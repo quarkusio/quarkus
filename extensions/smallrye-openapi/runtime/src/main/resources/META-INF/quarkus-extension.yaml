@@ -5,7 +5,7 @@ metadata:
   - "smallrye-openapi"
   - "openapi"
   - "open-api"
-  guide: "https://quarkus.io/guides/openapi-swaggerui-guide"
+  guide: "https://quarkus.io/guides/openapi-swaggerui"
   categories:
   - "web"
   status: "stable"

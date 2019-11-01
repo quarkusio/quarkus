@@ -6,7 +6,7 @@ metadata:
   - "panache"
   - "hibernate"
   - "jpa"
-  guide: "https://quarkus.io/guides/hibernate-orm-panache-guide"
+  guide: "https://quarkus.io/guides/hibernate-orm-panache"
   categories:
   - "data"
   status: "stable"

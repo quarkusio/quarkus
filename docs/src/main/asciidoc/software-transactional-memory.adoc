@@ -145,4 +145,4 @@ to abort if another thread has made conflicting updates.
 Remark: sharing a transaction between multiple threads is possible but is currently
 an advanced use case only and the Narayana documentation should be consulted
 if this behaviour is required. In particular, STM does not yet support the features
-described in the link:context-propagation-guide.html[Context Propagation guide].
+described in the link:context-propagation.html[Context Propagation guide].

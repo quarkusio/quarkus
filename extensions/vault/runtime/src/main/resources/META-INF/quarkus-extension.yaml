@@ -4,7 +4,7 @@ metadata:
   keywords:
   - "vault"
   - "security"
-  guide: "https://quarkus.io/guides/vault-guide"
+  guide: "https://quarkus.io/guides/vault"
   categories:
   - "security"
   status: "preview"

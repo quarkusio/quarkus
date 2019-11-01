@@ -9,7 +9,7 @@ metadata:
   - "transaction"
   - "tx"
   - "txs"
-  guide: "https://quarkus.io/guides/transaction-guide"
+  guide: "https://quarkus.io/guides/transaction"
   categories:
   - "data"
   status: "stable"

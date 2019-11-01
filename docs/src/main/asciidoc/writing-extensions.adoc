@@ -1216,7 +1216,7 @@ In order to provide a health check, you should do the following:
 
 - Import the `quarkus-smallrye-health` extension as an **optional** dependency in your runtime module so it will not impact the size of the application if
 health check is not included.
-- Create your health check following the link:health-guide.html[Quarkus - MicroProfile Health] guide. We advise providing only
+- Create your health check following the link:microprofile-health.html[Quarkus - MicroProfile Health] guide. We advise providing only
 readiness check for an extension (liveness check is designed to express the fact that an application is up and needs to be lightweight).
 - Import the `quarkus-smallrye-health-spi` library in your deployment module.
 - Add a build step in your deployment module that produces a `HealthBuildItem`.
@@ -1294,7 +1294,7 @@ The JSON-B extension will then use the produced build item to register your seri
 
 If you need more customization capabilities than registering a serializer or a deserializer,
 you can produce a CDI bean that implements `io.quarkus.jsonb.JsonbConfigCustomizer` via an `AdditionalBeanBuildItem`.
-More info about customizing JSON-B can be found on the JSON guide link:rest-json-guide.html#configuring-json-support[Configuring JSON support]
+More info about customizing JSON-B can be found on the JSON guide link:rest-json.html#configuring-json-support[Configuring JSON support]
 
 ==== Customizing Jackson
 
@@ -1356,7 +1356,7 @@ The Jackson extension will then use the produced build item to register a module
 
 If you need more customization capabilities than registering a module,
 you can produce a CDI bean that implements `io.quarkus.jackson.ObjectMapperCustomizer` via an `AdditionalBeanBuildItem`.
-More info about customizing Jackson can be found on the JSON guide link:rest-json-guide.html#configuring-json-support[Configuring JSON support]
+More info about customizing Jackson can be found on the JSON guide link:rest-json.html#configuring-json-support[Configuring JSON support]
 
 === Testing Extensions
 
@@ -1608,7 +1608,7 @@ Indicates that all charsets should be enabled in native image.
 
 `io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem`::
 A convenient way to tell Quarkus that the extension requires SSL and it should be enabled during native image build.
-When using this feature, remember to add your extension to the list of extensions that offer SSL support automatically on the https://github.com/quarkusio/quarkus/blob/master/docs/src/main/asciidoc/native-and-ssl-guide.adoc[native and ssl guide].
+When using this feature, remember to add your extension to the list of extensions that offer SSL support automatically on the https://github.com/quarkusio/quarkus/blob/master/docs/src/main/asciidoc/native-and-ssl.adoc[native and ssl guide].
 
 === IDE support tips
 
@@ -2265,7 +2265,7 @@ Now let's consider a more complicated example:
  *   Pass an explicit value to force Hibernate ORM to execute the SQL import file.
  *
  * If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus
- * https://quarkus.io/guides/application-configuration-guide#configuration-profiles[configuration profiles facility].
+ * https://quarkus.io/guides/config#configuration-profiles[configuration profiles facility].
  *
  * [source,property]
  * .application.properties

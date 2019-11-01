@@ -257,7 +257,7 @@ quarkus.mailer.password=YOURGENERATEDAPPLICATIONPASSWORD
 == Using SSL with native executables
 
 Note that if you enable SSL for the mailer and you want to build a native executable, you will need to enable the SSL support.
-Please refer to the native-and-ssl-guide.html[Using SSL With Native Executables] guide for more information.
+Please refer to the native-and-ssl.html[Using SSL With Native Executables] guide for more information.
 
 == Using the underlying Vert.x Mail Client
 

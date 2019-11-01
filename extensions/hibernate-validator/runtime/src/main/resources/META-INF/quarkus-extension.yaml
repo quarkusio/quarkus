@@ -6,7 +6,7 @@ metadata:
   - "hibernate-validator"
   - "bean-validation"
   - "validation"
-  guide: "https://quarkus.io/guides/validation-guide"
+  guide: "https://quarkus.io/guides/validation"
   categories:
   - "web"
   - "data"

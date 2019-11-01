@@ -4,7 +4,7 @@ metadata:
   keywords:
   - "mail"
   - "mailer"
-  guide: "https://quarkus.io/guides/sending-emails"
+  guide: "https://quarkus.io/guides/mailer"
   categories:
   - "miscellaneous"
   status: "stable"

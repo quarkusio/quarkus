@@ -156,7 +156,7 @@ public class ResteasyCommonProcessor {
             if (needJsonSupport) {
                 LOGGER.warn(
                         "Quarkus detected the need of REST JSON support but you have not provided the necessary JSON " +
-                                "extension for this. You can visit https://quarkus.io/guides/rest-json-guide for more " +
+                                "extension for this. You can visit https://quarkus.io/guides/rest-json for more " +
                                 "information on how to set one.");
             }
         }

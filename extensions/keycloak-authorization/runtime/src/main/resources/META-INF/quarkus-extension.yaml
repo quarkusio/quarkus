@@ -9,7 +9,7 @@ metadata:
   - "policy-enforcer"
   - "fine-grained-permission"
   - "resource-based-authorization"
-  guide: "https://quarkus.io/guides/keycloak-authorization-guide"
+  guide: "https://quarkus.io/guides/security-keycloak-authorization"
   categories:
     - "security"
   status: "stable"

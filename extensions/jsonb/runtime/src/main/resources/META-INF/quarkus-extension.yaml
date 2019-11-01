@@ -5,7 +5,7 @@ metadata:
   - "jsonb"
   - "json-b"
   - "json"
-  guide: "https://quarkus.io/guides/rest-json-guide"
+  guide: "https://quarkus.io/guides/rest-json"
   categories:
   - "serialization"
   status: "stable"

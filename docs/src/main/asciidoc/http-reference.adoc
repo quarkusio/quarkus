@@ -52,7 +52,7 @@ In both cases, a password must be provided. See the designated paragraph for a d
 
 [TIP]
 ====
-To enable SSL support with native executables, please refer to our link:native-and-ssl-guide[Using SSL With Native Executables guide].
+To enable SSL support with native executables, please refer to our link:native-and-ssl[Using SSL With Native Executables guide].
 ====
 
 === Providing a certificate and key file

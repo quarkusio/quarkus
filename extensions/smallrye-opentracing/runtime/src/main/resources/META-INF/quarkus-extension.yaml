@@ -7,7 +7,7 @@ metadata:
   - "tracing"
   - "distributed-tracing"
   - "jaeger"
-  guide: "https://quarkus.io/guides/opentracing-guide"
+  guide: "https://quarkus.io/guides/opentracing"
   categories:
   - "observability"
   status: "stable"

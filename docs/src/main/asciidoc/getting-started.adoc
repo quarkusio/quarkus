@@ -446,7 +446,7 @@ The async version of the code is available in the {quickstarts-base-url}[GitHub]
 
 This guide covered the creation of an application using Quarkus.
 However, there is much more.
-We recommend continuing the journey with the link:building-native-image-guide.html[building a native executable guide], where you learn about the native executable creation and the packaging in a container.
+We recommend continuing the journey with the link:building-native-image.html[building a native executable guide], where you learn about the native executable creation and the packaging in a container.
 
 In addition, the link:tooling.html[tooling guide] document explains how to:
 

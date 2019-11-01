@@ -5,7 +5,7 @@ metadata:
   - "flyway"
   - "database"
   - "data"
-  guide: "https://quarkus.io/guides/flyway-guide"
+  guide: "https://quarkus.io/guides/flyway"
   categories:
   - "data"
   status: "stable"

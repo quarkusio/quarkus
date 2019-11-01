@@ -383,7 +383,7 @@ and/or keystore. This is further detailed at
 https://infinispan.org/docs/dev/user_guide/user_guide.html#hr_encryption.
 
 The Infinispan Client extension enables SSL by default. You can read more about this
-at link:native-and-ssl-guide.html[Using SSL With Native Executables].
+at link:native-and-ssl.html[Using SSL With Native Executables].
 
 == Authentication
 

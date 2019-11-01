@@ -1118,7 +1118,7 @@ Now start Docker Compose as described above
 This guide has shown how you can build stream processing applications using Quarkus and the Kafka Streams APIs,
 both in JVM and native modes.
 For running your KStreams application in production, you could also add health checks and metrics for the data pipeline.
-Refer to the Quarkus guides on link:/guides/metrics-guide[metrics] and link:/guides/health-guide[health checks] to learn more.
+Refer to the Quarkus guides on link:/guides/microprofile-metrics[metrics] and link:/guides/microprofile-health[health checks] to learn more.
 
 == Configuration Reference
 

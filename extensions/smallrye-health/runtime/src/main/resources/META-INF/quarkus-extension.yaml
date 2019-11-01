@@ -8,7 +8,7 @@ metadata:
   - "health"
   - "microprofile-health"
   - "microprofile-health-check"
-  guide: "https://quarkus.io/guides/health-guide"
+  guide: "https://quarkus.io/guides/microprofile-health"
   categories:
   - "cloud"
   status: "stable"

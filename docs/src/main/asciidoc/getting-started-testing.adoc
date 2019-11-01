@@ -33,7 +33,7 @@ To complete this guide, you need:
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
-* The completed greeter application from the link:getting-started-guide.html[Getting Started Guide]
+* The completed greeter application from the link:getting-started.html[Getting Started Guide]
 
 == Architecture
 
@@ -358,4 +358,4 @@ It is also possible to test native executables using `@NativeImageTest`. This su
 guide except injecting into tests (and the native executable runs in a separate non-JVM process this is not really possible).
 
 
-This is covered in the link:building-native-image-guide.html[Native Executable Guide].
+This is covered in the link:building-native-image.html[Native Executable Guide].

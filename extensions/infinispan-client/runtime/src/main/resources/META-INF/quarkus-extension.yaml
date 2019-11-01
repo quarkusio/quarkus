@@ -5,7 +5,7 @@ metadata:
   - "infinispan-client"
   - "data-grid-client"
   - "infinispan"
-  guide: "https://quarkus.io/guides/infinispan-client-guide"
+  guide: "https://quarkus.io/guides/infinispan-client"
   categories:
   - "data"
   status: "stable"

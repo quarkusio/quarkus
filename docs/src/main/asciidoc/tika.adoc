@@ -45,7 +45,7 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
 * Docker
-* link:building-native-image-guide[GraalVM installed if you want to run in native mode]
+* link:building-native-image[GraalVM installed if you want to run in native mode]
 
 == Solution
 

@@ -83,7 +83,7 @@
         },
         {
             "name": "JSON-B",
-            "guide": "https://quarkus.io/guides/rest-json-guide",
+            "guide": "https://quarkus.io/guides/rest-json",
             "metadata": {
                 "keywords": [
                     "jsonb",
@@ -190,7 +190,7 @@
         },
         {
             "name": "Properties File based Security",
-            "guide": "https://quarkus.io/guides/elytron-properties-guide",
+            "guide": "https://quarkus.io/guides/security-properties",
             "metadata": {
                 "keywords": [
                     "security"
@@ -216,7 +216,7 @@
         },
         {
             "name": "OpenID Connect",
-            "guide": "https://quarkus.io/guides/oidc-guide",
+            "guide": "https://quarkus.io/guides/security-openid-connect",
             "metadata": {
                 "keywords": [
                     "oauth2",
@@ -230,7 +230,7 @@
         },
         {
             "name": "Flyway",
-            "guide": "https://quarkus.io/guides/flyway-guide",
+            "guide": "https://quarkus.io/guides/flyway",
             "metadata": {
                 "keywords": [
                     "flyway",
@@ -246,7 +246,7 @@
         {
             "name": "Hibernate ORM",
             "short-name": "JPA",
-            "guide": "https://quarkus.io/guides/hibernate-orm-guide",
+            "guide": "https://quarkus.io/guides/hibernate-orm",
             "metadata": {
                 "keywords": [
                     "hibernate-orm",
@@ -261,7 +261,7 @@
         },
         {
             "name": "Hibernate ORM with Panache",
-            "guide": "https://quarkus.io/guides/hibernate-orm-panache-guide",
+            "guide": "https://quarkus.io/guides/hibernate-orm-panache",
             "metadata": {
                 "keywords": [
                     "hibernate-orm-panache",
@@ -293,7 +293,7 @@
         },
         {
             "name": "Hibernate Search + Elasticsearch",
-            "guide": "https://quarkus.io/guides/hibernate-search-guide",
+            "guide": "https://quarkus.io/guides/hibernate-search-elasticsearch",
             "metadata": {
                 "keywords": [
                     "hibernate-search-elasticsearch",
@@ -311,7 +311,7 @@
         {
             "name": "Hibernate Validator",
             "short-name": "bean validation",
-            "guide": "https://quarkus.io/guides/validation-guide",
+            "guide": "https://quarkus.io/guides/validation",
             "metadata": {
                 "keywords": [
                     "hibernate-validator",
@@ -326,7 +326,7 @@
         },
         {
             "name": "Infinispan Client",
-            "guide": "https://quarkus.io/guides/infinispan-client-guide",
+            "guide": "https://quarkus.io/guides/infinispan-client",
             "metadata": {
                 "keywords": [
                     "infinispan-client",
@@ -471,7 +471,7 @@
         {
             "name": "SmallRye Health",
             "short-name": "health",
-            "guide": "https://quarkus.io/guides/health-guide",
+            "guide": "https://quarkus.io/guides/microprofile-health",
             "metadata": {
                 "keywords": [
                     "smallrye-health",
@@ -488,7 +488,7 @@
         },
         {
             "name": "SmallRye JWT",
-            "guide": "https://quarkus.io/guides/jwt-guide",
+            "guide": "https://quarkus.io/guides/security-jwt",
             "metadata": {
                 "keywords": [
                     "smallrye-jwt",
@@ -556,7 +556,7 @@
         },
         {
             "name": "SmallRye Reactive Messaging",
-            "guide": "https://quarkus.io/guides/async-message-passing",
+            "guide": "https://quarkus.io/guides/reactive-messaging",
             "metadata": {
                 "keywords": [
                     "smallrye-reactive-messaging",
@@ -572,7 +572,7 @@
         {
             "name": "SmallRye Reactive Messaging - Kafka Connector",
             "short-name": "kafka",
-            "guide": "https://quarkus.io/guides/kafka-guide",
+            "guide": "https://quarkus.io/guides/kafka",
             "metadata": {
                 "keywords": [
                     "kafka",
@@ -586,7 +586,7 @@
         },
         {
             "name": "SmallRye Reactive Messaging - AMQP Connector",
-            "guide": "https://quarkus.io/guides/amqp-guide",
+            "guide": "https://quarkus.io/guides/amqp",
             "metadata": {
                 "keywords": [
                     "amqp",
@@ -614,7 +614,7 @@
         {
             "name": "SmallRye Metrics",
             "short-name": "metrics",
-            "guide": "https://quarkus.io/guides/metrics-guide",
+            "guide": "https://quarkus.io/guides/microprofile-metrics",
             "metadata": {
                 "keywords": [
                     "smallrye-metrics",
@@ -631,7 +631,7 @@
         },
         {
             "name": "SmallRye OpenAPI",
-            "guide": "https://quarkus.io/guides/openapi-swaggerui-guide",
+            "guide": "https://quarkus.io/guides/openapi-swaggerui",
             "metadata": {
                 "keywords": [
                     "smallrye-openapi",
@@ -646,7 +646,7 @@
         },
         {
             "name": "SmallRye OpenTracing",
-            "guide": "https://quarkus.io/guides/opentracing-guide",
+            "guide": "https://quarkus.io/guides/opentracing",
             "metadata": {
                 "keywords": [
                     "smallrye-opentracing",
@@ -663,7 +663,7 @@
         },
         {
             "name": "REST Client",
-            "guide": "https://quarkus.io/guides/rest-client-guide",
+            "guide": "https://quarkus.io/guides/rest-client",
             "metadata": {
                 "keywords": [
                     "rest-client",
@@ -688,7 +688,7 @@
         {
             "name": "RESTEasy JAX-RS",
             "short-name": "jax-rs",
-            "guide": "https://quarkus.io/guides/rest-json-guide",
+            "guide": "https://quarkus.io/guides/rest-json",
             "metadata": {
                 "keywords": [
                     "resteasy",
@@ -722,7 +722,7 @@
         },
         {
             "name": "RESTEasy JSON-B",
-            "guide": "https://quarkus.io/guides/rest-json-guide",
+            "guide": "https://quarkus.io/guides/rest-json",
             "metadata": {
                 "keywords": [
                     "resteasy-jsonb",
@@ -759,7 +759,7 @@
         },
         {
             "name": "Narayana JTA - Transaction manager",
-            "guide": "https://quarkus.io/guides/transaction-guide",
+            "guide": "https://quarkus.io/guides/transaction",
             "metadata": {
                 "keywords": [
                     "narayana-jta",
@@ -823,7 +823,7 @@
         },
         {
             "name": "Eclipse Vert.x",
-            "guide": "https://quarkus.io/guides/using-vertx",
+            "guide": "https://quarkus.io/guides/vertx",
             "metadata": {
                 "keywords": [
                     "eclipse-vert.x",
@@ -900,7 +900,7 @@
         },
         {
             "name": "Mailer",
-            "guide": "https://quarkus.io/guides/sending-emails",
+            "guide": "https://quarkus.io/guides/mailer",
             "metadata": {
                 "keywords": [
                     "mail",
@@ -930,7 +930,7 @@
         {
             "name": "Undertow WebSockets",
             "short-name": "websockets",
-            "guide": "https://quarkus.io/guides/websocket-guide",
+            "guide": "https://quarkus.io/guides/websockets",
             "metadata": {
                 "keywords": [
                     "undertow-websockets",
@@ -948,7 +948,7 @@
         },
         {
             "name": "Scheduler - tasks",
-            "guide": "https://quarkus.io/guides/scheduled-guide",
+            "guide": "https://quarkus.io/guides/scheduler",
             "metadata": {
                 "keywords": [
                     "scheduler",
@@ -963,7 +963,7 @@
         },
         {
             "name": "Quarkus Extension for Spring DI API",
-            "guide": "https://quarkus.io/guides/spring-di-guide",
+            "guide": "https://quarkus.io/guides/spring-di",
             "metadata": {
                 "keywords": [
                     "spring-di"
@@ -976,7 +976,7 @@
         },
         {
             "name": "Quarkus Extension for Spring Web API",
-            "guide": "https://quarkus.io/guides/spring-web-guide",
+            "guide": "https://quarkus.io/guides/spring-web",
             "metadata": {
                 "keywords": [
                     "spring-web"
@@ -989,7 +989,7 @@
         },
         {
             "name": "Quarkus Extension for Spring Data JPA API",
-            "guide": "https://quarkus.io/guides/spring-data-jpa-guide",
+            "guide": "https://quarkus.io/guides/spring-data-jpa",
             "metadata": {
                 "keywords": [
                     "spring-data"
@@ -1002,7 +1002,7 @@
         },
         {
             "name": "Swagger UI",
-            "guide": "https://quarkus.io/guides/openapi-swaggerui-guide",
+            "guide": "https://quarkus.io/guides/openapi-swaggerui",
             "metadata": {
                 "keywords": [
                     "swagger-ui"
@@ -1075,7 +1075,7 @@
         },
         {
             "name": "Kubernetes",
-            "guide": "https://quarkus.io/guides/kubernetes-guide",
+            "guide": "https://quarkus.io/guides/kubernetes",
             "metadata": {
                 "keywords": [
                     "kubernetes"
@@ -1100,7 +1100,7 @@
         },
         {
             "name": "Kogito",
-            "guide": "https://quarkus.io/guides/kogito-guide",
+            "guide": "https://quarkus.io/guides/kogito",
             "metadata": {
                 "keywords": [
                     "kogito",
@@ -1167,7 +1167,7 @@
         },
         {
             "name": "Narayana STM - Software Transactional Memory",
-            "guide": "https://quarkus.io/guides/stm-guide",
+            "guide": "https://quarkus.io/guides/software-transactional-memory",
             "metadata": {
                 "keywords": [
                     "narayana-stm",
@@ -1187,7 +1187,7 @@
         },
         {
             "name": "Elytron Security JDBC Realm",
-            "guide": "https://quarkus.io/guides/security-jdbc-guide",
+            "guide": "https://quarkus.io/guides/security-jdbc",
             "metadata": {
                 "keywords": [
                     "security",
@@ -1201,7 +1201,7 @@
         },
         {
             "name": "Vault",
-            "guide": "https://quarkus.io/guides/vault-guide",
+            "guide": "https://quarkus.io/guides/vault",
             "metadata": {
                 "keywords": [
                     "vault",

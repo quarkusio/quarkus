@@ -23,13 +23,13 @@ For this guide you need:
 * roughly 2 hours for all modalities
 * having access to an Azure subscription. https://azure.microsoft.com/free/?WT.mc_id=opensource-quarkus-brborges[Get a free one here]
 
-This guide will take as input a native application developed in the link:building-native-image-guide.html[building native image guide].
+This guide will take as input a native application developed in the link:building-native-image.html[building native image guide].
 
 Make sure you have the getting-started application at hand, or clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive]. The solution is located in the `getting-started` directory.
 
 == Change Quarkus HTTP Port
 
-If you correctly followed the link:building-native-image-guide.html[building native image guide], you should have a local container image named `quarkus-quickstart/getting-started`. 
+If you correctly followed the link:building-native-image.html[building native image guide], you should have a local container image named `quarkus-quickstart/getting-started`. 
 
 While Quarkus by default runs on port 8080, most Azure services expect web applications to be running on port 80. Before we continue, go back to your quickstart code and open the file `src/main/docker/Dockerfile.native`.
 

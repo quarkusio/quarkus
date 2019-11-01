@@ -41,6 +41,7 @@
                         <exclude>org.eclipse.microprofile.config.tck.EmptyValuesTest</exclude>
                         <!-- "testEnvironmentConfigSource" fails because of the above TCK/spec dispute -->
                         <!-- "testInjectedConfigSerializable" fails because not all ConfigSource, Converters, etc are serializable -->
+                        <!-- We have a custom version of this TCK class that excludes "testEnvironmentConfigSource" and "testInjectedConfigSerializable", allowing other tests to run -->
                         <exclude>org.eclipse.microprofile.config.tck.ConfigProviderTest</exclude>
                     </excludes>
                 </configuration>

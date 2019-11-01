@@ -1,5 +1,7 @@
 package io.quarkus.it.config;
 
+import java.math.BigDecimal;
+
 import javax.validation.constraints.Size;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -25,5 +27,6 @@ public class ConfigPropertiesResource {
         @Size(min = 2)
         public String message;
         public String suffix = "!";
+        public BigDecimal other;
     }
 }

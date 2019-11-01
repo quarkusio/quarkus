@@ -96,11 +96,8 @@ public class ConfigBuildStep {
                     // No need to validate properties with default values
                     continue;
                 }
-                String propertyType = requiredType.name().toString();
-                if (requiredType.kind() != Kind.ARRAY && requiredType.kind() != Kind.PRIMITIVE) {
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, propertyType));
-                }
-                configProperties.produce(new ConfigPropertyBuildItem(propertyName, propertyType));
+
+                configProperties.produce(new ConfigPropertyBuildItem(propertyName, requiredType));
             }
         }
 
@@ -127,12 +124,21 @@ public class ConfigBuildStep {
     @BuildStep
     @Record(RUNTIME_INIT)
     void validateConfigProperties(ConfigRecorder recorder, List<ConfigPropertyBuildItem> configProperties,
-            BeanContainerBuildItem beanContainer) {
+            BeanContainerBuildItem beanContainer, BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         // IMPL NOTE: we do depend on BeanContainerBuildItem to make sure that the BeanDeploymentValidator finished its processing
+
+        // the non-primitive types need to be registered for reflection since Class.forName is used at runtime to load the class
+        for (ConfigPropertyBuildItem item : configProperties) {
+            Type requiredType = item.getPropertyType();
+            String propertyType = requiredType.name().toString();
+            if (requiredType.kind() != Kind.ARRAY && requiredType.kind() != Kind.PRIMITIVE) {
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, propertyType));
+            }
+        }
 
         Map<String, Set<String>> propNamesToClasses = configProperties.stream().collect(
                 groupingBy(ConfigPropertyBuildItem::getPropertyName,
-                        mapping(ConfigPropertyBuildItem::getPropertyType, toSet())));
+                        mapping(c -> c.getPropertyType().name().toString(), toSet())));
         recorder.validateConfigProperties(propNamesToClasses);
     }
 

@@ -140,7 +140,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         boolean isApplicationClass = applicationClassPredicate.test(bean.getImplClazz().name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+                bean.getBeanClass(), name -> name.equals(generatedName) ? SpecialType.BEAN : null);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
@@ -243,7 +243,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         boolean isApplicationClass = applicationClassPredicate.test(beanClass.name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+                bean.getBeanClass(), name -> name.equals(generatedName) ? SpecialType.BEAN : null);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
@@ -339,7 +339,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+                bean.getBeanClass(), name -> name.equals(generatedName) ? SpecialType.BEAN : null);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
@@ -425,7 +425,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+                bean.getBeanClass(), name -> name.equals(generatedName) ? SpecialType.BEAN : null);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)

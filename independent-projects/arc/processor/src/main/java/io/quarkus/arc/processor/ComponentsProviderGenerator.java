@@ -59,7 +59,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
     Collection<Resource> generate(String name, BeanDeployment beanDeployment, Map<BeanInfo, String> beanToGeneratedName,
             Map<ObserverInfo, String> observerToGeneratedName) {
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(true);
+        ResourceClassOutput classOutput = new ResourceClassOutput(true, null);
 
         String generatedName = SETUP_PACKAGE + "." + name + COMPONENTS_PROVIDER_SUFFIX;
         ClassCreator componentsProvider = ClassCreator.builder().classOutput(classOutput).className(generatedName)

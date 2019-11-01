@@ -48,14 +48,14 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
     /**
      *
      * @param beanDeployment
-     * @param annotationLiterals
      * @return a collection of resources
      */
     Collection<Resource> generate(String name, BeanDeployment beanDeployment,
             ComputingCache<Key, Literal> annotationLiteralsCache) {
         List<Resource> resources = new ArrayList<>();
         annotationLiteralsCache.forEachEntry((key, literal) -> {
-            ResourceClassOutput classOutput = new ResourceClassOutput(literal.isApplicationClass);
+            ResourceClassOutput classOutput = new ResourceClassOutput(literal.isApplicationClass,
+                    DotName.createSimple(literal.className));
             createSharedAnnotationLiteral(classOutput, key, literal);
             resources.addAll(classOutput.getResources());
         });

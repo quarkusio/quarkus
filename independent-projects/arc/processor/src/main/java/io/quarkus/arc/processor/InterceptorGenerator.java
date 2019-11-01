@@ -70,7 +70,7 @@ public class InterceptorGenerator extends BeanGenerator {
 
         boolean isApplicationClass = applicationClassPredicate.test(interceptor.getBeanClass());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.INTERCEPTOR_BEAN : null);
+                interceptor.getBeanClass(), name -> name.equals(generatedName) ? SpecialType.INTERCEPTOR_BEAN : null);
 
         // MyInterceptor_Bean implements InjectableInterceptor<T>
         ClassCreator interceptorCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)

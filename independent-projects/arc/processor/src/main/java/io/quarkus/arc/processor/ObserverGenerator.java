@@ -101,7 +101,7 @@ public class ObserverGenerator extends AbstractGenerator {
 
         boolean isApplicationClass = applicationClassPredicate.test(observer.getObserverMethod().declaringClass().name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.OBSERVER : null);
+                observer.getDeclaringBean().getBeanClass(), name -> name.equals(generatedName) ? SpecialType.OBSERVER : null);
 
         // Foo_Observer_fooMethod_hash implements ObserverMethod<T>
         ClassCreator observerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)

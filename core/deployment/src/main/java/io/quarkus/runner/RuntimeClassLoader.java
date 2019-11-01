@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -304,38 +303,10 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         this.bytecodeTransformers = functions;
     }
 
-    public void setApplicationArchives(List<Path> archives) {
-        //we also need to be able to transform application archives
-        //this is not great but I can't really see a better solution
-        if (bytecodeTransformers == null) {
-            return;
-        }
-        try {
-            for (Path root : archives) {
-                Map<String, Path> classes = new HashMap<>();
-                AtomicBoolean transform = new AtomicBoolean();
-                try (Stream<Path> fileTreeElements = Files.walk(root)) {
-                    fileTreeElements.forEach(new Consumer<Path>() {
-                        @Override
-                        public void accept(Path path) {
-                            if (path.toString().endsWith(".class")) {
-                                String key = root.relativize(path).toString().replace('\\', '/');
-                                classes.put(key, path);
-                                if (bytecodeTransformers
-                                        .containsKey(key.substring(0, key.length() - ".class".length()).replace("/", "."))) {
-                                    transform.set(true);
-                                }
-                            }
-                        }
-                    });
-                }
-                if (transform.get()) {
-                    applicationClasses.putAll(classes);
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void setClassesFromTransformedArchives(Map<String, Path> classesFromTransformedArchives) {
+        //if a class is from an archive that has had transformation applied then all classes from this archive
+        //must be loaded by the runtime class loader
+        applicationClasses.putAll(classesFromTransformedArchives);
     }
 
     @Override

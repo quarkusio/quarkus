@@ -1,5 +1,6 @@
 package io.quarkus.deployment.steps;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -16,7 +17,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
@@ -28,6 +32,7 @@ import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.TransformedArchiveBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 
 public class ClassTransformingBuildStep {
@@ -106,6 +111,54 @@ public class ClassTransformingBuildStep {
             }
         }
         return new TransformedClassesBuildItem(transformedClassesByJar);
+    }
+
+    @BuildStep
+    TransformedArchiveBuildItem archives(ApplicationArchivesBuildItem archives,
+            List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems) {
+        if (bytecodeTransformerBuildItems.isEmpty()) {
+            return new TransformedArchiveBuildItem(Collections.emptyList(), Collections.emptyMap(), Collections.emptySet());
+        }
+        Set<String> transformedClasses = new HashSet<>();
+        for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
+            transformedClasses.add(i.getClassToTransform());
+        }
+        List<ApplicationArchive> transformedArchive = new ArrayList<>();
+        Map<String, Path> applicationClasses = new HashMap<>();
+        Set<String> applicationJavaClassNames = new HashSet<>();
+        try {
+            for (ApplicationArchive aa : archives.getApplicationArchives()) {
+                Path root = aa.getArchiveRoot();
+                Map<String, Path> classes = new HashMap<>();
+                Set<String> javaClassNames = new HashSet<>();
+                AtomicBoolean transform = new AtomicBoolean();
+                try (Stream<Path> stream = Files.walk(root)) {
+                    stream.forEach(new Consumer<Path>() {
+                        @Override
+                        public void accept(Path path) {
+                            if (path.toString().endsWith(".class")) {
+                                String key = root.relativize(path).toString().replace('\\', '/');
+                                classes.put(key, path);
+                                String javaClassName = key.substring(0, key.length() - ".class".length()).replace("/", ".");
+                                javaClassNames.add(javaClassName);
+                                if (transformedClasses
+                                        .contains(javaClassName)) {
+                                    transform.set(true);
+                                }
+                            }
+                        }
+                    });
+                }
+                if (transform.get()) {
+                    transformedArchive.add(aa);
+                    applicationClasses.putAll(classes);
+                    applicationJavaClassNames.addAll(javaClassNames);
+                }
+            }
+            return new TransformedArchiveBuildItem(transformedArchive, applicationClasses, applicationJavaClassNames);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

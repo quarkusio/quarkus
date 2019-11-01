@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.jboss.jandex.DotName;
 
 /**
  *
@@ -13,10 +14,9 @@ import java.nio.file.Path;
  */
 class ResourceImpl implements ResourceOutput.Resource {
 
-    private final boolean applicationClass;
-
-    static Resource javaClass(String name, byte[] data, SpecialType specialType, boolean applicationClass) {
-        return new ResourceImpl(applicationClass, name, data, Type.JAVA_CLASS, specialType);
+    static Resource javaClass(String name, byte[] data, SpecialType specialType, boolean applicationClass,
+            DotName associatedClassName) {
+        return new ResourceImpl(applicationClass, name, data, Type.JAVA_CLASS, specialType, associatedClassName);
 
     }
 
@@ -25,7 +25,7 @@ class ResourceImpl implements ResourceOutput.Resource {
     }
 
     static Resource serviceProvider(String name, byte[] data, SpecialType specialType) {
-        return new ResourceImpl(true, name, data, Type.SERVICE_PROVIDER, specialType);
+        return new ResourceImpl(true, name, data, Type.SERVICE_PROVIDER, specialType, null);
     }
 
     private final String name;
@@ -36,17 +36,27 @@ class ResourceImpl implements ResourceOutput.Resource {
 
     private final SpecialType specialType;
 
-    private ResourceImpl(boolean applicationClass, String name, byte[] data, Type type, SpecialType specialType) {
+    private final boolean applicationClass;
+    private final DotName associatedClassName;
+
+    private ResourceImpl(boolean applicationClass, String name, byte[] data, Type type, SpecialType specialType,
+            DotName associatedClassName) {
         this.applicationClass = applicationClass;
         this.name = name;
         this.data = data;
         this.type = type;
         this.specialType = specialType;
+        this.associatedClassName = associatedClassName;
     }
 
     @Override
     public boolean isApplicationClass() {
         return applicationClass;
+    }
+
+    @Override
+    public DotName getAssociatedClassName() {
+        return associatedClassName;
     }
 
     @Override

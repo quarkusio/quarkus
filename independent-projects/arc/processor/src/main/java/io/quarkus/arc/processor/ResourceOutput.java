@@ -2,6 +2,7 @@ package io.quarkus.arc.processor;
 
 import java.io.File;
 import java.io.IOException;
+import org.jboss.jandex.DotName;
 
 /**
  * Represents a generated resource.
@@ -15,6 +16,8 @@ public interface ResourceOutput {
     interface Resource {
 
         boolean isApplicationClass();
+
+        DotName getAssociatedClassName();
 
         File writeTo(File directory) throws IOException;
 

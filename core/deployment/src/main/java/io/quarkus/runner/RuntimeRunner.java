@@ -17,21 +17,19 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.logging.Handler;
-import java.util.stream.Collectors;
 
 import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildResult;
-import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusAugmentor;
-import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.builditem.TransformedArchiveBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.LaunchMode;
@@ -106,6 +104,10 @@ public class RuntimeRunner implements Runnable, Closeable {
             for (Consumer<BuildChainBuilder> i : chainCustomizers) {
                 builder.addBuildChainCustomizer(i);
             }
+
+            if (loader instanceof RuntimeClassLoader) {
+                builder.addFinal(TransformedArchiveBuildItem.class);
+            }
             builder.addFinal(BytecodeTransformerBuildItem.class)
                     .addFinal(ApplicationClassNameBuildItem.class);
 
@@ -122,9 +124,9 @@ public class RuntimeRunner implements Runnable, Closeable {
             }
 
             if (loader instanceof RuntimeClassLoader) {
-                ApplicationArchivesBuildItem archives = result.consume(ApplicationArchivesBuildItem.class);
-                ((RuntimeClassLoader) loader).setApplicationArchives(archives.getApplicationArchives().stream()
-                        .map(ApplicationArchive::getArchiveRoot).collect(Collectors.toList()));
+                ((RuntimeClassLoader) loader)
+                        .setClassesFromTransformedArchives(
+                                result.consume(TransformedArchiveBuildItem.class).getClassFileToPath());
             }
             for (GeneratedClassBuildItem i : result.consumeMulti(GeneratedClassBuildItem.class)) {
                 classOutput.writeClass(i.isApplicationClass(), i.getName(), i.getClassData());

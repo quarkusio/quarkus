@@ -60,6 +60,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
+import io.quarkus.deployment.builditem.TransformedArchiveBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
@@ -289,7 +290,8 @@ public class ArcProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
-            BuildProducer<GeneratedResourceBuildItem> generatedResource) throws Exception {
+            BuildProducer<GeneratedResourceBuildItem> generatedResource,
+            TransformedArchiveBuildItem transformedArchiveBuildItem) throws Exception {
 
         for (ValidationErrorBuildItem validationError : validationErrors) {
             for (Throwable error : validationError.getValues()) {
@@ -317,7 +319,15 @@ public class ArcProcessor {
                 case JAVA_CLASS:
                     LOGGER.debugf("Add %s class: %s", (resource.isApplicationClass() ? "APP" : "FWK"),
                             resource.getFullyQualifiedName());
-                    generatedClass.produce(new GeneratedClassBuildItem(resource.isApplicationClass(), resource.getName(),
+                    boolean appClass = resource.isApplicationClass();
+                    //note that we do this additional check here instead of in the predicate to prevent circular dependencies
+                    //this check needs all transformation to be performed, so if ArC wants to do transformation (e.g. removing
+                    //the final flag from methods) then we would have a circular dependency
+                    if (resource.getAssociatedClassName() != null && transformedArchiveBuildItem.getClasses()
+                            .contains(resource.getAssociatedClassName().toString())) {
+                        appClass = true;
+                    }
+                    generatedClass.produce(new GeneratedClassBuildItem(appClass, resource.getName(),
                             resource.getData()));
                     break;
                 case SERVICE_PROVIDER:
@@ -331,7 +341,9 @@ public class ArcProcessor {
         LOGGER.debugf("Generated %s resources in %s ms", resources.size(), System.currentTimeMillis() - start);
 
         // Register all qualifiers for reflection to support type-safe resolution at runtime in native image
-        for (ClassInfo qualifier : beanProcessor.getBeanDeployment().getQualifiers()) {
+        for (
+
+        ClassInfo qualifier : beanProcessor.getBeanDeployment().getQualifiers()) {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, qualifier.name().toString()));
         }
 

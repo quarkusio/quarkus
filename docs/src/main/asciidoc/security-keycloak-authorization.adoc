@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 
 This guide demonstrates how your Quarkus application can authorize access to protected resources using https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services].
 
-The `quarkus-keycloak-authorization` extension provides a policy enforcer that enforces access to protected resources based on permissions managed by Keycloak.
+The `quarkus-keycloak-authorization` extension is based on `quarkus-oidc` and provides a policy enforcer that enforces access to protected resources based on permissions managed by Keycloak.
 It provides a flexible and dynamic authorization capability based on Resource-Based Access Control.
 In other words, instead of explicitly enforce access based on some specific access control mechanism (e.g.: RBAC), you just check whether or not a request is allowed to access a resource based on its name, identifier or URI.
 
@@ -28,6 +28,7 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
 * https://stedolan.github.io/jq/[jq tool]
+* https://www.keycloak.org/docs/latest/server_installation/index.html[Keycloak]
 * Docker
 
 == Architecture
@@ -61,7 +62,7 @@ Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {q
 
 The solution is located in the `security-keycloak-authorization-quickstart` {quickstarts-tree-url}/security-keycloak-authorization-quickstart[directory].
 
-== Creating the Maven Project
+== Creating the Project
 
 First, we need a new project.
 Create a new project with the following command:
@@ -76,8 +77,6 @@ cd security-keycloak-authorization-quickstart
 ----
 
 This command generates a Maven project, importing the `keycloak-authorization` extension which is an implementation of a Keycloak Adapter for Quarkus applications and provides all the necessary capabilities to integrate with a Keycloak Server and perform bearer token authorization.
-
-== Writing the application
 
 Let's start by implementing the `/api/users/me` endpoint.
 As you can see from the source code below it is just a regular JAX-RS resource:
@@ -153,11 +152,9 @@ public class AdminResource {
 Note that we did not define any annotation such as `@RoleAllowed` to explicitly enforce access to a resource.
 The extension will be responsible to map the URIs of the protected resources you have in Keycloak and evaluate the permissions accordingly, granting or denying access depending on the permissions that will be granted by Keycloak.
 
-== Configuring the application
+=== Configuring the application
 
 The OpenID Connect extension allows you to define the adapter configuration using the `application.properties` file which should be located at the `src/main/resources` directory.
-
-=== Configuring using the application.properties file
 
 [source,properties]
 ----
@@ -169,11 +166,6 @@ quarkus.oidc.credentials.secret=secret
 # Enable Policy Enforcement
 quarkus.keycloak.policy-enforcer.enable=true
 ----
-
-=== Configuring CORS
-
-If you plan to consume this application from another application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing).
-Please read the link:http-reference.html#cors-filter[HTTP CORS documentation] for more details.
 
 == Starting and Configuring the Keycloak Server
 
@@ -283,6 +275,46 @@ export access_token=$(\
     -H 'content-type: application/x-www-form-urlencoded' \
     -d 'username=admin&password=admin&grant_type=password' | jq --raw-output '.access_token' \
  )
+----
+
+== Checking Permissions Programmatically
+
+In some cases, you may want to programmatically check whether or not a request is granted to access a protected resource. By 
+injecting a `SecurityIdentity` instance in your beans, you are allowed to check permissions as follows:
+
+[source,java]
+----
+@Path("/api/protected")
+public class ProtectedResource {
+
+    @Inject
+    SecurityIdentity identity;
+    
+    
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public CompletionStage<List<Permission>> get() {
+        return identity.checkPermission(new AuthPermission("{resource_name}"))
+                .thenCompose(granted -> {
+                    if (granted) {
+                        return CompletableFuture.completedFuture(doGetState());
+                    }
+                    throw new ForbiddenException();
+                });
+    }
+}
+----
+
+== Mapping Protected Resources
+
+By default, the extension loads all the protected resources managed by Keycloak where their `URI` are used to map the resources 
+in your application that should be protected. This is done during the application startup.
+
+If you want to disable this behavior and map resources on-demand, you can use the following configuration:
+
+[source,properties]
+----
+quarkus.keycloak.policy-enforcer.lazy-load-paths=true
 ----
 
 == References

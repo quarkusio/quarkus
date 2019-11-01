@@ -6,9 +6,15 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.oidc.runtime.OidcConfig;
 
 public class KeycloakPolicyEnforcerBuildStep {
+
+    @BuildStep
+    FeatureBuildItem featureBuildItem() {
+        return new FeatureBuildItem(FeatureBuildItem.KEYCLOAK_AUTHORIZATION);
+    }
 
     @BuildStep
     public AdditionalBeanBuildItem beans() {

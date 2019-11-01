@@ -19,7 +19,7 @@ stages:
         timeoutInMinutes: 30
         pool:
           name: 'Expansion'
-          vmImage: "$(UNDEFINED)"
+          vmImage: "blah"
         workspace:
           clean: all
 

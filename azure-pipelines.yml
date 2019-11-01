@@ -213,7 +213,7 @@ stages:
           modules:
             - amazon-dynamodb
             - amazon-lambda
-            - amazon-lambda-http-it
+            - amazon-lambda-http
           name: amazon
           dynamodb: true
 

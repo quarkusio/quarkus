@@ -60,7 +60,7 @@
         <module>amazon-dynamodb</module>
         <module>test-extension</module>
         <module>amazon-lambda</module>
-        <module>amazon-lambda-http-it</module>
+        <module>amazon-lambda-http</module>
         <module>amazon-lambda-http-resteasy</module>
         <module>kogito</module>
         <module>kogito-maven</module>

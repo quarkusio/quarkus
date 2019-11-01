@@ -13,7 +13,7 @@ jobs:
     displayName: ${{ join(', ', parameters.modules) }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     pool:
-      name: 'tsetme'
+      name: 'Expansion'
     workspace:
       clean: all
 

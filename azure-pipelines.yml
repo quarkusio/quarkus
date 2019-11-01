@@ -18,7 +18,7 @@ stages:
         displayName: 'Linux Maven Repo'
         timeoutInMinutes: 30
         pool:
-          name: 'tsetme' 
+          name: 'Expansion' 
         workspace:
           clean: all
 
@@ -53,7 +53,7 @@ stages:
         displayName: 'Build JDK8 Linux'
         timeoutInMinutes: 60
         pool:
-          name: 'tsetme'
+          name: 'Expansion'
         workspace:
           clean: all
 
@@ -70,7 +70,7 @@ stages:
         timeoutInMinutes: 60
         displayName: 'Linux JDK11 Build'
         pool:
-          name: 'tsetme'          
+          name: 'Expansion'          
         workspace:
           clean: all
           
@@ -83,7 +83,7 @@ stages:
         timeoutInMinutes: 60
         displayName: 'Linux JDK12 Build'
         pool:
-          name: 'tsetme'
+          name: 'Expansion'
         workspace:
           clean: all
 
@@ -95,7 +95,7 @@ stages:
       - job: Run_TCKs
         timeoutInMinutes: 45
         pool:
-          name: 'tsetme'
+          name: 'Expansion'
         workspace:
           clean: all
 

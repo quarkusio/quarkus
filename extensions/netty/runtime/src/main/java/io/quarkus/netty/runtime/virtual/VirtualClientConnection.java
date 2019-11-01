@@ -1,5 +1,6 @@
 package io.quarkus.netty.runtime.virtual;
 
+import java.net.SocketAddress;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -14,17 +15,17 @@ import io.netty.util.internal.PlatformDependent;
  *
  */
 public class VirtualClientConnection {
-    protected VirtualAddress address;
+    protected SocketAddress clientAddress;
     protected BlockingQueue<Object> queue = new LinkedBlockingQueue<>();
     protected boolean connected = true;
     protected VirtualChannel peer;
 
-    VirtualClientConnection(VirtualAddress address) {
-        this.address = address;
+    VirtualClientConnection(SocketAddress clientAddress) {
+        this.clientAddress = clientAddress;
     }
 
-    public VirtualAddress clientAddress() {
-        return address;
+    public SocketAddress clientAddress() {
+        return clientAddress;
     }
 
     /**
@@ -104,6 +105,21 @@ public class VirtualClientConnection {
      * @return
      */
     public static VirtualClientConnection connect(final VirtualAddress remoteAddress) {
+        return connect(remoteAddress, remoteAddress);
+
+    }
+
+    /**
+     * Establish a virtual intra-JVM connection
+     *
+     * @param remoteAddress
+     * @param clientAddress
+     * @return
+     */
+    public static VirtualClientConnection connect(VirtualAddress remoteAddress, SocketAddress clientAddress) {
+        if (clientAddress == null)
+            clientAddress = remoteAddress;
+
         Channel boundChannel = VirtualChannelRegistry.get(remoteAddress);
         if (boundChannel == null) {
             throw new RuntimeException("No virtual channel available");
@@ -113,9 +129,8 @@ public class VirtualClientConnection {
         }
 
         VirtualServerChannel serverChannel = (VirtualServerChannel) boundChannel;
-        VirtualClientConnection conn = new VirtualClientConnection(remoteAddress);
+        VirtualClientConnection conn = new VirtualClientConnection(clientAddress);
         conn.peer = serverChannel.serve(conn);
         return conn;
-
     }
 }

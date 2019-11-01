@@ -1,6 +1,7 @@
 package io.quarkus.amazon.lambda.http;
 
 import java.io.ByteArrayOutputStream;
+import java.net.InetSocketAddress;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -37,7 +38,14 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
     }
 
     public AwsProxyResponse handleRequest(AwsProxyRequest request, Context context) {
-        VirtualClientConnection connection = VirtualClientConnection.connect(VertxHttpRecorder.VIRTUAL_HTTP);
+        InetSocketAddress clientAddress = null;
+        if (request.getRequestContext() != null && request.getRequestContext().getIdentity() != null) {
+            if (request.getRequestContext().getIdentity().getSourceIp() != null) {
+                clientAddress = new InetSocketAddress(request.getRequestContext().getIdentity().getSourceIp(), 443);
+            }
+        }
+
+        VirtualClientConnection connection = VirtualClientConnection.connect(VertxHttpRecorder.VIRTUAL_HTTP, clientAddress);
         try {
             return nettyDispatch(connection, request);
         } catch (Exception e) {
@@ -48,9 +56,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
 
     }
 
-    private AwsProxyResponse nettyDispatch(VirtualClientConnection connection,
-            AwsProxyRequest request)
-            throws Exception {
+    private AwsProxyResponse nettyDispatch(VirtualClientConnection connection, AwsProxyRequest request) throws Exception {
         String path = request.getPath();
         if (request.getMultiValueQueryStringParameters() != null && !request.getMultiValueQueryStringParameters().isEmpty()) {
             StringBuilder sb = new StringBuilder(path);

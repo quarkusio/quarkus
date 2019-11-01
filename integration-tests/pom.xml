@@ -61,6 +61,7 @@
         <module>test-extension</module>
         <module>amazon-lambda</module>
         <module>amazon-lambda-http-it</module>
+        <module>amazon-lambda-http-resteasy</module>
         <module>kogito</module>
         <module>kogito-maven</module>
         <module>kubernetes</module>
@@ -73,6 +74,7 @@
         <module>resteasy-jackson</module>
         <module>jgit</module>
         <module>virtual-http</module>
+        <module>virtual-http-resteasy</module>
         <module>artemis-core</module>
         <module>artemis-jms</module>
         <module>maven</module>

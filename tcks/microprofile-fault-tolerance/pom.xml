@@ -38,9 +38,6 @@
                         <!-- Hystrix is unable to interrupt the calling thread, as it didn't create it. -->
                         <!-- We have a custom version of this TCK class that excludes TimeoutUninterruptableTest.testTimeout() as all the other methods pass -->
                         <exclude>org.eclipse.microprofile.fault.tolerance.tck.TimeoutUninterruptableTest</exclude>
-
-                        <!-- Weird error only in CI that RequestContext is not active during call to @BeforeTest method. Unable to reproduce failure locally -->
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.metrics.CircuitBreakerMetricTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>

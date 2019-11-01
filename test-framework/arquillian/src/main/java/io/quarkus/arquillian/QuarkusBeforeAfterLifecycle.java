@@ -16,7 +16,10 @@ public class QuarkusBeforeAfterLifecycle {
     private static final String TESTNG_INVOKE_BEFORE_METHOD = "invokeTestNgBeforeMethods";
     private static final String TESTNG_INVOKE_AFTER_METHOD = "invokeTestNgAfterMethods";
 
-    public void on(@Observes(precedence = -100) org.jboss.arquillian.test.spi.event.suite.Before event) throws Throwable {
+    private static final int DEFAULT_PRECEDENCE = -100;
+
+    public void on(@Observes(precedence = DEFAULT_PRECEDENCE) org.jboss.arquillian.test.spi.event.suite.Before event)
+            throws Throwable {
         if (isJunitAvailable()) {
             invokeCallbacks(JUNIT_INVOKE_BEFORES, JUNIT_CALLBACKS);
         }
@@ -25,7 +28,8 @@ public class QuarkusBeforeAfterLifecycle {
         }
     }
 
-    public void on(@Observes(precedence = 100) org.jboss.arquillian.test.spi.event.suite.After event) throws Throwable {
+    public void on(@Observes(precedence = DEFAULT_PRECEDENCE) org.jboss.arquillian.test.spi.event.suite.After event)
+            throws Throwable {
         if (isJunitAvailable()) {
             invokeCallbacks(JUNIT_INVOKE_AFTERS, JUNIT_CALLBACKS);
         }
@@ -34,14 +38,16 @@ public class QuarkusBeforeAfterLifecycle {
         }
     }
 
-    public void beforeClass(@Observes(precedence = -100) org.jboss.arquillian.test.spi.event.suite.BeforeClass event)
+    public void beforeClass(
+            @Observes(precedence = DEFAULT_PRECEDENCE) org.jboss.arquillian.test.spi.event.suite.BeforeClass event)
             throws Throwable {
         if (isTestNGAvailable()) {
             invokeCallbacks(TESTNG_INVOKE_BEFORE_CLASS, TESTNG_CALLBACKS);
         }
     }
 
-    public void afterClass(@Observes(precedence = 100) org.jboss.arquillian.test.spi.event.suite.AfterClass event)
+    public void afterClass(
+            @Observes(precedence = DEFAULT_PRECEDENCE) org.jboss.arquillian.test.spi.event.suite.AfterClass event)
             throws Throwable {
         if (isTestNGAvailable()) {
             invokeCallbacks(TESTNG_INVOKE_AFTER_CLASS, TESTNG_CALLBACKS);

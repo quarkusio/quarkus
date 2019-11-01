@@ -100,9 +100,9 @@ final class Methods {
         if (Modifier.isFinal(method.flags())) {
             String className = method.declaringClass().name().toString();
             if (!className.startsWith("java.")) {
-                LOGGER.warn(
-                        String.format("Method %s.%s() is final, skipped during generation of the corresponding client proxy",
-                                className, method.name()));
+                LOGGER.warn(String.format(
+                        "Final method %s.%s() is ignored during proxy generation and should never be invoked upon the proxy instance!",
+                        className, method.name()));
             }
             return true;
         }
@@ -113,9 +113,10 @@ final class Methods {
         return method.declaringClass().name().equals(DotNames.OBJECT) && method.name().equals(TO_STRING);
     }
 
-    static void addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
+    static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
             Map<MethodKey, Set<AnnotationInstance>> candidates,
             List<AnnotationInstance> classLevelBindings) {
+        Set<MethodInfo> finalMethods = new HashSet<>();
         for (MethodInfo method : classInfo.methods()) {
             if (skipForSubclass(method)) {
                 continue;
@@ -134,13 +135,7 @@ final class Methods {
             }
             if (!merged.isEmpty()) {
                 if (Modifier.isFinal(method.flags())) {
-                    String className = method.declaringClass().name().toString();
-                    if (!className.startsWith("java.")) {
-                        LOGGER.warn(
-                                String.format(
-                                        "Method %s.%s() is final, skipped during generation of the corresponding intercepted subclass",
-                                        className, method.name()));
-                    }
+                    finalMethods.add(method);
                 } else {
                     candidates.computeIfAbsent(new Methods.MethodKey(method), key -> merged);
                 }
@@ -149,9 +144,11 @@ final class Methods {
         if (classInfo.superClassType() != null) {
             ClassInfo superClassInfo = getClassByName(beanDeployment.getIndex(), classInfo.superName());
             if (superClassInfo != null) {
-                addInterceptedMethodCandidates(beanDeployment, superClassInfo, candidates, classLevelBindings);
+                finalMethods
+                        .addAll(addInterceptedMethodCandidates(beanDeployment, superClassInfo, candidates, classLevelBindings));
             }
         }
+        return finalMethods;
     }
 
     private static boolean skipForSubclass(MethodInfo method) {

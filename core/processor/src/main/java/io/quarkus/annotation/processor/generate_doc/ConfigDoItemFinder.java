@@ -3,6 +3,7 @@ package io.quarkus.annotation.processor.generate_doc;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getJavaDocSiteLink;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getKnownGenericType;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenate;
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.stringifyType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -187,6 +188,7 @@ class ConfigDoItemFinder {
                                 configDocItems.addAll(groupConfigItems);
                                 continue;
                             } else {
+                                type = "`" + stringifyType(declaredType) + "`";
                                 configDocKey.setPassThroughMap(true);
                                 configDocKey.setWithinAMap(true);
                             }

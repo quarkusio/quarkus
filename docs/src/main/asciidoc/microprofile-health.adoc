@@ -102,7 +102,7 @@ public class SimpleHealthCheck implements HealthCheck {
 
     @Override
     public HealthCheckResponse call() {
-        return HealthCheckResponse.named("Simple health check").up().build();
+        return HealthCheckResponse.up("Simple health check");
     }
 }
 ----
@@ -156,7 +156,7 @@ public class DatabaseConnectionHealthCheck implements HealthCheck {
 
     @Override
     public HealthCheckResponse call() {
-        return HealthCheckResponse.named("Database connection health check").up().build();
+        return HealthCheckResponse.up("Database connection health check");
     }
 }
 
@@ -228,6 +228,12 @@ public class DatabaseConnectionHealthCheck implements HealthCheck {
     }
 }
 ----
+
+NOTE: Until now we used a simplified method of building a `HealthCheckResponse`
+through the `HealthCheckResponse#up(String)` (there is also
+`HealthCheckResponse#down(String)`) which will directly build the response object.
+From now on, we utilize the full builder capabilities provided by the
+`HealthCheckResponseBuilder` class.
 
 If you now rerun the readiness health check (at `http://localhost:8080/health/ready`) 
 the overall `status` should be DOWN. You can also check the liveness check at 

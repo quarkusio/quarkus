@@ -131,21 +131,21 @@ stages:
             - kafka
           name: messaging
     
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          modules: main
-          name: main
-          postgres: true
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           modules: main
+#           name: main
+#           postgres: true
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 25
-          modules:
-            - jpa-h2
-            - jpa-mariadb
-            - jpa-mssql
-            - jpa-derby
-          name: data_1
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 25
+#           modules:
+#             - jpa-h2
+#             - jpa-mariadb
+#             - jpa-mssql
+#             - jpa-derby
+#           name: data_1
 
 #       - template: ci-templates/native-build-steps.yaml
 #         parameters:
@@ -159,15 +159,15 @@ stages:
 #           postgres: true
 #           mysql: true
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 15
-          modules:
-            - amazon-dynamodb
-            - amazon-lambda
-            - amazon-lambda-http-it
-          name: amazon
-          dynamodb: true
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 15
+#           modules:
+#             - amazon-dynamodb
+#             - amazon-lambda
+#             - amazon-lambda-http-it
+#           name: amazon
+#           dynamodb: true
 
 #       - template: ci-templates/native-build-steps.yaml
 #         parameters:
@@ -178,100 +178,100 @@ stages:
 #             - kafka
 #           name: messaging
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 20
-          modules:
-            - elytron-security-oauth2
-            - elytron-security
-            - elytron-security-jdbc
-            - elytron-undertow
-          name: security_1
-          keycloak: true
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 20
+#           modules:
+#             - elytron-security-oauth2
+#             - elytron-security
+#             - elytron-security-jdbc
+#             - elytron-undertow
+#           name: security_1
+#           keycloak: true
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 45
-          modules:
-            - elytron-resteasy
-            - oidc
-            - oidc-code-flow
-            - vault-app
-            - keycloak-authorization
-          name: security_2
-          keycloak: true
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 45
+#           modules:
+#             - elytron-resteasy
+#             - oidc
+#             - oidc-code-flow
+#             - vault-app
+#             - keycloak-authorization
+#           name: security_2
+#           keycloak: true
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 30
-          modules:
-            - flyway
-            - hibernate-orm-panache
-            - reactive-pg-client
-          name: data_3
-          postgres: true
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 30
+#           modules:
+#             - flyway
+#             - hibernate-orm-panache
+#             - reactive-pg-client
+#           name: data_3
+#           postgres: true
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 30
-          modules:
-            - mongodb-client
-            - mongodb-panache
-            - neo4j
-          name: data_4
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 30
+#           modules:
+#             - mongodb-client
+#             - mongodb-panache
+#             - neo4j
+#           name: data_4
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 25
-          modules:
-            - infinispan-cache-jpa
-            - infinispan-client
-          name: infinispan
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 25
+#           modules:
+#             - infinispan-cache-jpa
+#             - infinispan-client
+#           name: infinispan
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 25
-          modules:
-            - resteasy-jackson
-            - vertx
-            - vertx-http
-            - virtual-http
-          name: http
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 25
+#           modules:
+#             - resteasy-jackson
+#             - vertx
+#             - vertx-http
+#             - virtual-http
+#           name: http
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 25
-          modules:
-            - jackson
-            - jsonb
-            - jgit
-            - kogito
-            - kubernetes-client
-          name: misc_1
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 25
+#           modules:
+#             - jackson
+#             - jsonb
+#             - jgit
+#             - kogito
+#             - kubernetes-client
+#           name: misc_1
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 25
-          modules:
-            - tika
-            - hibernate-validator
-            - test-extension
-          name: misc_2
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 25
+#           modules:
+#             - tika
+#             - hibernate-validator
+#             - test-extension
+#           name: misc_2
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 25
-          modules:
-            - spring-di
-            - spring-web
-            - spring-data-jpa
-          name: spring
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 25
+#           modules:
+#             - spring-di
+#             - spring-web
+#             - spring-data-jpa
+#           name: spring
 
-      - template: ci-templates/native-build-steps.yaml
-        parameters:
-          timeoutInMinutes: 25
-          modules:
-            - hibernate-search-elasticsearch
-            - narayana-stm
-            - narayana-jta
-          name: data_5
+#       - template: ci-templates/native-build-steps.yaml
+#         parameters:
+#           timeoutInMinutes: 25
+#           modules:
+#             - hibernate-search-elasticsearch
+#             - narayana-stm
+#             - narayana-jta
+#           name: data_5

@@ -5,10 +5,17 @@ import java.util.List;
 import java.util.Map;
 
 final public class ScannedConfigDocsItemHolder {
-    private final Map<String, List<ConfigDocItem>> allConfigItemsPerExtension = new HashMap<>();
-    private final Map<String, List<ConfigDocItem>> configGroupConfigItems = new HashMap<>();
+    private final Map<String, List<ConfigDocItem>> allConfigItemsPerExtension;
+    private final Map<String, List<ConfigDocItem>> configGroupConfigItems;
 
     public ScannedConfigDocsItemHolder() {
+        this(new HashMap<>(), new HashMap<>());
+    }
+
+    public ScannedConfigDocsItemHolder(Map<String, List<ConfigDocItem>> allConfigItemsPerExtension,
+            Map<String, List<ConfigDocItem>> configGroupConfigItems) {
+        this.allConfigItemsPerExtension = allConfigItemsPerExtension;
+        this.configGroupConfigItems = configGroupConfigItems;
     }
 
     public Map<String, List<ConfigDocItem>> getAllConfigItemsPerExtension() {

@@ -54,8 +54,18 @@ final public class Constants {
             .get(System.getProperties().getProperty("maven.multiModuleProjectDirectory")
                     + Constants.DOCS_SRC_MAIN_ASCIIDOC_GENERATED);
     public static final File GENERATED_DOCS_DIR = GENERATED_DOCS_PATH.toFile();
+
+    /**
+     * Holds the list of configuration items / configuration sections of each configuration roots.
+     */
     public static final File ALL_CR_GENERATED_DOC = GENERATED_DOCS_PATH
             .resolve("all-configuration-roots-generated-doc.properties").toFile();
+
+    /**
+     * Holds the list of computed file names and the list of configuration roots of this extension
+     */
+    public static final File EXTENSION_CONFIGURATION_ROOT_LIST = GENERATED_DOCS_PATH
+            .resolve("extensions-configuration-roots-list.properties").toFile();
 
     public static final String DURATION_NOTE_ANCHOR = "duration-note-anchor";
     public static final String MEMORY_SIZE_NOTE_ANCHOR = "memory-size-note-anchor";

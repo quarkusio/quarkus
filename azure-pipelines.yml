@@ -154,6 +154,12 @@ stages:
         pool:
           vmImage: 'Ubuntu 16.04'
         steps:
+          - task: CacheBeta@0 #we know the very first job will have restored or created this, so this will never write built artifacts to the cache
+            displayName: Restore Maven Cache
+            inputs:
+              key: maven | bom/runtime/pom.xml
+              path: $(Pipeline.Workspace)/.m2/repository/
+              securityNamespace: cache
           - task: Maven@3
             displayName: 'Maven Install'
             inputs:

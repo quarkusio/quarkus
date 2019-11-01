@@ -73,7 +73,7 @@ public class GradleBuildFile extends BuildFile {
         if (!containsBOM()) {
             res.append(System.lineSeparator());
             res.append("dependencies {").append(System.lineSeparator());
-            res.append("    implementation enforcedPlatform(\"${quarkusPlatformBomGroupId}:${quarkusPlatformBomArtifactId}:${quarkusPlatformBomVersion}\")")
+            res.append("    implementation enforcedPlatform(\"${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}\")")
                     .append(System.lineSeparator());
             res.append("    implementation 'io.quarkus:quarkus-resteasy'").append(System.lineSeparator());
             res.append("    testImplementation 'io.quarkus:quarkus-junit5'").append(System.lineSeparator());
@@ -127,14 +127,14 @@ public class GradleBuildFile extends BuildFile {
         if (props.getProperty("quarkusVersion") == null) {
             props.setProperty("quarkusVersion", getPluginVersion());
         }
-        if(props.getProperty("quarkusPlatformBomGroupId") == null) {
-            props.setProperty("quarkusPlatformBomGroupId", MojoUtils.getBomGroupId());
+        if(props.getProperty("quarkusPlatformGroupId") == null) {
+            props.setProperty("quarkusPlatformGroupId", MojoUtils.getBomGroupId());
         }
-        if(props.getProperty("quarkusPlatformBomArtifactId") == null) {
-            props.setProperty("quarkusPlatformBomArtifactId", MojoUtils.getBomArtifactId());
+        if(props.getProperty("quarkusPlatformArtifactId") == null) {
+            props.setProperty("quarkusPlatformArtifactId", MojoUtils.getBomArtifactId());
         }
-        if(props.getProperty("quarkusPlatformBomVersion") == null) {
-            props.setProperty("quarkusPlatformBomVersion", MojoUtils.getBomVersion());
+        if(props.getProperty("quarkusPlatformVersion") == null) {
+            props.setProperty("quarkusPlatformVersion", MojoUtils.getBomVersion());
         }
     }
 
@@ -192,7 +192,7 @@ public class GradleBuildFile extends BuildFile {
 
     @Override
     protected boolean containsBOM() throws IOException {
-        return getModel().getBuildContent().contains("enforcedPlatform(\"${quarkusPlatformBomGroupId}:${quarkusPlatformBomArtifactId}:");
+        return getModel().getBuildContent().contains("enforcedPlatform(\"${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:");
     }
 
     @Override

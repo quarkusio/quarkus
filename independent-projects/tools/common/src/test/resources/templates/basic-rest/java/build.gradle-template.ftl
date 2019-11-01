@@ -21,7 +21,7 @@ repositories {
 }
 
 dependencies {
-    implementation enforcedPlatform("${quarkusPlatformBomGroupId}:${quarkusPlatformBomArtifactId}:${quarkusPlatformBomVersion}")
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     implementation 'io.quarkus:quarkus-resteasy'
 
     testImplementation 'io.quarkus:quarkus-junit5'

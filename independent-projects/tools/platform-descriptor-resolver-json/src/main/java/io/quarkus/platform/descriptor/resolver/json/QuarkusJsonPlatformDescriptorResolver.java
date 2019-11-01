@@ -278,14 +278,15 @@ public class QuarkusJsonPlatformDescriptorResolver {
         try {
             log.debug("Attempting to resolve Quarkus JSON platform descriptor as %s", jsonArtifact);
             return loadFromFile(artifactResolver.resolve(jsonArtifact));
-        } catch (Throwable e) {
+        } catch (Exception e) {
+            log.debug("Failed to resolve %s due to %s", jsonArtifact, e);
             // it didn't work, now we are trying artifactId-descriptor-json
             final AppArtifact fallbackArtifact = new AppArtifact(jsonArtifact.getGroupId(), jsonArtifact.getArtifactId() + "-descriptor-json", null, "json", jsonArtifact.getVersion());
             log.debug("Attempting to resolve Quarkus JSON platform descriptor as %s", fallbackArtifact);
             try {
                 return loadFromFile(artifactResolver.resolve(fallbackArtifact));
-            } catch (Throwable e1) {
-                throw new IllegalStateException("Failed to resolve the JSON descriptor artifact as " + jsonArtifact);
+            } catch (Exception e1) {
+                throw new IllegalStateException("Failed to resolve the JSON descriptor artifact as " + jsonArtifact, e);
             }
         }
     }

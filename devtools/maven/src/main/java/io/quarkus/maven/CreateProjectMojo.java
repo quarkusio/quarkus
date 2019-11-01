@@ -83,13 +83,13 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "projectVersion")
     private String projectVersion;
 
-    @Parameter(property = "bomGroupId", defaultValue = CreateUtils.DEFAULT_PLATFORM_BOM_GROUP_ID)
+    @Parameter(property = "platformGroupId", defaultValue = CreateUtils.DEFAULT_PLATFORM_BOM_GROUP_ID)
     private String bomGroupId;
 
-    @Parameter(property = "bomArtifactId", defaultValue = CreateUtils.DEFAULT_PLATFORM_BOM_ARTIFACT_ID)
+    @Parameter(property = "platformArtifactId", defaultValue = CreateUtils.DEFAULT_PLATFORM_BOM_ARTIFACT_ID)
     private String bomArtifactId;
 
-    @Parameter(property = "bomVersion", required = false)
+    @Parameter(property = "platformVersion", required = false)
     private String bomVersion;
 
     @Parameter(property = "path")
@@ -149,6 +149,7 @@ public class CreateProjectMojo extends AbstractMojo {
             bomVersion = CreateUtils.resolvePluginInfo(getClass()).getVersion();
         }
 
+        // We assume platform specified by user refers to a BOM.
         final QuarkusPlatformDescriptor platform = QuarkusJsonPlatformDescriptorResolver.newInstance()
                 .setMessageWriter(new MojoMessageWriter(getLog()))
                 .setArtifactResolver(new BootstrapAppModelResolver(mvn))

@@ -18,7 +18,7 @@ stages:
         displayName: 'Linux Maven Repo'
         timeoutInMinutes: 30
         pool:
-          name: '$(UNDEFINED)'
+          name: $(UNDEFINED)
           vmImage: 'blah'
         workspace:
           clean: all

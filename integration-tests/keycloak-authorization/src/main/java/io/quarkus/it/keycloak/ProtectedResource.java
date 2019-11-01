@@ -1,6 +1,8 @@
 package io.quarkus.it.keycloak;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
 import javax.security.auth.AuthPermission;
@@ -22,11 +24,14 @@ public class ProtectedResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Permission> permissions() {
-        if (identity.checkPermissionBlocking(new AuthPermission("Permission Resource"))) {
-            return identity.getAttribute("permissions");
-        }
-        throw new ForbiddenException();
+    public CompletionStage<List<Permission>> permissions() {
+        return identity.checkPermission(new AuthPermission("Permission Resource"))
+                .thenCompose(granted -> {
+                    if (granted) {
+                        return CompletableFuture.completedFuture(identity.getAttribute("permissions"));
+                    }
+                    throw new ForbiddenException();
+                });
     }
 
     @Path("/claim-protected")

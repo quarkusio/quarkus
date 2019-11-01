@@ -32,6 +32,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String JDBC_MYSQL = "jdbc-mysql";
     public static final String JGIT = "jgit";
     public static final String KAFKA_STREAMS = "kafka-streams";
+    public static final String KEYCLOAK_AUTHORIZATION = "keycloak-authorization";
     public static final String KOGITO = "kogito";
     public static final String KOTLIN = "kotlin";
     public static final String KUBERNETES = "kubernetes";

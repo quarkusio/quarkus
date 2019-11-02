@@ -8,8 +8,15 @@ variables:
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
   QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
   LINUX_USE_VMS: $[ eq(variables['Build.Reason'], 'IndividualCI') ] 
-  LINUX_POOL_NAME: Expansion
-  LINUX_VM_NAME: 'Ununtu 16.0.4'
 
 stages:
   - template: ci-templates/stages.yml
+    parameters:
+      pool:
+         vmImage: 'Ununtu 16.0.4'
+       expectUseVMs: true
+  - template: ci-templates/stages.yml
+    parameters:
+      pool:
+        name: 'Expansion'
+      expectUseVMs: false      

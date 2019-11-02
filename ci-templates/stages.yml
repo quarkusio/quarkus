@@ -1,17 +1,17 @@
+parameters:
+  poolSettings: {}
+  expectUseVMs: true
 stages:
   #This stage uses the azure caching feature to reduce the downloads that are performed from central, which greatly speeds up CI
   #This is it's own stage to prevent Quarkus artifacts produced by the build from being cached
   - stage: cache_maven_repo_stage
     displayName: 'Maven Cache'
+    condition: $[ eq(xvariables.LINUX_USE_VMS, expectUseVMs) ] 
     jobs:
       - job: Cache_Maven_Repo
         displayName: 'Linux Maven Repo'
         timeoutInMinutes: 30
-        pool: 
-          $[ if variables.LINUX_USE_VMS ]:
-            vmImage: $(LINUX_VM_NAME)
-          $[ if not(variables.LINUX_USE_VMS) ]:
-            name: $(LINUX_POOL_NAME)
+        pool: ${{parameters.poolSettings}}
         workspace:
           clean: all
 
@@ -41,16 +41,14 @@ stages:
   #This stage builds the Quarkus artifacts needed for native image testing
   - stage: initial_jdk8_stage
     displayName: 'Build for Native'
+    condition: $[ eq(xvariables.LINUX_USE_VMS, expectUseVMs) ] 
     dependsOn: cache_maven_repo_stage
     jobs:
       - job: Build_JDK8_Linux
         displayName: 'Build JDK8 Linux'
         timeoutInMinutes: 60
-        pool: 
-          ${{ if variables.LINUX_USE_VMS }}:
-            vmImage: $(LINUX_VM_NAME)
-          ${{ if not(variables.LINUX_USE_VMS) }}:
-            name: $(LINUX_POOL_NAME)
+        pool: ${{parameters.poolSettings}}
+
         workspace:
           clean: all
 
@@ -61,16 +59,13 @@ stages:
 
   - stage: run_jvm_tests_stage
     displayName: 'Run JVM Tests'
+    condition: $[ eq(xvariables.LINUX_USE_VMS, expectUseVMs) ] 
     dependsOn: initial_jdk8_stage
     jobs:
       - job: Build_JDK11_Linux
         timeoutInMinutes: 60
         displayName: 'Linux JDK11 Build'
-        pool:
-          ${{ if variables.LINUX_USE_VMS }}:
-            vmImage: $(LINUX_VM_NAME)
-          ${{ if not(variables.LINUX_USE_VMS) }}:
-            name: $(LINUX_POOL_NAME)
+        pool: ${{parameters.poolSettings}}
         workspace:
           clean: all
           
@@ -82,11 +77,7 @@ stages:
       - job: Build_JDK12_Linux
         timeoutInMinutes: 60
         displayName: 'Linux JDK12 Build'
-        pool:
-          ${{ if variables.LINUX_USE_VMS }}:
-            vmImage: $(LINUX_VM_NAME)
-          ${{ if not(variables.LINUX_USE_VMS) }}:
-            name: $(LINUX_POOL_NAME)
+        pool: ${{parameters.poolSettings}}
 
         workspace:
           clean: all
@@ -98,11 +89,7 @@ stages:
 
       - job: Run_TCKs
         timeoutInMinutes: 45
-        pool:
-          ${{ if variables.LINUX_USE_VMS }}:
-            vmImage: $(LINUX_VM_NAME)
-          ${{ if not(variables.LINUX_USE_VMS) }}:
-            name: $(LINUX_POOL_NAME)
+        pool: ${{parameters.poolSettings}}
         workspace:
           clean: all
 
@@ -125,16 +112,19 @@ stages:
 
   - stage: run_native_tests_stage
     displayName: 'Native Tests'
+    condition: $[ eq(xvariables.LINUX_USE_VMS, expectUseVMs) ] 
     dependsOn: initial_jdk8_stage
     jobs:
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           modules: main
           name: main
           postgres: true
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 25
           modules:
             - jpa-h2
@@ -145,6 +135,7 @@ stages:
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 25
           modules:
             - jpa
@@ -157,6 +148,7 @@ stages:
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 15
           modules:
             - amazon-dynamodb
@@ -167,6 +159,7 @@ stages:
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 20
           modules:
             - artemis-core
@@ -176,6 +169,7 @@ stages:
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 20
           modules:
             - elytron-security-oauth2
@@ -187,6 +181,7 @@ stages:
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 45
           modules:
             - elytron-resteasy
@@ -199,6 +194,7 @@ stages:
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 30
           modules:
             - flyway
@@ -209,6 +205,7 @@ stages:
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 30
           modules:
             - mongodb-client
@@ -218,6 +215,7 @@ stages:
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 25
           modules:
             - infinispan-cache-jpa
@@ -226,6 +224,7 @@ stages:
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 25
           modules:
             - resteasy-jackson
@@ -236,6 +235,7 @@ stages:
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 25
           modules:
             - jackson
@@ -247,6 +247,7 @@ stages:
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 25
           modules:
             - tika
@@ -256,6 +257,7 @@ stages:
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 25
           modules:
             - spring-di
@@ -265,6 +267,7 @@ stages:
 
       - template: native-build-steps.yaml
         parameters:
+          poolSettings: ${{parameters.poolSettings}}
           timeoutInMinutes: 25
           modules:
             - hibernate-search-elasticsearch

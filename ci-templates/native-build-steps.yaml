@@ -1,4 +1,5 @@
 parameters:
+  poolSettings: {}
   modules: []
   name: ''
   postgres: false
@@ -12,11 +13,7 @@ jobs:
   - job: ${{ parameters.name }}
     displayName: ${{ join(', ', parameters.modules) }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-    pool:
-      ${{ if variables.LINUX_USE_VMS }}:
-        vmImage: $(LINUX_VM_NAME)
-      ${{ if not(variables.LINUX_USE_VMS) }}:
-        name: $(LINUX_POOL_NAME)
+    pool: ${{ parameters.poolSettings }}
 
     workspace:
       clean: all

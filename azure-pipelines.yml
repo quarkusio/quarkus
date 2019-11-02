@@ -12,4 +12,4 @@ variables:
   LINUX_VM_NAME: 'Ununtu 16.0.4'
 
 stages:
-  - template: stages.yml
+  - template: ci-templates/stages.yml

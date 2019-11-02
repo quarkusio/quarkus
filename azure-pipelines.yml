@@ -9,6 +9,7 @@ variables:
   QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
   LINUX_USE_VMS: $[ eq(variables['Build.Reason'], 'IndividualCI') ] 
 
+
 stages:
   - template: ci-templates/stages.yml
     parameters:

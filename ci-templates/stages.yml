@@ -54,7 +54,7 @@ stages:
           clean: all
 
         steps:
-          - template: ci-templates/jvm-build-steps.yaml
+          - template: jvm-build-steps.yaml
           - publish: $(MAVEN_CACHE_FOLDER)
             artifact: $(Build.SourceVersion)-BuiltMavenRepo
 
@@ -74,7 +74,7 @@ stages:
           clean: all
           
         steps:
-          - template: ci-templates/jvm-build-steps.yaml
+          - template: jvm-build-steps.yaml
             parameters:
               jdk: '1.11'
 
@@ -91,7 +91,7 @@ stages:
           clean: all
 
         steps:
-          - template: ci-templates/jvm-build-steps.yaml
+          - template: jvm-build-steps.yaml
             parameters:
               jdk: '1.12'
 
@@ -126,13 +126,13 @@ stages:
     displayName: 'Native Tests'
     dependsOn: initial_jdk8_stage
     jobs:
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           modules: main
           name: main
           postgres: true
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 25
           modules:
@@ -142,7 +142,7 @@ stages:
             - jpa-derby
           name: data_1
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 25
           modules:
@@ -154,7 +154,7 @@ stages:
           postgres: true
           mysql: true
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 15
           modules:
@@ -164,7 +164,7 @@ stages:
           name: amazon
           dynamodb: true
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 20
           modules:
@@ -173,7 +173,7 @@ stages:
             - kafka
           name: messaging
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 20
           modules:
@@ -184,7 +184,7 @@ stages:
           name: security_1
           keycloak: true
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 45
           modules:
@@ -196,7 +196,7 @@ stages:
           name: security_2
           keycloak: true
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 30
           modules:
@@ -206,7 +206,7 @@ stages:
           name: data_3
           postgres: true
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 30
           modules:
@@ -215,7 +215,7 @@ stages:
             - neo4j
           name: data_4
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 25
           modules:
@@ -223,7 +223,7 @@ stages:
             - infinispan-client
           name: infinispan
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 25
           modules:
@@ -233,7 +233,7 @@ stages:
             - virtual-http
           name: http
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 25
           modules:
@@ -244,7 +244,7 @@ stages:
             - kubernetes-client
           name: misc_1
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 25
           modules:
@@ -253,7 +253,7 @@ stages:
             - test-extension
           name: misc_2
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 25
           modules:
@@ -262,7 +262,7 @@ stages:
             - spring-data-jpa
           name: spring
 
-      - template: ci-templates/native-build-steps.yaml
+      - template: native-build-steps.yaml
         parameters:
           timeoutInMinutes: 25
           modules:

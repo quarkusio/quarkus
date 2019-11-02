@@ -3,8 +3,8 @@ variables:
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
   QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
   ${{ if eq(variables.Build.Reason, 'PullRequest') }}:
-  poolType: vm 
-  poolValue: 'Ubuntu 16.04'
+    poolType: vm 
+    poolValue: 'Ubuntu 16.04'
   ${{ if ne(variables.Build.Reason, 'PullRequest') }}:
-  poolType: name
-  poolValye: 'Expansion'
+    poolType: name
+    poolValye: 'Expansion'

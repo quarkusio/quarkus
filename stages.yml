@@ -16,9 +16,9 @@ stages:
         timeoutInMinutes: 30
         pool: 
           ${{ if variables.LINUX_USE_VMS }}:
-            vmImage: ${{variables.LINUX_VM_NAME}}
+          vmImage: ${{variables.LINUX_VM_NAME}}
           ${{ if not(variables.LINUX_USE_VMS) }}:
-            name: ${{variables.LINUX_POOL_NAME}}
+          name: ${{variables.LINUX_POOL_NAME}}
         workspace:
           clean: all
 

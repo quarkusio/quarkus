@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Building Quarkus apps with Maven
+= Quarkus - Building applications with Maven
 
 include::./attributes.adoc[]
 
@@ -396,24 +396,12 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <profiles>
     <profile> <3>
         <id>native</id>
+        <properties> <4>
+            <quarkus.package.type>native</quarkus.package.type>
+        </properties>
         <build>
             <plugins>
-                <plugin> <3>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${quarkus.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>native-image</goal>
-                            </goals>
-                            <configuration>
-                                <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin> <4>
+                <plugin> <5>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${surefire-plugin.version}</version>
@@ -438,9 +426,10 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 ----
 
 <1> Optionally use a BOM file to omit the version of the different Quarkus dependencies.
-<2> Use the Quarkus Maven plugin that will hook into the build process
-<3> Use a native profile and plugin to activate GraalVM compilation
-<4> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image.html[Native executable guide] for more info.
+<2> Use the Quarkus Maven plugin that will hook into the build process.
+<3> Use a specific `native` profile for native executable building.
+<4> Enable the `native` package type. The build will therefore produce a native executable.
+<5> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image.html[Native executable guide] for more info.
 
 [[uber-jar-maven]]
 === Uber-Jar Creation
@@ -455,6 +444,16 @@ option, this takes a comma seperated list of entries to ignore.
 Uber-Jar creation by default excludes link:https://docs.oracle.com/javase/tutorial/deployment/jar/intro.html[signature files] that might be present in the dependencies of the application.
 
 Uber-Jar's final name is configurable via a Maven's build settings `finalName` option.
+
+[[configuration-reference]]
+== Configuring the Project Output
+
+There are a several configuration options that will define what the output of your project build will be.
+These are provided in `application.properties` the same as any other config property.
+
+The properties are shown below:
+
+include::{generated-dir}/config/quarkus-core-package-config.adoc[opts=optional]
 
 [[custom-test-configuration-profile]]
 === Custom test configuration profile in JVM mode

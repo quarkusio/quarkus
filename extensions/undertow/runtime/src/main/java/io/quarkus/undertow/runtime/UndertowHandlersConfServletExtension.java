@@ -1,6 +1,8 @@
 package io.quarkus.undertow.runtime;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.List;
 
 import javax.servlet.ServletContext;
@@ -23,24 +25,27 @@ public class UndertowHandlersConfServletExtension implements ServletExtension {
     @Override
     public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        InputStream handlers = classLoader.getResourceAsStream(META_INF_UNDERTOW_HANDLERS_CONF);
-        if (handlers != null) {
-            // From Stuart Douglas: Ideally these would be parsed at deployment time and passed into a recorder,
-            // however they are likely not bytecode serialisable. Even though this approach
-            // does not 100% align with the Quarkus ethos I think it is ok in this case as
-            // the gains would be marginal compared to the cost of attempting to make
-            // every predicate bytecode serialisable.
-            List<PredicatedHandler> handlerList = PredicatedHandlersParser.parse(handlers, classLoader);
-            if (!handlerList.isEmpty()) {
-                deploymentInfo.addOuterHandlerChainWrapper(new RewriteCorrectingHandlerWrappers.PostWrapper());
-                deploymentInfo.addOuterHandlerChainWrapper(new HandlerWrapper() {
-                    @Override
-                    public HttpHandler wrap(HttpHandler handler) {
-                        return Handlers.predicates(handlerList, handler);
-                    }
-                });
-                deploymentInfo.addOuterHandlerChainWrapper(new RewriteCorrectingHandlerWrappers.PreWrapper());
+        try (InputStream handlers = classLoader.getResourceAsStream(META_INF_UNDERTOW_HANDLERS_CONF)) {
+            if (handlers != null) {
+                // From Stuart Douglas: Ideally these would be parsed at deployment time and passed into a recorder,
+                // however they are likely not bytecode serialisable. Even though this approach
+                // does not 100% align with the Quarkus ethos I think it is ok in this case as
+                // the gains would be marginal compared to the cost of attempting to make
+                // every predicate bytecode serialisable.
+                List<PredicatedHandler> handlerList = PredicatedHandlersParser.parse(handlers, classLoader);
+                if (!handlerList.isEmpty()) {
+                    deploymentInfo.addOuterHandlerChainWrapper(new RewriteCorrectingHandlerWrappers.PostWrapper());
+                    deploymentInfo.addOuterHandlerChainWrapper(new HandlerWrapper() {
+                        @Override
+                        public HttpHandler wrap(HttpHandler handler) {
+                            return Handlers.predicates(handlerList, handler);
+                        }
+                    });
+                    deploymentInfo.addOuterHandlerChainWrapper(new RewriteCorrectingHandlerWrappers.PreWrapper());
+                }
             }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 }

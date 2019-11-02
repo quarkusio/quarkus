@@ -168,9 +168,10 @@ public class SwaggerUiProcessor {
             while (entries.hasMoreElements()) {
                 JarEntry entry = entries.nextElement();
                 if (entry.getName().startsWith(versionedSwaggerUiWebjarPrefix) && !entry.isDirectory()) {
-                    InputStream inputStream = jarFile.getInputStream(entry);
-                    String filename = entry.getName().replace(versionedSwaggerUiWebjarPrefix, "");
-                    Files.copy(inputStream, resourceDir.resolve(filename));
+                    try (InputStream inputStream = jarFile.getInputStream(entry)) {
+                        String filename = entry.getName().replace(versionedSwaggerUiWebjarPrefix, "");
+                        Files.copy(inputStream, resourceDir.resolve(filename));
+                    }
                 }
             }
         }

@@ -13,7 +13,7 @@ stages:
   - template: ci-templates/stages.yml
     parameters:
       poolSettings:
-         vmImage: 'Ununtu 16.0.4'
+         vmImage: 'Ubuntu 16.0.4'
       expectUseVMs: true
   - template: ci-templates/stages.yml
     parameters:

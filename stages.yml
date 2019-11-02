@@ -12,7 +12,6 @@ stages:
             name: ${{variables.poolValue}}
           ${{ if ne(variables.poolType, 'name') }}:
             vmImage: ${{variables.poolValue}}
-~                                  
         workspace:
           clean: all
 

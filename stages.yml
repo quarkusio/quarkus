@@ -8,7 +8,10 @@ stages:
         displayName: 'Linux Maven Repo'
         timeoutInMinutes: 30
         pool:
-          name: 'Expansion'
+          ${{ if eq(Build.Reason, 'PullRequest') }}:
+            name: 'Expansion'
+          ${{ if ne(Build.Reason, 'PullRequest') }}:
+            vmImage: 'Ubuntu 16.04'
         workspace:
           clean: all
 

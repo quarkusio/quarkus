@@ -10,4 +10,5 @@ variables:
   template: vars.yml
 
 stages:
+  - script: echo $(poolType)
   - template: stages.yml

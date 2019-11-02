@@ -7,7 +7,12 @@ stages:
       - job: Cache_Maven_Repo
         displayName: 'Linux Maven Repo'
         timeoutInMinutes: 30
-        pool: ${{variables.poolSettings}}
+        pool: 
+          ${{ if eq(variables.poolType, 'name') }}:
+            name: ${{variables.poolValue}}
+          ${{ if ne(variables.poolType, 'name') }}:
+            vmImage: ${{variables.poolValue}}
+~                                  
         workspace:
           clean: all
 

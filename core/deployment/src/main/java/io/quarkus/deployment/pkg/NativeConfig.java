@@ -13,11 +13,58 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class NativeConfig {
 
     /**
-     * If errors should be reported at runtime. This is a more relaxed setting, however it is not recommended as it means
-     * your application may fail at runtime if an unsupported feature is used by accident
+     * Additional arguments to pass to the build process
+     */
+    @ConfigItem
+    public List<String> additionalBuildArgs;
+
+    /**
+     * If the HTTP url handler should be enabled, allowing you to do URL.openConnection() for HTTP URLs
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enableHttpUrlHandler;
+
+    /**
+     * If the HTTPS url handler should be enabled, allowing you to do URL.openConnection() for HTTPS URLs
      */
     @ConfigItem(defaultValue = "false")
-    public boolean reportErrorsAtRuntime;
+    public boolean enableHttpsUrlHandler;
+
+    /**
+     * If all security services should be added to the native image
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean enableAllSecurityServices;
+
+    /**
+     * If JNI should be enabled
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean enableJni;
+
+    /**
+     * If all character sets should be added to the native image. This increases image size
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean addAllCharsets;
+
+    /**
+     * The location of the Graal distribution
+     */
+    @ConfigItem(defaultValue = "${GRAALVM_HOME:}")
+    public String graalvmHome;
+
+    /**
+     * The location of the JDK
+     */
+    @ConfigItem(defaultValue = "${java.home}")
+    public File javaHome;
+
+    /**
+     * The default maximum old generation size of the native image
+     */
+    @ConfigItem
+    public Optional<String> nativeImageXmx;
 
     /**
      * If debug symbols should be included
@@ -45,24 +92,6 @@ public class NativeConfig {
     public boolean cleanupServer;
 
     /**
-     * If the HTTP url handler should be enabled, allowing you to do URL.openConnection() for HTTP URLs
-     */
-    @ConfigItem(defaultValue = "true")
-    public boolean enableHttpUrlHandler;
-
-    /**
-     * If the HTTPS url handler should be enabled, allowing you to do URL.openConnection() for HTTPS URLs
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean enableHttpsUrlHandler;
-
-    /**
-     * If all security services should be added to the native image
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean enableAllSecurityServices;
-
-    /**
      * This will report on the size of the retained heap after image build
      */
     @ConfigItem(defaultValue = "false")
@@ -88,29 +117,11 @@ public class NativeConfig {
     public boolean enableFallbackImages;
 
     /**
-     * The location of the Graal distribution
-     */
-    @ConfigItem(defaultValue = "${GRAALVM_HOME:}")
-    public String graalvmHome;
-
-    /**
-     * The location of the JDK
-     */
-    @ConfigItem(defaultValue = "${java.home}")
-    public File javaHome;
-
-    /**
      * If the native image server should be used. This can speed up compilation but can result in changes not always
      * being picked up due to cache invalidation not working 100%
      */
     @ConfigItem(defaultValue = "false")
     public boolean enableServer;
-
-    /**
-     * If JNI should be enabled
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean enableJni;
 
     /**
      * If all META-INF/services entries should be automatically registered
@@ -123,12 +134,6 @@ public class NativeConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean dumpProxies;
-
-    /**
-     * The default maximum old generation size of the native image
-     */
-    @ConfigItem
-    public Optional<String> nativeImageXmx;
 
     /**
      * If this build should be done using a container runtime. If this is set docker will be used by default,
@@ -175,20 +180,15 @@ public class NativeConfig {
     public boolean enableReports;
 
     /**
-     * Additional arguments to pass to the build process
-     */
-    @ConfigItem
-    public List<String> additionalBuildArgs;
-
-    /**
-     * If all character sets should be added to the native image. This increases image size
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean addAllCharsets;
-
-    /**
      * If exceptions should be reported with a full stack trace
      */
     @ConfigItem(defaultValue = "true")
     public boolean reportExceptionStackTraces;
+
+    /**
+     * If errors should be reported at runtime. This is a more relaxed setting, however it is not recommended as it means
+     * your application may fail at runtime if an unsupported feature is used by accident.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean reportErrorsAtRuntime;
 }

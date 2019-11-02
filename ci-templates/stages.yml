@@ -31,7 +31,7 @@ stages:
 
           - task: Maven@3
             displayName: 'Maven Build'
-            condition: ne(variables.CACHE_RESTORED, 'true')
+            condition: and(ne(variables.CACHE_RESTORED, 'true'), succeeded())
             inputs:
               goals: 'package'
               mavenOptions: $(MAVEN_OPTS)

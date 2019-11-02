@@ -4,9 +4,10 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
 variables:
-  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository/
-  MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
-  QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
+  #MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository/
+  #MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+  #QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
+  template: vars.yml
 
 stages:
   - template: stages.yml

@@ -7,15 +7,7 @@ stages:
       - job: Cache_Maven_Repo
         displayName: 'Linux Maven Repo'
         timeoutInMinutes: 30
-        pool:
-          ${{ if eq(variables.Build.Reason, 'PullRequest') }}:
-            name: 'Expansion'
-            #demands:
-            # - Agent.OS -equals Linux
-          ${{ if ne(variables.Build.Reason, 'PullRequest') }}:
-            #vmImage: 'Ubuntu 16.04'
-            demands:
-             - Agent.OS -equals Linux
+        pool: ${{variables.poolSettings}}
         workspace:
           clean: all
 

@@ -1,0 +1,11 @@
+variables:
+  MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository/
+  MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+  QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
+  poolSettings:
+     ${{ if eq(variables.Build.Reason, 'PullRequest') }}:
+        name: 'Expansion'
+        #demands:
+        # - Agent.OS -equals Linux
+     ${{ if ne(variables.Build.Reason, 'PullRequest') }}:
+        vmImage: 'Ubuntu 16.04'

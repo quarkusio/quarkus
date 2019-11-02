@@ -8,4 +8,5 @@ variables:
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
   QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
 
-template: stages.yml
+stages:
+  - template: stages.yml

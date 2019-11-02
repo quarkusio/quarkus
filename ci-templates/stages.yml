@@ -1,12 +1,12 @@
 parameters:
   poolSettings: {}
-  expectUseVMs: true
+  parameters.expectUseVMs: true
 stages:
   #This stage uses the azure caching feature to reduce the downloads that are performed from central, which greatly speeds up CI
   #This is it's own stage to prevent Quarkus artifacts produced by the build from being cached
   - stage: cache_maven_repo_stage
     displayName: 'Maven Cache'
-    condition: $[ eq(variables.LINUX_USE_VMS, expectUseVMs) ] 
+    condition: $[ eq(variables.LINUX_USE_VMS, parameters.expectUseVMs) ] 
     jobs:
       - job: Cache_Maven_Repo
         displayName: 'Linux Maven Repo'
@@ -41,7 +41,7 @@ stages:
   #This stage builds the Quarkus artifacts needed for native image testing
   - stage: initial_jdk8_stage
     displayName: 'Build for Native'
-    condition: $[ eq(xvariables.LINUX_USE_VMS, expectUseVMs) ] 
+    condition: $[ eq(variables.LINUX_USE_VMS, parameters.expectUseVMs) ] 
     dependsOn: cache_maven_repo_stage
     jobs:
       - job: Build_JDK8_Linux
@@ -59,7 +59,7 @@ stages:
 
   - stage: run_jvm_tests_stage
     displayName: 'Run JVM Tests'
-    condition: $[ eq(xvariables.LINUX_USE_VMS, expectUseVMs) ] 
+    condition: $[ eq(variables.LINUX_USE_VMS, parameters.expectUseVMs) ] 
     dependsOn: initial_jdk8_stage
     jobs:
       - job: Build_JDK11_Linux
@@ -112,7 +112,7 @@ stages:
 
   - stage: run_native_tests_stage
     displayName: 'Native Tests'
-    condition: $[ eq(xvariables.LINUX_USE_VMS, expectUseVMs) ] 
+    condition: $[ eq(variables.LINUX_USE_VMS, parameters.expectUseVMs) ] 
     dependsOn: initial_jdk8_stage
     jobs:
       - template: native-build-steps.yaml

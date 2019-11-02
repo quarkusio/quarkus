@@ -8,10 +8,10 @@ stages:
         displayName: 'Linux Maven Repo'
         timeoutInMinutes: 30
         pool: 
-          ${{ if eq(variables.poolType, 'name') }}:
-            name: ${{variables.poolValue}}
-          ${{ if ne(variables.poolType, 'name') }}:
-            vmImage: ${{variables.poolValue}}
+          ${{ if variables.LINUX_USE_VMS }}:
+            name: ${{variables.LINUX_POOL_NAME}}
+          ${{ if not(variables.LINUX_USE_VMS) }}:
+            vmImage: ${{variables.LINUX_VM_NAME}}
         workspace:
           clean: all
 

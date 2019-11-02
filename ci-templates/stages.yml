@@ -6,7 +6,7 @@ stages:
   #This is it's own stage to prevent Quarkus artifacts produced by the build from being cached
   - stage: cache_maven_repo_stage${{parameters.expectUseVMs}}
     displayName: 'Maven Cache'
-    condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
+    condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),not(canceled())) 
     jobs:
       - job: Cache_Maven_Repo
         displayName: 'Linux Maven Repo'

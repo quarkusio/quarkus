@@ -8,9 +8,9 @@ stages:
         displayName: 'Linux Maven Repo'
         timeoutInMinutes: 30
         pool: 
-          ${{ if variables.LINUX_USE_VMS }}:
+          $[ if variables.LINUX_USE_VMS ]:
             vmImage: $(LINUX_VM_NAME)
-          ${{ if not(variables.LINUX_USE_VMS) }}:
+          $[ if not(variables.LINUX_USE_VMS) ]:
             name: $(LINUX_POOL_NAME)
         workspace:
           clean: all

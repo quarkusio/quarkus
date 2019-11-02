@@ -7,7 +7,7 @@ stages:
       - job: EchoStuff
         displayName: Echo
         pool: 
-          name: 'Extension'
+          name: 'Expansion'
         steps:
          - script: echo $(LINUX_USE_VMS)
 

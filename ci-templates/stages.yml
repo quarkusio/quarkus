@@ -4,13 +4,6 @@ stages:
   - stage: cache_maven_repo_stage
     displayName: 'Maven Cache'
     jobs:
-      - job: EchoStuff
-        displayName: Echo
-        pool: 
-          name: 'Expansion'
-        steps:
-         - script: echo $(LINUX_USE_VMS)
-
       - job: Cache_Maven_Repo
         displayName: 'Linux Maven Repo'
         timeoutInMinutes: 30
@@ -52,8 +45,11 @@ stages:
       - job: Build_JDK8_Linux
         displayName: 'Build JDK8 Linux'
         timeoutInMinutes: 60
-        pool:
-          name: 'Expansion'
+        pool: 
+          ${{ if variables.LINUX_USE_VMS }}:
+            vmImage: $(LINUX_VM_NAME)
+          ${{ if not(variables.LINUX_USE_VMS) }}:
+            name: $(LINUX_POOL_NAME)
         workspace:
           clean: all
 
@@ -70,7 +66,10 @@ stages:
         timeoutInMinutes: 60
         displayName: 'Linux JDK11 Build'
         pool:
-          name: 'Expansion'          
+          ${{ if variables.LINUX_USE_VMS }}:
+            vmImage: $(LINUX_VM_NAME)
+          ${{ if not(variables.LINUX_USE_VMS) }}:
+            name: $(LINUX_POOL_NAME)
         workspace:
           clean: all
           
@@ -83,7 +82,11 @@ stages:
         timeoutInMinutes: 60
         displayName: 'Linux JDK12 Build'
         pool:
-          name: 'Expansion'
+          ${{ if variables.LINUX_USE_VMS }}:
+            vmImage: $(LINUX_VM_NAME)
+          ${{ if not(variables.LINUX_USE_VMS) }}:
+            name: $(LINUX_POOL_NAME)
+
         workspace:
           clean: all
 
@@ -95,7 +98,10 @@ stages:
       - job: Run_TCKs
         timeoutInMinutes: 45
         pool:
-          name: 'Expansion'
+          ${{ if variables.LINUX_USE_VMS }}:
+            vmImage: $(LINUX_VM_NAME)
+          ${{ if not(variables.LINUX_USE_VMS) }}:
+            name: $(LINUX_POOL_NAME)
         workspace:
           clean: all
 

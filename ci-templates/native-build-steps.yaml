@@ -13,7 +13,11 @@ jobs:
     displayName: ${{ join(', ', parameters.modules) }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     pool:
-      name: 'Expansion'
+      ${{ if variables.LINUX_USE_VMS }}:
+        vmImage: $(LINUX_VM_NAME)
+      ${{ if not(variables.LINUX_USE_VMS) }}:
+        name: $(LINUX_POOL_NAME)
+
     workspace:
       clean: all
 

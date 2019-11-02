@@ -4,7 +4,7 @@ stages:
   - stage: cache_maven_repo_stage
     displayName: 'Maven Cache'
     jobs:
-      - job: Echo Stuff
+      - job: EchoStuff
         displayName: Echo
         pool: 
           name: 'Extension'

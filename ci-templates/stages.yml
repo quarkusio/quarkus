@@ -19,6 +19,7 @@ stages:
           imageName: 'quarkus:$(build.buildId)'
 
         steps:
+          -script: echo $(Build.Reason)
 
           - task: CacheBeta@0
             inputs:

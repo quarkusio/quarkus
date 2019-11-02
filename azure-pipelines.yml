@@ -14,7 +14,7 @@ stages:
     parameters:
       pool:
          vmImage: 'Ununtu 16.0.4'
-       expectUseVMs: true
+      expectUseVMs: true
   - template: ci-templates/stages.yml
     parameters:
       pool:

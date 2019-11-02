@@ -6,7 +6,7 @@ stages:
   #This is it's own stage to prevent Quarkus artifacts produced by the build from being cached
   - stage: cache_maven_repo_stage${{parameters.expectUseVMs}}
     displayName: 'Maven Cache'
-    condition: eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}) 
+    condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
     jobs:
       - job: Cache_Maven_Repo
         displayName: 'Linux Maven Repo'
@@ -41,7 +41,7 @@ stages:
   #This stage builds the Quarkus artifacts needed for native image testing
   - stage: initial_jdk8_stage${{parameters.expectUseVMs}}
     displayName: 'Build for Native'
-    condition: eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}) 
+    condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
     dependsOn: cache_maven_repo_stage${{parameters.expectUseVMs}}
     jobs:
       - job: Build_JDK8_Linux
@@ -59,7 +59,7 @@ stages:
 
   - stage: run_jvm_tests_stage${{parameters.expectUseVMs}}
     displayName: 'Run JVM Tests'
-    condition: eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}) 
+    condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
     dependsOn: initial_jdk8_stage${{parameters.expectUseVMs}}
     jobs:
       - job: Build_JDK11_Linux
@@ -112,7 +112,7 @@ stages:
 
   - stage: run_native_tests_stage${{parameters.expectUseVMs}}
     displayName: 'Native Tests'
-    condition: eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}) 
+    condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
     dependsOn: initial_jdk8_stage${{parameters.expectUseVMs}}
     jobs:
       - template: native-build-steps.yaml

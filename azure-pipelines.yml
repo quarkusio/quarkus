@@ -12,5 +12,4 @@ variables:
   LINUX_VM_NAME: 'Ununtu 16.0.4'
 
 stages:
-  - script: echo $(poolType)
   - template: stages.yml

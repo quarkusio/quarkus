@@ -7,7 +7,7 @@ variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository/
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
   QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
-  LINUX_USE_VMS: ${{ eq(variables.build.reason, 'IndividualCI') }}
+  LINUX_USE_VMS: $[ eq(variables.build.reason, 'IndividualCI') ] 
   LINUX_POOL_NAME: Expansion
   LINUX_VM_NAME: 'Ununtu 16.0.4'
 

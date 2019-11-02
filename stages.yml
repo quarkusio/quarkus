@@ -10,8 +10,12 @@ stages:
         pool:
           ${{ if eq(variables.Build.Reason, 'PullRequest') }}:
             name: 'Expansion'
+            #demands:
+            # - Agent.OS -equals Linux
           ${{ if ne(variables.Build.Reason, 'PullRequest') }}:
-            vmImage: 'Ubuntu 16.04'
+            #vmImage: 'Ubuntu 16.04'
+            demands:
+             - Agent.OS -equals Linux
         workspace:
           clean: all
 

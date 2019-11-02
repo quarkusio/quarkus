@@ -6,7 +6,7 @@ stages:
   #This is it's own stage to prevent Quarkus artifacts produced by the build from being cached
   - stage: cache_maven_repo_stage
     displayName: 'Maven Cache'
-    condition: $[ eq(xvariables.LINUX_USE_VMS, expectUseVMs) ] 
+    condition: $[ eq(variables.LINUX_USE_VMS, expectUseVMs) ] 
     jobs:
       - job: Cache_Maven_Repo
         displayName: 'Linux Maven Repo'

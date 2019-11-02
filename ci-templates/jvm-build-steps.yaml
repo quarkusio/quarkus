@@ -20,7 +20,7 @@ steps:
 - script: docker run --rm --publish 8000:8000 --name build-dynamodb -d amazon/dynamodb-local:1.11.477
   displayName: 'start dynamodb'
 
-- script sudo netstat -nlp 
+- script: sudo netstat -nlp 
   displayName: 'dump netstat'
  
 - script: docker run --rm --publish 3306:3306 --name build-mysql -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl 

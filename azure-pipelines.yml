@@ -12,11 +12,11 @@ variables:
 stages:
   - template: ci-templates/stages.yml
     parameters:
-      pool:
+      poolSettings:
          vmImage: 'Ununtu 16.0.4'
       expectUseVMs: true
   - template: ci-templates/stages.yml
     parameters:
-      pool:
+      poolSettings:
         name: 'Expansion'
       expectUseVMs: false      

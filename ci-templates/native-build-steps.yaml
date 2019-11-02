@@ -22,7 +22,7 @@ jobs:
     steps:
     - bash: |
         docker stop $(docker ps -qa)
-        docker remove $(docker ps -qa)
+        docker rm $(docker ps -qa)
       displayName: 'Docker Cleanup'
     - task: DownloadPipelineArtifact@2
       inputs:

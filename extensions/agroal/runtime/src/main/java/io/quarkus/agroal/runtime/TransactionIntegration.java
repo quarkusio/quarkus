@@ -1,4 +1,4 @@
-package io.quarkus.agroal;
+package io.quarkus.agroal.runtime;
 
 public enum TransactionIntegration {
 

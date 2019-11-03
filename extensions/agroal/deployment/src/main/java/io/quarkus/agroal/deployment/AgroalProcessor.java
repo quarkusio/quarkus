@@ -23,12 +23,12 @@ import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
-import io.quarkus.agroal.TransactionIntegration;
 import io.quarkus.agroal.runtime.AbstractDataSourceProducer;
 import io.quarkus.agroal.runtime.AgroalBuildTimeConfig;
 import io.quarkus.agroal.runtime.AgroalRecorder;
 import io.quarkus.agroal.runtime.AgroalRuntimeConfig;
 import io.quarkus.agroal.runtime.DataSourceBuildTimeConfig;
+import io.quarkus.agroal.runtime.TransactionIntegration;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;

@@ -228,7 +228,7 @@ public class ArcContainerImpl implements ArcContainer {
     public <T> InstanceHandle<T> instance(InjectableBean<T> bean) {
         Objects.requireNonNull(bean);
         requireRunning();
-        return bean != null ? (InstanceHandle<T>) beanInstanceHandle(bean, null) : InstanceHandleImpl.unavailable();
+        return (InstanceHandle<T>) beanInstanceHandle(bean, null);
     }
 
     @Override

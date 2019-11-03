@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
@@ -71,14 +72,16 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
             Map<String, Path> applicationClasses = new HashMap<>();
             for (Path i : applicationClassesDirectories) {
                 if (Files.isDirectory(i)) {
-                    Files.walk(i).forEach(new Consumer<Path>() {
-                        @Override
-                        public void accept(Path path) {
-                            if (path.toString().endsWith(".class")) {
-                                applicationClasses.put(i.relativize(path).toString().replace('\\', '/'), path);
+                    try (Stream<Path> fileTreeElements = Files.walk(i)) {
+                        fileTreeElements.forEach(new Consumer<Path>() {
+                            @Override
+                            public void accept(Path path) {
+                                if (path.toString().endsWith(".class")) {
+                                    applicationClasses.put(i.relativize(path).toString().replace('\\', '/'), path);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             }
 
@@ -238,9 +241,9 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
                         debugPath.mkdir();
                     }
                     File classFile = new File(debugPath, dotName + ".class");
-                    FileOutputStream classWriter = new FileOutputStream(classFile);
-                    classWriter.write(data);
-                    classWriter.close();
+                    try (FileOutputStream classWriter = new FileOutputStream(classFile)) {
+                        classWriter.write(data);
+                    }
                     log.infof("Wrote %s", classFile.getAbsolutePath());
                 } catch (Throwable t) {
                     t.printStackTrace();
@@ -280,19 +283,21 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
             for (Path root : archives) {
                 Map<String, Path> classes = new HashMap<>();
                 AtomicBoolean transform = new AtomicBoolean();
-                Files.walk(root).forEach(new Consumer<Path>() {
-                    @Override
-                    public void accept(Path path) {
-                        if (path.toString().endsWith(".class")) {
-                            String key = root.relativize(path).toString().replace('\\', '/');
-                            classes.put(key, path);
-                            if (bytecodeTransformers
-                                    .containsKey(key.substring(0, key.length() - ".class".length()).replace("/", "."))) {
-                                transform.set(true);
+                try (Stream<Path> fileTreeElements = Files.walk(root)) {
+                    fileTreeElements.forEach(new Consumer<Path>() {
+                        @Override
+                        public void accept(Path path) {
+                            if (path.toString().endsWith(".class")) {
+                                String key = root.relativize(path).toString().replace('\\', '/');
+                                classes.put(key, path);
+                                if (bytecodeTransformers
+                                        .containsKey(key.substring(0, key.length() - ".class".length()).replace("/", "."))) {
+                                    transform.set(true);
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }
                 if (transform.get()) {
                     applicationClasses.putAll(classes);
                 }

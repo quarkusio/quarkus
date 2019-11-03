@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.jboss.arquillian.container.spi.client.container.DeployableContainer;
 import org.jboss.arquillian.container.spi.client.container.DeploymentException;
@@ -108,15 +109,17 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
                 if (Files.exists(tmpLocation.resolve("META-INF"))) {
                     if (Files.exists(appLocation.resolve("META-INF"))) {
                         // Target directory not empty.
-                        Files.walk(tmpLocation.resolve("META-INF"), 2).forEach(p -> {
-                            try {
-                                Files.createFile(p);
-                            } catch (FileAlreadyExistsException faee) {
-                                // Do Nothing
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        });
+                        try (Stream<Path> fileTreeElements = Files.walk(tmpLocation.resolve("META-INF"), 2)) {
+                            fileTreeElements.forEach(p -> {
+                                try {
+                                    Files.createFile(p);
+                                } catch (FileAlreadyExistsException faee) {
+                                    // Do Nothing
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
+                        }
                     } else {
                         Files.move(tmpLocation.resolve("META-INF"), appLocation.resolve("META-INF"));
                     }
@@ -127,7 +130,9 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
                 }
                 // Collect all libraries
                 if (Files.exists(tmpLocation.resolve("lib"))) {
-                    Files.walk(tmpLocation.resolve("lib"), 1).forEach(libraries::add);
+                    try (Stream<Path> libs = Files.walk(tmpLocation.resolve("lib"), 1)) {
+                        libs.forEach(libraries::add);
+                    }
                 }
             } else {
                 appLocation = tmpLocation;

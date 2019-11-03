@@ -26,3 +26,6 @@ Container container = deployment.spec.template.spec.containers.get(0)
 EnvVar env = container.env.find{e -> e.name == "MY_ENV_VAR"}
 assert env != null
 assert env.value == "SOMEVALUE"
+
+//Check the image
+assert deployment.spec.template.spec.containers[0].image == "quay.io/grp/kubernetes-with-application-properties:0.1-SNAPSHOT"

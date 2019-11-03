@@ -85,8 +85,8 @@ public abstract class AbstractDataSourceProducer {
 
         //TODO should we do such checks at build time only? All these are currently defined at build - but it could change
         //depending on if and how we could do Driver auto-detection.
-        final io.quarkus.agroal.TransactionIntegration transactionIntegration = dataSourceBuildTimeConfig.transactions;
-        if (transactionIntegration == io.quarkus.agroal.TransactionIntegration.XA) {
+        final io.quarkus.agroal.runtime.TransactionIntegration transactionIntegration = dataSourceBuildTimeConfig.transactions;
+        if (transactionIntegration == io.quarkus.agroal.runtime.TransactionIntegration.XA) {
             if (!XADataSource.class.isAssignableFrom(driver)) {
                 throw new RuntimeException("Driver is not an XA dataSource and XA has been configured");
             }
@@ -111,7 +111,7 @@ public abstract class AbstractDataSourceProducer {
                             dataSourceRuntimeConfig.transactionIsolationLevel.get());
         }
 
-        if (transactionIntegration != io.quarkus.agroal.TransactionIntegration.DISABLED) {
+        if (transactionIntegration != io.quarkus.agroal.runtime.TransactionIntegration.DISABLED) {
             TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
                     transactionSynchronizationRegistry);
             poolConfiguration.transactionIntegration(txIntegration);

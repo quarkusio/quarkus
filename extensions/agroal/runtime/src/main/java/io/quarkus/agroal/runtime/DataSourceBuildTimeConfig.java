@@ -2,7 +2,6 @@ package io.quarkus.agroal.runtime;
 
 import java.util.Optional;
 
-import io.quarkus.agroal.TransactionIntegration;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 

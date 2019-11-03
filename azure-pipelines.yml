@@ -9,6 +9,7 @@ variables:
   QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
   LINUX_USE_VMS: $[ not(not(variables['System.PullRequest.PullRequestId'])) ] 
 
+
 stages:
   - template: ci-templates/stages.yml
     parameters:

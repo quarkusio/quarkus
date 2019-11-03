@@ -1,6 +1,6 @@
 parameters:
   poolSettings: {}
-  parameters.expectUseVMs: true
+  expectUseVMs: true
   displayPrefix: ''
 
 stages:

@@ -56,7 +56,7 @@ public class ResteasyStandaloneBuildStep {
 
     }
 
-    @BuildStep()
+    @BuildStep(providesCapabilities = Capabilities.RESTEASY)
     @Record(STATIC_INIT)
     public void staticInit(ResteasyStandaloneRecorder recorder,
             Capabilities capabilities,

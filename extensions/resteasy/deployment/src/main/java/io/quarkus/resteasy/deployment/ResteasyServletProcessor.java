@@ -51,7 +51,7 @@ public class ResteasyServletProcessor {
         }
     }
 
-    @BuildStep
+    @BuildStep(providesCapabilities = Capabilities.RESTEASY)
     public void build(
             Capabilities capabilities,
             Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,

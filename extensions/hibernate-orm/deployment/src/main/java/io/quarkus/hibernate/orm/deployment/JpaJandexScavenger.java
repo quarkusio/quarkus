@@ -218,7 +218,7 @@ final class JpaJandexScavenger {
             unindexedClasses.add(className);
             return;
         }
-        //we need to check for enums
+        // we need to check for enums
         for (FieldInfo fieldInfo : classInfo.fields()) {
             DotName fieldType = fieldInfo.type().name();
             ClassInfo fieldTypeClassInfo = index.getClassByName(fieldType);
@@ -272,7 +272,8 @@ final class JpaJandexScavenger {
 
     private static boolean isIgnored(DotName classDotName) {
         String className = classDotName.toString();
-        if (className.startsWith("java.util.") || className.startsWith("java.lang.")) {
+        if (className.startsWith("java.util.") || className.startsWith("java.lang.")
+                || className.startsWith("org.hibernate.engine.spi.")) {
             return true;
         }
         return false;

@@ -44,7 +44,7 @@ stages:
 
       - job: Cache_Windows_Maven_Repo #windows has different line endings so the cache key is different
         displayName: 'Windows Maven Repo'
-        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
+        condition: false #and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         timeoutInMinutes: 30
         pool:
           vmImage: 'vs2017-win2016'
@@ -94,7 +94,7 @@ stages:
     jobs:
       - job: Windows_Build
         displayName: 'Windows JVM Build'
-        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
+        condition: false # and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         timeoutInMinutes: 60
         pool:
           # Always use hosted pool for windows

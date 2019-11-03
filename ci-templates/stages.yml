@@ -3,6 +3,7 @@ parameters:
   expectUseVMs: true
   displayPrefix: ''
 
+
 stages:
   #This stage uses the azure caching feature to reduce the downloads that are performed from central, which greatly speeds up CI
   #This is it's own stage to prevent Quarkus artifacts produced by the build from being cached

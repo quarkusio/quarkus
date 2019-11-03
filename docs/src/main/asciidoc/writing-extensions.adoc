@@ -2363,6 +2363,15 @@ This is simple, include the generated documentation in your guide:
 \include::{generated-dir}/config/quarkus-your-extension.adoc[opts=optional, leveloffset=+1]
 ----
 
+If you are interested in including the generated documentation for the config group, you can use the include statement below
+[source,asciidoc]
+----
+\include::{generated-dir}/config/hyphenated-config-group-class-name-with-runtime-or-deployment-namespace-replaced-by-config-group-namespace.adoc[opts=optional, leveloffset=+1]
+----
+
+For example, the `io.quarkus.vertx.http.runtime.FormAuthConfig` configuration group will be generated in a file named `quarkus-vertx-http-config-group-form-auth-config.adoc`.
+
+
 A few recommendations:
 
  * `opts=optional` is mandatory as we don't want the build to fail if only part of the configuration documentation has been generated

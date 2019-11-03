@@ -13,35 +13,6 @@ This guide explains how your Quarkus application can utilize MicroProfile Json W
 Role-Based Access Control (link:https://en.wikipedia.org/wiki/Role-based_access_control[RBAC]) to provide
 secured access to the JAX-RS endpoints.
 
-[[configuration-reference]]
-== Configuration Reference
-
-=== Quarkus configuration
-
-include::{generated-dir}/config/quarkus-smallrye-jwt.adoc[opts=optional, leveloffset=+1]
-
-=== MicroProfile JWT configuration
-
-[cols="<m,<m,<2",options="header"]
-|===
-|Property Name|Default|Description
-|mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in section <<Supported Public Key Formats>>.
-|mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL. If the value points to an HTTPS based JWK set then, for it to work in native mode, the `quarkus.ssl.native` property must also be set to `true`, see link:native-and-ssl.html[Using SSL With Native Executables] for more details.
-|mp.jwt.verify.issuer|none|Config property specifies the value of the `iss` (issuer)
-                           claim of the JWT that the server will accept as valid.
-|===
-
-=== Supported Public Key Formats
-
-Public Keys may be formatted in any of the following formats, specified in order of
-precedence:
-
- - Public Key Cryptography Standards #8 (PKCS#8) PEM
- - JSON Web Key (JWK)
- - JSON Web Key Set (JWKS)
- - JSON Web Key (JWK) Base64 URL encoded
- - JSON Web Key Set (JWKS) Base64 URL encoded
-
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
@@ -950,7 +921,36 @@ Scotts-iMacPro:using-jwt-rbac starksm$ ./target/security-jwt-quickstart-runner
 
 == Explore the Solution
 
-The solution repository located in the `using-jwt-rbac` {quickstarts-archive-url}[directory] contains all of the versions we have
+The solution repository located in the `security-jwt-quickstart` {quickstarts-tree-url}/security-jwt-quickstart[directory] contains all of the versions we have
 worked through in this quickstart guide as well as some additional endpoints that illustrate subresources with injection
 of ``JsonWebToken``s and their claims into those using the CDI APIs. We suggest that you check out the quickstart solutions and
 explore the `using-jwt-rbac` directory to learn more about the {extension-name} extension features.
+
+[[configuration-reference]]
+== Configuration Reference
+
+=== Quarkus configuration
+
+include::{generated-dir}/config/quarkus-smallrye-jwt.adoc[opts=optional, leveloffset=+1]
+
+=== MicroProfile JWT configuration
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in section <<Supported Public Key Formats>>.
+|mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL. If the value points to an HTTPS based JWK set then, for it to work in native mode, the `quarkus.ssl.native` property must also be set to `true`, see link:native-and-ssl.html[Using SSL With Native Executables] for more details.
+|mp.jwt.verify.issuer|none|Config property specifies the value of the `iss` (issuer)
+                           claim of the JWT that the server will accept as valid.
+|===
+
+=== Supported Public Key Formats
+
+Public Keys may be formatted in any of the following formats, specified in order of
+precedence:
+
+ - Public Key Cryptography Standards #8 (PKCS#8) PEM
+ - JSON Web Key (JWK)
+ - JSON Web Key Set (JWKS)
+ - JSON Web Key (JWK) Base64 URL encoded
+ - JSON Web Key Set (JWKS) Base64 URL encoded

@@ -171,9 +171,8 @@ class RestClientProcessor {
 
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {
-            if (isReflectionDeclarationRequiredFor(returnType)) {
-                reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(returnType));
-            }
+            reflectiveHierarchy
+                    .produce(new ReflectiveHierarchyBuildItem(returnType, ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
         }
 
         beanRegistrars.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {
@@ -352,23 +351,5 @@ class RestClientProcessor {
     private boolean isRestClientInterface(IndexView index, ClassInfo classInfo) {
         return Modifier.isInterface(classInfo.flags())
                 && index.getAllKnownImplementors(classInfo.name()).isEmpty();
-    }
-
-    private static boolean isReflectionDeclarationRequiredFor(Type type) {
-        DotName className = getClassName(type);
-
-        return className != null && !ResteasyDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(className);
-    }
-
-    private static DotName getClassName(Type type) {
-        switch (type.kind()) {
-            case CLASS:
-            case PARAMETERIZED_TYPE:
-                return type.name();
-            case ARRAY:
-                return getClassName(type.asArrayType().component());
-            default:
-                return null;
-        }
     }
 }

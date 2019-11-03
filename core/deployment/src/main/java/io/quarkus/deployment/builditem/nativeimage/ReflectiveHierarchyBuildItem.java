@@ -1,5 +1,10 @@
 package io.quarkus.deployment.builditem.nativeimage;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Predicate;
+
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
@@ -26,14 +31,25 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
 
     private final Type type;
     private IndexView index;
+    private Predicate<DotName> ignorePredicate;
 
     public ReflectiveHierarchyBuildItem(Type type) {
-        this.type = type;
+        this(type, DefaultIgnorePredicate.INSTANCE);
     }
 
     public ReflectiveHierarchyBuildItem(Type type, IndexView index) {
+        this(type, index, DefaultIgnorePredicate.INSTANCE);
+    }
+
+    public ReflectiveHierarchyBuildItem(Type type, Predicate<DotName> ignorePredicate) {
+        this.type = type;
+        this.ignorePredicate = ignorePredicate;
+    }
+
+    public ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignorePredicate) {
         this.type = type;
         this.index = index;
+        this.ignorePredicate = ignorePredicate;
     }
 
     public Type getType() {
@@ -42,5 +58,31 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
 
     public IndexView getIndex() {
         return index;
+    }
+
+    public Predicate<DotName> getIgnorePredicate() {
+        return ignorePredicate;
+    }
+
+    private static class DefaultIgnorePredicate implements Predicate<DotName> {
+
+        private static final DefaultIgnorePredicate INSTANCE = new DefaultIgnorePredicate();
+
+        private static final List<String> DEFAULT_IGNORED_PACKAGES = Arrays.asList("java.", "io.reactivex.",
+                "org.reactivestreams.");
+
+        @Override
+        public boolean test(DotName name) {
+            return isInContainerPackage(name.toString());
+        }
+
+        private boolean isInContainerPackage(String name) {
+            for (String containerPackageName : DEFAULT_IGNORED_PACKAGES) {
+                if (name.startsWith(containerPackageName)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

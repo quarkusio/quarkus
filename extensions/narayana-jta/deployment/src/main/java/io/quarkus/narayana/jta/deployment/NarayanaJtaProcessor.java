@@ -6,7 +6,9 @@ import java.util.Properties;
 
 import javax.transaction.TransactionScoped;
 
+import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
 import com.arjuna.ats.internal.arjuna.coordinator.CheckedActionFactoryImple;
+import com.arjuna.ats.internal.arjuna.objectstore.ShadowNoFileLockStore;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple;
@@ -64,7 +66,9 @@ class NarayanaJtaProcessor {
                 UserTransactionImple.class.getName(),
                 CheckedActionFactoryImple.class.getName(),
                 TransactionManagerImple.class.getName(),
-                TransactionSynchronizationRegistryImple.class.getName()));
+                TransactionSynchronizationRegistryImple.class.getName(),
+                ObjectStoreEnvironmentBean.class.getName(),
+                ShadowNoFileLockStore.class.getName()));
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
         builder.addBeanClass(TransactionalInterceptorSupports.class);

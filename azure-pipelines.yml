@@ -7,7 +7,7 @@ variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository/
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
   QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
-  LINUX_USE_VMS: $[ eq(variables['Build.Reason'], 'IndividualCI') ] 
+  LINUX_USE_VMS: $[ not(not(variables['System.PullRequest.PullRequestId'])) ] 
 
 stages:
   - template: ci-templates/stages.yml

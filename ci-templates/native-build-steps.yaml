@@ -23,9 +23,7 @@ jobs:
     variables:
       imageName: 'quarkus:$(build.buildId)'
     steps:
-    - bash: |
-        docker stop $(docker ps -qa) || true
-        docker rm $(docker ps -qa) || true
+    - script: docker rm -f $(docker ps -qa) || true
       displayName: 'Docker Cleanup'
     - task: DownloadPipelineArtifact@2
       inputs:

@@ -9,9 +9,7 @@ steps:
     securityNamespace: cache
   displayName: Restore Maven Cache
 
-- bash: |
-    docker stop $(docker ps -qa) || true
-    docker rm $(docker ps -qa) || true
+- script: docker rm -f $(docker ps -qa) || true
   displayName: 'Docker Cleanup'
 
 - script: docker run --rm --publish 5432:5432 --name build-postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -d postgres:10.5

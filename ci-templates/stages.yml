@@ -10,6 +10,8 @@ stages:
     displayName: '${{parameters.displayPrefix}} Maven Cache'
     condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),not(canceled())) 
     jobs:
+      - script: echo $(Agent.JobStatus)
+        displayName: Debug Stuff
       - job: Cache_Maven_Repo
         displayName: 'Linux Maven Repo'
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),not(canceled())) 

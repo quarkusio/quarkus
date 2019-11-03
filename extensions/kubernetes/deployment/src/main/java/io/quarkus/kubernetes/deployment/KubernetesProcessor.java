@@ -51,6 +51,8 @@ class KubernetesProcessor {
 
     private static final String DEPLOYMENT_TARGET = "kubernetes.deployment.target";
     private static final String KUBERNETES = "kubernetes";
+    private static final String DOCKER_REGISTRY_PROPERTY = PROPERTY_PREFIX + "docker.registry";
+    private static final String APP_GROUP_PROPERTY = "app.group";
 
     @Inject
     BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer;
@@ -92,20 +94,42 @@ class KubernetesProcessor {
         Map<String, Object> configAsMap = StreamSupport.stream(config.getPropertyNames().spliterator(), false)
                 .filter(k -> ALLOWED_GENERATOR.equals(generatorName(k)))
                 .collect(Collectors.toMap(k -> PROPERTY_PREFIX + k, k -> config.getValue(k, String.class)));
+        // this is a hack to get kubernetes.registry working because currently it's not supported as is in Dekorate
+        Optional<String> kubernetesRegistry = config.getOptionalValue(ALLOWED_GENERATOR + ".registry", String.class);
+        if (kubernetesRegistry.isPresent()) {
+            System.setProperty(DOCKER_REGISTRY_PROPERTY, kubernetesRegistry.get());
+        }
+        // this is a hack to work around Dekorate using the default group for some of the properties
+        Optional<String> kubernetesGroup = config.getOptionalValue(ALLOWED_GENERATOR + ".group", String.class);
+        if (kubernetesGroup.isPresent()) {
+            System.setProperty(APP_GROUP_PROPERTY, kubernetesGroup.get());
+        }
 
-        final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
-        Project project = createProject(applicationInfo, archiveRootBuildItem);
-        sessionWriter.setProject(project);
-        final Session session = Session.getSession();
-        session.setWriter(sessionWriter);
-        session.feed(Maps.fromProperties(configAsMap));
+        final Map<String, String> generatedResourcesMap;
+        try {
+            final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
+            Project project = createProject(applicationInfo, archiveRootBuildItem);
+            sessionWriter.setProject(project);
+            final Session session = Session.getSession();
+            session.setWriter(sessionWriter);
 
-        //apply build item configurations to the dekorate session.
-        applyBuildItems(session, applicationInfo, kubernetesPortBuildItems, kubernetesHealthLivenessPathBuildItem,
-                kubernetesHealthReadinessPathBuildItem);
+            session.feed(Maps.fromProperties(configAsMap));
+            //apply build item configurations to the dekorate session.
+            applyBuildItems(session, applicationInfo, kubernetesPortBuildItems, kubernetesHealthLivenessPathBuildItem,
+                    kubernetesHealthReadinessPathBuildItem);
 
-        // write the generated resources to the filesystem
-        final Map<String, String> generatedResourcesMap = session.close();
+            // write the generated resources to the filesystem
+            generatedResourcesMap = session.close();
+        } finally {
+            // clear the hacky properties if set
+            if (kubernetesGroup.isPresent()) {
+                System.clearProperty(APP_GROUP_PROPERTY);
+            }
+            if (kubernetesRegistry.isPresent()) {
+                System.clearProperty(DOCKER_REGISTRY_PROPERTY);
+            }
+        }
+
         for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
             String fileName = resourceEntry.getKey().replace(root.toAbsolutePath().toString(), "");
             String relativePath = resourceEntry.getKey().replace(root.toAbsolutePath().toString(), "kubernetes");

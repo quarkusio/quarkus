@@ -125,6 +125,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           modules: main
           name: main
           postgres: true
@@ -132,6 +133,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 25
           modules:
             - jpa-h2
@@ -143,6 +145,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 25
           modules:
             - jpa
@@ -156,6 +159,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 15
           modules:
             - amazon-dynamodb
@@ -167,6 +171,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 20
           modules:
             - artemis-core
@@ -177,6 +182,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 20
           modules:
             - elytron-security-oauth2
@@ -189,6 +195,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 45
           modules:
             - elytron-resteasy
@@ -202,6 +209,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 30
           modules:
             - flyway
@@ -213,6 +221,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 30
           modules:
             - mongodb-client
@@ -223,6 +232,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 25
           modules:
             - infinispan-cache-jpa
@@ -232,6 +242,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 25
           modules:
             - resteasy-jackson
@@ -243,6 +254,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 25
           modules:
             - jackson
@@ -255,6 +267,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 25
           modules:
             - tika
@@ -265,6 +278,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 25
           modules:
             - spring-di
@@ -275,6 +289,7 @@ stages:
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
           timeoutInMinutes: 25
           modules:
             - hibernate-search-elasticsearch

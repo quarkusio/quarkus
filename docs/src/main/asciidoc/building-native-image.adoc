@@ -144,7 +144,12 @@ If you have generated the application from the previous tutorial, you can find i
 
 [TIP]
 ====
-You can provide custom options for `native-image` command using `<additionalBuildArgs>` configuration element which can have multiple `<additionalBuildArg>` child elements.
+You can provide custom options for the `native-image` command using the `<quarkus.native.additional-build-args>` property.
+Multiple options may be separated by a comma.
+
+Another possibility is to include the `quarkus.native.additional-build-args` configuration property in your `application.properties`.
+
+You can find more information about how to configure the native image building process in the <<configuration-reference>> section below.
 ====
 
 We use a profile because, you will see very soon, packaging the native executable takes a _few_ minutes. You could
@@ -375,6 +380,7 @@ If you need SSL support in your native executable, you can easily include the ne
 Please see link:native-and-ssl.html#working-with-containers[our Using SSL With Native Executables guide] for more information.
 ====
 
+[[configuration-reference]]
 == Configuring the Native Image
 
 There are a lot of different configuration options that can affect how the native image is generated.

@@ -53,25 +53,23 @@ Now, let's tell the `native-image` executable about this configuration file by t
 
 [source,xml]
 ----
-<plugin>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-maven-plugin</artifactId>
-    <version>${version.quarkus}</version>
-    <executions>
-        <execution>
-            <goals>
-                <goal>native-image</goal>
-            </goals>
-            <configuration>
-                <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                <additionalBuildArgs>
-                    <additionalBuildArg>-H:ResourceConfigurationFiles=${project.basedir}/resources-config.json</additionalBuildArg>
-                </additionalBuildArgs>
-            </configuration>
-        </execution>
-    </executions>
-</plugin>
+<profiles>
+    <profile>
+        <id>native</id>
+        <properties>
+            <quarkus.package.type>native</quarkus.package.type>
+            <quarkus.native.additional-build-args>-H:ResourceConfigurationFiles=${project.basedir}/resources-config.json</quarkus.native.additional-build-args>
+        </properties>
+    </profile>
+</profiles>
 ----
+
+[TIP]
+====
+Multiple options may be separated by a comma.
+
+Another possibility is to include the `quarkus.native.additional-build-args` configuration property in your `application.properties`.
+====
 
 When using Gradle, we need to configure the additional build arguments in the plugin configuration:
 
@@ -199,25 +197,23 @@ Now, let's tell the `native-image` executable about this configuration file by t
 
 [source,xml]
 ----
-<plugin>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-maven-plugin</artifactId>
-    <version>${version.quarkus}</version>
-    <executions>
-        <execution>
-            <goals>
-                <goal>native-image</goal>
-            </goals>
-            <configuration>
-                <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                <additionalBuildArgs>
-                    <additionalBuildArg>-H:ReflectionConfigurationFiles=${project.basedir}/reflection-config.json</additionalBuildArg>
-                </additionalBuildArgs>
-            </configuration>
-        </execution>
-    </executions>
-</plugin>
+<profiles>
+    <profile>
+        <id>native</id>
+        <properties>
+            <quarkus.package.type>native</quarkus.package.type>
+            <quarkus.native.additional-build-args>-H:ReflectionConfigurationFiles=${project.basedir}/reflection-config.json</quarkus.native.additional-build-args>
+        </properties>
+    </profile>
+</profiles>
 ----
+
+[TIP]
+====
+Multiple options may be separated by a comma.
+
+Another possibility is to include the `quarkus.native.additional-build-args` configuration property in your `application.properties`.
+====
 
 When using Gradle, we need to configure the additional build arguments in the plugin configuration:
 

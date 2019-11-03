@@ -46,7 +46,7 @@ stages:
   #This stage builds the Quarkus artifacts needed for native image testing
   - stage: initial_jdk8_stage${{parameters.expectUseVMs}}
     displayName: '${{parameters.displayPrefix}} Build for Native'
-    condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
+    condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),not(canceled())) 
     dependsOn: cache_maven_repo_stage${{parameters.expectUseVMs}}
     jobs:
       - job: Build_JDK8_Linux
@@ -65,7 +65,7 @@ stages:
 
   - stage: run_jvm_tests_stage${{parameters.expectUseVMs}}
     displayName: '${{parameters.displayPrefix}} Run JVM Tests'
-    condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
+    condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),not(canceled())) 
     dependsOn: initial_jdk8_stage${{parameters.expectUseVMs}}
     jobs:
       - job: Build_JDK11_Linux

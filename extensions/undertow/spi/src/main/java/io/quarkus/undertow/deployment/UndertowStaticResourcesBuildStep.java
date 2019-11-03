@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
+import java.util.stream.Stream;
 
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -54,21 +55,23 @@ public class UndertowStaticResourcesBuildStep {
         for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
             Path resource = i.getChildPath(META_INF_RESOURCES);
             if (resource != null && Files.exists(resource)) {
-                Files.walk(resource).forEach(new Consumer<Path>() {
-                    @Override
-                    public void accept(Path path) {
-                        // Skip META-INF/resources entry
-                        if (resource.equals(path)) {
-                            return;
+                try (Stream<Path> fileTreeElements = Files.walk(resource)) {
+                    fileTreeElements.forEach(new Consumer<Path>() {
+                        @Override
+                        public void accept(Path path) {
+                            // Skip META-INF/resources entry
+                            if (resource.equals(path)) {
+                                return;
+                            }
+                            Path rel = resource.relativize(path);
+                            if (Files.isDirectory(path)) {
+                                knownDirectories.add(rel.toString());
+                            } else {
+                                knownFiles.add(rel.toString());
+                            }
                         }
-                        Path rel = resource.relativize(path);
-                        if (Files.isDirectory(path)) {
-                            knownDirectories.add(rel.toString());
-                        } else {
-                            knownFiles.add(rel.toString());
-                        }
-                    }
-                });
+                    });
+                }
             }
         }
         Enumeration<URL> resources = getClass().getClassLoader().getResources(META_INF_RESOURCES);

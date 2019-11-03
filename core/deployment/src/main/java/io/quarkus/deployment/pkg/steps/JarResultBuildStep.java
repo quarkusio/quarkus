@@ -35,6 +35,7 @@ import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -544,8 +545,8 @@ public class JarResultBuildStep {
      * @throws IOException if an error occurs
      */
     private void copyFiles(Path dir, FileSystem fs, Map<String, List<byte[]>> services) throws IOException {
-        try {
-            Files.walk(dir).forEach(new Consumer<Path>() {
+        try (Stream<Path> fileTreeElements = Files.walk(dir)) {
+            fileTreeElements.forEach(new Consumer<Path>() {
                 @Override
                 public void accept(Path path) {
                     final Path file = dir.relativize(path);

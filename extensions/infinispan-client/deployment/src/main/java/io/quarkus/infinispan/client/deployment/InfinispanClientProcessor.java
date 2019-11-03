@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.infinispan.client.hotrod.annotation.ClientListener;
 import org.infinispan.client.hotrod.configuration.NearCacheMode;
@@ -126,22 +127,24 @@ class InfinispanClientProcessor {
             Path metaPath = applicationArchive.getChildPath(META_INF);
 
             if (metaPath != null) {
-                Iterator<Path> protoFiles = Files.list(metaPath)
-                        .filter(Files::isRegularFile)
-                        .filter(p -> p.toString().endsWith(PROTO_EXTENSION))
-                        .iterator();
-                // We monitor the entire meta inf directory if properties are available
-                if (protoFiles.hasNext()) {
-                    // Quarkus doesn't currently support hot deployment watching directories
-                    //                hotDeployment.produce(new HotDeploymentConfigFileBuildItem(META_INF));
-                }
+                try (Stream<Path> dirElements = Files.list(metaPath)) {
+                    Iterator<Path> protoFiles = dirElements
+                            .filter(Files::isRegularFile)
+                            .filter(p -> p.toString().endsWith(PROTO_EXTENSION))
+                            .iterator();
+                    // We monitor the entire meta inf directory if properties are available
+                    if (protoFiles.hasNext()) {
+                        // Quarkus doesn't currently support hot deployment watching directories
+                        //                hotDeployment.produce(new HotDeploymentConfigFileBuildItem(META_INF));
+                    }
 
-                while (protoFiles.hasNext()) {
-                    Path path = protoFiles.next();
-                    byte[] bytes = Files.readAllBytes(path);
-                    // This uses the default file encoding - should we enforce UTF-8?
-                    properties.put(InfinispanClientProducer.PROTOBUF_FILE_PREFIX + path.getFileName().toString(),
-                            new String(bytes, StandardCharsets.UTF_8));
+                    while (protoFiles.hasNext()) {
+                        Path path = protoFiles.next();
+                        byte[] bytes = Files.readAllBytes(path);
+                        // This uses the default file encoding - should we enforce UTF-8?
+                        properties.put(InfinispanClientProducer.PROTOBUF_FILE_PREFIX + path.getFileName().toString(),
+                                new String(bytes, StandardCharsets.UTF_8));
+                    }
                 }
             }
 

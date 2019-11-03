@@ -48,11 +48,19 @@
                     <groupId>org.jboss.spec.javax.servlet</groupId>
                     <artifactId>jboss-servlet-api_4.0_spec</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.jboss.spec.javax.annotation</groupId>
+                    <artifactId>jboss-annotations-api_1.2_spec</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus.http</groupId>

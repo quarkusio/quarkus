@@ -1,15 +1,18 @@
 parameters:
   poolSettings: {}
   parameters.expectUseVMs: true
+  displayPrefix: ''
+
 stages:
   #This stage uses the azure caching feature to reduce the downloads that are performed from central, which greatly speeds up CI
   #This is it's own stage to prevent Quarkus artifacts produced by the build from being cached
   - stage: cache_maven_repo_stage${{parameters.expectUseVMs}}
-    displayName: 'Maven Cache'
+    displayName: '${{parameters.displayPrefix}} Maven Cache'
     condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),not(canceled())) 
     jobs:
       - job: Cache_Maven_Repo
         displayName: 'Linux Maven Repo'
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),not(canceled())) 
         timeoutInMinutes: 30
         pool: ${{parameters.poolSettings}}
         workspace:
@@ -40,12 +43,13 @@ stages:
 
   #This stage builds the Quarkus artifacts needed for native image testing
   - stage: initial_jdk8_stage${{parameters.expectUseVMs}}
-    displayName: 'Build for Native'
+    displayName: '${{parameters.displayPrefix}} Build for Native'
     condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
     dependsOn: cache_maven_repo_stage${{parameters.expectUseVMs}}
     jobs:
       - job: Build_JDK8_Linux
         displayName: 'Build JDK8 Linux'
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         timeoutInMinutes: 60
         pool: ${{parameters.poolSettings}}
 
@@ -58,12 +62,13 @@ stages:
             artifact: $(Build.SourceVersion)-BuiltMavenRepo
 
   - stage: run_jvm_tests_stage${{parameters.expectUseVMs}}
-    displayName: 'Run JVM Tests'
+    displayName: '${{parameters.displayPrefix}} Run JVM Tests'
     condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
     dependsOn: initial_jdk8_stage${{parameters.expectUseVMs}}
     jobs:
       - job: Build_JDK11_Linux
         timeoutInMinutes: 60
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         displayName: 'Linux JDK11 Build'
         pool: ${{parameters.poolSettings}}
         workspace:
@@ -76,6 +81,7 @@ stages:
 
       - job: Build_JDK12_Linux
         timeoutInMinutes: 60
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         displayName: 'Linux JDK12 Build'
         pool: ${{parameters.poolSettings}}
 
@@ -88,6 +94,7 @@ stages:
               jdk: '1.12'
 
       - job: Run_TCKs
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         timeoutInMinutes: 45
         pool: ${{parameters.poolSettings}}
         workspace:
@@ -111,7 +118,7 @@ stages:
 
 
   - stage: run_native_tests_stage${{parameters.expectUseVMs}}
-    displayName: 'Native Tests'
+    displayName: '${{parameters.displayPrefix}} Native Tests'
     condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
     dependsOn: initial_jdk8_stage${{parameters.expectUseVMs}}
     jobs:

@@ -11,6 +11,7 @@ parameters:
 
 jobs:
   - job: ${{ parameters.name }}
+    condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
     displayName: ${{ join(', ', parameters.modules) }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     pool: ${{ parameters.poolSettings }}

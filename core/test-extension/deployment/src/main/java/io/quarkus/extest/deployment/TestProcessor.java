@@ -132,17 +132,18 @@ public final class TestProcessor {
      */
     @BuildStep
     @Record(STATIC_INIT)
-    RuntimeServiceBuildItem parseServiceXmlConfig(TestRecorder recorder) throws JAXBException {
+    RuntimeServiceBuildItem parseServiceXmlConfig(TestRecorder recorder) throws JAXBException, IOException {
         RuntimeServiceBuildItem serviceBuildItem = null;
         JAXBContext context = JAXBContext.newInstance(XmlConfig.class);
         Unmarshaller unmarshaller = context.createUnmarshaller();
-        InputStream is = getClass().getResourceAsStream("/config.xml");
-        if (is != null) {
-            log.info("Have XmlConfig, loading");
-            XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is);
-            log.info("Loaded XmlConfig, creating service");
-            RuntimeValue<RuntimeXmlConfigService> service = recorder.initRuntimeService(config);
-            serviceBuildItem = new RuntimeServiceBuildItem(service);
+        try (InputStream is = getClass().getResourceAsStream("/config.xml")) {
+            if (is != null) {
+                log.info("Have XmlConfig, loading");
+                XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is);
+                log.info("Loaded XmlConfig, creating service");
+                RuntimeValue<RuntimeXmlConfigService> service = recorder.initRuntimeService(config);
+                serviceBuildItem = new RuntimeServiceBuildItem(service);
+            }
         }
         return serviceBuildItem;
     }
@@ -182,24 +183,25 @@ public final class TestProcessor {
     PublicKeyBuildItem loadDSAPublicKey(TestRecorder recorder,
             BuildProducer<ObjectSubstitutionBuildItem> substitutions) throws IOException, GeneralSecurityException {
         String path = configRoot.dsaKeyLocation;
-        InputStream is = getClass().getResourceAsStream(path);
-        if (is == null) {
-            throw new IOException("Failed to load resource: " + path);
+        try (InputStream is = getClass().getResourceAsStream(path)) {
+            if (is == null) {
+                throw new IOException("Failed to load resource: " + path);
+            }
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+            String base64 = reader.readLine();
+            reader.close();
+            byte[] encoded = Base64.getDecoder().decode(base64);
+            KeyFactory keyFactory = KeyFactory.getInstance("DSA");
+            X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(encoded);
+            DSAPublicKey publicKey = (DSAPublicKey) keyFactory.generatePublic(publicKeySpec);
+            // Register how to serialize DSAPublicKey
+            ObjectSubstitutionBuildItem.Holder<DSAPublicKey, KeyProxy> holder = new ObjectSubstitutionBuildItem.Holder(
+                    DSAPublicKey.class, KeyProxy.class, DSAPublicKeyObjectSubstitution.class);
+            ObjectSubstitutionBuildItem keySub = new ObjectSubstitutionBuildItem(holder);
+            substitutions.produce(keySub);
+            log.info("loadDSAPublicKey run");
+            return new PublicKeyBuildItem(publicKey);
         }
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-        String base64 = reader.readLine();
-        reader.close();
-        byte[] encoded = Base64.getDecoder().decode(base64);
-        KeyFactory keyFactory = KeyFactory.getInstance("DSA");
-        X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(encoded);
-        DSAPublicKey publicKey = (DSAPublicKey) keyFactory.generatePublic(publicKeySpec);
-        // Register how to serialize DSAPublicKey
-        ObjectSubstitutionBuildItem.Holder<DSAPublicKey, KeyProxy> holder = new ObjectSubstitutionBuildItem.Holder(
-                DSAPublicKey.class, KeyProxy.class, DSAPublicKeyObjectSubstitution.class);
-        ObjectSubstitutionBuildItem keySub = new ObjectSubstitutionBuildItem(holder);
-        substitutions.produce(keySub);
-        log.info("loadDSAPublicKey run");
-        return new PublicKeyBuildItem(publicKey);
     }
 
     /**

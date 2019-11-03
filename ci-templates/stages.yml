@@ -12,7 +12,7 @@ stages:
     jobs:
       - job: Cache_Maven_Repo
         displayName: 'Linux Maven Repo'
-        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),not(canceled())) 
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         timeoutInMinutes: 30
         pool: ${{parameters.poolSettings}}
         workspace:

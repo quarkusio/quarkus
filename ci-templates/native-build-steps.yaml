@@ -1,4 +1,6 @@
 parameters:
+  poolSettings: {}
+  expectUseVMs: true
   modules: []
   name: ''
   postgres: false
@@ -10,18 +12,23 @@ parameters:
 
 jobs:
   - job: ${{ parameters.name }}
+    condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
     displayName: ${{ join(', ', parameters.modules) }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-    pool:
-      vmImage: 'Ubuntu 16.04'
+    pool: ${{ parameters.poolSettings }}
+
+    workspace:
+      clean: all
+
     variables:
       imageName: 'quarkus:$(build.buildId)'
     steps:
+    - script: docker rm -f $(docker ps -qa) || true
+      displayName: 'Docker Cleanup'
     - task: DownloadPipelineArtifact@2
       inputs:
         artifact: $(Build.SourceVersion)-BuiltMavenRepo
         path: $(Pipeline.Workspace)/.m2/repository/
-
     - ${{ if eq(parameters.postgres, 'true') }}:
       - script: docker run --rm --publish 5432:5432 --name build-postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -d postgres:10.5
         displayName: 'start postgres'
@@ -32,12 +39,10 @@ jobs:
         - script: docker run --rm --publish 8180:8080 --name build-keycloak  -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -e JAVA_OPTS="-server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -Dkeycloak.profile.feature.upload_scripts=enabled" -d quay.io/keycloak/keycloak
           displayName: 'start keycloak'
     - ${{ if eq(parameters.mysql, 'true') }}:
-        - bash: |
-            sudo apt-get update &&
-            sudo apt-get -y install mysql-server libmysqlclient-dev &&
-            mysql -e "create user 'hibernate_orm_test'@'localhost' identified by 'hibernate_orm_test';" -uroot -proot &&
-            mysql -e "create database hibernate_orm_test; grant all on hibernate_orm_test.* to 'hibernate_orm_test'@'localhost';" -uroot -proot
-          displayName: 'install mysql'
+      - bash: |
+          sudo service mysql stop || true
+          docker run --rm --publish 3306:3306 --name build-mysql -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl
+        displayName: 'start mysql'
 
     - task: Maven@3
       displayName: 'Maven Build'

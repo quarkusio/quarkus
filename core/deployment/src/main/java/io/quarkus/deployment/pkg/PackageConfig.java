@@ -26,6 +26,12 @@ public class PackageConfig {
     public boolean uberJar;
 
     /**
+     * Manifest configuration of the runner jar.
+     */
+    @ConfigItem
+    public ManifestConfig manifest;
+
+    /**
      * The entry point of the application. In most cases this should not be modified.
      */
     @ConfigItem(defaultValue = "io.quarkus.runner.GeneratedMain")

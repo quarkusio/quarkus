@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeMirror;
 
 import io.quarkus.annotation.processor.Constants;
 
@@ -358,5 +359,25 @@ public class DocGeneratorUtil {
         }
 
         return false;
+    }
+
+    static String stringifyType(TypeMirror typeMirror) {
+        List<? extends TypeMirror> typeArguments = ((DeclaredType) typeMirror).getTypeArguments();
+        String simpleName = typeSimpleName(typeMirror);
+        if (typeArguments.isEmpty()) {
+            return simpleName;
+        } else if (typeArguments.size() == 1) {
+            return String.format("%s<%s>", simpleName, stringifyType(typeArguments.get(0)));
+        } else if (typeArguments.size() == 2) {
+            return String.format("%s<%s,%s>", simpleName, stringifyType(typeArguments.get(0)),
+                    stringifyType(typeArguments.get(1)));
+        }
+
+        return "unknown"; // we should not reach here
+    }
+
+    private static String typeSimpleName(TypeMirror typeMirror) {
+        String type = ((DeclaredType) typeMirror).asElement().toString();
+        return type.substring(1 + type.lastIndexOf(Constants.DOT));
     }
 }

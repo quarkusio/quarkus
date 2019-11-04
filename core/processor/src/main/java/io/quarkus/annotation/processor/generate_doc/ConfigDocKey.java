@@ -15,10 +15,12 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
     private boolean withinAMap;
     private String defaultValue;
     private String javaDocSiteLink;
+    private String docMapKey;
     private ConfigPhase configPhase;
     private List<String> acceptedValues;
     private boolean optional;
     private boolean list;
+    private boolean passThroughMap;
 
     public ConfigDocKey() {
     }
@@ -137,6 +139,22 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
         return list;
     }
 
+    public String getDocMapKey() {
+        return docMapKey;
+    }
+
+    public void setDocMapKey(String docMapKey) {
+        this.docMapKey = docMapKey;
+    }
+
+    public boolean isPassThroughMap() {
+        return passThroughMap;
+    }
+
+    public void setPassThroughMap(boolean passThroughMap) {
+        this.passThroughMap = passThroughMap;
+    }
+
     @Override
     public void accept(Writer writer, DocFormatter docFormatter) throws IOException {
         docFormatter.format(writer, this);
@@ -155,21 +173,23 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
             return false;
         ConfigDocKey that = (ConfigDocKey) o;
         return withinAMap == that.withinAMap &&
+                optional == that.optional &&
+                list == that.list &&
+                passThroughMap == that.passThroughMap &&
                 Objects.equals(type, that.type) &&
                 Objects.equals(key, that.key) &&
                 Objects.equals(configDoc, that.configDoc) &&
                 Objects.equals(defaultValue, that.defaultValue) &&
                 Objects.equals(javaDocSiteLink, that.javaDocSiteLink) &&
-                optional == that.optional &&
-                list == that.list &&
+                Objects.equals(docMapKey, that.docMapKey) &&
                 configPhase == that.configPhase &&
                 Objects.equals(acceptedValues, that.acceptedValues);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, key, configDoc, withinAMap, defaultValue, javaDocSiteLink, configPhase, acceptedValues,
-                optional, list);
+        return Objects.hash(type, key, configDoc, withinAMap, defaultValue, javaDocSiteLink, docMapKey, configPhase,
+                acceptedValues, optional, list, passThroughMap);
     }
 
     @Override
@@ -181,10 +201,12 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
                 ", withinAMap=" + withinAMap +
                 ", defaultValue='" + defaultValue + '\'' +
                 ", javaDocSiteLink='" + javaDocSiteLink + '\'' +
+                ", docMapKey='" + docMapKey + '\'' +
                 ", configPhase=" + configPhase +
                 ", acceptedValues=" + acceptedValues +
                 ", optional=" + optional +
                 ", list=" + list +
+                ", passThroughMap=" + passThroughMap +
                 '}';
     }
 }

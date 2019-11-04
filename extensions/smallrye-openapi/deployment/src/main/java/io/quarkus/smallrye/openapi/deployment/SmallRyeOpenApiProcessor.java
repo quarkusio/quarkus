@@ -49,6 +49,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
 import io.quarkus.resteasy.deployment.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
@@ -151,7 +152,8 @@ public class SmallRyeOpenApiProcessor {
                 continue;
             }
             reflectiveHierarchy
-                    .produce(new ReflectiveHierarchyBuildItem(Type.create(typeTarget.asClass().name(), Type.Kind.CLASS)));
+                    .produce(new ReflectiveHierarchyBuildItem(Type.create(typeTarget.asClass().name(), Type.Kind.CLASS),
+                            ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
         }
 
         // Generate reflection declaration from MP OpenAPI APIResponse schema definition
@@ -191,7 +193,8 @@ public class SmallRyeOpenApiProcessor {
                 AnnotationInstance schema = annotationValue.asNested();
                 AnnotationValue schemaImplementationClass = schema.value(OPENAPI_SCHEMA_IMPLEMENTATION);
                 if (schemaImplementationClass != null) {
-                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(schemaImplementationClass.asClass()));
+                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(schemaImplementationClass.asClass(),
+                            ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
                 }
 
                 AnnotationValue schemaNotClass = schema.value(OPENAPI_SCHEMA_NOT);
@@ -202,21 +205,24 @@ public class SmallRyeOpenApiProcessor {
                 AnnotationValue schemaOneOfClasses = schema.value(OPENAPI_SCHEMA_ONE_OF);
                 if (schemaOneOfClasses != null) {
                     for (Type schemaOneOfClass : schemaOneOfClasses.asClassArray()) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(schemaOneOfClass));
+                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(schemaOneOfClass,
+                                ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
                     }
                 }
 
                 AnnotationValue schemaAnyOfClasses = schema.value(OPENAPI_SCHEMA_ANY_OF);
                 if (schemaAnyOfClasses != null) {
                     for (Type schemaAnyOfClass : schemaAnyOfClasses.asClassArray()) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(schemaAnyOfClass));
+                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(schemaAnyOfClass,
+                                ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
                     }
                 }
 
                 AnnotationValue schemaAllOfClasses = schema.value(OPENAPI_SCHEMA_ALL_OF);
                 if (schemaAllOfClasses != null) {
                     for (Type schemaAllOfClass : schemaAllOfClasses.asClassArray()) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(schemaAllOfClass));
+                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(schemaAllOfClass,
+                                ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
                     }
                 }
             }

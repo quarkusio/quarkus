@@ -688,23 +688,17 @@ public class ResteasyServerCommonProcessor {
                 continue;
             }
             MethodInfo method = instance.target().asMethod();
-            if (isReflectionDeclarationRequiredFor(method.returnType())) {
-                reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType(), index));
-            }
+            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType(), index,
+                    ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
+
             for (short i = 0; i < method.parameters().size(); i++) {
                 Type parameterType = method.parameters().get(i);
-                if (isReflectionDeclarationRequiredFor(parameterType)
-                        && !hasAnnotation(method, i, ResteasyDotNames.CONTEXT)) {
-                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(parameterType, index));
+                if (!hasAnnotation(method, i, ResteasyDotNames.CONTEXT)) {
+                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(parameterType, index,
+                            ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
                 }
             }
         }
-    }
-
-    private static boolean isReflectionDeclarationRequiredFor(Type type) {
-        DotName className = getClassName(type);
-
-        return className != null && !ResteasyDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(className);
     }
 
     private static DotName getClassName(Type type) {

@@ -91,7 +91,7 @@ final public class Constants {
             "\n" +
             "You can also provide duration values starting with a number.\n" +
             "In this case, if the value consists only of a number, the converter treats the value as seconds.\n" +
-            "Otherwise, `PT` is implicitly appended to the value to obtain a standard `java.time.Duration` format.\n" +
+            "Otherwise, `PT` is implicitly prepended to the value to obtain a standard `java.time.Duration` format.\n" +
             "====\n";
 
     public static final String MEMORY_SIZE_FORMAT_NOTE = "\n[NOTE]" +

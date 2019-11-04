@@ -298,7 +298,7 @@ public class TracerConfiguration {
 }
 ----
 
-The idea is that the extension auto-configures things for user, eliminating a lot of boilerplate - we can just `@Inject` a `Tracer` wherever it is needed.
+The idea is that the extension auto-configures things for the user, eliminating a lot of boilerplate - we can just `@Inject` a `Tracer` wherever it is needed.
 Now imagine that in our application we would like to utilize the configured `Tracer`, but we need to customize it a little, for example by providing a custom `Reporter`.
 The only thing that would be needed in our application would be something like the following:
 

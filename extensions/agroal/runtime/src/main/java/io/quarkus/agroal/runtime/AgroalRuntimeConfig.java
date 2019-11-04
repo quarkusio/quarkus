@@ -20,8 +20,8 @@ public class AgroalRuntimeConfig {
     /**
      * Additional named datasources.
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    @ConfigDocMapKey("datasource-name")
     @ConfigDocSection
+    @ConfigDocMapKey("datasource-name")
+    @ConfigItem(name = ConfigItem.PARENT)
     public Map<String, DataSourceRuntimeConfig> namedDataSources;
 }

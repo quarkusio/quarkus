@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime;
 
 import static org.jboss.logging.Logger.getLogger;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.UUID;
@@ -51,7 +52,13 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         } else if (uuid != null) {
             details += "Error id " + uuid;
         }
-        log.errorf(exception, "HTTP Request to %s failed, error id: %s", event.request().uri(), uuid);
+        if (event.failure() instanceof IOException) {
+            log.debugf(exception,
+                    "IOError processing HTTP request to %s failed, the client likely terminated the connection. Error id: %s",
+                    event.request().uri(), uuid);
+        } else {
+            log.errorf(exception, "HTTP Request to %s failed, error id: %s", event.request().uri(), uuid);
+        }
         String accept = event.request().getHeader("Accept");
         if (accept != null && accept.contains("application/json")) {
             event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=utf-8");

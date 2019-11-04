@@ -39,8 +39,11 @@ public class QuarkusAddExtension extends QuarkusPlatformTask {
 
     @TaskAction
     public void addExtension() {
-        setupPlatformDescriptor();
+        execute();
+    }
 
+    @Override
+    protected void doExecute() {
         Set<String> extensionsSet = getExtensionsToAdd()
                 .stream()
                 .flatMap(ext -> stream(ext.split(",")))

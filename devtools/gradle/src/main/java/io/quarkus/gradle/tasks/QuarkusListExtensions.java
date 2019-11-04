@@ -62,9 +62,11 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
 
     @TaskAction
     public void listExtensions() {
+        execute();
+    }
 
-        setupPlatformDescriptor();
-
+    @Override
+    protected void doExecute() {
         try {
             new ListExtensions(new GradleBuildFileFromConnector(new FileProjectWriter(getProject().getProjectDir())))
                     .listExtensions(

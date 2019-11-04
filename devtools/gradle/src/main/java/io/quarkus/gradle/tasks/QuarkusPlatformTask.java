@@ -10,16 +10,30 @@ import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 
-public class QuarkusPlatformTask extends QuarkusTask {
+public abstract class QuarkusPlatformTask extends QuarkusTask {
 
     QuarkusPlatformTask(String description) {
         super(description);
     }
 
+    protected void execute() {
+        try {
+            setupPlatformDescriptor();
+            doExecute();
+        } finally {
+            QuarkusPlatformConfig.clearThreadLocal();
+        }
+    }
+
+    protected abstract void doExecute();
+
     protected void setupPlatformDescriptor() {
 
-        if (QuarkusPlatformConfig.hasGlobalDefault()) {
+        if (QuarkusPlatformConfig.hasThreadLocal()) {
+            getProject().getLogger().debug("Quarkus platform descriptor has already been initialized");
             return;
+        } else {
+            getProject().getLogger().debug("Initializing Quarkus platform descriptor");
         }
 
         final Path currentDir = getProject().getProjectDir().toPath();
@@ -41,7 +55,7 @@ public class QuarkusPlatformTask extends QuarkusTask {
                             getRequiredProperty(props, "quarkusPlatformArtifactId"),
                             getRequiredProperty(props, "quarkusPlatformVersion"));
 
-            QuarkusPlatformConfig.defaultConfigBuilder().setPlatformDescriptor(platform).build();
+            QuarkusPlatformConfig.threadLocalConfigBuilder().setPlatformDescriptor(platform).build();
 
         } else {
             getProject().getLogger()

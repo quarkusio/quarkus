@@ -174,7 +174,7 @@ public class CounterBean {
 
 === Qualified Injected Fields
 
-In CDI, if you declare a field injection point you need to use `@Inject` and optionally required qualifiers:
+In CDI, if you declare a field injection point you need to use `@Inject` and optionally a set of qualifiers:
  
 [source,java]
 ----

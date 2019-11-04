@@ -256,7 +256,8 @@ Excellent, we have not provided any JWT in the request, so we should not be able
 In the <<configuration-reference,Configuration Reference>> section we introduce the `application.properties` file that affect the {extension-name} extension.
 
 === Setting up application.properties
- For part A of step 1, create a using-jwt-rbac/src/main/resources/application.properties with the following content:
+
+For part A of step 1, create a `security-jwt-quickstart/src/main/resources/application.properties` with the following content:
 
 .application.properties for TokenSecuredResource
 [source, properties]
@@ -280,7 +281,7 @@ The {mp-jwt} specification requires that JWTs that are signed with the RSA-256 s
 turn requires a RSA public key pair. On the REST endpoint server side, you need to configure the location of the RSA public
 key to use to verify the JWT sent along with requests. The `mp.jwt.verify.publickey.location=publicKey.pem` setting configured
 previously expects that the public key is available on the classpath as `publicKey.pem`. To accomplish this, copy the following
-content to a using-jwt-rbac/src/main/resources/META-INF/resources/publicKey.pem file.
+content to a `security-jwt-quickstart/src/main/resources/META-INF/resources/publicKey.pem` file.
 
 .RSA Public Key PEM Content
 [source, text]
@@ -299,7 +300,7 @@ nQIDAQAB
 === Generating a JWT
 
 Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the
-https://bitbucket.org/b_c/jose4j/wiki/Home[Jose4J] library and the TokenUtils class shown in the following listing. Take this source and place it into using-jwt-rbac/src/test/java/org/acme/jwt/TokenUtils.java.
+https://bitbucket.org/b_c/jose4j/wiki/Home[Jose4J] library and the TokenUtils class shown in the following listing. Take this source and place it into `security-jwt-quickstart/src/test/java/org/acme/jwt/TokenUtils.java`.
 
 NOTE: JWT libraries for many different programming languages can be found at the JWT.io website https://jwt.io/#libraries[JWT Libraries].
 
@@ -436,7 +437,7 @@ public class TokenUtils {
 }
 ----
 
-Next take the code from the following listing and place into using-jwt-rbac/src/test/java/org/acme/jwt/GenerateToken.java
+Next take the code from the following listing and place into `security-jwt-quickstart/src/test/java/org/acme/jwt/GenerateToken.java`:
 
 .GenerateToken main Driver Class
 [source, java]
@@ -475,7 +476,7 @@ public class GenerateToken {
 }
 ----
 
-Now we need the content of the RSA private key that corresponds to the public key we have in the TokenSecuredResource application. Take the following PEM content and place it into using-jwt-rbac/src/test/resources/privateKey.pem.
+Now we need the content of the RSA private key that corresponds to the public key we have in the TokenSecuredResource application. Take the following PEM content and place it into `security-jwt-quickstart/src/test/resources/privateKey.pem`.
 
 .RSA Private Key PEM Content
 [source, text]
@@ -512,7 +513,7 @@ f3cg+fr8aou7pr9SHhJlZCU=
 
 And finally, we need to define what claims to include in the JWT. The `TokenUtils` class uses a json resource on the classpath
 to define the non-time sensitive claims, so take the content from the following listing and place it into
-using-jwt-rbac/src/test/resources/JwtClaims.json:
+`security-jwt-quickstart/src/test/resources/JwtClaims.json`:
 
 .JwtClaims.json claims document
 [source, json]
@@ -594,11 +595,11 @@ automatically compiles code as you write it.
 $ mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScope=test
 [INFO] Scanning for projects...
 [INFO]
-[INFO] ----------------------< org.acme:using-jwt-rbac >-----------------------
-[INFO] Building using-jwt-rbac 1.0-SNAPSHOT
+[INFO] ----------------------< org.acme:security-jwt-quickstart >-----------------------
+[INFO] Building security-jwt-quickstart 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
 [INFO]
-[INFO] --- exec-maven-plugin:1.6.0:java (default-cli) @ using-jwt-rbac ---
+[INFO] --- exec-maven-plugin:1.6.0:java (default-cli) @ security-jwt-quickstart ---
 Setting exp: 1551659976 / Sun Mar 03 16:39:36 PST 2019
 	Added claim: sub, value: jdoe-using-jwt-rbac
 	Added claim: aud, value: [using-jwt-rbac]
@@ -636,11 +637,11 @@ the JWT, and should be '/JwtClaims.json' for this quickstart.
 $ mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScope=test -Dexec.args="/JwtClaims.json 3600"
 [INFO] Scanning for projects...
 [INFO]
-[INFO] ----------------------< org.acme:using-jwt-rbac >-----------------------
-[INFO] Building using-jwt-rbac 1.0-SNAPSHOT
+[INFO] ----------------------< org.acme: >-----------------------
+[INFO] Building security-jwt-quickstart 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
 [INFO]
-[INFO] --- exec-maven-plugin:1.6.0:java (default-cli) @ using-jwt-rbac ---
+[INFO] --- exec-maven-plugin:1.6.0:java (default-cli) @ security-jwt-quickstart ---
 	Added claim: iss, value: https://quarkus.io/using-jwt-rbac
 	Added claim: jti, value: a-123
 	Added claim: sub, value: jdoe-using-jwt-rbac
@@ -882,12 +883,12 @@ As usual, the application can be packaged using `./mvnw clean package` and execu
 .Runner jar Example
 [source,shell]
 ----
-Scotts-iMacPro:using-jwt-rbac starksm$ ./mvnw clean package
+Scotts-iMacPro:security-jwt-quickstart starksm$ ./mvnw clean package
 [INFO] Scanning for projects...
 ...
-[INFO] [io.quarkus.creator.phase.runnerjar.RunnerJarPhase] Building jar: /Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/using-jwt-rbac/target/security-jwt-quickstart-runner.jar
+[INFO] [io.quarkus.creator.phase.runnerjar.RunnerJarPhase] Building jar: /Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/security-jwt-quickstart/target/security-jwt-quickstart-runner.jar
 
-Scotts-iMacPro:using-jwt-rbac starksm$ java -jar target/security-jwt-quickstart-runner.jar
+Scotts-iMacPro:security-jwt-quickstart starksm$ java -jar target/security-jwt-quickstart-runner.jar
 2019-03-28 14:27:48,839 INFO  [io.quarkus] (main) Quarkus 0.12.0 started in 0.796s. Listening on: http://[::]:8080
 2019-03-28 14:27:48,841 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, smallrye-jwt]
 ----
@@ -896,7 +897,7 @@ You can also generate the native executable with `./mvnw clean package -Pnative`
 .Native Executable Example
 [source,shell]
 ----
-Scotts-iMacPro:using-jwt-rbac starksm$ ./mvnw clean package -Pnative
+Scotts-iMacPro:security-jwt-quickstart starksm$ ./mvnw clean package -Pnative
 [INFO] Scanning for projects...
 ...
 [security-jwt-quickstart-runner:25602]     universe:     493.17 ms
@@ -914,7 +915,7 @@ Scotts-iMacPro:using-jwt-rbac starksm$ ./mvnw clean package -Pnative
 [INFO] Finished at: 2019-03-28T14:30:56-07:00
 [INFO] ------------------------------------------------------------------------
 
-Scotts-iMacPro:using-jwt-rbac starksm$ ./target/security-jwt-quickstart-runner
+Scotts-iMacPro:security-jwt-quickstart starksm$ ./target/security-jwt-quickstart-runner
 2019-03-28 14:31:37,315 INFO  [io.quarkus] (main) Quarkus 0.12.0 started in 0.006s. Listening on: http://[::]:8080
 2019-03-28 14:31:37,316 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, smallrye-jwt]
 ----
@@ -924,7 +925,7 @@ Scotts-iMacPro:using-jwt-rbac starksm$ ./target/security-jwt-quickstart-runner
 The solution repository located in the `security-jwt-quickstart` {quickstarts-tree-url}/security-jwt-quickstart[directory] contains all of the versions we have
 worked through in this quickstart guide as well as some additional endpoints that illustrate subresources with injection
 of ``JsonWebToken``s and their claims into those using the CDI APIs. We suggest that you check out the quickstart solutions and
-explore the `using-jwt-rbac` directory to learn more about the {extension-name} extension features.
+explore the `security-jwt-quickstart` directory to learn more about the {extension-name} extension features.
 
 [[configuration-reference]]
 == Configuration Reference

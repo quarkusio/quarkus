@@ -138,11 +138,11 @@ and you should see output similar to:
 $ ./mvnw clean compile quarkus:dev
 [INFO] Scanning for projects...
 [INFO] 
-[INFO] ---------------------< org.acme:using-oauth2-rbac >---------------------
-[INFO] Building using-oauth2-rbac 1.0-SNAPSHOT
+[INFO] ---------------------< org.acme:security-oauth2-quickstart >---------------------
+[INFO] Building security-oauth2-quickstart 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
 ...
-[INFO] --- quarkus-maven-plugin:999-SNAPSHOT:dev (default-cli) @ using-oauth2-rbac ---
+[INFO] --- quarkus-maven-plugin:999-SNAPSHOT:dev (default-cli) @ security-oauth2-quickstart ---
 Listening for transport dt_socket at address: 5005
 2019-07-16 09:58:09,753 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
 2019-07-16 09:58:10,884 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 1131ms
@@ -246,7 +246,7 @@ include::{generated-dir}/config/quarkus-elytron-security-oauth2.adoc[opts=option
 
 === Setting up application.properties
 
- For part A of step 1, create a `using-oauth2-rbac/src/main/resources/application.properties` with the following content:
+For part A of step 1, create a `security-oauth2-quickstart/src/main/resources/application.properties` with the following content:
 
 .application.properties for TokenSecuredResource
 [source, properties]
@@ -326,7 +326,7 @@ $ ./mvnw clean package -Pnative
 [security-oauth2-quickstart-runner:25602]     universe:     493.17 ms
 [security-oauth2-quickstart-runner:25602]      (parse):     660.41 ms
 [security-oauth2-quickstart-runner:25602]     (inline):   1,431.10 ms
-[using-oauth2-rbac-runner:25602]    (compile):   7,301.78 ms
+[security-oauth2-quickstart-runner:25602]    (compile):   7,301.78 ms
 [security-oauth2-quickstart-runner:25602]      compile:  10,542.16 ms
 [security-oauth2-quickstart-runner:25602]        image:   2,797.62 ms
 [security-oauth2-quickstart-runner:25602]        write:     988.24 ms

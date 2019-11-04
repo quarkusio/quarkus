@@ -173,7 +173,7 @@ And should look like
 image:kogito-guide-screenshot.png[alt=Process definition]
 
 To get started quickly copy the process definition from the
-{quickstarts-tree-url}/using-kogito/src/main/resources/org/acme/kogito/persons.bpmn2[quickstart]
+{quickstarts-tree-url}/kogito-quickstart/src/main/resources/org/acme/kogito/persons.bpmn2[quickstart]
 
 To model this process yourself, just follow these steps (start event should be automatically added)
 

@@ -264,15 +264,6 @@ public class DevMojo extends AbstractMojo {
                 suspend = "n";
             }
 
-            boolean useDebugMode = true;
-            // debug mode not specified
-            // make sure 5005 is not used, we don't want to just fail if something else is using it
-            try (Socket socket = new Socket(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), 5005)) {
-                getLog().error("Port 5005 in use, not starting in debug mode");
-                useDebugMode = false;
-            } catch (IOException e) {
-            }
-
             if (jvmArgs != null) {
                 args.addAll(Arrays.asList(jvmArgs.split(" ")));
             }
@@ -283,7 +274,7 @@ public class DevMojo extends AbstractMojo {
                 args.add("-Xverify:none");
             }
 
-            DevModeRunner runner = new DevModeRunner(args, useDebugMode);
+            DevModeRunner runner = new DevModeRunner(args);
 
             runner.prepare();
             runner.run();
@@ -308,7 +299,7 @@ public class DevMojo extends AbstractMojo {
                         }
                     }
                     if (changed) {
-                        DevModeRunner newRunner = new DevModeRunner(args, useDebugMode);
+                        DevModeRunner newRunner = new DevModeRunner(args);
                         try {
                             newRunner.prepare();
                         } catch (Exception e) {
@@ -414,11 +405,9 @@ public class DevMojo extends AbstractMojo {
         private final List<String> args;
         private Process process;
         private Set<Path> pomFiles = new HashSet<>();
-        private final boolean useDebugMode;
 
-        DevModeRunner(List<String> args, boolean useDebugMode) {
+        DevModeRunner(List<String> args) {
             this.args = new ArrayList<>(args);
-            this.useDebugMode = useDebugMode;
         }
 
         /**
@@ -426,6 +415,14 @@ public class DevMojo extends AbstractMojo {
          */
         void prepare() throws Exception {
             if (debug == null) {
+                boolean useDebugMode = true;
+                // debug mode not specified
+                // make sure 5005 is not used, we don't want to just fail if something else is using it
+                try (Socket socket = new Socket(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), 5005)) {
+                    getLog().error("Port 5005 in use, not starting in debug mode");
+                    useDebugMode = false;
+                } catch (IOException e) {
+                }
                 if (useDebugMode) {
                     args.add("-Xdebug");
                     args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=" + suspend);

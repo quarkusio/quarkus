@@ -145,7 +145,7 @@ stages:
 
       - job: Run_TCKs
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
-        timeoutInMinutes: 45
+        timeoutInMinutes: 60
         pool: ${{parameters.poolSettings}}
         workspace:
           clean: all

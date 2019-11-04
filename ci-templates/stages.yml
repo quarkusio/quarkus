@@ -3,6 +3,9 @@ parameters:
   expectUseVMs: true
   displayPrefix: ''
 
+# NOTE: It is critical that all jobs have the following condition defined
+#
+# condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded())
 
 stages:
   #This stage uses the azure caching feature to reduce the downloads that are performed from central, which greatly speeds up CI

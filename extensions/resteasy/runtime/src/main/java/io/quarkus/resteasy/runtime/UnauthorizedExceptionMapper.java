@@ -13,8 +13,6 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.ResteasyContext;
 
 import io.quarkus.security.UnauthorizedException;
-import io.quarkus.security.identity.CurrentIdentityAssociation;
-import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.vertx.ext.web.RoutingContext;

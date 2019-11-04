@@ -17,7 +17,8 @@ stages:
         displayName: 'Linux Maven Repo'
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         timeoutInMinutes: 30
-        pool: ${{parameters.poolSettings}}
+        pool:
+          vmImage: 'Ubuntu 16.04'
         workspace:
           clean: all
 
@@ -81,7 +82,8 @@ stages:
         displayName: 'Build JDK8 Linux'
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         timeoutInMinutes: 60
-        pool: ${{parameters.poolSettings}}
+        pool:
+          vmImage: 'Ubuntu 16.04'
 
         workspace:
           clean: all

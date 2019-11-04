@@ -1,7 +1,7 @@
 package io.quarkus.security.deployment;
 
 import static io.quarkus.security.deployment.SecurityTransformerUtils.DENY_ALL;
-import static io.quarkus.security.deployment.SecurityTransformerUtils.hasSecurityAnnotation;
+import static io.quarkus.security.deployment.SecurityTransformerUtils.hasStandardSecurityAnnotation;
 
 import java.util.List;
 
@@ -25,8 +25,8 @@ public class DenyingUnannotatedTransformer implements AnnotationsTransformer {
     public void transform(TransformationContext transformationContext) {
         ClassInfo classInfo = transformationContext.getTarget().asClass();
         List<MethodInfo> methods = classInfo.methods();
-        if (!hasSecurityAnnotation(classInfo)
-                && methods.stream().anyMatch(SecurityTransformerUtils::hasSecurityAnnotation)) {
+        if (!SecurityTransformerUtils.hasStandardSecurityAnnotation(classInfo)
+                && methods.stream().anyMatch(SecurityTransformerUtils::hasStandardSecurityAnnotation)) {
             transformationContext.transform().add(DENY_ALL).done();
         }
     }

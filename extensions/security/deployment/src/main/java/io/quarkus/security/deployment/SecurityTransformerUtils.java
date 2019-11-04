@@ -1,5 +1,7 @@
 package io.quarkus.security.deployment;
 
+import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.security.DenyAll;
@@ -16,23 +18,38 @@ public class SecurityTransformerUtils {
     public static final DotName DENY_ALL = DotName.createSimple(DenyAll.class.getName());
     private static final Set<DotName> SECURITY_ANNOTATIONS = SecurityAnnotationsRegistrar.SECURITY_BINDINGS.keySet();
 
-    public static boolean hasSecurityAnnotation(MethodInfo methodInfo) {
-        for (AnnotationInstance annotation : methodInfo.annotations()) {
-            if (SECURITY_ANNOTATIONS.contains(annotation.name())) {
+    public static boolean hasStandardSecurityAnnotation(MethodInfo methodInfo) {
+        return hasStandardSecurityAnnotation(methodInfo.annotations());
+    }
+
+    public static boolean hasStandardSecurityAnnotation(ClassInfo classInfo) {
+        return hasStandardSecurityAnnotation(classInfo.classAnnotations());
+    }
+
+    private static boolean hasStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {
+        for (AnnotationInstance instance : instances) {
+            if (SECURITY_ANNOTATIONS.contains(instance.name())) {
                 return true;
             }
         }
-
         return false;
     }
 
-    public static boolean hasSecurityAnnotation(ClassInfo classInfo) {
-        for (AnnotationInstance classAnnotation : classInfo.classAnnotations()) {
-            if (SECURITY_ANNOTATIONS.contains(classAnnotation.name())) {
-                return true;
+    public static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(MethodInfo methodInfo) {
+        return findFirstStandardSecurityAnnotation(methodInfo.annotations());
+    }
+
+    public static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(ClassInfo classInfo) {
+        return findFirstStandardSecurityAnnotation(classInfo.classAnnotations());
+    }
+
+    private static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {
+        for (AnnotationInstance instance : instances) {
+            if (SECURITY_ANNOTATIONS.contains(instance.name())) {
+                return Optional.of(instance);
             }
         }
-
-        return false;
+        return Optional.empty();
     }
+
 }

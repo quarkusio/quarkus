@@ -236,7 +236,7 @@ Keep in mind that you usually don't want to expose to the public the internals o
 
 Now let's add the simple web page to interact with our `BookResource`.
 Quarkus automatically serves static resources contained in the `META-INF/resources` directory.
-In the `src/main/resources/META-INF/resources` directory, replace the `index.html` file with the content from this {quickstarts-blob-url}/validation/src/main/resources/META-INF/resources/index.html[index.html] file in it.
+In the `src/main/resources/META-INF/resources` directory, replace the `index.html` file with the content from this {quickstarts-blob-url}/validation-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file in it.
 
 == Run the application
 

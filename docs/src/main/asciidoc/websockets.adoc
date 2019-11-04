@@ -121,7 +121,7 @@ public class ChatSocket {
 
 All chat applications need a _nice_ UI, well, this one may not be that nice, but does the work.
 Quarkus automatically serves static resources contained in the `META-INF/resources` directory.
-Create the `src/main/resources/META-INF/resources` directory and copy this {quickstarts-blob-url}/using-websockets/src/main/resources/META-INF/resources/index.html[index.html] file in it.
+Create the `src/main/resources/META-INF/resources` directory and copy this {quickstarts-blob-url}/websockets-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file in it.
 
 == Run the application
 
@@ -142,4 +142,4 @@ image:websocket-guide-screenshot.png[alt=Application]
 As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
 You can also build the native executable using `./mvnw package -Pnative`.
 
-You can also test your web socket applications using the approach detailed {quickstarts-blob-url}/using-websockets/src/test/java/org/acme/websocket/ChatTestCase.java[here].
+You can also test your web socket applications using the approach detailed {quickstarts-blob-url}/websockets-quickstart/src/test/java/org/acme/websocket/ChatTestCase.java[here].

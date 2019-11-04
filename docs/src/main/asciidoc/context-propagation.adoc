@@ -85,7 +85,7 @@ Notice that thanks to automatic support for context propagation with Reactive St
 
 If you are using link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/CompletionStage.html[`CompletionStage`]
 you need manual context propagation. You can do that by injecting a `ThreadContext`
-or `ManagedExecutor` that will propagate every context. For example, here we use the link:using-vertx.html[Vert.x Web Client] 
+or `ManagedExecutor` that will propagate every context. For example, here we use the link:vertx.html[Vert.x Web Client]
 to get the list of Star Wars people, then store them in the database using
 link:hibernate-orm-panache.html[Hibernate ORM with Panache] (all in the same transaction) before returning
 them to the client:

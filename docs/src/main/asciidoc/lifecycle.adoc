@@ -93,7 +93,7 @@ public class AppLifecycleBean {
 
 TIP: The events are also called in _dev mode_ between each redeployment.
 
-NOTE: The methods can access injected beans. Check the {quickstarts-blob-url}/application-lifecycle-events/src/main/java/org/acme/events/AppLifecycleBean.java[AppLifecycleBean.java] class for details.
+NOTE: The methods can access injected beans. Check the {quickstarts-blob-url}/lifecycle-quickstart/src/main/java/org/acme/events/AppLifecycleBean.java[AppLifecycleBean.java] class for details.
 
 === What is the difference from `@Initialized(ApplicationScoped.class)` and `@Destroyed(ApplicationScoped.class)`
 

@@ -27,7 +27,7 @@ This guide is based on the REST client guide so you should get this Maven projec
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The project is located in the `rest-client` {quickstarts-tree-url}/rest-client[directory].
+The project is located in the `rest-client-quickstart` {quickstarts-tree-url}/rest-client-quickstart[directory].
 
 == Looks like it works out of the box?!?
 

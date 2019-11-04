@@ -558,7 +558,7 @@ For more information about the Hibernate Search extension configuration please r
 Now let's add a simple web page to interact with our `LibraryResource`.
 Quarkus automatically serves static resources located under the `META-INF/resources` directory.
 In the `src/main/resources/META-INF/resources` directory, overwrite the existing `index.html` file with the content from this
-{quickstarts-blob-url}/hibernate-search-elasticsearch/src/main/resources/META-INF/resources/index.html[index.html] file.
+{quickstarts-blob-url}/hibernate-search-elasticsearch-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file.
 
 == Automatic import script
 

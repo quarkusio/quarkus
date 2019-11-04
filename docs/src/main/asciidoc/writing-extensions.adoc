@@ -830,6 +830,11 @@ extensions may use the full range of configuration types made available by Small
 * Any type which has a constructor accepting a single argument of type `String` or `CharSequence`
 * Any type which has a static method named `of` which accepts a single argument of type `String`
 * Any type which has a static method named `valueOf` or `parse` which accepts a single argument of type `CharSequence` or `String`
+* `java.time.Duration`
+* `java.util.regex.Pattern`
+* `java.nio.file.Path`
+* `io.quarkus.runtime.configuration.MemorySize` to represent data sizes
+* `java.net.InetSocketAddress`, `java.net.InetAddress` and `org.wildfly.common.net.CidrAddress`
 * A `List` or `Optional` of any of the above types
 * `OptionalInt`, `OptionalLong`, `OptionalDouble`
 

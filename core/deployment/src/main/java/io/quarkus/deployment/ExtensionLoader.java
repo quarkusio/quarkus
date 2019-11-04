@@ -80,7 +80,6 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.runtime.annotations.Template;
 import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSource;
 import io.quarkus.runtime.configuration.ConverterSupport;
 import io.quarkus.runtime.configuration.DeploymentProfileConfigSource;
@@ -113,7 +112,7 @@ public final class ExtensionLoader {
 
     @SuppressWarnings("deprecation")
     private static boolean isRecorder(AnnotatedElement element) {
-        return element.isAnnotationPresent(Recorder.class) || element.isAnnotationPresent(Template.class);
+        return element.isAnnotationPresent(Recorder.class);
     }
 
     /**

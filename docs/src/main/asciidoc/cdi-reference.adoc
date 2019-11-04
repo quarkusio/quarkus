@@ -269,7 +269,7 @@ quarkus.log.category."io.quarkus.arc.processor".level=DEBUG
 [[default_beans]]
 === Default Beans
 
-Quarkus adds a capability that CDI currently does not support which is to conditionally declare a bean if no such bean has been declared in the typical ways Quarkus supports.
+Quarkus adds a capability that CDI currently does not support which is to conditionally declare a bean if no other bean with equal types and qualifiers was declared by any available means (bean class, producer, synthetic bean, ...)
 This is done using the `@io.quarkus.arc.DefaultBean` annotation and is best explained with an example.
 
 Say there is a Quarkus extension that among other things declares a few CDI beans like the following code does:

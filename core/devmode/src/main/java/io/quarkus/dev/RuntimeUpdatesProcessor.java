@@ -283,7 +283,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         return name.substring(lastIndexOf);
     }
 
-    private Set<String> checkForFileChange() {
+    Set<String> checkForFileChange() {
         Set<String> ret = new HashSet<>();
         for (DevModeContext.ModuleInfo module : context.getModules()) {
             final Set<Path> moduleResources = correspondingResources.computeIfAbsent(module.getName(),

@@ -87,6 +87,7 @@ public class DevModeMain implements Closeable {
 
         runtimeUpdatesProcessor = setupRuntimeCompilation(context);
         if (runtimeUpdatesProcessor != null) {
+            runtimeUpdatesProcessor.checkForFileChange();
             runtimeUpdatesProcessor.checkForChangedClasses();
         }
         //TODO: we can't handle an exception on startup with hot replacement, as Undertow might not have started

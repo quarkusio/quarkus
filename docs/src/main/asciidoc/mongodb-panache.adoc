@@ -384,9 +384,13 @@ will use the entity field name: `name`, and native query will use the MongoDB fi
 
 == The DAO/Repository option
 
-Look, we get it: you have a love/hate relationship with DAOs/Repositories but you can't live without them. We don't judge, we know life is tough and we've got you covered.
+Repository is a very popular pattern and can be very accurate for some use case, depending on
+the complexity of your needs.
 
-If you want to have Repositories, you can get the exact same convenient methods injected in your Repository by making it
+Whether you want to use the Entity based approach presented above or a more traditional Repository approach, it is up to you,
+Panache and Quarkus have you covered either way.
+
+If you lean towards using Repositories, you can get the exact same convenient methods injected in your Repository by making it
 implement `PanacheMongoRepository`:
 
 [source,java]
@@ -426,7 +430,7 @@ public long count(){
 
 So if Repositories are your thing, you can keep doing them. Even with repositories, you can keep your entities as
 subclasses of `PanacheMongoEntity` in order to get the ID and public fields working, but you can even skip that and
-go back to specifying your ID and using getters and setters if that's your thing. We're not judging.
+go back to specifying your ID and using getters and setters if that's your thing. Use what works for you.
 
 == Transactions
 

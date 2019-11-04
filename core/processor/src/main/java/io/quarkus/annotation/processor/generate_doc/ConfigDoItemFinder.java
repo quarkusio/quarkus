@@ -54,7 +54,7 @@ class ConfigDoItemFinder {
             final int sectionLevel = 2;
             final List<ConfigDocItem> configDocItems = recursivelyFindConfigItems(element, configRootInfo.getName(),
                     configRootInfo.getConfigPhase(), false, sectionLevel);
-            holder.addToAllConfigItems(configRootInfo.getClazz().getQualifiedName().toString(), configDocItems);
+            holder.addConfigRootItems(configRootInfo.getClazz().getQualifiedName().toString(), configDocItems);
         }
 
         return holder;
@@ -213,6 +213,7 @@ class ConfigDoItemFinder {
 
                 configDocKey.setKey(name);
                 configDocKey.setType(type);
+                configDocKey.setWithinAConfigGroup(sectionLevel > 2);
                 configDocKey.setConfigPhase(configPhase);
                 configDocKey.setDefaultValue(defaultValue);
                 configDocKey.setOptional(optional);
@@ -232,19 +233,16 @@ class ConfigDoItemFinder {
 
     private List<ConfigDocItem> recordConfigItemsFromConfigGroup(ConfigPhase configPhase, String name, Element configGroup,
             ConfigDocSection configSection, boolean withinAMap, int sectionLevel) {
-        final List<ConfigDocItem> groupConfigItems;
         final List<ConfigDocItem> configDocItems = new ArrayList<>();
-
-        if (configSection != null) {
+        final List<ConfigDocItem> groupConfigItems = recursivelyFindConfigItems(configGroup, name, configPhase, withinAMap,
+                sectionLevel + 1);
+        if (configSection == null) {
+            configDocItems.addAll(groupConfigItems);
+        } else {
             final ConfigDocItem configDocItem = new ConfigDocItem();
             configDocItem.setConfigDocSection(configSection);
             configDocItems.add(configDocItem);
-            groupConfigItems = recursivelyFindConfigItems(configGroup, name, configPhase, withinAMap,
-                    sectionLevel + 1);
             configSection.addConfigDocItems(groupConfigItems);
-        } else {
-            groupConfigItems = recursivelyFindConfigItems(configGroup, name, configPhase, withinAMap, sectionLevel);
-            configDocItems.addAll(groupConfigItems);
         }
 
         String configGroupName = configGroup.asType().toString();

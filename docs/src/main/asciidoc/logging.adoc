@@ -13,7 +13,7 @@ This guide explains logging and how to configure it.
 
 Run time configuration of logging is done through the normal `application.properties` file.
 
-include::{generated-dir}/config/quarkus-core-log-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-log-logging-log-config.adoc[opts=optional, leveloffset=+1]
 
 === Logging categories
 

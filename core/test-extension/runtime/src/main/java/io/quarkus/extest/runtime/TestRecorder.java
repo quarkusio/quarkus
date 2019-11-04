@@ -13,7 +13,7 @@ import io.quarkus.extest.runtime.config.TestRunTimeConfig;
 import io.quarkus.extest.runtime.config.XmlConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Template;
+import io.quarkus.runtime.annotations.Recorder;
 
 /**
  * The runtime recorder
@@ -22,7 +22,7 @@ import io.quarkus.runtime.annotations.Template;
  *
  */
 @SuppressWarnings("deprecation")
-@Template
+@Recorder
 public class TestRecorder {
     static final Logger log = Logger.getLogger(TestRecorder.class);
 

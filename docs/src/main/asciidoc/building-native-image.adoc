@@ -398,7 +398,7 @@ These are provided in `application.properties` the same as any other config prop
 
 The properties are shown below:
 
-include::{generated-dir}/config/quarkus-core-native-config.adoc[opts=optional]
+include::{generated-dir}/config/quarkus-native-pkg-native-config.adoc[opts=optional]
 
 == What's next?
 

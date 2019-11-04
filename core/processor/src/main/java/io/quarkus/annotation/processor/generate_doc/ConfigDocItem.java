@@ -89,6 +89,17 @@ final public class ConfigDocItem implements ConfigDocElement, Comparable<ConfigD
         return false;
     }
 
+    @JsonIgnore
+    public boolean isWithinAConfigGroup() {
+        if (isConfigSection()) {
+            return true;
+        } else if (isConfigKey() && configDocKey.isWithinAConfigGroup()) {
+            return true;
+        }
+
+        return false;
+    }
+
     /**
      * TODO determine section ordering
      *

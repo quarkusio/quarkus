@@ -21,12 +21,11 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResult;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 
+import io.quarkus.annotation.processor.generate_doc.ConfigDocGeneratedOutput;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocItem;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocItemScanner;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocSection;
@@ -37,8 +36,7 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.docs.generation.ExtensionJson.Extension;
 
 public class AllConfigGenerator {
-    public static void main(String[] args)
-            throws AppModelResolverException, JsonParseException, JsonMappingException, IOException {
+    public static void main(String[] args) throws AppModelResolverException, IOException {
         if (args.length != 2) {
             // exit 1 will break Maven
             throw new IllegalArgumentException("Usage: <version> <extension.json>");
@@ -165,7 +163,7 @@ public class AllConfigGenerator {
         for (Map.Entry<String, List<ConfigDocItem>> entry : sortedConfigItemsByExtension.entrySet()) {
             final List<ConfigDocItem> configDocItems = entry.getValue();
             // sort the items
-            ConfigDocWriter.sort(configDocItems);
+            DocGeneratorUtil.sort(configDocItems);
             // insert a header
             ConfigDocSection header = new ConfigDocSection();
             header.setSectionDetailsTitle(entry.getKey());
@@ -177,19 +175,29 @@ public class AllConfigGenerator {
         }
 
         // write our docs
-        configDocWriter.writeAllExtensionConfigDocumentation(allItems);
+        ConfigDocGeneratedOutput allConfigGeneratedOutput = new ConfigDocGeneratedOutput("all-config.adoc", true, allItems,
+                false);
+        configDocWriter.writeAllExtensionConfigDocumentation(allConfigGeneratedOutput);
     }
 
     private static String guessExtensionNameFromDocumentationFileName(String docFileName) {
         // sanitise
-        if (docFileName.startsWith("quarkus-"))
+        if (docFileName.startsWith("quarkus-")) {
             docFileName = docFileName.substring(8);
-        if (docFileName.endsWith(".adoc"))
+        }
+
+        if (docFileName.endsWith(".adoc")) {
             docFileName = docFileName.substring(0, docFileName.length() - 5);
-        if (docFileName.endsWith("-config"))
+        }
+
+        if (docFileName.endsWith("-config")) {
             docFileName = docFileName.substring(0, docFileName.length() - 7);
-        if (docFileName.endsWith("-configuration"))
+        }
+
+        if (docFileName.endsWith("-configuration")) {
             docFileName = docFileName.substring(0, docFileName.length() - 14);
+        }
+
         docFileName = docFileName.replace('-', ' ');
         return capitalize(docFileName);
     }

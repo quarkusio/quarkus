@@ -21,6 +21,7 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
     private boolean optional;
     private boolean list;
     private boolean passThroughMap;
+    private boolean withinAConfigGroup;
 
     public ConfigDocKey() {
     }
@@ -155,6 +156,14 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
         this.passThroughMap = passThroughMap;
     }
 
+    public boolean isWithinAConfigGroup() {
+        return withinAConfigGroup;
+    }
+
+    public void setWithinAConfigGroup(boolean withinAConfigGroup) {
+        this.withinAConfigGroup = withinAConfigGroup;
+    }
+
     @Override
     public void accept(Writer writer, DocFormatter docFormatter) throws IOException {
         docFormatter.format(writer, this);
@@ -176,6 +185,7 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
                 optional == that.optional &&
                 list == that.list &&
                 passThroughMap == that.passThroughMap &&
+                withinAConfigGroup == that.withinAConfigGroup &&
                 Objects.equals(type, that.type) &&
                 Objects.equals(key, that.key) &&
                 Objects.equals(configDoc, that.configDoc) &&
@@ -189,7 +199,7 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
     @Override
     public int hashCode() {
         return Objects.hash(type, key, configDoc, withinAMap, defaultValue, javaDocSiteLink, docMapKey, configPhase,
-                acceptedValues, optional, list, passThroughMap);
+                acceptedValues, optional, list, passThroughMap, withinAConfigGroup);
     }
 
     @Override
@@ -207,6 +217,7 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
                 ", optional=" + optional +
                 ", list=" + list +
                 ", passThroughMap=" + passThroughMap +
+                ", withinAConfigGroup=" + withinAConfigGroup +
                 '}';
     }
 }

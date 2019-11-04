@@ -65,9 +65,10 @@ import org.jboss.jdeparser.JSources;
 import org.jboss.jdeparser.JType;
 import org.jboss.jdeparser.JTypes;
 
+import io.quarkus.annotation.processor.generate_doc.ConfigDocGeneratedOutput;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocItemScanner;
 import io.quarkus.annotation.processor.generate_doc.ConfigDocWriter;
-import io.quarkus.annotation.processor.generate_doc.ScannedConfigDocsItemHolder;
+import io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil;
 
 public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
@@ -235,12 +236,12 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         }
 
         try {
-            final ScannedConfigDocsItemHolder scannedConfigDocsItemHolder = configDocItemScanner
+            final Set<ConfigDocGeneratedOutput> outputs = configDocItemScanner
                     .scanExtensionsConfigurationItems(javaDocProperties);
-
-            configDocWriter.writeExtensionConfigDocumentation(scannedConfigDocsItemHolder.getAllConfigItemsPerExtension(),
-                    true); // generate extension doc with search engine activate
-            configDocWriter.writeExtensionConfigDocumentation(scannedConfigDocsItemHolder.getConfigGroupConfigItems(), false); // generate config group docs with search engine deactivated
+            for (ConfigDocGeneratedOutput output : outputs) {
+                DocGeneratorUtil.sort(output.getConfigDocItems()); // sort before writing
+                configDocWriter.writeAllExtensionConfigDocumentation(output);
+            }
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate extension doc: " + e);
             return;

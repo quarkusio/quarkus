@@ -4,37 +4,47 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-final public class ScannedConfigDocsItemHolder {
-    private final Map<String, List<ConfigDocItem>> allConfigItemsPerExtension;
+final class ScannedConfigDocsItemHolder {
+    private final Map<String, List<ConfigDocItem>> generalConfigItems;
+    private final Map<String, List<ConfigDocItem>> configRootConfigItems;
     private final Map<String, List<ConfigDocItem>> configGroupConfigItems;
 
     public ScannedConfigDocsItemHolder() {
-        this(new HashMap<>(), new HashMap<>());
+        this(new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 
-    public ScannedConfigDocsItemHolder(Map<String, List<ConfigDocItem>> allConfigItemsPerExtension,
-            Map<String, List<ConfigDocItem>> configGroupConfigItems) {
-        this.allConfigItemsPerExtension = allConfigItemsPerExtension;
+    public ScannedConfigDocsItemHolder(Map<String, List<ConfigDocItem>> configRootConfigItems,
+            Map<String, List<ConfigDocItem>> configGroupConfigItems, Map<String, List<ConfigDocItem>> generalConfigItems) {
+        this.configRootConfigItems = configRootConfigItems;
         this.configGroupConfigItems = configGroupConfigItems;
-    }
-
-    public Map<String, List<ConfigDocItem>> getAllConfigItemsPerExtension() {
-        return allConfigItemsPerExtension;
+        this.generalConfigItems = generalConfigItems;
     }
 
     public Map<String, List<ConfigDocItem>> getConfigGroupConfigItems() {
         return configGroupConfigItems;
     }
 
-    public void addToAllConfigItems(String configRootName, List<ConfigDocItem> configDocItems) {
-        allConfigItemsPerExtension.put(configRootName, configDocItems);
+    public Map<String, List<ConfigDocItem>> getConfigRootConfigItems() {
+        return configRootConfigItems;
+    }
+
+    public Map<String, List<ConfigDocItem>> getGeneralConfigItems() {
+        return generalConfigItems;
     }
 
     public void addConfigGroupItems(String configGroupName, List<ConfigDocItem> configDocItems) {
         configGroupConfigItems.put(configGroupName, configDocItems);
     }
 
+    public void addConfigRootItems(String configRoot, List<ConfigDocItem> configDocItems) {
+        configRootConfigItems.put(configRoot, configDocItems);
+    }
+
+    public void addGeneralConfigItems(String configRoot, List<ConfigDocItem> configDocItems) {
+        configRootConfigItems.put(configRoot, configDocItems);
+    }
+
     public boolean isEmpty() {
-        return allConfigItemsPerExtension.isEmpty();
+        return configRootConfigItems.isEmpty();
     }
 }

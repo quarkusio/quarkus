@@ -5,6 +5,7 @@ import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.OFFI
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.VERTX_JAVA_DOC_SITE;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.appendConfigItemsIntoExistingOnes;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeConfigGroupDocFileName;
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeConfigRootDocFileName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeExtensionDocFileName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.deriveConfigRootName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getJavaDocSiteLink;
@@ -138,19 +139,19 @@ public class DocGeneratorUtilTest {
     }
 
     @Test
-    public void shouldAddCoreInComputedExtensionName() {
+    public void shouldUseCoreForConfigRootsCoreModuleWhenComputingExtensionName() {
         String configRoot = "io.quarkus.runtime.RuntimeConfig";
-        String expected = "quarkus-core-runtime-config.adoc";
+        String expected = "quarkus-core.adoc";
         String fileName = computeExtensionDocFileName(configRoot);
         assertEquals(expected, fileName);
 
         configRoot = "io.quarkus.deployment.BuildTimeConfig";
-        expected = "quarkus-core-build-time-config.adoc";
+        expected = "quarkus-core.adoc";
         fileName = computeExtensionDocFileName(configRoot);
         assertEquals(expected, fileName);
 
         configRoot = "io.quarkus.deployment.path.BuildTimeConfig";
-        expected = "quarkus-core-build-time-config.adoc";
+        expected = "quarkus-core.adoc";
         fileName = computeExtensionDocFileName(configRoot);
         assertEquals(expected, fileName);
     }
@@ -203,6 +204,34 @@ public class DocGeneratorUtilTest {
         configRoot = "io.quarkus.extension.deployment.name.BuildTimeConfig";
         expected = "quarkus-extension-config-group-name-build-time-config.adoc";
         fileName = computeConfigGroupDocFileName(configRoot);
+        assertEquals(expected, fileName);
+    }
+
+    @Test
+    public void shouldUseHyphenatedClassNameWithEverythingBeforeRuntimeOrDeploymentNamespaceReplacedByConfigRootNameWhenComputingConfigRootFileName() {
+        String configRoot = "ClassName";
+        String expected = "root-name-class-name.adoc";
+        String fileName = computeConfigRootDocFileName(configRoot, "root-name");
+        assertEquals(expected, fileName);
+
+        configRoot = "io.quarkus.agroal.runtime.ClassName";
+        expected = "quarkus-datasource-class-name.adoc";
+        fileName = computeConfigRootDocFileName(configRoot, "quarkus-datasource");
+        assertEquals(expected, fileName);
+
+        configRoot = "io.quarkus.keycloak.deployment.RealmConfig";
+        expected = "quarkus-keycloak-realm-config.adoc";
+        fileName = computeConfigRootDocFileName(configRoot, "quarkus-keycloak");
+        assertEquals(expected, fileName);
+
+        configRoot = "io.quarkus.extension.deployment.BuildTimeConfig";
+        expected = "quarkus-root-10-build-time-config.adoc";
+        fileName = computeConfigRootDocFileName(configRoot, "quarkus-root-10");
+        assertEquals(expected, fileName);
+
+        configRoot = "io.quarkus.extension.deployment.name.BuildTimeConfig";
+        expected = "quarkus-config-root-name-build-time-config.adoc";
+        fileName = computeConfigRootDocFileName(configRoot, "quarkus-config-root");
         assertEquals(expected, fileName);
     }
 

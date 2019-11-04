@@ -2,6 +2,8 @@ package io.quarkus.platform.tools.config;
 
 import java.util.Iterator;
 import java.util.ServiceLoader;
+import java.util.concurrent.atomic.AtomicReference;
+
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoader;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
@@ -12,14 +14,17 @@ public class QuarkusPlatformConfig {
 
     public static class Builder {
 
-        private boolean buildDefaultConfig;
+        private int type = STANDALONE;
         private MessageWriter log;
         private QuarkusPlatformDescriptor platformDescr;
 
-        private Builder(boolean buildSingleton) {
-            if (this.buildDefaultConfig = buildSingleton) {
-                assertNoDefaultConfig();
+        private Builder(int type) {
+            if(type == GLOBAL) {
+                assertNoGlobalConfig();
+            } else if(type == THREAD_LOCAL) {
+                assertNoThreadLocalConfig();
             }
+            this.type = type;
         }
 
         public Builder setMessageWriter(MessageWriter msgWriter) {
@@ -68,7 +73,7 @@ public class QuarkusPlatformConfig {
     }
 
     public static Builder builder() {
-        return new Builder(false);
+        return new Builder(STANDALONE);
     }
 
     /**
@@ -77,7 +82,16 @@ public class QuarkusPlatformConfig {
      * as the global default config.
      */
     public static Builder defaultConfigBuilder() {
-        return new Builder(true);
+        return new Builder(GLOBAL);
+    }
+
+    /**
+     * This hopefully will be a temporary way of providing global default config
+     * by creating a builder that will create a config instance which will serve
+     * as the global default config.
+     */
+    public static Builder threadLocalConfigBuilder() {
+        return new Builder(THREAD_LOCAL);
     }
 
     public static QuarkusPlatformConfig newInstance() {
@@ -85,7 +99,7 @@ public class QuarkusPlatformConfig {
     }
 
     public static QuarkusPlatformConfig getGlobalDefault() {
-        final QuarkusPlatformConfig c = defaultConfig.get();
+        final QuarkusPlatformConfig c = globalConfig.get();
         if(c != null) {
             return c;
         }
@@ -93,17 +107,45 @@ public class QuarkusPlatformConfig {
     }
 
     public static boolean hasGlobalDefault() {
-        return defaultConfig.get() != null;
+        return globalConfig.get() != null;
     }
 
-    private static void assertNoDefaultConfig() {
-        if (defaultConfig.get() != null) {
+    public static QuarkusPlatformConfig getThreadLocal() {
+        final QuarkusPlatformConfig c = threadLocalConfig.get();
+        if(c != null) {
+            return c;
+        }
+        return threadLocalConfigBuilder().build();
+    }
+
+    public static boolean hasThreadLocal() {
+        return threadLocalConfig.get() != null;
+    }
+
+    public static void clearThreadLocal() {
+        threadLocalConfig.remove();
+    }
+
+    private static void assertNoGlobalConfig() {
+        if (globalConfig.get() != null) {
             throw new IllegalStateException(
-                    "The default instance of " + QuarkusPlatformConfig.class.getName() + " has already been initialized");
+                    "The global instance of " + QuarkusPlatformConfig.class.getName() + " has already been initialized");
         }
     }
 
-    private static final ThreadLocal<QuarkusPlatformConfig> defaultConfig = new ThreadLocal<>();
+    private static void assertNoThreadLocalConfig() {
+        if (threadLocalConfig.get() != null) {
+            throw new IllegalStateException(
+                    "The thread local instance of " + QuarkusPlatformConfig.class.getName() + " has already been initialized");
+        }
+    }
+
+    private static final int STANDALONE = 0;
+    private static final int GLOBAL = 1;
+    private static final int THREAD_LOCAL = 2;
+
+    private static final AtomicReference<QuarkusPlatformConfig> globalConfig = new AtomicReference<>();
+    private static final ThreadLocal<QuarkusPlatformConfig> threadLocalConfig = new ThreadLocal<>();
 
     private final MessageWriter log;
     private final QuarkusPlatformDescriptor platformDescr;
@@ -111,9 +153,12 @@ public class QuarkusPlatformConfig {
     private QuarkusPlatformConfig(Builder builder) {
         this.log = builder.getMessageWriter();
         this.platformDescr = builder.getPlatformDescriptor();
-        if(builder.buildDefaultConfig) {
-            assertNoDefaultConfig();
-            defaultConfig.set(this);
+        if(builder.type == GLOBAL) {
+            assertNoGlobalConfig();
+            globalConfig.set(this);
+        } else if(builder.type == THREAD_LOCAL) {
+            assertNoThreadLocalConfig();
+            threadLocalConfig.set(this);
         }
     }
 

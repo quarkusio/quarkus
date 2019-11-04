@@ -1,5 +1,7 @@
 package io.quarkus.runtime;
 
+import io.quarkus.runtime.configuration.ProfileManager;
+
 public enum LaunchMode {
 
     /**
@@ -28,5 +30,13 @@ public enum LaunchMode {
 
     public String getDefaultProfile() {
         return defaultProfile;
+    }
+
+    /**
+     *
+     * @return The current launch mode
+     */
+    public static LaunchMode current() {
+        return ProfileManager.getLaunchMode();
     }
 }

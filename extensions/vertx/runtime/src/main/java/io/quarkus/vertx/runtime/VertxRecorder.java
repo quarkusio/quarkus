@@ -161,11 +161,6 @@ public class VertxRecorder {
         }
     }
 
-    private void registerCodec(Class<?> typeToAdd, MessageCodec codec) {
-        EventBus eventBus = vertx.eventBus();
-        eventBus.registerDefaultCodec(typeToAdd, codec);
-    }
-
     public RuntimeValue<Vertx> forceStart(Supplier<Vertx> vertx) {
         return new RuntimeValue<>(vertx.get());
     }

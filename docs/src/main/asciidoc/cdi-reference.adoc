@@ -191,7 +191,7 @@ In Quarkus, you can skip the `@Inject` annotation completely if an injected fiel
   String coolProperty;
 ----
 
-NOTE: `@Inject` is still required for constructor and method injection.
+NOTE: With the notable exception of one special case discussed below, `@Inject` is still required for constructor and method injection.
 
 === Simplified Constructor Injection
 

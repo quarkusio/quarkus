@@ -3,6 +3,26 @@
 # Add steps that use Docker Compose, tag images, push to a registry, run an image, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker 
 
+trigger:
+  batch: true
+  branches:
+    include:
+      - master
+
+pr:
+  branches:
+    include:
+      - master
+  paths:
+    exclude:
+      - docs/src/main/asciidoc/*
+      - docs/src/main/asciidoc/images/*
+      - README.md
+      - CONTRIBUTING.md
+      - LICENSE.txt
+      - dco.txt
+      - .github/ISSUE_TEMPLATE/*.md
+
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository/
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'

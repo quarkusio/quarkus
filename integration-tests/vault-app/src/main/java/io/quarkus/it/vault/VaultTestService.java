@@ -39,7 +39,7 @@ public class VaultTestService {
             return "someSecret=" + someSecret + "; expected: " + expectedPassword;
         }
         String password = ConfigProviderResolver.instance().getConfig().getValue("password", String.class);
-        if (!expectedPassword.equals(someSecret)) {
+        if (!expectedPassword.equals(password)) {
             return "password=" + password + "; expected: " + expectedPassword;
         }
 

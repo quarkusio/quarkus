@@ -23,6 +23,10 @@
             <classifier>noapt</classifier>
             <exclusions>
                 <exclusion>
+                    <groupId>io.sundr</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>com.sun</groupId>
                     <artifactId>tools</artifactId>
                 </exclusion>
@@ -33,6 +37,10 @@
             <artifactId>openshift-annotations</artifactId>
             <classifier>noapt</classifier>
             <exclusions>
+                <exclusion>
+                    <groupId>io.sundr</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>com.sun</groupId>
                     <artifactId>tools</artifactId>

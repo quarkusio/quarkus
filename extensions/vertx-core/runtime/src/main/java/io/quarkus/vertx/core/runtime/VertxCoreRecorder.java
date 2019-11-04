@@ -3,10 +3,13 @@ package io.quarkus.vertx.core.runtime;
 import static io.vertx.core.file.impl.FileResolver.CACHE_DIR_BASE_PROP_NAME;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -143,16 +146,27 @@ public class VertxCoreRecorder {
                 .setFileCacheDir(fileCacheDir)
                 .setClassPathResolvingEnabled(conf.classpathResolving));
         options.setWorkerPoolSize(conf.workerPoolSize);
-        options.setBlockedThreadCheckInterval(conf.warningExceptionTime.toMillis());
         options.setInternalBlockingPoolSize(conf.internalBlockingPoolSize);
+
+        options.setBlockedThreadCheckInterval(conf.warningExceptionTime.toMillis());
         if (conf.eventLoopsPoolSize.isPresent()) {
             options.setEventLoopPoolSize(conf.eventLoopsPoolSize.getAsInt());
         } else {
             options.setEventLoopPoolSize(calculateDefaultIOThreads());
         }
-        // TODO - Add the ability to configure these times in ns when long will be supported
-        //  options.setMaxEventLoopExecuteTime(conf.maxEventLoopExecuteTime)
-        //         .setMaxWorkerExecuteTime(conf.maxWorkerExecuteTime)
+
+        Optional<Duration> maxEventLoopExecuteTime = conf.maxEventLoopExecuteTime;
+        if (maxEventLoopExecuteTime.isPresent()) {
+            options.setMaxEventLoopExecuteTime(maxEventLoopExecuteTime.get().toMillis());
+            options.setMaxEventLoopExecuteTimeUnit(TimeUnit.MILLISECONDS);
+        }
+
+        Optional<Duration> maxWorkerExecuteTime = conf.maxWorkerExecuteTime;
+        if (maxWorkerExecuteTime.isPresent()) {
+            options.setMaxWorkerExecuteTime(maxWorkerExecuteTime.get().toMillis());
+            options.setMaxWorkerExecuteTimeUnit(TimeUnit.MILLISECONDS);
+        }
+
         options.setWarningExceptionTime(conf.warningExceptionTime.toNanos());
 
         return options;

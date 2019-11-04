@@ -84,8 +84,10 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         }
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
                 HttpMethod.valueOf(request.getHttpMethod()), path);
-        for (Map.Entry<String, List<String>> header : request.getMultiValueHeaders().entrySet()) {
-            nettyRequest.headers().add(header.getKey(), header.getValue());
+        if (request.getMultiValueHeaders() != null) { //apparently this can be null if no headers are sent
+            for (Map.Entry<String, List<String>> header : request.getMultiValueHeaders().entrySet()) {
+                nettyRequest.headers().add(header.getKey(), header.getValue());
+            }
         }
         if (!nettyRequest.headers().contains(HttpHeaderNames.HOST)) {
             nettyRequest.headers().add(HttpHeaderNames.HOST, "localhost");

@@ -27,7 +27,8 @@ variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository/
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
   QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
-  LINUX_USE_VMS: $[ not(contains(variables['Build.SourceBranch'], '/pull/')) ]
+  # Force everything to use VMs if the expansion pool is disabled. Otherwise send PRs to the expansion pool and everything else to the hosted VMs
+  LINUX_USE_VMS: $[ or(not(variables['quarkus_expansion_enabled']), not(contains(variables['Build.SourceBranch'], '/pull/'))) ]
 
 stages:
   - template: ci-templates/stages.yml

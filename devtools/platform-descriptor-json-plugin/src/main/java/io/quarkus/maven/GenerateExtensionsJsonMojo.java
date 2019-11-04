@@ -335,6 +335,12 @@ public class GenerateExtensionsJsonMojo extends AbstractMojo {
 
     private JsonObject mergeObject(JsonObject extObject, JsonObject extOverride) {
         final JsonObjectBuilder mergedObject = Json.createObjectBuilder();
+        
+        // add all existing to mergedobject and then override kicks in below
+        for (Map.Entry<String, JsonValue> e : extObject.entrySet()) {
+            mergedObject.add(e.getKey(), e.getValue());
+        }
+        
         for (Map.Entry<String, JsonValue> e : extOverride.entrySet()) {
             JsonValue.ValueType tp = e.getValue().getValueType();
             if (tp == JsonValue.ValueType.OBJECT

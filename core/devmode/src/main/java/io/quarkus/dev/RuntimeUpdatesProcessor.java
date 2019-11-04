@@ -334,6 +334,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                         });
                     }
                     for (Path i : seen) {
+                        moduleResources.remove(i);
                         if (!Files.isDirectory(i)) {
                             Files.delete(i);
                         }

@@ -110,3 +110,11 @@ When the application is stopped, the second log message is printed.
 
 As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
 You can also generate the native executable using `./mvnw clean package -Pnative`.
+
+== Launch Modes
+
+Quarkus has 3 different launch modes, `NORMAL` (i.e. production), `DEVELOPMENT` and `TEST`. If you are running `quarkus:dev`
+then the mode will be `DEVELOPMENT`, if you are running a JUnit test it will be `TEST`, otherwise it will be `NORMAL`.
+
+Your application can get the launch mode by injecting the `io.quarkus.runtime.LaunchMode` enum into a CDI bean,
+or by invoking the static method `io.quarkus.runtime.LaunchMode.current()`.

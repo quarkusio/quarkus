@@ -12,6 +12,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class SimpleBeanTest {
@@ -25,6 +26,9 @@ public class SimpleBeanTest {
     @Inject
     SimpleBean simpleBean;
 
+    @Inject
+    LaunchMode launchMode;
+
     @Test
     public void testSimpleBean() {
         assertNotNull(simpleBean.getStartupEvent());
@@ -32,6 +36,11 @@ public class SimpleBeanTest {
         assertFalse(simpleBean.getFooOptional().isPresent());
         assertEquals("1", simpleBean.getBazOptional().get());
         assertEquals("1", simpleBean.getBazProvider().get());
+    }
+
+    @Test
+    public void testLaunchModeInjection() {
+        assertEquals(LaunchMode.TEST, launchMode);
     }
 
 }

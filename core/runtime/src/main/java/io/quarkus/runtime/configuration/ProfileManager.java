@@ -29,6 +29,10 @@ public class ProfileManager {
         launchMode = mode;
     }
 
+    public static LaunchMode getLaunchMode() {
+        return launchMode;
+    }
+
     public static void setRuntimeDefaultProfile(final String profile) {
         runtimeDefaultProfile = profile;
     }

@@ -73,7 +73,7 @@ public class ReactiveMailerImpl implements ReactiveMailer {
 
     private CompletionStage<Void> send(Mail mail, MailMessage message) {
         if (mock) {
-            LOGGER.infof("Sending email {} from {} to {}, text body: \n{}\nhtml body: \n{}",
+            LOGGER.infof("Sending email %s from %s to %s, text body: \n%s\nhtml body: \n%s",
                     message.getSubject(), message.getFrom(), message.getTo(),
                     message.getText(), message.getHtml());
             return mockMailbox.send(mail);
@@ -98,7 +98,6 @@ public class ReactiveMailerImpl implements ReactiveMailer {
         } else {
             message.setFrom(this.from);
         }
-
         message.setTo(mail.getTo());
         message.setCc(mail.getCc());
         message.setBcc(mail.getBcc());
@@ -106,6 +105,9 @@ public class ReactiveMailerImpl implements ReactiveMailer {
         message.setText(mail.getText());
         message.setHtml(mail.getHtml());
         message.setHeaders(toMultimap(mail.getHeaders()));
+        if (mail.getReplyTo() != null) {
+            message.addHeader("Reply-To", mail.getReplyTo());
+        }
 
         List<CompletionStage<?>> stages = new ArrayList<>();
         List<MailAttachment> attachments = new CopyOnWriteArrayList<>();

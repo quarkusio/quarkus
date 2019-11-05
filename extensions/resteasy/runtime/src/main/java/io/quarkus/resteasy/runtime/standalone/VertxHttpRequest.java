@@ -37,14 +37,14 @@ import io.vertx.core.Context;
  * @author Kristoffer Sjogren
  * @version $Revision: 1 $
  */
-public class VertxHttpRequest extends BaseHttpRequest {
-    protected ResteasyHttpHeaders httpHeaders;
-    protected SynchronousDispatcher dispatcher;
-    protected String httpMethod;
-    protected String remoteHost;
-    protected InputStream inputStream;
-    protected Map<String, Object> attributes = new HashMap<String, Object>();
-    protected VertxHttpResponse response;
+public final class VertxHttpRequest extends BaseHttpRequest {
+    private ResteasyHttpHeaders httpHeaders;
+    private SynchronousDispatcher dispatcher;
+    private String httpMethod;
+    private String remoteHost;
+    private InputStream inputStream;
+    private Map<String, Object> attributes = new HashMap<String, Object>();
+    private VertxHttpResponse response;
     private final boolean is100ContinueExpected;
     private VertxExecutionContext executionContext;
     private final Context context;

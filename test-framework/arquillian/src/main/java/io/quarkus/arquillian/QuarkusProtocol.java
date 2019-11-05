@@ -97,6 +97,11 @@ class QuarkusProtocol implements Protocol<QuarkusProtocolConfiguration> {
                 public Object getInstance() {
                     return QuarkusDeployableContainer.testInstance;
                 }
+
+                @Override
+                public String getMethodName() {
+                    return testMethodExecutor.getMethod().getName();
+                }
             }));
             return testResult.get();
         }

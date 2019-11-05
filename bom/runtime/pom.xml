@@ -124,7 +124,7 @@
         <caffeine.version>2.6.2</caffeine.version>
         <netty.version>4.1.42.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
-        <test-containers.version>1.12.0</test-containers.version>
+        <test-containers.version>1.12.3</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <axle-client.version>0.0.10</axle-client.version>
         <kafka-clients.version>2.2.1</kafka-clients.version>

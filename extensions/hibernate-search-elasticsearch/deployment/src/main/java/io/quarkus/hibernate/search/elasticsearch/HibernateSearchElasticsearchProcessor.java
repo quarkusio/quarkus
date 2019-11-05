@@ -92,15 +92,16 @@ class HibernateSearchElasticsearchProcessor {
     }
 
     private static void checkConfig(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig) {
-        if (buildTimeConfig.defaultBackend.isPresent()) {
+        if (buildTimeConfig.additionalBackends.defaultBackend.isPresent()) {
+            String defaultBackend = buildTimeConfig.additionalBackends.defaultBackend.get();
             // we have a default named backend
             if (buildTimeConfig.elasticsearch.version.isPresent()) {
                 throw new ConfigurationError(
                         "quarkus.hibernate-search.elasticsearch.default-backend cannot be used in conjunction with a default backend configuration.");
             }
-            if (!buildTimeConfig.additionalBackends.containsKey(buildTimeConfig.defaultBackend.get())) {
+            if (!buildTimeConfig.additionalBackends.backends.containsKey(defaultBackend)) {
                 throw new ConfigurationError(
-                        "The default backend defined does not exist: " + buildTimeConfig.defaultBackend.get());
+                        "The default backend defined does not exist: " + defaultBackend);
             }
         } else {
             // we are in the default backend case
@@ -111,9 +112,9 @@ class HibernateSearchElasticsearchProcessor {
         }
 
         // we validate that the version is present for all the additional backends
-        if (!buildTimeConfig.additionalBackends.isEmpty()) {
+        if (!buildTimeConfig.additionalBackends.backends.isEmpty()) {
             List<String> additionalBackendsWithNoVersion = new ArrayList<>();
-            for (Entry<String, ElasticsearchBackendBuildTimeConfig> additionalBackendEntry : buildTimeConfig.additionalBackends
+            for (Entry<String, ElasticsearchBackendBuildTimeConfig> additionalBackendEntry : buildTimeConfig.additionalBackends.backends
                     .entrySet()) {
                 if (!additionalBackendEntry.getValue().version.isPresent()) {
                     additionalBackendsWithNoVersion.add(additionalBackendEntry.getKey());

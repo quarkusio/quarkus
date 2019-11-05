@@ -212,7 +212,8 @@ public class AllConfigGenerator {
         if (entry != null) {
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(zf.getInputStream(entry), StandardCharsets.UTF_8))) {
-                reader.lines().map(String::trim).filter(str -> !str.isEmpty())
+                // make sure we turn $ into . because javadoc-scanned class names are dot-separated
+                reader.lines().map(String::trim).filter(str -> !str.isEmpty()).map(str -> str.replace('$', '.'))
                         .forEach(klass -> extensionsByConfigRoots.put(klass, extension));
             }
         }

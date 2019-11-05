@@ -162,7 +162,8 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * <p>
          * Defines the status for which you wait before considering the operation completed by Hibernate Search.
          * <p>
-         * Using "searchable" is recommended in unit tests.
+         * Use {@code queued} or {@code committed} in production environments.
+         * {@code searchable} is useful in integration tests.
          */
         @ConfigItem(defaultValue = "committed")
         AutomaticIndexingSynchronizationStrategyName strategy;

@@ -162,8 +162,6 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * <p>
          * Defines the status for which you wait before considering the operation completed by Hibernate Search.
          * <p>
-         * Can be either one of "queued", "committed" or "searchable".
-         * <p>
          * Using "searchable" is recommended in unit tests.
          */
         @ConfigItem(defaultValue = "committed")
@@ -191,8 +189,6 @@ public class HibernateSearchElasticsearchRuntimeConfig {
 
         /**
          * The strategy to use when loading entities during the execution of a search query.
-         * <p>
-         * Can be either one of "skip", "persistence-context" or "persistence-context-then-second-level-cache".
          */
         @ConfigItem(defaultValue = "skip")
         EntityLoadingCacheLookupStrategy strategy;
@@ -205,8 +201,6 @@ public class HibernateSearchElasticsearchRuntimeConfig {
 
         /**
          * The strategy used for index lifecycle.
-         * <p>
-         * Must be one of: none, validate, update, create, drop-and-create or drop-and-create-and-drop.
          */
         // We can't set an actual default value here: see comment on this class.
         @ConfigItem(defaultValueDocumentation = "create")
@@ -214,8 +208,6 @@ public class HibernateSearchElasticsearchRuntimeConfig {
 
         /**
          * The minimal cluster status required.
-         * <p>
-         * Must be one of: green, yellow, red.
          */
         // We can't set an actual default value here: see comment on this class.
         @ConfigItem(defaultValueDocumentation = "green")

@@ -20,7 +20,7 @@ public class HibernateSearchElasticsearchBuildTimeConfig {
      */
     @ConfigItem(name = "elasticsearch")
     @ConfigDocSection
-    public ElasticsearchBackendBuildTimeConfig elasticsearch;
+    public ElasticsearchBackendBuildTimeConfig defaultBackend;
 
     /**
      * Additional backends

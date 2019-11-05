@@ -64,14 +64,14 @@ public class HibernateSearchElasticsearchRecorder {
                 // we have a named default backend
                 addConfig(propertyCollector, EngineSettings.DEFAULT_BACKEND,
                         buildTimeConfig.additionalBackends.defaultBackend.get());
-            } else if (buildTimeConfig.elasticsearch.version.isPresent()) {
+            } else if (buildTimeConfig.defaultBackend.version.isPresent()) {
                 // we use the default backend configuration
                 addConfig(propertyCollector, EngineSettings.DEFAULT_BACKEND,
                         HibernateSearchElasticsearchRecorder.DEFAULT_BACKEND);
             }
 
             contributeBackendBuildTimeProperties(propertyCollector, HibernateSearchElasticsearchRecorder.DEFAULT_BACKEND,
-                    buildTimeConfig.elasticsearch);
+                    buildTimeConfig.defaultBackend);
 
             for (Entry<String, ElasticsearchBackendBuildTimeConfig> backendEntry : buildTimeConfig.additionalBackends.backends
                     .entrySet()) {

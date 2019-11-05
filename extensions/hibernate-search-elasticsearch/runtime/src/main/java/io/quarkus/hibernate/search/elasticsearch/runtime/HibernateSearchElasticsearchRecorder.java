@@ -130,8 +130,7 @@ public class HibernateSearchElasticsearchRecorder {
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.PASSWORD,
                     elasticsearchBackendConfig.password);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.CONNECTION_TIMEOUT,
-                    elasticsearchBackendConfig.connectionTimeout,
-                    Optional::isPresent, d -> d.get().toMillis());
+                    elasticsearchBackendConfig.connectionTimeout.toMillis());
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.MAX_CONNECTIONS,
                     elasticsearchBackendConfig.maxConnections);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.MAX_CONNECTIONS_PER_ROUTE,
@@ -140,8 +139,7 @@ public class HibernateSearchElasticsearchRecorder {
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_ENABLED,
                     elasticsearchBackendConfig.discovery.enabled);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_REFRESH_INTERVAL,
-                    elasticsearchBackendConfig.discovery.refreshInterval,
-                    Optional::isPresent, d -> d.get().getSeconds());
+                    elasticsearchBackendConfig.discovery.refreshInterval.getSeconds());
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_SCHEME,
                     elasticsearchBackendConfig.discovery.defaultScheme);
 

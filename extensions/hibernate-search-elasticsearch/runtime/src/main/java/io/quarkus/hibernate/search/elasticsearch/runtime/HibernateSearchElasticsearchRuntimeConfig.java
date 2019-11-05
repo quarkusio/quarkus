@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 
 import org.hibernate.search.backend.elasticsearch.index.IndexLifecycleStrategyName;
 import org.hibernate.search.backend.elasticsearch.index.IndexStatus;
@@ -52,7 +51,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         /**
          * The list of hosts of the Elasticsearch servers.
          */
-        @ConfigItem
+        @ConfigItem(defaultValue = "http://localhost:9200")
         List<String> hosts;
 
         /**
@@ -70,20 +69,20 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         /**
          * The connection timeout.
          */
-        @ConfigItem
-        Optional<Duration> connectionTimeout;
+        @ConfigItem(defaultValue = "3S")
+        Duration connectionTimeout;
 
         /**
          * The maximum number of connections to all the Elasticsearch servers.
          */
-        @ConfigItem
-        OptionalInt maxConnections;
+        @ConfigItem(defaultValue = "20")
+        int maxConnections;
 
         /**
          * The maximum number of connections per Elasticsearch server.
          */
-        @ConfigItem
-        OptionalInt maxConnectionsPerRoute;
+        @ConfigItem(defaultValue = "10")
+        int maxConnectionsPerRoute;
 
         /**
          * Configuration for the automatic discovery of new Elasticsearch nodes.
@@ -120,20 +119,20 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         /**
          * Defines if automatic discovery is enabled.
          */
-        @ConfigItem
-        Optional<Boolean> enabled;
+        @ConfigItem(defaultValue = "false")
+        boolean enabled;
 
         /**
          * Refresh interval of the node list.
          */
-        @ConfigItem
-        Optional<Duration> refreshInterval;
+        @ConfigItem(defaultValue = "10S")
+        Duration refreshInterval;
 
         /**
          * The scheme that should be used for the new nodes discovered.
          */
-        @ConfigItem
-        Optional<String> defaultScheme;
+        @ConfigItem(defaultValue = "http")
+        String defaultScheme;
     }
 
     @ConfigGroup
@@ -151,8 +150,8 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * When enabled, re-indexing of an entity is skipped if the only changes are on properties that are not used when
          * indexing.
          */
-        @ConfigItem
-        Optional<Boolean> enableDirtyCheck;
+        @ConfigItem(defaultValue = "true")
+        boolean enableDirtyCheck;
     }
 
     @ConfigGroup
@@ -166,11 +165,9 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * Can be either one of "queued", "committed" or "searchable".
          * <p>
          * Using "searchable" is recommended in unit tests.
-         * <p>
-         * Defaults to "committed".
          */
-        @ConfigItem
-        Optional<AutomaticIndexingSynchronizationStrategyName> strategy;
+        @ConfigItem(defaultValue = "committed")
+        AutomaticIndexingSynchronizationStrategyName strategy;
     }
 
     @ConfigGroup
@@ -196,13 +193,13 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * The strategy to use when loading entities during the execution of a search query.
          * <p>
          * Can be either one of "skip", "persistence-context" or "persistence-context-then-second-level-cache".
-         * <p>
-         * Defaults to "skip".
          */
-        @ConfigItem
-        Optional<EntityLoadingCacheLookupStrategy> strategy;
+        @ConfigItem(defaultValue = "skip")
+        EntityLoadingCacheLookupStrategy strategy;
     }
 
+    // We can't set actual default values in this section,
+    // otherwise "quarkus.hibernate-search.elasticsearch.index-defaults" will be ignored.
     @ConfigGroup
     public static class LifecycleConfig {
 
@@ -211,7 +208,8 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * <p>
          * Must be one of: none, validate, update, create, drop-and-create or drop-and-create-and-drop.
          */
-        @ConfigItem
+        // We can't set an actual default value here: see comment on this class.
+        @ConfigItem(defaultValueDocumentation = "create")
         Optional<IndexLifecycleStrategyName> strategy;
 
         /**
@@ -219,13 +217,15 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * <p>
          * Must be one of: green, yellow, red.
          */
-        @ConfigItem
+        // We can't set an actual default value here: see comment on this class.
+        @ConfigItem(defaultValueDocumentation = "green")
         Optional<IndexStatus> requiredStatus;
 
         /**
          * How long we should wait for the status before failing the bootstrap.
          */
-        @ConfigItem
+        // We can't set an actual default value here: see comment on this class.
+        @ConfigItem(defaultValueDocumentation = "10S")
         Optional<Duration> requiredStatusWaitTimeout;
     }
 }

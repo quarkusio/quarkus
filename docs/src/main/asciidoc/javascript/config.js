@@ -28,8 +28,8 @@ if(tables){
         }
 
         var rowIdx = 0;
-        for (var row of table.querySelectorAll("tr")) {
-            var heads = row.querySelectorAll("th");
+        for (var row of table.querySelectorAll("table.configuration-reference > tbody > tr")) {
+            var heads = row.querySelectorAll("table.configuration-reference > tbody > tr > th");
             if(!heads || heads.length == 0){
                 // mark even rows
                 if(++rowIdx % 2){
@@ -193,8 +193,8 @@ function applySearch(table, search, autoExpand){
     clearHighlights(table);
     var lastSectionHeader = null;
     var idx = 0;
-    for (var row of table.querySelectorAll("tr")) {
-        var heads = row.querySelectorAll("th");
+    for (var row of table.querySelectorAll("table.configuration-reference > tbody > tr")) {
+        var heads = row.querySelectorAll("table.configuration-reference > tbody > tr > th");
         if(!heads || heads.length == 0){
             // mark even rows
             if(++idx % 2){

@@ -3,8 +3,10 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-include::./attributes.adoc[]
 = Quarkus - Infinispan Embedded
+
+include::./attributes.adoc[]
+
 Infinispan is an elastically scalable in-memory data store that you can embed
 directly in your application.
 

@@ -17,6 +17,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
@@ -29,6 +30,7 @@ import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
 import io.quarkus.smallrye.health.runtime.SmallRyeLivenessHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeReadinessHandler;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.smallrye.health.SmallRyeHealthReporter;
 
@@ -87,7 +89,9 @@ class SmallRyeHealthProcessor {
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
-            BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotation) throws IOException {
+            BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotation,
+            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
+            LaunchModeBuildItem launchModeBuildItem) throws IOException {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_HEALTH));
 
@@ -99,6 +103,14 @@ class SmallRyeHealthProcessor {
         routes.produce(
                 new RouteBuildItem(health.rootPath + health.readinessPath, new SmallRyeReadinessHandler(),
                         HandlerType.BLOCKING));
+
+        // add health endpoints to not found page
+        if (launchModeBuildItem.getLaunchMode().isDevOrTest()) {
+            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(health.rootPath));
+            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(health.rootPath + health.livenessPath));
+            displayableEndpoints
+                    .produce(new NotFoundPageDisplayableEndpointBuildItem(health.rootPath + health.readinessPath));
+        }
 
         // Make ArC discover the beans marked with the @Health qualifier
         beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH));

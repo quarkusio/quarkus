@@ -56,6 +56,7 @@ import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
 import io.quarkus.smallrye.openapi.runtime.OpenApiHandler;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
@@ -101,7 +102,8 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    RouteBuildItem handler(DeploymentClassLoaderBuildItem deploymentClassLoaderBuildItem, LaunchModeBuildItem launch) {
+    RouteBuildItem handler(DeploymentClassLoaderBuildItem deploymentClassLoaderBuildItem, LaunchModeBuildItem launch,
+            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints) {
         /*
          * <em>Ugly Hack</em>
          * In dev mode, we pass a classloader to load the up to date OpenAPI document.
@@ -115,6 +117,7 @@ public class SmallRyeOpenApiProcessor {
          */
         if (launch.getLaunchMode() == LaunchMode.DEVELOPMENT) {
             OpenApiHandler.classLoader = deploymentClassLoaderBuildItem.getClassLoader();
+            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(openapi.path));
         } else {
             OpenApiHandler.classLoader = null;
         }

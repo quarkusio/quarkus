@@ -39,6 +39,7 @@ import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.swaggerui.runtime.SwaggerUiRecorder;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -79,7 +80,8 @@ public class SwaggerUiProcessor {
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResourceBuildItemBuildProducer,
             LiveReloadBuildItem liveReloadBuildItem,
-            HttpRootPathBuildItem httpRootPathBuildItem) throws Exception {
+            HttpRootPathBuildItem httpRootPathBuildItem,
+            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints) throws Exception {
 
         if ("/".equals(swaggerUiConfig.path)) {
             throw new ConfigurationError(
@@ -119,6 +121,7 @@ public class SwaggerUiProcessor {
             Handler<RoutingContext> handler = recorder.handler(cached.cachedDirectory, swaggerUiConfig.path);
             routes.produce(new RouteBuildItem(swaggerUiConfig.path, handler));
             routes.produce(new RouteBuildItem(swaggerUiConfig.path + "/*", handler));
+            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(swaggerUiConfig.path + "/"));
         } else if (swaggerUiConfig.alwaysInclude) {
             ResolvedArtifact artifact = getSwaggerUiArtifact();
             //we are including in a production artifact

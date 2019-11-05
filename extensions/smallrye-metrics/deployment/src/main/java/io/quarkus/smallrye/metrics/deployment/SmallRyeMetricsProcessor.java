@@ -53,6 +53,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
@@ -63,6 +64,7 @@ import io.quarkus.smallrye.metrics.deployment.jandex.JandexMemberInfoAdapter;
 import io.quarkus.smallrye.metrics.runtime.SmallRyeMetricsRecorder;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.smallrye.metrics.MetricProducer;
 import io.smallrye.metrics.MetricRegistries;
@@ -96,9 +98,16 @@ public class SmallRyeMetricsProcessor {
     @Record(STATIC_INIT)
     void createRoute(BuildProducer<RouteBuildItem> routes,
             SmallRyeMetricsRecorder recorder,
-            HttpRootPathBuildItem httpRoot) {
+            HttpRootPathBuildItem httpRoot,
+            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
+            LaunchModeBuildItem launchModeBuildItem) {
         Function<Router, Route> route = recorder.route(metrics.path + (metrics.path.endsWith("/") ? "*" : "/*"));
         Function<Router, Route> slash = recorder.route(metrics.path);
+
+        // add metrics endpoint for not found display in dev or test mode
+        if (launchModeBuildItem.getLaunchMode().isDevOrTest()) {
+            displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(metrics.path));
+        }
         routes.produce(new RouteBuildItem(route, recorder.handler(httpRoot.adjustPath(metrics.path)), HandlerType.BLOCKING));
         routes.produce(new RouteBuildItem(slash, recorder.handler(httpRoot.adjustPath(metrics.path)), HandlerType.BLOCKING));
     }

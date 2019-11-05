@@ -24,7 +24,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=my-artifactId \
     -DprojectVersion=my-version \
     -DclassName="org.my.group.MyResource" \
-    -Dextensions="resteasy-jsonb"
+    -Dextensions="resteasy-jsonb" \
     -DbuildTool=gradle
 ----
 

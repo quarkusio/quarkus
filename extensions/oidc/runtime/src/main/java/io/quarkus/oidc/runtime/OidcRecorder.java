@@ -2,6 +2,8 @@ package io.quarkus.oidc.runtime;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.runtime.RuntimeValue;
@@ -16,6 +18,8 @@ import io.vertx.ext.auth.oauth2.providers.KeycloakAuth;
 
 @Recorder
 public class OidcRecorder {
+
+    private static final Logger LOG = Logger.getLogger(OidcRecorder.class);
 
     public void setup(OidcConfig config, RuntimeValue<Vertx> vertx, BeanContainer beanContainer) {
         OAuth2ClientOptions options = new OAuth2ClientOptions();
@@ -45,19 +49,43 @@ public class OidcRecorder {
                     .setPublicKey(config.publicKey.get()));
         }
 
-        CompletableFuture<OAuth2Auth> cf = new CompletableFuture<>();
-        KeycloakAuth.discover(vertx.getValue(), options, new Handler<AsyncResult<OAuth2Auth>>() {
-            @Override
-            public void handle(AsyncResult<OAuth2Auth> event) {
-                if (event.failed()) {
-                    cf.completeExceptionally(toOidcException(event.cause()));
+        final long connectionDelayInSecs = config.connectionDelay.isPresent() ? config.connectionDelay.get().toMillis() / 1000
+                : 0;
+        final long connectionRetryCount = connectionDelayInSecs > 1 ? connectionDelayInSecs / 2 : 1;
+        if (connectionRetryCount > 1) {
+            LOG.infof("Connecting to IDP for up to %d times every 2 seconds", connectionRetryCount);
+        }
+
+        OAuth2Auth auth = null;
+        for (long i = 0; i < connectionRetryCount; i++) {
+            try {
+                CompletableFuture<OAuth2Auth> cf = new CompletableFuture<>();
+                KeycloakAuth.discover(vertx.getValue(), options, new Handler<AsyncResult<OAuth2Auth>>() {
+                    @Override
+                    public void handle(AsyncResult<OAuth2Auth> event) {
+                        if (event.failed()) {
+                            cf.completeExceptionally(toOidcException(event.cause()));
+                        } else {
+                            cf.complete(event.result());
+                        }
+                    }
+                });
+
+                auth = cf.join();
+                break;
+            } catch (OIDCException ex) {
+                if (i + 1 < connectionRetryCount) {
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException iex) {
+                        // continue connecting
+                    }
+
                 } else {
-                    cf.complete(event.result());
+                    throw ex;
                 }
             }
-        });
-
-        OAuth2Auth auth = cf.join();
+        }
 
         OidcIdentityProvider identityProvider = beanContainer.instance(OidcIdentityProvider.class);
         identityProvider.setAuth(auth);

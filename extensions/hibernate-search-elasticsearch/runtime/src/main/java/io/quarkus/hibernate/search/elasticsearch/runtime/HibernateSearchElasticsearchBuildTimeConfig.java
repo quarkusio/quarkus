@@ -16,8 +16,9 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class HibernateSearchElasticsearchBuildTimeConfig {
 
     /**
-     * Configuration of the default backend.
+     * Default backend
      */
+    @ConfigDocSection
     public ElasticsearchBackendBuildTimeConfig elasticsearch;
 
     /**

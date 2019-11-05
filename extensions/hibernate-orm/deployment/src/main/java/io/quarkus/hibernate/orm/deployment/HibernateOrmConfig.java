@@ -75,6 +75,13 @@ public class HibernateOrmConfig {
     @ConfigItem(defaultValueDocumentation = "import.sql (DEV,TEST)")
     public Optional<String> sqlLoadScript;
 
+    // @formatter:off
+    /**
+     * Allows setting a custom connection.provider-class for Hibernate
+     */
+    @ConfigItem(name = "connection.provider-class")
+    public Optional<String> connectionProviderClass;
+    
     /**
      * The size of the batches used when loading entities and collections.
      *
@@ -129,6 +136,7 @@ public class HibernateOrmConfig {
         return dialect.isPresent() ||
                 dialectStorageEngine.isPresent() ||
                 sqlLoadScript.isPresent() ||
+                connectionProviderClass.isPresent() ||
                 batchFetchSize > 0 ||
                 statistics ||
                 query.isAnyPropertySet() ||

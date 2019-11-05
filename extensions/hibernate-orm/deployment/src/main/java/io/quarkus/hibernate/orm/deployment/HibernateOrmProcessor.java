@@ -395,6 +395,10 @@ public final class HibernateOrmProcessor {
                             hibernateConfig.dialectStorageEngine.get()));
                 }
 
+                hibernateConfig.connectionProviderClass.ifPresent(
+                        connectionProvider -> desc.getProperties().setProperty(AvailableSettings.CONNECTION_PROVIDER,
+                                connectionProvider));
+
                 // Database
                 desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION,
                         hibernateConfig.database.generation);

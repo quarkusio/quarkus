@@ -1,7 +1,9 @@
 package io.quarkus.gradle.tasks;
 
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toSet;
+
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -37,10 +39,13 @@ public class QuarkusAddExtension extends QuarkusPlatformTask {
 
     @TaskAction
     public void addExtension() {
-
         setupPlatformDescriptor();
 
-        Set<String> extensionsSet = new HashSet<>(getExtensionsToAdd());
+        Set<String> extensionsSet = getExtensionsToAdd()
+                .stream()
+                .flatMap(ext -> stream(ext.split(",")))
+                .map(String::trim)
+                .collect(toSet());
         try {
             new AddExtensions(new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir())))
                     .addExtensions(extensionsSet);

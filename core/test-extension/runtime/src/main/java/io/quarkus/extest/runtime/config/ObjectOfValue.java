@@ -40,6 +40,11 @@ public class ObjectOfValue {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(part1, part2);
+    }
+
+    @Override
     public String toString() {
         return "ObjectOfValue{" +
                 "part1='" + part1 + '\'' +

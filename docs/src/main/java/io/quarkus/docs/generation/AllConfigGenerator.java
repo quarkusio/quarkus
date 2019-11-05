@@ -130,6 +130,11 @@ public class AllConfigGenerator {
         List<ConfigDocItem> allItems = new ArrayList<>();
         SortedMap<String, List<ConfigDocItem>> sortedConfigItemsByExtension = new TreeMap<>();
 
+        // Temporary fix for https://github.com/quarkusio/quarkus/issues/5214 until we figure out how to fix it
+        Extension openApi = extensionsByGav.get("io.quarkus:quarkus-smallrye-openapi");
+        if (openApi != null)
+            extensionsByConfigRoots.put("io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig", openApi);
+
         // sort extensions by name, assign their config items based on their config roots
         for (Entry<String, Extension> entry : extensionsByConfigRoots.entrySet()) {
             List<ConfigDocItem> items = docItemsByConfigRoots.get(entry.getKey());

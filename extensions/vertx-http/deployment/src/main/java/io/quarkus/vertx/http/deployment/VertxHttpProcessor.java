@@ -102,7 +102,8 @@ class VertxHttpProcessor {
             InternalWebVertxBuildItem vertx,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, List<DefaultRouteBuildItem> defaultRoutes,
             List<FilterBuildItem> filters, VertxWebRouterBuildItem router, EventLoopCountBuildItem eventLoopCountBuildItem,
-            HttpBuildTimeConfig httpBuildTimeConfig)
+            HttpBuildTimeConfig httpBuildTimeConfig,
+            List<WebsocketSubProtocolsBuildItem> websocketSubProtocolsBuildItem)
             throws BuildException, IOException {
         Optional<DefaultRouteBuildItem> defaultRoute;
         if (defaultRoutes == null || defaultRoutes.isEmpty()) {
@@ -129,7 +130,9 @@ class VertxHttpProcessor {
         boolean startSocket = !startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL;
         recorder.startServer(vertx.getVertx(), shutdown,
                 httpConfiguration, launchMode.getLaunchMode(), startVirtual, startSocket,
-                eventLoopCountBuildItem.getEventLoopCount());
+                eventLoopCountBuildItem.getEventLoopCount(),
+                websocketSubProtocolsBuildItem.stream().map(bi -> bi.getWebsocketSubProtocols())
+                        .collect(Collectors.joining(",")));
 
         return new ServiceStartBuildItem("vertx-http");
     }

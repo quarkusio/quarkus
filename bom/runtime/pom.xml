@@ -2435,6 +2435,11 @@
                 <artifactId>keycloak-authz-client</artifactId>
                 <version>${keycloak.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-vertx-graphql</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

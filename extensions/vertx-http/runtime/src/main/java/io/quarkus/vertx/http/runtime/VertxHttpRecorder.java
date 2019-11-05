@@ -126,7 +126,7 @@ public class VertxHttpRecorder {
                 public Integer get() {
                     return ProcessorInfo.availableProcessors() * 2; //this is dev mode, so the number of IO threads not always being 100% correct does not really matter in this case
                 }
-            });
+            }, null);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -147,7 +147,8 @@ public class VertxHttpRecorder {
 
     public void startServer(RuntimeValue<Vertx> vertxRuntimeValue, ShutdownContext shutdown,
             HttpConfiguration httpConfiguration, LaunchMode launchMode,
-            boolean startVirtual, boolean startSocket, Supplier<Integer> ioThreads) throws IOException {
+            boolean startVirtual, boolean startSocket, Supplier<Integer> ioThreads, String websocketSubProtocols)
+            throws IOException {
 
         Vertx vertx = vertxRuntimeValue.getValue();
         if (startVirtual) {
@@ -156,7 +157,7 @@ public class VertxHttpRecorder {
         if (startSocket) {
             // Start the server
             if (closeTask == null) {
-                doServerStart(vertx, httpConfiguration, launchMode, ioThreads);
+                doServerStart(vertx, httpConfiguration, launchMode, ioThreads, websocketSubProtocols);
                 if (launchMode != LaunchMode.DEVELOPMENT) {
                     shutdown.addShutdownTask(closeTask);
                 }
@@ -213,10 +214,9 @@ public class VertxHttpRecorder {
     }
 
     private static void doServerStart(Vertx vertx, HttpConfiguration httpConfiguration, LaunchMode launchMode,
-            Supplier<Integer> eventLoops)
-            throws IOException {
+            Supplier<Integer> eventLoops, String websocketSubProtocols) throws IOException {
         // Http server configuration
-        HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode);
+        HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode, websocketSubProtocols);
         HttpServerOptions sslConfig = createSslOptions(httpConfiguration, launchMode);
 
         int eventLoopCount = eventLoops.get();
@@ -393,12 +393,13 @@ public class VertxHttpRecorder {
     }
 
     private static HttpServerOptions createHttpServerOptions(HttpConfiguration httpConfiguration,
-            LaunchMode launchMode) {
+            LaunchMode launchMode, String websocketSubProtocols) {
         // TODO other config properties
         HttpServerOptions options = new HttpServerOptions();
         options.setHost(httpConfiguration.host);
         options.setPort(httpConfiguration.determinePort(launchMode));
         options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
+        options.setWebsocketSubProtocols(websocketSubProtocols);
         return options;
     }
 

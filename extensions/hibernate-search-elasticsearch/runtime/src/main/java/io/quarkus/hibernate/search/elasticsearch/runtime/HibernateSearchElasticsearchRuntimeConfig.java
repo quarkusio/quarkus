@@ -21,9 +21,10 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class HibernateSearchElasticsearchRuntimeConfig {
 
     /**
-     * Configuration of the default backend.
+     * Default backend
      */
     @ConfigItem(name = "elasticsearch")
+    @ConfigDocSection
     ElasticsearchBackendRuntimeConfig defaultBackend;
 
     /**

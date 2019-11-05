@@ -303,7 +303,7 @@ public class DevMojo extends AbstractMojo {
                         try {
                             newRunner.prepare();
                         } catch (Exception e) {
-                            getLog().info("Could not load changed pom.xml file, changes not applied");
+                            getLog().info("Could not load changed pom.xml file, changes not applied", e);
                             continue;
                         }
                         runner.stop();

@@ -95,7 +95,7 @@ class HibernateSearchElasticsearchProcessor {
         if (buildTimeConfig.additionalBackends.defaultBackend.isPresent()) {
             String defaultBackend = buildTimeConfig.additionalBackends.defaultBackend.get();
             // we have a default named backend
-            if (buildTimeConfig.elasticsearch.version.isPresent()) {
+            if (buildTimeConfig.defaultBackend.version.isPresent()) {
                 throw new ConfigurationError(
                         "quarkus.hibernate-search.elasticsearch.default-backend cannot be used in conjunction with a default backend configuration.");
             }
@@ -105,7 +105,7 @@ class HibernateSearchElasticsearchProcessor {
             }
         } else {
             // we are in the default backend case
-            if (!buildTimeConfig.elasticsearch.version.isPresent()) {
+            if (!buildTimeConfig.defaultBackend.version.isPresent()) {
                 throw new ConfigurationError(
                         "The Elasticsearch version needs to be defined via the quarkus.hibernate-search.elasticsearch.version property.");
             }
@@ -132,9 +132,9 @@ class HibernateSearchElasticsearchProcessor {
         Set<DotName> reflectiveClassCollector = new HashSet<>();
         Set<DotName> reflectiveTypeCollector = new HashSet<>();
 
-        if (buildTimeConfig.elasticsearch.analysis.configurer.isPresent()) {
+        if (buildTimeConfig.defaultBackend.analysis.configurer.isPresent()) {
             reflectiveClass.produce(
-                    new ReflectiveClassBuildItem(true, false, buildTimeConfig.elasticsearch.analysis.configurer.get()));
+                    new ReflectiveClassBuildItem(true, false, buildTimeConfig.defaultBackend.analysis.configurer.get()));
         }
 
         if (buildTimeConfig.backgroundFailureHandler.isPresent()) {

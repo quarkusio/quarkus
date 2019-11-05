@@ -45,6 +45,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
 
     private volatile static List<String> servletMappings = Collections.EMPTY_LIST;
     private volatile static List<String> staticResources = Collections.EMPTY_LIST;
+    private volatile static List<String> additionalEndpoints = Collections.EMPTY_LIST;
     private volatile static Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths = Collections.EMPTY_MAP;
 
     @Context
@@ -241,6 +242,14 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                 sb.resourcesEnd();
             }
 
+            if (!additionalEndpoints.isEmpty()) {
+                sb.resourcesStart("Additional endpoints");
+                for (String additionalEndpoint : additionalEndpoints) {
+                    sb.staticResourcePath(additionalEndpoint);
+                }
+                sb.resourcesEnd();
+            }
+
             return Response.status(Status.NOT_FOUND).entity(sb.toString()).type(MediaType.TEXT_HTML_TYPE).build();
         }
         return Response.status(Status.NOT_FOUND).build();
@@ -265,5 +274,9 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
 
     public static void nonJaxRsClassNameToMethodPaths(Map<String, NonJaxRsClassMappings> nonJaxRsPaths) {
         NotFoundExceptionMapper.nonJaxRsClassNameToMethodPaths = nonJaxRsPaths;
+    }
+
+    public static void setAdditionalEndpoints(List<String> additionalEndpoints) {
+        NotFoundExceptionMapper.additionalEndpoints = additionalEndpoints;
     }
 }

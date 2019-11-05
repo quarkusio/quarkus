@@ -299,10 +299,10 @@ public class NativeImageBuildStep {
     private boolean isThisGraalVMVersionObsolete() {
         final String vmName = System.getProperty("java.vm.name");
         log.info("Running Quarkus native-image plugin on " + vmName);
-        final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.");
+        final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.", "19.2.0");
         final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
         if (vmVersionIsObsolete) {
-            log.error("Out of date build of GraalVM detected! Please upgrade to GraalVM 19.2.0.");
+            log.error("Out of date build of GraalVM detected! Please upgrade to GraalVM 19.2.1.");
             return true;
         }
         return false;

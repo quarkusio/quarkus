@@ -56,6 +56,18 @@ The following table lists the attributes you can pass to the `create` command:
 | _[]_
 | The list of extensions to add to the project (comma-separated)
 
+| `platformGroupId`
+| `io.quarkus`
+| The group id of the platform you want to use.
+
+| `platformArtifactId`
+| `quarkus-bom`
+| The artifact id of the platform you want to use.
+
+| `platformVersion`
+| `quarkus-bom`
+| The artifact id of the platform you want to use.
+
 |===
 
 If you decide to generate a REST resource (using the `className` attribute), the endpoint is exposed at: `http://localhost:8080/$path`.
@@ -66,6 +78,26 @@ If the directory already exists, the generation fails.
 
 A pair of Dockerfiles for native and jvm mode are also generated in `src/main/docker`.
 Instructions to build the image and run the container are written in those Dockerfiles.
+
+== Using platform
+
+By default at project creation only the extensions that comes with Quarkus core are enabled. It is possible to get access to the full ecosystem
+available on `code.quarkus.io` by using the platform called `universe`.
+
+You do that by passing `platformArtifactId` and `platformVersion` to the project create:
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=my-groupId \
+    -DprojectArtifactId=my-artifactId \
+    -DprojectVersion=my-version \
+    -DplatformArtifactId=quarkus-universe-bom \
+    -DplatformVersion={quarkus-version} \
+    -DclassName="org.my.group.MyResource"
+----
+
+Once a project are created using a platform the operations dealing with extensions will use that automatically.
 
 == Dealing with extensions
 

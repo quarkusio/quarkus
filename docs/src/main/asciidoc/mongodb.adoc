@@ -474,6 +474,15 @@ public class CodecFruitService {
 
 The link:mongodb-panache[MongoDB with Panache] extension facilitates the usage of MongoDB by providing active record style entities (and repositories) like you have in link:hibernate-orm-panache.html[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
 
+== Connection Health Check
+
+If you are using the `quarkus-smallrye-health` extension, `quarkus-mongodb` will automatically add a readiness health check
+to validate the connection to the cluster.
+
+So when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
+
+This behavior can be disabled via the property `quarkus.mongodb.health.enabled`.
+
 == Building a native executable
 
 You can use the MongoDB client in a native executable.

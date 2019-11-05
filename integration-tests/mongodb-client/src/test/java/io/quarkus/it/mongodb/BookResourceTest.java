@@ -1,6 +1,8 @@
 package io.quarkus.it.mongodb;
 
 import static io.restassured.RestAssured.get;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -140,6 +142,14 @@ class BookResourceTest {
     @Test
     public void testReactiveClients() {
         callTheEndpoint("/reactive-books");
+    }
+
+    @Test
+    public void health() throws Exception {
+        RestAssured.when().get("/health/ready").then()
+                .body("status", is("UP"),
+                        "checks.status", containsInAnyOrder("UP"),
+                        "checks.name", containsInAnyOrder("MongoDB connection health check"));
     }
 
 }

@@ -342,7 +342,6 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                 } catch (IOException e) {
                     log.error("Failed to copy resources", e);
                 }
-
             }
 
             for (String path : watchedFilePaths.keySet()) {
@@ -354,7 +353,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                         if (value > existing) {
                             ret.add(path);
                             log.infof("File change detected: %s", file);
-                            if (doCopy) {
+                            if (doCopy && !Files.isDirectory(file)) {
                                 Path target = classesDir.resolve(path);
                                 byte[] data = Files.readAllBytes(file);
                                 try (FileOutputStream out = new FileOutputStream(target.toFile())) {

@@ -10,10 +10,12 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -35,7 +37,12 @@ public class PanacheResourceProcessor {
 
     private static final DotName DOTNAME_OBJECT_ID = DotName.createSimple(ObjectId.class.getName());
 
-    @BuildStep(providesCapabilities = "io.quarkus.mongodb.panache")
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.MONGODB_PANACHE);
+    }
+
+    @BuildStep
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem(FeatureBuildItem.MONGODB_PANACHE);
     }

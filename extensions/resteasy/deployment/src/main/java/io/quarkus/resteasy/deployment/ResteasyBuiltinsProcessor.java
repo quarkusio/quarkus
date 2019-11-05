@@ -6,10 +6,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
@@ -21,6 +23,12 @@ import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
 import io.quarkus.undertow.deployment.StaticResourceFilesBuildItem;
 
 public class ResteasyBuiltinsProcessor {
+
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.RESTEASY);
+    }
+
     @BuildStep
     void setUpDenyAllJaxRs(CombinedIndexBuildItem index,
             JaxRsSecurityConfig config,

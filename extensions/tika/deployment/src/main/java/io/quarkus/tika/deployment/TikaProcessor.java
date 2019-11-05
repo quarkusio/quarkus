@@ -16,10 +16,12 @@ import org.apache.tika.parser.Parser;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -53,7 +55,12 @@ public class TikaProcessor {
         recorder.initTikaParser(beanContainer.getValue(), config, getSupportedParserNames(config.parsers));
     }
 
-    @BuildStep(providesCapabilities = "io.quarkus.tika")
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.TIKA);
+    }
+
+    @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.TIKA);
     }

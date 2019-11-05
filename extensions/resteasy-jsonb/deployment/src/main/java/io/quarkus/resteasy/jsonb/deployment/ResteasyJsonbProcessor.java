@@ -16,6 +16,7 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
@@ -25,7 +26,12 @@ public class ResteasyJsonbProcessor {
 
     private static final DotName JSONB = DotName.createSimple(Jsonb.class.getName());
 
-    @BuildStep(providesCapabilities = { Capabilities.RESTEASY_JSON_EXTENSION })
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.RESTEASY_JSON_EXTENSION);
+    }
+
+    @BuildStep
     void build(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY_JSONB));
     }

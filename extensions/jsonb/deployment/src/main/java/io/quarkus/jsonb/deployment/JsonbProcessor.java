@@ -32,6 +32,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -54,7 +55,12 @@ public class JsonbProcessor {
     private static final DotName JSONB_TYPE_SERIALIZER = DotName.createSimple(JsonbTypeSerializer.class.getName());
     private static final DotName JSONB_TYPE_DESERIALIZER = DotName.createSimple(JsonbTypeDeserializer.class.getName());
 
-    @BuildStep(providesCapabilities = Capabilities.JSONB)
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.JSONB);
+    }
+
+    @BuildStep
     void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,

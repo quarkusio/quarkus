@@ -30,6 +30,7 @@ import org.jboss.metadata.web.spec.WebMetaData;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 
@@ -47,7 +48,12 @@ public class WebXmlParsingBuildStep {
                 new HotDeploymentWatchedFileBuildItem(WEB_FRAGMENT_XML));
     }
 
-    @BuildStep(applicationArchiveMarkers = WEB_FRAGMENT_XML)
+    @BuildStep
+    AdditionalApplicationArchiveMarkerBuildItem marker() {
+        return new AdditionalApplicationArchiveMarkerBuildItem(WEB_FRAGMENT_XML);
+    }
+
+    @BuildStep
     WebMetadataBuildItem createWebMetadata(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             Consumer<AdditionalBeanBuildItem> additionalBeanBuildItemConsumer) throws Exception {
 

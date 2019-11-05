@@ -29,6 +29,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -55,7 +56,12 @@ public final class AmazonLambdaProcessor {
         return new FeatureBuildItem(FeatureBuildItem.AMAZON_LAMBDA);
     }
 
-    @BuildStep(applicationArchiveMarkers = { AWS_LAMBDA_EVENTS_ARCHIVE_MARKERS })
+    @BuildStep
+    AdditionalApplicationArchiveMarkerBuildItem marker() {
+        return new AdditionalApplicationArchiveMarkerBuildItem(AWS_LAMBDA_EVENTS_ARCHIVE_MARKERS);
+    }
+
+    @BuildStep
     List<AmazonLambdaBuildItem> discover(CombinedIndexBuildItem combinedIndexBuildItem,
             Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,

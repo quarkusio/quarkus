@@ -1,7 +1,5 @@
 package io.quarkus.oidc.runtime;
 
-import java.util.Set;
-
 import javax.annotation.Priority;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Alternative;
@@ -16,6 +14,7 @@ import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.jwt.auth.cdi.NullJsonWebToken;
 
 @Priority(2)
 @Alternative
@@ -77,23 +76,5 @@ public class OidcJsonWebTokenProducer {
             return new OidcJwtCallerPrincipal(jwtClaims);
         }
         throw new IllegalStateException("Current identity not associated with an access token");
-    }
-
-    private static class NullJsonWebToken implements JsonWebToken {
-
-        @Override
-        public String getName() {
-            return null;
-        }
-
-        @Override
-        public Set<String> getClaimNames() {
-            return null;
-        }
-
-        @Override
-        public <T> T getClaim(String claimName) {
-            return null;
-        }
     }
 }

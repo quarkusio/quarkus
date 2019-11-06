@@ -1,7 +1,5 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
-import java.util.Set;
-
 import javax.annotation.Priority;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Alternative;
@@ -11,6 +9,7 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.jwt.auth.cdi.NullJsonWebToken;
 
 @Priority(1)
 @Alternative
@@ -35,23 +34,5 @@ public class JwtPrincipalProducer {
             return (JsonWebToken) identity.getPrincipal();
         }
         throw new IllegalStateException("Current principal " + identity.getPrincipal() + " is not a JSON web token");
-    }
-
-    private static class NullJsonWebToken implements JsonWebToken {
-
-        @Override
-        public String getName() {
-            return null;
-        }
-
-        @Override
-        public Set<String> getClaimNames() {
-            return null;
-        }
-
-        @Override
-        public <T> T getClaim(String claimName) {
-            return null;
-        }
     }
 }

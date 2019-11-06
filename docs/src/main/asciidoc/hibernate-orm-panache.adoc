@@ -51,7 +51,7 @@ To get started:
 * annotate your entities with `@Entity` and make them extend `PanacheEntity`
 * place your entity logic in static methods in your entities
 
-Follow the link:hibernate-orm#setting-up-and-configuring-hibernate-orm-without-persistence-xml-recommended[Hibernate set-up guide for all configuration].
+Follow the link:hibernate-orm#setting-up-and-configuring-hibernate-orm[Hibernate set-up guide for all configuration].
 
 In your `pom.xml`, add the following dependencies:
 

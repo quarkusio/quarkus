@@ -12,7 +12,7 @@ This guide covers:
 * Compiling the application to a native executable
 * Packaging the native executable in a container
 
-This guide takes as input the application developed in the link:getting-started.html[Getting Started Guide].
+This guide takes as input the application developed in the link:getting-started[Getting Started Guide].
 
 == Prerequisites
 
@@ -24,7 +24,7 @@ To complete this guide, you need:
 * A xref:configuring-c-development[working C development environment]
 * GraalVM version {graalvm-version} installed and xref:configuring-graalvm[configured appropriately]
 * A working container runtime (Docker, podman)
-* The code of the application developed in the link:getting-started.html[Getting Started Guide].
+* The code of the application developed in the link:getting-started[Getting Started Guide].
 
 .Supporting native compilation in C
 [[configuring-c-development]]
@@ -377,7 +377,7 @@ docker run -i --rm -p 8080:8080 quarkus-quickstart/getting-started
 ====
 If you need SSL support in your native executable, you can easily include the necessary libraries in your Docker image.
 
-Please see link:native-and-ssl.html#working-with-containers[our Using SSL With Native Executables guide] for more information.
+Please see link:native-and-ssl#working-with-containers[our Using SSL With Native Executables guide] for more information.
 ====
 
 [[configuration-reference]]
@@ -396,4 +396,4 @@ This guide covered the creation of a native (binary) executable for your applica
 It provides an application exhibiting a swift startup time and consuming less memory.
 However, there is much more.
 
-We recommend continuing the journey with the link:deploying-to-kubernetes.html[deployment to Kubernetes and OpenShift].
+We recommend continuing the journey with the link:deploying-to-kubernetes[deployment to Kubernetes and OpenShift].

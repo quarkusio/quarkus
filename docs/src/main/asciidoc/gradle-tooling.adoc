@@ -79,7 +79,7 @@ Instructions to build the image and run the container are written in those Docke
 
 By default, Quarkus tests in JVM mode are run using the `test` configuration profile. If you are not familiar with Quarkus
 configuration profiles, everything you need to know is explained in the
-link:config.html#configuration-profiles[Configuration Profiles Documentation].
+link:config#configuration-profiles[Configuration Profiles Documentation].
 
 It is however possible to use a custom configuration profile for your tests with the Gradle build configuration shown below.
 This can be useful if you need for example to run some tests using a specific database which is not your default testing

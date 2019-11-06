@@ -154,7 +154,7 @@ quarkus.oidc.client-id=backend-service
 
 === Configuring CORS
 
-If you plan to consume this application from another application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the link:http-reference.html#cors-filter[HTTP CORS documentation] for more details.
+If you plan to consume this application from another application running on a different domain, you will need to configure CORS (Cross-Origin Resource Sharing). Please read the link:http-reference#cors-filter[HTTP CORS documentation] for more details.
 
 == Starting and Configuring the Keycloak Server
 

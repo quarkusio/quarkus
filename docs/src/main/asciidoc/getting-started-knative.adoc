@@ -13,7 +13,7 @@ This guide covers:
 
 * The deployment of the application to Kubernetes
 
-This guide takes as input the application developed in the link:building-native-image.html[native application guide].
+This guide takes as input the application developed in the link:building-native-image[native application guide].
 So, you should have been able to package your application as a binary executable, copied it in a Docker image and run this image.
 
 Depending on whether you are a _bare_ Kubernetes user or an OpenShift user, pick the section you need.

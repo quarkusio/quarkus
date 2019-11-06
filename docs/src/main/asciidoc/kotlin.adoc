@@ -20,7 +20,7 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
 
-NB: For Gradle project setup please see below, and for further reference consult the guide in the link:gradle-tooling.html[Gradle setup page].
+NB: For Gradle project setup please see below, and for further reference consult the guide in the link:gradle-tooling[Gradle setup page].
 
 == Creating the Maven project
 

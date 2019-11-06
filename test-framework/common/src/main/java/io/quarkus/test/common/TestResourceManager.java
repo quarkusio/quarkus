@@ -23,6 +23,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
@@ -30,6 +31,7 @@ import org.jboss.jandex.Indexer;
 public class TestResourceManager {
 
     private final List<QuarkusTestResourceLifecycleManager> testResources;
+
     private Map<String, String> oldSystemProps;
 
     public TestResourceManager(Class<?> testClass) {
@@ -96,6 +98,21 @@ public class TestResourceManager {
                         .forName(annotation.value().asString()));
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Unable to find the class for the test resource " + annotation.value().asString());
+            }
+        }
+
+        for (AnnotationInstance annotationList : index
+                .getAnnotations(DotName.createSimple(QuarkusTestResource.List.class.getName()))) {
+            for (AnnotationValue annotationValue : annotationList.values()) {
+                for (AnnotationInstance annotation : annotationValue.asNestedArray()) {
+                    try {
+                        testResourceRunnerClasses.add((Class<? extends QuarkusTestResourceLifecycleManager>) Class
+                                .forName(annotation.value().asString()));
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(
+                                "Unable to find the class for the test resource " + annotation.value().asString());
+                    }
+                }
             }
         }
 

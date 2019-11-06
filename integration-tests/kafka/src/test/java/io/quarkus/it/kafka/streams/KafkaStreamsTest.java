@@ -50,7 +50,7 @@ public class KafkaStreamsTest {
     private static Producer<Integer, Category> createCategoryProducer() {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
-        props.put(ProducerConfig.CLIENT_ID_CONFIG, "streams-test-producer");
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "streams-test-category-producer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ObjectMapperSerializer.class.getName());
 

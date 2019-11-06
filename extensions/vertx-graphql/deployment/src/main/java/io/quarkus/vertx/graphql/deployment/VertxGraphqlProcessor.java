@@ -1,21 +1,18 @@
 package io.quarkus.vertx.graphql.deployment;
 
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
 
 class VertxGraphqlProcessor {
 
-    private static final String FEATURE = "vertx-graphql";
-
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FEATURE);
+        return new FeatureBuildItem(FeatureBuildItem.VERTX_GRAPHQL);
     }
 
     @BuildStep
-    WebsocketSubProtocolsBuildItem websocketSubProtocols(CombinedIndexBuildItem combinedIndexBuildItem) {
+    WebsocketSubProtocolsBuildItem websocketSubProtocols() {
         return new WebsocketSubProtocolsBuildItem("graphql-ws");
     }
 }

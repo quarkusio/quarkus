@@ -52,7 +52,7 @@ Configure Infinispan caches for transactional operations with a specific
 </local-cache>
 ----
 
-For more information, see the Quarkus link:transaction.html[Transaction Guide].
+For more information, see the Quarkus link:transaction[Transaction Guide].
 
 === Native Limitations
 When running Infinispan in native mode, some limitations apply:

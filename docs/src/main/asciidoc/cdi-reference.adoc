@@ -175,7 +175,7 @@ public class CounterBean {
 
 Quarkus incorporates build-time optimizations in order to provide instant startup and low memory footprint.
 The downside of this approach is that CDI Portable Extensions cannot be supported.
-Nevertheless, most of the functionality can be achieved using Quarkus link:writing-extensions.html[extensions].
+Nevertheless, most of the functionality can be achieved using Quarkus link:writing-extensions[extensions].
 
 === Additional Bean Defining Annotations
 

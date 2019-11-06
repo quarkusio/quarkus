@@ -44,7 +44,7 @@ public class TsArtifact {
         return new TsArtifact(DEFAULT_GROUP_ID, artifactId, EMPTY, TYPE_JAR, version);
     }
 
-    interface ContentProvider {
+    public interface ContentProvider {
         Path getPath(Path workDir) throws IOException;
     }
 

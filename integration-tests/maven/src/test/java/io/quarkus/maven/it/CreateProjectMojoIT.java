@@ -21,6 +21,7 @@ import com.google.common.io.Files;
 
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.platform.tools.ToolsConstants;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
@@ -312,6 +313,11 @@ public class CreateProjectMojoIT extends MojoTestBase {
 
     private InvocationResult setup(Properties params)
             throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
+
+        params.setProperty("platformGroupId", ToolsConstants.IO_QUARKUS);
+        params.setProperty("platformArtifactId", "quarkus-bom");
+        params.setProperty("platformVersion", MojoUtils.getPluginVersion());
+
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(

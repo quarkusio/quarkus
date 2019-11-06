@@ -42,6 +42,7 @@ import io.quarkus.flyway.runtime.graal.QuarkusPathLocationScanner;
 
 class FlywayProcessor {
 
+    private static final String CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL = "classpath";
     private static final String JAR_APPLICATION_MIGRATIONS_PROTOCOL = "jar";
     private static final String FILE_APPLICATION_MIGRATIONS_PROTOCOL = "file";
 
@@ -118,6 +119,11 @@ class FlywayProcessor {
             }
             // Locations can be a comma separated list
             for (String location : locations) {
+                // Strip any 'classpath:' protocol prefixes because they are assumed
+                // but not recognized by ClassLoader.getResources()
+                if (location != null && location.startsWith(CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL + ':')) {
+                    location = location.substring(CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL.length() + 1);
+                }
                 Enumeration<URL> migrations = Thread.currentThread().getContextClassLoader().getResources(location);
                 while (migrations.hasMoreElements()) {
                     URL path = migrations.nextElement();

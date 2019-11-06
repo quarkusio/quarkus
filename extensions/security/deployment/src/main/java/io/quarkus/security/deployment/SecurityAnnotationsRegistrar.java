@@ -22,7 +22,7 @@ public class SecurityAnnotationsRegistrar implements InterceptorBindingRegistrar
     public static final Map<DotName, Set<String>> SECURITY_BINDINGS = new HashMap<>();
 
     static {
-        // keep the conents the same as in io.quarkus.resteasy.deployment.SecurityTransformerUtils
+        // keep the contents the same as in io.quarkus.resteasy.deployment.SecurityTransformerUtils
         SECURITY_BINDINGS.put(DotName.createSimple(RolesAllowed.class.getName()), Collections.singleton("value"));
         SECURITY_BINDINGS.put(DotName.createSimple(Authenticated.class.getName()), Collections.emptySet());
         SECURITY_BINDINGS.put(DotName.createSimple(DenyAll.class.getName()), Collections.emptySet());

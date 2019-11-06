@@ -154,7 +154,7 @@
         <mongo-client.version>3.10.2</mongo-client.version>
         <mongo-reactivestreams-client.version>1.11.0</mongo-reactivestreams-client.version>
         <artemis.version>2.10.0</artemis.version>
-        <okhttp.version>3.12.0</okhttp.version>
+        <okhttp.version>3.12.6</okhttp.version>
         <!-- Used for integration tests, to make sure webjars work-->
         <bootstrap.version>3.1.0</bootstrap.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>

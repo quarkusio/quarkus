@@ -80,6 +80,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String VAULT = "vault";
     public static final String VERTX = "vertx";
     public static final String VERTX_WEB = "vertx-web";
+    public static final String VERTX_GRAPHQL = "vertx-graphql";
 
     private final String info;
 

@@ -85,7 +85,7 @@ public class Neo4jResource {
                 Transaction transaction = session.beginTransaction()) {
             transaction.run("CREATE (f:Framework {name: $name}) - [:CAN_USE] -> (n:Database {name: 'Neo4j'})",
                     Values.parameters("name", "Quarkus"));
-            transaction.success();
+            transaction.commit();
         }
     }
 
@@ -98,7 +98,7 @@ public class Neo4jResource {
             result.forEachRemaining(
                     record -> System.out.println(String.format("%s works with %s", record.get("n").get("name").asString(),
                             record.get("f").get("name").asString())));
-            transaction.success();
+            transaction.commit();
         }
     }
 

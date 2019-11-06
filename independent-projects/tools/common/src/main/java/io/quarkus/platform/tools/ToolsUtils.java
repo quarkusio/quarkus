@@ -17,4 +17,8 @@ public class ToolsUtils {
     public static String getProperty(String name, String defaultValue) {
         return System.getProperty(name, defaultValue);
     }
+
+    public static boolean isNullOrEmpty(String arg) {
+        return arg == null || arg.isEmpty();
+    }
 }

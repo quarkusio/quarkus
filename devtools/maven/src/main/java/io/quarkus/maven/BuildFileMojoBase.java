@@ -25,6 +25,7 @@ import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
 import io.quarkus.platform.tools.MessageWriter;
+import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 import io.quarkus.platform.tools.maven.MojoMessageWriter;
 
@@ -42,10 +43,10 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
     @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
     protected List<RemoteRepository> repos;
 
-    @Parameter(property = "bomGroupId", defaultValue = CreateUtils.DEFAULT_PLATFORM_BOM_GROUP_ID)
+    @Parameter(property = "bomGroupId", defaultValue = ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID)
     private String bomGroupId;
 
-    @Parameter(property = "bomArtifactId", defaultValue = CreateUtils.DEFAULT_PLATFORM_BOM_ARTIFACT_ID)
+    @Parameter(property = "bomArtifactId", required = false)
     private String bomArtifactId;
 
     @Parameter(property = "bomVersion", required = false)
@@ -128,34 +129,10 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
                     || new File(project.getBasedir(), "build.gradle.kts").exists()) {
                 // Gradle project
                 buildFile = new GradleBuildFile(new FileProjectWriter(project.getBasedir()));
-            } else {
-
             }
 
             if (!QuarkusPlatformConfig.hasGlobalDefault()) {
-                String bomGroupId = this.bomGroupId;
-                if (bomGroupId == null) {
-                    bomGroupId = CreateUtils.DEFAULT_PLATFORM_BOM_GROUP_ID;
-                }
-                String bomArtifactId = this.bomArtifactId;
-                if (bomArtifactId == null) {
-                    bomArtifactId = CreateUtils.DEFAULT_PLATFORM_BOM_ARTIFACT_ID;
-                }
-
-                String bomVersion = this.bomVersion;
-                if (bomVersion == null) {
-                    // if the BOM artifactId matches Quarkus BOM we use the plugins version as its version
-                    bomVersion = CreateUtils.QUARKUS_CORE_BOM_ARTIFACT_ID.equals(bomArtifactId)
-                            ? CreateUtils.resolvePluginInfo(BuildFileMojoBase.class).getVersion()
-                            : null;
-                }
-                final QuarkusPlatformDescriptor platform = QuarkusJsonPlatformDescriptorResolver.newInstance()
-                        .setArtifactResolver(new BootstrapAppModelResolver(mvn))
-                        .setMessageWriter(log)
-                        .resolveFromBom(bomGroupId, bomArtifactId, bomVersion);
-                QuarkusPlatformConfig.defaultConfigBuilder()
-                        .setPlatformDescriptor(platform)
-                        .build();
+                CreateUtils.setGlobalPlatformDescriptor(bomGroupId, bomArtifactId, bomVersion, mvn, getLog());
             }
 
             doExecute(buildFile);

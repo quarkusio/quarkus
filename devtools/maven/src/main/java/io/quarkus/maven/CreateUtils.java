@@ -11,12 +11,19 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.logging.Log;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
+import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
+import io.quarkus.platform.tools.maven.MojoMessageWriter;
 
 public final class CreateUtils {
 
@@ -26,6 +33,53 @@ public final class CreateUtils {
 
     private CreateUtils() {
         //Not to be constructed
+    }
+
+    private static boolean isVersionRange(String versionStr) {
+        if (versionStr == null || versionStr.isEmpty()) {
+            return false;
+        }
+        char c = versionStr.charAt(0);
+        if (c == '[' || c == '(') {
+            return true;
+        }
+        c = versionStr.charAt(versionStr.length() - 1);
+        if (c == ']' || c == ')') {
+            return true;
+        }
+        return versionStr.indexOf(',') >= 0;
+    }
+
+    static void setGlobalPlatformDescriptor(final String bomGroupId, final String bomArtifactId, final String bomVersion,
+            MavenArtifactResolver mvn, Log log) throws MojoExecutionException {
+
+        final QuarkusJsonPlatformDescriptorResolver platformResolver = QuarkusJsonPlatformDescriptorResolver.newInstance()
+                .setMessageWriter(new MojoMessageWriter(log))
+                .setArtifactResolver(new BootstrapAppModelResolver(mvn));
+
+        String groupId = StringUtils.defaultIfBlank(bomGroupId, null);
+        String artifactId = StringUtils.defaultIfBlank(bomArtifactId, null);
+        String version = StringUtils.defaultIfBlank(bomVersion, null);
+
+        if (CreateUtils.QUARKUS_CORE_BOM_ARTIFACT_ID.equals(artifactId)
+                && version == null) {
+            version = resolvePluginInfo(CreateUtils.class).getVersion();
+        }
+
+        final QuarkusPlatformDescriptor platform;
+        if (version == null) {
+            if (artifactId == null && groupId == null) {
+                platform = platformResolver.resolve();
+            } else {
+                platform = platformResolver.resolveLatestFromBom(groupId, artifactId, null);
+            }
+        } else if (isVersionRange(version)) {
+            platform = platformResolver.resolveLatestFromBom(groupId, artifactId, version);
+        } else {
+            platform = platformResolver.resolveFromBom(groupId, artifactId, version);
+        }
+
+        QuarkusPlatformConfig.defaultConfigBuilder().setPlatformDescriptor(platform).build();
     }
 
     public static String getDerivedPath(String className) {

@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 Traditional blocking code uses link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ThreadLocal.html[`ThreadLocal`]
  variables to store contextual objects in order to avoid
 passing them as parameters everywhere. Many Quarkus extensions require those contextual objects to operate
-properly: link:getting-started.html[RESTEasy], link:getting-started.html[ArC] and link:transaction.html[Transaction]
+properly: link:rest-json[RESTEasy], link:cdi-reference[ArC] and link:transaction[Transaction]
 for example.
 
 If you write reactive/async code, you have to cut your work into a pipeline of code blocks that get executed
@@ -48,8 +48,8 @@ With this, you will get context propagation for ArC, RESTEasy and transactions, 
 
 If you are using SmallRye Reactive Streams Operators (the `quarkus-smallrye-reactive-streams-operators` module),
 you get context propagation out of the box, so, for example, let's write a REST endpoint that reads the next
-3 items from a link:kafka.html[Kafka topic], stores them in a database using
-link:hibernate-orm-panache.html[Hibernate ORM with Panache] (all in the same transaction) before returning
+3 items from a link:kafka[Kafka topic], stores them in a database using
+link:hibernate-orm-panache[Hibernate ORM with Panache] (all in the same transaction) before returning
 them to the client, you can do it like this:
 
 [source,java]
@@ -85,9 +85,9 @@ Notice that thanks to automatic support for context propagation with Reactive St
 
 If you are using link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/CompletionStage.html[`CompletionStage`]
 you need manual context propagation. You can do that by injecting a `ThreadContext`
-or `ManagedExecutor` that will propagate every context. For example, here we use the link:vertx.html[Vert.x Web Client]
+or `ManagedExecutor` that will propagate every context. For example, here we use the link:vertx[Vert.x Web Client]
 to get the list of Star Wars people, then store them in the database using
-link:hibernate-orm-panache.html[Hibernate ORM with Panache] (all in the same transaction) before returning
+link:hibernate-orm-panache[Hibernate ORM with Panache] (all in the same transaction) before returning
 them to the client:
 
 [source,java]

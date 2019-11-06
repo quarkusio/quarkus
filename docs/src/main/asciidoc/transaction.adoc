@@ -143,7 +143,7 @@ This allows your reactive methods to keep on working on the transaction asynchro
 work is really done, and not just until the reactive method returns.
 
 If you need to propagate your transaction context across your reactive pipeline, please see the
-link:context-propagation.html[Context Propagation guide].
+link:context-propagation[Context Propagation guide].
 
 === API approach
 

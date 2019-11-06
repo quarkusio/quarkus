@@ -18,7 +18,7 @@ In this guide, you will learn how to implement a simple CRUD application exposin
 
 NOTE: Extension and connection pool class names for each client can be found at the bottom of this document.
 
-IMPORTANT: If you are not familiar with the Quarkus Vert.x extension, consider reading the link:vertx.html[Using Eclipse Vert.x] guide first.
+IMPORTANT: If you are not familiar with the Quarkus Vert.x extension, consider reading the link:vertx[Using Eclipse Vert.x] guide first.
 
 The application shall manage fruit entities:
 
@@ -88,7 +88,7 @@ Otherwise, you can manually add this to the dependencies section of your `pom.xm
 ----
 
 NOTE: In this guide, we will use the Axle API of the Reactive PostgreSQL Client.
-Read the link:vertx.html[Using Eclipse Vert.x] guide to understand the differences between the callback, RxJava and Axle based APIs.
+Read the link:vertx[Using Eclipse Vert.x] guide to understand the differences between the callback, RxJava and Axle based APIs.
 
 === JSON Binding
 
@@ -147,7 +147,7 @@ public class FruitResource {
 Before we implement the REST endpoint and data management code, we need to setup the database schema.
 It would also be convenient to have some data inserted upfront.
 
-For production we would recommend to use something like the link:flyway.html[Flyway database migration tool].
+For production we would recommend to use something like the link:flyway[Flyway database migration tool].
 But for development we can simply drop and create the tables on startup, and then insert a few fruits.
 
 [source,java]

@@ -51,7 +51,7 @@ To get started:
 * annotate your entities with `@Entity` and make them extend `PanacheEntity`
 * place your entity logic in static methods in your entities
 
-Follow the link:hibernate-orm.html#setting-up-and-configuring-hibernate-orm-without-persistence-xml-recommended[Hibernate set-up guide for all configuration].
+Follow the link:hibernate-orm#setting-up-and-configuring-hibernate-orm-without-persistence-xml-recommended[Hibernate set-up guide for all configuration].
 
 In your `pom.xml`, add the following dependencies:
 
@@ -541,6 +541,6 @@ That's all there is to it: with Panache, Hibernate ORM has never looked so trim 
 Hibernate ORM with Panache relies on compile-time bytecode enhancements to your entities.
 If you define your entities in the same project where you build your Quarkus application, everything will work fine.
 If the entities come from external projects or jars, you can make sure that your jar is treated like a Quarkus application library
-by indexing it via Jandex, see link:cdi-reference.html#how-to-generate-a-jandex-index[How to Generate a Jandex Index] in the CDI guide.
+by indexing it via Jandex, see link:cdi-reference#how-to-generate-a-jandex-index[How to Generate a Jandex Index] in the CDI guide.
 This will allow Quarkus to index and enhance your entities as if they were inside the current project.
 

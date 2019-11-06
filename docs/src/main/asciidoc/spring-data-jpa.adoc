@@ -245,7 +245,7 @@ public class FruitResource {
 === Note on Spring Web
 
 The JAX-RS resource can also be substituted with a Spring Web controller as Quarkus supports REST endpoint definition using Spring controllers.
-See the link:spring-web.html[Spring Web guide] for more details.
+See the link:spring-web[Spring Web guide] for more details.
 
 == Update the test
 
@@ -382,7 +382,7 @@ The application can be started in dev mode as usual using:
 
 == Run the application as a native binary
 
-You can of course create a native executable following the instructions of the link:building-native-image.html[this] guide.
+You can of course create a native executable following the instructions of the link:building-native-image[this] guide.
 
 == Supported Spring Data JPA functionalities
 

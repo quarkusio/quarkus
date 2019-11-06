@@ -110,7 +110,7 @@ The result should be: `{"message": "hello"}`.
 
 == Run the application as a native executable
 
-You can of course create a native image using the instructions of the link:building-native-image.html[Building a native executable guide].
+You can of course create a native image using the instructions of the link:building-native-image[Building a native executable guide].
 
 == Going further with an endpoint returning JSON
 

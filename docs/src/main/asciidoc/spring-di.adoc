@@ -247,7 +247,7 @@ The result should be: `HELLO WORLD!`.
 
 == Run the application as a native
 
-You can of course create a native image using instructions similar to link:building-native-image.html[this] guide.
+You can of course create a native image using instructions similar to link:building-native-image[this] guide.
 
 == Important Technical Note
 

@@ -52,5 +52,5 @@ Here is an example using it in a JAX-RS endpoint:
 
 [WARNING]
 ====
-When running in native mode, make sure that the link:native-and-ssl.html#the-sunec-library-and-friends[SSL access is configured correctly].
+When running in native mode, make sure that the link:native-and-ssl#the-sunec-library-and-friends[SSL access is configured correctly].
 ====

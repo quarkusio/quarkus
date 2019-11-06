@@ -10,8 +10,8 @@ include::./attributes.adoc[]
 Quarkus comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application.
 In this guide, we will explore:
 
-* how to use link:maven-tooling.html[Maven] as a build tool
-* how to use link:gradle-tooling.html[Gradle] as a build tool
+* how to use link:maven-tooling[Maven] as a build tool
+* how to use link:gradle-tooling[Gradle] as a build tool
 * how to use the native CLI for your toolchain (coming soon)
 * how to create and scaffold a new project
 * how to deal with extensions
@@ -26,6 +26,6 @@ Quarkus comes with a toolchain to help you at all development stages.
 You can use Maven or Gradle as build tool.
 And we offer a native CLI that is convenient to use (coming soon).
 
-* link:maven-tooling.html[Maven]
-* link:gradle-tooling.html[Gradle]
-//* link:cli-tooling.html[CLI]
+* link:maven-tooling[Maven]
+* link:gradle-tooling[Gradle]
+//* link:cli-tooling[CLI]

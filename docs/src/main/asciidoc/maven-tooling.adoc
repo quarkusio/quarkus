@@ -355,7 +355,7 @@ The produced executable will be a 64 bit Linux executable, so depending on your 
 However, it's not an issue as we are going to copy it to a Docker container.
 Note that in this case the build itself runs in a Docker container too, so you don't need to have GraalVM installed locally.
 
-You can follow the link:building-native-image.html[Build a native executable guide] as well as link:deploying-to-kubernetes.html[Deploying Application to Kubernetes and OpenShift] for more information.
+You can follow the link:building-native-image[Build a native executable guide] as well as link:deploying-to-kubernetes[Deploying Application to Kubernetes and OpenShift] for more information.
 
 [[build-tool-maven]]
 == Maven configuration
@@ -429,7 +429,7 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <2> Use the Quarkus Maven plugin that will hook into the build process.
 <3> Use a specific `native` profile for native executable building.
 <4> Enable the `native` package type. The build will therefore produce a native executable.
-<5> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image.html[Native executable guide] for more info.
+<5> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@NativeImageTest` will be run against the native executable. See the link:building-native-image[Native executable guide] for more info.
 
 [[uber-jar-maven]]
 === Uber-Jar Creation
@@ -460,7 +460,7 @@ include::{generated-dir}/config/quarkus-core-package-config.adoc[opts=optional]
 
 By default, Quarkus tests in JVM mode are run using the `test` configuration profile. If you are not familiar with Quarkus
 configuration profiles, everything you need to know is explained in the
-link:config.html#configuration-profiles[Configuration Profiles Documentation].
+link:config#configuration-profiles[Configuration Profiles Documentation].
 
 It is however possible to use a custom configuration profile for your tests with the Maven Surefire and Maven Failsafe
 configurations shown below. This can be useful if you need for example to run some tests using a specific database which is not

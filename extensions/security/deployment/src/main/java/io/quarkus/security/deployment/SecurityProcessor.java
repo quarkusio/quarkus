@@ -32,6 +32,7 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -109,7 +110,9 @@ public class SecurityProcessor {
 
     @BuildStep
     void gatherSecurityChecks(BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
-            ApplicationIndexBuildItem indexBuildItem) {
+            ApplicationIndexBuildItem indexBuildItem,
+            BuildProducer<ApplicationClassPredicateBuildItem> classPredicate) {
+        classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorage.AppPredicate()));
 
         beanRegistrars.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {
 

@@ -14,12 +14,11 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -44,7 +43,7 @@ import io.restassured.response.Response;
 
 @QuarkusTest
 class BookResourceTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BookResourceTest.class);
+    private static final Logger LOGGER = Logger.getLogger(BookResourceTest.class);
     private static final TypeRef<List<BookDTO>> LIST_OF_BOOK_TYPE_REF = new TypeRef<List<BookDTO>>() {
     };
     private static final TypeRef<List<Person>> LIST_OF_PERSON_TYPE_REF = new TypeRef<List<Person>>() {
@@ -56,7 +55,7 @@ class BookResourceTest {
     public static void startMongoDatabase() throws IOException {
         Version.Main version = Version.Main.V4_0;
         int port = 27018;
-        LOGGER.info("Starting Mongo {} on port {}", version, port);
+        LOGGER.infof("Starting Mongo %s on port %s", version, port);
         IMongodConfig config = new MongodConfigBuilder()
                 .version(version)
                 .net(new Net(port, Network.localhostIsIPv6()))

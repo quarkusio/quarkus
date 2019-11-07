@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Destroyed;
@@ -99,8 +100,8 @@ class RequestContext implements ManagedContext {
             // Fire an event with qualifier @Initialized(RequestScoped.class) if there are any observers for it
             fireIfNotEmpty(initializedNotifier);
         } else {
-            if (initialState instanceof InstanceHandlesContextState) {
-                currentContext.set(((InstanceHandlesContextState) initialState).toConcurrentMap());
+            if (initialState instanceof RequestContextState) {
+                currentContext.set(((RequestContextState) initialState).value);
             } else {
                 throw new IllegalArgumentException("Invalid inital state: " + initialState);
             }
@@ -114,7 +115,7 @@ class RequestContext implements ManagedContext {
             // Thread local not set - context is not active!
             throw new ContextNotActiveException();
         }
-        return new InstanceHandlesContextState(ctx.values());
+        return new RequestContextState(ctx);
     }
 
     @Override
@@ -174,6 +175,22 @@ class RequestContext implements ManagedContext {
         return EventImpl.createNotifier(Object.class, Object.class,
                 new HashSet<>(Arrays.asList(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
                 ArcContainerImpl.instance());
+    }
+
+    class RequestContextState implements ContextState {
+
+        private final ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value;
+
+        RequestContextState(ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value) {
+            this.value = value;
+        }
+
+        @Override
+        public Map<InjectableBean<?>, Object> getContextualInstances() {
+            return value.values().stream()
+                    .collect(Collectors.toMap(ContextInstanceHandle::getBean, ContextInstanceHandle::get));
+        }
+
     }
 
 }

@@ -75,9 +75,13 @@ public class HibernateOrmConfig {
     @ConfigItem(defaultValueDocumentation = "import.sql (DEV,TEST)")
     public Optional<String> sqlLoadScript;
 
-    // @formatter:off
     /**
-     * Allows setting a custom connection.provider-class for Hibernate
+     * Sets a specific ConnectionProvider implementation for Hibernate.
+     *
+     * When not specified a DataSourceConnectionProvider for the default Quarkus Agroal DataSource will be used.
+     * This is the default.
+     *
+     * @asciidoclet
      */
     @ConfigItem(name = "connection.provider-class")
     public Optional<String> connectionProviderClass;

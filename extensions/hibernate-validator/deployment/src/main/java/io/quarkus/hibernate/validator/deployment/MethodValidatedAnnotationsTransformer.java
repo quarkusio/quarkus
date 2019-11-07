@@ -3,9 +3,11 @@ package io.quarkus.hibernate.validator.deployment;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 
@@ -30,10 +32,14 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
 
     private final Set<DotName> consideredAnnotations;
     private final Collection<DotName> effectiveJaxRsMethodDefiningAnnotations;
+    private final Map<DotName, Set<String>> inheritedAnnotationsToBeValidated;
 
     MethodValidatedAnnotationsTransformer(Set<DotName> consideredAnnotations,
-            Collection<DotName> additionalJaxRsMethodAnnotationsDotNames) {
+            Collection<DotName> additionalJaxRsMethodAnnotationsDotNames,
+            Map<DotName, Set<String>> inheritedAnnotationsToBeValidated) {
         this.consideredAnnotations = consideredAnnotations;
+        this.inheritedAnnotationsToBeValidated = inheritedAnnotationsToBeValidated;
+
         this.effectiveJaxRsMethodDefiningAnnotations = new ArrayList<>(
                 JAXRS_METHOD_ANNOTATIONS.length + additionalJaxRsMethodAnnotationsDotNames.size());
         effectiveJaxRsMethodDefiningAnnotations.addAll(Arrays.asList(JAXRS_METHOD_ANNOTATIONS));
@@ -60,6 +66,15 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
 
     private boolean requiresValidation(MethodInfo method) {
         if (method.annotations().isEmpty()) {
+            // This method has no annotations of its own: look for inherited annotations
+            ClassInfo clazz = method.declaringClass();
+            String methodName = method.name().toString();
+            for (Map.Entry<DotName, Set<String>> validatedMethod : inheritedAnnotationsToBeValidated.entrySet()) {
+                if (clazz.interfaceNames().contains(validatedMethod.getKey())
+                        && validatedMethod.getValue().contains(methodName)) {
+                    return true;
+                }
+            }
             return false;
         }
 

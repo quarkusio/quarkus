@@ -38,6 +38,9 @@ public class HibernateValidatorTestResource
     @Inject
     GreetingService greetingService;
 
+    @Inject
+    ZipCodeService zipCodeResource;
+
     @GET
     @Path("/basic-features")
     @Produces(MediaType.TEXT_PLAIN)
@@ -128,6 +131,25 @@ public class HibernateValidatorTestResource
         result.append(formatViolations(validator.validate(new BeanWithInjectedConstraintValidatorConstraint(MyService.VALID))));
 
         result.append(formatViolations(validator.validate(new BeanWithInjectedConstraintValidatorConstraint("Invalid value"))));
+
+        return result.build();
+    }
+
+    @GET
+    @Path("/test-inherited-constraints")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testInheritedConstraints() {
+        ResultBuilder result = new ResultBuilder();
+
+        zipCodeResource.echoZipCode("12345");
+
+        result.append(formatViolations(Collections.emptySet()));
+
+        try {
+            zipCodeResource.echoZipCode("1234");
+        } catch (ConstraintViolationException e) {
+            result.append(formatViolations(e.getConstraintViolations()));
+        }
 
         return result.build();
     }

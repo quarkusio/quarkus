@@ -217,7 +217,7 @@ We are using `curl -w "\n"` in this example to avoid your terminal printing a '%
 == Using injection
 
 Dependency injection in Quarkus is based on ArC which is a CDI-based dependency injection solution tailored for Quarkus' architecture.
-You can learn more about it in the link:cdi-reference.html[Contexts and Dependency Injection guide].
+You can learn more about it in the link:cdi-reference[Contexts and Dependency Injection guide].
 
 ArC comes as a dependency of `quarkus-resteasy` so you already have it handy.
 
@@ -446,9 +446,9 @@ The async version of the code is available in the {quickstarts-base-url}[GitHub]
 
 This guide covered the creation of an application using Quarkus.
 However, there is much more.
-We recommend continuing the journey with the link:building-native-image.html[building a native executable guide], where you learn about the native executable creation and the packaging in a container.
+We recommend continuing the journey with the link:building-native-image[building a native executable guide], where you learn about the native executable creation and the packaging in a container.
 
-In addition, the link:tooling.html[tooling guide] document explains how to:
+In addition, the link:tooling[tooling guide] document explains how to:
 
 * scaffold a project in a single command line
 * enable the _development mode_ (hot reload)

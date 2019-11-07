@@ -19,22 +19,22 @@ in order for Quarkus to know how to find the authentication information to check
 |===
 |Extension |Description
 
-|link:security-properties.html[quarkus-elytron-security-properties-file]
+|link:security-properties[quarkus-elytron-security-properties-file]
 |Provides support for simple properties files that can be used for testing security. This supports both embedding user info in `application.properties` and standalone properties files.
 
-|link:security-jdbc.html[quarkus-elytron-security-jdbc]
+|link:security-jdbc[quarkus-elytron-security-jdbc]
 |Provides support for authenticating via JDBC.
 
-|link:security-oauth2.html[quarkus-elytron-security-oauth2]
+|link:security-oauth2[quarkus-elytron-security-oauth2]
 |Provides support for OAuth2 flows using Elytron. This extension will likely be deprecated soon and replaced by a reactive Vert.x version.
 
-|link:security-jwt.html[quarkus-smallrye-jwt]
+|link:security-jwt[quarkus-smallrye-jwt]
 |A Microprofile JWT implementation that provides support for authenticating using Json Web Tokens. This also allows you to inject the token and claims into the application as per the MP JWT spec.
 
-|link:security-openid-connect.html[quarkus-oidc]
+|link:security-openid-connect[quarkus-oidc]
 |Provides support for authenticating via an OpenID Connect provider such as Keycloak.
 
-|link:security-keycloak-authorization.html[quarkus-keycloak-authorization]
+|link:security-keycloak-authorization[quarkus-keycloak-authorization]
 |Provides support for a policy enforcer using Keycloak Authorization Services.
 
 |===
@@ -49,7 +49,7 @@ however so extensions can add additional mechanisms (most notably OpenID Connect
 ### Basic Authentication
 
 To enable basic authentication set `quarkus.http.auth.basic=true`. You must also have at least one extension installed
-that provides a username/password based `IdentityProvider`, such as link:security-jdbc.html[Elytron JDBC].
+that provides a username/password based `IdentityProvider`, such as link:security-jdbc[Elytron JDBC].
 
 ### Form Based Authentication
 

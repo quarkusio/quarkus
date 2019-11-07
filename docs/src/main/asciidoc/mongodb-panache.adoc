@@ -10,9 +10,9 @@ include::./attributes.adoc[]
 
 MongoDB is a well known NoSQL Database that is widely used, but using its raw API can be cumbersome as you need to express your entities and your queries as a MongoDB link:https://mongodb.github.io/mongo-java-driver/3.11/bson/documents/#document[`Document`].
 
-MongoDB with Panache provides active record style entities (and repositories) like you have in link:hibernate-orm-panache.html[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
+MongoDB with Panache provides active record style entities (and repositories) like you have in link:hibernate-orm-panache[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
 
-It is built on top of the link:mongodb.html[MongoDB Client] extension.
+It is built on top of the link:mongodb[MongoDB Client] extension.
 
 WARNING: This extension is still experimental, feedback is welcome on the https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
 
@@ -107,7 +107,7 @@ quarkus.mongodb.database = person
 
 The `quarkus.mongodb.database` property will be used by MongoDB with Panache to determine the name of the database where your entities will be persisted.
 
-For advanced configuration of the MongoDB client, you can follow the link:mongodb.html#configuring-the-mongodb-database[Configuring the MongoDB database guide].
+For advanced configuration of the MongoDB client, you can follow the link:mongodb#configuring-the-mongodb-database[Configuring the MongoDB database guide].
 
 == Defining your entity
 
@@ -512,6 +512,6 @@ That's all there is to it: with Panache, MongoDB has never looked so trim and ne
 MongoDB with Panache relies on compile-time bytecode enhancements to your entities.
 If you define your entities in the same project where you build your Quarkus application, everything will work fine. 
 If the entities come from external projects or jars, you can make sure that your jar is treated like a Quarkus application library
-by indexing it via Jandex, see link:cdi-reference.html#how-to-generate-a-jandex-index[How to Generate a Jandex Index] in the CDI guide.
+by indexing it via Jandex, see link:cdi-reference#how-to-generate-a-jandex-index[How to Generate a Jandex Index] in the CDI guide.
 This will allow Quarkus to index and enhance your entities as if they were inside the current project.
 

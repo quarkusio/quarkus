@@ -27,10 +27,12 @@ import io.quarkus.agroal.deployment.DataSourceInitializedBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -42,6 +44,7 @@ import io.quarkus.flyway.runtime.graal.QuarkusPathLocationScanner;
 
 class FlywayProcessor {
 
+    private static final String CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL = "classpath";
     private static final String JAR_APPLICATION_MIGRATIONS_PROTOCOL = "jar";
     private static final String FILE_APPLICATION_MIGRATIONS_PROTOCOL = "file";
 
@@ -51,8 +54,13 @@ class FlywayProcessor {
      */
     FlywayBuildConfig flywayBuildConfig;
 
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.FLYWAY);
+    }
+
     @Record(STATIC_INIT)
-    @BuildStep(providesCapabilities = "io.quarkus.flyway")
+    @BuildStep
     void build(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer,
             BuildProducer<FeatureBuildItem> featureProducer,
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
@@ -118,6 +126,11 @@ class FlywayProcessor {
             }
             // Locations can be a comma separated list
             for (String location : locations) {
+                // Strip any 'classpath:' protocol prefixes because they are assumed
+                // but not recognized by ClassLoader.getResources()
+                if (location != null && location.startsWith(CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL + ':')) {
+                    location = location.substring(CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL.length() + 1);
+                }
                 Enumeration<URL> migrations = Thread.currentThread().getContextClassLoader().getResources(location);
                 while (migrations.hasMoreElements()) {
                     URL path = migrations.nextElement();

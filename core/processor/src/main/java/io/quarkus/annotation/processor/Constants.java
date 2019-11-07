@@ -78,7 +78,7 @@ final public class Constants {
     public static final String CONFIG_PHASE_RUNTIME_ILLUSTRATION = "icon:cogs[title=Overridable at runtime]";
     public static final String CONFIG_PHASE_BUILD_TIME_ILLUSTRATION = "icon:archive[title=Fixed at build time]";
     public static final String CONFIG_PHASE_LEGEND = String.format(
-            "\n%s Configuration property fixed at build time - %s️ Configuration property overridable at runtime \n",
+            "%n%s Configuration property fixed at build time - %s️ Configuration property overridable at runtime %n",
             CONFIG_PHASE_BUILD_TIME_ILLUSTRATION, CONFIG_PHASE_RUNTIME_ILLUSTRATION);
 
     public static final String DURATION_FORMAT_NOTE = "\n[NOTE]" +

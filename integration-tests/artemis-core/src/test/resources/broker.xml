@@ -21,5 +21,6 @@
                 </anycast>
             </address>
         </addresses>
+        <max-disk-usage>100</max-disk-usage>
     </core>
 </configuration>

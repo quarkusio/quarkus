@@ -93,6 +93,7 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
+                <version>${project.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -167,10 +168,8 @@
                                     <goal>native-image</goal>
                                 </goals>
                                 <configuration>
-                                    <addAllCharsets>true</addAllCharsets>
-                                    <reportErrorsAtRuntime>false</reportErrorsAtRuntime>
                                     <cleanupServer>true</cleanupServer>
-                                    <debugBuildProcess>false</debugBuildProcess>
+                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
                                 </configuration>
                             </execution>

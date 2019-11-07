@@ -1,6 +1,8 @@
 package io.quarkus.agroal.runtime;
 
+import java.sql.Connection;
 import java.sql.Driver;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -166,6 +168,22 @@ public abstract class AbstractDataSourceProducer {
         }
         if (dataSourceRuntimeConfig.backgroundValidationInterval.isPresent()) {
             poolConfiguration.validationTimeout(dataSourceRuntimeConfig.backgroundValidationInterval.get());
+        }
+        if (dataSourceRuntimeConfig.validationQuerySql.isPresent()) {
+            String validationQuery = dataSourceRuntimeConfig.validationQuerySql.get();
+            poolConfiguration.connectionValidator(new ConnectionValidator() {
+
+                @Override
+                public boolean isValid(Connection connection) {
+                    try (Statement stmt = connection.createStatement()) {
+                        stmt.execute(validationQuery);
+                        return true;
+                    } catch (Exception e) {
+                        log.warn("Connection validation failed", e);
+                    }
+                    return false;
+                }
+            });
         }
         if (dataSourceRuntimeConfig.idleRemovalInterval.isPresent()) {
             poolConfiguration.reapTimeout(dataSourceRuntimeConfig.idleRemovalInterval.get());

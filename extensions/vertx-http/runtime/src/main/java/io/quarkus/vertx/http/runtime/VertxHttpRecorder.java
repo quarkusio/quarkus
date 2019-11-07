@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -296,6 +297,7 @@ public class VertxHttpRecorder {
         final String keystorePassword = sslConfig.certificate.keyStorePassword;
         final HttpServerOptions serverOptions = new HttpServerOptions();
         serverOptions.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
+        setIdleTimeout(httpConfiguration, serverOptions);
 
         if (certFile.isPresent() && keyFile.isPresent()) {
             createPemKeyCertOptions(certFile.get(), keyFile.get(), serverOptions);
@@ -398,9 +400,16 @@ public class VertxHttpRecorder {
         HttpServerOptions options = new HttpServerOptions();
         options.setHost(httpConfiguration.host);
         options.setPort(httpConfiguration.determinePort(launchMode));
+        setIdleTimeout(httpConfiguration, options);
         options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         options.setWebsocketSubProtocols(websocketSubProtocols);
         return options;
+    }
+
+    private static void setIdleTimeout(HttpConfiguration httpConfiguration, HttpServerOptions options) {
+        int idleTimeout = (int) httpConfiguration.idleTimeout.toMillis();
+        options.setIdleTimeout(idleTimeout);
+        options.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
     }
 
     public void warnIfPortChanged(HttpConfiguration config, int port) {

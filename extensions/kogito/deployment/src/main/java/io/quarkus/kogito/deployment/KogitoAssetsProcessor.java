@@ -41,9 +41,11 @@ import org.kie.kogito.codegen.rules.IncrementalRuleCodegen;
 
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.builder.item.BuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -61,7 +63,12 @@ public class KogitoAssetsProcessor {
     private final transient String persistenceFactoryClass = "org.kie.kogito.persistence.KogitoProcessInstancesFactory";
     private final transient String metricsClass = "org.kie.addons.monitoring.rest.MetricsResource";
 
-    @BuildStep(providesCapabilities = "io.quarkus.kogito")
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.KOGITO);
+    }
+
+    @BuildStep
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem(FeatureBuildItem.KOGITO);
     }

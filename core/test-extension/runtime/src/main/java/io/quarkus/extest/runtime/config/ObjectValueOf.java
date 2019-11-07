@@ -1,5 +1,7 @@
 package io.quarkus.extest.runtime.config;
 
+import java.util.Objects;
+
 /**
  * A configuration type that has a static {@linkplain ObjectValueOf#valueOf(String)} conversion method
  */
@@ -33,9 +35,21 @@ public class ObjectValueOf {
         return part2;
     }
 
+    @Override
     public boolean equals(Object obj) {
-        ObjectValueOf oov = (ObjectValueOf) obj;
-        return part1.equals(oov.part1) && part2.equals(oov.part2);
+        if (obj == this) {
+            return true;
+        }
+        if (obj instanceof ObjectValueOf) {
+            ObjectValueOf other = (ObjectValueOf) obj;
+            return Objects.equals(part1, other.part1) && Objects.equals(part2, other.part2);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(part1, part2);
     }
 
     @Override

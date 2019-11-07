@@ -2,7 +2,6 @@ package io.quarkus.resteasy.runtime.standalone;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.function.Supplier;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
@@ -25,7 +24,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -97,15 +95,11 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             HttpServerResponse response = request.response();
             VertxHttpResponse vertxResponse = new VertxHttpResponse(request, dispatcher.getProviderFactory(),
                     request.method(), allocator, output);
-            // client address may not be available with VirtualHttp;
-            // using a supplier to make the remote Address resolution lazy: often it's not needed.
-            Supplier<String> hostNameProvider = () -> {
-                SocketAddress socketAddress = request.remoteAddress();
-                String host = socketAddress != null ? socketAddress.host() : null;
-                return host;
-            };
 
-            VertxHttpRequest vertxRequest = new VertxHttpRequest(ctx, headers, uriInfo, request.rawMethod(), hostNameProvider,
+            // using a supplier to make the remote Address resolution lazy: often it's not needed and it's not very cheap to create.
+            LazyHostSupplier hostSupplier = new LazyHostSupplier(request);
+
+            VertxHttpRequest vertxRequest = new VertxHttpRequest(ctx, headers, uriInfo, request.rawMethod(), hostSupplier,
                     dispatcher.getDispatcher(), vertxResponse);
             vertxRequest.setInputStream(is);
             try {

@@ -92,28 +92,29 @@ class HibernateSearchElasticsearchProcessor {
     }
 
     private static void checkConfig(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig) {
-        if (buildTimeConfig.defaultBackend.isPresent()) {
+        if (buildTimeConfig.additionalBackends.defaultBackend.isPresent()) {
+            String defaultBackend = buildTimeConfig.additionalBackends.defaultBackend.get();
             // we have a default named backend
-            if (buildTimeConfig.elasticsearch.version.isPresent()) {
+            if (buildTimeConfig.defaultBackend.version.isPresent()) {
                 throw new ConfigurationError(
                         "quarkus.hibernate-search.elasticsearch.default-backend cannot be used in conjunction with a default backend configuration.");
             }
-            if (!buildTimeConfig.additionalBackends.containsKey(buildTimeConfig.defaultBackend.get())) {
+            if (!buildTimeConfig.additionalBackends.backends.containsKey(defaultBackend)) {
                 throw new ConfigurationError(
-                        "The default backend defined does not exist: " + buildTimeConfig.defaultBackend.get());
+                        "The default backend defined does not exist: " + defaultBackend);
             }
         } else {
             // we are in the default backend case
-            if (!buildTimeConfig.elasticsearch.version.isPresent()) {
+            if (!buildTimeConfig.defaultBackend.version.isPresent()) {
                 throw new ConfigurationError(
                         "The Elasticsearch version needs to be defined via the quarkus.hibernate-search.elasticsearch.version property.");
             }
         }
 
         // we validate that the version is present for all the additional backends
-        if (!buildTimeConfig.additionalBackends.isEmpty()) {
+        if (!buildTimeConfig.additionalBackends.backends.isEmpty()) {
             List<String> additionalBackendsWithNoVersion = new ArrayList<>();
-            for (Entry<String, ElasticsearchBackendBuildTimeConfig> additionalBackendEntry : buildTimeConfig.additionalBackends
+            for (Entry<String, ElasticsearchBackendBuildTimeConfig> additionalBackendEntry : buildTimeConfig.additionalBackends.backends
                     .entrySet()) {
                 if (!additionalBackendEntry.getValue().version.isPresent()) {
                     additionalBackendsWithNoVersion.add(additionalBackendEntry.getKey());
@@ -131,9 +132,9 @@ class HibernateSearchElasticsearchProcessor {
         Set<DotName> reflectiveClassCollector = new HashSet<>();
         Set<DotName> reflectiveTypeCollector = new HashSet<>();
 
-        if (buildTimeConfig.elasticsearch.analysis.configurer.isPresent()) {
+        if (buildTimeConfig.defaultBackend.analysis.configurer.isPresent()) {
             reflectiveClass.produce(
-                    new ReflectiveClassBuildItem(true, false, buildTimeConfig.elasticsearch.analysis.configurer.get()));
+                    new ReflectiveClassBuildItem(true, false, buildTimeConfig.defaultBackend.analysis.configurer.get()));
         }
 
         if (buildTimeConfig.backgroundFailureHandler.isPresent()) {

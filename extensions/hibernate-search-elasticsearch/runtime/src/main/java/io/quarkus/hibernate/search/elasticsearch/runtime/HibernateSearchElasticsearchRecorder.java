@@ -60,20 +60,20 @@ public class HibernateSearchElasticsearchRecorder {
                     EngineSettings.BACKGROUND_FAILURE_HANDLER,
                     buildTimeConfig.backgroundFailureHandler);
 
-            if (buildTimeConfig.defaultBackend.isPresent()) {
+            if (buildTimeConfig.additionalBackends.defaultBackend.isPresent()) {
                 // we have a named default backend
                 addConfig(propertyCollector, EngineSettings.DEFAULT_BACKEND,
-                        buildTimeConfig.defaultBackend.get());
-            } else if (buildTimeConfig.elasticsearch.version.isPresent()) {
+                        buildTimeConfig.additionalBackends.defaultBackend.get());
+            } else if (buildTimeConfig.defaultBackend.version.isPresent()) {
                 // we use the default backend configuration
                 addConfig(propertyCollector, EngineSettings.DEFAULT_BACKEND,
                         HibernateSearchElasticsearchRecorder.DEFAULT_BACKEND);
             }
 
             contributeBackendBuildTimeProperties(propertyCollector, HibernateSearchElasticsearchRecorder.DEFAULT_BACKEND,
-                    buildTimeConfig.elasticsearch);
+                    buildTimeConfig.defaultBackend);
 
-            for (Entry<String, ElasticsearchBackendBuildTimeConfig> backendEntry : buildTimeConfig.additionalBackends
+            for (Entry<String, ElasticsearchBackendBuildTimeConfig> backendEntry : buildTimeConfig.additionalBackends.backends
                     .entrySet()) {
                 contributeBackendBuildTimeProperties(propertyCollector, backendEntry.getKey(), backendEntry.getValue());
             }
@@ -103,7 +103,8 @@ public class HibernateSearchElasticsearchRecorder {
 
             contributeBackendRuntimeProperties(propertyCollector, DEFAULT_BACKEND, runtimeConfig.defaultBackend);
 
-            for (Entry<String, ElasticsearchBackendRuntimeConfig> backendEntry : runtimeConfig.additionalBackends.entrySet()) {
+            for (Entry<String, ElasticsearchBackendRuntimeConfig> backendEntry : runtimeConfig.additionalBackends.backends
+                    .entrySet()) {
                 contributeBackendRuntimeProperties(propertyCollector, backendEntry.getKey(), backendEntry.getValue());
             }
         }

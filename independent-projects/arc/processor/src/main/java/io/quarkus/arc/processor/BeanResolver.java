@@ -1,8 +1,11 @@
 package io.quarkus.arc.processor;
 
 import static java.util.Collections.singletonList;
-import static org.jboss.jandex.Type.Kind.*;
+import static org.jboss.jandex.Type.Kind.ARRAY;
 import static org.jboss.jandex.Type.Kind.CLASS;
+import static org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
+import static org.jboss.jandex.Type.Kind.TYPE_VARIABLE;
+import static org.jboss.jandex.Type.Kind.WILDCARD_TYPE;
 
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 import java.util.ArrayList;
@@ -15,8 +18,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
-import org.jboss.jandex.*;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
+import org.jboss.jandex.TypeVariable;
+import org.jboss.jandex.WildcardType;
 
 /**
  *

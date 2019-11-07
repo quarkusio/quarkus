@@ -12,15 +12,14 @@ import javax.transaction.Transactional;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 import io.quarkus.vault.VaultKVSecretEngine;
 
 @ApplicationScoped
 public class VaultTestService {
 
-    private static final Logger log = LoggerFactory.getLogger(VaultTestService.class);
+    private static final Logger log = Logger.getLogger(VaultTestService.class);
 
     @Inject
     EntityManager entityManager;

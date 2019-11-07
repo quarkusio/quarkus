@@ -28,8 +28,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.cache.FileTemplateLoader;
@@ -61,7 +60,7 @@ public class CreateExtensionMojo extends AbstractMojo {
 
     private static final String QUOTED_DOLLAR = Matcher.quoteReplacement("$");
 
-    private static final Logger log = LoggerFactory.getLogger(CreateExtensionMojo.class);
+    private static final Logger log = Logger.getLogger(CreateExtensionMojo.class);
 
     private static final Pattern BRACKETS_PATTERN = Pattern.compile("[()]+");
     private static final String CLASSPATH_PREFIX = "classpath:";
@@ -717,7 +716,7 @@ public class CreateExtensionMojo extends AbstractMojo {
 
     static void evalTemplate(Configuration cfg, String templateUri, Path dest, Charset charset, TemplateParams model)
             throws IOException, TemplateException {
-        log.info("Adding '{}'", dest);
+        log.infof("Adding '%s'", dest);
         final Template template = cfg.getTemplate(templateUri);
         Files.createDirectories(dest.getParent());
         try (Writer out = Files.newBufferedWriter(dest)) {

@@ -17,10 +17,10 @@ import org.infinispan.configuration.cache.StoreConfigurationBuilder;
 import org.infinispan.configuration.parsing.ConfigurationParser;
 import org.infinispan.distribution.ch.ConsistentHashFactory;
 import org.infinispan.distribution.ch.impl.HashFunctionPartitioner;
+import org.infinispan.factories.impl.ModuleMetadataBuilder;
 import org.infinispan.interceptors.AsyncInterceptor;
 import org.infinispan.marshall.exts.CollectionExternalizer;
 import org.infinispan.marshall.exts.MapExternalizer;
-import org.infinispan.modules.ModuleMetadataBuilder;
 import org.infinispan.notifications.Listener;
 import org.infinispan.persistence.spi.CacheLoader;
 import org.infinispan.persistence.spi.CacheWriter;
@@ -86,6 +86,7 @@ class InfinispanEmbeddedProcessor {
                 "org/infinispan/protostream/message-wrapping.proto",
                 "proto/generated/persistence.commons.proto",
                 "proto/generated/persistence.core.proto",
+                "proto/generated/global.commons.proto",
                 "default-configs/default-jgroups-udp.xml",
                 "default-configs/default-jgroups-tcp.xml",
                 "default-configs/default-jgroups-kubernetes.xml",

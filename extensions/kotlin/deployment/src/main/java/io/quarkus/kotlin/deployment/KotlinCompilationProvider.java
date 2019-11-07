@@ -71,7 +71,7 @@ public class KotlinCompilationProvider implements CompilationProvider {
         public void report(CompilerMessageSeverity severity, String s, CompilerMessageLocation location) {
             if (severity.isError()) {
                 if ((location != null) && (location.getLineContent() != null)) {
-                    errors.add(String.format("%s\n%s:%d:%d", location.getLineContent(), location.getPath(), location.getLine(),
+                    errors.add(String.format("%s%n%s:%d:%d", location.getLineContent(), location.getPath(), location.getLine(),
                             location.getColumn()));
                 } else {
                     errors.add(s);

@@ -19,6 +19,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -67,7 +68,12 @@ public class DynamodbProcessor {
         return new JniBuildItem();
     }
 
-    @BuildStep(applicationArchiveMarkers = { AWS_SDK_APPLICATION_ARCHIVE_MARKERS })
+    @BuildStep
+    AdditionalApplicationArchiveMarkerBuildItem marker() {
+        return new AdditionalApplicationArchiveMarkerBuildItem(AWS_SDK_APPLICATION_ARCHIVE_MARKERS);
+    }
+
+    @BuildStep
     void setup(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -156,14 +162,16 @@ public class DynamodbProcessor {
     void buildClients(DynamodbClientBuildItem clientBuildItem, DynamodbRecorder recorder,
             BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown) {
 
-        recorder.configureRuntimeConfig(config);
+        if (clientBuildItem.isCreateSyncClient() || clientBuildItem.isCreateAsyncClient()) {
+            recorder.configureRuntimeConfig(config);
 
-        if (clientBuildItem.isCreateSyncClient()) {
-            recorder.createClient(beanContainer.getValue(), shutdown);
-        }
+            if (clientBuildItem.isCreateSyncClient()) {
+                recorder.createClient(beanContainer.getValue(), shutdown);
+            }
 
-        if (clientBuildItem.isCreateAsyncClient()) {
-            recorder.createAsyncClient(beanContainer.getValue(), shutdown);
+            if (clientBuildItem.isCreateAsyncClient()) {
+                recorder.createAsyncClient(beanContainer.getValue(), shutdown);
+            }
         }
     }
 

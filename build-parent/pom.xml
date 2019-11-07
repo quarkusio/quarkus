@@ -53,7 +53,7 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.6.2</proposed-maven-version>
         <maven-wrapper.version>0.7.6</maven-wrapper.version>
-        <gradle-wrapper.version>5.5.1</gradle-wrapper.version>
+        <gradle-wrapper.version>5.6.4</gradle-wrapper.version>
 
         <!-- MicroProfile TCK versions -->
         <microprofile-health-api.version>2.1</microprofile-health-api.version>

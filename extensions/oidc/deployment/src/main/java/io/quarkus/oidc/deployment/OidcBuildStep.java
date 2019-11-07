@@ -16,11 +16,12 @@ import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.oidc.runtime.OidcIdentityProvider;
 import io.quarkus.oidc.runtime.OidcJsonWebTokenProducer;
 import io.quarkus.oidc.runtime.OidcRecorder;
-import io.quarkus.vertx.deployment.VertxBuildItem;
+import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 
+@SuppressWarnings("deprecation")
 public class OidcBuildStep {
 
     @BuildStep
@@ -65,7 +66,7 @@ public class OidcBuildStep {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    public void setup(OidcConfig config, OidcRecorder recorder, VertxBuildItem vertxBuildItem,
+    public void setup(OidcConfig config, OidcRecorder recorder, InternalWebVertxBuildItem vertxBuildItem,
             BeanContainerBuildItem bc) {
         if (config.enabled) {
             recorder.setup(config, vertxBuildItem.getVertx(), bc.getValue());

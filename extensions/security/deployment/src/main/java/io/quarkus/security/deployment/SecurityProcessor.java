@@ -15,6 +15,7 @@ import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.security.runtime.IdentityProviderManagerCreator;
@@ -108,7 +109,12 @@ public class SecurityProcessor {
         return providerClasses;
     }
 
-    @BuildStep(providesCapabilities = Capabilities.SECURITY)
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.SECURITY);
+    }
+
+    @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.SECURITY);
     }

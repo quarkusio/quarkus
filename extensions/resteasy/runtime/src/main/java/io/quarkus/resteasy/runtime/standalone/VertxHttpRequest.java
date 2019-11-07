@@ -2,6 +2,7 @@ package io.quarkus.resteasy.runtime.standalone;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -37,32 +38,26 @@ import io.vertx.core.Context;
  * @author Kristoffer Sjogren
  * @version $Revision: 1 $
  */
-public class VertxHttpRequest extends BaseHttpRequest {
-    protected ResteasyHttpHeaders httpHeaders;
-    protected SynchronousDispatcher dispatcher;
-    protected String httpMethod;
-    protected String remoteHost;
-    protected InputStream inputStream;
-    protected Map<String, Object> attributes = new HashMap<String, Object>();
-    protected VertxHttpResponse response;
-    private final boolean is100ContinueExpected;
+public final class VertxHttpRequest extends BaseHttpRequest {
+    private ResteasyHttpHeaders httpHeaders;
+    private String httpMethod;
+    private LazyHostSupplier remoteHost;
+    private InputStream inputStream;
+    private Map<String, Object> attributes;
+    private VertxHttpResponse response;
     private VertxExecutionContext executionContext;
     private final Context context;
-    private volatile boolean flushed;
 
     public VertxHttpRequest(Context context,
             ResteasyHttpHeaders httpHeaders,
             ResteasyUriInfo uri,
             String httpMethod,
-            String remoteHost,
+            LazyHostSupplier remoteHost,
             SynchronousDispatcher dispatcher,
-            VertxHttpResponse response,
-            boolean is100ContinueExpected) {
+            VertxHttpResponse response) {
         super(uri);
         this.context = context;
-        this.is100ContinueExpected = is100ContinueExpected;
         this.response = response;
-        this.dispatcher = dispatcher;
         this.httpHeaders = httpHeaders;
         this.httpMethod = httpMethod;
         this.remoteHost = remoteHost;
@@ -81,20 +76,25 @@ public class VertxHttpRequest extends BaseHttpRequest {
 
     @Override
     public Enumeration<String> getAttributeNames() {
-        Enumeration<String> en = new Enumeration<String>() {
-            private Iterator<String> it = attributes.keySet().iterator();
+        final Map<String, Object> attributes = this.attributes;
+        if (attributes == null) {
+            return Collections.emptyEnumeration();
+        } else {
+            Enumeration<String> en = new Enumeration<String>() {
+                private Iterator<String> it = attributes.keySet().iterator();
 
-            @Override
-            public boolean hasMoreElements() {
-                return it.hasNext();
-            }
+                @Override
+                public boolean hasMoreElements() {
+                    return it.hasNext();
+                }
 
-            @Override
-            public String nextElement() {
-                return it.next();
-            }
-        };
-        return en;
+                @Override
+                public String nextElement() {
+                    return it.next();
+                }
+            };
+            return en;
+        }
     }
 
     @Override
@@ -102,23 +102,24 @@ public class VertxHttpRequest extends BaseHttpRequest {
         return executionContext;
     }
 
-    public boolean isFlushed() {
-        return flushed;
-    }
-
     @Override
     public Object getAttribute(String attribute) {
-        return attributes.get(attribute);
+        return attributes != null ? attributes.get(attribute) : null;
     }
 
     @Override
     public void setAttribute(String name, Object value) {
+        if (attributes == null) {
+            attributes = new HashMap<String, Object>();
+        }
         attributes.put(name, value);
     }
 
     @Override
     public void removeAttribute(String name) {
-        attributes.remove(name);
+        if (attributes != null) {
+            attributes.remove(name);
+        }
     }
 
     @Override
@@ -128,12 +129,12 @@ public class VertxHttpRequest extends BaseHttpRequest {
 
     @Override
     public String getRemoteHost() {
-        return remoteHost;
+        return remoteHost.getRemoteHost();
     }
 
     @Override
     public String getRemoteAddress() {
-        return remoteHost;
+        return remoteHost.getRemoteHost();
     }
 
     @Override
@@ -153,10 +154,6 @@ public class VertxHttpRequest extends BaseHttpRequest {
 
     public VertxHttpResponse getResponse() {
         return response;
-    }
-
-    public boolean is100ContinueExpected() {
-        return is100ContinueExpected;
     }
 
     @Override
@@ -309,7 +306,6 @@ public class VertxHttpRequest extends BaseHttpRequest {
             }
 
             protected synchronized void vertxFlush() {
-                flushed = true;
                 try {
                     vertxResponse.finish();
                 } catch (IOException e) {

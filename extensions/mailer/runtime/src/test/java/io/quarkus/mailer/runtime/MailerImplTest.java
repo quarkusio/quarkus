@@ -197,6 +197,18 @@ class MailerImplTest {
         assertThat(value).isEqualTo("Hello 2");
     }
 
+    @Test
+    void testReplyToHeaderIsSet() throws MessagingException {
+        mailer.send(Mail.withText(TO, "Test", "testHeaders")
+                .setReplyTo("reply-to@quarkus.io"))
+                .toCompletableFuture().join();
+        assertThat(wiser.getMessages()).hasSize(1);
+        WiserMessage actual = wiser.getMessages().get(0);
+        MimeMessage msg = actual.getMimeMessage();
+        assertThat(msg.getHeader("Reply-To")).containsExactly("reply-to@quarkus.io");
+        assertThat(msg.getReplyTo()).containsExactly(InternetAddress.parse("reply-to@quarkus.io"));
+    }
+
     private String getContent(WiserMessage msg) {
         try {
             return getTextFromMimeMultipart((MimeMultipart) msg.getMimeMessage().getContent());

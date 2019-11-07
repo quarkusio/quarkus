@@ -6,10 +6,12 @@ import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.agroal.deployment.DataSourceInitializedBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
@@ -21,7 +23,12 @@ class ElytronSecurityJdbcProcessor {
 
     JdbcSecurityRealmConfig jdbc;
 
-    @BuildStep(providesCapabilities = "io.quarkus.elytron.security.jdbc")
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.SECURITY_ELYTRON_JDBC);
+    }
+
+    @BuildStep()
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.SECURITY_JDBC);
     }

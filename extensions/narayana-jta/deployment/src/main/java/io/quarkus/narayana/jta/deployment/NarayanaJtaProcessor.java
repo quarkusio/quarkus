@@ -22,6 +22,7 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -50,7 +51,12 @@ class NarayanaJtaProcessor {
         return new NativeImageSystemPropertyBuildItem("CoordinatorEnvironmentBean.transactionStatusManagerEnable", "false");
     }
 
-    @BuildStep(providesCapabilities = Capabilities.TRANSACTIONS)
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.TRANSACTIONS);
+    }
+
+    @BuildStep
     @Record(RUNTIME_INIT)
     public void build(NarayanaJtaRecorder recorder,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,

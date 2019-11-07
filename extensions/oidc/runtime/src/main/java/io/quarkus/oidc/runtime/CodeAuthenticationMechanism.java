@@ -39,7 +39,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .setPrincipal(securityIdentity.getPrincipal())
                 .addCredentials(securityIdentity.getCredentials())
                 .addCredential(new AccessTokenCredential(accessToken))
-                .addCredential(new RefreshToken(refreshToken))
                 .addRoles(securityIdentity.getRoles())
                 .addAttributes(securityIdentity.getAttributes())
                 .addPermissionChecker(new Function<Permission, CompletionStage<Boolean>>() {

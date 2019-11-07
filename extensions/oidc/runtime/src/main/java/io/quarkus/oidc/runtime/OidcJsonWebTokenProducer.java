@@ -47,17 +47,6 @@ public class OidcJsonWebTokenProducer {
         return getTokenCredential(IdTokenCredential.class);
     }
 
-    /**
-     * The producer method for the current id token
-     *
-     * @return the id token
-     */
-    @Produces
-    @RequestScoped
-    RefreshToken currentRefreshToken() {
-        return identity.getCredential(RefreshToken.class);
-    }
-
     private JsonWebToken getTokenCredential(Class<? extends TokenCredential> type) {
         if (identity.isAnonymous()) {
             return new NullJsonWebToken();

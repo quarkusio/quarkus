@@ -47,6 +47,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
+import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -79,6 +80,7 @@ class InfinispanClientProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<NativeImageConfigBuildItem> nativeImageConfig,
+            DeploymentClassLoaderBuildItem classLoaderBuildItem,
             ApplicationIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.INFINISPAN_CLIENT));
@@ -149,12 +151,12 @@ class InfinispanClientProcessor {
             }
 
             InfinispanClientProducer.handleProtoStreamRequirements(properties);
-
+            ClassLoader classLoader = classLoaderBuildItem.getClassLoader();
             Set<ClassInfo> initializerClasses = index.getAllKnownImplementors(DotName.createSimple(
                     SerializationContextInitializer.class.getName()));
             Set<SerializationContextInitializer> initializers = new HashSet<>(initializerClasses.size());
             for (ClassInfo ci : initializerClasses) {
-                Class<?> initializerClass = Class.forName(ci.toString());
+                Class<?> initializerClass = classLoader.loadClass(ci.toString());
                 try {
                     SerializationContextInitializer sci = (SerializationContextInitializer) initializerClass
                             .getDeclaredConstructor().newInstance();

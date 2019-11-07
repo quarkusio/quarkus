@@ -20,6 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.ConsumeEvent;
 import io.restassured.RestAssured;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
@@ -43,6 +44,8 @@ public class SimpleRouteTest {
         RestAssured.when().delete("/delete").then().statusCode(200).body(is("deleted"));
         RestAssured.when().get("/routes").then().statusCode(200)
                 .body(Matchers.containsString("/hello-event-bus"));
+        RestAssured.given().contentType("text/plain").body("world")
+                .post("/body").then().body(is("Hello world!"));
     }
 
     static class SimpleBean {
@@ -69,6 +72,11 @@ public class SimpleRouteTest {
         @Route(path = "/delete", methods = DELETE)
         void deleteHttpMethod(RoutingExchange exchange) {
             exchange.ok("deleted");
+        }
+
+        @Route(path = "/body", methods = HttpMethod.POST, consumes = "text/plain")
+        void post(RoutingContext context) {
+            context.response().setStatusCode(200).end("Hello " + context.getBodyAsString() + "!");
         }
 
     }

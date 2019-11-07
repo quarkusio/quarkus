@@ -36,6 +36,7 @@ public class RouterEventTest {
 
         RestAssured.given()
                 .body("An example body")
+                .contentType("text/plain")
                 .post("/post")
                 .then()
                 .body(is("An example body"));
@@ -50,6 +51,7 @@ public class RouterEventTest {
             counter++;
             router.get("/boom").handler(ctx -> ctx.response().setStatusCode(200).end("ok"));
             Route post = router.post("/post");
+            post.consumes("text/plain");
             post.handler(BodyHandler.create());
             post.handler(ctx -> ctx.response().end(ctx.getBody()));
         }

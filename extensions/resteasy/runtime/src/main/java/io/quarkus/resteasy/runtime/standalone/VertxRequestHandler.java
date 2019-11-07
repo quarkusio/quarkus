@@ -2,6 +2,7 @@ package io.quarkus.resteasy.runtime.standalone;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.function.Supplier;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
@@ -96,12 +97,16 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             HttpServerResponse response = request.response();
             VertxHttpResponse vertxResponse = new VertxHttpResponse(request, dispatcher.getProviderFactory(),
                     request.method(), allocator, output);
-            // client address may not be available with VirtualHttp
-            SocketAddress socketAddress = request.remoteAddress();
-            String host = socketAddress != null ? socketAddress.host() : null;
+            // client address may not be available with VirtualHttp;
+            // using a supplier to make the remote Address resolution lazy: often it's not needed.
+            Supplier<String> hostNameProvider = () -> {
+                SocketAddress socketAddress = request.remoteAddress();
+                String host = socketAddress != null ? socketAddress.host() : null;
+                return host;
+            };
 
-            VertxHttpRequest vertxRequest = new VertxHttpRequest(ctx, headers, uriInfo, request.rawMethod(),
-                    host, dispatcher.getDispatcher(), vertxResponse, false);
+            VertxHttpRequest vertxRequest = new VertxHttpRequest(ctx, headers, uriInfo, request.rawMethod(), hostNameProvider,
+                    dispatcher.getDispatcher(), vertxResponse);
             vertxRequest.setInputStream(is);
             try {
                 ResteasyContext.pushContext(SecurityContext.class, new QuarkusResteasySecurityContext(request));

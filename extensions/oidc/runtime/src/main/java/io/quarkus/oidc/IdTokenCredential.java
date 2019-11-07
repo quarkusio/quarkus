@@ -1,4 +1,4 @@
-package io.quarkus.oidc.runtime;
+package io.quarkus.oidc;
 
 import io.quarkus.security.credential.TokenCredential;
 

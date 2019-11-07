@@ -468,6 +468,16 @@ Then, create the native executable with:
 ./mvnw package -Pnative
 ----
 
+== Read only deployment environments
+
+In environments with read only file systems you may receive errors of the form:
+
+```
+java.lang.IllegalStateException: Failed to create cache dir
+```
+
+Assuming `/tmp/` is writeable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
+
 == Going further
 
 There are many other facets of Quarkus using Vert.x underneath:

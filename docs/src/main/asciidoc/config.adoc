@@ -159,6 +159,19 @@ You can add the `greeting.suffix`, remove the other properties, change the value
 As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
 
+== Programmatically access the configuration
+
+You can access the configuration programmatically.
+It can be handy to achieve dynamic lookup, or retrieve configured values from classes that are neither CDI beans or JAX-RS resources.
+
+You can access the configuration programmatically using `org.eclipse.microprofile.config.ConfigProvider.getConfig()` such as in:
+
+[source,java]
+----
+String databaseName = ConfigProvider.getConfig().getValue("database.name", String.class);
+Optional<String> maybeDatabaseName = ConfigProvider.getConfig().getOptionalValue("database.name", String.class);
+----
+
 == Using @ConfigProperties
 
 As an alternative to injecting multiple related configuration values in the way that was shown in the previous example,

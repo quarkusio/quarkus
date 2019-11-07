@@ -1,5 +1,7 @@
 package io.quarkus.narayana.stm.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -15,18 +17,22 @@ import org.jboss.logging.Logger;
 import org.jboss.stm.annotations.Transactional;
 
 import com.arjuna.ats.internal.arjuna.coordinator.CheckedActionFactoryImple;
+import com.arjuna.ats.internal.arjuna.objectstore.ShadowNoFileLockStore;
 import com.arjuna.ats.txoj.Lock;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.narayana.stm.runtime.NarayanaSTMRecorder;
 
-class NarayanaStmProcessor {
-    private static final Logger log = Logger.getLogger(NarayanaStmProcessor.class.getName());
+class NarayanaSTMProcessor {
+    private static final Logger log = Logger.getLogger(NarayanaSTMProcessor.class.getName());
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
@@ -39,12 +45,28 @@ class NarayanaStmProcessor {
 
     // register classes in need of reflection
     @BuildStep
-    ReflectiveClassBuildItem register(BuildProducer<FeatureBuildItem> feature) {
+    ReflectiveClassBuildItem registerFeature(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.NARAYANA_STM));
 
         return new ReflectiveClassBuildItem(true, false,
+                ShadowNoFileLockStore.class.getName(),
                 CheckedActionFactoryImple.class.getName(),
                 Lock.class.getName());
+    }
+
+    // the software transactional memory implementation does not require a TSM
+    // so disable it at native image build time
+    @BuildStep()
+    public NativeImageSystemPropertyBuildItem substrateSystemPropertyBuildItem() {
+        return new NativeImageSystemPropertyBuildItem("CoordinatorEnvironmentBean.transactionStatusManagerEnable", "false");
+    }
+
+    // the software transactional memory implementation does not require a TSM
+    // so disable it at runtime
+    @BuildStep()
+    @Record(RUNTIME_INIT)
+    public void configureRuntimeProperties(NarayanaSTMRecorder recorder) {
+        recorder.disableTransactionStatusManager();
     }
 
     // register STM dynamic proxies

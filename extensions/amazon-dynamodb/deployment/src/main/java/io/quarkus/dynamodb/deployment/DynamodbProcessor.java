@@ -162,14 +162,16 @@ public class DynamodbProcessor {
     void buildClients(DynamodbClientBuildItem clientBuildItem, DynamodbRecorder recorder,
             BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown) {
 
-        recorder.configureRuntimeConfig(config);
+        if (clientBuildItem.isCreateSyncClient() || clientBuildItem.isCreateAsyncClient()) {
+            recorder.configureRuntimeConfig(config);
 
-        if (clientBuildItem.isCreateSyncClient()) {
-            recorder.createClient(beanContainer.getValue(), shutdown);
-        }
+            if (clientBuildItem.isCreateSyncClient()) {
+                recorder.createClient(beanContainer.getValue(), shutdown);
+            }
 
-        if (clientBuildItem.isCreateAsyncClient()) {
-            recorder.createAsyncClient(beanContainer.getValue(), shutdown);
+            if (clientBuildItem.isCreateAsyncClient()) {
+                recorder.createAsyncClient(beanContainer.getValue(), shutdown);
+            }
         }
     }
 

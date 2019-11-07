@@ -85,7 +85,7 @@ public class HibernateOrmConfig {
      */
     @ConfigItem(name = "connection.provider-class")
     public Optional<String> connectionProviderClass;
-    
+
     /**
      * The size of the batches used when loading entities and collections.
      *

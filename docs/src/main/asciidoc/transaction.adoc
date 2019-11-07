@@ -186,6 +186,22 @@ include::duration-format-note.adoc[]
 
 The default value is 60 seconds.
 
+== Configuring transaction node name identifier
+
+Narayana, as the underlaying transaction manager, has an concept of unique node identifier.
+This is important if you consider to use XA transactions with involve multiple resources.
+
+The node name identifier plays a crucial part in the identification of a transaction.
+The node name identifier is forged into the transaction id when the transaction is created.
+Based on the node name identifier the transaction manager is capable to recognized the XA tranaction
+counterparts created in database or JMS broker. The identifier makes possible for the transaction manager
+to roll-back the transaction counterparts during recovery.
+
+The node name identifier needs to be unique per transaction manager deployment.
+And the node identifier needs to be stable over the transaction manager restarts.
+
+The node name identifier may be configured via the property `quarkus.transaction-manager.node-name`.
+
 == Why always having a transaction manager?
 
 Does it work everywhere I want to?::
@@ -225,4 +241,3 @@ It's not a mess in Quarkus :)
 Resource-level was introduced to support JPA in a non managed environment.
 But Quarkus is both lean and a managed environment so we can safely always assume we are in JTA mode.
 The end result is that the difficulties of running Hibernate ORM + CDI + a transaction manager in Java SE mode are solved by Quarkus.
-

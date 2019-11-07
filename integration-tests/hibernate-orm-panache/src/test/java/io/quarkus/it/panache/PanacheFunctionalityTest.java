@@ -44,4 +44,9 @@ public class PanacheFunctionalityTest {
     public void testPanacheInTest() {
         Assertions.assertEquals(0, Person.count());
     }
+
+    @Test
+    public void testBug5274() {
+        RestAssured.when().get("/test/5274").then().body(is("OK"));
+    }
 }

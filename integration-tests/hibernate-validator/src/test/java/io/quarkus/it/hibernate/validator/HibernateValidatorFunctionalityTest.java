@@ -103,4 +103,16 @@ public class HibernateValidatorFunctionalityTest {
                 .then()
                 .body(is(expected.toString()));
     }
+
+    @Test
+    public void testInheritedConstraints() {
+        StringBuilder expected = new StringBuilder();
+        expected.append("passed").append("\n")
+                .append("failed: echoZipCode.arg0 (size must be between 5 and 5)");
+
+        RestAssured.when()
+                .get("/hibernate-validator/test/test-inherited-constraints")
+                .then()
+                .body(is(expected.toString()));
+    }
 }

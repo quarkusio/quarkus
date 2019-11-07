@@ -5,6 +5,9 @@ metadata:
   - "kogito"
   - "drools"
   - "jbpm"
+  - "processes"
+  - "rules"
+  - "decisions"
   guide: "https://quarkus.io/guides/kogito"
   categories:
   - "business-automation"

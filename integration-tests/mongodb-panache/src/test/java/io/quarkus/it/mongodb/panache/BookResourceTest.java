@@ -1,6 +1,7 @@
 package io.quarkus.it.mongodb.panache;
 
 import static io.restassured.RestAssured.get;
+import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -322,6 +323,11 @@ class BookResourceTest {
 
     private Date fromYear(int year) {
         return Date.from(LocalDate.of(year, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC));
+    }
+
+    @Test
+    public void testBug5274() {
+        get("/bugs/5274").then().body(is("OK"));
     }
 
 }

@@ -789,4 +789,15 @@ public class TestEndpoint {
         person.status = Status.DECEASED;
         return person;
     }
+
+    @Inject
+    Bug5274EntityRepository bug5274EntityRepository;
+
+    @GET
+    @Path("5274")
+    @Transactional
+    public String testBug5274() {
+        bug5274EntityRepository.count();
+        return "OK";
+    }
 }

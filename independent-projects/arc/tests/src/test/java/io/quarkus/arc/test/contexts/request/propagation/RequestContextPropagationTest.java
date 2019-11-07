@@ -18,7 +18,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class RequestContextPropagationTest {
 
     @RegisterExtension
-    public ArcTestContainer container = new ArcTestContainer(SuperController.class, SuperButton.class);
+    public ArcTestContainer container = new ArcTestContainer(SuperController.class, SuperButton.class,
+            YetAnotherReqScopedBean.class);
 
     @Test
     public void testPropagation() {
@@ -43,6 +44,7 @@ public class RequestContextPropagationTest {
 
         // Store existing instances
         ContextState state = requestContext.getState();
+
         // Deactivate but don't destroy
         requestContext.deactivate();
 
@@ -58,6 +60,18 @@ public class RequestContextPropagationTest {
 
         requestContext.activate(state);
         assertEquals(arc.instance(SuperController.class).get().getId(), controller2Id);
+
+        // add req. scoped bean, note that we have already captured the state prior to this
+        // we do this to prove that even after capture, newly added beans still get to be propagated
+        YetAnotherReqScopedBean yetAnotherReqScopedBean = arc.instance(YetAnotherReqScopedBean.class).get();
+        int generatedNumber = yetAnotherReqScopedBean.getRandomNumber();
+
+        // end the context and re-start with originally stored state and assume the bean is part of it
+        requestContext.deactivate();
+        requestContext.activate(state);
+
+        // check that the bean is not created anew - that means the contextual storage was shared between activations
+        assertEquals(arc.instance(YetAnotherReqScopedBean.class).get().getRandomNumber(), generatedNumber);
 
         requestContext.terminate();
         assertTrue(SuperController.DESTROYED.get());

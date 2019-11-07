@@ -6,12 +6,15 @@ import javax.enterprise.inject.Alternative;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 
+import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdToken;
+import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.jwt.auth.cdi.NullJsonWebToken;
@@ -47,17 +50,6 @@ public class OidcJsonWebTokenProducer {
         return getTokenCredential(IdTokenCredential.class);
     }
 
-    /**
-     * The producer method for the current id token
-     *
-     * @return the id token
-     */
-    @Produces
-    @RequestScoped
-    RefreshToken currentRefreshToken() {
-        return identity.getCredential(RefreshToken.class);
-    }
-
     private JsonWebToken getTokenCredential(Class<? extends TokenCredential> type) {
         if (identity.isAnonymous()) {
             return new NullJsonWebToken();
@@ -73,6 +65,7 @@ public class OidcJsonWebTokenProducer {
             } catch (InvalidJwtException e) {
                 throw new RuntimeException(e);
             }
+            jwtClaims.setClaim(Claims.raw_token.name(), credential.getToken());
             return new OidcJwtCallerPrincipal(jwtClaims);
         }
         throw new IllegalStateException("Current identity not associated with an access token");

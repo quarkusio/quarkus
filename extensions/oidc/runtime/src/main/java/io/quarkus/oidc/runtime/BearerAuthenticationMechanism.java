@@ -6,6 +6,7 @@ import java.util.concurrent.CompletionStage;
 import javax.enterprise.context.ApplicationScoped;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;

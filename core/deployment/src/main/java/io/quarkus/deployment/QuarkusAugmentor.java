@@ -73,7 +73,7 @@ public class QuarkusAugmentor {
 
     public BuildResult run() throws Exception {
         long time = System.currentTimeMillis();
-        log.info("Beginning quarkus augmentation");
+        log.debug("Beginning Quarkus augmentation");
         ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         FileSystem rootFs = null;
         try {
@@ -128,7 +128,13 @@ public class QuarkusAugmentor {
             }
             BuildResult buildResult = execBuilder
                     .execute();
-            log.info("Quarkus augmentation completed in " + (System.currentTimeMillis() - time) + "ms");
+            String message = "Quarkus augmentation completed in " + (System.currentTimeMillis() - time) + "ms";
+            if (launchMode == LaunchMode.NORMAL) {
+                log.info(message);
+            } else {
+                //test and dev mode already report the total startup time, no need to add noise to the logs
+                log.debug(message);
+            }
             return buildResult;
         } finally {
             if (rootFs != null) {

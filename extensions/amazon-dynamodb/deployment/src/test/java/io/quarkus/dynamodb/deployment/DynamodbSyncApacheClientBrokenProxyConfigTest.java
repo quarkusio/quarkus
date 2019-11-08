@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.deployment.configuration.ConfigurationError;
+import io.quarkus.dynamodb.runtime.RuntimeConfigurationError;
 import io.quarkus.test.QuarkusUnitTest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -19,13 +19,12 @@ public class DynamodbSyncApacheClientBrokenProxyConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setExpectedException(ConfigurationError.class)
+            .setExpectedException(RuntimeConfigurationError.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("sync-apache-broken-proxy-config.properties", "application.properties"));
 
     @Test
     public void test() {
-        // should not be called, deployment exception should happen first.
         Assertions.fail();
     }
 }

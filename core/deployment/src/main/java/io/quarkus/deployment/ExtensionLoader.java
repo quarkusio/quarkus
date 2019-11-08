@@ -65,6 +65,7 @@ import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildIt
 import io.quarkus.deployment.builditem.BuildTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.BuildTimeRunTimeFixedConfigurationBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
+import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
@@ -522,6 +523,7 @@ public final class ExtensionLoader {
             final BuildStep buildStep = method.getAnnotation(BuildStep.class);
             final String[] archiveMarkers = buildStep.applicationArchiveMarkers();
             final String[] capabilities = buildStep.providesCapabilities();
+            final boolean loadsAppClasses = buildStep.loadsApplicationClasses();
             final Class<? extends BooleanSupplier>[] onlyIf = buildStep.onlyIf();
             final Class<? extends BooleanSupplier>[] onlyIfNot = buildStep.onlyIfNot();
             final Parameter[] methodParameters = method.getParameters();
@@ -898,73 +900,88 @@ public final class ExtensionLoader {
                     }
                 });
             }
-
             final Consumer<BuildStepBuilder> finalStepConfig = stepConfig.andThen(methodStepConfig)
                     .andThen(buildStepBuilder -> buildStepBuilder.buildIf(finalAddStep));
             final BiConsumer<BuildContext, Object> finalStepInstanceSetup = stepInstanceSetup;
             final String name = clazz.getName() + "#" + method.getName();
+
             chainConfig = chainConfig
-                    .andThen(bcb -> finalStepConfig.accept(bcb.addBuildStep(new io.quarkus.builder.BuildStep() {
-                        public void execute(final BuildContext bc) {
-                            Object[] ctorArgs = new Object[ctorParamFns.size()];
-                            for (int i = 0; i < ctorArgs.length; i++) {
-                                ctorArgs[i] = ctorParamFns.get(i).apply(bc);
-                            }
-                            Object instance;
-                            try {
-                                instance = constructor.newInstance(ctorArgs);
-                            } catch (InstantiationException e) {
-                                throw ReflectUtil.toError(e);
-                            } catch (IllegalAccessException e) {
-                                throw ReflectUtil.toError(e);
-                            } catch (InvocationTargetException e) {
+                    .andThen(bcb -> {
+                        BuildStepBuilder bsb = bcb.addBuildStep(new io.quarkus.builder.BuildStep() {
+                            public void execute(final BuildContext bc) {
+                                Object[] ctorArgs = new Object[ctorParamFns.size()];
+                                for (int i = 0; i < ctorArgs.length; i++) {
+                                    ctorArgs[i] = ctorParamFns.get(i).apply(bc);
+                                }
+                                Object instance;
                                 try {
-                                    throw e.getCause();
-                                } catch (RuntimeException | Error e2) {
-                                    throw e2;
-                                } catch (Throwable t) {
-                                    throw new IllegalStateException(t);
+                                    instance = constructor.newInstance(ctorArgs);
+                                } catch (InstantiationException e) {
+                                    throw ReflectUtil.toError(e);
+                                } catch (IllegalAccessException e) {
+                                    throw ReflectUtil.toError(e);
+                                } catch (InvocationTargetException e) {
+                                    try {
+                                        throw e.getCause();
+                                    } catch (RuntimeException | Error e2) {
+                                        throw e2;
+                                    } catch (Throwable t) {
+                                        throw new IllegalStateException(t);
+                                    }
                                 }
-                            }
-                            finalStepInstanceSetup.accept(bc, instance);
-                            Object[] methodArgs = new Object[methodParamFns.size()];
-                            BytecodeRecorderImpl bri = isRecorder
-                                    ? new BytecodeRecorderImpl(recordAnnotation.value() == ExecutionTime.STATIC_INIT,
-                                            clazz.getSimpleName(), method.getName())
-                                    : null;
-                            for (int i = 0; i < methodArgs.length; i++) {
-                                methodArgs[i] = methodParamFns.get(i).apply(bc, bri);
-                            }
-                            Object result;
-                            try {
-                                result = method.invoke(instance, methodArgs);
-                            } catch (IllegalAccessException e) {
-                                throw ReflectUtil.toError(e);
-                            } catch (InvocationTargetException e) {
+                                finalStepInstanceSetup.accept(bc, instance);
+                                Object[] methodArgs = new Object[methodParamFns.size()];
+                                BytecodeRecorderImpl bri = isRecorder
+                                        ? new BytecodeRecorderImpl(recordAnnotation.value() == ExecutionTime.STATIC_INIT,
+                                                clazz.getSimpleName(), method.getName())
+                                        : null;
+                                for (int i = 0; i < methodArgs.length; i++) {
+                                    methodArgs[i] = methodParamFns.get(i).apply(bc, bri);
+                                }
+                                ClassLoader old = Thread.currentThread().getContextClassLoader();
+                                if (loadsAppClasses) {
+                                    Thread.currentThread().setContextClassLoader(
+                                            bc.consume(DeploymentClassLoaderBuildItem.class).getClassLoader());
+                                }
+                                Object result;
                                 try {
-                                    throw e.getCause();
-                                } catch (RuntimeException | Error e2) {
-                                    throw e2;
-                                } catch (Throwable t) {
-                                    throw new IllegalStateException(t);
+                                    result = method.invoke(instance, methodArgs);
+                                } catch (IllegalAccessException e) {
+                                    throw ReflectUtil.toError(e);
+                                } catch (InvocationTargetException e) {
+                                    try {
+                                        throw e.getCause();
+                                    } catch (RuntimeException | Error e2) {
+                                        throw e2;
+                                    } catch (Throwable t) {
+                                        throw new IllegalStateException(t);
+                                    }
+                                } finally {
+                                    //we do this every time, it also provides a measure of safety if the build step
+                                    //does something funny to the TCCL
+                                    Thread.currentThread().setContextClassLoader(old);
+                                }
+                                resultConsumer.accept(bc, result);
+                                if (isRecorder) {
+                                    // commit recorded data
+                                    if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
+                                        bc.produce(new StaticBytecodeRecorderBuildItem(bri));
+                                    } else {
+                                        bc.produce(new MainBytecodeRecorderBuildItem(bri));
+                                    }
+
                                 }
                             }
-                            resultConsumer.accept(bc, result);
-                            if (isRecorder) {
-                                // commit recorded data
-                                if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
-                                    bc.produce(new StaticBytecodeRecorderBuildItem(bri));
-                                } else {
-                                    bc.produce(new MainBytecodeRecorderBuildItem(bri));
-                                }
 
+                            public String toString() {
+                                return name;
                             }
+                        });
+                        if (loadsAppClasses) {
+                            bsb.consumes(DeploymentClassLoaderBuildItem.class);
                         }
-
-                        public String toString() {
-                            return name;
-                        }
-                    })));
+                        finalStepConfig.accept(bsb);
+                    });
         }
         return chainConfig;
     }

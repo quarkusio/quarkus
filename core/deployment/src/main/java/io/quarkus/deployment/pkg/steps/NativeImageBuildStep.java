@@ -232,12 +232,7 @@ public class NativeImageBuildStep {
             if (!noPIE.isEmpty()) {
                 command.add("-H:NativeLinkerOption=" + noPIE);
             }
-            if (nativeConfig.enableRetainedHeapReporting) {
-                command.add("-H:+PrintRetainedHeapHistogram");
-            }
-            if (nativeConfig.enableCodeSizeReporting) {
-                command.add("-H:+PrintCodeSizeReport");
-            }
+
             if (!nativeConfig.enableIsolates) {
                 command.add("-H:-SpawnIsolates");
             }

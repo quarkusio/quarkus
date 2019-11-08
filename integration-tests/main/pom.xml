@@ -242,10 +242,6 @@
                                     <addAllCharsets>true</addAllCharsets>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                    <!-- Requires Quarkus Graal fork to work, will fail otherwise
-                                      <enableRetainedHeapReporting>true</enableRetainedHeapReporting>
-                                      <enableCodeSizeReporting>true</enableCodeSizeReporting>
-                                    -->
                                     <graalvmHome>${graalvmHome}</graalvmHome>
                                 </configuration>
                             </execution>

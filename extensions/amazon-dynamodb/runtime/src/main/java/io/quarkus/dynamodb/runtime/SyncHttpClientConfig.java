@@ -10,13 +10,6 @@ import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class SyncHttpClientConfig {
-
-    /**
-     * Type of the sync HTTP client implementation
-     */
-    @ConfigItem(defaultValue = "url")
-    public SyncClientType type;
-
     /**
      * The maximum amount of time to establish a connection before timing out.
      */
@@ -148,10 +141,5 @@ public class SyncHttpClientConfig {
             @ConfigItem
             public List<String> nonProxyHosts;
         }
-    }
-
-    public enum SyncClientType {
-        URL,
-        APACHE
     }
 }

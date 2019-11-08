@@ -347,9 +347,9 @@ public class UndertowBuildStep {
                 // Map the @ServletSecurity annotations
                 if (webMetaData.getAnnotations() != null) {
                     for (AnnotationMetaData amd : webMetaData.getAnnotations()) {
-                        if (amd.getClassName().equals(servlet.getServletClass())) {
+                        final ServletSecurityMetaData ssmd = amd.getServletSecurity();
+                        if (ssmd != null && amd.getClassName().equals(servlet.getServletClass())) {
                             // Process the @ServletSecurity into metadata
-                            ServletSecurityMetaData ssmd = amd.getServletSecurity();
                             ServletSecurityInfo securityInfo = new ServletSecurityInfo();
                             securityInfo.setEmptyRoleSemantic(
                                     ssmd.getEmptyRoleSemantic() == EmptyRoleSemanticType.DENY ? DENY : PERMIT);

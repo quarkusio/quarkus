@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -249,6 +250,14 @@ public class CodeFlowTest {
 
             assertEquals("RT injected", page.getBody().asText());
         }
+    }
+
+    @Test
+    public void testNoCodeFlowUnprotected() {
+        RestAssured.when().get("/public-web-app/access")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("no user"));
     }
 
     private Cookie getSessionCookie(WebClient webClient) {

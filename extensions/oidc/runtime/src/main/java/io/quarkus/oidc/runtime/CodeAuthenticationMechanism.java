@@ -96,10 +96,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private CompletionStage<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
             RoutingContext context) {
-        CompletableFuture<SecurityIdentity> cf = new CompletableFuture<>();
         JsonObject params = new JsonObject();
 
-        params.put("code", context.request().getParam("code"));
+        String code = context.request().getParam("code");
+        if (code == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        CompletableFuture<SecurityIdentity> cf = new CompletableFuture<>();
+        params.put("code", code);
         params.put("redirect_uri", buildRedirectUri(context));
 
         auth.authenticate(params, userAsyncResult -> {

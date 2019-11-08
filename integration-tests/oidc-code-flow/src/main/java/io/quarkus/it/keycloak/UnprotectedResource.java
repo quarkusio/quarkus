@@ -8,12 +8,10 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdToken;
-import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
 
-@Path("/web-app")
-@Authenticated
-public class ProtectedResource {
+@Path("/public-web-app")
+public class UnprotectedResource {
 
     @Inject
     @IdToken
@@ -33,7 +31,7 @@ public class ProtectedResource {
     @GET
     @Path("access")
     public String getAccessToken() {
-        return accessToken.getRawToken() != null && !accessToken.getRawToken().isEmpty() ? "AT injected" : "";
+        return accessToken.getRawToken() != null && !accessToken.getRawToken().isEmpty() ? "AT injected" : "no user";
         // or get it with identity.getCredential(AccessTokenCredential.class).getToken();
     }
 
@@ -41,6 +39,6 @@ public class ProtectedResource {
     @Path("refresh")
     public String refresh() {
         String refreshToken = identity.getCredential(AccessTokenCredential.class).getRefreshToken();
-        return refreshToken != null && !refreshToken.isEmpty() ? "RT injected" : "no refresh";
+        return refreshToken != null && !refreshToken.isEmpty() ? "RT injected" : "";
     }
 }

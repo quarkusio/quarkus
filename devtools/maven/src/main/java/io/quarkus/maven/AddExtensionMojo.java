@@ -49,41 +49,30 @@ public class AddExtensionMojo extends BuildFileMojoBase {
     @Override
     public void doExecute(BuildFile buildFile) throws MojoExecutionException {
 
-        boolean closeBuildFile = false;
-        try {
-            if (buildFile == null) {
-                try {
-                    buildFile = BuildTool.MAVEN.createBuildFile(new FileProjectWriter(project.getBasedir()));
-                } catch (IOException e) {
-                    throw new MojoExecutionException("Failed initialize project configuration tools", e);
-                }
-            }
-            Set<String> ext = new HashSet<>();
-            if (extensions != null && !extensions.isEmpty()) {
-                ext.addAll(extensions);
-            } else {
-                // Parse the "extension" just in case it contains several comma-separated values
-                // https://github.com/quarkusio/quarkus/issues/2393
-                ext.addAll(Arrays.stream(extension.split(",")).map(s -> s.trim()).collect(Collectors.toSet()));
-            }
-
+        if (buildFile == null) {
             try {
-                final AddExtensionResult result = new AddExtensions(buildFile)
-                        .addExtensions(ext.stream().map(String::trim).collect(Collectors.toSet()));
-                if (!result.succeeded()) {
-                    throw new MojoExecutionException("Unable to add extensions");
-                }
+                buildFile = BuildTool.MAVEN.createBuildFile(new FileProjectWriter(project.getBasedir()));
             } catch (IOException e) {
-                throw new MojoExecutionException("Unable to update the pom.xml file", e);
+                throw new MojoExecutionException("Failed to initialize the project's build descriptor", e);
             }
-        } finally {
-            if (closeBuildFile && buildFile != null) {
-                try {
-                    buildFile.close();
-                } catch (IOException e) {
-                    getLog().debug("Failed to close " + buildFile, e);
-                }
+        }
+        Set<String> ext = new HashSet<>();
+        if (extensions != null && !extensions.isEmpty()) {
+            ext.addAll(extensions);
+        } else {
+            // Parse the "extension" just in case it contains several comma-separated values
+            // https://github.com/quarkusio/quarkus/issues/2393
+            ext.addAll(Arrays.stream(extension.split(",")).map(s -> s.trim()).collect(Collectors.toSet()));
+        }
+
+        try {
+            final AddExtensionResult result = new AddExtensions(buildFile)
+                    .addExtensions(ext.stream().map(String::trim).collect(Collectors.toSet()));
+            if (!result.succeeded()) {
+                throw new MojoExecutionException("Unable to add extensions");
             }
+        } catch (IOException e) {
+            throw new MojoExecutionException("Unable to update the pom.xml file", e);
         }
     }
 }

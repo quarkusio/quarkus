@@ -256,8 +256,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         return null;
                     }
                     ProxyInstance instance = getProxyInstance(returnType);
-                    if (instance == null)
+                    if (instance == null) {
                         return null;
+                    }
 
                     storedMethodCall.returnedProxy = instance.proxy;
                     storedMethodCall.proxyId = instance.key;

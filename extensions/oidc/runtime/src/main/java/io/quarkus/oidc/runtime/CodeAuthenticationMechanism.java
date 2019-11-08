@@ -12,6 +12,8 @@ import java.util.function.Function;
 import javax.enterprise.context.ApplicationScoped;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -38,8 +40,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return QuarkusSecurityIdentity.builder()
                 .setPrincipal(securityIdentity.getPrincipal())
                 .addCredentials(securityIdentity.getCredentials())
-                .addCredential(new AccessTokenCredential(accessToken))
-                .addCredential(new RefreshToken(refreshToken))
+                .addCredential(new AccessTokenCredential(accessToken, refreshToken))
                 .addRoles(securityIdentity.getRoles())
                 .addAttributes(securityIdentity.getAttributes())
                 .addPermissionChecker(new Function<Permission, CompletionStage<Boolean>>() {

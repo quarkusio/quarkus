@@ -170,12 +170,13 @@ public final class HibernateOrmProcessor {
         // remember how to run the enhancers later
         domainObjectsProducer.produce(domainObjects);
 
-        if (!hasEntities(domainObjects, nonJpaModelBuildItems)) {
+        final boolean enableORM = hasEntities(domainObjects, nonJpaModelBuildItems);
+        recorder.callHibernateFeatureInit(enableORM);
+
+        if (!enableORM) {
             // we can bail out early
             return;
         }
-
-        recorder.callHibernateFeatureInit();
 
         // handle the implicit persistence unit
         List<ParsedPersistenceXmlDescriptor> allDescriptors = new ArrayList<>(explicitDescriptors.size() + 1);

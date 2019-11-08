@@ -18,8 +18,10 @@ public class Hibernate {
                 org.hibernate.cfg.Environment.BYTECODE_PROVIDER_NAME_NONE);
     }
 
-    public static void featureInit() {
-        Logger.getLogger("org.hibernate.quarkus.feature").debug("Hibernate Features Enabled");
+    public static void featureInit(boolean enabled) {
+        if (enabled) {
+            Logger.getLogger("org.hibernate.quarkus.feature").debug("Hibernate Features Enabled");
+        }
     }
 
 }

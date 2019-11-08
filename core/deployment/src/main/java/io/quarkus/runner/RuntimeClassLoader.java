@@ -9,12 +9,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.CodeSource;
 import java.security.MessageDigest;
+import java.security.ProtectionDomain;
+import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -54,6 +59,8 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
 
     private final Map<String, Path> applicationClasses;
 
+    private final ProtectionDomain defaultProtectionDomain;
+
     private final Path frameworkClassesPath;
     private final Path transformerCache;
 
@@ -85,6 +92,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
                 }
             }
 
+            this.defaultProtectionDomain = createDefaultProtectionDomain(applicationClassesDirectories.get(0));
             this.applicationClasses = applicationClasses;
 
         } catch (IOException e) {
@@ -183,7 +191,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         if (bytes != null) {
             try {
                 definePackage(name);
-                return defineClass(name, bytes, 0, bytes.length);
+                return defineClass(name, bytes, 0, bytes.length, defaultProtectionDomain);
             } catch (Error e) {
                 //potential race conditions if another thread is loading the same class
                 existing = findLoadedClass(name);
@@ -214,7 +222,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
                 }
                 bytes = handleTransform(name, bytes);
                 definePackage(name);
-                Class<?> clazz = defineClass(name, bytes, 0, bytes.length);
+                Class<?> clazz = defineClass(name, bytes, 0, bytes.length, defaultProtectionDomain);
                 res.complete(clazz);
                 return clazz;
             } catch (RuntimeException e) {
@@ -318,7 +326,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
      * See {@link io.quarkus.deployment.proxy.InjectIntoClassloaderClassOutput}
      */
     public Class<?> visibleDefineClass(String name, byte[] b, int off, int len) throws ClassFormatError {
-        return super.defineClass(name, b, off, len);
+        return super.defineClass(name, b, off, len, defaultProtectionDomain);
     }
 
     private void definePackage(String name) {
@@ -485,5 +493,20 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
             }
         }
         return null;
+    }
+
+    private ProtectionDomain createDefaultProtectionDomain(Path applicationClasspath) {
+        URL url = null;
+        if (applicationClasspath != null) {
+            try {
+                URI uri = new URI("file", null, applicationClasspath.toString(), null);
+                url = uri.toURL();
+            } catch (URISyntaxException | MalformedURLException e) {
+                log.error("URL codeSource location for path " + applicationClasspath + " could not be created.");
+            }
+        }
+        CodeSource codesource = new CodeSource(url, (Certificate[]) null);
+        ProtectionDomain protectionDomain = new ProtectionDomain(codesource, null, this, null);
+        return protectionDomain;
     }
 }

@@ -18,7 +18,7 @@
         <keycloak.url>http://localhost:8180/auth</keycloak.url>
         <htmlunit.version>2.36.0</htmlunit.version>
     </properties>
-  
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -187,10 +187,6 @@
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                     <enableServer>false</enableServer>
                                     <dumpProxies>false</dumpProxies>
-                                    <!-- Requires Quarkus Graal fork to work, will fail otherwise
-                                      <enableRetainedHeapReporting>true</enableRetainedHeapReporting>
-                                      <enableCodeSizeReporting>true</enableCodeSizeReporting>
-                                    -->
                                     <graalvmHome>${graalvmHome}</graalvmHome>
                                     <debugBuildProcess>false</debugBuildProcess>
                                 </configuration>

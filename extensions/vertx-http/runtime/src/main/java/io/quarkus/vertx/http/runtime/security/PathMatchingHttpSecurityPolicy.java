@@ -93,7 +93,10 @@ public class PathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
                     List<HttpMatcher> perms = new ArrayList<>();
                     tempMap.put(path, perms);
                     perms.add(m);
-                    if (path.endsWith("*")) {
+                    if (path.endsWith("/*")) {
+                        String stripped = path.substring(0, path.length() - 2);
+                        pathMatcher.addPrefixPath(stripped.isEmpty() ? "/" : stripped, perms);
+                    } else if (path.endsWith("*")) {
                         pathMatcher.addPrefixPath(path.substring(0, path.length() - 1), perms);
                     } else {
                         pathMatcher.addExactPath(path, perms);

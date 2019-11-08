@@ -229,39 +229,32 @@ public class SmallRyeOpenApiProcessor {
         }
     }
 
-    @BuildStep
+    @BuildStep(loadsApplicationClasses = true)
     public void build(ApplicationArchivesBuildItem archivesBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
             BuildProducer<GeneratedResourceBuildItem> resourceBuildItemBuildProducer,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
-            DeploymentClassLoaderBuildItem deploymentClassLoaderBuildItem) throws Exception {
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        try {
-            Thread.currentThread().setContextClassLoader(deploymentClassLoaderBuildItem.getClassLoader());
-            FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
+            OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem) throws Exception {
+        FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
 
-            feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
-            OpenAPI staticModel = generateStaticModel(archivesBuildItem);
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
+        OpenAPI staticModel = generateStaticModel(archivesBuildItem);
 
-            OpenAPI annotationModel;
-            Config config = ConfigProvider.getConfig();
-            boolean scanDisable = config.getOptionalValue(OASConfig.SCAN_DISABLE, Boolean.class).orElse(false);
-            if (resteasyJaxrsConfig.isPresent() && !scanDisable) {
-                annotationModel = generateAnnotationModel(index, resteasyJaxrsConfig.get());
-            } else {
-                annotationModel = null;
-            }
-            OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel);
-            for (OpenApiSerializer.Format format : OpenApiSerializer.Format.values()) {
-                String name = OpenApiHandler.BASE_NAME + format;
-                resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name,
-                        OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8)));
-                nativeImageResources.produce(new NativeImageResourceBuildItem(name));
-            }
-        } finally {
-            Thread.currentThread().setContextClassLoader(old);
+        OpenAPI annotationModel;
+        Config config = ConfigProvider.getConfig();
+        boolean scanDisable = config.getOptionalValue(OASConfig.SCAN_DISABLE, Boolean.class).orElse(false);
+        if (resteasyJaxrsConfig.isPresent() && !scanDisable) {
+            annotationModel = generateAnnotationModel(index, resteasyJaxrsConfig.get());
+        } else {
+            annotationModel = null;
+        }
+        OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel);
+        for (OpenApiSerializer.Format format : OpenApiSerializer.Format.values()) {
+            String name = OpenApiHandler.BASE_NAME + format;
+            resourceBuildItemBuildProducer.produce(new GeneratedResourceBuildItem(name,
+                    OpenApiSerializer.serialize(finalDocument.get(), format).getBytes(StandardCharsets.UTF_8)));
+            nativeImageResources.produce(new NativeImageResourceBuildItem(name));
         }
     }
 

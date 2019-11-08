@@ -13,6 +13,10 @@ public class ExceptionMapperRecorder {
         NotFoundExceptionMapper.staticResources(resources);
     }
 
+    public void setAdditionalEndpoints(List<String> additionalEndpoints) {
+        NotFoundExceptionMapper.setAdditionalEndpoints(additionalEndpoints);
+    }
+
     public void setServlets(Map<String, List<String>> servletToMapping) {
         NotFoundExceptionMapper.servlets(servletToMapping);
     }
@@ -20,7 +24,7 @@ public class ExceptionMapperRecorder {
     /**
      * Uses to register the paths of classes that are not annotated with JAX-RS annotations (like Spring Controllers for
      * example)
-     * 
+     *
      * @param nonJaxRsClassNameToMethodPaths A map that contains the class name as a key and a map that
      *        contains the method name to path as a value
      */

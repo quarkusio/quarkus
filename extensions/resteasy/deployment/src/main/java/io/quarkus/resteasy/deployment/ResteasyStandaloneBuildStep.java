@@ -79,7 +79,7 @@ public class ResteasyStandaloneBuildStep {
             deploymentRootPath = deployment.getRootPath();
             if (rootPath.endsWith("/")) {
                 if (deploymentRootPath.startsWith("/")) {
-                    rootPath += deploymentRootPath.substring(1, deploymentRootPath.length());
+                    rootPath += deploymentRootPath.substring(1);
                 } else {
                     rootPath += deploymentRootPath;
                 }

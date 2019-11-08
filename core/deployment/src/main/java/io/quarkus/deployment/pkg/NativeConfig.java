@@ -92,18 +92,6 @@ public class NativeConfig {
     public boolean cleanupServer;
 
     /**
-     * This will report on the size of the retained heap after image build
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean enableRetainedHeapReporting;
-
-    /**
-     * This enables reporting of the code size of the native image
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean enableCodeSizeReporting;
-
-    /**
      * If isolates should be enabled
      */
     @ConfigItem(defaultValue = "true")

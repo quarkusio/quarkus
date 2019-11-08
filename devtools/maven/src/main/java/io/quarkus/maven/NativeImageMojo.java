@@ -92,13 +92,7 @@ public class NativeImageMojo extends AbstractMojo {
     private Boolean enableAllSecurityServices;
 
     @Parameter
-    private Boolean enableRetainedHeapReporting;
-
-    @Parameter
     private Boolean enableIsolates;
-
-    @Parameter
-    private Boolean enableCodeSizeReporting;
 
     @Parameter(defaultValue = "${env.GRAALVM_HOME}")
     private String graalvmHome;
@@ -365,9 +359,6 @@ public class NativeImageMojo extends AbstractMojo {
                 if (enableAllSecurityServices != null) {
                     configs.add("quarkus.native.enable-all-security-services", enableAllSecurityServices.toString());
                 }
-                if (enableCodeSizeReporting != null) {
-                    configs.add("quarkus.native.enable-code-size-reporting", enableCodeSizeReporting.toString());
-                }
                 if (enableFallbackImages != null) {
                     configs.add("quarkus.native.enable-fallback-images", enableFallbackImages.toString());
                 }
@@ -383,12 +374,11 @@ public class NativeImageMojo extends AbstractMojo {
                 if (enableJni != null) {
                     configs.add("quarkus.native.enable-jni", enableJni.toString());
                 }
-                if (enableRetainedHeapReporting != null) {
-                    configs.add("quarkus.native.enable-retained-heap-reporting", enableRetainedHeapReporting.toString());
-                }
+
                 if (enableServer != null) {
                     configs.add("quarkus.native.enable-server", enableServer.toString());
                 }
+
                 if (enableVMInspection != null) {
                     configs.add("quarkus.native.enable-vm-inspection", enableVMInspection.toString());
                 }
@@ -396,13 +386,13 @@ public class NativeImageMojo extends AbstractMojo {
                     configs.add("quarkus.native.full-stack-traces", fullStackTraces.toString());
                 }
                 if (graalvmHome != null && !graalvmHome.trim().isEmpty()) {
-                    configs.add("quarkus.native.graalvm-home", graalvmHome.toString());
+                    configs.add("quarkus.native.graalvm-home", graalvmHome);
                 }
                 if (javaHome != null && !javaHome.toString().isEmpty()) {
                     configs.add("quarkus.native.java-home", javaHome.toString());
                 }
                 if (nativeImageXmx != null && !nativeImageXmx.trim().isEmpty()) {
-                    configs.add("quarkus.native.native-image-xmx", nativeImageXmx.toString());
+                    configs.add("quarkus.native.native-image-xmx", nativeImageXmx);
                 }
                 if (reportErrorsAtRuntime != null) {
                     configs.add("quarkus.native.report-errors-at-runtime", reportErrorsAtRuntime.toString());

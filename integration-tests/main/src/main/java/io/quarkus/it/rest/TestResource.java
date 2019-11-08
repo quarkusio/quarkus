@@ -78,6 +78,13 @@ public class TestResource {
     }
 
     @GET
+    @Path("/config/names")
+    @Produces("application/json")
+    public String configNames() {
+        return String.join(",", config.names());
+    }
+
+    @GET
     @Path("/count")
     public int count() {
         return count.incrementAndGet();

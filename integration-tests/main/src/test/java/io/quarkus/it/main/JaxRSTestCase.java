@@ -37,6 +37,11 @@ public class JaxRSTestCase {
     }
 
     @Test
+    public void testConfigInjectionOfStringArray() {
+        RestAssured.when().get("/test/config/names").then().body(is("quarkus,redhat"));
+    }
+
+    @Test
     public void testAnnotatedInterface() {
         RestAssured.when().get("/interface").then().body(is("interface endpoint"));
 

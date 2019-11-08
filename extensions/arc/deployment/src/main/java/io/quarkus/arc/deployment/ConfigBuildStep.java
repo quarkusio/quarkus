@@ -131,7 +131,7 @@ public class ConfigBuildStep {
         for (ConfigPropertyBuildItem item : configProperties) {
             Type requiredType = item.getPropertyType();
             String propertyType = requiredType.name().toString();
-            if (requiredType.kind() != Kind.ARRAY && requiredType.kind() != Kind.PRIMITIVE) {
+            if (requiredType.kind() != Kind.PRIMITIVE) {
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, propertyType));
             }
         }

@@ -178,7 +178,7 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
                 appCl = clFactory.newDeploymentClassLoader();
 
             } catch (BootstrapException e) {
-                throw new IllegalStateException("Failed to create the boostrap class loader", e);
+                throw new IllegalStateException("Failed to create the bootstrap class loader", e);
             }
 
             appClassloader.set(appCl);

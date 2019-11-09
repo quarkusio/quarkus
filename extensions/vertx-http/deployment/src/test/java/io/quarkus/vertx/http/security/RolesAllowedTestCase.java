@@ -20,9 +20,9 @@ public class RolesAllowedTestCase {
             "quarkus.http.auth.basic=true\n" +
             "quarkus.http.auth.policy.r1.roles-allowed=test\n" +
             "quarkus.http.auth.policy.r2.roles-allowed=admin\n" +
-            "quarkus.http.auth.permission.roles1.paths=/roles1,/deny,/permit,/combined\n" +
+            "quarkus.http.auth.permission.roles1.paths=/roles1,/deny,/permit,/combined,/wildcard1/*,/wildcard2*\n" +
             "quarkus.http.auth.permission.roles1.policy=r1\n" +
-            "quarkus.http.auth.permission.roles2.paths=/roles2,/deny,/permit/combined\n" +
+            "quarkus.http.auth.permission.roles2.paths=/roles2,/deny,/permit/combined,/wildcard3/*\n" +
             "quarkus.http.auth.permission.roles2.policy=r2\n" +
             "quarkus.http.auth.permission.permit1.paths=/permit\n" +
             "quarkus.http.auth.permission.permit1.policy=permit\n" +
@@ -177,5 +177,95 @@ public class RolesAllowedTestCase {
                 .then()
                 .assertThat()
                 .statusCode(403);
+    }
+
+    @Test
+    public void testWildcardMatchingWithSlash() {
+        RestAssured
+                .given()
+                .auth()
+                .preemptive()
+                .basic("test", "test")
+                .when()
+                .get("/wildcard1/a")
+                .then()
+                .assertThat()
+                .statusCode(200);
+
+        RestAssured
+                .given()
+                .auth()
+                .preemptive()
+                .basic("test", "test")
+                .when()
+                .get("/wildcard1/a/")
+                .then()
+                .assertThat()
+                .statusCode(200);
+
+        RestAssured
+                .given()
+                .when()
+                .get("/wildcard1/a")
+                .then()
+                .assertThat()
+                .statusCode(401);
+
+        RestAssured
+                .given()
+                .when()
+                .get("/wildcard1/a/")
+                .then()
+                .assertThat()
+                .statusCode(401);
+
+        RestAssured
+                .given()
+                .when()
+                .get("/wildcard3XXX")
+                .then()
+                .assertThat()
+                .statusCode(200);
+    }
+
+    @Test
+    public void testWildcardMatchingWithoutSlash() {
+        RestAssured
+                .given()
+                .auth()
+                .preemptive()
+                .basic("test", "test")
+                .when()
+                .get("/wildcard2/a")
+                .then()
+                .assertThat()
+                .statusCode(200);
+
+        RestAssured
+                .given()
+                .auth()
+                .preemptive()
+                .basic("test", "test")
+                .when()
+                .get("/wildcard2")
+                .then()
+                .assertThat()
+                .statusCode(200);
+
+        RestAssured
+                .given()
+                .when()
+                .get("/wildcard2")
+                .then()
+                .assertThat()
+                .statusCode(401);
+
+        RestAssured
+                .given()
+                .when()
+                .get("/wildcard2/a")
+                .then()
+                .assertThat()
+                .statusCode(401);
     }
 }

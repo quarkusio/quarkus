@@ -5,7 +5,7 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
-public class PersonFragmentImpl implements PersonFragment, PersonFragment2 {
+public class PersonRepositoryImpl implements PersonFragment, PersonFragment2 {
 
     @PersistenceContext
     EntityManager entityManager;

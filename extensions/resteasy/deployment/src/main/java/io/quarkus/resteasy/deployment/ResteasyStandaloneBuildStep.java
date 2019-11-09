@@ -25,6 +25,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder;
@@ -55,6 +56,11 @@ public class ResteasyStandaloneBuildStep {
             }
         }
 
+    }
+
+    @BuildStep
+    HotDeploymentWatchedFileBuildItem watchMetaInfResources() {
+        return new HotDeploymentWatchedFileBuildItem(META_INF_RESOURCES);
     }
 
     @BuildStep()

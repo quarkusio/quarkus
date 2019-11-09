@@ -67,7 +67,7 @@ public class ConfigRecorder {
         try {
             return Class.forName(className, true, cl);
         } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Unable to load the config property type: " + className);
+            throw new IllegalStateException("Unable to load the config property type: " + className, e);
         }
     }
 

@@ -6,6 +6,7 @@ import javax.inject.Inject;
 
 import org.apache.activemq.artemis.api.core.ActiveMQException;
 import org.apache.activemq.artemis.api.core.client.ClientMessage;
+import org.apache.activemq.artemis.api.core.client.ClientProducer;
 import org.apache.activemq.artemis.api.core.client.ClientSession;
 import org.apache.activemq.artemis.api.core.client.ClientSessionFactory;
 import org.apache.activemq.artemis.api.core.client.ServerLocator;
@@ -27,7 +28,9 @@ public class ArtemisProducerManager {
         try (ClientSession session = connection.createSession()) {
             ClientMessage message = session.createMessage(true);
             message.getBodyBuffer().writeString(body);
-            session.createProducer("test-core").send(message);
+            try (ClientProducer producer = session.createProducer("test-core")) {
+                producer.send(message);
+            }
         } catch (ActiveMQException e) {
             throw new RuntimeException("Could not send message", e);
         }

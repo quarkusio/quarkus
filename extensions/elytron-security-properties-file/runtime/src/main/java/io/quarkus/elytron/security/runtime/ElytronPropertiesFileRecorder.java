@@ -1,6 +1,8 @@
 package io.quarkus.elytron.security.runtime;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -84,9 +86,11 @@ public class ElytronPropertiesFileRecorder {
                         throw new IllegalStateException(msg);
                     }
                     LegacyPropertiesSecurityRealm propsRealm = (LegacyPropertiesSecurityRealm) secRealm;
-                    propsRealm.load(users.openStream(), roles.openStream());
+                    try (InputStream usersStream = users.openStream(); InputStream rolesStream = roles.openStream()) {
+                        propsRealm.load(usersStream, rolesStream);
+                    }
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    throw new UncheckedIOException(e);
                 }
             }
         };

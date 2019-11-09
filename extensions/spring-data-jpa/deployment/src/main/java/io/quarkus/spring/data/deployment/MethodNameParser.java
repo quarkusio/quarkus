@@ -115,7 +115,7 @@ public class MethodNameParser {
         boolean allIgnoreCase = false;
         if (afterByPart.contains(ALL_IGNORE_CASE)) {
             allIgnoreCase = true;
-            afterByPart = afterByPart.replaceAll(ALL_IGNORE_CASE, "");
+            afterByPart = afterByPart.replace(ALL_IGNORE_CASE, "");
         }
 
         // handle the 'OrderBy' clause which is assumed to be at the end of the query
@@ -131,10 +131,10 @@ public class MethodNameParser {
             boolean ascending = true;
             if (afterOrderByPart.endsWith("Asc")) {
                 ascending = true;
-                afterOrderByPart = afterOrderByPart.replaceAll("Asc", "");
+                afterOrderByPart = afterOrderByPart.replace("Asc", "");
             } else if (afterOrderByPart.endsWith("Desc")) {
                 ascending = false;
-                afterOrderByPart = afterOrderByPart.replaceAll("Desc", "");
+                afterOrderByPart = afterOrderByPart.replace("Desc", "");
             }
             String orderField = lowerFirstLetter(afterOrderByPart);
             if (!entityContainsField(orderField)) {
@@ -176,7 +176,7 @@ public class MethodNameParser {
 
             if (part.endsWith(IGNORE_CASE)) {
                 ignoreCase = true;
-                part = part.replaceAll(IGNORE_CASE, "");
+                part = part.replace(IGNORE_CASE, "");
             }
 
             String operation = getFieldOperation(part);

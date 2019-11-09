@@ -88,7 +88,7 @@ public class NativeImageBuildStep {
                 if ("docker".equals(containerRuntime)) {
                     String uid = getLinuxID("-ur");
                     String gid = getLinuxID("-gr");
-                    if (uid != null & gid != null & !"".equals(uid) & !"".equals(gid)) {
+                    if (uid != null && gid != null && !"".equals(uid) && !"".equals(gid)) {
                         Collections.addAll(nativeImage, "--user", uid + ":" + gid);
                     }
                 } else if ("podman".equals(containerRuntime)) {

@@ -313,6 +313,7 @@ public class ArcProcessor {
                 case SERVICE_PROVIDER:
                     generatedResource.produce(
                             new GeneratedResourceBuildItem("META-INF/services/" + resource.getName(), resource.getData()));
+                    break;
                 default:
                     break;
             }

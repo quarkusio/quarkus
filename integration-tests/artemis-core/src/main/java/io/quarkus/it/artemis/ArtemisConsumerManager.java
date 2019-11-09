@@ -5,6 +5,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.apache.activemq.artemis.api.core.ActiveMQException;
+import org.apache.activemq.artemis.api.core.client.ClientConsumer;
 import org.apache.activemq.artemis.api.core.client.ClientMessage;
 import org.apache.activemq.artemis.api.core.client.ClientSession;
 import org.apache.activemq.artemis.api.core.client.ClientSessionFactory;
@@ -26,9 +27,11 @@ public class ArtemisConsumerManager {
     public String receive() {
         try (ClientSession session = connection.createSession()) {
             session.start();
-            ClientMessage message = session.createConsumer("test-core").receive(1000L);
-            message.acknowledge();
-            return message.getBodyBuffer().readString();
+            try (ClientConsumer consumer = session.createConsumer("test-core")) {
+                ClientMessage message = consumer.receive(1000L);
+                message.acknowledge();
+                return message.getBodyBuffer().readString();
+            }
         } catch (ActiveMQException e) {
             throw new RuntimeException("Could not receive message", e);
         }

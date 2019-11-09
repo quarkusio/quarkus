@@ -15,8 +15,8 @@ public class ArtemisConsumerManager {
     ConnectionFactory connectionFactory;
 
     public String receive() {
-        try (JMSContext context = connectionFactory.createContext(Session.AUTO_ACKNOWLEDGE)) {
-            JMSConsumer consumer = context.createConsumer(context.createQueue("test-jms"));
+        try (JMSContext context = connectionFactory.createContext(Session.AUTO_ACKNOWLEDGE);
+                JMSConsumer consumer = context.createConsumer(context.createQueue("test-jms"))) {
             return consumer.receive(1000L).getBody(String.class);
         } catch (JMSException e) {
             throw new RuntimeException("Could not receive message", e);

@@ -4,6 +4,7 @@ import java.io.Writer;
 
 import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.JsonWriter;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
@@ -13,8 +14,9 @@ public class ServerDtoEncoder implements Encoder.TextStream<Dto> {
         JsonObject jsonObject = Json.createObjectBuilder()
                 .add("content", object.getContent())
                 .build();
-        Json.createWriter(writer)
-                .writeObject(jsonObject);
+        try (JsonWriter jsonWriter = Json.createWriter(writer)) {
+            jsonWriter.writeObject(jsonObject);
+        }
     }
 
     @Override

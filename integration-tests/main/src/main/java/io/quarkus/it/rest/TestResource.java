@@ -254,17 +254,18 @@ public class TestResource {
     @GET
     @Path("/from-json")
     @Produces("application/json")
-    public MyEntity fromJson() {
+    public MyEntity fromJson() throws Exception {
         MyEntity entity = new MyEntity();
         entity.name = "my entity name";
         entity.value = "my entity value";
 
         JsonbConfig config = new JsonbConfig();
-        Jsonb jsonb = JsonbBuilder.create(config);
-        String json = jsonb.toJson(entity);
-        MyEntity fromJsonEntity = jsonb.fromJson(json, MyEntity.class);
+        try (Jsonb jsonb = JsonbBuilder.create(config)) {
+            String json = jsonb.toJson(entity);
+            MyEntity fromJsonEntity = jsonb.fromJson(json, MyEntity.class);
 
-        return fromJsonEntity;
+            return fromJsonEntity;
+        }
     }
 
     @GET

@@ -19,6 +19,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -73,10 +74,11 @@ public class SpringDataRepositoryCreator {
         }
 
         Map<String, FieldDescriptor> fragmentImplNameToFieldDescriptor = new HashMap<>();
-        String generatedClassName = repositoryToImplement.name().toString() + "Impl";
+        String repositoryToImplementStr = repositoryToImplement.name().toString();
+        String generatedClassName = repositoryToImplementStr + "_" + HashUtil.sha1(repositoryToImplementStr) + "Impl";
         try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
                 .className(generatedClassName)
-                .interfaces(repositoryToImplement.name().toString())
+                .interfaces(repositoryToImplementStr)
                 .build()) {
             classCreator.addAnnotation(ApplicationScoped.class);
 

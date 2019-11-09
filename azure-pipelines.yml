@@ -14,6 +14,7 @@ pr:
       - docs/src/main/asciidoc/images/*
       - README.md
       - CONTRIBUTING.md
+      - ADOPTERS.md
       - LICENSE.txt
       - dco.txt
       - .github/ISSUE_TEMPLATE/*.md

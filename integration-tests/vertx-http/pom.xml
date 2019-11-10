@@ -103,7 +103,6 @@
                                         <additionalBuildArg>-H:EnableURLProtocols=http,https</additionalBuildArg>
                                     </additionalBuildArgs>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableJni>true</enableJni>
                                     <enableAllSecurityServices>true</enableAllSecurityServices>
                                 </configuration>
                             </execution>

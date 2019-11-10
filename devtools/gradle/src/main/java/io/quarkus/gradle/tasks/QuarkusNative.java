@@ -49,7 +49,7 @@ public class QuarkusNative extends QuarkusTask {
 
     private boolean enableServer = false;
 
-    private boolean enableJni = false;
+    private boolean enableJni = true;
 
     private boolean autoServiceLoaderRegistration = false;
 

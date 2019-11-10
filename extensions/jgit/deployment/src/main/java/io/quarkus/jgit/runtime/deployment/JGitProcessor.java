@@ -1,11 +1,15 @@
 package io.quarkus.jgit.runtime.deployment;
 
+import java.util.Arrays;
+import java.util.List;
+
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.jgit.runtime.PortWatcherRunTime;
 
 class JGitProcessor {
 
@@ -84,8 +88,10 @@ class JGitProcessor {
     }
 
     @BuildStep
-    RuntimeInitializedClassBuildItem lazyDigest() {
-        return new RuntimeInitializedClassBuildItem("org.eclipse.jgit.transport.HttpAuthMethod$Digest");
+    List<RuntimeInitializedClassBuildItem> runtimeInitializedClasses() {
+        return Arrays.asList(
+                new RuntimeInitializedClassBuildItem("org.eclipse.jgit.transport.HttpAuthMethod$Digest"),
+                new RuntimeInitializedClassBuildItem(PortWatcherRunTime.class.getName()));
     }
 
     @BuildStep

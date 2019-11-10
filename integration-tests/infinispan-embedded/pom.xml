@@ -144,7 +144,6 @@
                                         <additionalBuildArg>-H:ResourceConfigurationFiles=${project.basedir}/src/main/resources/resources-config.json</additionalBuildArg>
                                     </additionalBuildArgs>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableJni>true</enableJni>
                                 </configuration>
                             </execution>
                         </executions>

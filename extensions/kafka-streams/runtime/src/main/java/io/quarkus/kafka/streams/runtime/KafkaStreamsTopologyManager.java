@@ -2,6 +2,7 @@ package io.quarkus.kafka.streams.runtime;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -50,6 +51,7 @@ public class KafkaStreamsTopologyManager {
     private KafkaStreamsRuntimeConfig runtimeConfig;
     private Instance<Topology> topology;
     private Properties properties;
+    private Map<String, Object> adminClientConfig;
 
     KafkaStreamsTopologyManager() {
         executor = null;
@@ -105,10 +107,11 @@ public class KafkaStreamsTopologyManager {
         Properties streamsProperties = getStreamsProperties(properties, bootstrapServersConfig, runtimeConfig);
 
         streams = new KafkaStreams(topology.get(), streamsProperties);
+        adminClientConfig = getAdminClientConfig(bootstrapServersConfig);
 
         executor.execute(() -> {
             try {
-                waitForTopicsToBeCreated(runtimeConfig.getTrimmedTopics(), bootstrapServersConfig);
+                waitForTopicsToBeCreated(runtimeConfig.getTrimmedTopics());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return;
@@ -131,21 +134,9 @@ public class KafkaStreamsTopologyManager {
         return streams;
     }
 
-    private void waitForTopicsToBeCreated(Collection<String> topicsToAwait, String bootstrapServersConfig)
+    private void waitForTopicsToBeCreated(Collection<String> topicsToAwait)
             throws InterruptedException {
-        final Map<String, Object> config = new HashMap<>();
-        config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersConfig);
-        // include other AdminClientConfig(s) that have been configured
-        for (final String knownAdminClientConfig : AdminClientConfig.configNames()) {
-            // give preference to admin.<propname> first
-            if (properties.containsKey(StreamsConfig.ADMIN_CLIENT_PREFIX + knownAdminClientConfig)) {
-                config.put(knownAdminClientConfig, properties.get(StreamsConfig.ADMIN_CLIENT_PREFIX + knownAdminClientConfig));
-            } else if (properties.containsKey(knownAdminClientConfig)) {
-                config.put(knownAdminClientConfig, properties.get(knownAdminClientConfig));
-            }
-        }
-
-        try (AdminClient adminClient = AdminClient.create(config)) {
+        try (AdminClient adminClient = AdminClient.create(adminClientConfig)) {
             while (true) {
                 try {
                     ListTopicsResult topics = adminClient.listTopics();
@@ -155,7 +146,7 @@ public class KafkaStreamsTopologyManager {
                         LOGGER.debug("All expected topics created");
                         return;
                     } else {
-                        HashSet<String> missing = new HashSet<>(topicsToAwait);
+                        Set<String> missing = new HashSet<>(topicsToAwait);
                         missing.removeAll(topicNames);
                         LOGGER.debug("Waiting for topic(s) to be created: " + missing);
                     }
@@ -166,6 +157,42 @@ public class KafkaStreamsTopologyManager {
                 }
             }
         }
+    }
+
+    public Set<String> getMissingTopics(Collection<String> topicsToCheck)
+            throws InterruptedException {
+        HashSet<String> missing = new HashSet<>(topicsToCheck);
+
+        try (AdminClient adminClient = AdminClient.create(adminClientConfig)) {
+            ListTopicsResult topics = adminClient.listTopics();
+            Set<String> topicNames = topics.names().get(10, TimeUnit.SECONDS);
+
+            if (topicNames.containsAll(topicsToCheck)) {
+                return Collections.EMPTY_SET;
+            } else {
+                missing.removeAll(topicNames);
+            }
+        } catch (ExecutionException | TimeoutException e) {
+            LOGGER.error("Failed to get topic names from broker", e);
+        }
+
+        return missing;
+    }
+
+    private Map<String, Object> getAdminClientConfig(String bootstrapServersConfig) {
+        Map<String, Object> adminClientConfig = new HashMap<>();
+        adminClientConfig.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServersConfig);
+        // include other AdminClientConfig(s) that have been configured
+        for (final String knownAdminClientConfig : AdminClientConfig.configNames()) {
+            // give preference to admin.<propname> first
+            if (properties.containsKey(StreamsConfig.ADMIN_CLIENT_PREFIX + knownAdminClientConfig)) {
+                adminClientConfig.put(knownAdminClientConfig,
+                        properties.get(StreamsConfig.ADMIN_CLIENT_PREFIX + knownAdminClientConfig));
+            } else if (properties.containsKey(knownAdminClientConfig)) {
+                adminClientConfig.put(knownAdminClientConfig, properties.get(knownAdminClientConfig));
+            }
+        }
+        return adminClientConfig;
     }
 
     public void setRuntimeConfig(KafkaStreamsRuntimeConfig runtimeConfig) {

@@ -73,7 +73,7 @@ public class NativeImageBuildStep {
 
         final String runnerJarName = runnerJar.getFileName().toString();
 
-        boolean vmVersionOutOfDate = isThisGraalVMVersionObsolete();
+        isThisGraalVMVersionObsolete();
 
         HashMap<String, String> env = new HashMap<>(System.getenv());
         List<String> nativeImage;
@@ -178,8 +178,6 @@ public class NativeImageBuildStep {
             command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
             command.add("-jar");
             command.add(runnerJarName);
-            //https://github.com/oracle/graal/issues/660
-            command.add("-J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1");
             if (nativeConfig.enableFallbackImages) {
                 command.add("-H:FallbackThreshold=5");
             } else {
@@ -296,16 +294,14 @@ public class NativeImageBuildStep {
     }
 
     //FIXME remove after transition period
-    private boolean isThisGraalVMVersionObsolete() {
+    private void isThisGraalVMVersionObsolete() {
         final String vmName = System.getProperty("java.vm.name");
         log.info("Running Quarkus native-image plugin on " + vmName);
-        final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.", "19.2.0");
+        final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.", "19.2.");
         final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
         if (vmVersionIsObsolete) {
-            log.error("Out of date build of GraalVM detected! Please upgrade to GraalVM 19.2.1.");
-            return true;
+            log.error("Out of date build of GraalVM detected! Please upgrade to GraalVM 19.3.0.");
         }
-        return false;
     }
 
     private static File getNativeImageExecutable(Optional<String> graalVmHome, File javaHome, Map<String, String> env) {

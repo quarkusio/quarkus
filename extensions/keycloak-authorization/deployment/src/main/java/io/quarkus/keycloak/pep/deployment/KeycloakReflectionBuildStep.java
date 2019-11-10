@@ -31,7 +31,9 @@ import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.keycloak.pep.runtime.PortWatcherRunTime;
 
 public class KeycloakReflectionBuildStep {
 
@@ -73,5 +75,10 @@ public class KeycloakReflectionBuildStep {
                 HttpClaimInformationPointProviderFactory.class.getName(),
                 ClaimsInformationPointProviderFactory.class.getName()));
 
+    }
+
+    @BuildStep
+    RuntimeInitializedClassBuildItem runtimeInitializedClass() {
+        return new RuntimeInitializedClassBuildItem(PortWatcherRunTime.class.getName());
     }
 }

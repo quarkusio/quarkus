@@ -143,7 +143,6 @@
                                     <enableServer>false</enableServer>
                                     <dumpProxies>false</dumpProxies>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableJni>false</enableJni>
                                 </configuration>
                             </execution>
                         </executions>

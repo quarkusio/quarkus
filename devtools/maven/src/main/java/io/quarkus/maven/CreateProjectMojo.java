@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -54,7 +55,8 @@ import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.SourceType;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
-import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.tools.ToolsUtils;
 
 /**
  * This goal helps in setting up Quarkus Maven project with quarkus-maven-plugin, with sensible defaults
@@ -147,7 +149,8 @@ public class CreateProjectMojo extends AbstractMojo {
         } catch (AppModelResolverException e1) {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e1);
         }
-        CreateUtils.setGlobalPlatformDescriptor(bomGroupId, bomArtifactId, bomVersion, mvn, getLog());
+        final QuarkusPlatformDescriptor platform = CreateUtils.setGlobalPlatformDescriptor(bomGroupId, bomArtifactId,
+                bomVersion, mvn, getLog());
 
         // We detect the Maven version during the project generation to indicate the user immediately that the installed
         // version may not be supported.
@@ -221,12 +224,12 @@ public class CreateProjectMojo extends AbstractMojo {
                 }
             }
             if (BuildTool.MAVEN.equals(buildToolEnum)) {
-                createMavenWrapper(createdDependenciesBuildFile);
+                createMavenWrapper(createdDependenciesBuildFile, ToolsUtils.readQuarkusProperties(platform));
             } else if (BuildTool.GRADLE.equals(buildToolEnum)) {
-                createGradleWrapper(buildFile.getParentFile());
+                createGradleWrapper(buildFile.getParentFile(), ToolsUtils.readQuarkusProperties(platform));
             }
         } catch (IOException e) {
-            throw new MojoExecutionException(e.getMessage(), e);
+            throw new MojoExecutionException("Failed to generate Quarkus project", e);
         }
         if (success) {
             printUserInstructions(projectRoot);
@@ -236,11 +239,11 @@ public class CreateProjectMojo extends AbstractMojo {
         }
     }
 
-    private void createGradleWrapper(File projectDirectory) {
+    private void createGradleWrapper(File projectDirectory, Properties props) {
         try {
             String gradleName = IS_WINDOWS ? "gradle.bat" : "gradle";
             ProcessBuilder pb = new ProcessBuilder(gradleName, "wrapper",
-                    "--gradle-version=" + MojoUtils.getGradleWrapperVersion()).directory(projectDirectory)
+                    "--gradle-version=" + ToolsUtils.getGradleWrapperVersion(props)).directory(projectDirectory)
                             .inheritIO();
             Process x = pb.start();
 
@@ -259,7 +262,7 @@ public class CreateProjectMojo extends AbstractMojo {
 
     }
 
-    private void createMavenWrapper(File createdPomFile) {
+    private void createMavenWrapper(File createdPomFile, Properties props) {
         try {
             // we need to modify the maven environment used by the wrapper plugin since the project could have been
             // created in a directory other than the current
@@ -277,10 +280,10 @@ public class CreateProjectMojo extends AbstractMojo {
                     plugin(
                             groupId("io.takari"),
                             artifactId("maven"),
-                            version(MojoUtils.getMavenWrapperVersion())),
+                            version(ToolsUtils.getMavenWrapperVersion(props))),
                     goal("wrapper"),
                     configuration(
-                            element(name("maven"), MojoUtils.getProposedMavenVersion())),
+                            element(name("maven"), ToolsUtils.getProposedMavenVersion(props))),
                     executionEnvironment(
                             newProject,
                             newSession,

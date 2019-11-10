@@ -3,6 +3,8 @@ package io.quarkus.generators;
 import java.io.IOException;
 import java.util.Map;
 
+import io.quarkus.cli.commands.QuarkusCommandInvocation;
+import io.quarkus.cli.commands.legacy.LegacyQuarkusCommandInvocation;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 
 public interface ProjectGenerator {
@@ -24,5 +26,9 @@ public interface ProjectGenerator {
 
     String getName();
 
-    void generate(final ProjectWriter writer, Map<String, Object> parameters) throws IOException;
+    default void generate(ProjectWriter writer, Map<String, Object> parameters) throws IOException {
+        generate(writer, new LegacyQuarkusCommandInvocation(parameters));
+    }
+
+    void generate(ProjectWriter writer, QuarkusCommandInvocation invocation) throws IOException;
 }

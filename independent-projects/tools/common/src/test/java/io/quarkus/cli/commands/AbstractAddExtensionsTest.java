@@ -11,9 +11,7 @@ import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.maven.utilities.MojoUtils;
-
-abstract class AbstractAddExtensionsTest<T> {
+abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
 
     private final Path projectPath = Paths.get("target/extensions-test");
 
@@ -87,7 +85,7 @@ abstract class AbstractAddExtensionsTest<T> {
         final T project = readProject();
         hasDependency(project, "quarkus-agroal");
         Assertions.assertEquals(1,
-                countDependencyOccurrences(project, MojoUtils.getPluginGroupId(), "quarkus-agroal", null));
+                countDependencyOccurrences(project, getPluginGroupId(), "quarkus-agroal", null));
         Assertions.assertTrue(result.isUpdated());
         Assertions.assertTrue(result.succeeded());
     }
@@ -100,7 +98,7 @@ abstract class AbstractAddExtensionsTest<T> {
         final T project1 = readProject();
         hasDependency(project1, "quarkus-agroal");
         Assertions.assertEquals(1,
-                countDependencyOccurrences(project1, MojoUtils.getPluginGroupId(), "quarkus-agroal", null));
+                countDependencyOccurrences(project1, getPluginGroupId(), "quarkus-agroal", null));
         Assertions.assertTrue(result1.isUpdated());
         Assertions.assertTrue(result1.succeeded());
 
@@ -108,7 +106,7 @@ abstract class AbstractAddExtensionsTest<T> {
         final T project2 = readProject();
         hasDependency(project2, "quarkus-agroal");
         Assertions.assertEquals(1,
-                countDependencyOccurrences(project2, MojoUtils.getPluginGroupId(), "quarkus-agroal", null));
+                countDependencyOccurrences(project2, getPluginGroupId(), "quarkus-agroal", null));
         Assertions.assertFalse(result2.isUpdated());
         Assertions.assertTrue(result2.succeeded());
     }
@@ -193,7 +191,7 @@ abstract class AbstractAddExtensionsTest<T> {
     }
 
     private void hasDependency(T project, String artifactId) {
-        hasDependency(project, MojoUtils.getPluginGroupId(), artifactId, null);
+        hasDependency(project, getPluginGroupId(), artifactId, null);
     }
 
     private void hasDependency(T project, String groupId, String artifactId, String version) {
@@ -201,7 +199,7 @@ abstract class AbstractAddExtensionsTest<T> {
     }
 
     private void doesNotHaveDependency(T project, String artifactId) {
-        Assertions.assertTrue(countDependencyOccurrences(project, MojoUtils.getPluginGroupId(), artifactId, null) == 0);
+        Assertions.assertTrue(countDependencyOccurrences(project, getPluginGroupId(), artifactId, null) == 0);
     }
 
     protected abstract T createProject() throws IOException;

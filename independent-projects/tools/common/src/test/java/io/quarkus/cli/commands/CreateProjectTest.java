@@ -1,6 +1,5 @@
 package io.quarkus.cli.commands;
 
-import static io.quarkus.maven.utilities.MojoUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.contentOf;
 
@@ -40,7 +39,7 @@ import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.cli.commands.writer.ZipProjectWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 
-public class CreateProjectTest {
+public class CreateProjectTest extends PlatformAwareTestBase {
     @Test
     public void create() throws IOException {
         final File file = new File("target/basic-rest");
@@ -138,7 +137,8 @@ public class CreateProjectTest {
         Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         assertThat(contentOf(pom, "UTF-8"))
-                .contains(getPluginArtifactId(), TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
+                .contains(getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
+
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
@@ -179,7 +179,8 @@ public class CreateProjectTest {
         Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         assertThat(contentOf(pom, "UTF-8"))
-                .contains(getPluginArtifactId(), TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
+                .contains(getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
+
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
@@ -221,7 +222,8 @@ public class CreateProjectTest {
         Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         assertThat(contentOf(pom, "UTF-8"))
-                .contains(getPluginArtifactId(), TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
+                .contains(getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
+
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
@@ -263,7 +265,8 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/java/org/acme/MyApplication.java")).doesNotExist();
 
         assertThat(contentOf(pom, "UTF-8"))
-                .contains(getPluginArtifactId(), TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
+                .contains(getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
+
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 

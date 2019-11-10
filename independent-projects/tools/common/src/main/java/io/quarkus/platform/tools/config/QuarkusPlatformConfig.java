@@ -98,7 +98,7 @@ public class QuarkusPlatformConfig {
         return builder().build();
     }
 
-    public static QuarkusPlatformConfig getGlobalDefault() {
+    public static synchronized QuarkusPlatformConfig getGlobalDefault() {
         final QuarkusPlatformConfig c = globalConfig.get();
         if(c != null) {
             return c;

@@ -12,37 +12,33 @@ import static io.quarkus.generators.ProjectGenerator.PROJECT_GROUP_ID;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_VERSION;
 import static io.quarkus.generators.ProjectGenerator.QUARKUS_VERSION;
 import static io.quarkus.generators.ProjectGenerator.SOURCE_TYPE;
-import static io.quarkus.maven.utilities.MojoUtils.getBomGroupId;
-import static io.quarkus.maven.utilities.MojoUtils.getBomArtifactId;
-import static io.quarkus.maven.utilities.MojoUtils.getBomVersion;
-import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
-import static io.quarkus.maven.utilities.MojoUtils.getQuarkusVersion;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 
 import org.apache.maven.model.Model;
 
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.file.MavenBuildFile;
+import io.quarkus.cli.commands.legacy.LegacyQuarkusCommandInvocation;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.ProjectGeneratorRegistry;
 import io.quarkus.generators.SourceType;
 import io.quarkus.generators.rest.BasicRestProjectGenerator;
-import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.platform.tools.ToolsUtils;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
-public class CreateProject {
+public class CreateProject implements QuarkusCommand {
 
     private ProjectWriter writer;
     private String groupId;
     private String artifactId;
-    private String version = getPluginVersion();
+    private String version;
     private SourceType sourceType = SourceType.JAVA;
     private BuildFile buildFile;
     private BuildTool buildTool;
@@ -100,45 +96,58 @@ public class CreateProject {
     }
 
     public boolean doCreateProject(final Map<String, Object> context) throws IOException {
+        try {
+            return execute(new LegacyQuarkusCommandInvocation(context)).isSuccess();
+        } catch (QuarkusCommandException e) {
+            throw new IOException("Failed to create project", e);
+        }
+    }
+
+    public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
         if (!writer.init()) {
-            return false;
+            return QuarkusCommandOutcome.failure();
         }
 
-        MojoUtils.getAllProperties().forEach((k, v) -> context.put(k.replace("-", "_"), v));
+        final Properties quarkusProps = ToolsUtils.readQuarkusProperties(invocation.getPlatformDescriptor());
+        quarkusProps.forEach((k, v) -> invocation.setProperty(k.toString().replace("-", "_"), v.toString()));
 
-        context.put(PROJECT_GROUP_ID, groupId);
-        context.put(PROJECT_ARTIFACT_ID, artifactId);
-        context.put(PROJECT_VERSION, version);
-        context.put(BOM_GROUP_ID, getBomGroupId());
-        context.put(BOM_ARTIFACT_ID, getBomArtifactId());
-        context.put(BOM_VERSION, getBomVersion());
-        context.put(QUARKUS_VERSION, getQuarkusVersion());
-        context.put(SOURCE_TYPE, sourceType);
-        context.put(BUILD_FILE, getBuildFile());
+        invocation.setProperty(PROJECT_GROUP_ID, groupId);
+        invocation.setProperty(PROJECT_ARTIFACT_ID, artifactId);
+        invocation.setProperty(PROJECT_VERSION, version);
+        invocation.setProperty(BOM_GROUP_ID, invocation.getPlatformDescriptor().getBomGroupId());
+        invocation.setProperty(BOM_ARTIFACT_ID, invocation.getPlatformDescriptor().getBomArtifactId());
 
-        if (extensions != null && extensions.stream().anyMatch(e -> e.toLowerCase().contains("spring-web"))) {
-            context.put(IS_SPRING, Boolean.TRUE);
-        }
-
-        if (className != null) {
-            className = sourceType.stripExtensionFrom(className);
-            int idx = className.lastIndexOf('.');
-            if (idx >= 0) {
-                final String packageName = className.substring(0, idx);
-                className = className.substring(idx + 1);
-                context.put(PACKAGE_NAME, packageName);
-            }
-            context.put(CLASS_NAME, className);
-        }
-
-        ProjectGeneratorRegistry.get(BasicRestProjectGenerator.NAME).generate(writer, context);
-
-        // call close at the end to save file
         try (BuildFile buildFile = getBuildFile()) {
-            buildFile.completeFile(groupId, artifactId, version);
-        }
+            String bomVersion = invocation.getPlatformDescriptor().getBomVersion();
 
-        return true;
+            invocation.setProperty(BOM_VERSION, bomVersion);
+            invocation.setProperty(QUARKUS_VERSION, invocation.getPlatformDescriptor().getQuarkusVersion());
+            invocation.setValue(SOURCE_TYPE, sourceType);
+            invocation.setValue(BUILD_FILE, buildFile);
+
+            if (extensions != null && extensions.stream().anyMatch(e -> e.toLowerCase().contains("spring-web"))) {
+                invocation.setValue(IS_SPRING, Boolean.TRUE);
+            }
+
+            if (className != null) {
+                className = sourceType.stripExtensionFrom(className);
+                int idx = className.lastIndexOf('.');
+                if (idx >= 0) {
+                    final String packageName = className.substring(0, idx);
+                    className = className.substring(idx + 1);
+                    invocation.setProperty(PACKAGE_NAME, packageName);
+                }
+                invocation.setProperty(CLASS_NAME, className);
+            }
+
+            ProjectGeneratorRegistry.get(BasicRestProjectGenerator.NAME).generate(writer, invocation);
+
+            // call close at the end to save file
+            buildFile.completeFile(groupId, artifactId, version, invocation.getPlatformDescriptor(), quarkusProps);
+        } catch (IOException e) {
+            throw new QuarkusCommandException("Failed to create project", e);
+        }
+        return QuarkusCommandOutcome.success();
     }
 
     private BuildFile getBuildFile() throws IOException {

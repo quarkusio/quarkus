@@ -50,7 +50,8 @@ public final class CreateUtils {
         return versionStr.indexOf(',') >= 0;
     }
 
-    static void setGlobalPlatformDescriptor(final String bomGroupId, final String bomArtifactId, final String bomVersion,
+    static QuarkusPlatformDescriptor setGlobalPlatformDescriptor(final String bomGroupId, final String bomArtifactId,
+            final String bomVersion,
             MavenArtifactResolver mvn, Log log) throws MojoExecutionException {
 
         final QuarkusJsonPlatformDescriptorResolver platformResolver = QuarkusJsonPlatformDescriptorResolver.newInstance()
@@ -80,6 +81,7 @@ public final class CreateUtils {
         }
 
         QuarkusPlatformConfig.defaultConfigBuilder().setPlatformDescriptor(platform).build();
+        return platform;
     }
 
     public static String getDerivedPath(String className) {

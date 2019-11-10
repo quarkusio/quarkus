@@ -1,7 +1,5 @@
 package io.quarkus.cli.commands;
 
-import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
-import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
 import static io.quarkus.maven.utilities.MojoUtils.readPom;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,7 +12,6 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Assertions;
@@ -25,7 +22,7 @@ import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
-public class ListExtensionsTest {
+public class ListExtensionsTest extends PlatformAwareTestBase {
 
     @Test
     public void listWithBom() throws IOException {

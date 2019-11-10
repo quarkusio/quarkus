@@ -18,6 +18,9 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
+import io.quarkus.platform.tools.ToolsConstants;
 
 public class SetupVerifier {
 
@@ -49,7 +52,7 @@ public class SetupVerifier {
 
         MavenProject project = new MavenProject(model);
 
-        Optional<Plugin> maybe = hasPlugin(project, MojoUtils.getPluginKey());
+        Optional<Plugin> maybe = hasPlugin(project, ToolsConstants.IO_QUARKUS + ":" + ToolsConstants.QUARKUS_MAVEN_PLUGIN);
         assertThat(maybe).isNotEmpty();
 
         //Check if the properties have been set correctly
@@ -62,8 +65,8 @@ public class SetupVerifier {
         // Check plugin is set
         Plugin plugin = maybe.orElseThrow(() -> new AssertionError("Plugin expected"));
         assertThat(plugin).isNotNull().satisfies(p -> {
-            assertThat(p.getArtifactId()).isEqualTo("quarkus-maven-plugin");
-            assertThat(p.getGroupId()).isEqualTo("io.quarkus");
+            assertThat(p.getArtifactId()).isEqualTo(ToolsConstants.QUARKUS_MAVEN_PLUGIN);
+            assertThat(p.getGroupId()).isEqualTo(ToolsConstants.IO_QUARKUS);
             assertThat(p.getVersion()).isEqualTo(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE);
         });
 
@@ -77,7 +80,8 @@ public class SetupVerifier {
         assertThat(model.getProfiles()).hasSize(1);
         Profile profile = model.getProfiles().get(0);
         assertThat(profile.getId()).isEqualTo("native");
-        Plugin actual = profile.getBuild().getPluginsAsMap().get(MojoUtils.getPluginKey());
+        Plugin actual = profile.getBuild().getPluginsAsMap()
+                .get(ToolsConstants.IO_QUARKUS + ":" + ToolsConstants.QUARKUS_MAVEN_PLUGIN);
         assertThat(actual).isNotNull();
         assertThat(actual.getExecutions()).hasSize(1).allSatisfy(exec -> {
             assertThat(exec.getGoals()).containsExactly("native-image");
@@ -107,7 +111,11 @@ public class SetupVerifier {
         Properties projectProps = project.getProperties();
         assertNotNull(projectProps);
         assertFalse(projectProps.isEmpty());
-        assertEquals(MojoUtils.getPluginVersion(),
-                projectProps.getProperty(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_NAME));
+        final String quarkusVersion = getPlatformDescriptor().getQuarkusVersion();
+        assertEquals(quarkusVersion, projectProps.getProperty(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_NAME));
+    }
+
+    private static QuarkusPlatformDescriptor getPlatformDescriptor() {
+        return QuarkusJsonPlatformDescriptorResolver.newInstance().resolveBundled();
     }
 }

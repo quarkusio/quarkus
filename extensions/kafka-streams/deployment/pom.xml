@@ -30,6 +30,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kafka-streams</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health-spi</artifactId>
+        </dependency>
 
         <!-- test dependencies -->
         <dependency>

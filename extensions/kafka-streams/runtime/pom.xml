@@ -34,6 +34,11 @@
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>

@@ -8,6 +8,7 @@ import java.util.Properties;
 
 import javax.inject.Inject;
 
+import org.apache.http.HttpStatus;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -20,6 +21,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.eclipse.microprofile.config.Config;
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -37,14 +39,14 @@ public class KafkaStreamsTest {
     @Inject
     public Config config;
 
-    private static Producer<Integer, Customer> createProducer() {
+    private static Producer<Integer, Customer> createCustomerProducer() {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "streams-test-producer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ObjectMapperSerializer.class.getName());
 
-        return new KafkaProducer<Integer, Customer>(props);
+        return new KafkaProducer<>(props);
     }
 
     private static Producer<Integer, Category> createCategoryProducer() {
@@ -73,6 +75,8 @@ public class KafkaStreamsTest {
 
     @Test
     public void testKafkaStreams() throws Exception {
+        testKafkaStreamsNotAliveAndNotReady();
+
         produceCustomers();
 
         Consumer<Integer, EnrichedCustomer> consumer = createConsumer();
@@ -114,13 +118,49 @@ public class KafkaStreamsTest {
         assertCategoryCount(1, 3);
         assertCategoryCount(2, 1);
 
+        testKafkaStreamsAliveAndReady();
+
         // explicitly stopping the pipeline *before* the broker is shut down, as it
         // otherwise will time out
         RestAssured.post("/kafkastreams/stop");
     }
 
+    public void testKafkaStreamsNotAliveAndNotReady() throws Exception {
+        RestAssured.get("/health/ready").then()
+                .statusCode(HttpStatus.SC_SERVICE_UNAVAILABLE)
+                .body("checks[0].name", CoreMatchers.is("Kafka Streams topics health check"))
+                .body("checks[0].status", CoreMatchers.is("DOWN"))
+                .body("checks[0].data.missing_topics", CoreMatchers.is("streams-test-customers,streams-test-categories"));
+
+        RestAssured.when().get("/health/live").then()
+                .statusCode(HttpStatus.SC_SERVICE_UNAVAILABLE)
+                .body("checks[0].name", CoreMatchers.is("Kafka Streams state health check"))
+                .body("checks[0].status", CoreMatchers.is("DOWN"))
+                .body("checks[0].data.state", CoreMatchers.is("CREATED"));
+
+        RestAssured.when().get("/health").then()
+                .statusCode(HttpStatus.SC_SERVICE_UNAVAILABLE);
+    }
+
+    public void testKafkaStreamsAliveAndReady() throws Exception {
+        RestAssured.get("/health/ready").then()
+                .statusCode(HttpStatus.SC_OK)
+                .body("checks[0].name", CoreMatchers.is("Kafka Streams topics health check"))
+                .body("checks[0].status", CoreMatchers.is("UP"))
+                .body("checks[0].data.available_topics", CoreMatchers.is("streams-test-categories,streams-test-customers"));
+
+        RestAssured.when().get("/health/live").then()
+                .statusCode(HttpStatus.SC_OK)
+                .body("checks[0].name", CoreMatchers.is("Kafka Streams state health check"))
+                .body("checks[0].status", CoreMatchers.is("UP"))
+                .body("checks[0].data.state", CoreMatchers.is("RUNNING"));
+
+        RestAssured.when().get("/health").then()
+                .statusCode(HttpStatus.SC_OK);
+    }
+
     private void produceCustomers() {
-        Producer<Integer, Customer> producer = createProducer();
+        Producer<Integer, Customer> producer = createCustomerProducer();
 
         Producer<Integer, Category> categoryProducer = createCategoryProducer();
 

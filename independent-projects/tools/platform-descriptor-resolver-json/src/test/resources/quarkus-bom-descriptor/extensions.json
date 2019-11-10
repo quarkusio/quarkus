@@ -1,0 +1,9 @@
+{
+    "bom": {
+        "groupId": "io.quarkus",
+        "artifactId": "quarkus-bom",
+        "version": "1.0.0.CR90"
+    },
+    "quarkus-core-version": "1.0.0.CR90",
+    "extensions": []
+}

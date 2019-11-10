@@ -26,7 +26,7 @@ import io.quarkus.platform.tools.ToolsConstants;
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
  */
-public class CreateProjectMojoIT extends MojoTestBase {
+public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
     private Invoker invoker;
     private RunningInvoker running;
@@ -84,18 +84,21 @@ public class CreateProjectMojoIT extends MojoTestBase {
         setup(new Properties());
 
         assertThat(new File(testDir, "pom.xml")).isFile();
-        assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains(MojoUtils.getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE,
-                        MojoUtils.getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
         assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .containsIgnoringCase(MojoUtils.getBomArtifactId());
+                .contains(getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE,
+                        getPluginGroupId());
 
-        Model model = loadPom(testDir);
+        final Model model = loadPom(testDir);
+        assertThat(model.getProperties().getProperty(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_NAME))
+                .isEqualTo(getPluginVersion());
+        assertThat(model.getProperties().getProperty(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_NAME))
+                .isEqualTo(getBomArtifactId());
+
         assertThat(model.getDependencyManagement().getDependencies().stream()
                 .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
                         && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
@@ -318,12 +321,12 @@ public class CreateProjectMojoIT extends MojoTestBase {
 
         params.setProperty("platformGroupId", ToolsConstants.IO_QUARKUS);
         params.setProperty("platformArtifactId", "quarkus-bom");
-        params.setProperty("platformVersion", MojoUtils.getPluginVersion());
+        params.setProperty("platformVersion", getPluginVersion());
 
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
-                MojoUtils.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":create"));
+                getPluginGroupId() + ":" + getPluginArtifactId() + ":" + getPluginVersion() + ":create"));
         request.setDebug(false);
         request.setShowErrors(false);
         request.setProperties(params);

@@ -92,14 +92,14 @@ public class PackageIT extends MojoTestBase {
     @Test
     public void testCustomPackaging()
             throws MavenInvocationException, FileNotFoundException, InterruptedException {
-        testDir = initProject("projects/custom-packaging-plugin", "projects/custom-packaging-plugin");
+        testDir = getTargetDir("projects/custom-packaging-plugin");
 
         running = new RunningInvoker(testDir, false);
         MavenProcessInvocationResult result = running.execute(Collections.singletonList("install"),
                 Collections.emptyMap());
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
-        testDir = initProject("projects/custom-packaging-app", "projects/custom-packaging-app");
+        testDir = getTargetDir("projects/custom-packaging-app");
 
         running = new RunningInvoker(testDir, false);
         result = running.execute(Collections.singletonList("package"),

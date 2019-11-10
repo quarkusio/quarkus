@@ -16,10 +16,10 @@ import org.junit.jupiter.api.Test;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 
-import io.quarkus.maven.it.MojoTestBase;
+import io.quarkus.maven.it.QuarkusPlatformAwareMojoTestBase;
 import io.quarkus.maven.utilities.MojoUtils;
 
-public class KotlinCreateMavenProjectIT extends MojoTestBase {
+public class KotlinCreateMavenProjectIT extends QuarkusPlatformAwareMojoTestBase {
 
     private Invoker invoker;
     private File testDir;
@@ -76,12 +76,12 @@ public class KotlinCreateMavenProjectIT extends MojoTestBase {
             throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
 
         params.setProperty("platformArtifactId", "quarkus-bom");
-        params.setProperty("platformVersion", MojoUtils.getPluginVersion());
+        params.setProperty("platformVersion", getPluginVersion());
 
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
-                MojoUtils.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":create"));
+                getPluginGroupId() + ":" + getPluginArtifactId() + ":" + getPluginVersion() + ":create"));
         request.setProperties(params);
         getEnv().forEach(request::addShellEnvironment);
         File log = new File(testDir, "build-create-" + testDir.getName() + ".log");

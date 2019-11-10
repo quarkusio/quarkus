@@ -170,6 +170,7 @@ public class AllConfigGenerator {
             ConfigDocSection header = new ConfigDocSection();
             header.setSectionDetailsTitle(entry.getKey());
             header.setAnchorPrefix(artifactIdsByName.get(entry.getKey()));
+            header.setName(artifactIdsByName.get(entry.getKey()));
             allItems.add(new ConfigDocItem(header, null));
             // add all the configs for this extension
             allItems.addAll(configDocItems);

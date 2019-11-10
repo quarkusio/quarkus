@@ -113,7 +113,7 @@ public class AddExtensions {
         boolean matches = false;
         // if any label match it's ok
         for(String label : labels) {
-            matches = matches | pattern.matcher(label.toLowerCase()).matches();
+            matches = matches || pattern.matcher(label.toLowerCase()).matches();
         }
         return matches;
     }

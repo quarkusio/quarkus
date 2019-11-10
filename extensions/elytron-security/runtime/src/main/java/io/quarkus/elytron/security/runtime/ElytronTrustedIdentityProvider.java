@@ -50,21 +50,22 @@ public class ElytronTrustedIdentityProvider implements IdentityProvider<TrustedA
                         return null;
                     }
                     PasswordCredential cred = id.getCredential(PasswordCredential.class);
-                    ServerAuthenticationContext ac = domain.createNewAuthenticationContext();
-                    ac.setAuthenticationName(request.getPrincipal());
-                    ac.addPrivateCredential(cred);
-                    ac.authorize();
-                    result = ac.getAuthorizedIdentity();
+                    try (ServerAuthenticationContext ac = domain.createNewAuthenticationContext()) {
+                        ac.setAuthenticationName(request.getPrincipal());
+                        ac.addPrivateCredential(cred);
+                        ac.authorize();
+                        result = ac.getAuthorizedIdentity();
 
-                    if (result == null) {
-                        throw new AuthenticationFailedException();
+                        if (result == null) {
+                            throw new AuthenticationFailedException();
+                        }
+                        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
+                        builder.setPrincipal(result.getPrincipal());
+                        for (String i : result.getRoles()) {
+                            builder.addRole(i);
+                        }
+                        return builder.build();
                     }
-                    QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
-                    builder.setPrincipal(result.getPrincipal());
-                    for (String i : result.getRoles()) {
-                        builder.addRole(i);
-                    }
-                    return builder.build();
                 } catch (RealmUnavailableException e) {
                     throw new RuntimeException(e);
                 } catch (SecurityException e) {

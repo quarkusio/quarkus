@@ -25,6 +25,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kubernetes-client</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes-spi</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

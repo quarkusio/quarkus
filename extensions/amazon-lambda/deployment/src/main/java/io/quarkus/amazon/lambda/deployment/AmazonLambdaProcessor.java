@@ -21,6 +21,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder;
 import io.quarkus.amazon.lambda.runtime.FunctionError;
+import io.quarkus.amazon.lambda.runtime.LambdaBuildTimeConfig;
 import io.quarkus.amazon.lambda.runtime.LambdaConfig;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -196,7 +197,7 @@ public final class AmazonLambdaProcessor {
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT)
-    void enableNativeEventLoop(LambdaConfig config,
+    void enableNativeEventLoop(LambdaBuildTimeConfig config,
             AmazonLambdaRecorder recorder,
             List<ServiceStartBuildItem> orderServicesFirst, // force some ordering of recorders
             ShutdownContextBuildItem shutdownContextBuildItem,

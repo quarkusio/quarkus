@@ -39,6 +39,9 @@ public class HibernateValidatorTestResource
     GreetingService greetingService;
 
     @Inject
+    EnhancedGreetingService enhancedGreetingService;
+
+    @Inject
     ZipCodeService zipCodeResource;
 
     @GET
@@ -136,9 +139,9 @@ public class HibernateValidatorTestResource
     }
 
     @GET
-    @Path("/test-inherited-constraints")
+    @Path("/test-inherited-implements-constraints")
     @Produces(MediaType.TEXT_PLAIN)
-    public String testInheritedConstraints() {
+    public String testInheritedImplementsConstraints() {
         ResultBuilder result = new ResultBuilder();
 
         zipCodeResource.echoZipCode("12345");
@@ -147,6 +150,25 @@ public class HibernateValidatorTestResource
 
         try {
             zipCodeResource.echoZipCode("1234");
+        } catch (ConstraintViolationException e) {
+            result.append(formatViolations(e.getConstraintViolations()));
+        }
+
+        return result.build();
+    }
+
+    @GET
+    @Path("/test-inherited-extends-constraints")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testInheritedExtendsConstraints() {
+        ResultBuilder result = new ResultBuilder();
+
+        enhancedGreetingService.greeting("test");
+
+        result.append(formatViolations(Collections.emptySet()));
+
+        try {
+            enhancedGreetingService.greeting(null);
         } catch (ConstraintViolationException e) {
             result.append(formatViolations(e.getConstraintViolations()));
         }

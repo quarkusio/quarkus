@@ -85,6 +85,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
         private boolean initBuildTool() throws IOException {
             BuildTool buildTool = getBuildTool();
             context.putIfAbsent(ADDITIONAL_GITIGNORE_ENTRIES, buildTool.getGitIgnoreEntries());
+            context.putIfAbsent(BUILD_DIRECTORY, buildTool.getBuildDirectory());
             boolean newProject = !writer.exists(buildTool.getDependenciesFile());
             if (newProject) {
                 for (String buildFile : buildTool.getBuildFiles()) {

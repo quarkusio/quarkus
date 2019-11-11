@@ -198,6 +198,7 @@ stages:
             - jpa-mariadb
             - jpa-mssql
             - jpa-derby
+            - jpa-without-entity
           name: data_1
 
       - template: native-build-steps.yaml

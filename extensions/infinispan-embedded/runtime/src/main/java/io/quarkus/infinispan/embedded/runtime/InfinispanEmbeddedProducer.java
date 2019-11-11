@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
 
 import org.infinispan.commons.CacheConfigurationException;
 import org.infinispan.commons.configuration.attributes.Attribute;
@@ -30,6 +31,7 @@ public class InfinispanEmbeddedProducer {
         this.config = config;
     }
 
+    @Singleton
     @Produces
     EmbeddedCacheManager manager() {
         if (config.xmlConfig.isPresent()) {

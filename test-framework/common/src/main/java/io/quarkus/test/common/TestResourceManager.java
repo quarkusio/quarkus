@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -82,6 +83,11 @@ public class TestResourceManager {
             } catch (Exception e) {
                 throw new RuntimeException("Unable to stop Quarkus test resource " + testResource, e);
             }
+        }
+        ConfigProviderResolver cpr = ConfigProviderResolver.instance();
+        try {
+            cpr.releaseConfig(cpr.getConfig());
+        } catch (IllegalStateException ignored) {
         }
     }
 

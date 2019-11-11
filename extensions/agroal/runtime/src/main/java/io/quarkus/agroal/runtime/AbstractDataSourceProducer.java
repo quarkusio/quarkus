@@ -267,20 +267,20 @@ public abstract class AbstractDataSourceProducer {
             }
         }
     }
-    
+
     /**
      * Wrapper to facilitate filtering & sorting of applicable CDI produced AgroalDataSourceListeners
      */
     private class PrioritizedDataSourceListenerWrapper implements Comparable<PrioritizedDataSourceListenerWrapper> {
         final AgroalDataSourceListener listener;
         final int priority;
-        final String dataSource;
+        final String dataSourceName;
 
         PrioritizedDataSourceListenerWrapper(final AgroalDataSourceListener listener, final int priority,
                 final String dataSourceName) {
             this.listener = listener;
             this.priority = priority;
-            this.dataSource = dataSourceName;
+            this.dataSourceName = dataSourceName;
         }
 
         PrioritizedDataSourceListenerWrapper(final Bean<AgroalDataSourceListener> listener) {
@@ -291,11 +291,11 @@ public abstract class AbstractDataSourceProducer {
             this.priority = p != null ? p.value() : Interceptor.Priority.APPLICATION;
 
             io.quarkus.agroal.DataSource ds = listener.getBeanClass().getAnnotation(io.quarkus.agroal.DataSource.class);
-            this.dataSource = ds != null ? ds.value() : null;
+            this.dataSourceName = ds != null ? ds.value() : null;
         }
 
         boolean appliesTo(final String dataSourceNamed) {
-            return dataSource == null || dataSource.equals(dataSourceNamed);
+            return dataSourceName == null || dataSourceName.equals(dataSourceNamed);
         }
 
         @Override

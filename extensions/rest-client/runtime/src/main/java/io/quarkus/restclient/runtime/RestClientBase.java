@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 import javax.net.ssl.HostnameVerifier;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
 public class RestClientBase {
@@ -38,12 +38,9 @@ public class RestClientBase {
     private final String baseUriFromAnnotation;
     private final String propertyPrefix;
 
-    private final Config config;
-
     public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String propertyPrefix) {
         this.proxyType = proxyType;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
-        this.config = ConfigProviderResolver.instance().getConfig();
         this.propertyPrefix = propertyPrefix;
     }
 
@@ -211,6 +208,7 @@ public class RestClientBase {
     }
 
     private <T> Optional<T> getOptionalProperty(String propertyFormat, Class<T> type) {
+        final Config config = ConfigProvider.getConfig();
         Optional<T> interfaceNameValue = config.getOptionalValue(String.format(propertyFormat, proxyType.getName()), type);
         return interfaceNameValue.isPresent() ? interfaceNameValue
                 : config.getOptionalValue(String.format(propertyFormat, propertyPrefix), type);

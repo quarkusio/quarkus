@@ -4,6 +4,7 @@ import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.websocket.ClientEndpoint;
@@ -174,11 +175,11 @@ public class UndertowWebsocketProcessor {
         /**
          * The security key for remote hot deployment
          */
-        String password;
+        Optional<String> password;
 
         /**
          * The remote URL to connect to
          */
-        String url;
+        Optional<String> url;
     }
 }

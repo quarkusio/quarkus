@@ -63,7 +63,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          * The list of hosts of the Elasticsearch servers.
          */
         @ConfigItem(defaultValue = "http://localhost:9200")
-        List<String> hosts;
+        Optional<List<String>> hosts;
 
         /**
          * The username used for authentication.

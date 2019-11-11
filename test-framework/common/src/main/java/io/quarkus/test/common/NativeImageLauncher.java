@@ -52,7 +52,7 @@ public class NativeImageLauncher implements Closeable {
     }
 
     private static Config installAndGetSomeConfig() {
-        final SmallRyeConfig config = ConfigUtils.configBuilder().build();
+        final SmallRyeConfig config = ConfigUtils.configBuilder(false).build();
         QuarkusConfigFactory.setConfig(config);
         final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
         try {

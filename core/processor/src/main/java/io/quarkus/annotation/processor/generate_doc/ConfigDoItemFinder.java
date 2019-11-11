@@ -19,7 +19,9 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 import io.quarkus.annotation.processor.Constants;
@@ -261,6 +263,8 @@ class ConfigDoItemFinder {
     private String simpleTypeToString(TypeMirror typeMirror) {
         if (typeMirror.getKind().isPrimitive()) {
             return typeMirror.toString();
+        } else if (typeMirror.getKind() == TypeKind.ARRAY) {
+            return "list of " + simpleTypeToString(((ArrayType) typeMirror).getComponentType());
         }
 
         final String knownGenericType = getKnownGenericType((DeclaredType) typeMirror);

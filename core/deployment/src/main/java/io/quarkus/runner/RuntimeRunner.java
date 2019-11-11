@@ -32,6 +32,7 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
@@ -133,12 +134,26 @@ public class RuntimeRunner implements Runnable, Closeable {
             }
 
             final Application application;
-            Class<? extends Application> appClass = loader
-                    .loadClass(result.consume(ApplicationClassNameBuildItem.class).getClassName())
-                    .asSubclass(Application.class);
+            final String className = result.consume(ApplicationClassNameBuildItem.class).getClassName();
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(loader);
+                Class<? extends Application> appClass;
+                try {
+                    // force init here
+                    appClass = Class.forName(className, true, loader).asSubclass(Application.class);
+                } catch (Throwable t) {
+                    // todo: dev mode expects run time config to be available immediately even if static init didn't complete.
+                    try {
+                        final Class<?> configClass = Class.forName(RunTimeConfigurationGenerator.CONFIG_CLASS_NAME, true,
+                                loader);
+                        configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_RUN_TIME_CONFIG.getName())
+                                .invoke(null);
+                    } catch (Throwable t2) {
+                        t.addSuppressed(t2);
+                    }
+                    throw t;
+                }
                 application = appClass.newInstance();
                 application.start(null);
             } finally {

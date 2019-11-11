@@ -8,12 +8,15 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.CodeSource;
@@ -249,6 +252,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
                         debugPath.mkdir();
                     }
                     File classFile = new File(debugPath, dotName + ".class");
+                    classFile.getParentFile().mkdirs();
                     try (FileOutputStream classWriter = new FileOutputStream(classFile)) {
                         classWriter.write(data);
                     }
@@ -274,6 +278,25 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    @Override
+    public Writer writeSource(final String className) {
+        if (DEBUG_CLASSES_DIR != null) {
+            try {
+                File debugPath = new File(DEBUG_CLASSES_DIR);
+                if (!debugPath.exists()) {
+                    debugPath.mkdir();
+                }
+                File classFile = new File(debugPath, className + ".zig");
+                classFile.getParentFile().mkdirs();
+                log.infof("Wrote %s", classFile.getAbsolutePath());
+                return new OutputStreamWriter(new FileOutputStream(classFile), StandardCharsets.UTF_8);
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        }
+        return ClassOutput.super.writeSource(className);
     }
 
     @Override

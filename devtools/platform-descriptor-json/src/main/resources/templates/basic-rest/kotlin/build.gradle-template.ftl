@@ -11,6 +11,7 @@ buildscript {
 
 plugins {
     id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
+    id "org.jetbrains.kotlin.plugin.allopen" version "${kotlin_version}"
 }
 
 apply plugin: 'io.quarkus'
@@ -43,8 +44,21 @@ quarkusDev {
     setSourceDir("$projectDir/src/main/kotlin")
 }
 
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
+allOpen {
+    annotation("javax.ws.rs.Path")
+    annotation("javax.enterprise.context.ApplicationScoped")
+    annotation("io.quarkus.test.junit.QuarkusTest")
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8
+}
+
+compileTestKotlin {
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8
 }

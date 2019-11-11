@@ -29,11 +29,6 @@ public class AgroalRecorder {
     }
 
     public void configureRuntimeProperties(AgroalRuntimeConfig agroalRuntimeConfig) {
-        // TODO @dmlloyd
-        // Same here, the map is entirely empty (obviously, I didn't expect the values
-        // that were not properly injected but at least the config objects present in
-        // the map)
-        // The elements from the default datasource are there
         Arc.container().instance(AbstractDataSourceProducer.class).get().setRuntimeConfig(agroalRuntimeConfig);
     }
 }

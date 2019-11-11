@@ -321,8 +321,6 @@ stages:
             - jackson
             - jsonb
             - jgit
-            - kogito
-            - kubernetes-client
           name: misc_1
 
       - template: native-build-steps.yaml
@@ -335,6 +333,16 @@ stages:
             - hibernate-validator
             - test-extension
           name: misc_2
+
+      - template: native-build-steps.yaml
+        parameters:
+          poolSettings: ${{parameters.poolSettings}}
+          expectUseVMs: ${{parameters.expectUseVMs}}
+          timeoutInMinutes: 25
+          modules:
+            - kogito
+            - kubernetes-client
+          name: misc_3
 
       - template: native-build-steps.yaml
         parameters:

@@ -283,7 +283,7 @@ public abstract class AbstractDataSourceProducer {
             this.dataSource = dataSourceName;
         }
 
-        PrioritizedDataSourceListenerWrapper(Bean<AgroalDataSourceListener> listener) {
+        PrioritizedDataSourceListenerWrapper(final Bean<AgroalDataSourceListener> listener) {
             this.listener = (AgroalDataSourceListener) beanManager.getReference(listener, listener.getBeanClass(),
                     beanManager.createCreationalContext(listener));
 
@@ -299,7 +299,7 @@ public abstract class AbstractDataSourceProducer {
         }
 
         @Override
-        public int compareTo(PrioritizedDataSourceListenerWrapper o) {
+        public int compareTo(final PrioritizedDataSourceListenerWrapper o) {
             return Integer.compare(this.priority, o.priority);
         }
     }

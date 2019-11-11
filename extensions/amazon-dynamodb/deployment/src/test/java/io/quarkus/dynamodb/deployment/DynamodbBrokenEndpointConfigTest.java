@@ -5,6 +5,7 @@ import javax.inject.Inject;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -13,6 +14,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
+@Disabled("https://github.com/quarkusio/quarkus/issues/5286")
 public class DynamodbBrokenEndpointConfigTest {
 
     @Inject

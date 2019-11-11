@@ -8,7 +8,6 @@ import static io.quarkus.hibernate.search.elasticsearch.runtime.HibernateSearchC
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.BootstrapContext;

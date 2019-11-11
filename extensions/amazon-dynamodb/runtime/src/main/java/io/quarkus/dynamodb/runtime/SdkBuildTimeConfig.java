@@ -1,6 +1,7 @@
 package io.quarkus.dynamodb.runtime;
 
 import java.util.List;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -20,5 +21,5 @@ public class SdkBuildTimeConfig {
      * @see software.amazon.awssdk.core.interceptor.ExecutionInterceptor
      */
     @ConfigItem
-    public List<Class<?>> interceptors;
+    public Optional<List<Class<?>>> interceptors;
 }

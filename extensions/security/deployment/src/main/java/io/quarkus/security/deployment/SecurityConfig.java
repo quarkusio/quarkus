@@ -1,6 +1,7 @@
 package io.quarkus.security.deployment;
 
 import java.util.List;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -16,5 +17,5 @@ public final class SecurityConfig {
      * List of security providers to enable for reflection
      */
     @ConfigItem
-    public List<String> securityProviders;
+    public Optional<List<String>> securityProviders;
 }

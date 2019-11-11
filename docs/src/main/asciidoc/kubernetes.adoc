@@ -142,6 +142,22 @@ By default the Kubernetes resources do not contain readiness and liveness probes
 The values of the generated probes will be determined by the configured health properties: `quarkus.smallrye-health.root-path`, `quarkus.smallrye-health.liveness-path` and `quarkus.smallrye-health.readiness-path`.
 More information about the health extension can be found in the relevant link:microprofile-health[guide].
 
+=== Using the kubernetes client
+
+Applications, that are deployed to kubernetes and need to access the API server, will usually make use of the `kubernetes-client` exetension:
+
+[source,xml]
+----
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-kubernetes</artifactId>
+    </dependency>
+----
+
+To access the API server from within a kubernetes cluster, some RBAC related resources are required (e.g. a ServiceAccount, a RoleBinding etc).
+So, when the `kubernetes-client` extension is present, those resources are going to be automatically created, so that application will be greanted the `view` role.
+If more roles, are required they will have to be added manually. 
+
 == Tuning the generated resources using application.properties
 
 The Kubernetes extension allows tuning the generated manifest, using the `application.properties` file.

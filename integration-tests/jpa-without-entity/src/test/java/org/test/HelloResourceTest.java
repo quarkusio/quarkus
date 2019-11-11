@@ -13,10 +13,10 @@ public class HelloResourceTest {
     @Test
     public void testHelloEndpoint() {
         given()
-                .when().get("/y")
+                .when().get("/jpa-without-entity")
                 .then()
                 .statusCode(200)
-                .body(is("hello"));
+                .body(is("hello without jpa"));
     }
 
 }

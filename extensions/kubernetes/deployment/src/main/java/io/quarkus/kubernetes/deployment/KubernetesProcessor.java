@@ -27,6 +27,9 @@ import io.dekorate.kubernetes.config.ProbeBuilder;
 import io.dekorate.kubernetes.configurator.AddPort;
 import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
+import io.dekorate.kubernetes.decorator.AddRoleBindingDecorator;
+import io.dekorate.kubernetes.decorator.AddServiceAccountDecorator;
+import io.dekorate.kubernetes.decorator.ApplyServiceAccountDecorator;
 import io.dekorate.processor.SimpleFileWriter;
 import io.dekorate.project.BuildInfo;
 import io.dekorate.project.FileProjectFactory;
@@ -43,6 +46,7 @@ import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 class KubernetesProcessor {
 
@@ -63,6 +67,7 @@ class KubernetesProcessor {
     @BuildStep(onlyIf = IsNormal.class)
     public void build(ApplicationInfoBuildItem applicationInfo,
             ArchiveRootBuildItem archiveRootBuildItem,
+            List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem)
@@ -115,7 +120,8 @@ class KubernetesProcessor {
 
             session.feed(Maps.fromProperties(configAsMap));
             //apply build item configurations to the dekorate session.
-            applyBuildItems(session, applicationInfo, kubernetesPortBuildItems, kubernetesHealthLivenessPathBuildItem,
+            applyBuildItems(session, applicationInfo, kubernetesRoleBuildItems, kubernetesPortBuildItems,
+                    kubernetesHealthLivenessPathBuildItem,
                     kubernetesHealthReadinessPathBuildItem);
 
             // write the generated resources to the filesystem
@@ -156,6 +162,7 @@ class KubernetesProcessor {
     }
 
     private void applyBuildItems(Session session, ApplicationInfoBuildItem applicationInfo,
+            List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem) {
@@ -165,6 +172,15 @@ class KubernetesProcessor {
         ports.entrySet().stream()
                 .map(e -> new PortBuilder().withName(e.getKey()).withContainerPort(e.getValue()).build())
                 .forEach(p -> session.configurators().add(new AddPort(p)));
+
+        //Handle RBAC
+        if (!kubernetesPortBuildItems.isEmpty()) {
+            session.resources().decorate(new ApplyServiceAccountDecorator(applicationInfo.getName(),
+                    applicationInfo.getName()));
+            session.resources().decorate(new AddServiceAccountDecorator(session.resources()));
+            kubernetesRoleBuildItems.forEach(r -> session.resources()
+                    .decorate(new AddRoleBindingDecorator(session.resources(), r.getRole())));
+        }
 
         //Handle probes
         kubernetesHealthLivenessPathBuildItem

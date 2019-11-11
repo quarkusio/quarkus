@@ -17,6 +17,6 @@ public class PathConverter implements Converter<Path> {
 
     @Override
     public Path convert(String value) {
-        return Paths.get(value);
+        return value.isEmpty() ? null : Paths.get(value);
     }
 }

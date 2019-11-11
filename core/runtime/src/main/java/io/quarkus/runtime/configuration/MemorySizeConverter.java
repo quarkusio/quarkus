@@ -42,6 +42,9 @@ public class MemorySizeConverter implements Converter<MemorySize> {
      * @return {@link MemorySize} - a memory size represented by the given value
      */
     public MemorySize convert(String value) {
+        if (value.isEmpty()) {
+            return null;
+        }
         Matcher matcher = MEMORY_SIZE_PATTERN.matcher(value);
         if (matcher.find()) {
             BigInteger number = new BigInteger(matcher.group(1));

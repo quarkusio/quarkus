@@ -15,7 +15,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.function.Consumer;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
@@ -36,8 +38,11 @@ import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
+import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.smallrye.config.PropertiesConfigSource;
-import io.smallrye.config.SmallRyeConfigProviderResolver;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
  * This phase consumes {@link CurateOutcome} and processes
@@ -110,32 +115,25 @@ public class AugmentTask implements CuratedTask<AugmentOutcome> {
         }
         //first lets look for some config, as it is not on the current class path
         //and we need to load it to run the build process
-        Path config = configDir.resolve("application.properties");
-        if (Files.exists(config)) {
+        Path configPath = configDir.resolve("application.properties");
+        SmallRyeConfigBuilder configBuilder = ConfigUtils.configBuilder(false);
+        if (Files.exists(configPath)) {
             try {
-                ConfigBuilder builder = SmallRyeConfigProviderResolver.instance().getBuilder()
-                        .addDefaultSources()
-                        .addDiscoveredConverters()
-                        .addDiscoveredSources()
-                        .withSources(new PropertiesConfigSource(config.toUri().toURL()));
-
-                if (configCustomizer != null) {
-                    configCustomizer.accept(builder);
-                }
-                SmallRyeConfigProviderResolver.instance().registerConfig(builder.build(),
-                        Thread.currentThread().getContextClassLoader());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+                configBuilder.withSources(new PropertiesConfigSource(configPath.toUri().toURL()));
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Failed to convert config URL", e);
             }
-        } else if (configCustomizer != null) {
-            ConfigBuilder builder = SmallRyeConfigProviderResolver.instance().getBuilder()
-                    .addDefaultSources()
-                    .addDiscoveredConverters()
-                    .addDiscoveredSources();
-
-            configCustomizer.accept(builder);
-            SmallRyeConfigProviderResolver.instance().registerConfig(builder.build(),
-                    Thread.currentThread().getContextClassLoader());
+        }
+        if (configCustomizer != null) {
+            configCustomizer.accept(configBuilder);
+        }
+        final SmallRyeConfig config = configBuilder.build();
+        QuarkusConfigFactory.setConfig(config);
+        final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
+        final Config existing = cpr.getConfig();
+        if (existing != config) {
+            cpr.releaseConfig(existing);
+            // subsequent calls will get the new config
         }
 
         final AppModelResolver depResolver = appState.getArtifactResolver();

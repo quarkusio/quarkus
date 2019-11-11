@@ -1,6 +1,7 @@
 package io.quarkus.deployment.pkg;
 
 import java.util.List;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -41,7 +42,7 @@ public class PackageConfig {
      * Files that should not be copied to the output artifact
      */
     @ConfigItem
-    public List<String> userConfiguredIgnoredEntries;
+    public Optional<List<String>> userConfiguredIgnoredEntries;
 
     /**
      * The suffix that is applied to the runner jar and native images

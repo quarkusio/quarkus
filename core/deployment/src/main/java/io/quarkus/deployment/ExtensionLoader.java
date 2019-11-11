@@ -25,12 +25,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -40,6 +39,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 import org.wildfly.common.function.Functions;
 
@@ -62,33 +62,33 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.annotations.Weak;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
-import io.quarkus.deployment.builditem.BuildTimeConfigurationBuildItem;
-import io.quarkus.deployment.builditem.BuildTimeRunTimeFixedConfigurationBuildItem;
+import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
+import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationProxyBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
-import io.quarkus.deployment.builditem.UnmatchedConfigBuildItem;
-import io.quarkus.deployment.configuration.ConfigDefinition;
+import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
+import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
+import io.quarkus.deployment.recording.ObjectLoader;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ReflectUtil;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSource;
-import io.quarkus.runtime.configuration.ConverterSupport;
-import io.quarkus.runtime.configuration.DeploymentProfileConfigSource;
-import io.quarkus.runtime.configuration.ExpandingConfigSource;
+import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
-import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
  * Utility class to load build steps, runtime recorders, and configuration roots from a given extension class.
@@ -103,11 +103,6 @@ public final class ExtensionLoader {
     public static final String BUILD_TIME_CONFIG_ROOT = "io.quarkus.runtime.generated.BuildTimeConfigRoot";
     public static final String RUN_TIME_CONFIG = "io.quarkus.runtime.generated.RunTimeConfig";
     public static final String RUN_TIME_CONFIG_ROOT = "io.quarkus.runtime.generated.RunTimeConfigRoot";
-
-    private static final FieldDescriptor RUN_TIME_CONFIG_FIELD = FieldDescriptor.of(RUN_TIME_CONFIG, "runConfig",
-            RUN_TIME_CONFIG_ROOT);
-    private static final FieldDescriptor BUILD_TIME_CONFIG_FIELD = FieldDescriptor.of(BUILD_TIME_CONFIG, "buildConfig",
-            BUILD_TIME_CONFIG_ROOT);
 
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
 
@@ -171,44 +166,29 @@ public final class ExtensionLoader {
             LaunchMode launchMode, Consumer<ConfigBuilder> configCustomizer)
             throws IOException, ClassNotFoundException {
 
-        // set up the configuration definitions
-        final ConfigDefinition buildTimeConfig = new ConfigDefinition(FieldDescriptor.of("Bogus", "No field", "Nothing"));
-        final ConfigDefinition buildTimeRunTimeConfig = new ConfigDefinition(BUILD_TIME_CONFIG_FIELD);
-        final ConfigDefinition runTimeConfig = new ConfigDefinition(RUN_TIME_CONFIG_FIELD, true);
-
-        // populate it with all known types
+        // populate with all known types
+        List<Class<?>> roots = new ArrayList<>();
         for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, CONFIG_ROOTS_LIST)) {
             final ConfigRoot annotation = clazz.getAnnotation(ConfigRoot.class);
             if (annotation == null) {
                 cfgLog.warnf("Ignoring configuration root %s because it has no annotation", clazz);
             } else {
-                final ConfigPhase phase = annotation.phase();
-                if (phase == ConfigPhase.RUN_TIME) {
-                    runTimeConfig.registerConfigRoot(clazz);
-                } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                    buildTimeRunTimeConfig.registerConfigRoot(clazz);
-                } else if (phase == ConfigPhase.BUILD_TIME) {
-                    buildTimeConfig.registerConfigRoot(clazz);
-                } else {
-                    cfgLog.warnf("Unrecognized configuration phase \"%s\" on %s", phase, clazz);
-                }
+                roots.add(clazz);
             }
         }
 
-        // now prepare & load the build configuration
-        final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
+        final BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(roots);
 
-        // expand properties
-        final ExpandingConfigSource.Cache cache = new ExpandingConfigSource.Cache();
-        builder.withWrapper(ExpandingConfigSource.wrapper(cache));
-        builder.withWrapper(DeploymentProfileConfigSource.wrapper());
-        builder.addDefaultSources();
-        final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
-        final DefaultValuesConfigurationSource defaultSource = new DefaultValuesConfigurationSource(
-                buildTimeConfig.getLeafPatterns());
+        // now prepare & load the build configuration
+        final SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false);
+
+        final DefaultValuesConfigurationSource ds1 = new DefaultValuesConfigurationSource(
+                reader.getBuildTimePatternMap());
+        final DefaultValuesConfigurationSource ds2 = new DefaultValuesConfigurationSource(
+                reader.getBuildTimeRunTimePatternMap());
         final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
 
-        builder.withSources(inJar, defaultSource, pcs);
+        builder.withSources(ds1, ds2, pcs);
 
         // populate builder with all converters loaded from ServiceLoader
         ConverterSupport.populateConverters(builder);
@@ -216,43 +196,53 @@ public final class ExtensionLoader {
         if (configCustomizer != null) {
             configCustomizer.accept(builder);
         }
-        final SmallRyeConfig src = (SmallRyeConfig) builder
-                .addDefaultSources()
-                .addDiscoveredSources()
-                .addDiscoveredConverters()
-                .build();
+        final SmallRyeConfig src = builder.build();
 
-        SmallRyeConfigProviderResolver.instance().registerConfig(src, classLoader);
+        // install globally
+        QuarkusConfigFactory.setConfig(src);
+        final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
+        try {
+            cpr.releaseConfig(cpr.getConfig());
+        } catch (IllegalStateException ignored) {
+            // just means no config was installed, which is fine
+        }
 
-        Set<String> unmatched = new HashSet<>();
+        final BuildTimeConfigurationReader.ReadResult readResult = reader.readConfiguration(src);
 
-        ConfigDefinition.loadConfiguration(cache, src,
-                unmatched,
-                buildTimeConfig,
-                buildTimeRunTimeConfig, // this one is only for generating a default-values config source
-                runTimeConfig);
-
-        unmatched.removeIf(s -> !inJar.getPropertyNames().contains(s) && !s.startsWith("quarkus."));
-
+        // the proxy objects used for run time config in the recorders
+        Map<Class<?>, Object> proxies = new HashMap<>();
         Consumer<BuildChainBuilder> result = Functions.discardingConsumer();
-        result = result.andThen(bcb -> bcb.addBuildStep(bc -> {
-            bc.produce(new BuildTimeConfigurationBuildItem(buildTimeConfig));
-            bc.produce(new BuildTimeRunTimeFixedConfigurationBuildItem(buildTimeRunTimeConfig));
-            bc.produce(new RunTimeConfigurationBuildItem(runTimeConfig));
-            bc.produce(new UnmatchedConfigBuildItem(Collections.unmodifiableSet(unmatched)));
-        }).produces(BuildTimeConfigurationBuildItem.class)
-                .produces(BuildTimeRunTimeFixedConfigurationBuildItem.class)
-                .produces(RunTimeConfigurationBuildItem.class)
-                .produces(UnmatchedConfigBuildItem.class)
-                .build());
         for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/quarkus-build-steps.list")) {
             try {
-                result = result
-                        .andThen(ExtensionLoader.loadStepsFrom(clazz, buildTimeConfig, buildTimeRunTimeConfig, launchMode));
+                result = result.andThen(
+                        ExtensionLoader.loadStepsFrom(clazz, readResult, proxies, launchMode));
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to load steps from " + clazz, e);
             }
         }
+        // this has to be an identity hash map else the recorder will get angry
+        Map<Object, FieldDescriptor> proxyFields = new IdentityHashMap<>();
+        for (Map.Entry<Class<?>, Object> entry : proxies.entrySet()) {
+            final RootDefinition def = readResult.requireRootDefinitionForClass(entry.getKey());
+            proxyFields.put(entry.getValue(), def.getDescriptor());
+        }
+        result = result.andThen(bcb -> bcb.addBuildStep(bc -> {
+            bc.produce(new ConfigurationBuildItem(readResult));
+            bc.produce(new RunTimeConfigurationProxyBuildItem(proxies));
+            final ObjectLoader loader = new ObjectLoader() {
+                public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
+                    return body.readStaticField(proxyFields.get(obj));
+                }
+
+                public boolean canHandleObject(final Object obj, final boolean staticInit) {
+                    return proxyFields.containsKey(obj);
+                }
+            };
+            bc.produce(new BytecodeRecorderObjectLoaderBuildItem(loader));
+        }).produces(ConfigurationBuildItem.class)
+                .produces(RunTimeConfigurationProxyBuildItem.class)
+                .produces(BytecodeRecorderObjectLoaderBuildItem.class)
+                .build());
         return result;
     }
 
@@ -260,13 +250,13 @@ public final class ExtensionLoader {
      * Load all the build steps from the given class.
      *
      * @param clazz the class to load from (must not be {@code null})
-     * @param buildTimeConfig the build time configuration (must not be {@code null})
-     * @param buildTimeRunTimeConfig the build time/run time visible config (must not be {@code null})
-     * @param launchMode
+     * @param readResult the build time configuration read result (must not be {@code null})
+     * @param runTimeProxies the map of run time proxy objects to populate for recorders (must not be {@code null})
+     * @param launchMode the launch mode
      * @return a consumer which adds the steps to the given chain builder
      */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(Class<?> clazz, ConfigDefinition buildTimeConfig,
-            ConfigDefinition buildTimeRunTimeConfig, final LaunchMode launchMode) {
+    public static Consumer<BuildChainBuilder> loadStepsFrom(Class<?> clazz, BuildTimeConfigurationReader.ReadResult readResult,
+            Map<Class<?>, Object> runTimeProxies, final LaunchMode launchMode) {
         final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         // this is the chain configuration that will contain all steps on this class and be returned
         Consumer<BuildChainBuilder> chainConfig = Functions.discardingConsumer();
@@ -365,15 +355,14 @@ public final class ExtensionLoader {
                     final ConfigPhase phase = annotation.phase();
                     consumingConfigPhases.add(phase);
 
-                    if (phase == ConfigPhase.BUILD_TIME) {
-                        ctorParamFns.add(bc -> bc.consume(BuildTimeConfigurationBuildItem.class).getConfigDefinition()
-                                .getRealizedInstance(parameterClass));
-                    } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                        ctorParamFns.add(bc -> bc.consume(BuildTimeRunTimeFixedConfigurationBuildItem.class)
-                                .getConfigDefinition().getRealizedInstance(parameterClass));
+                    if (phase.isAvailableAtBuild()) {
+                        ctorParamFns.add(bc -> bc.consume(ConfigurationBuildItem.class).getReadResult()
+                                .requireRootObjectForClass(parameterClass));
+                        if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
+                            runTimeProxies.computeIfAbsent(parameterClass, readResult::requireRootObjectForClass);
+                        }
                     } else if (phase == ConfigPhase.RUN_TIME) {
-                        ctorParamFns.add(bc -> bc.consume(RunTimeConfigurationBuildItem.class).getConfigDefinition()
-                                .getRealizedInstance(parameterClass));
+                        throw reportError(parameter, "Run time configuration cannot be consumed here");
                     } else {
                         throw reportError(parameterClass, "Unknown value for ConfigPhase");
                     }
@@ -477,27 +466,18 @@ public final class ExtensionLoader {
                 final ConfigPhase phase = annotation.phase();
                 consumingConfigPhases.add(phase);
 
-                if (phase == ConfigPhase.BUILD_TIME) {
+                if (phase.isAvailableAtBuild()) {
                     stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
-                        final BuildTimeConfigurationBuildItem configurationBuildItem = bc
-                                .consume(BuildTimeConfigurationBuildItem.class);
+                        final ConfigurationBuildItem configurationBuildItem = bc
+                                .consume(ConfigurationBuildItem.class);
                         ReflectUtil.setFieldVal(field, o,
-                                configurationBuildItem.getConfigDefinition().getRealizedInstance(fieldClass));
+                                configurationBuildItem.getReadResult().requireRootObjectForClass(fieldClass));
                     });
-                } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                    stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
-                        final BuildTimeRunTimeFixedConfigurationBuildItem configurationBuildItem = bc
-                                .consume(BuildTimeRunTimeFixedConfigurationBuildItem.class);
-                        ReflectUtil.setFieldVal(field, o,
-                                configurationBuildItem.getConfigDefinition().getRealizedInstance(fieldClass));
-                    });
+                    if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
+                        runTimeProxies.computeIfAbsent(fieldClass, readResult::requireRootObjectForClass);
+                    }
                 } else if (phase == ConfigPhase.RUN_TIME) {
-                    stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
-                        final RunTimeConfigurationBuildItem configurationBuildItem = bc
-                                .consume(RunTimeConfigurationBuildItem.class);
-                        ReflectUtil.setFieldVal(field, o,
-                                configurationBuildItem.getConfigDefinition().getRealizedInstance(fieldClass));
-                    });
+                    throw reportError(field, "Run time configuration cannot be consumed here");
                 } else {
                     throw reportError(fieldClass, "Unknown value for ConfigPhase");
                 }
@@ -566,16 +546,14 @@ public final class ExtensionLoader {
                             } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
                                 final ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);
                                 final ConfigPhase phase = annotation.phase();
-                                ConfigDefinition confDef;
-                                if (phase == ConfigPhase.BUILD_TIME) {
-                                    confDef = buildTimeConfig;
-                                } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                                    confDef = buildTimeRunTimeConfig;
+                                if (phase.isAvailableAtBuild()) {
+                                    paramSuppList.add(() -> readResult.requireRootObjectForClass(parameterClass));
+                                } else if (phase == ConfigPhase.RUN_TIME) {
+                                    throw reportError(parameter, "Run time configuration cannot be consumed here");
                                 } else {
                                     throw reportError(parameter,
                                             "Unsupported conditional class configuration build phase " + phase);
                                 }
-                                paramSuppList.add(() -> confDef.getRealizedInstance(parameterClass));
                             } else {
                                 throw reportError(parameter,
                                         "Unsupported conditional class constructor parameter type " + parameterClass);
@@ -600,17 +578,15 @@ public final class ExtensionLoader {
                             } else if (fieldClass.isAnnotationPresent(ConfigRoot.class)) {
                                 final ConfigRoot annotation = fieldClass.getAnnotation(ConfigRoot.class);
                                 final ConfigPhase phase = annotation.phase();
-                                ConfigDefinition confDef;
-                                if (phase == ConfigPhase.BUILD_TIME) {
-                                    confDef = buildTimeConfig;
-                                } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                                    confDef = buildTimeRunTimeConfig;
+                                if (phase.isAvailableAtBuild()) {
+                                    setup = setup.andThen(o -> ReflectUtil.setFieldVal(field, o,
+                                            readResult.requireRootObjectForClass(fieldClass)));
+                                } else if (phase == ConfigPhase.RUN_TIME) {
+                                    throw reportError(field, "Run time configuration cannot be consumed here");
                                 } else {
                                     throw reportError(field,
                                             "Unsupported conditional class configuration build phase " + phase);
                                 }
-                                setup = setup.andThen(
-                                        o -> ReflectUtil.setFieldVal(field, o, confDef.getRealizedInstance(fieldClass)));
                             } else {
                                 throw reportError(field, "Unsupported conditional class field type " + fieldClass);
                             }
@@ -757,24 +733,27 @@ public final class ExtensionLoader {
                         final ConfigPhase phase = annotation.phase();
                         methodConsumingConfigPhases.add(phase);
 
-                        if (phase == ConfigPhase.BUILD_TIME) {
+                        if (phase.isAvailableAtBuild()) {
                             methodParamFns.add((bc, bri) -> {
-                                final BuildTimeConfigurationBuildItem configurationBuildItem = bc
-                                        .consume(BuildTimeConfigurationBuildItem.class);
-                                return configurationBuildItem.getConfigDefinition().getRealizedInstance(parameterClass);
+                                final ConfigurationBuildItem configurationBuildItem = bc
+                                        .consume(ConfigurationBuildItem.class);
+                                return configurationBuildItem.getReadResult().requireRootObjectForClass(parameterClass);
                             });
-                        } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                            methodParamFns.add((bc, bri) -> {
-                                final BuildTimeRunTimeFixedConfigurationBuildItem configurationBuildItem = bc
-                                        .consume(BuildTimeRunTimeFixedConfigurationBuildItem.class);
-                                return configurationBuildItem.getConfigDefinition().getRealizedInstance(parameterClass);
-                            });
+                            if (isRecorder && phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
+                                runTimeProxies.computeIfAbsent(parameterClass, readResult::requireRootObjectForClass);
+                            }
                         } else if (phase == ConfigPhase.RUN_TIME) {
-                            methodParamFns.add((bc, bri) -> {
-                                final RunTimeConfigurationBuildItem configurationBuildItem = bc
-                                        .consume(RunTimeConfigurationBuildItem.class);
-                                return configurationBuildItem.getConfigDefinition().getRealizedInstance(parameterClass);
-                            });
+                            if (isRecorder) {
+                                methodParamFns.add((bc, bri) -> {
+                                    final RunTimeConfigurationProxyBuildItem proxies = bc
+                                            .consume(RunTimeConfigurationProxyBuildItem.class);
+                                    return proxies.getProxyObjectFor(parameterClass);
+                                });
+                                runTimeProxies.computeIfAbsent(parameterClass, ReflectUtil::newInstance);
+                            } else {
+                                throw reportError(parameter,
+                                        "Run time configuration cannot be consumed here unless the method is a @Recorder");
+                            }
                         } else {
                             throw reportError(parameterClass, "Unknown value for ConfigPhase");
                         }
@@ -873,15 +852,12 @@ public final class ExtensionLoader {
                             "Bytecode recorder is static but an injected config object is declared as run time");
                 }
                 methodStepConfig = methodStepConfig
-                        .andThen(bsb -> bsb.consumes(RunTimeConfigurationBuildItem.class));
+                        .andThen(bsb -> bsb.consumes(RunTimeConfigurationProxyBuildItem.class));
             }
-            if (methodConsumingConfigPhases.contains(ConfigPhase.BUILD_AND_RUN_TIME_FIXED)) {
+            if (methodConsumingConfigPhases.contains(ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+                    || methodConsumingConfigPhases.contains(ConfigPhase.BUILD_TIME)) {
                 methodStepConfig = methodStepConfig
-                        .andThen(bsb -> bsb.consumes(BuildTimeRunTimeFixedConfigurationBuildItem.class));
-            }
-            if (methodConsumingConfigPhases.contains(ConfigPhase.BUILD_TIME)) {
-                methodStepConfig = methodStepConfig
-                        .andThen(bsb -> bsb.consumes(BuildTimeConfigurationBuildItem.class));
+                        .andThen(bsb -> bsb.consumes(ConfigurationBuildItem.class));
             }
 
             final Consume[] consumes = method.getAnnotationsByType(Consume.class);

@@ -295,6 +295,22 @@ public final class NameIterator {
         }
     }
 
+    public String getAllPreviousSegments() {
+        final int pos = getPosition();
+        if (pos == -1) {
+            return "";
+        }
+        return name.substring(0, pos);
+    }
+
+    public String getAllPreviousSegmentsWith(String suffix) {
+        final int pos = getPosition();
+        if (pos == -1) {
+            return suffix;
+        }
+        return name.substring(0, pos) + "." + suffix;
+    }
+
     public boolean hasNext() {
         return pos < name.length();
     }
@@ -316,7 +332,12 @@ public final class NameIterator {
     }
 
     public String toString() {
-        // generated code relies on this behavior
-        return getName();
+        if (pos == -1) {
+            return "*" + name;
+        } else if (pos == name.length()) {
+            return name + "*";
+        } else {
+            return name.substring(0, pos) + '*' + name.substring(pos + 1);
+        }
     }
 }

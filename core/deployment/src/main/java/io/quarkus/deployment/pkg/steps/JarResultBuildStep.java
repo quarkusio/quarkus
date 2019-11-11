@@ -180,7 +180,7 @@ public class JarResultBuildStep {
             final StringBuilder classPath = new StringBuilder();
             final Map<String, List<byte[]>> services = new HashMap<>();
             Set<String> finalIgnoredEntries = new HashSet<>(IGNORED_ENTRIES);
-            finalIgnoredEntries.addAll(packageConfig.userConfiguredIgnoredEntries);
+            packageConfig.userConfiguredIgnoredEntries.ifPresent(finalIgnoredEntries::addAll);
 
             final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
 
@@ -567,6 +567,7 @@ public class JarResultBuildStep {
         } else {
             Files.createDirectories(runnerZipFs.getPath("META-INF"));
         }
+        Files.createDirectories(manifestPath.getParent());
         Attributes attributes = manifest.getMainAttributes();
         attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
         if (attributes.containsKey(Attributes.Name.CLASS_PATH)) {

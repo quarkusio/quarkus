@@ -19,6 +19,7 @@ import io.smallrye.config.Converters;
  * This small utility class is a tool which helps populating SmallRye {@link ConfigBuilder} with
  * {@link Converter} implementations loaded from {@link ServiceLoader}.
  */
+// todo: delete
 public class ConverterSupport {
 
     private static final Logger LOG = Logger.getLogger(ConverterSupport.class);

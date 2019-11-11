@@ -1,6 +1,8 @@
 package io.quarkus.deployment;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -19,7 +21,7 @@ public class JniProcessor {
          * Paths of library to load.
          */
         @ConfigItem
-        List<String> libraryPaths;
+        Optional<List<String>> libraryPaths;
 
         /**
          * Enable JNI support.
@@ -30,8 +32,8 @@ public class JniProcessor {
 
     @BuildStep
     void setupJni(BuildProducer<JniBuildItem> jniProducer) {
-        if ((jni.enable) || !jni.libraryPaths.isEmpty()) {
-            jniProducer.produce(new JniBuildItem(jni.libraryPaths));
+        if ((jni.enable) || jni.libraryPaths.isPresent()) {
+            jniProducer.produce(new JniBuildItem(jni.libraryPaths.orElse(Collections.emptyList())));
         }
     }
 }

@@ -1,9 +1,10 @@
-package io.quarkus.deployment.configuration;
+package io.quarkus.deployment.configuration.matching;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.function.BiFunction;
 
 import org.wildfly.common.Assert;
 
@@ -125,6 +126,89 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
 
     public void addChild(final String childName, final ConfigPatternMap<T> child) {
         children.put(childName, child);
+    }
+
+    public static <T, U, R> ConfigPatternMap<R> merge(final ConfigPatternMap<T> param0,
+            final ConfigPatternMap<U> param1, final BiFunction<T, U, R> combinator) {
+        final ConfigPatternMap<R> result = new ConfigPatternMap<>();
+        final T matched0 = param0.getMatched();
+        final U matched1 = param1.getMatched();
+        result.setMatched(combinator.apply(matched0, matched1));
+
+        // they're sorted; combine them in order
+        final Iterator<String> iter0 = param0.childNames().iterator();
+        final Iterator<String> iter1 = param1.childNames().iterator();
+        String next0;
+        String next1;
+        if (iter0.hasNext() && iter1.hasNext()) {
+            next0 = iter0.next();
+            next1 = iter1.next();
+            for (;;) {
+                if (next0.compareTo(next1) < 0) {
+                    result.addChild(next0, merge0(param0.getChild(next0), combinator));
+                    if (iter0.hasNext()) {
+                        next0 = iter0.next();
+                    } else {
+                        result.addChild(next1, merge1(param1.getChild(next1), combinator));
+                        break;
+                    }
+                } else if (next0.compareTo(next1) > 0) {
+                    result.addChild(next1, merge1(param1.getChild(next1), combinator));
+                    if (iter1.hasNext()) {
+                        next1 = iter1.next();
+                    } else {
+                        result.addChild(next0, merge0(param0.getChild(next0), combinator));
+                        break;
+                    }
+                } else {
+                    assert next0.compareTo(next1) == 0;
+                    result.addChild(next0, merge(param0.getChild(next0), param1.getChild(next1), combinator));
+                    if (iter0.hasNext() && iter1.hasNext()) {
+                        next0 = iter0.next();
+                        next1 = iter1.next();
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        while (iter0.hasNext()) {
+            next0 = iter0.next();
+            result.addChild(next0, merge0(param0.getChild(next0), combinator));
+        }
+        while (iter1.hasNext()) {
+            next1 = iter1.next();
+            result.addChild(next1, merge1(param1.getChild(next1), combinator));
+        }
+        return result;
+    }
+
+    private static <T, U, R> ConfigPatternMap<R> merge0(final ConfigPatternMap<T> param0,
+            final BiFunction<T, U, R> combinator) {
+        final ConfigPatternMap<R> result = new ConfigPatternMap<>();
+        final T matched0 = param0.getMatched();
+        result.setMatched(combinator.apply(matched0, null));
+        final Iterator<String> iter0 = param0.childNames().iterator();
+        String next0;
+        while (iter0.hasNext()) {
+            next0 = iter0.next();
+            result.addChild(next0, merge0(param0.getChild(next0), combinator));
+        }
+        return result;
+    }
+
+    private static <T, U, R> ConfigPatternMap<R> merge1(final ConfigPatternMap<U> param1,
+            final BiFunction<T, U, R> combinator) {
+        final ConfigPatternMap<R> result = new ConfigPatternMap<>();
+        final U matched1 = param1.getMatched();
+        result.setMatched(combinator.apply(null, matched1));
+        final Iterator<String> iter1 = param1.childNames().iterator();
+        String next1;
+        while (iter1.hasNext()) {
+            next1 = iter1.next();
+            result.addChild(next1, merge1(param1.getChild(next1), combinator));
+        }
+        return result;
     }
 
     public static class PatternIterator<T> implements Iterator<T> {

@@ -16,6 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
@@ -40,8 +41,11 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.smallrye.config.PropertiesConfigSource;
-import io.smallrye.config.SmallRyeConfigProviderResolver;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
  * This phase generates an example configuration file
@@ -65,12 +69,16 @@ public class GenerateConfigTask implements CuratedTask<Path> {
         //TODO: do we actually need to load this config? Does it affect resolution?
         if (Files.exists(configFile)) {
             try {
-                Config built = SmallRyeConfigProviderResolver.instance().getBuilder()
-                        .addDefaultSources()
-                        .addDiscoveredConverters()
-                        .addDiscoveredSources()
-                        .withSources(new PropertiesConfigSource(configFile.toUri().toURL())).build();
-                SmallRyeConfigProviderResolver.instance().registerConfig(built, Thread.currentThread().getContextClassLoader());
+                SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false)
+                        .withSources(new PropertiesConfigSource(configFile.toUri().toURL()));
+                final SmallRyeConfig config = builder.build();
+                QuarkusConfigFactory.setConfig(config);
+                final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
+                final Config existing = cpr.getConfig();
+                if (existing != config) {
+                    cpr.releaseConfig(existing);
+                    // subsequent calls will get the new config
+                }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

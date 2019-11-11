@@ -52,6 +52,10 @@ public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
         cache.flush();
     }
 
+    public String toString() {
+        return "ExpandingConfigSource[delegate=" + getDelegate() + ",ord=" + getOrdinal() + "]";
+    }
+
     private static boolean isExpanding() {
         return NO_EXPAND.get() != Boolean.TRUE;
     }

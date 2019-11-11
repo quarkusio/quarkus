@@ -61,4 +61,9 @@ public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSourc
     public String getName() {
         return delegate.getName();
     }
+
+    public String toString() {
+        return "DeploymentProfileConfigSource[profile=" + profilePrefix + ",delegate=" + getDelegate() + ",ord=" + getOrdinal()
+                + "]";
+    }
 }

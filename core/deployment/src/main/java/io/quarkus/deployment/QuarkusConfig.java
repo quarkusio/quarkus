@@ -12,6 +12,10 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 
+/**
+ * @deprecated Do not use this class anymore, instead try {@code ConfigProvider.getConfig.getValue()} instead.
+ */
+@Deprecated
 public final class QuarkusConfig extends SimpleBuildItem {
 
     public static final QuarkusConfig INSTANCE = new QuarkusConfig();

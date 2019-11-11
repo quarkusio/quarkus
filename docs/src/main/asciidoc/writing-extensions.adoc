@@ -220,7 +220,7 @@ Static Init::
     This means that if a framework can boot in this phase then it will have its booted state directly written to the
     image, and so the boot code does not need to be executed when the image is started.
 +
-There are some restrictions on what can be done in this stage as the Substrate VM disallows some objects in the native executable. For example you should not attempt to listen on a port or start threads in this phase.
+There are some restrictions on what can be done in this stage as the Substrate VM disallows some objects in the native executable. For example you should not attempt to listen on a port or start threads in this phase. In addition, it is disallowed to read run time configuration during static initialization.
 +
 In non-native pure JVM mode, there is no real difference between Static and Runtime Init, except that Static Init is always executed first. This mode benefits from the same build phase augmentation as native mode as the descriptor parsing and annotation scanning are done
 at build time and any associated class/framework dependencies can be removed from the build output jar. In servers like
@@ -886,6 +886,7 @@ this change is complete.
 
 ===== Configuration Root Phases
 
+Configuration roots are strictly bound by configuration phase, and attempting to access a configuration root from outside of its corresponding phase will result in an error.
 A configuration root dictates when its contained keys are read from configuration, and when they are available to applications.  The phases defined by `io.quarkus.runtime.annotations.ConfigPhase` are as follows:
 
 [cols="<3m,^1,^1,^1,^1,<8",options="header"]

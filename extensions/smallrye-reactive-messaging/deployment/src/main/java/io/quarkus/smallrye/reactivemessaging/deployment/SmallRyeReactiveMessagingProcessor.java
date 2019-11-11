@@ -12,7 +12,7 @@ import java.util.Optional;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.DeploymentException;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -236,7 +236,7 @@ public class SmallRyeReactiveMessagingProcessor {
         recorder.registerMediators(configurations, beanContainer.getValue());
 
         for (EmitterBuildItem it : emitterFields) {
-            int defaultBufferSize = ConfigProviderResolver.instance().getConfig()
+            int defaultBufferSize = ConfigProvider.getConfig()
                     .getOptionalValue("smallrye.messaging.emitter.default-buffer-size", Integer.class).orElse(127);
             if (it.getOverflow() != null) {
                 recorder.configureEmitter(beanContainer.getValue(), it.getName(), it.getOverflow(), it.getBufferSize(),

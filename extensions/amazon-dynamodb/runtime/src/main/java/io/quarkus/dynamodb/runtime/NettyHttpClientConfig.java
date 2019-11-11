@@ -168,13 +168,13 @@ public class NettyHttpClientConfig {
          * raised.
          */
         @ConfigItem
-        public URI endpoint;
+        public Optional<URI> endpoint;
 
         /**
          * The hosts that the client is allowed to access without going through the proxy.
          */
         @ConfigItem
-        public List<String> nonProxyHosts;
+        public Optional<List<String>> nonProxyHosts;
     }
 
     //TODO: additionalChannelOptions

@@ -1,6 +1,7 @@
 package io.quarkus.dynamodb.runtime;
 
 import java.nio.file.Path;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -32,7 +33,7 @@ public class TlsManagersProviderConfig {
      * Used only if {@code FILE_STORE} type is chosen.
      */
     @ConfigItem
-    public FileStoreTlsManagersProviderConfig fileStore;
+    public Optional<FileStoreTlsManagersProviderConfig> fileStore;
 
     @ConfigGroup
     public static class FileStoreTlsManagersProviderConfig {

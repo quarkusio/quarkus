@@ -94,13 +94,13 @@ public class AwsCredentialsProviderConfig {
          * AWS Access key id
          */
         @ConfigItem
-        public String accessKeyId;
+        public Optional<String> accessKeyId;
 
         /**
          * AWS Secret access key
          */
         @ConfigItem
-        public String secretAccessKey;
+        public Optional<String> secretAccessKey;
     }
 
     @ConfigGroup
@@ -145,6 +145,6 @@ public class AwsCredentialsProviderConfig {
          * The command that should be executed to retrieve credentials.
          */
         @ConfigItem
-        public String command;
+        public Optional<String> command;
     }
 }

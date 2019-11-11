@@ -26,7 +26,8 @@ public enum AwsCredentialsProviderType {
         @Override
         public AwsCredentialsProvider create(AwsCredentialsProviderConfig config) {
             return StaticCredentialsProvider.create(
-                    AwsBasicCredentials.create(config.staticProvider.accessKeyId, config.staticProvider.secretAccessKey));
+                    AwsBasicCredentials.create(config.staticProvider.accessKeyId.get(),
+                            config.staticProvider.secretAccessKey.get()));
         }
     },
 
@@ -72,7 +73,7 @@ public enum AwsCredentialsProviderType {
 
             builder.credentialRefreshThreshold(config.processProvider.credentialRefreshThreshold);
             builder.processOutputLimit(config.processProvider.processOutputLimit.asLongValue());
-            builder.command(config.processProvider.command);
+            builder.command(config.processProvider.command.get());
 
             return builder.build();
         }

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -40,8 +41,8 @@ import io.vertx.ext.web.Router;
 class VertxHttpProcessor {
 
     @BuildStep
-    HttpRootPathBuildItem httpRoot(HttpBuildTimeConfig config) {
-        return new HttpRootPathBuildItem(config.rootPath);
+    HttpRootPathBuildItem httpRoot(HttpBuildTimeConfig httpBuildTimeConfig) {
+        return new HttpRootPathBuildItem(httpBuildTimeConfig.rootPath);
     }
 
     @BuildStep
@@ -75,7 +76,7 @@ class VertxHttpProcessor {
     @BuildStep(onlyIf = IsNormal.class)
     @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
     public KubernetesPortBuildItem kubernetes(HttpConfiguration config, VertxHttpRecorder recorder) {
-        int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
+        int port = ConfigProvider.getConfig().getValue("quarkus.http.port", OptionalInt.class).orElse(8080);
         recorder.warnIfPortChanged(config, port);
         return new KubernetesPortBuildItem(config.port, "http");
     }
@@ -127,7 +128,7 @@ class VertxHttpProcessor {
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath, launchMode.getLaunchMode());
 
-        boolean startVirtual = requireVirtual.isPresent() || httpConfiguration.virtual;
+        boolean startVirtual = requireVirtual.isPresent() || httpBuildTimeConfig.virtual;
         if (startVirtual) {
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, false, false, VirtualServerChannel.class));

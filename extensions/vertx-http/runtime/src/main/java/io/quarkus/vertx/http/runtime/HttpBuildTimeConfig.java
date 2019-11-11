@@ -15,4 +15,10 @@ public class HttpBuildTimeConfig {
 
     public AuthConfig auth;
 
+    /**
+     * If this is true then only a virtual channel will be set up for vertx web.
+     * We have this switch for testing purposes.
+     */
+    @ConfigItem
+    public boolean virtual;
 }

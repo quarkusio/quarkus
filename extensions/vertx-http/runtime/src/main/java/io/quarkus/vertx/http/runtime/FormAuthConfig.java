@@ -31,7 +31,7 @@ public class FormAuthConfig {
     /**
      * The landing page to redirect to if there is no saved page to redirect back to
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "/index.html")
     public String landingPage;
 
     /**

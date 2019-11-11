@@ -8,8 +8,8 @@ import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.InjectionPoint;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.impl.InjectionPointProvider;
@@ -58,7 +58,7 @@ public class ConfigBeanCreator implements BeanCreator<Object> {
     }
 
     private Config getConfig() {
-        return ConfigProviderResolver.instance().getConfig();
+        return ConfigProvider.getConfig();
     }
 
     private ConfigProperty getConfigProperty(InjectionPoint injectionPoint) {

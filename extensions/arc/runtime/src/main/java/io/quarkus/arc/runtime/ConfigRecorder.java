@@ -7,7 +7,7 @@ import java.util.Set;
 import javax.enterprise.inject.spi.DeploymentException;
 
 import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -18,7 +18,7 @@ import io.quarkus.runtime.annotations.Recorder;
 public class ConfigRecorder {
 
     public void validateConfigProperties(Map<String, Set<String>> properties) {
-        Config config = ConfigProviderResolver.instance().getConfig();
+        Config config = ConfigProvider.getConfig();
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
             cl = ConfigRecorder.class.getClassLoader();

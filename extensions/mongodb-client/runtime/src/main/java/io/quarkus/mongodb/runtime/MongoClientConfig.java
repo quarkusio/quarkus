@@ -67,7 +67,7 @@ public class MongoClientConfig {
      * The addressed are passed as {@code host:port}.
      */
     @ConfigItem
-    public List<String> hosts;
+    public Optional<List<String>> hosts;
 
     /**
      * Configure the database name.

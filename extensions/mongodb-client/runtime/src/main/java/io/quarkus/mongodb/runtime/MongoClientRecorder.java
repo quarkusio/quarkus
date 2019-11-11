@@ -139,7 +139,7 @@ public class MongoClientRecorder {
         settings.applyToClusterSettings(builder -> {
             if (!maybeConnectionString.isPresent()) {
                 // Parse hosts
-                List<ServerAddress> hosts = parseHosts(config.hosts);
+                List<ServerAddress> hosts = parseHosts(config.hosts.orElse(Collections.emptyList()));
                 builder.hosts(hosts);
 
                 if (hosts.size() == 1 && !config.replicaSetName.isPresent()) {

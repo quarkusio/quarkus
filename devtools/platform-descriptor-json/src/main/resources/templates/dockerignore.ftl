@@ -1,4 +1,4 @@
 *
-!target/*-runner
-!target/*-runner.jar
-!target/lib/*
+!${build_dir}/*-runner
+!${build_dir}/*-runner.jar
+!${build_dir}/lib/*

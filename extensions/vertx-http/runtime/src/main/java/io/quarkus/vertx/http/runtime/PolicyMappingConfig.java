@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.util.List;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -30,7 +31,7 @@ public class PolicyMappingConfig {
      *
      */
     @ConfigItem
-    public List<String> methods;
+    public Optional<List<String>> methods;
 
     /**
      * The paths that this permission check applies to. If the path ends in /* then this is treated
@@ -43,5 +44,5 @@ public class PolicyMappingConfig {
      *
      */
     @ConfigItem
-    public List<String> paths;
+    public Optional<List<String>> paths;
 }

@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.LaunchMode;
@@ -70,13 +71,6 @@ public class HttpConfiguration {
     public OptionalInt ioThreads;
 
     /**
-     * If this is true then only a virtual channel will be set up for vertx web.
-     * We have this switch for testing purposes.
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean virtual;
-
-    /**
      * Server limits configuration
      */
     public ServerLimitsConfig limits;
@@ -100,7 +94,7 @@ public class HttpConfiguration {
      * is not suitable for production environments. This must be more than 16 characters long for security reasons
      */
     @ConfigItem(name = "auth.session.encryption-key")
-    public String encryptionKey;
+    public Optional<String> encryptionKey;
 
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;

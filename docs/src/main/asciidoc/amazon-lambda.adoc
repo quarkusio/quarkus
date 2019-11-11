@@ -23,6 +23,7 @@ To complete this guide, you need:
 * Apache Maven 3.5.3+
 * https://aws.amazon.com[An Amazon AWS account]
 * https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html[AWS CLI]
+* https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html[AWS SAM CLI], for local testing
 
 == Getting Started
 
@@ -246,18 +247,91 @@ aws lambda update-function-code --function-name my-native-function \
 
 == Examine the POM
 
-If you want to adapt an existing project to use Quarku's Amazon Lambda extension, there's a couple
+If you want to adapt an existing project to use Quarkus's Amazon Lambda extension, there's a couple
 of things you need to do.  Take a look at the generated example project to get an example of what you need to adapt.
 
 1. Include the `quarkus-amazon-lambda` extension as a pom dependency
-2. Configure Quarkus to build an `uber-jar`
+2. Configure Quarkus to build an `uber-jar` (via quarkus.package.uber-jar=true in the application.properties)
 3. If you are doing a native GraalVM build, Amazon requires you to rename your executable to `bootstrap` and zip it up.  Notice that the `pom.xml` uses the `maven-assemby-plugin` to perform this requirement.
 
+NB: With gradle, to build the uber-jar execute: ./gradlew quarkusBuild --uber-jar
+
+== Testing with the SAM CLI
+
+The https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html[AWS SAM CLI] allows you to run your lambdas locally on your laptop in a simulated Lambda environment.  This requires https://www.docker.com/products/docker-desktop[docker] to be installed.
+
+To execute your lambda function with the
+`java8` runtime, create a `sam.jvm.yaml` template as below:
+----
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Timeout: 5
+Resources:
+  QuarkusSam:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+      Runtime: java8
+      CodeUri: {path to *-runner.jar}
+      MemorySize: 128
+      Policies: AWSLambdaBasicExecutionRole
+----
+
+Run the following SAM CLI command to test your lambda function with the `Java8` runtime and `sam.jvm.yaml` template:
+----
+sam local invoke --template sam.jvm.yaml --event {json test file}
+----
+
+The native executable can be tested via the `provided` runtime defined in a `sam.native.yaml` template:
+----
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Timeout: 5
+Resources:
+  QuarkusSam:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: not.used.in.provided.runtimei
+      Runtime: provided
+      CodeUri: {path to function.zip}
+      MemorySize: 128
+      Policies: AWSLambdaBasicExecutionRole
+      Timeout: 15
+      Environment:
+        Variables:
+          DISABLE_SIGNAL_HANDLERS: true
+----
 
 
+When using the `provided` runtime, AWS requires a bootstrap script to trigger the native executable. Bundle the `bootstrap` script along with the *-runner executable.
 
+i.e., create a zip file called `function.zip` with:
 
+* bootstrap
+* {projectname-version}-runner
 
+Example `bootstrap` script to load the native executable:
+----
+#!/usr/bin/env bash
+
+RUNNER=$( find . -maxdepth 1 -name '*-runner' )
+if [[ ! -z "$RUNNER" ]]
+then
+    $RUNNER
+fi
+----
+
+To invoke the native `provided` runtime with the `sam.native.yaml` template, use the following command:
+
+----
+sam local invoke --template sam.native.yaml --event {json test file}
+----
 
 
 

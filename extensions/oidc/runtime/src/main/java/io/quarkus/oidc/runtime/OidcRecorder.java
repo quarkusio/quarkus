@@ -21,7 +21,7 @@ public class OidcRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcRecorder.class);
 
-    public void setup(OidcConfig config, RuntimeValue<Vertx> vertx, BeanContainer beanContainer) {
+    public void setup(OidcConfig config, OidcBuildTimeConfig btConfig, RuntimeValue<Vertx> vertx, BeanContainer beanContainer) {
         OAuth2ClientOptions options = new OAuth2ClientOptions();
 
         // Base IDP server URL
@@ -92,9 +92,9 @@ public class OidcRecorder {
         identityProvider.setConfig(config);
         AbstractOidcAuthenticationMechanism mechanism = null;
 
-        if (OidcConfig.ApplicationType.SERVICE.equals(config.applicationType)) {
+        if (OidcBuildTimeConfig.ApplicationType.SERVICE.equals(btConfig.applicationType)) {
             mechanism = beanContainer.instance(BearerAuthenticationMechanism.class);
-        } else if (OidcConfig.ApplicationType.WEB_APP.equals(config.applicationType)) {
+        } else if (OidcBuildTimeConfig.ApplicationType.WEB_APP.equals(btConfig.applicationType)) {
             mechanism = beanContainer.instance(CodeAuthenticationMechanism.class);
         }
 

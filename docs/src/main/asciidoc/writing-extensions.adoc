@@ -852,10 +852,36 @@ In addition, custom converters may be registered by adding their fully qualified
 
 Though these implicit converters use reflection, Quarkus will automatically ensure that they are loaded at the appropriate time.
 
+===== Optional Values
+
+If the configuration type is one of the optional types, then empty values are allowed for the configuration key; otherwise,
+specification of an empty value will result in a configuration error which prevents the application from starting.  This
+is especially relevant to configuration properties of inherently emptiable values such as `List`, `Set`, and `String`.  Such
+value types will never be empty; in the event of an empty value, an empty `Optional` is always used.
+
+==== Configuration Default Values
+
+A configuration item can be marked to have a default value.  The default value is used when no matching configuration key
+is specified in the configuration.
+
+Configuration items with a primitive type (such as `int` or `boolean`) implicitly use a default value of `0` or `false`.  The
+sole exception to this rule is the `char` type which does not have an implicit default value.
+
+A property with a default value is not implicitly optional.  If a non-optional configuration item with a default value
+is explicitly specified to have an empty value, the application will report a configuration error and will not start.  If
+it is desired for a property to have a default value and also be optional, it must have an `Optional` type as described above.
+
 ==== Configuration Groups
 
 Configuration values are always collected into grouping classes which are marked with the `@io.quarkus.runtime.annotations.ConfigGroup`
 annotation.  These classes contain a field for each key within its group.  In addition, configuration groups can be nested.
+
+===== Optional Configuration Groups
+
+A nested configuration group may be wrapped with an `Optional` type.  In this case, the group is not populated unless one
+or more properties within that group are specified in the configuration.  If the group is populated, then any required
+properties in the group must also be specified otherwise a configuration error will be reported and the application will
+not start.
 
 ==== Configuration Maps
 

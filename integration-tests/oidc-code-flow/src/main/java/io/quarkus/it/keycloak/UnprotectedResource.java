@@ -38,7 +38,7 @@ public class UnprotectedResource {
     @GET
     @Path("refresh")
     public String refresh() {
-        String refreshToken = identity.getCredential(AccessTokenCredential.class).getRefreshToken();
+        String refreshToken = identity.getCredential(AccessTokenCredential.class).getRefreshToken().getToken();
         return refreshToken != null && !refreshToken.isEmpty() ? "RT injected" : "";
     }
 }

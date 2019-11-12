@@ -28,6 +28,13 @@ public class TestRunTimeConfig {
     @ConfigItem
     public AllValuesConfig allValues;
 
+    /** A map of properties */
+    @ConfigItem
+    public Map<String, Map<String, String>> leafMap;
+    /** A map of property lists */
+    @ConfigItem
+    public Map<String, Map<String, NestedConfig>> configGroupMap;
+
     /**
      * Enum object
      */

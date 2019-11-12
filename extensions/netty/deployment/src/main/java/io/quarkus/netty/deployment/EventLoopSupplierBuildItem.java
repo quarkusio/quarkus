@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 import io.netty.channel.EventLoopGroup;
 import io.quarkus.builder.item.SimpleBuildItem;
 
-public class EventLoopSupplierBuildItem extends SimpleBuildItem {
+public final class EventLoopSupplierBuildItem extends SimpleBuildItem {
 
     private final Supplier<EventLoopGroup> mainSupplier;
     private final Supplier<EventLoopGroup> bossSupplier;

@@ -48,6 +48,7 @@ class VertxCoreProcessor {
         return new EventLoopCountBuildItem(recorder.calculateEventLoopThreads(vertxConfiguration));
     }
 
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     EventLoopSupplierBuildItem eventLoop(VertxCoreRecorder recorder) {
         return new EventLoopSupplierBuildItem(recorder.mainSupplier(), recorder.bossSupplier());

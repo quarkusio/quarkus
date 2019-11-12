@@ -1,9 +1,6 @@
 package io.quarkus.security.runtime.interceptor;
 
 import java.lang.reflect.Method;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -16,8 +13,6 @@ import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
  */
 @Singleton
 public class SecurityConstrainer {
-
-    private final Map<Method, Optional<SecurityCheck>> checkForMethod = new ConcurrentHashMap<>();
 
     @Inject
     SecurityIdentity identity;

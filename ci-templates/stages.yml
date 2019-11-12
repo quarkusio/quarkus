@@ -310,11 +310,12 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 25
+          timeoutInMinutes: 30
           modules:
             - resteasy-jackson
             - vertx
             - vertx-http
+            - vertx-graphql
             - virtual-http
           name: http
 

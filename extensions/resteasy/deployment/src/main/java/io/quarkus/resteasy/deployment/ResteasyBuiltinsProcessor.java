@@ -18,6 +18,7 @@ import io.quarkus.resteasy.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
 import io.quarkus.resteasy.runtime.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
+import io.quarkus.security.spi.DenyAllEnabledBuildItem;
 import io.quarkus.undertow.deployment.StaticResourceFilesBuildItem;
 
 public class ResteasyBuiltinsProcessor {
@@ -25,8 +26,10 @@ public class ResteasyBuiltinsProcessor {
     void setUpDenyAllJaxRs(CombinedIndexBuildItem index,
             JaxRsSecurityConfig config,
             ResteasyDeploymentBuildItem resteasyDeployment,
-            BuildProducer<AnnotationsTransformerBuildItem> transformers) {
+            BuildProducer<AnnotationsTransformerBuildItem> transformers,
+            BuildProducer<DenyAllEnabledBuildItem> denyAllEnabled) {
         if (config.denyJaxRs) {
+            denyAllEnabled.produce(new DenyAllEnabledBuildItem());
             DenyJaxRsTransformer transformer = new DenyJaxRsTransformer(resteasyDeployment.getDeployment());
             transformers.produce(new AnnotationsTransformerBuildItem(transformer));
         }

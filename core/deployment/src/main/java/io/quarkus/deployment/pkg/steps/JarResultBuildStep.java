@@ -179,6 +179,11 @@ public class JarResultBuildStep {
 
             final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
 
+            AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
+            // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
+            // see https://bugs.openjdk.java.net/browse/JDK-8031748
+            generateManifest(runnerZipFs, classPath.toString(), packageConfig);
+
             for (AppDependency appDep : appDeps) {
                 final AppArtifact depArtifact = appDep.getArtifact();
                 final Path resolvedDep = depResolver.resolve(depArtifact);
@@ -258,11 +263,8 @@ public class JarResultBuildStep {
                     }
                 }
             }
-
             copyCommonContent(runnerZipFs, services, applicationArchivesBuildItem, transformedClasses, generatedClasses,
                     generatedResources, seen);
-            generateManifest(runnerZipFs, classPath.toString(), packageConfig);
-
         }
 
         runnerJar.toFile().setReadable(true, false);
@@ -366,9 +368,12 @@ public class JarResultBuildStep {
         final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
 
         copyLibraryJars(transformedClasses, libDir, depResolver, classPath, appDeps);
+
+        // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
+        // see https://bugs.openjdk.java.net/browse/JDK-8031748
+        generateManifest(runnerZipFs, classPath.toString(), packageConfig);
         copyCommonContent(runnerZipFs, services, applicationArchivesBuildItem, transformedClasses, allClasses,
                 generatedResources, seen);
-        generateManifest(runnerZipFs, classPath.toString(), packageConfig);
     }
 
     private void copyLibraryJars(TransformedClassesBuildItem transformedClasses, Path libDir, AppModelResolver depResolver,
@@ -516,6 +521,8 @@ public class JarResultBuildStep {
                 manifest.read(is);
             }
             Files.delete(manifestPath);
+        } else {
+            Files.createDirectories(runnerZipFs.getPath("META-INF"));
         }
         Attributes attributes = manifest.getMainAttributes();
         attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");

@@ -70,6 +70,14 @@ public class SpringControllerTest {
     }
 
     @Test
+    public void testExceptionHandlerWithoutResponseStatusOnExceptionOrMethod() {
+        RestAssured.when().get("/exception/unannotated").then()
+                .contentType("text/plain")
+                .body(isEmptyString())
+                .statusCode(204);
+    }
+
+    @Test
     public void testExceptionHandlerResponseEntityType() {
         RestAssured.when().get("/exception/responseEntity").then()
                 .contentType("application/json")

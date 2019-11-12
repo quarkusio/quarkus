@@ -4,19 +4,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.jar.JarInputStream;
+import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
-import org.assertj.core.util.Arrays;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
@@ -30,7 +35,7 @@ public class PackageIT extends MojoTestBase {
 
     @Test
     public void testPackageWorksWhenUberjarIsFalse()
-            throws MavenInvocationException, FileNotFoundException, InterruptedException {
+            throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/uberjar-check", "projects/project-uberjar-false");
 
         running = new RunningInvoker(testDir, false);
@@ -40,12 +45,24 @@ public class PackageIT extends MojoTestBase {
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
         final File targetDir = getTargetDir();
-        assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(2);
+        List<File> jars = getFilesEndingWith(targetDir, ".jar");
+        assertThat(jars).hasSize(2);
+
+        // make sure the jar can be read by JarInputStream
+        ensureManifestOfJarIsReadableByJarInputStream(
+                jars.stream().filter(f -> f.getName().contains("-runner")).findFirst().get());
+    }
+
+    private void ensureManifestOfJarIsReadableByJarInputStream(File jar) throws IOException {
+        try (InputStream fileInputStream = new FileInputStream(jar)) {
+            Manifest manifest = new JarInputStream(fileInputStream).getManifest();
+            assertThat(manifest).isNotNull();
+        }
     }
 
     @Test
     public void testPackageWorksWhenUberjarIsTrue()
-            throws MavenInvocationException, FileNotFoundException, InterruptedException {
+            throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/uberjar-check", "projects/project-uberjar-true");
 
         createAndVerifyUberJar();
@@ -53,7 +70,7 @@ public class PackageIT extends MojoTestBase {
         createAndVerifyUberJar();
     }
 
-    private void createAndVerifyUberJar() throws FileNotFoundException, MavenInvocationException, InterruptedException {
+    private void createAndVerifyUberJar() throws IOException, MavenInvocationException, InterruptedException {
         Properties p = new Properties();
         p.setProperty("quarkus.package.uber-jar", "true");
 
@@ -63,8 +80,11 @@ public class PackageIT extends MojoTestBase {
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
         final File targetDir = getTargetDir();
-        assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(1);
+        List<File> jars = getFilesEndingWith(targetDir, ".jar");
+        assertThat(jars).hasSize(1);
         assertThat(getNumberOfFilesEndingWith(targetDir, ".original")).isEqualTo(1);
+
+        ensureManifestOfJarIsReadableByJarInputStream(jars.get(0));
     }
 
     @Test
@@ -105,7 +125,7 @@ public class PackageIT extends MojoTestBase {
      */
     @Test
     public void testRunnerUberJarHasValidCRC() throws Exception {
-        testDir = initProject("projects/uberjar-check", "projects/project-uberjar-true");
+        testDir = initProject("projects/uberjar-check", "projects/project-uberjar-true2");
 
         running = new RunningInvoker(testDir, false);
 
@@ -134,7 +154,7 @@ public class PackageIT extends MojoTestBase {
      */
     @Test
     public void testRunnerJarHasValidCRC() throws Exception {
-        testDir = initProject("projects/uberjar-check", "projects/project-uberjar-false");
+        testDir = initProject("projects/uberjar-check", "projects/project-uberjar-false2");
 
         running = new RunningInvoker(testDir, false);
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
@@ -150,9 +170,13 @@ public class PackageIT extends MojoTestBase {
         assertZipEntriesCanBeOpenedAndClosed(runnerJar);
     }
 
-    private int getNumberOfFilesEndingWith(File dir, String suffix) {
+    private List<File> getFilesEndingWith(File dir, String suffix) {
         final File[] files = dir.listFiles((d, name) -> name.endsWith(suffix));
-        return files != null ? files.length : 0;
+        return files != null ? Arrays.asList(files) : Collections.emptyList();
+    }
+
+    private int getNumberOfFilesEndingWith(File dir, String suffix) {
+        return getFilesEndingWith(dir, suffix).size();
     }
 
     private File getTargetDir() {

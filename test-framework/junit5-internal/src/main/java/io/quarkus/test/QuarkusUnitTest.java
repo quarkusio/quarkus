@@ -301,7 +301,7 @@ public class QuarkusUnitTest
 
                 Object actualTest = factory.get();
                 extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).put(testClass.getName(), actualTest);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 started = false;
                 if (assertException != null) {
                     if (e instanceof RuntimeException) {

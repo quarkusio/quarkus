@@ -65,11 +65,11 @@ The OpenID Connect extension allows you to define the configuration using the `a
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
 quarkus.oidc.client-id=frontend
-quarkus.oidc.client-type=web-app
+quarkus.oidc.application-type=web-app
 
 ----
 
-Note that the `quarkus.oidc.client-type` is set to `web-app`. This setting tells Quarkus that you want to enable the OpenID Connect Authorization Code Flow, so that your users are redirected to the OpenID Connect Provider to authenticate.
+Note that the `quarkus.oidc.application-type` is set to `web-app`. This setting tells Quarkus that you want to enable the OpenID Connect Authorization Code Flow, so that your users are redirected to the OpenID Connect Provider to authenticate.
 
 == Starting and Configuring the Keycloak Server
 

@@ -65,7 +65,7 @@ The OpenID Connect extension allows you to define the configuration using the `a
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/auth/realms/quarkus
 quarkus.oidc.client-id=frontend
-quarkus.oidc.client-type=web-app
+quarkus.oidc.application-type=web-app
 
 ----
 

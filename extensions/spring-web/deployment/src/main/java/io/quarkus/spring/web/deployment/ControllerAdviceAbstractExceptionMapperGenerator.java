@@ -108,16 +108,14 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
     void generateMethodBody(MethodCreator toResponse) {
         if (returnType.kind() == Type.Kind.VOID) {
             AnnotationInstance responseStatusInstance = controllerAdviceMethod.annotation(RESPONSE_STATUS);
-            if (responseStatusInstance == null) {
-                throw new IllegalStateException(
-                        "void methods annotated with @ExceptionHandler must also be annotated with @ResponseStatus");
-            }
 
             // invoke the @ExceptionHandler method
             exceptionHandlerMethodResponse(toResponse);
 
             // build a JAX-RS response
-            ResultHandle status = toResponse.load(getHttpStatusFromAnnotation(responseStatusInstance));
+            ResultHandle status = toResponse
+                    .load(responseStatusInstance != null ? getHttpStatusFromAnnotation(responseStatusInstance)
+                            : Response.Status.NO_CONTENT.getStatusCode());
             ResultHandle responseBuilder = toResponse.invokeStaticMethod(
                     MethodDescriptor.ofMethod(Response.class, "status", Response.ResponseBuilder.class, int.class),
                     status);

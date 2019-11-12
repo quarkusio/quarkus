@@ -424,12 +424,6 @@ public class SpringWebProcessor {
                 reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, true, returnTypeDotName.toString()));
             }
 
-            AnnotationInstance responseStatusInstance = method.annotation(RESPONSE_STATUS);
-            if ((method.returnType().kind() == Type.Kind.VOID) && (responseStatusInstance == null)) {
-                throw new IllegalStateException(
-                        "void methods annotated with @ExceptionHandler must also be annotated with @ResponseStatus");
-            }
-
             // we need to generate one JAX-RS ExceptionMapper per Exception type
             Type[] handledExceptionTypes = exceptionHandlerInstance.value().asClassArray();
             for (Type handledExceptionType : handledExceptionTypes) {

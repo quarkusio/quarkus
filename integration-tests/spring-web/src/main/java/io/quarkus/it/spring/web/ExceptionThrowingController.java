@@ -24,6 +24,11 @@ public class ExceptionThrowingController {
         throw new RuntimeException();
     }
 
+    @GetMapping("/unannotated")
+    public void unannotated() {
+        throw new UnannotatedException();
+    }
+
     @GetMapping("/responseEntity")
     public Greeting handledByResponseEntity() {
         throw new IllegalStateException("bad state");

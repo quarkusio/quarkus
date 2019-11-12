@@ -33,6 +33,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
+import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -544,17 +545,44 @@ public class StockMethodsAdder {
                             "(Lorg/springframework/data/domain/Pageable;)Lorg/springframework/data/domain/Page<L%s;>;",
                             entityTypeStr.replace('.', '/')));
 
-                    ResultHandle page = findAll.invokeStaticMethod(
+                    ResultHandle pageable = findAll.getMethodParam(0);
+                    ResultHandle pageableSort = findAll.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(Pageable.class, "getSort", Sort.class),
+                            pageable);
+
+                    ResultHandle panachePage = findAll.invokeStaticMethod(
                             MethodDescriptor.ofMethod(TypesConverter.class, "toPanachePage",
                                     io.quarkus.panache.common.Page.class, Pageable.class),
-                            findAll.getMethodParam(0));
-                    ResultHandle panacheQuery = findAll.invokeStaticMethod(
+                            pageable);
+                    ResultHandle panacheSort = findAll.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(TypesConverter.class, "toPanacheSort",
+                                    io.quarkus.panache.common.Sort.class,
+                                    org.springframework.data.domain.Sort.class),
+                            pageableSort);
+
+                    // depending on whether there was a io.quarkus.panache.common.Sort returned, we need to execute a different findAll method
+                    BranchResult sortNullBranch = findAll.ifNull(panacheSort);
+                    BytecodeCreator sortNullTrue = sortNullBranch.trueBranch();
+                    BytecodeCreator sortNullFalse = sortNullBranch.falseBranch();
+                    AssignableResultHandle panacheQueryVar = findAll.createVariable(PanacheQuery.class);
+
+                    ResultHandle panacheQueryWithoutSort = sortNullTrue.invokeStaticMethod(
                             ofMethod(JpaOperations.class, "findAll", PanacheQuery.class, Class.class),
-                            findAll.readInstanceField(entityClassFieldDescriptor, findAll.getThis()));
-                    panacheQuery = findAll.invokeInterfaceMethod(
+                            sortNullTrue.readInstanceField(entityClassFieldDescriptor, sortNullTrue.getThis()));
+                    sortNullTrue.assign(panacheQueryVar, panacheQueryWithoutSort);
+                    sortNullTrue.breakScope();
+
+                    ResultHandle panacheQueryWithSort = sortNullFalse.invokeStaticMethod(
+                            ofMethod(JpaOperations.class, "findAll", PanacheQuery.class, Class.class,
+                                    io.quarkus.panache.common.Sort.class),
+                            sortNullFalse.readInstanceField(entityClassFieldDescriptor, sortNullFalse.getThis()), panacheSort);
+                    sortNullFalse.assign(panacheQueryVar, panacheQueryWithSort);
+                    sortNullFalse.breakScope();
+
+                    ResultHandle panacheQuery = findAll.invokeInterfaceMethod(
                             MethodDescriptor.ofMethod(PanacheQuery.class, "page", PanacheQuery.class,
                                     io.quarkus.panache.common.Page.class),
-                            panacheQuery, page);
+                            panacheQueryVar, panachePage);
                     ResultHandle list = findAll.invokeInterfaceMethod(
                             MethodDescriptor.ofMethod(PanacheQuery.class, "list", List.class),
                             panacheQuery);

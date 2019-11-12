@@ -17,6 +17,8 @@ public interface PersonRepository extends CrudRepository<Person, Long>, PersonFr
 
     List<Person> findByName(String name);
 
+    List<Person> findByName(String name, Pageable pageable);
+
     List<Person> findByName(String name, Sort sort);
 
     Page<Person> findByNameOrderByJoined(String name, Pageable pageable);

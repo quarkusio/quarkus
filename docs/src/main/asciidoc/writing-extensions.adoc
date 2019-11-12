@@ -1642,6 +1642,9 @@ executable. Some of these build items are listed below:
 `io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem`::
  Includes static resources into the native executable.
 
+`io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryBuildItem`::
+ Includes directory's static resources into the native executable.
+
 `io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem`::
 A class that will be reinitialized at runtime by Substrate. This will result in the static initializer running twice.
 
@@ -2099,16 +2102,16 @@ public final class MyExtProcessor {
     @BuildStep
     void registerNativeImageReources(BuildProducer<ServiceProviderBuildItem> services) {
         String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
-        
+
         // find out all the implementation classes listed in the service files
-        Set<String> implementations = 
+        Set<String> implementations =
             ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                                           service);
 
-        // register every listed implementation class so they can be instantiated 
+        // register every listed implementation class so they can be instantiated
         // in native-image at run-time
         services.produce(
-            new ServiceProviderBuildItem(io.quarkus.SomeService.class.getName(), 
+            new ServiceProviderBuildItem(io.quarkus.SomeService.class.getName(),
                                          implementations.toArray(new String[0])));
     }
 }
@@ -2130,13 +2133,13 @@ public final class MyExtProcessor {
     void registerNativeImageReources(BuildProducer<NativeImageResourceBuildItem> resource,
                                      BuildProducer<ReflectiveClassBuildItem> reflectionClasses) {
         String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
-        
+
         // register the service file so it is visible in native-image
         resource.produce(new NativeImageResourceBuildItem(service));
-        
-        // register every listed implementation class so they can be inspected/instantiated 
+
+        // register every listed implementation class so they can be inspected/instantiated
         // in native-image at run-time
-        Set<String> implementations = 
+        Set<String> implementations =
             ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                                           service);
         reflectionClasses.produce(
@@ -2148,7 +2151,7 @@ public final class MyExtProcessor {
 While this is the easiest way to get your services running natively, it's less efficient than scanning the implementation
 classes at build time and generating code that registers them at static-init time instead of relying on reflection.
 
-You can achieve that by adapting the previous build step to use a static-init recorder instead of registering 
+You can achieve that by adapting the previous build step to use a static-init recorder instead of registering
 classes for reflection:
 
 [source,java]
@@ -2157,19 +2160,19 @@ public final class MyExtProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void registerNativeImageReources(RecorderContext recorderContext, 
+    void registerNativeImageReources(RecorderContext recorderContext,
                                      SomeServiceRecorder recorder) {
         String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
-        
+
         // read the implementation classes
         Collection<Class<? extends io.quarkus.SomeService>> implementationClasses = new LinkedHashSet<>();
         Set<String> implementations = ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                                                                     service);
         for(String implementation : implementations) {
-            implementationClasses.add((Class<? extends io.quarkus.SomeService>) 
+            implementationClasses.add((Class<? extends io.quarkus.SomeService>)
                 recorderContext.classProxy(implementation));
         }
-        
+
         // produce a static-initializer with those classes
         recorder.configure(implementationClasses);
     }

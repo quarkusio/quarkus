@@ -81,7 +81,7 @@ public class InterceptorResolver {
                 String annotationField = value.name();
                 if (!interceptorBindingClass.method(annotationField).hasAnnotation(DotNames.NONBINDING)
                         && !nonBindingFields.contains(annotationField)
-                        && !value.equals(interceptorBinding.value(annotationField))) {
+                        && !value.equals(interceptorBinding.valueWithDefault(beanDeployment.getIndex(), annotationField))) {
                     matches = false;
                     break;
                 }

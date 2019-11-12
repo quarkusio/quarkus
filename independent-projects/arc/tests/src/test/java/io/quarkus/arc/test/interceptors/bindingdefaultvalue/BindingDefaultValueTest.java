@@ -37,7 +37,7 @@ public class BindingDefaultValueTest {
 
     }
 
-    @MyTransactional("alpha")
+    @MyTransactional
     @Priority(1)
     @Interceptor
     public static class AlphaInterceptor {

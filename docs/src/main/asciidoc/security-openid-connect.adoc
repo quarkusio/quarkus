@@ -270,18 +270,6 @@ export access_token=$(\
  )
 ----
 
-The `http://localhost:8080/api/confidential` endpoint is protected with a policy defined in the Keycloak Server. The policy only grants access to the resource if the user is granted with a `confidential` role. The difference here is that the application is  delegating the access decision to Keycloak. To access the confidential endpoint, you should obtain an access token for user `jdoe`:
-
-[source,bash]
-----
-export access_token=$(\
- curl -X POST http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/token \
- --user backend-service:secret \
- -H 'content-type: application/x-www-form-urlencoded' \
- -d 'username=jdoe&password=jdoe&grant_type=password' | jq --raw-output '.access_token' \
-)
-----
-
 == References
 
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]

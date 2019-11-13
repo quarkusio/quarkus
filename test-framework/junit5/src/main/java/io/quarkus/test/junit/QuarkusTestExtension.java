@@ -57,7 +57,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.NativeImageLauncher;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
-import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.RestAssuredManager;
 import io.quarkus.test.common.TestInjectionManager;
 import io.quarkus.test.common.TestInstantiator;
 import io.quarkus.test.common.TestResourceManager;
@@ -81,7 +81,7 @@ public class QuarkusTestExtension
      * run we remove them if this file exists.
      */
     private static final String CREATED_FILES = "CREATED_FILES.txt";
-    private final RestAssuredURLManager restAssuredURLManager = new RestAssuredURLManager(false);
+    private final RestAssuredManager restAssuredManager = new RestAssuredManager(false);
 
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
 
@@ -340,7 +340,7 @@ public class QuarkusTestExtension
         if (!failedBoot) {
             boolean nativeImageTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class)
                     || context.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class);
-            restAssuredURLManager.clearURL();
+            restAssuredManager.clear();
             TestScopeManager.tearDown(nativeImageTest);
         }
     }
@@ -350,7 +350,7 @@ public class QuarkusTestExtension
         if (!failedBoot) {
             boolean nativeImageTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class)
                     || context.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class);
-            restAssuredURLManager.setURL();
+            restAssuredManager.set();
             TestScopeManager.setup(nativeImageTest);
         }
     }

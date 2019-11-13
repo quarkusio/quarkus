@@ -55,7 +55,7 @@ import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
-import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.RestAssuredManager;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
@@ -82,7 +82,7 @@ public class QuarkusUnitTest
     private volatile TimerTask timeoutTask;
     private Properties customApplicationProperties;
 
-    private final RestAssuredURLManager restAssuredURLManager;
+    private final RestAssuredManager restAssuredManager;
 
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
         return assertException(t -> {
@@ -100,7 +100,7 @@ public class QuarkusUnitTest
     }
 
     private QuarkusUnitTest(boolean useSecureConnection) {
-        this.restAssuredURLManager = new RestAssuredURLManager(useSecureConnection);
+        this.restAssuredManager = new RestAssuredManager(useSecureConnection);
     }
 
     public QuarkusUnitTest assertException(Consumer<Throwable> assertException) {
@@ -372,12 +372,12 @@ public class QuarkusUnitTest
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        restAssuredURLManager.clearURL();
+        restAssuredManager.clear();
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        restAssuredURLManager.setURL();
+        restAssuredManager.set();
     }
 
     public Runnable getAfterUndeployListener() {

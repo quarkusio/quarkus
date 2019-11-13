@@ -2,6 +2,7 @@ package io.quarkus.runtime.configuration;
 
 import static io.quarkus.runtime.configuration.ConverterSupport.DEFAULT_QUARKUS_CONVERTER_PRIORITY;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
@@ -16,7 +17,9 @@ import org.wildfly.common.net.Inet;
  * an unresolved instance is returned.
  */
 @Priority(DEFAULT_QUARKUS_CONVERTER_PRIORITY)
-public class InetSocketAddressConverter implements Converter<InetSocketAddress> {
+public class InetSocketAddressConverter implements Converter<InetSocketAddress>, Serializable {
+
+    private static final long serialVersionUID = 1928336763333858343L;
 
     @Override
     public InetSocketAddress convert(String value) {

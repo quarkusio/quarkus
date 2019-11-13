@@ -2,6 +2,7 @@ package io.quarkus.runtime.configuration;
 
 import static io.quarkus.runtime.configuration.ConverterSupport.DEFAULT_QUARKUS_CONVERTER_PRIORITY;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.regex.Pattern;
@@ -14,7 +15,8 @@ import org.eclipse.microprofile.config.spi.Converter;
  * A converter for a {@link Duration} interface.
  */
 @Priority(DEFAULT_QUARKUS_CONVERTER_PRIORITY)
-public class DurationConverter implements Converter<Duration> {
+public class DurationConverter implements Converter<Duration>, Serializable {
+    private static final long serialVersionUID = 7499347081928776532L;
     private static final String PERIOD_OF_TIME = "PT";
     private static final Pattern DIGITS = Pattern.compile("^[-+]?\\d+$");
     private static final Pattern START_WITH_DIGITS = Pattern.compile("^[-+]?\\d+.*");

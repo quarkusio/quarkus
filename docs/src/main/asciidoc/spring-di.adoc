@@ -256,6 +256,50 @@ Spring classes and annotations are only used for reading metadata and / or are u
 What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
 classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for example) will not be executed.
 
+== Conversion Table
+
+The following table shows how Spring DI annotations can be converted to CDI and / or MicroProfile annotations.
+
+|===
+|Spring |CDI / MicroProfile |Comments
+
+|@Autowired
+|@Inject
+|
+
+|@Qualifier
+|@Named
+|
+
+|@Value
+|@ConfigProperty
+|@ConfigProperty doesn't support an expression language the way @Value does, but makes the typical use cases much easier to handle
+
+|@Component
+|@Singleton
+|By default Spring stereotype annotations are singleton beans
+
+|@Service
+|@Singleton
+|By default Spring stereotype annotations are singleton beans
+
+|@Repository
+|@Singleton
+|By default Spring stereotype annotations are singleton beans
+
+|@Configuration
+|@ApplicationScoped
+|In CDI a producer bean isn't limited to the application scope, it could just as well be @Singleton or @Dependent
+
+|@Bean
+|@Produces
+|
+
+|@Scope
+|
+|Doesn't have a one-to-one mapping to a CDI annotation. Depending on the value of @Scope, one of the @Singleton, @ApplicationScoped, @SessionScoped, @RequestScoped, @Dependent could be used
+|===
+
 == More Spring guides
 
 Quarkus supports additional Spring compatibility features. See the following guides for more details:

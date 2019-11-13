@@ -38,12 +38,6 @@ public class HibernateValidatorTestResource
     @Inject
     GreetingService greetingService;
 
-    @Inject
-    EnhancedGreetingService enhancedGreetingService;
-
-    @Inject
-    ZipCodeService zipCodeResource;
-
     @GET
     @Path("/basic-features")
     @Produces(MediaType.TEXT_PLAIN)
@@ -134,44 +128,6 @@ public class HibernateValidatorTestResource
         result.append(formatViolations(validator.validate(new BeanWithInjectedConstraintValidatorConstraint(MyService.VALID))));
 
         result.append(formatViolations(validator.validate(new BeanWithInjectedConstraintValidatorConstraint("Invalid value"))));
-
-        return result.build();
-    }
-
-    @GET
-    @Path("/test-inherited-implements-constraints")
-    @Produces(MediaType.TEXT_PLAIN)
-    public String testInheritedImplementsConstraints() {
-        ResultBuilder result = new ResultBuilder();
-
-        zipCodeResource.echoZipCode("12345");
-
-        result.append(formatViolations(Collections.emptySet()));
-
-        try {
-            zipCodeResource.echoZipCode("1234");
-        } catch (ConstraintViolationException e) {
-            result.append(formatViolations(e.getConstraintViolations()));
-        }
-
-        return result.build();
-    }
-
-    @GET
-    @Path("/test-inherited-extends-constraints")
-    @Produces(MediaType.TEXT_PLAIN)
-    public String testInheritedExtendsConstraints() {
-        ResultBuilder result = new ResultBuilder();
-
-        enhancedGreetingService.greeting("test");
-
-        result.append(formatViolations(Collections.emptySet()));
-
-        try {
-            enhancedGreetingService.greeting(null);
-        } catch (ConstraintViolationException e) {
-            result.append(formatViolations(e.getConstraintViolations()));
-        }
 
         return result.build();
     }

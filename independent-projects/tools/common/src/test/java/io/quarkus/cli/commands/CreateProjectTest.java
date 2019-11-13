@@ -75,6 +75,9 @@ public class CreateProjectTest {
         Assertions.assertFalse(gitignoreContent.contains("\ntarget/\n"));
         Assertions.assertTrue(gitignoreContent.contains("\nbuild/"));
         Assertions.assertTrue(gitignoreContent.contains("\n.gradle/\n"));
+
+				assertThat(new File(file, "README.md")).exists();
+				assertThat(contentOf(new File(file, "README.md"), "UTF-8")).contains("./gradlew");
     }
 
     @Test
@@ -116,7 +119,10 @@ public class CreateProjectTest {
         Assertions.assertEquals(getBomGroupId(), props.get("quarkusPlatformGroupId"));
         Assertions.assertEquals(getBomArtifactId(), props.get("quarkusPlatformArtifactId"));
         Assertions.assertEquals(getBomVersion(), props.get("quarkusPlatformVersion"));
-    }
+
+        assertThat(new File(testDir, "README.md")).exists();
+				assertThat(contentOf(new File(testDir, "README.md"), "UTF-8")).contains("./gradlew");
+		}
 
     @Test
     public void createOnTopPomWithoutResource() throws IOException {
@@ -142,6 +148,8 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
+  			assertThat(new File(testDir, "README.md")).exists();
+			  assertThat(contentOf(new File(testDir, "README.md"), "UTF-8")).contains("./mvnw");
         assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory().matches(f -> {
@@ -183,6 +191,8 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
+				assertThat(new File(testDir, "README.md")).exists();
+				assertThat(contentOf(new File(testDir, "README.md"), "UTF-8")).contains("./mvnw");
         assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
@@ -225,6 +235,8 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
+				assertThat(new File(testDir, "README.md")).exists();
+				assertThat(contentOf(new File(testDir, "README.md"), "UTF-8")).contains("./mvnw");
         assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
         assertThat(new File(testDir, "src/main/java")).isDirectory();

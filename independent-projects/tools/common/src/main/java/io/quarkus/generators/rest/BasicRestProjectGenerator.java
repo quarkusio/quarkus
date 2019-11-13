@@ -40,6 +40,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
         project.createDockerFiles();
         project.createDockerIgnore();
         project.createApplicationConfig();
+        project.createReadme();
 
         project.createGitIgnore();
     }
@@ -153,6 +154,21 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
             generate("templates/dockerfile-native.ftl", context, dockerRootDir + "/Dockerfile.native",
                     "native docker file");
             generate("templates/dockerfile-jvm.ftl", context, dockerRootDir + "/Dockerfile.jvm", "jvm docker file");
+        }
+
+        private void createReadme() throws IOException {
+            String readme = writer.mkdirs("") + "README.md";
+            BuildTool buildTool = getBuildTool();
+            switch (buildTool) {
+                case MAVEN:
+                    generate("templates/README.maven.ftl", context, readme, "read me");
+                    break;
+                case GRADLE:
+                    generate("templates/README.gradle.ftl", context, readme, "read me");
+                    break;
+                default:
+                    throw new IllegalStateException("buildTool is none of Maven or Gradle");
+            }
         }
 
         private void createDockerIgnore() throws IOException {

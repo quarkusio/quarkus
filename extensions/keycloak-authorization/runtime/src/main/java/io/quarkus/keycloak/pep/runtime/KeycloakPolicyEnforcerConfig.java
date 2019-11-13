@@ -1,4 +1,4 @@
-package io.quarkus.keycloak.pep;
+package io.quarkus.keycloak.pep.runtime;
 
 import java.util.List;
 import java.util.Map;
@@ -26,7 +26,7 @@ public class KeycloakPolicyEnforcerConfig {
      * Policy enforcement configuration when using Keycloak Authorization Services
      */
     @ConfigItem
-    KeycloakConfigPolicyEnforcer policyEnforcer;
+    public KeycloakConfigPolicyEnforcer policyEnforcer;
 
     @ConfigGroup
     public static class KeycloakConfigPolicyEnforcer {
@@ -35,7 +35,7 @@ public class KeycloakPolicyEnforcerConfig {
          * Enables policy enforcement.
          */
         @ConfigItem
-        boolean enable;
+        public boolean enable;
 
         /**
          * Specifies how policies are enforced.

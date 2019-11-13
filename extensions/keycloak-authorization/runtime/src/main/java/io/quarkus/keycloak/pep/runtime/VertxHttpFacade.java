@@ -1,4 +1,4 @@
-package io.quarkus.keycloak.pep;
+package io.quarkus.keycloak.pep.runtime;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -20,6 +20,7 @@ import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.representations.AccessToken;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
@@ -216,7 +217,7 @@ public class VertxHttpFacade implements OIDCHttpFacade {
         }
 
         SecurityIdentity identity = user.getSecurityIdentity();
-        TokenCredential credential = identity.getCredential(TokenCredential.class);
+        TokenCredential credential = identity.getCredential(AccessTokenCredential.class);
 
         if (credential == null) {
             return null;

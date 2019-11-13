@@ -1,4 +1,4 @@
-package io.quarkus.keycloak.pep;
+package io.quarkus.keycloak.pep.runtime;
 
 import java.security.Permission;
 import java.util.HashMap;
@@ -39,7 +39,6 @@ public class KeycloakPolicyEnforcerAuthorizer
 
     @Override
     public CheckResult apply(RoutingContext routingContext, SecurityIdentity identity) {
-
         VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext);
         AuthorizationContext result = delegate.authorize(httpFacade);
 

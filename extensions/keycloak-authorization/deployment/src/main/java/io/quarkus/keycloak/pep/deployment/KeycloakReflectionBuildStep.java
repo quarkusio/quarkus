@@ -1,4 +1,4 @@
-package io.quarkus.keycloak.pep;
+package io.quarkus.keycloak.pep.deployment;
 
 import org.keycloak.adapters.authentication.ClientCredentialsProvider;
 import org.keycloak.adapters.authentication.ClientIdAndSecretCredentialsProvider;

@@ -1,4 +1,4 @@
-package io.quarkus.keycloak.pep;
+package io.quarkus.keycloak.pep.runtime;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.runtime.OidcConfig;

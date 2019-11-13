@@ -167,6 +167,8 @@ quarkus.oidc.credentials.secret=secret
 quarkus.keycloak.policy-enforcer.enable=true
 ----
 
+NOTE: By default, applications using the `quarkus-oidc` extension are marked as a `service` type application (see `quarkus.oidc.application-type`). This extension currently supports only such `service` type applications.
+
 == Starting and Configuring the Keycloak Server
 
 To start a Keycloak Server you can use Docker and just run the following command:

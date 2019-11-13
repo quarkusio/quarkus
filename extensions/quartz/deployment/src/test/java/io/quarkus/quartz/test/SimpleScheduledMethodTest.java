@@ -1,4 +1,4 @@
-package io.quarkus.scheduler.test;
+package io.quarkus.quartz.test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -25,7 +25,7 @@ public class SimpleScheduledMethodTest {
     @Test
     public void testSimpleScheduledJobs() throws InterruptedException {
         for (CountDownLatch latch : SimpleJobs.LATCHES.values()) {
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(5, TimeUnit.SECONDS), "Latch count: " + latch.getCount());
         }
     }
 

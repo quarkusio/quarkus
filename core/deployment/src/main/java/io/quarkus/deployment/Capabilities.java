@@ -24,6 +24,7 @@ public final class Capabilities extends SimpleBuildItem {
     public static final String SECURITY = "io.quarkus.security";
     public static final String SECURITY_ELYTRON_OAUTH2 = "io.quarkus.elytron.security.oauth2";
     public static final String SECURITY_ELYTRON_JDBC = "io.quarkus.elytron.security.jdbc";
+    public static final String QUARTZ = "io.quarkus.quartz";
 
     private final Set<String> capabilities;
 

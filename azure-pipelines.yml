@@ -30,11 +30,13 @@ stages:
     parameters:
       poolSettings:
          vmImage: 'Ubuntu 16.04'
+         name: $(EMPTY)
       displayPrefix: '(Azure Hosted)'
       expectUseVMs: true
   - template: ci-templates/stages.yml
     parameters:
       poolSettings:
         name: 'Expansion'
+        vmImage: $(EMPTY)
       displayPrefix: '(Expansion)'
       expectUseVMs: false      

@@ -234,6 +234,7 @@ With TLS:
 
 [source]
 ----
+quarkus.mailer.auth-methods=DIGEST-MD5 CRAM-SHA256 CRAM-SHA1 CRAM-MD5 PLAIN LOGIN
 quarkus.mailer.from=YOUREMAIL@gmail.com
 quarkus.mailer.host=smtp.gmail.com
 quarkus.mailer.port=587
@@ -245,7 +246,8 @@ quarkus.mailer.password=YOURGENERATEDAPPLICATIONPASSWORD
 Or with SSL:
 
 [source]
-----
+---- 
+quarkus.mailer.auth-methods=DIGEST-MD5 CRAM-SHA256 CRAM-SHA1 CRAM-MD5 PLAIN LOGIN
 quarkus.mailer.from=YOUREMAIL@gmail.com
 quarkus.mailer.host=smtp.gmail.com
 quarkus.mailer.port=465
@@ -253,6 +255,8 @@ quarkus.mailer.ssl=true
 quarkus.mailer.username=YOUREMAIL@gmail.com
 quarkus.mailer.password=YOURGENERATEDAPPLICATIONPASSWORD
 ----
+
+Note: the `quarkus.mailer.auth-methods` configuration option is needed for the quarkus mailer to support password auth with google. By default both the mailer and google default to XOAUTH2 which requires registering an application, getting tokens, etc. 
 
 == Using SSL with native executables
 

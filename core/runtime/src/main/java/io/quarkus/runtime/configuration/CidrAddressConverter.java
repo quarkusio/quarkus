@@ -2,6 +2,8 @@ package io.quarkus.runtime.configuration;
 
 import static io.quarkus.runtime.configuration.ConverterSupport.DEFAULT_QUARKUS_CONVERTER_PRIORITY;
 
+import java.io.Serializable;
+
 import javax.annotation.Priority;
 
 import org.eclipse.microprofile.config.spi.Converter;
@@ -12,7 +14,9 @@ import org.wildfly.common.net.Inet;
  * A converter which converts a CIDR address into an instance of {@link CidrAddress}.
  */
 @Priority(DEFAULT_QUARKUS_CONVERTER_PRIORITY)
-public class CidrAddressConverter implements Converter<CidrAddress> {
+public class CidrAddressConverter implements Converter<CidrAddress>, Serializable {
+
+    private static final long serialVersionUID = 2023552088048952902L;
 
     @Override
     public CidrAddress convert(String value) {

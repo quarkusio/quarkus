@@ -1,5 +1,6 @@
 package io.quarkus.runtime.configuration;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -12,9 +13,10 @@ import io.quarkus.runtime.util.StringUtil;
 /**
  * A converter for hyphenated enums.
  */
-public final class HyphenateEnumConverter<E extends Enum<E>> implements Converter<E> {
+public final class HyphenateEnumConverter<E extends Enum<E>> implements Converter<E>, Serializable {
     private static final String HYPHEN = "-";
     private static final Pattern PATTERN = Pattern.compile("([-_]+)");
+    private static final long serialVersionUID = 5675903245398498741L;
 
     private final Class<E> enumType;
     private final Map<String, E> values = new HashMap<>();

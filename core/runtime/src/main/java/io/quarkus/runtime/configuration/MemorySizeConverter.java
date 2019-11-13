@@ -2,6 +2,7 @@ package io.quarkus.runtime.configuration;
 
 import static io.quarkus.runtime.configuration.ConverterSupport.DEFAULT_QUARKUS_CONVERTER_PRIORITY;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,10 +17,11 @@ import org.eclipse.microprofile.config.spi.Converter;
  * A converter to support data sizes.
  */
 @Priority(DEFAULT_QUARKUS_CONVERTER_PRIORITY)
-public class MemorySizeConverter implements Converter<MemorySize> {
+public class MemorySizeConverter implements Converter<MemorySize>, Serializable {
     private static final Pattern MEMORY_SIZE_PATTERN = Pattern.compile("^(\\d+)([BbKkMmGgTtPpEeZzYy]?)$");
     static final BigInteger KILO_BYTES = BigInteger.valueOf(1024);
     private static final Map<String, BigInteger> MEMORY_SIZE_MULTIPLIERS;
+    private static final long serialVersionUID = -1988485929047973068L;
 
     static {
         MEMORY_SIZE_MULTIPLIERS = new HashMap<>();

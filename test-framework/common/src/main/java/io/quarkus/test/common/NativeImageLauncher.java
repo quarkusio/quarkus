@@ -13,11 +13,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.ServiceLoader;
 
-import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
+import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
+import io.smallrye.config.SmallRyeConfig;
 
 public class NativeImageLauncher implements Closeable {
 
@@ -32,13 +38,31 @@ public class NativeImageLauncher implements Closeable {
     private final Map<String, String> systemProps = new HashMap<>();
     private List<NativeImageStartedNotifier> startedNotifiers;
 
-    public NativeImageLauncher(Class<?> testClass) {
+    private NativeImageLauncher(Class<?> testClass, Config config) {
         this(testClass,
-                ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class).orElse(DEFAULT_PORT),
-                ConfigProvider.getConfig().getOptionalValue("quarkus.test.native-image-wait-time", Long.class)
-                        .orElse(DEFAULT_IMAGE_WAIT_TIME),
-                ConfigProvider.getConfig().getOptionalValue("quarkus.test.native-image-profile", String.class)
+                config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
+                config.getValue("quarkus.test.native-image-wait-time", OptionalLong.class).orElse(DEFAULT_IMAGE_WAIT_TIME),
+                config.getOptionalValue("quarkus.test.native-image-profile", String.class)
                         .orElse(null));
+    }
+
+    public NativeImageLauncher(Class<?> testClass) {
+        // todo: accessing run time config from here doesn't make sense
+        this(testClass, installAndGetSomeConfig());
+    }
+
+    private static Config installAndGetSomeConfig() {
+        final SmallRyeConfig config = ConfigUtils.configBuilder().build();
+        QuarkusConfigFactory.setConfig(config);
+        final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
+        try {
+            final Config installed = cpr.getConfig();
+            if (installed != config) {
+                cpr.releaseConfig(installed);
+            }
+        } catch (IllegalStateException ignored) {
+        }
+        return config;
     }
 
     public NativeImageLauncher(Class<?> testClass, int port, long imageWaitTime, String profile) {

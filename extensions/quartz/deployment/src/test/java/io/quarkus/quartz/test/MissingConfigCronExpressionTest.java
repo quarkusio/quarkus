@@ -1,4 +1,4 @@
-package io.quarkus.scheduler.test;
+package io.quarkus.quartz.test;
 
 import java.util.NoSuchElementException;
 

@@ -17,6 +17,7 @@
         <!-- Plumbing -->
         <module>arc</module>
         <module>scheduler</module>
+        <module>quartz</module>
 
         <!-- Formats -->
         <module>jackson</module>

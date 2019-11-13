@@ -1,4 +1,4 @@
-package io.quarkus.scheduler.runtime.graal;
+package io.quarkus.quartz.runtime.graal;
 
 import java.rmi.RemoteException;
 

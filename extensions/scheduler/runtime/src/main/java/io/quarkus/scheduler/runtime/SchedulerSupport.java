@@ -2,42 +2,47 @@ package io.quarkus.scheduler.runtime;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
-import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Singleton;
 
-import io.quarkus.scheduler.Scheduled;
+import com.cronutils.model.CronType;
 
 /**
  *
  * @author Martin Kouba
  */
-@ApplicationScoped
-public class SchedulerConfiguration {
+@Singleton
+public class SchedulerSupport {
 
-    private final Map<String, List<Scheduled>> schedules = new ConcurrentHashMap<>();
+    private ExecutorService executor;
+    private CronType cronType;
+    private List<ScheduledMethodMetadata> scheduledMethods;
 
-    private final Map<String, String> descriptions = new ConcurrentHashMap<>();
-
-    void register(String invokerClassName, String description, List<Scheduled> schedules) {
-        this.schedules.put(invokerClassName, schedules);
-        this.descriptions.put(invokerClassName, description);
+    void initialize(SchedulerConfig config, List<ScheduledMethodMetadata> scheduledMethods, ExecutorService executor) {
+        this.cronType = config.cronType;
+        this.scheduledMethods = scheduledMethods;
+        this.executor = executor;
     }
 
-    Map<String, List<Scheduled>> getSchedules() {
-        return schedules;
+    public ExecutorService getExecutor() {
+        return executor;
     }
 
-    String getDescription(String invokerClassName) {
-        return descriptions.get(invokerClassName);
+    public CronType getCronType() {
+        return cronType;
+    }
+
+    public List<ScheduledMethodMetadata> getScheduledMethods() {
+        return scheduledMethods;
     }
 
     @SuppressWarnings("unchecked")
-    ScheduledInvoker createInvoker(String invokerClassName) {
+    public ScheduledInvoker createInvoker(String invokerClassName) {
         try {
             Class<? extends ScheduledInvoker> invokerClazz = (Class<? extends ScheduledInvoker>) Thread.currentThread()
-                    .getContextClassLoader().loadClass(invokerClassName);
+                    .getContextClassLoader()
+                    .loadClass(invokerClassName);
             return invokerClazz.getDeclaredConstructor().newInstance();
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException
                 | InvocationTargetException e) {

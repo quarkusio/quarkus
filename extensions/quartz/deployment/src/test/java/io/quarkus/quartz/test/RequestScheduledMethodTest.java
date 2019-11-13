@@ -1,4 +1,4 @@
-package io.quarkus.scheduler.test;
+package io.quarkus.quartz.test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,5 +21,4 @@ public class RequestScheduledMethodTest {
     public void testRequestContextScheduledJobs() throws InterruptedException {
         assertTrue(RequestContextJobs.LATCH.await(5, TimeUnit.SECONDS));
     }
-
 }

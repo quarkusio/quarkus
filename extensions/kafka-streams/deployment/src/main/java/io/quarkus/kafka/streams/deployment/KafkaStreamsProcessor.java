@@ -27,6 +27,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.kafka.streams.runtime.HotReplacementInterceptor;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
@@ -43,12 +44,13 @@ class KafkaStreamsProcessor {
             BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized,
             BuildProducer<NativeImageResourceBuildItem> nativeLibs,
             BuildProducer<JniBuildItem> jni,
-            LaunchModeBuildItem launchMode) throws IOException {
+            LaunchModeBuildItem launchMode,
+            NativeConfig config) throws IOException {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.KAFKA_STREAMS));
 
         registerClassesThatAreLoadedThroughReflection(reflectiveClasses, launchMode);
-        addSupportForRocksDbLib(nativeLibs);
+        addSupportForRocksDbLib(nativeLibs, config);
         enableLoadOfNativeLibs(reinitialized);
         enableJniForNativeBuild(jni);
     }
@@ -105,9 +107,9 @@ class KafkaStreamsProcessor {
         }
     }
 
-    private void addSupportForRocksDbLib(BuildProducer<NativeImageResourceBuildItem> nativeLibs) {
+    private void addSupportForRocksDbLib(BuildProducer<NativeImageResourceBuildItem> nativeLibs, NativeConfig nativeConfig) {
         // for RocksDB, either add linux64 native lib when targeting containers
-        if (isContainerBuild()) {
+        if (nativeConfig.containerBuild) {
             nativeLibs.produce(new NativeImageResourceBuildItem("librocksdbjni-linux64.so"));
         }
         // otherwise the native lib of the platform this build runs on
@@ -193,23 +195,5 @@ class KafkaStreamsProcessor {
     @BuildStep
     AdditionalBeanBuildItem registerBean() {
         return AdditionalBeanBuildItem.unremovableOf(KafkaStreamsTopologyManager.class);
-    }
-
-    private boolean isContainerBuild() {
-        String containerRuntime = System.getProperty("native-image.container-runtime");
-
-        if (containerRuntime != null) {
-            containerRuntime = containerRuntime.trim().toLowerCase();
-            return containerRuntime.equals("docker") || containerRuntime.equals("podman");
-        }
-
-        String dockerBuild = System.getProperty("native-image.docker-build");
-
-        if (dockerBuild != null) {
-            dockerBuild = dockerBuild.trim().toLowerCase();
-            return !"false".equals(dockerBuild);
-        }
-
-        return false;
     }
 }

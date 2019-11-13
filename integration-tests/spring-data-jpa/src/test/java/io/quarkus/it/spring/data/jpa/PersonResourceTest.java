@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -71,6 +72,15 @@ public class PersonResourceTest {
         when().get("/person/name/DeMar").then()
                 .statusCode(200)
                 .body("size()", is(3));
+    }
+
+    @Test
+    void testFindByNamePageSorted() {
+        String response = when().get("/person/name-pageable/DeMar").then()
+                .statusCode(200)
+                .extract().response().asString();
+        assertThat(Arrays.stream(response.split(",")).map(Long::parseLong).collect(Collectors.toList()))
+                .isSortedAccordingTo(Comparator.reverseOrder());
     }
 
     @Test

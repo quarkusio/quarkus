@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http;
 
+import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -15,6 +16,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
 
 public class UserRouteRegistrationTest {
 
@@ -27,6 +29,7 @@ public class UserRouteRegistrationTest {
     public void test() {
         assertThat(RestAssured.get("/observes").asString()).isEqualTo("observers - ok");
         assertThat(RestAssured.get("/inject").asString()).isEqualTo("inject - ok");
+        assertThat(given().body("test").contentType("text/plain").post("/body").asString()).isEqualTo("test");
     }
 
     @ApplicationScoped
@@ -47,6 +50,8 @@ public class UserRouteRegistrationTest {
         public void register(@Observes StartupEvent ignored) {
             router.route("/inject").handler(rc -> rc.response().end("inject - ok"));
             router.route().failureHandler(rc -> rc.failure().printStackTrace());
+            router.route("/body").consumes("text/plain").handler(BodyHandler.create())
+                    .handler(rc -> rc.response().end(rc.getBodyAsString()));
         }
 
     }

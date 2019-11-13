@@ -448,7 +448,7 @@ In MongoDB with Panache the ID are defined by a field named `id` of the `org.bso
 but if you want ot customize them, once again we have you covered.
 
 You can specify your own ID strategy by extending `PanacheMongoEntityBase` instead of `PanacheMongoEntity`. Then
-you just declare whatever ID you want as a public field by annotating it by @BsonId:
+you just declare whatever ID you want as a public field by annotating it by `@BsonId`:
 
 [source,java]
 ----

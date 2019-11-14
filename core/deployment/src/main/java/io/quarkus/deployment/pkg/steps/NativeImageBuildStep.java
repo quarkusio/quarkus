@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
 
@@ -265,17 +267,17 @@ public class NativeImageBuildStep {
             log.info(String.join(" ", command));
             CountDownLatch errorReportLatch = new CountDownLatch(1);
 
-            ProcessBuilder pb = new ProcessBuilder(command.toArray(new String[0]));
-            pb.directory(outputDir.toFile());
-            pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
-            pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-
-            Process process = pb.start();
-            new Thread(new ErrorReplacingProcessReader(process.getErrorStream(), outputDir.resolve("reports").toFile(),
-                    errorReportLatch)).start();
+            Process process = new ProcessBuilder(command)
+                    .directory(outputDir.toFile())
+                    .inheritIO()
+                    .start();
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            executor.submit(new ErrorReplacingProcessReader(process.getErrorStream(), outputDir.resolve("reports").toFile(),
+                    errorReportLatch));
+            executor.shutdown();
             errorReportLatch.await();
             if (process.waitFor() != 0) {
-                throw new RuntimeException("Image generation failed");
+                throw new RuntimeException("Image generation failed. Exit code: " + process.exitValue());
             }
             Path generatedImage = outputDir.resolve(executableName);
             IoUtils.copy(generatedImage,

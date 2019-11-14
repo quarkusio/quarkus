@@ -256,7 +256,11 @@ quarkus.mailer.username=YOUREMAIL@gmail.com
 quarkus.mailer.password=YOURGENERATEDAPPLICATIONPASSWORD
 ----
 
-Note: the `quarkus.mailer.auth-methods` configuration option is needed for the quarkus mailer to support password auth with google. By default both the mailer and google default to XOAUTH2 which requires registering an application, getting tokens, etc. 
+[NOTE]
+====
+The `quarkus.mailer.auth-methods` configuration option is needed for the Quarkus mailer to support password authentication with Gmail.
+By default both the mailer and Gmail default to `XOAUTH2` which requires registering an application, getting tokens, etc.
+====
 
 == Using SSL with native executables
 

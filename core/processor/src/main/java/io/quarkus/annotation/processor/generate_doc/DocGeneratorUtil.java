@@ -17,6 +17,8 @@ import javax.lang.model.type.TypeMirror;
 import io.quarkus.annotation.processor.Constants;
 
 public class DocGeneratorUtil {
+    private static final String CONFIG = "Config";
+    private static final String CONFIGURATION = "Configuration";
     private static String CONFIG_GROUP_PREFIX = "config-group-";
     static final String VERTX_JAVA_DOC_SITE = "https://vertx.io/docs/apidocs/";
     static final String OFFICIAL_JAVA_DOC_BASE_LINK = "https://docs.oracle.com/javase/8/docs/api/";
@@ -98,8 +100,12 @@ public class DocGeneratorUtil {
     }
 
     private static String getJavaDocLinkForType(String type) {
-        int indexOfFirstUpperCase = 0;
+        int beginOfWrappedTypeIndex = type.indexOf("<");
+        if (beginOfWrappedTypeIndex != -1) {
+            type = type.substring(0, beginOfWrappedTypeIndex);
+        }
 
+        int indexOfFirstUpperCase = 0;
         for (int index = 0; index < type.length(); index++) {
             char charAt = type.charAt(index);
             if (charAt >= 'A' && charAt <= 'Z') {
@@ -379,5 +385,21 @@ public class DocGeneratorUtil {
     private static String typeSimpleName(TypeMirror typeMirror) {
         String type = ((DeclaredType) typeMirror).asElement().toString();
         return type.substring(1 + type.lastIndexOf(Constants.DOT));
+    }
+
+    static String deriveConfigRootName(String simpleClassName, ConfigPhase configPhase) {
+        int length = simpleClassName.length();
+
+        if (simpleClassName.endsWith(CONFIG)) {
+            String sanitized = simpleClassName.substring(0, length - CONFIG.length());
+            return deriveConfigRootName(sanitized, configPhase);
+        } else if (simpleClassName.endsWith(CONFIGURATION)) {
+            String sanitized = simpleClassName.substring(0, length - CONFIGURATION.length());
+            return deriveConfigRootName(sanitized, configPhase);
+        } else if (simpleClassName.endsWith(configPhase.getConfigSuffix())) {
+            String sanitized = simpleClassName.substring(0, length - configPhase.getConfigSuffix().length());
+            return deriveConfigRootName(sanitized, configPhase);
+        }
+        return Constants.QUARKUS + Constants.DOT + hyphenate(simpleClassName);
     }
 }

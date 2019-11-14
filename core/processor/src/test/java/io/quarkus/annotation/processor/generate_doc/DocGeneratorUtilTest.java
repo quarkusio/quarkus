@@ -6,6 +6,7 @@ import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.VERT
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.appendConfigItemsIntoExistingOnes;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeConfigGroupDocFileName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeExtensionDocFileName;
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.deriveConfigRootName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getJavaDocSiteLink;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -93,6 +94,12 @@ public class DocGeneratorUtilTest {
 
         value = getJavaDocSiteLink(Map.Entry.class.getName());
         assertEquals(OFFICIAL_JAVA_DOC_BASE_LINK + "java/util/Map.Entry.html", value);
+
+        value = getJavaDocSiteLink(List.class.getName());
+        assertEquals(OFFICIAL_JAVA_DOC_BASE_LINK + "java/util/List.html", value);
+
+        value = getJavaDocSiteLink("java.util.List<java.lang.String>");
+        assertEquals(OFFICIAL_JAVA_DOC_BASE_LINK + "java/util/List.html", value);
     }
 
     @Test
@@ -278,5 +285,40 @@ public class DocGeneratorUtilTest {
 
         assertEquals(deepConfigKey, deepSection.getConfigDocItems().get(0));
         assertEquals(configItem, deepSection.getConfigDocItems().get(1));
+    }
+
+    @Test
+    public void derivingConfigRootNameTestCase() {
+        // should hyphenate class name
+        String simpleClassName = "RootName";
+        String actual = deriveConfigRootName(simpleClassName, ConfigPhase.RUN_TIME);
+        assertEquals("quarkus.root-name", actual);
+
+        // should hyphenate class name after removing Config(uration) suffix
+        simpleClassName = "RootNameConfig";
+        actual = deriveConfigRootName(simpleClassName, ConfigPhase.BUILD_TIME);
+        assertEquals("quarkus.root-name", actual);
+
+        simpleClassName = "RootNameConfiguration";
+        actual = deriveConfigRootName(simpleClassName, ConfigPhase.BUILD_AND_RUN_TIME_FIXED);
+        assertEquals("quarkus.root-name", actual);
+
+        // should hyphenate class name after removing RunTimeConfig(uration) suffix
+        simpleClassName = "RootNameRunTimeConfig";
+        actual = deriveConfigRootName(simpleClassName, ConfigPhase.RUN_TIME);
+        assertEquals("quarkus.root-name", actual);
+
+        simpleClassName = "RootNameRunTimeConfiguration";
+        actual = deriveConfigRootName(simpleClassName, ConfigPhase.RUN_TIME);
+        assertEquals("quarkus.root-name", actual);
+
+        // should hyphenate class name after removing BuildTimeConfig(uration) suffix
+        simpleClassName = "RootNameBuildTimeConfig";
+        actual = deriveConfigRootName(simpleClassName, ConfigPhase.BUILD_AND_RUN_TIME_FIXED);
+        assertEquals("quarkus.root-name", actual);
+
+        simpleClassName = "RootNameBuildTimeConfiguration";
+        actual = deriveConfigRootName(simpleClassName, ConfigPhase.BUILD_TIME);
+        assertEquals("quarkus.root-name", actual);
     }
 }

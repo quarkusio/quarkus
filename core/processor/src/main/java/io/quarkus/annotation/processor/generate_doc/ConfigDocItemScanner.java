@@ -2,7 +2,7 @@ package io.quarkus.annotation.processor.generate_doc;
 
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeConfigGroupDocFileName;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.computeExtensionDocFileName;
-import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenate;
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.deriveConfigRootName;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -69,6 +69,7 @@ final public class ConfigDocItemScanner {
         }
 
         ConfigPhase configPhase = ConfigPhase.BUILD_TIME;
+        final String extensionName = pkgMatcher.group(1);
 
         for (AnnotationMirror annotationMirror : clazz.getAnnotationMirrors()) {
             String annotationName = annotationMirror.getAnnotationType().toString();
@@ -87,13 +88,9 @@ final public class ConfigDocItemScanner {
                 }
 
                 if (name.isEmpty()) {
-                    final Matcher nameMatcher = Constants.CONFIG_ROOT_PATTERN.matcher(clazz.getSimpleName());
-                    if (nameMatcher.find()) {
-                        name = Constants.QUARKUS + Constants.DOT + hyphenate(nameMatcher.group(1));
-                    }
+                    name = deriveConfigRootName(clazz.getSimpleName().toString(), configPhase);
                 }
 
-                final String extensionName = pkgMatcher.group(1);
                 ConfigRootInfo configRootInfo = new ConfigRootInfo(name, clazz, extensionName, configPhase);
                 configRoots.add(configRootInfo);
                 break;

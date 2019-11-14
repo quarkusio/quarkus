@@ -30,7 +30,6 @@ final public class Constants {
     public static final String DEPLOYMENT = "deployment";
 
     public static final Pattern CLASS_NAME_PATTERN = Pattern.compile("^.+[\\.$](\\w+)$");
-    public static final Pattern CONFIG_ROOT_PATTERN = Pattern.compile("^(\\w+)Config(uration)?");
     public static final Pattern PKG_PATTERN = Pattern.compile("^io\\.quarkus\\.(\\w+)\\.?(\\w+)?\\.?(\\w+)?");
 
     public static final String INSTANCE_SYM = "__instance";

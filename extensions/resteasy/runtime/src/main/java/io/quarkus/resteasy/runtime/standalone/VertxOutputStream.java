@@ -66,12 +66,13 @@ public class VertxOutputStream extends OutputStream {
                 rem -= toWrite;
                 idx += toWrite;
                 if (!buffer.isWritable()) {
-                    response.writeBlocking(buffer, false);
+                    ByteBuf tmpBuf = buffer;
                     this.pooledBuffer = buffer = allocator.allocateBuffer();
+                    response.writeBlocking(tmpBuf, false);
                 }
             }
         } catch (Exception e) {
-            if (buffer != null) {
+            if (buffer != null && buffer.refCnt() > 0) {
                 buffer.release();
             }
             throw new IOException(e);

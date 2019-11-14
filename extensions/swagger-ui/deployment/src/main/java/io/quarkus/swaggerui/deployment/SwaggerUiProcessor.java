@@ -203,7 +203,7 @@ public class SwaggerUiProcessor {
     @ConfigRoot
     static final class SwaggerUiConfig {
         /**
-         * The path of the swagger-ui servlet.
+         * The path where Swagger UI is available.
          * <p>
          * The value `/` is not allowed as it blocks the application from serving anything else.
          */

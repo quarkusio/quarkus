@@ -10,6 +10,8 @@ include::./attributes.adoc[]
 This guide explains how to use the MicroProfile REST Client in order to interact with REST APIs
 with very little effort.
 
+TIP: there is another guide if you need to write server link:rest-json[JSON REST APIs].
+
 == Prerequisites
 
 To complete this guide, you need:

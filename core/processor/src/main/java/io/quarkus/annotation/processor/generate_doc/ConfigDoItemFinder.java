@@ -8,6 +8,7 @@ import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.stri
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
@@ -172,8 +173,8 @@ class ConfigDoItemFinder {
                     DeclaredType declaredType = (DeclaredType) typeMirror;
                     TypeElement typeElement = (TypeElement) declaredType.asElement();
                     Name qualifiedName = typeElement.getQualifiedName();
-                    optional = qualifiedName.toString().startsWith("java.util.Optional");
-                    list = qualifiedName.contentEquals("java.util.List");
+                    optional = qualifiedName.toString().startsWith(Optional.class.getName());
+                    list = qualifiedName.contentEquals(List.class.getName());
 
                     List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
                     if (!typeArguments.isEmpty()) {
@@ -197,8 +198,17 @@ class ConfigDoItemFinder {
                         } else {
                             // FIXME: this is for Optional<T> and List<T>
                             TypeMirror realTypeMirror = typeArguments.get(0);
-                            type = simpleTypeToString(realTypeMirror);
+                            if (optional && (realTypeMirror.toString().startsWith(List.class.getName())
+                                    || realTypeMirror.getKind() == TypeKind.ARRAY)) {
+                                list = true;
+                                DeclaredType declaredRealType = (DeclaredType) typeMirror;
+                                typeArguments = declaredRealType.getTypeArguments();
+                                if (!typeArguments.isEmpty()) {
+                                    realTypeMirror = typeArguments.get(0);
+                                }
+                            }
 
+                            type = simpleTypeToString(realTypeMirror);
                             if (isEnumType(realTypeMirror)) {
                                 acceptedValues = extractEnumValues(realTypeMirror);
                             }
@@ -215,10 +225,10 @@ class ConfigDoItemFinder {
 
                 configDocKey.setKey(name);
                 configDocKey.setType(type);
+                configDocKey.setList(list);
+                configDocKey.setOptional(optional);
                 configDocKey.setConfigPhase(configPhase);
                 configDocKey.setDefaultValue(defaultValue);
-                configDocKey.setOptional(optional);
-                configDocKey.setList(list);
                 configDocKey.setDocMapKey(configDocMapKey);
                 configDocKey.setConfigDoc(configDescription);
                 configDocKey.setAcceptedValues(acceptedValues);
@@ -261,14 +271,25 @@ class ConfigDoItemFinder {
     }
 
     private String simpleTypeToString(TypeMirror typeMirror) {
+
         if (typeMirror.getKind().isPrimitive()) {
             return typeMirror.toString();
         } else if (typeMirror.getKind() == TypeKind.ARRAY) {
-            return "list of " + simpleTypeToString(((ArrayType) typeMirror).getComponentType());
+            return simpleTypeToString(((ArrayType) typeMirror).getComponentType());
         }
 
         final String knownGenericType = getKnownGenericType((DeclaredType) typeMirror);
-        return knownGenericType != null ? knownGenericType : typeMirror.toString();
+
+        if (knownGenericType != null) {
+            return knownGenericType;
+        }
+
+        List<? extends TypeMirror> typeArguments = ((DeclaredType) typeMirror).getTypeArguments();
+        if (!typeArguments.isEmpty()) {
+            return simpleTypeToString(typeArguments.get(0));
+        }
+
+        return typeMirror.toString();
     }
 
     private List<String> extractEnumValues(TypeMirror realTypeMirror) {

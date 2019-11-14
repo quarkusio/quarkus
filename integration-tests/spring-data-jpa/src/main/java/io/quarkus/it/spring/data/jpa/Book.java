@@ -4,19 +4,18 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 @Entity
-public class Book {
+public class Book extends NamedEntity {
 
     private Integer bid;
 
-    private String name;
     private Integer publicationYear;
 
     public Book() {
     }
 
     public Book(Integer bid, String name, Integer publicationYear) {
+        super(name);
         this.bid = bid;
-        this.name = name;
         this.publicationYear = publicationYear;
     }
 
@@ -27,14 +26,6 @@ public class Book {
 
     public void setBid(Integer bid) {
         this.bid = bid;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public Integer getPublicationYear() {

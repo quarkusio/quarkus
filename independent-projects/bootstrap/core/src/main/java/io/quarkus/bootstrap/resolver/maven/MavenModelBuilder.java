@@ -3,15 +3,12 @@ package io.quarkus.bootstrap.resolver.maven;
 import java.io.File;
 
 import org.apache.maven.model.Model;
-import org.apache.maven.model.building.DefaultModelBuilderFactory;
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelBuildingException;
 import org.apache.maven.model.building.ModelBuildingRequest;
 import org.apache.maven.model.building.ModelBuildingResult;
-import org.apache.maven.model.building.ModelProblemCollector;
 import org.apache.maven.model.building.Result;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
-import org.apache.maven.model.validation.ModelValidator;
 
 /**
  *
@@ -23,17 +20,7 @@ public class MavenModelBuilder implements ModelBuilder {
     private final WorkspaceModelResolver modelResolver;
 
     public MavenModelBuilder(WorkspaceModelResolver wsModelResolver) {
-        builder = new DefaultModelBuilderFactory().newInstance()
-                .setModelValidator(new ModelValidator() {
-                    @Override
-                    public void validateRawModel(Model model, ModelBuildingRequest request, ModelProblemCollector problems) {
-                    }
-
-                    @Override
-                    public void validateEffectiveModel(Model model, ModelBuildingRequest request, ModelProblemCollector problems) {
-                    }
-                });
-
+        builder = new BootstrapModelBuilderFactory().newInstance();
         modelResolver = wsModelResolver;
     }
 

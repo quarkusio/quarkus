@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.UUID;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +25,7 @@ public class ResolverSetupCleanup {
     public void setup() throws Exception {
         workDir = initWorkDir();
         repoHome = IoUtils.mkdirs(workDir.resolve("repo"));
-        resolver = initResolver();
+        resolver = initResolver(null);
         repo = TsRepoBuilder.getInstance(resolver, workDir);
     }
 
@@ -43,10 +44,11 @@ public class ResolverSetupCleanup {
         return true;
     }
 
-    protected BootstrapAppModelResolver initResolver() throws AppModelResolverException {
+    protected BootstrapAppModelResolver initResolver(LocalWorkspace workspace) throws AppModelResolverException {
         return new BootstrapAppModelResolver(MavenArtifactResolver.builder()
                 .setRepoHome(repoHome)
                 .setOffline(true)
+                .setWorkspace(workspace)
                 .build());
     }
 

@@ -127,27 +127,9 @@ public class LocalProject {
         this.rawModel = rawModel;
         this.dir = rawModel.getProjectDirectory().toPath();
         this.workspace = workspace;
-        final Parent parent = rawModel.getParent();
-        String groupId = rawModel.getGroupId();
-        if(groupId == null) {
-            if(parent == null) {
-                throw new BootstrapException("Failed to determine groupId for " + rawModel.getPomFile());
-            }
-            this.groupId = parent.getGroupId();
-        } else {
-            this.groupId = groupId;
-        }
-
+        this.groupId = ModelUtils.getGroupId(rawModel);
         this.artifactId = rawModel.getArtifactId();
-        String version = rawModel.getVersion();
-        if(version == null) {
-            if(parent == null) {
-                throw new BootstrapException("Failed to determine version for " + rawModel.getPomFile());
-            }
-            this.version = parent.getVersion();
-        } else {
-            this.version = version;
-        }
+        this.version = ModelUtils.getVersion(rawModel);
         if(workspace != null) {
             workspace.addProject(this, rawModel.getPomFile().lastModified());
         }

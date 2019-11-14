@@ -65,4 +65,18 @@ public class BookResourceTest {
                 .body(containsString("Upheaval"))
                 .body(containsString("Sapiens"));
     }
+
+    @Test
+    void testByName() {
+        when().get("/book/name/Sapiens").then()
+                .statusCode(200)
+                .body(containsString("Sapiens"));
+    }
+
+    @Test
+    void testByNameNotFound() {
+        when().get("/book/name/DoesNotExist").then()
+                .statusCode(200)
+                .body("size()", is(0));
+    }
 }

@@ -41,4 +41,11 @@ public class BookResource {
     public boolean existsByPublicationYearBetween(@PathParam("start") Integer start, @PathParam("end") Integer end) {
         return bookRepository.existsBookByPublicationYearBetween(start, end);
     }
+
+    @GET
+    @Path("/name/{name}")
+    @Produces("application/json")
+    public List<Book> byName(@PathParam("name") String name) {
+        return bookRepository.findByName(name);
+    }
 }

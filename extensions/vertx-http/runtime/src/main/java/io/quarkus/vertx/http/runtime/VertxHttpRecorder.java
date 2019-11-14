@@ -181,8 +181,9 @@ public class VertxHttpRecorder {
 
         filterList.addAll(filters.getFilters());
 
-        // Then, fire the router
-        event.select(Router.class).fire(new ResumingRouter(router));
+        // Then, fire the resuming router
+        ResumingRouter resumingRouter = new ResumingRouter(router);
+        event.select(Router.class).fire(resumingRouter);
 
         for (Filter filter : filterList) {
             if (filter.getHandler() != null) {
@@ -195,7 +196,7 @@ public class VertxHttpRecorder {
             defaultRouteHandler.accept(router.route().order(10_000));
         }
 
-        container.instance(RouterProducer.class).initialize(router);
+        container.instance(RouterProducer.class).initialize(resumingRouter);
         router.route().last().failureHandler(new QuarkusErrorHandler(launchMode.isDevOrTest()));
 
         if (rootPath.equals("/")) {

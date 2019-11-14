@@ -11,6 +11,8 @@ JSON is now the _lingua franca_ between microservices.
 
 In this guide, we see how you can get your REST services to consume and produce JSON payloads.
 
+TIP: there is another guide if you need a link:rest-client[REST client] (including support for JSON).
+
 == Prerequisites
 
 To complete this guide, you need:

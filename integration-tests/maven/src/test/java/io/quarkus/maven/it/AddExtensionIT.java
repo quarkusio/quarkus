@@ -108,6 +108,9 @@ class AddExtensionIT extends MojoTestBase {
         request.setGoals(Collections.singletonList(
                 MojoUtils.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":add-extension"));
         Properties properties = new Properties();
+        properties.setProperty("platformGroupId", "io.quarkus");
+        properties.setProperty("platformArtifactId", "quarkus-bom");
+        properties.setProperty("platformVersion", MojoUtils.getPluginVersion());
         if (plural) {
             properties.setProperty("extensions", ext);
         } else {

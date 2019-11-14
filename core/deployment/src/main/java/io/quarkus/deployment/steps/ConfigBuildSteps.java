@@ -2,11 +2,11 @@ package io.quarkus.deployment.steps;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -94,8 +94,11 @@ class ConfigBuildSteps {
                 Converter.class)) {
             final String serviceName = serviceClass.getName();
             final Set<String> names = ServiceUtil.classNamesNamedIn(classLoader, SERVICES_PREFIX + serviceName);
-            if (!names.isEmpty()) {
-                providerProducer.produce(new ServiceProviderBuildItem(serviceName, new ArrayList<>(names)));
+            final List<String> list = names.stream()
+                    // todo: see https://github.com/quarkusio/quarkus/issues/5492
+                    .filter(s -> !s.startsWith("org.jboss.resteasy.microprofile.config.")).collect(Collectors.toList());
+            if (!list.isEmpty()) {
+                providerProducer.produce(new ServiceProviderBuildItem(serviceName, list));
             }
         }
     }

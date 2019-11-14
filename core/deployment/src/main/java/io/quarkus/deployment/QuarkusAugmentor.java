@@ -33,7 +33,9 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.ContainerImageResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusAugmentor {
@@ -107,7 +109,9 @@ public class QuarkusAugmentor {
                 chainBuilder.addFinal(i);
             }
             chainBuilder.addFinal(GeneratedClassBuildItem.class)
-                    .addFinal(GeneratedResourceBuildItem.class);
+                    .addFinal(GeneratedResourceBuildItem.class)
+                    .addFinal(ContainerImageResultBuildItem.class)
+                    .addFinal(DeploymentResultBuildItem.class);
 
             for (Consumer<BuildChainBuilder> i : buildChainCustomizers) {
                 i.accept(chainBuilder);

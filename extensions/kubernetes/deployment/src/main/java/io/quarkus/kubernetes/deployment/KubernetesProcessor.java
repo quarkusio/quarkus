@@ -22,6 +22,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.dekorate.Session;
 import io.dekorate.SessionWriter;
+import io.dekorate.kubernetes.config.ImageConfiguration;
 import io.dekorate.kubernetes.config.PortBuilder;
 import io.dekorate.kubernetes.config.ProbeBuilder;
 import io.dekorate.kubernetes.configurator.AddPort;
@@ -29,11 +30,13 @@ import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddRoleBindingResourceDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceAccountResourceDecorator;
+import io.dekorate.kubernetes.decorator.ApplyImageDecorator;
 import io.dekorate.kubernetes.decorator.ApplyServiceAccountNamedDecorator;
 import io.dekorate.processor.SimpleFileWriter;
 import io.dekorate.project.BuildInfo;
 import io.dekorate.project.FileProjectFactory;
 import io.dekorate.project.Project;
+import io.dekorate.utils.Images;
 import io.dekorate.utils.Maps;
 import io.dekorate.utils.Strings;
 import io.quarkus.deployment.IsNormal;
@@ -44,6 +47,7 @@ import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.ContainerImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
@@ -77,6 +81,7 @@ class KubernetesProcessor {
             PackageConfig packageConfig,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
+            Optional<ContainerImageBuildItem> containerImageBuildItem,
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem)
             throws UnsupportedEncodingException {
@@ -136,8 +141,10 @@ class KubernetesProcessor {
             session.setWriter(sessionWriter);
 
             session.feed(Maps.fromProperties(configAsMap));
+
             //apply build item configurations to the dekorate session.
             applyBuildItems(session, applicationInfo, kubernetesRoleBuildItems, kubernetesPortBuildItems,
+                    containerImageBuildItem,
                     kubernetesHealthLivenessPathBuildItem,
                     kubernetesHealthReadinessPathBuildItem);
 
@@ -181,9 +188,12 @@ class KubernetesProcessor {
     private void applyBuildItems(Session session, ApplicationInfoBuildItem applicationInfo,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
+            Optional<ContainerImageBuildItem> containerImageResultItem,
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem) {
 
+        containerImageResultItem.ifPresent(c -> session.resources()
+                .decorate(new ApplyImageDecorator(applicationInfo.getName(), c.getImage())));
         //Handle ports
         final Map<String, Integer> ports = verifyPorts(kubernetesPortBuildItems);
         ports.entrySet().stream()
@@ -245,7 +255,7 @@ class KubernetesProcessor {
 
     /**
      * Returns the name of the generators that can handle the specified key.
-     * 
+     *
      * @param key The key.
      * @return The generator name or null if the key format is unexpected.
      */

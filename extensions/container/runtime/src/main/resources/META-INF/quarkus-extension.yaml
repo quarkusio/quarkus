@@ -1,0 +1,9 @@
+---
+name: "Docker"
+metadata:
+  keywords:
+  - "docker"
+  guide: "https://quarkus.io/guides/docker"
+  categories:
+  - "cloud"
+  status: "stable"

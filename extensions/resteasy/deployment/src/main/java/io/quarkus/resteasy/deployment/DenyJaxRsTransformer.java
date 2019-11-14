@@ -27,9 +27,13 @@ public class DenyJaxRsTransformer implements AnnotationsTransformer {
     @Override
     public void transform(TransformationContext transformationContext) {
         ClassInfo classInfo = transformationContext.getTarget().asClass();
-        if (!hasSecurityAnnotation(classInfo) && isJaxRsResource(classInfo)) {
+        if (requiresSyntheticDenyAll(classInfo)) {
             transformationContext.transform().add(DENY_ALL).done();
         }
+    }
+
+    public boolean requiresSyntheticDenyAll(ClassInfo classInfo) {
+        return !hasSecurityAnnotation(classInfo) && isJaxRsResource(classInfo);
     }
 
     private boolean isJaxRsResource(ClassInfo classInfo) {

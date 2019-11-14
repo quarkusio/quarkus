@@ -46,6 +46,8 @@ under the License.
       <includes>
         <include>*.sh</include>
         <include>*.json</include>
+        <include>sam.jvm.yaml</include>
+        <include>sam.native.yaml</include>
       </includes>
     </fileSet>
   </fileSets>

@@ -6,14 +6,12 @@ import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 
 @Entity
-public class Country {
+public class Country extends NamedEntity {
 
     @Id
     @SequenceGenerator(name = "countrySeqGen", sequenceName = "countrySeq", initialValue = 4, allocationSize = 1)
     @GeneratedValue(generator = "countrySeqGen")
     public Long id;
-
-    private String name;
 
     private String iso3;
 
@@ -21,16 +19,12 @@ public class Country {
     }
 
     public Country(String name, String iso3) {
-        this.name = name;
+        super(name);
         this.iso3 = iso3;
     }
 
     public Long getId() {
         return id;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public String getIso3() {

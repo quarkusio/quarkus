@@ -97,7 +97,17 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             VertxHttpResponse vertxResponse = new VertxHttpResponse(request, dispatcher.getProviderFactory(),
                     request.method(), allocator, output);
             // client address may not be available with VirtualHttp
-            SocketAddress socketAddress = request.remoteAddress();
+            SocketAddress socketAddress = null;
+            try {
+                socketAddress = request.remoteAddress();
+            } catch (NullPointerException npe) {
+                // ideally there shouldn't be an exception for this call.
+                // This is just to workaround a current issue in vertx
+                // https://github.com/quarkusio/quarkus/issues/5247
+                // https://github.com/eclipse-vertx/vert.x/issues/3181
+                // TODO: remove this workaround once vertx issue is resolved
+                log.debug("Ignoring exception that occurred when obtaining remote address of request " + request, npe);
+            }
             String host = socketAddress != null ? socketAddress.host() : null;
 
             VertxHttpRequest vertxRequest = new VertxHttpRequest(ctx, headers, uriInfo, request.rawMethod(),

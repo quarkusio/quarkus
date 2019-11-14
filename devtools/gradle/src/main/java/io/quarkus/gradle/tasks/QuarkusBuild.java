@@ -84,6 +84,7 @@ public class QuarkusBuild extends QuarkusTask {
             clear = true;
         }
         try (CuratedApplicationCreator appCreationContext = CuratedApplicationCreator.builder()
+                .setModuleDir(getProject().getProjectDir().toPath())
                 .setWorkDir(getProject().getBuildDir().toPath())
                 .setModelResolver(modelResolver)
                 .setBaseName(extension().finalName())

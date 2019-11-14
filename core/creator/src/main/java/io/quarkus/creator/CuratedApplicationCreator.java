@@ -28,6 +28,7 @@ public class CuratedApplicationCreator implements AutoCloseable {
 
     private final AppModelResolver artifactResolver;
     private final AppArtifact appArtifact;
+    private final Path moduleDir;
     private final Path workDir;
     private boolean deleteTmpDir = true;
 
@@ -44,6 +45,7 @@ public class CuratedApplicationCreator implements AutoCloseable {
         this.update = builder.update;
         this.updateNumber = builder.updateNumber;
         this.localRepo = builder.localRepo;
+        this.moduleDir = builder.moduleDir;
         boolean del;
         if (builder.workDir != null) {
             del = false;
@@ -67,6 +69,15 @@ public class CuratedApplicationCreator implements AutoCloseable {
             }
         }
         this.baseName = finalName;
+    }
+
+    /**
+     * Module module directory.
+     *
+     * @return module dir
+     */
+    public Path getModuleDir() {
+        return moduleDir;
     }
 
     /**
@@ -186,6 +197,7 @@ public class CuratedApplicationCreator implements AutoCloseable {
 
         public String baseName;
         private AppArtifact appArtifact;
+        private Path moduleDir;
         private Path workDir;
         private AppModelResolver modelResolver;
 
@@ -199,6 +211,17 @@ public class CuratedApplicationCreator implements AutoCloseable {
 
         public Builder setBaseName(String baseName) {
             this.baseName = baseName;
+            return this;
+        }
+
+        /**
+         * Base directory ofr the current module.
+         * 
+         * @param dir base directory
+         * @return this AppCreator instance
+         */
+        public Builder setModuleDir(Path dir) {
+            this.moduleDir = dir;
             return this;
         }
 

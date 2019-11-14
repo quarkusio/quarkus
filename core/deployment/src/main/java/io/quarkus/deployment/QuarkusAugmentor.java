@@ -32,6 +32,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.ModuleDirBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
@@ -48,6 +49,7 @@ public class QuarkusAugmentor {
     private final Collection<Path> excludedFromIndexing;
     private final LiveReloadBuildItem liveReloadBuildItem;
     private final Properties buildSystemProperties;
+    private final Path moduleDir;
     private final Path targetDir;
     private final AppModel effectiveModel;
     private final AppModelResolver resolver;
@@ -64,6 +66,7 @@ public class QuarkusAugmentor {
         this.excludedFromIndexing = builder.excludedFromIndexing;
         this.liveReloadBuildItem = builder.liveReloadState;
         this.buildSystemProperties = builder.buildSystemProperties;
+        this.moduleDir = builder.moduleDir;
         this.targetDir = builder.targetDir;
         this.effectiveModel = builder.effectiveModel;
         this.resolver = builder.resolver;
@@ -97,6 +100,7 @@ public class QuarkusAugmentor {
                     .addInitial(LiveReloadBuildItem.class)
                     .addInitial(AdditionalApplicationArchiveBuildItem.class)
                     .addInitial(ExtensionClassLoaderBuildItem.class)
+                    .addInitial(ModuleDirBuildItem.class)
                     .addInitial(OutputTargetBuildItem.class)
                     .addInitial(CurateOutcomeBuildItem.class);
             for (Class<? extends BuildItem> i : finalResults) {
@@ -121,6 +125,7 @@ public class QuarkusAugmentor {
                     .produce(new ShutdownContextBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode))
                     .produce(new ExtensionClassLoaderBuildItem(classLoader))
+                    .produce(new ModuleDirBuildItem(moduleDir))
                     .produce(new OutputTargetBuildItem(targetDir, baseName))
                     .produce(new CurateOutcomeBuildItem(effectiveModel, resolver));
             for (Path i : additionalApplicationArchives) {
@@ -157,6 +162,7 @@ public class QuarkusAugmentor {
         Collection<Path> excludedFromIndexing = Collections.emptySet();
         ClassLoader classLoader;
         Path root;
+        Path moduleDir;
         Path targetDir;
         Set<Class<? extends BuildItem>> finalResults = new HashSet<>();
         private final List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
@@ -248,6 +254,11 @@ public class QuarkusAugmentor {
 
         public Builder setLiveReloadState(LiveReloadBuildItem liveReloadState) {
             this.liveReloadState = liveReloadState;
+            return this;
+        }
+
+        public Builder setModuleDir(Path moduleDir) {
+            this.moduleDir = moduleDir;
             return this;
         }
 

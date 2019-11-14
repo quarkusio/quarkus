@@ -86,6 +86,12 @@ public class BuildMojo extends AbstractMojo {
     protected MavenProject project;
 
     /**
+     * The directory for the current module root.
+     */
+    @Parameter(defaultValue = "${project.basedir}")
+    private File moduleDir;
+
+    /**
      * The directory for generated source files.
      */
     @Parameter(defaultValue = "${project.build.directory}/generated-sources")
@@ -175,6 +181,7 @@ public class BuildMojo extends AbstractMojo {
         realProperties.putIfAbsent("quarkus.application.version", project.getVersion());
         try (CuratedApplicationCreator appCreationContext = CuratedApplicationCreator.builder()
                 .setModelResolver(modelResolver)
+                .setModuleDir(moduleDir.toPath())
                 .setWorkDir(buildDir.toPath())
                 .setBaseName(finalName)
                 .setAppArtifact(appArtifact)

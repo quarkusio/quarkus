@@ -168,6 +168,7 @@ public class AugmentTask implements CuratedTask<AugmentOutcome> {
                 QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder();
                 builder.setRoot(appClassesDir);
                 builder.setBaseName(ctx.getBaseName());
+                builder.setModuleDir(ctx.getModuleDir());
                 builder.setTargetDir(outputDir);
                 builder.setResolver(appState.getArtifactResolver());
                 builder.setEffectiveModel(appState.getEffectiveModel());

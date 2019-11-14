@@ -43,6 +43,7 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
+import io.quarkus.deployment.pkg.builditem.ModuleDirBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
@@ -66,6 +67,7 @@ class KubernetesProcessor {
 
     @BuildStep(onlyIf = IsNormal.class)
     public void build(ApplicationInfoBuildItem applicationInfo,
+            ModuleDirBuildItem moduleDir,
             ArchiveRootBuildItem archiveRootBuildItem,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
@@ -113,7 +115,7 @@ class KubernetesProcessor {
         final Map<String, String> generatedResourcesMap;
         try {
             final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
-            Project project = createProject(applicationInfo, archiveRootBuildItem);
+            Project project = createProject(applicationInfo, moduleDir);
             sessionWriter.setProject(project);
             final Session session = Session.getSession();
             session.setWriter(sessionWriter);
@@ -215,9 +217,9 @@ class KubernetesProcessor {
         return result;
     }
 
-    private Project createProject(ApplicationInfoBuildItem app, ArchiveRootBuildItem archiveRootBuildItem) {
+    private Project createProject(ApplicationInfoBuildItem app, ModuleDirBuildItem moduleDir) {
         //Let dekorate create a Project instance and then override with what is found in ApplicationInfoBuildItem.
-        Project project = FileProjectFactory.create(archiveRootBuildItem.getArchiveLocation().toFile());
+        Project project = FileProjectFactory.create(moduleDir.getPath().toFile());
         BuildInfo buildInfo = new BuildInfo(app.getName(), app.getVersion(),
                 "jar", project.getBuildInfo().getBuildTool(),
                 project.getBuildInfo().getOutputFile(),

@@ -59,6 +59,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
@@ -112,6 +113,15 @@ public class JarResultBuildStep {
     // we shouldn't have to specify these flags when opening a ZipFS (since they are the default ones), but failure to do so
     // makes a subsequent uberJar creation fail in java 8 (but works fine in Java 11)
     private static final OpenOption[] DEFAULT_OPEN_OPTIONS = { TRUNCATE_EXISTING, WRITE, CREATE };
+
+    @BuildStep
+    OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
+        String name = packageConfig.outputName.isPresent() ? packageConfig.outputName.get() : bst.getBaseName();
+        Path path = packageConfig.outputDirectory.isPresent()
+                ? bst.getOutputDirectory().resolve(packageConfig.outputDirectory.get())
+                : bst.getOutputDirectory();
+        return new OutputTargetBuildItem(path, name);
+    }
 
     @BuildStep(onlyIf = JarRequired.class)
     ArtifactResultBuildItem jarOutput(JarBuildItem jarBuildItem) {

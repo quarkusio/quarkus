@@ -31,8 +31,8 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusAugmentor {
@@ -97,7 +97,7 @@ public class QuarkusAugmentor {
                     .addInitial(LiveReloadBuildItem.class)
                     .addInitial(AdditionalApplicationArchiveBuildItem.class)
                     .addInitial(ExtensionClassLoaderBuildItem.class)
-                    .addInitial(OutputTargetBuildItem.class)
+                    .addInitial(BuildSystemTargetBuildItem.class)
                     .addInitial(CurateOutcomeBuildItem.class);
             for (Class<? extends BuildItem> i : finalResults) {
                 chainBuilder.addFinal(i);
@@ -121,7 +121,7 @@ public class QuarkusAugmentor {
                     .produce(new ShutdownContextBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode))
                     .produce(new ExtensionClassLoaderBuildItem(classLoader))
-                    .produce(new OutputTargetBuildItem(targetDir, baseName))
+                    .produce(new BuildSystemTargetBuildItem(targetDir, baseName))
                     .produce(new CurateOutcomeBuildItem(effectiveModel, resolver));
             for (Path i : additionalApplicationArchives) {
                 execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));

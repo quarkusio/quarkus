@@ -53,7 +53,7 @@ import io.quarkus.security.runtime.interceptor.SecurityCheckStorage;
 import io.quarkus.security.runtime.interceptor.SecurityCheckStorageBuilder;
 import io.quarkus.security.runtime.interceptor.SecurityConstrainer;
 import io.quarkus.security.runtime.interceptor.SecurityHandler;
-import io.quarkus.security.spi.DenyAllEnabledBuildItem;
+import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
 
 public class SecurityProcessor {
 
@@ -95,10 +95,8 @@ public class SecurityProcessor {
 
     @BuildStep
     void transformSecurityAnnotations(BuildProducer<AnnotationsTransformerBuildItem> transformers,
-            BuildProducer<DenyAllEnabledBuildItem> denyAllEnabled,
             SecurityBuildTimeConfig config) {
         if (config.denyUnannotated) {
-            denyAllEnabled.produce(new DenyAllEnabledBuildItem());
             transformers.produce(new AnnotationsTransformerBuildItem(new DenyingUnannotatedTransformer()));
         }
     }
@@ -117,16 +115,23 @@ public class SecurityProcessor {
     void gatherSecurityChecks(BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
             ApplicationIndexBuildItem indexBuildItem,
             BuildProducer<ApplicationClassPredicateBuildItem> classPredicate,
-            List<DenyAllEnabledBuildItem> denyAllEnabled) {
+            List<AdditionalSecuredClassesBuildIem> additionalSecuredClasses) {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorage.AppPredicate()));
+
+        Set<ClassInfo> additionalSecured = new HashSet<>();
+        if (additionalSecuredClasses != null) {
+            for (AdditionalSecuredClassesBuildIem securedClasses : additionalSecuredClasses) {
+                additionalSecured.addAll(securedClasses.additionalSecuredClasses);
+            }
+        }
 
         beanRegistrars.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {
 
             @Override
             public void register(RegistrationContext registrationContext) {
-                boolean loopThroughIndex = denyAllEnabled != null && !denyAllEnabled.isEmpty();
+
                 Map<MethodInfo, AnnotationInstance> methodAnnotations = gatherSecurityAnnotationsByLooping(indexBuildItem,
-                        registrationContext, loopThroughIndex);
+                        registrationContext, additionalSecured);
 
                 DotName name = DotName.createSimple(SecurityCheckStorage.class.getName());
 
@@ -199,41 +204,24 @@ public class SecurityProcessor {
 
     private Map<MethodInfo, AnnotationInstance> gatherSecurityAnnotationsByLooping(ApplicationIndexBuildItem indexBuildItem,
             BeanRegistrar.RegistrationContext registrationContext,
-            boolean loopThroughIndex) {
+            Set<ClassInfo> additionalSecuredClasses) {
         Set<DotName> securityAnnotations = SecurityAnnotationsRegistrar.SECURITY_BINDINGS.keySet();
         AnnotationStore annotationStore = registrationContext.get(BuildExtension.Key.ANNOTATION_STORE);
-        Set<ClassInfo> classesWithSecurity = new HashSet<>();
+        Set<ClassInfo> classesWithSecurity = new HashSet<>(additionalSecuredClasses);
 
         Index index = indexBuildItem.getIndex();
-        if (loopThroughIndex) { // only needed when synthetic security annotations are added
-            for (ClassInfo classInfo : index.getKnownClasses()) {
-                boolean hasSecurityAnnotations = annotationStore.hasAnyAnnotation(classInfo, securityAnnotations);
-                if (!hasSecurityAnnotations) {
-                    for (MethodInfo method : classInfo.methods()) {
-                        if (annotationStore.hasAnyAnnotation(method, securityAnnotations)) {
-                            hasSecurityAnnotations = true;
-                            break;
-                        }
-                    }
-                }
-                if (hasSecurityAnnotations) {
-                    classesWithSecurity.add(classInfo);
-                }
-            }
-        } else {
-            for (DotName securityAnno : SecurityAnnotationsRegistrar.SECURITY_BINDINGS.keySet()) {
-                for (AnnotationInstance annotation : index.getAnnotations(securityAnno)) {
-                    AnnotationTarget target = annotation.target();
-                    switch (target.kind()) {
-                        case CLASS:
-                            classesWithSecurity.add(target.asClass());
-                            break;
-                        case METHOD:
-                            classesWithSecurity.add(target.asMethod().declaringClass());
-                            break;
-                        default:
-                            throw new IllegalStateException("Security annotation discovered on unsupported target: " + target);
-                    }
+        for (DotName securityAnno : SecurityAnnotationsRegistrar.SECURITY_BINDINGS.keySet()) {
+            for (AnnotationInstance annotation : index.getAnnotations(securityAnno)) {
+                AnnotationTarget target = annotation.target();
+                switch (target.kind()) {
+                    case CLASS:
+                        classesWithSecurity.add(target.asClass());
+                        break;
+                    case METHOD:
+                        classesWithSecurity.add(target.asMethod().declaringClass());
+                        break;
+                    default:
+                        throw new IllegalStateException("Security annotation discovered on unsupported target: " + target);
                 }
             }
         }

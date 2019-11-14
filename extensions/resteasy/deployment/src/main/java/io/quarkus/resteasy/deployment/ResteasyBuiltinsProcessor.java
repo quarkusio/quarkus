@@ -2,8 +2,13 @@ package io.quarkus.resteasy.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.deployment.IsDevelopment;
@@ -18,7 +23,7 @@ import io.quarkus.resteasy.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
 import io.quarkus.resteasy.runtime.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
-import io.quarkus.security.spi.DenyAllEnabledBuildItem;
+import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
 import io.quarkus.undertow.deployment.StaticResourceFilesBuildItem;
 
 public class ResteasyBuiltinsProcessor {
@@ -27,11 +32,23 @@ public class ResteasyBuiltinsProcessor {
             JaxRsSecurityConfig config,
             ResteasyDeploymentBuildItem resteasyDeployment,
             BuildProducer<AnnotationsTransformerBuildItem> transformers,
-            BuildProducer<DenyAllEnabledBuildItem> denyAllEnabled) {
+            BuildProducer<AdditionalSecuredClassesBuildIem> additionalSecuredClasses) {
         if (config.denyJaxRs) {
-            denyAllEnabled.produce(new DenyAllEnabledBuildItem());
+            Set<ClassInfo> classes = new HashSet<>();
+
             DenyJaxRsTransformer transformer = new DenyJaxRsTransformer(resteasyDeployment.getDeployment());
+
+            List<String> resourceClasses = resteasyDeployment.getDeployment().getScannedResourceClasses();
+            for (String className : resourceClasses) {
+                ClassInfo classInfo = index.getIndex().getClassByName(DotName.createSimple(className));
+                if (transformer.requiresSyntheticDenyAll(classInfo)) {
+                    classes.add(classInfo);
+                }
+            }
+
+            additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildIem(classes));
             transformers.produce(new AnnotationsTransformerBuildItem(transformer));
+
         }
     }
 

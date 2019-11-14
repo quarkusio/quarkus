@@ -70,13 +70,12 @@ import javax.enterprise.event.Observes;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class AppLifecycleBean {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("ListenerBean");
+    private static final Logger LOGGER = Logger.getLogger("ListenerBean");
 
     void onStart(@Observes StartupEvent ev) {               // <1>
         LOGGER.info("The application is starting...");

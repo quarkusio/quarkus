@@ -116,8 +116,7 @@ import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 import io.reactivex.Flowable;
 import io.smallrye.reactive.messaging.kafka.KafkaMessage;
@@ -131,7 +130,7 @@ import io.smallrye.reactive.messaging.kafka.KafkaMessage;
 @ApplicationScoped
 public class ValuesGenerator {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ValuesGenerator.class);
+    private static final Logger LOG = Logger.getLogger(ValuesGenerator.class);
 
     private Random random = new Random();
 

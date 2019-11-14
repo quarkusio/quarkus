@@ -49,7 +49,7 @@ public class KubernetesWithQuarkusAppNameTest {
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
         assertThat(openshiftList).allSatisfy(h -> {
-            assertThat(h.getMetadata().getName()).isIn("ofoo", "s2i-java");
+            assertThat(h.getMetadata().getName()).isIn("ofoo", "s2ifoo", "s2i-java");
             assertThat(h.getMetadata().getLabels()).contains(entry("app", "ofoo"), entry("version", "1.0-openshift"));
         });
     }

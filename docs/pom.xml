@@ -24,7 +24,7 @@
     </properties>
 
     <name>Quarkus - Documentation</name>
-    <description>The quarkus documentation</description>
+    <description>The Quarkus documentation</description>
 
     <dependencies>
         <dependency>

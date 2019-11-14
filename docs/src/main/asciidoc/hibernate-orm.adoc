@@ -257,7 +257,7 @@ your entity changes or any change to your `import.sql` is immediately picked up 
 
 [TIP]
 --
-By default, Hibernate ORM, upon boot, will read and execute the SQL statements in the `/import.sql` file (if present).
+By default in `dev` and `test` modes, Hibernate ORM, upon boot, will read and execute the SQL statements in the `/import.sql` file (if present).
 You can change the file name by changing the property `quarkus.hibernate-orm.sql-load-script` in `application.properties`.
 --
 
@@ -302,6 +302,29 @@ This is great because you can define different combinations of Hibernate ORM pro
 .Start "dev mode" using a custom profile via Maven
 --
 ./mvnw compile quarkus:dev -Dquarkus.profile=dev-with-data
+--
+
+== Hibernate ORM in production mode
+
+Quarkus comes with default profiles (`dev`, `test` and `prod`).
+And you can add your own custom profiles to describe various environments (`staging`, `prod-us`, etc).
+
+The Hibernate ORM Quarkus extension sets some default configurations differently in dev and test modes than in other environments.
+
+* `quarkus.hibernate-orm.sql-load-script` is set to `no-file` for all profiles except the `dev` and `test` ones.
+
+You can override it in your `application.properties` explicitly
+(e.g. `%prod.quarkus.hibernate-orm.sql-load-script = import.sql`)
+but we wanted you to avoid overriding your database by accident in prod :)
+
+Speaking of, make sure to not drop your database schema in production!
+Add the following in your properties file.
+
+[source]
+.application.properties
+--
+%prod.quarkus.hibernate-orm.database.generation = none
+%prod.quarkus.hibernate-orm.sql-load-script = no-file
 --
 
 [[caching]]

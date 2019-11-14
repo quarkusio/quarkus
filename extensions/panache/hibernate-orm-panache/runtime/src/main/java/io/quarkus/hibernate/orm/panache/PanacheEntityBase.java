@@ -7,6 +7,8 @@ import java.util.stream.Stream;
 import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.Transient;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
@@ -74,6 +76,8 @@ public abstract class PanacheEntityBase {
      * @return true if this entity is persistent in the database.
      */
     @JsonbTransient
+    // @JsonIgnore is here to avoid serialization of this property with jackson
+    @JsonIgnore
     public boolean isPersistent() {
         return JpaOperations.isPersistent(this);
     }

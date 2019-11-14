@@ -97,14 +97,16 @@ public class VertxBlockingOutput implements VertxOutput {
             }
             if (!drainHandlerRegistered) {
                 drainHandlerRegistered = true;
-                request.response().drainHandler(new Handler<Void>() {
+                Handler<Void> handler = new Handler<Void>() {
                     @Override
                     public void handle(Void event) {
                         if (waitingForDrain) {
                             request.connection().notifyAll();
                         }
                     }
-                });
+                };
+                request.response().drainHandler(handler);
+                request.response().closeHandler(handler);
             }
             try {
                 waitingForDrain = true;

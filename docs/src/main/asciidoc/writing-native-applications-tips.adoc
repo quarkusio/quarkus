@@ -77,7 +77,7 @@ When using Gradle, we need to configure the additional build arguments in the pl
 ----
 buildNative {
     additionalBuildArgs = [
-            '-H:ResourceConfigurationFiles=../resources/main/resources-config.json'
+            "-H:ResourceConfigurationFiles=${buildDir}/resources/main/resources-config.json".toString()
     ]
 }
 ----
@@ -228,7 +228,7 @@ When using Gradle, we need to configure the additional build arguments in the pl
 ----
 buildNative {
     additionalBuildArgs = [
-            '-H:ReflectionConfigurationFiles=resources/main/reflection-config.json'
+            "-H:ReflectionConfigurationFiles=${buildDir}/resources/main/reflection-config.json".toString()
     ]
 }
 ----

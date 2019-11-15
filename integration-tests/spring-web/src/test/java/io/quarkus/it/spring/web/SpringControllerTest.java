@@ -99,4 +99,12 @@ public class SpringControllerTest {
         RestAssured.when().get("/hello").then()
                 .body(containsString("hello"));
     }
+
+    @Test
+    public void testResponseEntityWithIllegalArgumentException() {
+        RestAssured.when().get("/exception/re").then()
+                .contentType("application/json")
+                .body(containsString("hello from error"))
+                .statusCode(402);
+    }
 }

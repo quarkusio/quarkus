@@ -101,7 +101,7 @@ public class VertxCoreRecorder {
         } else if (conf == null) {
             webVertx = Vertx.vertx();
         } else {
-            VertxOptions options = convertToVertxOptions(conf);
+            VertxOptions options = convertToVertxOptions(conf, false);
             webVertx = Vertx.vertx(options);
         }
     }
@@ -111,7 +111,7 @@ public class VertxCoreRecorder {
             return Vertx.vertx();
         }
 
-        VertxOptions options = convertToVertxOptions(conf);
+        VertxOptions options = convertToVertxOptions(conf, true);
 
         if (!conf.useAsyncDNS) {
             System.setProperty("vertx.disableDnsResolver", "true");
@@ -132,11 +132,14 @@ public class VertxCoreRecorder {
         }
     }
 
-    private static VertxOptions convertToVertxOptions(VertxConfiguration conf) {
+    private static VertxOptions convertToVertxOptions(VertxConfiguration conf, boolean allowClustering) {
         VertxOptions options = new VertxOptions();
-        // Order matters, as the cluster options modifies the event bus options.
-        setEventBusOptions(conf, options);
-        initializeClusterOptions(conf, options);
+
+        if (allowClustering) {
+            // Order matters, as the cluster options modifies the event bus options.
+            setEventBusOptions(conf, options);
+            initializeClusterOptions(conf, options);
+        }
 
         String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME,
                 System.getProperty("java.io.tmpdir", ".") + File.separator + "vertx-cache");

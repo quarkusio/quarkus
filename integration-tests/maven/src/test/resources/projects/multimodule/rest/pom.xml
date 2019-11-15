@@ -15,7 +15,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>@project.groupId@</groupId>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy</artifactId>
         </dependency>
     </dependencies>

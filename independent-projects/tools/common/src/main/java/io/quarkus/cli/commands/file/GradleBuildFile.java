@@ -31,11 +31,6 @@ public class GradleBuildFile extends BuildFile {
     }
 
     @Override
-    public String getPlatformBomVersionExpression() {
-        return MojoUtils.getBomVersion();
-    }
-
-    @Override
     public void close() throws IOException {
         write(SETTINGS_GRADLE_PATH, getModel().getSettingsContent());
         write(BUILD_GRADLE_PATH, getModel().getBuildContent());
@@ -108,7 +103,7 @@ public class GradleBuildFile extends BuildFile {
             res.append("    resolutionStrategy {").append(System.lineSeparator());
             res.append("        eachPlugin {").append(System.lineSeparator());
             res.append("            if (requested.id.id == 'io.quarkus') {").append(System.lineSeparator());
-            res.append("                useModule(\"io.quarkus:quarkus-gradle-plugin:${quarkusVersion}\")")
+            res.append("                useModule(\"io.quarkus:quarkus-gradle-plugin:${quarkusPluginVersion}\")")
                     .append(System.lineSeparator());
             res.append("            }").append(System.lineSeparator());
             res.append("        }").append(System.lineSeparator());
@@ -124,8 +119,8 @@ public class GradleBuildFile extends BuildFile {
 
     private void completeProperties() throws IOException {
         Properties props = getModel().getPropertiesContent();
-        if (props.getProperty("quarkusVersion") == null) {
-            props.setProperty("quarkusVersion", getPluginVersion());
+        if (props.getProperty("quarkusPluginVersion") == null) {
+            props.setProperty("quarkusPluginVersion", getPluginVersion());
         }
         if(props.getProperty("quarkusPlatformGroupId") == null) {
             props.setProperty("quarkusPlatformGroupId", MojoUtils.getBomGroupId());

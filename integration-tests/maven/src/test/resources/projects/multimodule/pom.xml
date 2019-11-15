@@ -8,7 +8,10 @@
     <packaging>pom</packaging>
 
     <properties>
-        <quarkus.version>@project.version@</quarkus.version>
+    <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
+    <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+    <quarkus.platform.version>@project.version@</quarkus.platform.version>
+    <quarkus-plugin.version>@project.version@</quarkus-plugin.version>
         <surefire-plugin.version>2.22.1</surefire-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -23,9 +26,9 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>@project.groupId@</groupId>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${quarkus.version}</version>
+                <version>${quarkus-plugin.version}</version>
             </plugin>
         </plugins>
     </build>
@@ -33,9 +36,9 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>@project.groupId@</groupId>
-                <artifactId>quarkus-bom</artifactId>
-                <version>${quarkus.version}</version>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>${quarkus.platform.artifact-id}</artifactId>
+                <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

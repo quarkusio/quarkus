@@ -12,7 +12,10 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.parameters>true</maven.compiler.parameters>
 
-        <quarkus.version>${quarkus_version}</quarkus.version>
+        <quarkus.platform.artifact-id>${bom_artifactId}</quarkus.platform.artifact-id>
+        <quarkus.platform.group-id>${bom_groupId}</quarkus.platform.group-id>
+        <quarkus.platform.version>${bom_version}</quarkus.platform.version>
+        <quarkus-plugin.version>${plugin_version}</quarkus-plugin.version>
         <compiler-plugin.version>${compiler_plugin_version}</compiler-plugin.version>
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
     </properties>
@@ -20,9 +23,9 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>${bom_groupId}</groupId>
-                <artifactId>${bom_artifactId}</artifactId>
-                <version>${bom_version}</version>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>${quarkus.platform.artifact-id}</artifactId>
+                <version>${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -54,7 +57,7 @@
             <plugin>
                 <groupId>${plugin_groupId}</groupId>
                 <artifactId>${plugin_artifactId}</artifactId>
-                <version>${quarkus.version}</version>
+                <version>${quarkus-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -95,7 +98,7 @@
                     <plugin>
                         <groupId>${plugin_groupId}</groupId>
                         <artifactId>${plugin_artifactId}</artifactId>
-                        <version>${quarkus.version}</version>
+                        <version>${quarkus-plugin.version}</version>
                         <executions>
                             <execution>
                                 <goals>

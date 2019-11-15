@@ -36,7 +36,7 @@ public class ListExtensionsTest {
 
         FileProjectWriter writer = new FileProjectWriter(pom.getParentFile());
         new CreateProject(writer)
-                .groupId(getPluginGroupId())
+                .groupId("org.acme")
                 .artifactId("add-extension-test")
                 .version("0.0.1-SNAPSHOT")
                 .doCreateProject(context);
@@ -69,7 +69,7 @@ public class ListExtensionsTest {
         FileProjectWriter writer = new FileProjectWriter(pomFile.getParentFile());
 
         new CreateProject(writer)
-                .groupId(getPluginGroupId())
+        .groupId("org.acme")
                 .artifactId("add-extension-test")
                 .version("0.0.1-SNAPSHOT")
                 .doCreateProject(context);
@@ -95,7 +95,7 @@ public class ListExtensionsTest {
         FileProjectWriter writer = new FileProjectWriter(pomFile.getParentFile());
 
         new CreateProject(writer)
-                .groupId(getPluginGroupId())
+                .groupId("org.acme")
                 .artifactId("add-extension-test")
                 .version("0.0.1-SNAPSHOT")
                 .doCreateProject(context);
@@ -166,7 +166,7 @@ public class ListExtensionsTest {
         FileProjectWriter writer = new FileProjectWriter(pomFile.getParentFile());
 
         new CreateProject(writer)
-                .groupId(getPluginGroupId())
+                .groupId("org.acme")
                 .artifactId("add-extension-test")
                 .version("0.0.1-SNAPSHOT")
                 .doCreateProject(context);
@@ -199,7 +199,7 @@ public class ListExtensionsTest {
         FileProjectWriter writer = new FileProjectWriter(pomFile.getParentFile());
 
         new CreateProject(writer)
-                .groupId(getPluginGroupId())
+        .groupId("org.acme")
                 .artifactId("add-extension-test")
                 .version("0.0.1-SNAPSHOT")
                 .doCreateProject(context);

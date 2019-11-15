@@ -55,8 +55,10 @@ public class PackageIT extends MojoTestBase {
 
     private void ensureManifestOfJarIsReadableByJarInputStream(File jar) throws IOException {
         try (InputStream fileInputStream = new FileInputStream(jar)) {
-            Manifest manifest = new JarInputStream(fileInputStream).getManifest();
-            assertThat(manifest).isNotNull();
+            try (JarInputStream stream = new JarInputStream(fileInputStream)) {
+                Manifest manifest = stream.getManifest();
+                assertThat(manifest).isNotNull();
+            }
         }
     }
 

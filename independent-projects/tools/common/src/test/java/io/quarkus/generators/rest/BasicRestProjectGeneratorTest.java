@@ -1,14 +1,14 @@
 package io.quarkus.generators.rest;
 
+import static io.quarkus.generators.ProjectGenerator.BOM_VERSION;
 import static io.quarkus.generators.ProjectGenerator.CLASS_NAME;
 import static io.quarkus.generators.ProjectGenerator.IS_SPRING;
 import static io.quarkus.generators.ProjectGenerator.PACKAGE_NAME;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_ARTIFACT_ID;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_GROUP_ID;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_VERSION;
-import static io.quarkus.generators.ProjectGenerator.QUARKUS_VERSION;
 import static io.quarkus.generators.ProjectGenerator.SOURCE_TYPE;
-import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
+import static io.quarkus.maven.utilities.MojoUtils.getBomVersion;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableMap;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.generators.SourceType;
+import io.quarkus.maven.utilities.MojoUtils;
 
 class BasicRestProjectGeneratorTest {
 
@@ -45,7 +46,7 @@ class BasicRestProjectGeneratorTest {
             .put(PROJECT_GROUP_ID, "org.example")
             .put(PROJECT_ARTIFACT_ID, "quarkus-app")
             .put(PROJECT_VERSION, "0.0.1-SNAPSHOT")
-            .put(QUARKUS_VERSION, getPluginVersion())
+            .put(BOM_VERSION, getBomVersion())
             .put(SOURCE_TYPE, SourceType.JAVA)
             .put(PACKAGE_NAME, "org.example")
             .put(CLASS_NAME, "ExampleResource")
@@ -96,7 +97,7 @@ class BasicRestProjectGeneratorTest {
                 argThat(argument -> argument.contains("<groupId>org.example</groupId>")
                         && argument.contains("<artifactId>quarkus-app</artifactId")
                         && argument.contains("<version>0.0.1-SNAPSHOT</version>")
-                        && argument.contains("<quarkus.version>" + getPluginVersion() + "</quarkus.version>")));
+                        && argument.contains("<" + MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME + ">" + MojoUtils.getPluginVersion())));// + "</" + MojoUtils.TEMPLATE_QUARKUS_PLATFORM_VERSION_NAME + ">")));
         verify(mockWriter, times(1)).write(eq("src/main/java/org/example/ExampleResource.java"),
                 argThat(argument -> argument.contains("@Path(\"/hello\")")));
         verify(mockWriter, times(1)).write(eq("src/test/java/org/example/ExampleResourceTest.java"), anyString());

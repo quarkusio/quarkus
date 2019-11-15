@@ -138,7 +138,7 @@ public class CreateProjectTest {
         Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         assertThat(contentOf(pom, "UTF-8"))
-                .contains(getPluginArtifactId(), QUARKUS_VERSION_PROPERTY, getPluginGroupId());
+                .contains(getPluginArtifactId(), TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
@@ -154,7 +154,7 @@ public class CreateProjectTest {
         });
 
         assertThat(contentOf(new File(testDir, "pom.xml"), "UTF-8"))
-                .containsIgnoringCase(getBomArtifactId());
+                .contains(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE);
 
     }
 
@@ -179,7 +179,7 @@ public class CreateProjectTest {
         Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         assertThat(contentOf(pom, "UTF-8"))
-                .contains(getPluginArtifactId(), QUARKUS_VERSION_PROPERTY, getPluginGroupId());
+                .contains(getPluginArtifactId(), TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
@@ -221,7 +221,7 @@ public class CreateProjectTest {
         Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         assertThat(contentOf(pom, "UTF-8"))
-                .contains(getPluginArtifactId(), QUARKUS_VERSION_PROPERTY, getPluginGroupId());
+                .contains(getPluginArtifactId(), TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
@@ -263,7 +263,7 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/java/org/acme/MyApplication.java")).doesNotExist();
 
         assertThat(contentOf(pom, "UTF-8"))
-                .contains(getPluginArtifactId(), QUARKUS_VERSION_PROPERTY, getPluginGroupId());
+                .contains(getPluginArtifactId(), TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
@@ -271,7 +271,7 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
 
         assertThat(contentOf(new File(testDir, "pom.xml"), "UTF-8"))
-                .containsIgnoringCase(MojoUtils.QUARKUS_VERSION_PROPERTY);
+                .contains(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE);
 
     }
 

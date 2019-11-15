@@ -46,8 +46,24 @@ public class MojoUtils {
     public static final String KOTLIN_EXTENSION_NAME = "kotlin";
     public static final String SCALA_EXTENSION_NAME = "scala";
 
-    public static final String QUARKUS_VERSION_PROPERTY_NAME = "quarkus.version";
-    public static final String QUARKUS_VERSION_PROPERTY = "${" + QUARKUS_VERSION_PROPERTY_NAME + "}";
+    public static final String TEMPLATE_PROPERTY_QUARKUS_VERSION_NAME = "quarkus.version";
+    public static final String TEMPLATE_PROPERTY_QUARKUS_VERSION_VALUE = toPropExpr(TEMPLATE_PROPERTY_QUARKUS_VERSION_NAME);
+
+    public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_GROUP_ID_NAME = "quarkus.platform.group-id";
+    public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_GROUP_ID_VALUE = toPropExpr(TEMPLATE_PROPERTY_QUARKUS_PLATFORM_GROUP_ID_NAME);
+
+    public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_NAME = "quarkus.platform.artifact-id";
+    public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE = toPropExpr(TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_NAME);
+
+    public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME = "quarkus.platform.version";
+    public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE = toPropExpr(TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME);
+
+    public static final String TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_NAME = "quarkus-plugin.version";
+    public static final String TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE = toPropExpr(TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_NAME);
+
+    private static String toPropExpr(String name) {
+        return "${" + name + "}";
+    }
 
     private static Properties properties;
 
@@ -108,15 +124,6 @@ public class MojoUtils {
 
     public static String getBomVersion() {
         return getPlatformDescriptor().getBomVersion();
-    }
-
-    public static String getBomVersionForTemplate(String defaultValue) {
-        final String v = getBomVersion();
-        if(v.equals(getQuarkusVersion())) {
-            // this might not always work but at this point we're assuming the bom is coming from Quarkus itself
-            return defaultValue;
-        }
-        return v;
     }
 
     public static String getQuarkusVersion() {
@@ -249,6 +256,13 @@ public class MojoUtils {
     }
 
     public static void write(Model model, OutputStream fileOutputStream) throws IOException {
+        final Properties props = model.getProperties();
+        // until we can preserve the user ordering, it's better to stick to the alphabetical one
+        if (!props.isEmpty() && !(props instanceof SortedProperties)) {
+            final Properties sorted = new SortedProperties();
+            sorted.putAll(props);
+            model.setProperties(sorted);
+        }
         try (OutputStream stream = fileOutputStream) {
             new MavenXpp3Writer().write(stream, model);
         }

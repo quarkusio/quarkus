@@ -14,7 +14,7 @@ import static io.quarkus.generators.ProjectGenerator.QUARKUS_VERSION;
 import static io.quarkus.generators.ProjectGenerator.SOURCE_TYPE;
 import static io.quarkus.maven.utilities.MojoUtils.getBomGroupId;
 import static io.quarkus.maven.utilities.MojoUtils.getBomArtifactId;
-import static io.quarkus.maven.utilities.MojoUtils.getBomVersionForTemplate;
+import static io.quarkus.maven.utilities.MojoUtils.getBomVersion;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
 import static io.quarkus.maven.utilities.MojoUtils.getQuarkusVersion;
 
@@ -111,7 +111,7 @@ public class CreateProject {
         context.put(PROJECT_VERSION, version);
         context.put(BOM_GROUP_ID, getBomGroupId());
         context.put(BOM_ARTIFACT_ID, getBomArtifactId());
-        context.put(BOM_VERSION, getBomVersionForTemplate(getBuildFile().getPlatformBomVersionExpression()));
+        context.put(BOM_VERSION, getBomVersion());
         context.put(QUARKUS_VERSION, getQuarkusVersion());
         context.put(SOURCE_TYPE, sourceType);
         context.put(BUILD_FILE, getBuildFile());

@@ -90,12 +90,11 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
         // Edit the pom.xml.
         File source = new File(testDir, "pom.xml");
-        filter(source, ImmutableMap.of("<dependencies>", "<dependencies>\n" +
+        filter(source, ImmutableMap.of("<!-- insert test dependencies here -->",
                 "        <dependency>\n" +
-                "            <groupId>io.quarkus</groupId>\n" +
-                "            <artifactId>quarkus-smallrye-openapi</artifactId>\n" +
-                "            <version>${quarkus.version}</version>\n" +
-                "        </dependency>"));
+                        "            <groupId>io.quarkus</groupId>\n" +
+                        "            <artifactId>quarkus-smallrye-openapi</artifactId>\n" +
+                        "        </dependency>"));
 
         // Wait until we get "uuid"
         await()

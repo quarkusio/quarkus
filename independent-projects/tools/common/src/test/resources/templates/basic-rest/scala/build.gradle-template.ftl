@@ -5,7 +5,7 @@ buildscript {
         mavenLocal()
     }
     dependencies {
-        classpath "io.quarkus:quarkus-gradle-plugin:${quarkusVersion}"
+        classpath "io.quarkus:quarkus-gradle-plugin:${quarkusPluginVersion}"
     }
 }
 

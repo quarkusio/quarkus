@@ -55,10 +55,11 @@ public class KotlinCreateMavenProjectIT extends MojoTestBase {
         Model model = loadPom(testDir);
         final DependencyManagement dependencyManagement = model.getDependencyManagement();
         final List<Dependency> dependencies = dependencyManagement.getDependencies();
-        assertThat(dependencies.stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                && d.getVersion().equalsIgnoreCase("${quarkus.version}")
-                && d.getScope().equalsIgnoreCase("import")
-                && d.getType().equalsIgnoreCase("pom"))).isTrue();
+        assertThat(dependencies.stream()
+                .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
+                        && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
+                        && d.getScope().equalsIgnoreCase("import")
+                        && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")

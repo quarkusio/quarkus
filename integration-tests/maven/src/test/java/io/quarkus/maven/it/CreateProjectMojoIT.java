@@ -62,10 +62,11 @@ public class CreateProjectMojoIT extends MojoTestBase {
         Model model = loadPom(testDir);
         final DependencyManagement dependencyManagement = model.getDependencyManagement();
         final List<Dependency> dependencies = dependencyManagement.getDependencies();
-        assertThat(dependencies.stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                && d.getVersion().equalsIgnoreCase("${quarkus.version}")
-                && d.getScope().equalsIgnoreCase("import")
-                && d.getType().equalsIgnoreCase("pom"))).isTrue();
+        assertThat(dependencies.stream()
+                .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
+                        && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
+                        && d.getScope().equals("import")
+                        && d.getType().equals("pom"))).isTrue();
 
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
@@ -84,7 +85,8 @@ public class CreateProjectMojoIT extends MojoTestBase {
 
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains(MojoUtils.getPluginGroupId(), MojoUtils.QUARKUS_VERSION_PROPERTY, MojoUtils.getPluginGroupId());
+                .contains(MojoUtils.getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE,
+                        MojoUtils.getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
         assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
@@ -95,10 +97,10 @@ public class CreateProjectMojoIT extends MojoTestBase {
 
         Model model = loadPom(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream()
-                .anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                        && d.getVersion().equalsIgnoreCase("${quarkus.version}")
-                        && d.getScope().equalsIgnoreCase("import")
-                        && d.getType().equalsIgnoreCase("pom"))).isTrue();
+                .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
+                        && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
+                        && d.getScope().equals("import")
+                        && d.getType().equals("pom"))).isTrue();
 
         assertThat(model.getDependencies()).isEmpty();
 
@@ -137,7 +139,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("className", "org.acme.MyResource.java");
         setup(properties);
 
-        check(new File(testDir, "pom.xml"), "quarkus.version");
+        check(new File(testDir, "pom.xml"), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME);
 
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
@@ -170,10 +172,10 @@ public class CreateProjectMojoIT extends MojoTestBase {
 
         Model model = loadPom(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream()
-                .anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                        && d.getVersion().equalsIgnoreCase("${quarkus.version}")
-                        && d.getScope().equalsIgnoreCase("import")
-                        && d.getType().equalsIgnoreCase("pom"))).isTrue();
+                .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
+                        && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
+                        && d.getScope().equals("import")
+                        && d.getType().equals("pom"))).isTrue();
 
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
@@ -207,10 +209,10 @@ public class CreateProjectMojoIT extends MojoTestBase {
 
         Model model = loadPom(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream()
-                .anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                        && d.getVersion().equalsIgnoreCase("${quarkus.version}")
-                        && d.getScope().equalsIgnoreCase("import")
-                        && d.getType().equalsIgnoreCase("pom"))).isTrue();
+                .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE)
+                        && d.getVersion().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE)
+                        && d.getScope().equals("import")
+                        && d.getType().equals("pom"))).isTrue();
 
         assertThat(
                 model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")

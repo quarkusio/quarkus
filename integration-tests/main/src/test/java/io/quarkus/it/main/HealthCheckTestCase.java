@@ -4,26 +4,24 @@ import javax.inject.Inject;
 
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.Liveness;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.wildfly.common.Assert;
 
 import io.quarkus.it.health.SimpleHealthCheck;
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.SubstrateTest;
 
 @QuarkusTest
+@DisabledOnNativeImage("This test is not meant to be ran in native mode as Quarkus does not yet support injection " +
+        "in native " + "tests - see https://quarkus.io/guides/getting-started-testing#native-executable-testing")
 public class HealthCheckTestCase {
 
     @Inject
     @Liveness
-    SimpleHealthCheck checkks;
+    SimpleHealthCheck simpleHealthCheck;
 
     @Test
     public void testInjection() {
-        Assumptions.assumeFalse(getClass().isAnnotationPresent(SubstrateTest.class));
-        Assumptions.assumeFalse(getClass().isAnnotationPresent(NativeImageTest.class));
-        Assert.assertTrue(checkks.call().getState() == HealthCheckResponse.State.UP);
+        Assert.assertTrue(simpleHealthCheck.call().getState() == HealthCheckResponse.State.UP);
     }
 }

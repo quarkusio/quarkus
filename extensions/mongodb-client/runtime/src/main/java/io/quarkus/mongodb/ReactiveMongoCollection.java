@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.bson.Document;
+import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 
@@ -29,6 +30,13 @@ public interface ReactiveMongoCollection<T> {
      * @return the namespace
      */
     MongoNamespace getNamespace();
+
+    /**
+     * Gets the codec registry of this collection.
+     *
+     * @return the codec registry
+     */
+    CodecRegistry getCodecRegistry();
 
     /**
      * Get the class of documents stored in this collection.

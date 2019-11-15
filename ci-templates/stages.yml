@@ -32,7 +32,8 @@ stages:
 
           - task: CacheBeta@0
             inputs:
-              key: maven | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
+              # the number below is a cache version when we want to force a cache refresh
+              key: maven | "1" | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
               path: $(MAVEN_CACHE_FOLDER)
               securityNamespace: cache
               cacheHitVar: CACHE_RESTORED
@@ -61,7 +62,8 @@ stages:
         steps:
           - task: CacheBeta@0
             inputs:
-              key: mavenWindows | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
+              # the number below is a cache version when we want to force a cache refresh
+              key: mavenWindows | "1" | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
               path: $(MAVEN_CACHE_FOLDER)
               securityNamespace: cache
               cacheHitVar: CACHE_RESTORED

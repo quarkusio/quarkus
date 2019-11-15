@@ -46,6 +46,8 @@ stages:
               mavenOptions: $(MAVEN_OPTS)
               options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs'
 
+          - template: prepare-cache.yaml
+
       - job: Cache_Windows_Maven_Repo #windows has different line endings so the cache key is different
         displayName: 'Windows Maven Repo'
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
@@ -92,6 +94,7 @@ stages:
           - template: jvm-build-steps.yaml
           - publish: $(MAVEN_CACHE_FOLDER)
             artifact: $(Build.SourceVersion)-BuiltMavenRepo
+          - template: prepare-cache.yaml
 
   - stage: run_jvm_tests_stage${{parameters.expectUseVMs}}
     displayName: '${{parameters.displayPrefix}} Run JVM Tests'
@@ -133,6 +136,7 @@ stages:
           - template: jvm-build-steps.yaml
             parameters:
               jdk: '1.11'
+          - template: prepare-cache.yaml
 
       - job: Build_JDK12_Linux
         timeoutInMinutes: 60
@@ -147,6 +151,7 @@ stages:
           - template: jvm-build-steps.yaml
             parameters:
               jdk: '1.12'
+          - template: prepare-cache.yaml
 
       - job: Run_TCKs
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
@@ -175,8 +180,7 @@ stages:
               mavenOptions: $(MAVEN_OPTS)
               options: '-B --settings azure-mvn-settings.xml'
               mavenPomFile: 'tcks/pom.xml'
-
-
+          - template: prepare-cache.yaml
 
   - stage: run_native_tests_stage${{parameters.expectUseVMs}}
     displayName: '${{parameters.displayPrefix}} Native Tests'

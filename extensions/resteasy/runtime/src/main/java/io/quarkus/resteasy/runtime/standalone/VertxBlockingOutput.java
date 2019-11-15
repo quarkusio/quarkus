@@ -68,11 +68,18 @@ public class VertxBlockingOutput implements VertxOutput {
         try {
             //do all this in the same lock
             synchronized (request.connection()) {
-                awaitWriteable();
-                if (last) {
-                    request.response().end(createBuffer(data));
-                } else {
-                    request.response().write(createBuffer(data));
+                try {
+                    awaitWriteable();
+                    if (last) {
+                        request.response().end(createBuffer(data));
+                    } else {
+                        request.response().write(createBuffer(data));
+                    }
+                } catch (Exception e) {
+                    if (data != null && data.refCnt() > 0) {
+                        data.release();
+                    }
+                    throw new IOException("Failed to write", e);
                 }
             }
         } finally {
@@ -95,16 +102,21 @@ public class VertxBlockingOutput implements VertxOutput {
             if (Context.isOnEventLoopThread()) {
                 throw new IOException("Attempting a blocking write on io thread");
             }
+            if (request.response().closed()) {
+                throw new IOException("Connection has been closed");
+            }
             if (!drainHandlerRegistered) {
                 drainHandlerRegistered = true;
-                request.response().drainHandler(new Handler<Void>() {
+                Handler<Void> handler = new Handler<Void>() {
                     @Override
                     public void handle(Void event) {
                         if (waitingForDrain) {
                             request.connection().notifyAll();
                         }
                     }
-                });
+                };
+                request.response().drainHandler(handler);
+                request.response().closeHandler(handler);
             }
             try {
                 waitingForDrain = true;

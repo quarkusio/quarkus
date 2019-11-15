@@ -192,7 +192,9 @@ public class GradleBuildFile extends BuildFile {
 
     @Override
     protected boolean containsBOM() throws IOException {
-        return getModel().getBuildContent().contains("enforcedPlatform(\"${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:");
+    	String buildContent = getModel().getBuildContent();
+        return buildContent.contains("enforcedPlatform(\"${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:")
+        		|| buildContent.contains("enforcedPlatform(\"" + MojoUtils.getBomGroupId() + ":" + MojoUtils.getBomArtifactId() + ":");
     }
 
     @Override

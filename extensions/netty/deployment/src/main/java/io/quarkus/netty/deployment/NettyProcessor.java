@@ -1,5 +1,7 @@
 package io.quarkus.netty.deployment;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -21,6 +23,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.NettyRecorder;
@@ -176,5 +179,13 @@ class NettyProcessor {
     public RuntimeReinitializedClassBuildItem reinitScheduledFutureTask() {
         return new RuntimeReinitializedClassBuildItem(
                 "io.quarkus.netty.runtime.graal.Holder_io_netty_util_concurrent_ScheduledFutureTask");
+    }
+
+    // TODO: Remove this when netty.version is 4.1.43.Final or greater.
+    @BuildStep
+    public List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields() {
+        return Arrays.asList(
+                new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "selectedKeys"),
+                new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "publicSelectedKeys"));
     }
 }

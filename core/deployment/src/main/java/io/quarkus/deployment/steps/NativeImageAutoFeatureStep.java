@@ -32,6 +32,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -65,7 +66,8 @@ public class NativeImageAutoFeatureStep {
             List<ReflectiveMethodBuildItem> reflectiveMethods,
             List<ReflectiveFieldBuildItem> reflectiveFields,
             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
-            List<ServiceProviderBuildItem> serviceProviderBuildItems) {
+            List<ServiceProviderBuildItem> serviceProviderBuildItems,
+            List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields) {
         ClassCreator file = new ClassCreator(new ClassOutput() {
             @Override
             public void write(String s, byte[] bytes) {
@@ -79,6 +81,22 @@ public class NativeImageAutoFeatureStep {
         MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V", BEFORE_ANALYSIS_ACCESS);
         TryBlock overallCatch = beforeAn.tryBlock();
         //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
+
+        ResultHandle beforeAnalysisParam = beforeAn.getMethodParam(0);
+        for (UnsafeAccessedFieldBuildItem unsafeAccessedField : unsafeAccessedFields) {
+            TryBlock tc = overallCatch.tryBlock();
+            ResultHandle declaringClassHandle = tc.invokeStaticMethod(
+                    ofMethod(Class.class, "forName", Class.class, String.class),
+                    tc.load(unsafeAccessedField.getDeclaringClass()));
+            ResultHandle fieldHandle = tc.invokeVirtualMethod(
+                    ofMethod(Class.class, "getDeclaredField", Field.class, String.class), declaringClassHandle,
+                    tc.load(unsafeAccessedField.getFieldName()));
+            tc.invokeInterfaceMethod(
+                    ofMethod(Feature.BeforeAnalysisAccess.class, "registerAsUnsafeAccessed", void.class, Field.class),
+                    beforeAnalysisParam, fieldHandle);
+            CatchBlockCreator cc = tc.addCatch(Throwable.class);
+            cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+        }
 
         ResultHandle initSingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
                 overallCatch.loadClass(RuntimeClassInitializationSupport.class));

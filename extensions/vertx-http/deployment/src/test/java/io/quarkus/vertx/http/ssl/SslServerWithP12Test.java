@@ -3,7 +3,6 @@ package io.quarkus.vertx.http.ssl;
 import static org.hamcrest.core.Is.is;
 
 import java.io.File;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -18,10 +17,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 import io.vertx.ext.web.Router;
 
 public class SslServerWithP12Test {
+
+    @TestHTTPResource(value = "/ssl", ssl = true)
+    URL url;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -41,8 +44,7 @@ public class SslServerWithP12Test {
     }
 
     @Test
-    public void testSslServerWithPkcs12() throws MalformedURLException {
-        URL url = new URL("https://localhost:8444/ssl");
+    public void testSslServerWithPkcs12() {
         RestAssured.get(url).then().statusCode(200).body(is("ssl"));
     }
 

@@ -296,6 +296,8 @@ public class VertxHttpRecorder {
         final Optional<Path> keyFile = sslConfig.certificate.keyFile;
         final Optional<Path> keyStoreFile = sslConfig.certificate.keyStoreFile;
         final String keystorePassword = sslConfig.certificate.keyStorePassword;
+        final Optional<Path> trustStoreFile = sslConfig.certificate.trustStoreFile;
+        final Optional<String> trustStorePassword = sslConfig.certificate.trustStorePassword;
         final HttpServerOptions serverOptions = new HttpServerOptions();
         serverOptions.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         setIdleTimeout(httpConfiguration, serverOptions);
@@ -309,13 +311,7 @@ public class VertxHttpRecorder {
             if (keyStoreFileType.isPresent()) {
                 type = keyStoreFileType.get().toLowerCase();
             } else {
-                final String pathName = keyStorePath.toString();
-                if (pathName.endsWith(".p12") || pathName.endsWith(".pkcs12") || pathName.endsWith(".pfx")) {
-                    type = "pkcs12";
-                } else {
-                    // assume jks
-                    type = "jks";
-                }
+                type = findKeystoreFileType(keyStorePath);
             }
 
             byte[] data = getFileContent(keyStorePath);
@@ -343,6 +339,22 @@ public class VertxHttpRecorder {
             return null;
         }
 
+        if (trustStoreFile.isPresent()) {
+            if (!trustStorePassword.isPresent()) {
+                throw new IllegalArgumentException("No trust store password provided");
+            }
+            final String type;
+            final Optional<String> trustStoreFileType = sslConfig.certificate.trustStoreFileType;
+            final Path trustStoreFilePath = trustStoreFile.get();
+            if (trustStoreFileType.isPresent()) {
+                type = trustStoreFileType.get().toLowerCase();
+            } else {
+                type = findKeystoreFileType(trustStoreFilePath);
+            }
+            createTrustStoreOptions(trustStoreFilePath, trustStorePassword.get(), type,
+                    serverOptions);
+        }
+
         for (String cipher : sslConfig.cipherSuites) {
             if (!cipher.isEmpty()) {
                 serverOptions.addEnabledCipherSuite(cipher);
@@ -357,6 +369,7 @@ public class VertxHttpRecorder {
         serverOptions.setSsl(true);
         serverOptions.setHost(httpConfiguration.host);
         serverOptions.setPort(httpConfiguration.determineSslPort(launchMode));
+        serverOptions.setClientAuth(sslConfig.clientAuth);
         return serverOptions;
     }
 
@@ -383,6 +396,40 @@ public class VertxHttpRecorder {
                 .setCertValue(Buffer.buffer(cert))
                 .setKeyValue(Buffer.buffer(key));
         serverOptions.setPemKeyCertOptions(pemKeyCertOptions);
+    }
+
+    private static void createTrustStoreOptions(Path trustStoreFile, String trustStorePassword,
+            String trustStoreFileType, HttpServerOptions serverOptions) throws IOException {
+        byte[] data = getFileContent(trustStoreFile);
+        switch (trustStoreFileType) {
+            case "pkcs12": {
+                PfxOptions options = new PfxOptions()
+                        .setPassword(trustStorePassword)
+                        .setValue(Buffer.buffer(data));
+                serverOptions.setPfxTrustOptions(options);
+                break;
+            }
+            case "jks": {
+                JksOptions options = new JksOptions()
+                        .setPassword(trustStorePassword)
+                        .setValue(Buffer.buffer(data));
+                serverOptions.setTrustStoreOptions(options);
+                break;
+            }
+            default:
+                throw new IllegalArgumentException(
+                        "Unknown truststore type: " + trustStoreFileType + " valid types are jks or pkcs12");
+        }
+    }
+
+    private static String findKeystoreFileType(Path storePath) {
+        final String pathName = storePath.toString();
+        if (pathName.endsWith(".p12") || pathName.endsWith(".pkcs12") || pathName.endsWith(".pfx")) {
+            return "pkcs12";
+        } else {
+            // assume jks
+            return "jks";
+        }
     }
 
     private static byte[] doRead(InputStream is) throws IOException {

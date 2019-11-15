@@ -41,4 +41,23 @@ public class CertificateConfig {
      */
     @ConfigItem(defaultValue = "password")
     public String keyStorePassword;
+
+    /**
+     * An optional trust store which holds the certificate information of the certificates to trust
+     */
+    @ConfigItem
+    public Optional<Path> trustStoreFile;
+
+    /**
+     * An optional parameter to specify type of the trust store file. If not given, the type is automatically detected
+     * based on the file name.
+     */
+    @ConfigItem
+    public Optional<String> trustStoreFileType;
+
+    /**
+     * A parameter to specify the password of the trust store file.
+     */
+    @ConfigItem
+    public Optional<String> trustStorePassword;
 }

@@ -1,5 +1,6 @@
 package io.quarkus.it.spring.web;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -37,6 +38,11 @@ public class ExceptionThrowingController {
     @GetMapping("/pojo")
     public Greeting greetingWithIllegalArgumentException() {
         throw new IllegalArgumentException("hello from error");
+    }
+
+    @GetMapping("/re")
+    public ResponseEntity<Greeting> responseEntityWithIllegalArgumentException() {
+        throw new IllegalStateException("hello from error");
     }
 
 }

@@ -1,8 +1,11 @@
 package io.quarkus.runtime;
 
 import java.math.BigDecimal;
+import java.util.logging.Handler;
 
 import org.jboss.logging.Logger;
+
+import io.quarkus.runtime.logging.InitialConfigurator;
 
 /**
  * Class that is responsible for printing out timing results.
@@ -79,6 +82,17 @@ public class Timing {
                 (UNSET_VALUE.equals(name) || name == null || name.trim().isEmpty()) ? "Quarkus" : name,
                 secondsRepresentation);
         bootStopTime = -1;
+
+        /**
+         * We can safely close log handlers after stop time has been printed.
+         */
+        Handler[] handlers = InitialConfigurator.DELAYED_HANDLER.clearHandlers();
+        for (Handler handler : handlers) {
+            try {
+                handler.close();
+            } catch (Throwable ignored) {
+            }
+        }
     }
 
     public static BigDecimal convertToBigDecimalSeconds(final long timeNanoSeconds) {

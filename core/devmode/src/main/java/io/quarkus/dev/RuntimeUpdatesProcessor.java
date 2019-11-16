@@ -286,7 +286,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     }
 
     Set<String> checkForFileChange() {
-        Set<String> ret = new HashSet<>();
+        Set<String> changedFiles = new HashSet<>();
         for (DevModeContext.ModuleInfo module : context.getModules()) {
             final Set<Path> moduleResources = correspondingResources.computeIfAbsent(module.getName(),
                     m -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
@@ -304,7 +304,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                 continue;
             }
             Path classesDir = Paths.get(module.getClassesPath());
-            //copy all modified non hot deployment files over
+            // copy all modified non hot deployment files over
             if (doCopy) {
                 try {
                     final Set<Path> seen = new HashSet<>(moduleResources);
@@ -314,20 +314,17 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                             try {
                                 Path relative = root.relativize(path);
                                 Path target = classesDir.resolve(relative);
+
                                 seen.remove(target);
                                 if (!watchedFileTimestamps.containsKey(path)) {
-                                    moduleResources.add(target);
-                                    if (!Files.exists(target) || Files.getLastModifiedTime(target).toMillis() < Files
-                                            .getLastModifiedTime(path).toMillis()) {
-                                        if (Files.isDirectory(path)) {
-                                            Files.createDirectories(target);
-                                        } else {
-                                            Files.createDirectories(target.getParent());
-                                            byte[] data = Files.readAllBytes(path);
-                                            try (FileOutputStream out = new FileOutputStream(target.toFile())) {
-                                                out.write(data);
-                                            }
-                                        }
+                                    Optional<String> watchedParent = findWatchedParentIfAny(root, path);
+                                    if (watchedParent.isPresent()) { // watch path since parent path is watched
+                                        String key = root.relativize(path).toString();
+                                        watchedFilePaths.put(key, watchedFilePaths.get(watchedParent.get()));
+                                        watchedFileTimestamps.put(path, 0L);
+                                    } else {
+                                        moduleResources.add(target);
+                                        copyFileContentIfModified(path, target);
                                     }
                                 }
                             } catch (Exception e) {
@@ -348,15 +345,16 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
 
             for (String path : watchedFilePaths.keySet()) {
                 Path file = root.resolve(path);
-                if (file.toFile().exists()) {
-                    try {
+                Long existing = watchedFileTimestamps.get(file);
+                try {
+                    if (file.toFile().exists()) {
                         long value = Files.getLastModifiedTime(file).toMillis();
-                        Long existing = watchedFileTimestamps.get(file);
                         if (value > existing) {
-                            ret.add(path);
+                            changedFiles.add(path);
                             log.infof("File change detected: %s", file);
                             if (doCopy && !Files.isDirectory(file)) {
                                 Path target = classesDir.resolve(path);
+                                Files.createDirectories(target.getParent());
                                 byte[] data = Files.readAllBytes(file);
                                 try (FileOutputStream out = new FileOutputStream(target.toFile())) {
                                     out.write(data);
@@ -364,22 +362,51 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                             }
                             watchedFileTimestamps.put(file, value);
                         }
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
+
+                    } else {
+                        watchedFileTimestamps.put(file, 0L);
+                        Path target = classesDir.resolve(path);
+                        boolean deleted = Files.deleteIfExists(target);
+                        if (deleted) {
+                            changedFiles.add(path); // file deleted, add to result for potential restart
+                        }
                     }
-                } else {
-                    watchedFileTimestamps.put(file, 0L);
-                    Path target = classesDir.resolve(path);
-                    try {
-                        Files.deleteIfExists(target);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
-                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
             }
         }
 
-        return ret;
+        return changedFiles;
+    }
+
+    private void copyFileContentIfModified(Path path, Path target) throws IOException {
+        if (!Files.exists(target) || Files.getLastModifiedTime(target).toMillis() < Files
+                .getLastModifiedTime(path).toMillis()) {
+            if (Files.isDirectory(path)) {
+                Files.createDirectories(target);
+            } else {
+                Files.createDirectories(target.getParent());
+                byte[] data = Files.readAllBytes(path);
+                try (FileOutputStream out = new FileOutputStream(target.toFile())) {
+                    out.write(data);
+                }
+            }
+        }
+    }
+
+    private Optional<String> findWatchedParentIfAny(Path root, Path path) {
+        Stream<String> watchedPaths = watchedFilePaths.keySet().stream();
+        Stream<String> watchedParents = watchedPaths
+                .filter(watchedPath -> {
+                    Path absolute = root.resolve(watchedPath).toAbsolutePath();
+                    return Files.exists(absolute) && Files.isDirectory(absolute)
+                            && path.toString().startsWith(absolute.toString());
+                });
+
+        String watchedParent = watchedParents.reduce("",
+                (parentPath, accumulator) -> accumulator.length() < parentPath.length() ? parentPath : accumulator);
+        return watchedParent.isEmpty() ? Optional.empty() : Optional.of(watchedParent);
     }
 
     private boolean sourceFileWasRecentModified(final Path sourcePath, boolean ignoreFirstScanChanges) {
@@ -412,8 +439,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     }
 
     public RuntimeUpdatesProcessor setWatchedFilePaths(Map<String, Boolean> watchedFilePaths) {
-        this.watchedFilePaths = watchedFilePaths;
         watchedFileTimestamps.clear();
+        this.watchedFilePaths = new ConcurrentHashMap<>(watchedFilePaths);
 
         for (DevModeContext.ModuleInfo module : context.getModules()) {
             String rootPath = module.getResourcePath();
@@ -431,6 +458,22 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                     try {
                         FileTime lastModifiedTime = Files.getLastModifiedTime(config);
                         watchedFileTimestamps.put(config, lastModifiedTime.toMillis());
+                        if (Files.isDirectory(config)) {
+                            try (Stream<Path> paths = Files.walk(config)) {
+                                paths.parallel().forEach(p -> {
+                                    if (!Files.isDirectory(p)) { // keep track of files content only and not directory
+                                        try {
+                                            String key = root.relativize(p).toString();
+                                            this.watchedFilePaths.put(key, watchedFilePaths.get(path));
+                                            watchedFileTimestamps.put(p, Files.getLastModifiedTime(p).toMillis());
+                                        } catch (IOException e) {
+                                            throw new UncheckedIOException(e);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }

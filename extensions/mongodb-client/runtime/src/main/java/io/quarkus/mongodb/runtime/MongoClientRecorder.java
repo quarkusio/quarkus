@@ -100,9 +100,10 @@ public class MongoClientRecorder {
                 .automatic(true)
                 .conventions(Conventions.DEFAULT_CONVENTIONS)
                 .build();
-        providers.add(pojoCodecProvider);
-        CodecRegistry registry = CodecRegistries.fromRegistries(defaultCodecRegistry,
-                CodecRegistries.fromProviders(providers));
+        CodecRegistry registry = CodecRegistries.fromRegistries(
+                CodecRegistries.fromProviders(providers),
+                defaultCodecRegistry,
+                CodecRegistries.fromProviders(Collections.singletonList(pojoCodecProvider)));
         settings.codecRegistry(registry);
 
         config.applicationName.ifPresent(settings::applicationName);

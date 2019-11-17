@@ -90,21 +90,21 @@ public class MongoClientRecorder {
             settings.applyConnectionString(connectionString);
         }
 
-        List<CodecProvider> providers = new ArrayList<>();
-        if (!codecProviders.isEmpty()) {
-            providers.addAll(getCodecProviders(codecProviders));
+        List<CodecRegistry> registries = new ArrayList<>();
+        List<CodecProvider> foundProviders = getCodecProviders(codecProviders);
+        if (!foundProviders.isEmpty()) {
+            registries.add(CodecRegistries.fromProviders(foundProviders));
         }
+        registries.add(defaultCodecRegistry);
+
         // add pojo codec provider with automatic capabilities
         // it always needs to be the last codec provided
         CodecProvider pojoCodecProvider = PojoCodecProvider.builder()
                 .automatic(true)
                 .conventions(Conventions.DEFAULT_CONVENTIONS)
                 .build();
-        CodecRegistry registry = CodecRegistries.fromRegistries(
-                CodecRegistries.fromProviders(providers),
-                defaultCodecRegistry,
-                CodecRegistries.fromProviders(Collections.singletonList(pojoCodecProvider)));
-        settings.codecRegistry(registry);
+        registries.add(CodecRegistries.fromProviders(Collections.singletonList(pojoCodecProvider)));
+        settings.codecRegistry(CodecRegistries.fromRegistries(registries));
 
         config.applicationName.ifPresent(settings::applicationName);
 

@@ -1,5 +1,8 @@
 package io.quarkus.gradle.tasks;
 
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toSet;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -26,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -42,6 +46,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -94,12 +99,12 @@ public class QuarkusDev extends QuarkusTask {
     }
 
     @Optional
-    @InputDirectory
-    public File getSourceDir() {
+    @InputFiles
+    public Set<File> getSourceDir() {
         if (sourceDir == null)
-            return extension().sourceDir();
+            return Collections.unmodifiableSet(new HashSet<>(extension().sourceDir()));
         else
-            return new File(sourceDir);
+            return getProject().getLayout().files(sourceDir.split(Pattern.quote(File.pathSeparator))).getFiles();
     }
 
     @Option(description = "Set source directory", option = "source-dir")
@@ -151,7 +156,7 @@ public class QuarkusDev extends QuarkusTask {
         Project project = getProject();
         QuarkusPluginExtension extension = (QuarkusPluginExtension) project.getExtensions().findByName("quarkus");
 
-        if (!getSourceDir().isDirectory()) {
+        if (getSourceDir().stream().anyMatch(file -> !file.isDirectory())) {
             throw new GradleException("The `src/main/java` directory is required, please create it.");
         }
 
@@ -309,7 +314,8 @@ public class QuarkusDev extends QuarkusTask {
             DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(
                     project.getName(),
                     project.getProjectDir().getAbsolutePath(),
-                    Collections.singleton(getSourceDir().getAbsolutePath()),
+                    getSourceDir().stream().map(File::getAbsolutePath)
+                            .collect(collectingAndThen(toSet(), Collections::unmodifiableSet)),
                     extension.outputDirectory().getAbsolutePath(),
                     res);
             context.getModules().add(moduleInfo);

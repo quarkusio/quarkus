@@ -193,7 +193,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>quay.io/keycloak/keycloak</name>
+                                    <name>${keycloak.docker.image}</name>
                                     <alias>quarkus-test-keycloak</alias>
                                     <run>
                                         <ports>

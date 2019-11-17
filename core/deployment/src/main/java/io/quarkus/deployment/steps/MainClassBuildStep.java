@@ -28,6 +28,7 @@ import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.SslTrustStoreSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
@@ -48,7 +49,6 @@ import io.quarkus.runtime.configuration.ProfileManager;
 class MainClassBuildStep {
 
     private static final String APP_CLASS = "io.quarkus.runner.ApplicationImpl";
-    private static final String MAIN_CLASS = "io.quarkus.runner.GeneratedMain";
     private static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
     private static final String JAVA_LIBRARY_PATH = "java.library.path";
     private static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
@@ -60,6 +60,7 @@ class MainClassBuildStep {
             List<SystemPropertyBuildItem> properties,
             List<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPaths,
             Optional<SslTrustStoreSystemPropertyBuildItem> sslTrustStoreSystemProperty,
+            PackageConfig config,
             List<FeatureBuildItem> features,
             BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
@@ -75,7 +76,6 @@ class MainClassBuildStep {
                 Application.class.getName());
 
         // Application class: static init
-
         FieldCreator scField = file.getFieldCreator(STARTUP_CONTEXT, StartupContext.class);
         scField.setModifiers(Modifier.STATIC);
 
@@ -224,7 +224,7 @@ class MainClassBuildStep {
 
         // Main class
 
-        file = new ClassCreator(gizmoOutput, MAIN_CLASS, null,
+        file = new ClassCreator(gizmoOutput, config.mainClass, null,
                 Object.class.getName());
 
         mv = file.getMethodCreator("main", void.class, String[].class);
@@ -243,7 +243,7 @@ class MainClassBuildStep {
         mv.returnValue(null);
 
         file.close();
-        return new MainClassBuildItem(MAIN_CLASS);
+        return new MainClassBuildItem(config.mainClass);
     }
 
 }

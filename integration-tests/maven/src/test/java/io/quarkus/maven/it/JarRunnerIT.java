@@ -24,11 +24,13 @@ import io.quarkus.utilities.JavaBinFinder;
 public class JarRunnerIT extends MojoTestBase {
 
     @Test
-    public void testThatJarRunnerConsoleOutputWorksCorrectly() throws MavenInvocationException, IOException {
+    public void testThatJarRunnerWorksCorrectly() throws MavenInvocationException, IOException {
         File testDir = initProject("projects/classic", "projects/project-classic-console-output");
         RunningInvoker running = new RunningInvoker(testDir, false);
 
-        MavenProcessInvocationResult result = running.execute(Arrays.asList("package", "-DskipTests"), Collections.emptyMap());
+        MavenProcessInvocationResult result = running.execute(
+                Arrays.asList("package", "-DskipTests", "-Dquarkus.package.main-class=foo.bar.MainClass"),
+                Collections.emptyMap());
         await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
         running.stop();

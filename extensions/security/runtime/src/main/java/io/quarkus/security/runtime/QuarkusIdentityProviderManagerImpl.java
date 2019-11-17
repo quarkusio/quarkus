@@ -112,7 +112,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
             List<IdentityProvider<T>> providers, T request, AuthenticationRequestContext context) {
         if (pos == providers.size()) {
             //we failed to authentication
-            log.debugf("Authentication failed as providers would authenticate the request");
+            log.debug("Authentication failed as providers would authenticate the request");
             CompletableFuture<SecurityIdentity> cf = new CompletableFuture<>();
             cf.completeExceptionally(new AuthenticationFailedException());
             return cf;

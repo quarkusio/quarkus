@@ -97,7 +97,7 @@ class InfinispanClientProcessor {
         if (stream == null) {
             properties = new Properties();
             if (log.isTraceEnabled()) {
-                log.tracef("There was no hotrod-client.properties file found - using defaults");
+                log.trace("There was no hotrod-client.properties file found - using defaults");
             }
         } else {
             try {

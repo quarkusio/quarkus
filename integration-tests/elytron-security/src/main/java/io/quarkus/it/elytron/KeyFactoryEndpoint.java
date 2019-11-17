@@ -57,7 +57,7 @@ public class KeyFactoryEndpoint {
         log.infof("Loaded SHA256withRSA: %s", sha256withRSA);
         //log.infof("Loaded SHA256withRSA: %s, %s", sha256withRSA, sha256withRSA.getProvider());
         sha256withRSA.initVerify(pk);
-        log.infof("Initialized SHA256withRSA");
+        log.info("Initialized SHA256withRSA");
 
         return true;
     }

@@ -1768,7 +1768,7 @@ An example of parsing a XML config file using JAXB is shown in the `TestProcesso
         Unmarshaller unmarshaller = context.createUnmarshaller();
         InputStream is = getClass().getResourceAsStream("/config.xml"); <1>
         if (is != null) {
-            log.infof("Have XmlConfig, loading");
+            log.info("Have XmlConfig, loading");
             XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is); <2>
 ...
         }
@@ -1854,7 +1854,7 @@ You can use the `io.quarkus.arc.runtime.BeanContainer` interface to interact wit
     public void configureBeans(BeanContainer beanContainer, Class<IConfigConsumer> beanClass,
             TestBuildAndRunTimeConfig buildTimeConfig,
             TestRunTimeConfig runTimeConfig) {
-        log.infof("Begin BeanContainerListener callback\n");
+        log.info("Begin BeanContainerListener callback\n");
         IConfigConsumer instance = beanContainer.instance(beanClass); <4>
         instance.loadConfig(buildTimeConfig, runTimeConfig); <5>
         log.infof("configureBeans, instance=%s\n", instance);
@@ -1881,9 +1881,9 @@ A common purpose for an extension is to integrate a non-CDI aware service into t
         Unmarshaller unmarshaller = context.createUnmarshaller();
         InputStream is = getClass().getResourceAsStream("/config.xml");
         if (is != null) {
-            log.infof("Have XmlConfig, loading");
+            log.info("Have XmlConfig, loading");
             XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is);
-            log.infof("Loaded XmlConfig, creating service");
+            log.info("Loaded XmlConfig, creating service");
             RuntimeValue<RuntimeXmlConfigService> service = recorder.initRuntimeService(config); //<1>
             serviceBuildItem = new RuntimeServiceBuildItem(service); //<3>
         }
@@ -2139,7 +2139,7 @@ Objects created during the build phase that are passed into the runtime need to 
 There is a `io.quarkus.runtime.ObjectSubstitution` interface that can be implemented to tell Quarkus how to handle such classes. An example implementation for the `DSAPublicKey` is shown here:
 
 .DSAPublicKeyObjectSubstitution Example
-[source,bash]
+[source,java]
 ----
 package io.quarkus.extest.runtime.subst;
 
@@ -2199,7 +2199,7 @@ An extension registers this substitution by producing an `ObjectSubstitutionBuil
         ObjectSubstitutionBuildItem keysub = new ObjectSubstitutionBuildItem(holder);
         substitutions.produce(keysub);
 
-        log.infof("loadDSAPublicKey run");
+        log.info("loadDSAPublicKey run");
         return new PublicKeyBuildItem(publicKey);
     }
 ----

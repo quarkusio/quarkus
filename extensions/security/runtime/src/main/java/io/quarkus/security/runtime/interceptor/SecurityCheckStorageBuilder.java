@@ -6,27 +6,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import javax.annotation.security.DenyAll;
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-
-import io.quarkus.security.Authenticated;
-import io.quarkus.security.runtime.interceptor.check.AuthenticatedCheck;
-import io.quarkus.security.runtime.interceptor.check.DenyAllCheck;
-import io.quarkus.security.runtime.interceptor.check.PermitAllCheck;
-import io.quarkus.security.runtime.interceptor.check.RolesAllowedCheck;
 import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
 
 public class SecurityCheckStorageBuilder {
     private final Map<MethodDescription, SecurityCheck> securityChecks = new HashMap<>();
 
-    public void registerAnnotation(String aClass,
+    public void registerCheck(String className,
             String methodName,
             String[] parameterTypes,
-            String securityAnnotation,
-            String[] value) {
-        securityChecks.put(new MethodDescription(aClass, methodName, parameterTypes),
-                determineCheck(securityAnnotation, value));
+            SecurityCheck securityCheck) {
+        securityChecks.put(new MethodDescription(className, methodName, parameterTypes), securityCheck);
     }
 
     public SecurityCheckStorage create() {
@@ -40,23 +29,7 @@ public class SecurityCheckStorageBuilder {
         };
     }
 
-    private SecurityCheck determineCheck(String securityAnnotation, String[] value) {
-        if (DenyAll.class.getName().equals(securityAnnotation)) {
-            return new DenyAllCheck();
-        }
-        if (RolesAllowed.class.getName().equals(securityAnnotation)) {
-            return new RolesAllowedCheck(value);
-        }
-        if (PermitAll.class.getName().equals(securityAnnotation)) {
-            return new PermitAllCheck();
-        }
-        if (Authenticated.class.getName().equals(securityAnnotation)) {
-            return new AuthenticatedCheck();
-        }
-        throw new IllegalArgumentException("Unsupported security check " + securityAnnotation);
-    }
-
-    private String[] typesAsStrings(Class[] parameterTypes) {
+    private String[] typesAsStrings(Class<?>[] parameterTypes) {
         String[] result = new String[parameterTypes.length];
         for (int i = 0; i < parameterTypes.length; i++) {
             result[i] = parameterTypes[i].getName();
@@ -69,8 +42,8 @@ public class SecurityCheckStorageBuilder {
         private final String methodName;
         private final String[] parameterTypes;
 
-        public MethodDescription(String aClass, String methodName, String[] parameterTypes) {
-            this.className = aClass;
+        public MethodDescription(String className, String methodName, String[] parameterTypes) {
+            this.className = className;
             this.methodName = methodName;
             this.parameterTypes = parameterTypes;
         }

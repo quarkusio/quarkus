@@ -1,7 +1,6 @@
 package io.quarkus.runtime.configuration;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-import org.wildfly.common.Assert;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Delete;
@@ -17,6 +16,8 @@ import com.oracle.svm.core.threadlocal.FastThreadLocalInt;
 final class Substitutions {
 
     static final FastThreadLocalInt depth = FastThreadLocalFactory.createInt();
+    // 0 = expand so that the default value is to expand
+    static final FastThreadLocalInt notExpanding = FastThreadLocalFactory.createInt();
 
     @TargetClass(ConfigExpander.class)
     static final class Target_ConfigExpander {
@@ -56,14 +57,16 @@ final class Substitutions {
 
         @Substitute
         private static boolean isExpanding() {
-            return true;
+            return notExpanding.get() == 0;
         }
 
         @Substitute
         public static boolean setExpanding(boolean newValue) {
-            if (!newValue)
-                throw Assert.unsupported();
-            return true;
+            try {
+                return notExpanding.get() == 0;
+            } finally {
+                notExpanding.set(newValue ? 0 : 1);
+            }
         }
     }
 }

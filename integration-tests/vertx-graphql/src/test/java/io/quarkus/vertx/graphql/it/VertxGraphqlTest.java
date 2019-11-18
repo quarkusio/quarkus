@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -32,8 +33,10 @@ class VertxGraphqlTest {
     }
 
     @AfterAll
-    public static void closeVertx() {
-        vertx.close();
+    public static void closeVertx() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        vertx.close((h) -> latch.countDown());
+        latch.await();
     }
 
     @Test

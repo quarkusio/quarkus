@@ -3,12 +3,17 @@ package io.quarkus.scheduler;
 import java.time.Instant;
 
 /**
- * Trigger is bound to a scheduled business method.
+ * Trigger is bound to a scheduled task.
  *
- * @author Martin Kouba
  * @see Scheduled
  */
 public interface Trigger {
+
+    /**
+     * 
+     * @return the identifier
+     */
+    String getId();
 
     /**
      *

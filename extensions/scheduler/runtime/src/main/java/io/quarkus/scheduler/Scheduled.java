@@ -67,14 +67,16 @@ public @interface Scheduled {
     String every() default "";
 
     /**
-     * Delays the time the trigger should start at. By default, the trigger starts when registered.
+     * Delays the time the trigger should start at. The value is rounded to full second.
+     * <p>
+     * By default, the trigger starts when registered.
      *
      * @return the initial delay
      */
     long delay() default 0;
 
     /**
-     *
+     * 
      * @return the unit of initial delay
      */
     TimeUnit delayUnit() default TimeUnit.MINUTES;

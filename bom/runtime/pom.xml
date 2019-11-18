@@ -106,6 +106,7 @@
         <httpclient.version>4.5.9</httpclient.version>
         <httpcore.version>4.4.11</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
+        <cronutils.version>9.0.1</cronutils.version>
         <quartz.version>2.3.1</quartz.version>
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
         <postgresql-jdbc.version>42.2.8</postgresql-jdbc.version>
@@ -594,6 +595,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-scheduler</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-quartz</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2000,6 +2006,11 @@
                 </exclusions>
             </dependency>
 
+            <dependency>
+                <groupId>com.cronutils</groupId>
+                <artifactId>cron-utils</artifactId>
+                <version>${cronutils.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.quartz-scheduler</groupId>
                 <artifactId>quartz</artifactId>

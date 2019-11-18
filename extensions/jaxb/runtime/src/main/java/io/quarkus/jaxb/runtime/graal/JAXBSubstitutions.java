@@ -8,33 +8,6 @@ import java.util.function.BooleanSupplier;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-@TargetClass(className = "com.sun.xml.bind.v2.model.annotation.LocatableAnnotation", onlyWith = Target_com_sun_xml_bind_v2_model_annotation_LocatableAnnotation.Selector.class)
-final class Target_com_sun_xml_bind_v2_model_annotation_LocatableAnnotation {
-
-    @Substitute
-    public static <A extends Annotation> A create(A annotation, Locatable parentSourcePos) {
-        return annotation;
-    }
-
-    @TargetClass(className = "com.sun.xml.bind.v2.model.annotation.Locatable", onlyWith = Target_com_sun_xml_bind_v2_model_annotation_LocatableAnnotation.Selector.class)
-    static final class Locatable {
-
-    }
-
-    static final class Selector implements BooleanSupplier {
-
-        @Override
-        public boolean getAsBoolean() {
-            try {
-                Class.forName("com.sun.xml.bind.v2.model.annotation.LocatableAnnotation");
-                return true;
-            } catch (ClassNotFoundException e) {
-                return false;
-            }
-        }
-    }
-}
-
 @TargetClass(className = "com.sun.xml.bind.v2.model.nav.ReflectionNavigator", onlyWith = Target_com_sun_xml_bind_v2_model_nav_ReflectionNavigator.Selector.class)
 final class Target_com_sun_xml_bind_v2_model_nav_ReflectionNavigator {
 

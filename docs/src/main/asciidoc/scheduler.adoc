@@ -109,7 +109,7 @@ public class CounterBean {
 (Quarkus is using 10 worker threads for the scheduler). If it is not available the method invocation should be re-scheduled by default i.e
 it should be invoked as soon as possible. The invocation of the scheduled method does not depend on the status or result of the previous invocation.
 4. The code is pretty straightforward. Every 10 seconds, the counter is incremented.
-5. Define a job with a cron-like expression. The syntax is currently based on http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html[Quartz Cron Trigger]. The annotated method is executed at 10:15am every day.
+5. Define a job with a cron-like expression. The annotated method is executed at 10:15am every day.
 6. Define a job with a cron-like expression `cron.expr` which is configurable in `application.properties`.
 
 == Updating the application configuration file
@@ -117,6 +117,9 @@ it should be invoked as soon as possible. The invocation of the scheduled method
 Edit the `application.properties` file and add the `cron.expr` configuration:
 [source,shell]
 ----
+# By default, the syntax used for cron expressions is based on Quartz - http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html
+# You can change the syntax using the following property:
+# quarkus.scheduler.cron-type=unix
 cron.expr=*/5 * * * * ?
 ----
 
@@ -190,3 +193,8 @@ that the cron job using an expression configured in `application.properties` has
 
 As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
 You can also generate the native executable with `./mvnw clean package -Pnative`.
+
+[[scheduler-configuration-reference]]
+== Scheduler Configuration Reference
+
+include::{generated-dir}/config/quarkus-scheduler.adoc[leveloffset=+1, opts=optional]

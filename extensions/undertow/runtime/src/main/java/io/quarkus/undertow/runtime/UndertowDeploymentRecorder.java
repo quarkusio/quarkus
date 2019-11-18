@@ -37,6 +37,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
@@ -448,6 +449,7 @@ public class UndertowDeploymentRecorder {
         return new ServletExtension() {
             @Override
             public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
+                CurrentVertxRequest currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
                 deploymentInfo.addThreadSetupAction(new ThreadSetupHandler() {
                     @Override
                     public <T, C> ThreadSetupHandler.Action<T, C> create(Action<T, C> action) {
@@ -458,6 +460,7 @@ public class UndertowDeploymentRecorder {
                                 if (exchange == null) {
                                     return action.call(exchange, context);
                                 }
+                                boolean vertxFirst = false;
                                 ManagedContext requestContext = beanContainer.requestContext();
                                 if (requestContext.isActive()) {
                                     return action.call(exchange, context);
@@ -466,11 +469,19 @@ public class UndertowDeploymentRecorder {
                                             .getAttachment(REQUEST_CONTEXT);
                                     try {
                                         requestContext.activate(existingRequestContext);
+                                        vertxFirst = existingRequestContext == null;
+
+                                        VertxHttpExchange delegate = (VertxHttpExchange) exchange.getDelegate();
+                                        RoutingContext rc = (RoutingContext) delegate.getContext();
+                                        currentVertxRequest.setCurrent(rc);
                                         return action.call(exchange, context);
                                     } finally {
                                         ServletRequestContext src = exchange
                                                 .getAttachment(ServletRequestContext.ATTACHMENT_KEY);
                                         HttpServletRequestImpl req = src.getOriginalRequest();
+                                        if (vertxFirst) {
+                                            currentVertxRequest.initialInvocationComplete(req.isAsyncStarted());
+                                        }
                                         if (req.isAsyncStarted()) {
                                             exchange.putAttachment(REQUEST_CONTEXT, requestContext.getState());
                                             requestContext.deactivate();

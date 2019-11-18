@@ -392,7 +392,7 @@ public class CreateProjectMojo extends AbstractMojo {
         getLog().info(ansi().a("Navigate into this directory and launch your application with ")
                 .bold()
                 .fg(Ansi.Color.CYAN)
-                .a("mvn compile quarkus:dev")
+                .a("mvn quarkus:dev")
                 .reset()
                 .toString());
         getLog().info(

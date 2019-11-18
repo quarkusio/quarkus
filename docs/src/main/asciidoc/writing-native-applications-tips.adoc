@@ -23,11 +23,11 @@ GraalVM imposes a number of constraints and making your application a native exe
 === Including resources
 
 By default, when building a native executable, GraalVM will not include any of the resources that are on the classpath into the native executable it creates.
-Such resources that are meant to be part of the native executable need to be specified explicitly.
+Resources that are meant to be part of the native executable need to be configured explicitly.
 
 Quarkus automatically includes the resources present in `META-INF/resources` (the web resources) but, outside of this directory, you are on your own.
 
-To include more resources in the native executable, create a `resources-config.json` JSON file defining which resources should be included:
+To include more resources in the native executable, create a `resources-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included:
 
 [source,json]
 ----
@@ -43,13 +43,41 @@ To include more resources in the native executable, create a `resources-config.j
 }
 ----
 
-When using Maven, you can put this file at the root of your project.
-If Gradle is used, we need to put this file in a folder that will be deployed in the build folder (for example `src/main/resources`) because the build folder is used as the project folder when creating the native image.
-
 The patterns are valid Java regexps.
 Here we include all the XML files and JSON files into the native executable.
 
-Now, let's tell the `native-image` executable about this configuration file by tweaking the `native-image` execution in your `pom.xml`:
+[NOTE]
+====
+You can find more information about this topic in https://github.com/oracle/graal/blob/master/substratevm/RESOURCES.md[the GraalVM documentation].
+====
+
+The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
+
+[source,properties]
+----
+quarkus.native.additional-build-args =-H:ResourceConfigurationFiles=resources-config.json
+----
+
+In the previous snippet we were able to simply use `resources-config.json` instead of specifying the entire path of the file simply because it was added to `src/main/resources`.
+If the file had been added to another directory, the proper file path would have had to be specified manually.
+
+[TIP]
+====
+Multiple options may be separated by a comma. For example, one could use:
+
+[source,properties]
+----
+quarkus.native.additional-build-args =\
+    -H:ResourceConfigurationFiles=resource-config.json,\
+    -H:ReflectionConfigurationFiles=reflection-config.json
+----
+
+in order to ensure that various resources are included and additional reflection is registered.
+
+====
+If for some reason adding the aforementioned configuration to `application.properties` is not desirable, it is possible to configure the build tool to effectively perform the same operation.
+
+When using Maven, we could use the following configuration:
 
 [source,xml]
 ----
@@ -58,36 +86,22 @@ Now, let's tell the `native-image` executable about this configuration file by t
         <id>native</id>
         <properties>
             <quarkus.package.type>native</quarkus.package.type>
-            <quarkus.native.additional-build-args>-H:ResourceConfigurationFiles=${project.basedir}/resources-config.json</quarkus.native.additional-build-args>
+            <quarkus.native.additional-build-args>-H:ResourceConfigurationFiles=resources-config.json</quarkus.native.additional-build-args>
         </properties>
     </profile>
 </profiles>
 ----
 
-[TIP]
-====
-Multiple options may be separated by a comma.
-
-Another possibility is to include the `quarkus.native.additional-build-args` configuration property in your `application.properties`.
-====
-
-When using Gradle, we need to configure the additional build arguments in the plugin configuration:
+When using Gradle, configuring the `buildNative` task like so suffices:
 
 [source,groovy]
 ----
 buildNative {
     additionalBuildArgs = [
-            "-H:ResourceConfigurationFiles=${buildDir}/resources/main/resources-config.json".toString()
+            '-H:ResourceConfigurationFiles=resources-config.json'
     ]
 }
 ----
-
-Your resources will now be included in your native executable.
-
-[NOTE]
-====
-You can find more information about this topic in https://github.com/oracle/graal/blob/master/substratevm/RESOURCES.md[the GraalVM documentation].
-====
 
 === Registering for reflection
 
@@ -168,7 +182,7 @@ Obviously, adding `@RegisterForReflection` is not possible if the class is in a 
 
 In this case, you can use a configuration file to register classes for reflection.
 
-Let's create the `reflection-config.json` file:
+As an example, in order to register all methods of class `com.acme.MyClass` for reflection, we create `reflection-config.json` (the most common location is within `src/main/resources`)
 
 [source,json]
 ----
@@ -185,15 +199,38 @@ Let's create the `reflection-config.json` file:
 ]
 ----
 
-When using Maven, you can put this file at the root of your project.
-If Gradle is used, we need to put this file in a folder that will be deployed in the build folder (for example `src/main/resources`) because the build folder is used as the project folder when creating the native image.
-
 [NOTE]
 ====
 For more details on the format of this file, please refer to https://github.com/oracle/graal/blob/master/substratevm/REFLECTION.md[the GraalVM documentation].
 ====
 
-Now, let's tell the `native-image` executable about this configuration file by tweaking the `native-image` execution in the `pom.xml`:
+The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
+
+[source,properties]
+----
+quarkus.native.additional-build-args =-H:ResourceConfigurationFiles=reflection-config.json
+----
+
+In the previous snippet we were able to simply use `reflection-config.json` instead of specifying the entire path of the file simply because it was added to `src/main/resources`.
+If the file had been added to another directory, the proper file path would have had to be specified manually.
+
+[TIP]
+====
+Multiple options may be separated by a comma. For example, one could use:
+
+[source,properties]
+----
+quarkus.native.additional-build-args =\
+    -H:ResourceConfigurationFiles=resource-config.json,\
+    -H:ReflectionConfigurationFiles=reflection-config.json
+----
+
+in order to ensure that various resources are included and additional reflection is registered.
+
+====
+If for some reason adding the aforementioned configuration to `application.properties` is not desirable, it is possible to configure the build tool to effectively perform the same operation.
+
+When using Maven, we could use the following configuration:
 
 [source,xml]
 ----
@@ -202,31 +239,22 @@ Now, let's tell the `native-image` executable about this configuration file by t
         <id>native</id>
         <properties>
             <quarkus.package.type>native</quarkus.package.type>
-            <quarkus.native.additional-build-args>-H:ReflectionConfigurationFiles=${project.basedir}/reflection-config.json</quarkus.native.additional-build-args>
+            <quarkus.native.additional-build-args>-H:ReflectionConfigurationFiles=reflection-config.json</quarkus.native.additional-build-args>
         </properties>
     </profile>
 </profiles>
 ----
 
-[TIP]
-====
-Multiple options may be separated by a comma.
-
-Another possibility is to include the `quarkus.native.additional-build-args` configuration property in your `application.properties`.
-====
-
-When using Gradle, we need to configure the additional build arguments in the plugin configuration:
+When using Gradle, configuring the `buildNative` task like so suffices:
 
 [source,groovy]
 ----
 buildNative {
     additionalBuildArgs = [
-            "-H:ReflectionConfigurationFiles=${buildDir}/resources/main/reflection-config.json".toString()
+            '-H:ReflectionConfigurationFiles=reflection-config.json'
     ]
 }
 ----
-
-`com.acme.MyClass` will now be registered for reflection and included in the native executable.
 
 === Delaying class initialization
 

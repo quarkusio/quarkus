@@ -16,6 +16,7 @@
     <modules>
         <!-- Plumbing -->
         <module>arc</module>
+        <module>config-viewer</module>
         <module>scheduler</module>
         <module>quartz</module>
 

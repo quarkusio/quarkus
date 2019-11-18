@@ -71,6 +71,9 @@ public class ConfigDefinition extends CompoundConfigType {
             .asList(QUARKUS_NAMESPACE + ".live-reload.password", QUARKUS_NAMESPACE + ".live-reload.url",
                     QUARKUS_NAMESPACE + ".debug.generated-classes-dir", QUARKUS_NAMESPACE + ".debug.reflection",
                     QUARKUS_NAMESPACE + ".build.skip",
+                    QUARKUS_NAMESPACE + ".platform.group-id",
+                    QUARKUS_NAMESPACE + ".platform.artifact-id",
+                    QUARKUS_NAMESPACE + ".platform.version",
                     QUARKUS_NAMESPACE + ".version", QUARKUS_NAMESPACE + ".profile", QUARKUS_NAMESPACE + ".test.profile",
                     QUARKUS_NAMESPACE + ".test.native-image-wait-time",
                     QUARKUS_NAMESPACE + ".test.native-image-profile");

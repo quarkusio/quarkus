@@ -32,8 +32,6 @@ public abstract class BuildFile implements Closeable {
         this.buildTool = buildTool;
     }
 
-    public abstract String getPlatformBomVersionExpression();
-
     protected void write(String fileName, String content) throws IOException {
         writer.write(fileName, content);
     }
@@ -46,8 +44,8 @@ public abstract class BuildFile implements Closeable {
                 dep = extension.toDependency(true);
             } else {
                 dep = extension.toDependency(false);
-                if(getProperty(MojoUtils.QUARKUS_VERSION_PROPERTY_NAME) != null) {
-                    dep.setVersion(MojoUtils.QUARKUS_VERSION_PROPERTY);
+                if(getProperty(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_VERSION_NAME) != null) {
+                    dep.setVersion(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_VERSION_VALUE);
                 }
             }
             addDependencyInBuildFile(dep);

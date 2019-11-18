@@ -54,14 +54,17 @@ public class SetupVerifier {
 
         //Check if the properties have been set correctly
         Properties properties = model.getProperties();
-        assertThat(properties.containsKey("quarkus.version")).isTrue();
+        assertThat(properties.containsKey(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_GROUP_ID_NAME)).isTrue();
+        assertThat(properties.containsKey(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_NAME)).isTrue();
+        assertThat(properties.containsKey(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME)).isTrue();
+        assertThat(properties.containsKey(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_NAME)).isTrue();
 
         // Check plugin is set
         Plugin plugin = maybe.orElseThrow(() -> new AssertionError("Plugin expected"));
         assertThat(plugin).isNotNull().satisfies(p -> {
-            assertThat(p.getArtifactId()).isEqualTo(MojoUtils.getPluginArtifactId());
-            assertThat(p.getGroupId()).isEqualTo(MojoUtils.getPluginGroupId());
-            assertThat(p.getVersion()).isEqualTo(MojoUtils.QUARKUS_VERSION_PROPERTY);
+            assertThat(p.getArtifactId()).isEqualTo("quarkus-maven-plugin");
+            assertThat(p.getGroupId()).isEqualTo("io.quarkus");
+            assertThat(p.getVersion()).isEqualTo(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE);
         });
 
         // Check build execution Configuration
@@ -104,6 +107,7 @@ public class SetupVerifier {
         Properties projectProps = project.getProperties();
         assertNotNull(projectProps);
         assertFalse(projectProps.isEmpty());
-        assertEquals(MojoUtils.getPluginVersion(), projectProps.getProperty("quarkus.version"));
+        assertEquals(MojoUtils.getPluginVersion(),
+                projectProps.getProperty(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_NAME));
     }
 }

@@ -1,10 +1,9 @@
 package io.quarkus.cli.commands.file;
 
-import static io.quarkus.maven.utilities.MojoUtils.QUARKUS_VERSION_PROPERTY;
 import static io.quarkus.maven.utilities.MojoUtils.configuration;
-import static io.quarkus.maven.utilities.MojoUtils.getBomArtifactId;
 import static io.quarkus.maven.utilities.MojoUtils.getBomGroupId;
-import static io.quarkus.maven.utilities.MojoUtils.getBomVersionForTemplate;
+import static io.quarkus.maven.utilities.MojoUtils.getBomArtifactId;
+import static io.quarkus.maven.utilities.MojoUtils.getBomVersion;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginArtifactId;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
@@ -52,11 +51,6 @@ public class MavenBuildFile extends BuildFile {
     }
 
     @Override
-    public String getPlatformBomVersionExpression() {
-        return MojoUtils.QUARKUS_VERSION_PROPERTY;
-    }
-
-    @Override
     public void close() throws IOException {
         if(getModel() == null) {
             return;
@@ -95,12 +89,12 @@ public class MavenBuildFile extends BuildFile {
                 .filter(dependency -> "import".equalsIgnoreCase(dependency.getScope()))
                 .filter(dependency -> "pom".equalsIgnoreCase(dependency.getType()))
                 // Does it matches the bom artifact name
-                .anyMatch(dependency -> dependency.getArtifactId().equalsIgnoreCase(getBomArtifactId()));
+                .anyMatch(d -> d.getArtifactId().equals(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE));
     }
 
     @Override
     public void completeFile(String groupId, String artifactId, String version) throws IOException {
-        addVersionProperty();
+        addQuarkusProperties();
         addBom();
         addMainPluginConfig();
         addNativeProfile();
@@ -113,16 +107,14 @@ public class MavenBuildFile extends BuildFile {
             dm = new DependencyManagement();
             getModel().setDependencyManagement(dm);
         } else {
-            hasBom = dm.getDependencies().stream()
-                    .anyMatch(d -> d.getGroupId().equals(getBomGroupId()) &&
-                            d.getArtifactId().equals(getBomArtifactId()));
+            hasBom = containsBOM();
         }
 
         if (!hasBom) {
             Dependency bom = new Dependency();
-            bom.setGroupId(getBomGroupId());
-            bom.setArtifactId(getBomArtifactId());
-            bom.setVersion(getBomVersionForTemplate(getPlatformBomVersionExpression()));
+            bom.setGroupId(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_GROUP_ID_VALUE);
+            bom.setArtifactId(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE);
+            bom.setVersion(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE);
             bom.setType("pom");
             bom.setScope("import");
 
@@ -137,7 +129,7 @@ public class MavenBuildFile extends BuildFile {
             exec.addGoal("native-image");
             exec.setConfiguration(configuration(new Element("enableHttpUrlHandler", "true")));
 
-            Plugin plg = plugin(getPluginGroupId(), getPluginArtifactId(), QUARKUS_VERSION_PROPERTY);
+            Plugin plg = plugin(getPluginGroupId(), getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE);
             plg.addExecution(exec);
 
             BuildBase buildBase = new BuildBase();
@@ -160,7 +152,7 @@ public class MavenBuildFile extends BuildFile {
     private void addMainPluginConfig() throws IOException {
         if (!hasPlugin()) {
             Build build = createBuildSectionIfRequired();
-            Plugin plugin = plugin(getPluginGroupId(), getPluginArtifactId(), QUARKUS_VERSION_PROPERTY);
+            Plugin plugin = plugin(getPluginGroupId(), getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE);
             if (isParentPom()) {
                 addPluginManagementSection(plugin);
                 //strip the quarkusVersion off
@@ -217,13 +209,16 @@ public class MavenBuildFile extends BuildFile {
         return build;
     }
 
-    private void addVersionProperty() throws IOException {
+    private void addQuarkusProperties() throws IOException {
         Properties properties = getModel().getProperties();
         if (properties == null) {
             properties = new Properties();
             getModel().setProperties(properties);
         }
-        properties.putIfAbsent("quarkus.version", getPluginVersion());
+        properties.putIfAbsent(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_NAME, getPluginVersion());
+        properties.putIfAbsent(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_GROUP_ID_NAME, getBomGroupId());
+        properties.putIfAbsent(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_NAME, getBomArtifactId());
+        properties.putIfAbsent(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME, getBomVersion());
     }
 
     private boolean isParentPom() throws IOException {

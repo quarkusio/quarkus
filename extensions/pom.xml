@@ -16,6 +16,7 @@
     <modules>
         <!-- Plumbing -->
         <module>arc</module>
+        <module>config</module>
         <module>scheduler</module>
 
         <!-- Formats -->

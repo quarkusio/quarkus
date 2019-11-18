@@ -2045,6 +2045,31 @@ but you also need to register each listed class for reflection so they can be in
 public final class MyExtProcessor {
 
     @BuildStep
+    void registerNativeImageReources(BuildProducer<ServiceProviderBuildItem> services) {
+        String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
+        
+        // find out all the implementation classes listed in the service files
+        Set<String> implementations = 
+            ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
+                                          service);
+
+        // register every listed implementation class so they can be instantiated 
+        // in native-image at run-time
+        services.produce(
+            new ServiceProviderBuildItem(io.quarkus.SomeService.class.getName(), 
+                                         implementations.toArray(new String[0])));
+    }
+}
+----
+
+NOTE: This only registers the implementation classes for instantiation via reflection (you will not be able
+to inspect its fields and methods). If you need to do that, you can do it this way:
+
+[source,java]
+----
+public final class MyExtProcessor {
+
+    @BuildStep
     void registerNativeImageReources(BuildProducer<NativeImageResourceBuildItem> resource,
                                      BuildProducer<ReflectiveClassBuildItem> reflectionClasses) {
         String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
@@ -2063,7 +2088,7 @@ public final class MyExtProcessor {
 }
 ----
 
-This is the easiest way to get your services running natively, but it's less efficient than scanning the implementation
+While this is the easiest way to get your services running natively, it's less efficient than scanning the implementation
 classes at build time and generating code that registers them at static-init time instead of relying on reflection.
 
 You can achieve that by adapting the previous build step to use a static-init recorder instead of registering 

@@ -147,6 +147,13 @@ If we were to use the code above, we would get an exception like the following w
 Exception handling request to /person: org.jboss.resteasy.spi.UnhandledException: javax.json.bind.JsonbException: Can't create instance of a class: class org.acme.jsonb.Person, No default constructor found
 ----
 
+or if you are using Jackson:
+
+[source]
+----
+com.fasterxml.jackson.databind.exc.InvalidDefinitionException: No serializer found for class org.acme.jsonb.Person and no properties discovered to create BeanSerializer (to avoid exception, disable SerializationFeature.FAIL_ON_EMPTY_BEANS)
+----
+
 An even nastier possible outcome could be for no exception to be thrown, but instead the JSON result would be completely empty.
 
 There are two different ways to fix this type of issues.

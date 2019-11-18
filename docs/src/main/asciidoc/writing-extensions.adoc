@@ -942,7 +942,6 @@ public class FileConfig {
     /**
      * The level of logs to be written into the file.
      */
-    @DefaultConverter
     @ConfigItem(defaultValue = "ALL")
     Level level;
 

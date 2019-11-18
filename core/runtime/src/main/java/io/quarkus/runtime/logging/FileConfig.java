@@ -6,7 +6,6 @@ import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.DefaultConverter;
 import io.quarkus.runtime.configuration.MemorySize;
 
 @ConfigGroup
@@ -32,7 +31,6 @@ public class FileConfig {
     /**
      * The level of logs to be written into the file.
      */
-    @DefaultConverter
     @ConfigItem(defaultValue = "ALL")
     Level level;
 

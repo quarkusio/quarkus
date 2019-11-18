@@ -98,10 +98,10 @@ public class ExecutorRecorder {
                                 final List<Runnable> runnables = executor.shutdownNow();
                                 if (!runnables.isEmpty()) {
                                     log.warnf("Thread pool shutdown failed: discarding %d tasks, %d threads still running",
-                                            Integer.valueOf(runnables.size()), Integer.valueOf(executor.getActiveCount()));
+                                            runnables.size(), executor.getActiveCount());
                                 } else {
                                     log.warnf("Thread pool shutdown failed: %d threads still running",
-                                            Integer.valueOf(executor.getActiveCount()));
+                                            executor.getActiveCount());
                                 }
                                 break;
                             }
@@ -111,7 +111,7 @@ public class ExecutorRecorder {
                                 final int queueSize = executor.getQueueSize();
                                 final Thread[] runningThreads = executor.getRunningThreads();
                                 log.infof("Awaiting thread pool shutdown; %d thread(s) running with %d task(s) waiting",
-                                        Integer.valueOf(runningThreads.length), Integer.valueOf(queueSize));
+                                        runningThreads.length, queueSize);
                                 // make sure no threads are stuck in {@code exit()}
                                 int realWaiting = runningThreads.length;
                                 for (Thread thr : runningThreads) {

@@ -48,7 +48,7 @@ class MailerImplTest {
     @AfterAll
     static void stopWiser() {
         wiser.stop();
-        vertx.close();
+        vertx.close().toCompletableFuture().join();
     }
 
     @BeforeEach

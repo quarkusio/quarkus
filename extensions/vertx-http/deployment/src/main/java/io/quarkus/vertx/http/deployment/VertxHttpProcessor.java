@@ -27,6 +27,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.RouterProducer;
@@ -53,7 +54,11 @@ class VertxHttpProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem additionalBeans() {
-        return AdditionalBeanBuildItem.unremovableOf(RouterProducer.class);
+        return AdditionalBeanBuildItem.builder()
+                .setUnremovable()
+                .addBeanClass(RouterProducer.class)
+                .addBeanClass(CurrentVertxRequest.class)
+                .build();
     }
 
     /**

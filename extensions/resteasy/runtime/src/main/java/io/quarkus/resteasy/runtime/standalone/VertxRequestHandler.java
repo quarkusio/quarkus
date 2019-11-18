@@ -18,6 +18,7 @@ import org.jboss.resteasy.spi.ResteasyDeployment;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -39,6 +40,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     protected final BufferAllocator allocator;
     protected final BeanContainer beanContainer;
     protected final CurrentIdentityAssociation association;
+    protected final CurrentVertxRequest currentVertxRequest;
 
     public VertxRequestHandler(Vertx vertx,
             BeanContainer beanContainer,
@@ -53,6 +55,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         this.allocator = allocator;
         Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);
         this.association = association.isResolvable() ? association.get() : null;
+        currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
     }
 
     @Override
@@ -68,26 +71,22 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         }
 
         vertx.executeBlocking(event -> {
-            dispatchRequestContext(request, is, new VertxBlockingOutput(request.request()));
+            dispatch(request, is, new VertxBlockingOutput(request.request()));
         }, false, event -> {
+            if (event.failed()) {
+                request.fail(event.cause());
+            }
         });
     }
 
-    private void dispatchRequestContext(RoutingContext request, InputStream is, VertxOutput output) {
+    private void dispatch(RoutingContext routingContext, InputStream is, VertxOutput output) {
         ManagedContext requestContext = beanContainer.requestContext();
         requestContext.activate();
-        QuarkusHttpUser user = (QuarkusHttpUser) request.user();
+        QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
         if (user != null && association != null) {
             association.setIdentity(user.getSecurityIdentity());
         }
-        try {
-            dispatch(request, is, output);
-        } finally {
-            requestContext.terminate();
-        }
-    }
-
-    private void dispatch(RoutingContext routingContext, InputStream is, VertxOutput output) {
+        currentVertxRequest.setCurrent(routingContext);
         try {
             Context ctx = vertx.getOrCreateContext();
             HttpServerRequest request = routingContext.request();
@@ -110,8 +109,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             }
             String host = socketAddress != null ? socketAddress.host() : null;
 
-            VertxHttpRequest vertxRequest = new VertxHttpRequest(ctx, headers, uriInfo, request.rawMethod(),
-                    host, dispatcher.getDispatcher(), vertxResponse, false);
+            VertxHttpRequest vertxRequest = new VertxHttpRequest(ctx, routingContext, headers, uriInfo, request.rawMethod(),
+                    host, dispatcher.getDispatcher(), vertxResponse, false, requestContext);
             vertxRequest.setInputStream(is);
             try {
                 ResteasyContext.pushContext(SecurityContext.class, new QuarkusResteasySecurityContext(request));
@@ -126,15 +125,35 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 routingContext.fail(ex);
             }
 
-            if (!vertxRequest.getAsyncContext().isSuspended()) {
+            boolean suspended = vertxRequest.getAsyncContext().isSuspended();
+            boolean requestContextActive = requestContext.isActive();
+            if (requestContextActive) {
+                //it is possible that there was an async response, that then finished in the same thread
+                //the async response will have terminated the request context in this case
+                currentVertxRequest.initialInvocationComplete(suspended);
+            }
+            if (!suspended) {
                 try {
                     vertxResponse.finish();
                 } catch (IOException e) {
                     log.error("Unexpected failure", e);
+                } finally {
+                    if (requestContextActive) {
+                        requestContext.terminate();
+                    }
                 }
+            } else {
+                //we need the request context to stick around
+                requestContext.deactivate();
             }
         } catch (Throwable t) {
-            routingContext.fail(t);
+            try {
+                routingContext.fail(t);
+            } finally {
+                if (requestContext.isActive()) {
+                    requestContext.terminate();
+                }
+            }
         }
     }
 }

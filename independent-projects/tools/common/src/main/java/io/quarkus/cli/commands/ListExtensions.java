@@ -33,6 +33,9 @@ public class ListExtensions {
 
     public void listExtensions(boolean all, String format, String search) throws IOException {
         final Map<String, Dependency> installed = findInstalled();
+        if(format == null) {
+            format = "name";
+        }
 
         Stream<Extension> extensionsStream = loadExtensions().stream();
         extensionsStream = extensionsStream.filter(e -> filterUnlisted(e));

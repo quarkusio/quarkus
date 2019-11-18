@@ -117,19 +117,16 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
 
             boolean suspended = vertxRequest.getAsyncContext().isSuspended();
             boolean requestContextActive = requestContext.isActive();
-            if (requestContextActive) {
-                //it is possible that there was an async response, that then finished in the same thread
-                //the async response will have terminated the request context in this case
-                currentVertxRequest.initialInvocationComplete(suspended);
-            }
             if (!suspended) {
                 try {
-                    vertxResponse.finish();
-                } catch (IOException e) {
-                    log.error("Unexpected failure", e);
-                } finally {
                     if (requestContextActive) {
                         requestContext.terminate();
+                    }
+                } finally {
+                    try {
+                        vertxResponse.finish();
+                    } catch (IOException e) {
+                        log.debug("IOException writing JAX-RS response", e);
                     }
                 }
             } else {

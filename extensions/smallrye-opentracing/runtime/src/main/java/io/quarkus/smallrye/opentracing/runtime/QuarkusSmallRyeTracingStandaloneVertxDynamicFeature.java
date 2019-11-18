@@ -16,6 +16,7 @@ import io.opentracing.Span;
 import io.opentracing.contrib.jaxrs2.internal.SpanWrapper;
 import io.opentracing.tag.Tags;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 @Provider
@@ -39,31 +40,21 @@ public class QuarkusSmallRyeTracingStandaloneVertxDynamicFeature implements Dyna
 
         @Override
         public void filter(ContainerRequestContext requestContext) throws IOException {
-            request().addRequestDoneListener(new CurrentVertxRequest.Listener() {
+            RoutingContext routingContext = request().getCurrent();
+            routingContext.addHeadersEndHandler(new Handler<Void>() {
                 @Override
-                public void initialInvocationComplete(RoutingContext routingContext, boolean goingAsync) {
+                public void handle(Void event) {
                     SpanWrapper wrapper = routingContext.get(SpanWrapper.PROPERTY_NAME);
                     if (wrapper != null) {
                         wrapper.getScope().close();
+                        Tags.HTTP_STATUS.set(wrapper.get(), routingContext.response().getStatusCode());
+                        if (routingContext.failure() != null) {
+                            addExceptionLogs(wrapper.get(), routingContext.failure());
+                        }
+                        wrapper.finish();
                     }
-                }
-
-                @Override
-                public void responseComplete(RoutingContext routingContext) {
-                    SpanWrapper wrapper = routingContext.get(SpanWrapper.PROPERTY_NAME);
-                    if (wrapper == null) {
-                        return;
-                    }
-
-                    Tags.HTTP_STATUS.set(wrapper.get(), routingContext.response().getStatusCode());
-                    if (routingContext.failure() != null) {
-                        addExceptionLogs(wrapper.get(), routingContext.failure());
-                    }
-                    wrapper.finish();
-
                 }
             });
-
         }
 
         private static void addExceptionLogs(Span span, Throwable throwable) {

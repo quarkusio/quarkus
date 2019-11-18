@@ -61,7 +61,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
-import io.quarkus.scheduler.runtime.ScheduledInvoker;
+import io.quarkus.scheduler.runtime.AbstractScheduledInvoker;
 import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
 import io.quarkus.scheduler.runtime.SchedulerConfig;
 import io.quarkus.scheduler.runtime.SchedulerRecorder;
@@ -98,26 +98,18 @@ public class SchedulerProcessor {
 
             @Override
             public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
-                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS
-                        || kind == org.jboss.jandex.AnnotationTarget.Kind.METHOD;
+                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
             }
 
             @Override
             public void transform(TransformationContext context) {
-                if (context.isClass() && context.getAnnotations().isEmpty()) {
-                    // Class with no annotations but with @Scheduled method
+                if (context.isClass() && !BuiltinScope.isDeclaredOn(context.getTarget().asClass())) {
+                    // Class with no built-in scope annotation but with @Scheduled method
                     if (context.getTarget().asClass().annotations().containsKey(SCHEDULED_NAME)
                             || context.getTarget().asClass().annotations().containsKey(SCHEDULES_NAME)) {
                         LOGGER.debugf("Found scheduled business methods on a class %s with no annotations - adding @Singleton",
                                 context.getTarget());
                         context.transform().add(Singleton.class).done();
-                    }
-                } else if (context.isMethod()) {
-                    MethodInfo method = context.getTarget().asMethod();
-                    if ((method.hasAnnotation(SCHEDULED_NAME) || method.hasAnnotation(SCHEDULES_NAME))
-                            && !method.hasAnnotation(DotNames.ACTIVATE_REQUEST_CONTEXT)) {
-                        // Activate request context during a scheduled method invocation
-                        context.transform().add(DotNames.ACTIVATE_REQUEST_CONTEXT).done();
                     }
                 }
             }
@@ -263,10 +255,10 @@ public class SchedulerProcessor {
                 + HashUtil.sha1(sigBuilder.toString());
 
         ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(ScheduledInvoker.class)
+                .superClass(AbstractScheduledInvoker.class)
                 .build();
 
-        MethodCreator invoke = invokerCreator.getMethodCreator("invoke", void.class, ScheduledExecution.class);
+        MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", void.class, ScheduledExecution.class);
         // InjectableBean<Foo: bean = Arc.container().bean("1");
         // InstanceHandle<Foo> handle = Arc.container().instance(bean);
         // handle.get().ping();

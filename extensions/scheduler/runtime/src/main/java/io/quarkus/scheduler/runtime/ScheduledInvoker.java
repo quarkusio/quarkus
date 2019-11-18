@@ -9,6 +9,6 @@ import io.quarkus.scheduler.ScheduledExecution;
  */
 public interface ScheduledInvoker {
 
-    void invoke(ScheduledExecution action);
+    void invoke(ScheduledExecution execution);
 
 }

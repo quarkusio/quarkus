@@ -112,6 +112,7 @@ class JaxbProcessor {
     private static final DotName XML_REGISTRY = DotName.createSimple(XmlRegistry.class.getName());
     private static final DotName XML_SCHEMA = DotName.createSimple(XmlSchema.class.getName());
     private static final DotName XML_JAVA_TYPE_ADAPTER = DotName.createSimple(XmlJavaTypeAdapter.class.getName());
+    private static final DotName XML_ANY_ELEMENT = DotName.createSimple(XmlAnyElement.class.getName());
 
     private static final List<DotName> JAXB_ROOT_ANNOTATIONS = Arrays.asList(XML_ROOT_ELEMENT, XML_TYPE, XML_REGISTRY);
 
@@ -180,6 +181,10 @@ class JaxbProcessor {
         addResourceBundle("com.sun.org.apache.xml.internal.res.XMLErrorResources");
         nativeImageProps
                 .produce(new NativeImageSystemPropertyBuildItem("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize", "true"));
+
+        if (!index.getAnnotations(XML_ANY_ELEMENT).isEmpty()) {
+            addReflectiveClass(false, false, "javax.xml.bind.annotation.W3CDomHandler");
+        }
 
         JAXB_REFLECTIVE_CLASSES.stream()
                 .map(Class::getName)

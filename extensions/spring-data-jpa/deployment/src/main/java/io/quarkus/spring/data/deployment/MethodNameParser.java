@@ -14,6 +14,9 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.panache.common.Sort;
 
@@ -57,10 +60,12 @@ public class MethodNameParser {
 
     private final ClassInfo entityClass;
     private final IndexView indexView;
+    private final List<ClassInfo> mappedSuperClassInfos;
 
     public MethodNameParser(ClassInfo entityClass, IndexView indexView) {
         this.entityClass = entityClass;
         this.indexView = indexView;
+        this.mappedSuperClassInfos = getMappedSuperClassInfos(indexView, entityClass);
     }
 
     public enum QueryType {
@@ -115,7 +120,7 @@ public class MethodNameParser {
         boolean allIgnoreCase = false;
         if (afterByPart.contains(ALL_IGNORE_CASE)) {
             allIgnoreCase = true;
-            afterByPart = afterByPart.replaceAll(ALL_IGNORE_CASE, "");
+            afterByPart = afterByPart.replace(ALL_IGNORE_CASE, "");
         }
 
         // handle the 'OrderBy' clause which is assumed to be at the end of the query
@@ -131,10 +136,10 @@ public class MethodNameParser {
             boolean ascending = true;
             if (afterOrderByPart.endsWith("Asc")) {
                 ascending = true;
-                afterOrderByPart = afterOrderByPart.replaceAll("Asc", "");
+                afterOrderByPart = afterOrderByPart.replace("Asc", "");
             } else if (afterOrderByPart.endsWith("Desc")) {
                 ascending = false;
-                afterOrderByPart = afterOrderByPart.replaceAll("Desc", "");
+                afterOrderByPart = afterOrderByPart.replace("Desc", "");
             }
             String orderField = lowerFirstLetter(afterOrderByPart);
             if (!entityContainsField(orderField)) {
@@ -176,7 +181,7 @@ public class MethodNameParser {
 
             if (part.endsWith(IGNORE_CASE)) {
                 ignoreCase = true;
-                part = part.replaceAll(IGNORE_CASE, "");
+                part = part.replace(IGNORE_CASE, "");
             }
 
             String operation = getFieldOperation(part);
@@ -185,7 +190,7 @@ public class MethodNameParser {
             } else {
                 fieldName = lowerFirstLetter(part.replaceAll(operation, ""));
             }
-            FieldInfo fieldInfo = entityClass.field(fieldName);
+            FieldInfo fieldInfo = getField(fieldName);
             if (fieldInfo == null) {
                 String parsingExceptionMethod = "Entity " + entityClass + " does not contain a field named: " + part + ". " +
                         "Offending method is " + methodName;
@@ -213,7 +218,7 @@ public class MethodNameParser {
 
                 String simpleFieldName = fieldName.substring(0, fieldEndIndex);
                 String associatedEntityFieldName = lowerFirstLetter(fieldName.substring(associatedEntityFieldStartIndex));
-                fieldInfo = entityClass.field(simpleFieldName);
+                fieldInfo = getField(simpleFieldName);
                 if ((fieldInfo == null) || !(fieldInfo.type() instanceof ClassType)) {
                     throw new UnableToParseMethodException(parsingExceptionMethod);
                 }
@@ -428,7 +433,52 @@ public class MethodNameParser {
     }
 
     private boolean entityContainsField(String fieldName) {
-        return entityClass.field(fieldName) != null;
+        if (entityClass.field(fieldName) != null) {
+            return true;
+        }
+
+        for (ClassInfo superClass : mappedSuperClassInfos) {
+            FieldInfo fieldInfo = superClass.field(fieldName);
+            if (fieldInfo != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private FieldInfo getField(String fieldName) {
+        FieldInfo fieldInfo = entityClass.field(fieldName);
+        if (fieldInfo == null) {
+            for (ClassInfo superClass : mappedSuperClassInfos) {
+                fieldInfo = superClass.field(fieldName);
+                if (fieldInfo != null) {
+                    break;
+                }
+            }
+        }
+        return fieldInfo;
+    }
+
+    private List<ClassInfo> getMappedSuperClassInfos(IndexView indexView, ClassInfo entityClass) {
+        List<ClassInfo> mappedSuperClassInfos = new ArrayList<>(3);
+        Type superClassType = entityClass.superClassType();
+        while (superClassType != null && !superClassType.name().equals(DotNames.OBJECT)) {
+            ClassInfo superClass = indexView.getClassByName(entityClass.superName());
+            if (superClass.classAnnotation(DotNames.JPA_MAPPED_SUPERCLASS) != null) {
+                mappedSuperClassInfos.add(superClass);
+            }
+
+            if (superClassType.kind() == Kind.CLASS) {
+                superClassType = indexView.getClassByName(superClassType.name()).superClassType();
+            } else if (superClassType.kind() == Kind.PARAMETERIZED_TYPE) {
+                ParameterizedType parameterizedType = superClassType.asParameterizedType();
+                superClassType = parameterizedType.owner();
+            }
+        }
+        if (mappedSuperClassInfos.size() > 0) {
+            return mappedSuperClassInfos;
+        }
+        return Collections.emptyList();
     }
 
     public static class Result {

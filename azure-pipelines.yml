@@ -14,6 +14,7 @@ pr:
       - docs/src/main/asciidoc/images/*
       - README.md
       - CONTRIBUTING.md
+      - ADOPTERS.md
       - LICENSE.txt
       - dco.txt
       - .github/ISSUE_TEMPLATE/*.md
@@ -23,7 +24,7 @@ variables:
   MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
   QUARKUS_LOCAL_REPO: $(MAVEN_CACHE_FOLDER)
   # Force everything to use VMs if the expansion pool is disabled. Otherwise send PRs to the expansion pool and everything else to the hosted VMs
-  LINUX_USE_VMS: $[ or(not(variables['quarkus_expansion_enabled']), not(contains(variables['Build.SourceBranch'], '/pull/'))) ]
+  LINUX_USE_VMS: $[ or(eq(variables['quarkus_expansion_enabled'], 'false'), not(contains(variables['Build.SourceBranch'], '/pull/'))) ]
 
 stages:
   - template: ci-templates/stages.yml

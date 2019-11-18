@@ -19,7 +19,7 @@ public class ZipResourceLoader implements ResourceLoader {
 
     @Override
     public <T> T loadResource(String name, ResourceInputStreamConsumer<T> consumer) throws IOException {
-        try(FileSystem fs = FileSystems.newFileSystem(zip, null)) {
+        try(FileSystem fs = FileSystems.newFileSystem(zip, (ClassLoader) null)) {
             final Path p = fs.getPath("/", name);
             if(!Files.exists(p)) {
                 throw new IOException("Failed to locate " + name + " in " + zip);

@@ -10,12 +10,11 @@ import java.util.List;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodStarter;
@@ -35,7 +34,7 @@ import io.restassured.response.Response;
 @QuarkusTest
 class BookResourceTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BookResourceTest.class);
+    private static final Logger LOGGER = Logger.getLogger(BookResourceTest.class);
     private static MongodExecutable MONGO;
 
     private static Jsonb jsonb;
@@ -66,7 +65,7 @@ class BookResourceTest {
     public static void startMongoDatabase() throws IOException {
         Version.Main version = Version.Main.V4_0;
         int port = 27018;
-        LOGGER.info("Starting Mongo {} on port {}", version, port);
+        LOGGER.infof("Starting Mongo %s on port %s", version, port);
         IMongodConfig config = new MongodConfigBuilder()
                 .version(version)
                 .net(new Net(port, Network.localhostIsIPv6()))

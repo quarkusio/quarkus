@@ -6,9 +6,11 @@ import static java.util.stream.Collectors.toList;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -249,7 +251,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
 
         return hasChanges;
@@ -342,7 +344,6 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                 } catch (IOException e) {
                     log.error("Failed to copy resources", e);
                 }
-
             }
 
             for (String path : watchedFilePaths.keySet()) {
@@ -354,7 +355,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                         if (value > existing) {
                             ret.add(path);
                             log.infof("File change detected: %s", file);
-                            if (doCopy) {
+                            if (doCopy && !Files.isDirectory(file)) {
                                 Path target = classesDir.resolve(path);
                                 byte[] data = Files.readAllBytes(file);
                                 try (FileOutputStream out = new FileOutputStream(target.toFile())) {
@@ -364,7 +365,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                             watchedFileTimestamps.put(file, value);
                         }
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        throw new UncheckedIOException(e);
                     }
                 } else {
                     watchedFileTimestamps.put(file, 0L);
@@ -372,7 +373,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                     try {
                         Files.deleteIfExists(target);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        throw new UncheckedIOException(e);
                     }
                 }
             }
@@ -406,7 +407,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
 
             return false;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -428,9 +429,10 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                 Path config = root.resolve(path);
                 if (config.toFile().exists()) {
                     try {
-                        watchedFileTimestamps.put(config, Files.getLastModifiedTime(config).toMillis());
+                        FileTime lastModifiedTime = Files.getLastModifiedTime(config);
+                        watchedFileTimestamps.put(config, lastModifiedTime.toMillis());
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        throw new UncheckedIOException(e);
                     }
                 } else {
                     watchedFileTimestamps.put(config, 0L);

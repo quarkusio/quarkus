@@ -19,7 +19,7 @@ public class RequestScheduledMethodTest {
 
     @Test
     public void testRequestContextScheduledJobs() throws InterruptedException {
-        assertTrue(RequestContextJobs.LATCH.await(4, TimeUnit.SECONDS));
+        assertTrue(RequestContextJobs.LATCH.await(5, TimeUnit.SECONDS));
     }
 
 }

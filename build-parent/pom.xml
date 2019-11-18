@@ -27,6 +27,8 @@
         <scala.version>2.12.8</scala.version>
         <scala-plugin.version>4.1.1</scala-plugin.version>
 
+        <version.surefire.plugin>2.22.1</version.surefire.plugin>
+
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
@@ -74,6 +76,10 @@
         <findbugs.version>3.0.2</findbugs.version>
         <jsoup.version>1.11.3</jsoup.version>
         <wagon-provider-api.version>3.3.3</wagon-provider-api.version>
+
+        <!-- The image to use for tests that run Keycloak -->
+        <!-- IMPORTANT: If this is changed you must also update native-build-steps.yaml to match the version -->
+        <keycloak.docker.image>quay.io/keycloak/keycloak:7.0.1</keycloak.docker.image>
     </properties>
 
     <dependencyManagement>

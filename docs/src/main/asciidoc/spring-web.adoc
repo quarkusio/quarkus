@@ -233,12 +233,29 @@ The following method return types are supported:
 * POJO classes which will be serialized via JSON
 * `org.springframework.http.ResponseEntity`
 
-=== Controller method return types
+=== Controller method parameter types
 
 In addition to the method parameters that can be annotated with the appropriate Spring Web annotations from the previous table,
 `javax.servlet.http.HttpServletRequest` and `javax.servlet.http.HttpServletResponse` are also supported.
 For this to function however, users need to add the `quarkus-undertow` dependency.
 
+=== Exception handler method return types
+
+The following method return types are supported:
+
+* `org.springframework.http.ResponseEntity`
+* `java.util.Map` 
+
+Other return types mentioned in the Spring `https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ExceptionHandler.html[ExceptionHandler javadoc]` are not supported.
+
+=== Exception handler method parameter types
+
+The following parameter types are supported, in arbitrary order:
+
+* An exception argument: declared as a general `Exception` or as a more specific exception. This also serves as a mapping hint if the annotation itself does not narrow the exception types through its `value()`.
+* Request and/or response objects (typically from the Servlet API). You may choose any specific request/response type, e.g. `ServletRequest` / `HttpServletRequest`. To use Servlet API, the `quarkus-undertow` dependency needs to be added.
+ 
+Other parameter types mentioned in the Spring `https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ExceptionHandler.html[ExceptionHandler javadoc]` are not supported.
 
 == Important Technical Note
 
@@ -246,6 +263,54 @@ Please note that the Spring support in Quarkus does not start a Spring Applicati
 Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
 What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
 classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for example) will not be executed.
+
+== Conversion Table
+
+The following table shows how Spring Web annotations can be converted to JAX-RS annotations.
+
+|===
+|Spring |JAX-RS |Comments
+
+|@RequestController
+|
+|There is no equivalent in JAX-RS. Annotating a class with @Path suffices
+
+|@RequestMapping(path="/api")
+|@Path("/api")
+|
+
+|@RequestMapping(consumes="application/json")
+|@Consumes("application/json")
+|
+
+|@RequestMapping(produces="application/json")
+|@Produces("application/json")
+|
+
+|@RequestParam
+|@QueryParam
+|
+
+|@PathVariable
+|@PathParam
+|
+
+|@RequestBody
+|
+|No equivalent in JAX-RS. Method parameters corresponding to the body of the request are handled in JAX-RS without requiring any annotation
+
+|@RestControllerAdvice
+|
+|No equivalent in JAX-RS
+
+|@ResponseStatus
+|
+|No equivalent in JAX-RS
+
+|@ExceptionHandler
+|
+|No equivalent annotation in JAX-RS. Exceptions are handled by implementing `javax.ws.rs.ext.ExceptionMapper`
+|===
 
 == More Spring guides
 

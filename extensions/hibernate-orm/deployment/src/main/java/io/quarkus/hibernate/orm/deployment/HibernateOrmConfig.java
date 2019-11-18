@@ -72,7 +72,7 @@ public class HibernateOrmConfig {
      * @asciidoclet
      */
     // @formatter:on
-    @ConfigItem(defaultValueDocumentation = "import.sql (DEV,TEST)")
+    @ConfigItem(defaultValueDocumentation = "import.sql in DEV, TEST ; no-file otherwise")
     public Optional<String> sqlLoadScript;
 
     /**

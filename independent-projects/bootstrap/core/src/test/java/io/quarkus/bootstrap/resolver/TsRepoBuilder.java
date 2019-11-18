@@ -66,11 +66,15 @@ public class TsRepoBuilder {
                 case TsArtifact.TYPE_TXT:
                     p = newTxt(artifact);
                     break;
+                case TsArtifact.TYPE_POM:
+                break;
                 default:
                     throw new IllegalStateException("Unsupported artifact type " + artifact.type);
             }
         }
-        install(artifact.toAppArtifact(), p);
+        if (p != null) {
+            install(artifact.toAppArtifact(), p);
+        }
     }
 
     protected void install(AppArtifact artifact, Path file) {

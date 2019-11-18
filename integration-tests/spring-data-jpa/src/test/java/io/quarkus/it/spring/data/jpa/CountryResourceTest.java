@@ -9,9 +9,11 @@ import static org.hamcrest.Matchers.startsWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -51,6 +53,15 @@ public class CountryResourceTest {
         when().get("/country/page/10/1").then()
                 .statusCode(200)
                 .body(is("true - false / 0"));
+    }
+
+    @Test
+    void testPageSorted() {
+        String response = when().get("/country/page-sorted/2/0").then()
+                .statusCode(200)
+                .extract().response().asString();
+        assertThat(Arrays.stream(response.split(",")).map(Long::parseLong).collect(Collectors.toList()))
+                .isSortedAccordingTo(Comparator.reverseOrder());
     }
 
     @Test

@@ -30,8 +30,13 @@ public class HibernateOrmRecorder {
         Logger.getLogger("io.quarkus.hibernate.orm").debugf("List of entities found by Quarkus deployment:%n%s", entities);
     }
 
-    public void callHibernateFeatureInit() {
-        Hibernate.featureInit();
+    /**
+     * The feature needs to be initialized, even if it's not enabled.
+     *
+     * @param enabled Set to false if it's not being enabled, to log appropriately.
+     */
+    public void callHibernateFeatureInit(boolean enabled) {
+        Hibernate.featureInit(enabled);
     }
 
     public BeanContainerListener initializeJpa(boolean jtaEnabled) {

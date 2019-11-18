@@ -1,16 +1,15 @@
 package io.quarkus.smallrye.opentracing.deployment;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.annotation.WebListener;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 
 import io.opentracing.util.GlobalTracer;
+import io.quarkus.runtime.StartupEvent;
 
-@WebListener
-public class TracerRegistrar implements ServletContextListener {
+@ApplicationScoped
+public class TracerRegistrar {
 
-    @Override
-    public void contextInitialized(ServletContextEvent sce) {
+    public void start(@Observes StartupEvent start) {
         GlobalTracer.register(TracingTest.mockTracer);
     }
 }

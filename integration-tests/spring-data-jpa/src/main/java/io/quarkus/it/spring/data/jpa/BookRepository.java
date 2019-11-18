@@ -14,6 +14,8 @@ public interface BookRepository extends Repository<Book, Integer> {
 
     List<Book> findAll();
 
+    List<Book> findByName(String name);
+
     boolean existsById(Integer id);
 
     boolean existsBookByPublicationYearBetween(Integer start, Integer end);

@@ -142,6 +142,22 @@ By default the Kubernetes resources do not contain readiness and liveness probes
 The values of the generated probes will be determined by the configured health properties: `quarkus.smallrye-health.root-path`, `quarkus.smallrye-health.liveness-path` and `quarkus.smallrye-health.readiness-path`.
 More information about the health extension can be found in the relevant link:microprofile-health[guide].
 
+=== Using the kubernetes client
+
+Applications, that are deployed to kubernetes and need to access the API server, will usually make use of the `kubernetes-client` exetension:
+
+[source,xml]
+----
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-kubernetes</artifactId>
+    </dependency>
+----
+
+To access the API server from within a kubernetes cluster, some RBAC related resources are required (e.g. a ServiceAccount, a RoleBinding etc).
+So, when the `kubernetes-client` extension is present, those resources are going to be automatically created, so that application will be greanted the `view` role.
+If more roles, are required they will have to be added manually. 
+
 == Tuning the generated resources using application.properties
 
 The Kubernetes extension allows tuning the generated manifest, using the `application.properties` file.
@@ -458,4 +474,89 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 | s2i.build-env-vars | Env[] |   |  
 | s2i.auto-push-enabled | boolean |   | false 
 | s2i.auto-build-enabled | boolean |   | false 
+|====
+
+=== Knative
+    
+To enable the generation of Knative resources, you need to include Knative in the target platforms:
+
+[source]
+----
+kubernetes.deployment.target=knative
+----
+
+Following the execution of `./mvnw package` you will notice amongst the other files that are created, two files named
+`knative.json` and `knative.yml` in the `target/kubernetes/` directory.
+
+If you look at either file you will see that it contains a Knative `Service`.
+
+The full source of the `knative.json` file looks something like this:
+
+[source,json]
+----
+{
+  "apiVersion" : "v1",
+  "kind" : "List",
+  "items" : [ {
+    "apiVersion" : "serving.knative.dev/v1alpha1",
+    "kind" : "Service",
+    "metadata" : {
+      "labels" : {
+        "app" : "test-quarkus-app",
+        "version" : "0.1-SNAPSHOT",
+        "group" : "yourDockerUsername"
+      },
+      "name" : "knative"
+    },
+    "spec" : {
+      "runLatest" : {
+        "configuration" : {
+          "revisionTemplate" : {
+            "spec" : {
+              "container" : {
+                "image" : "dev.local/yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT",
+                "imagePullPolicy" : "IfNotPresent"
+              }
+            }
+          }
+        }
+      }
+    }
+  } ]
+}
+----
+
+The generated service can be customized using the following properties:
+
+.Knative
+|====
+| Property | Type | Description | Default Value 
+| knative.group | String |   |  
+| knative.name | String |   |  
+| knative.version | String |   |  
+| knative.labels | Label[] |   |  
+| knative.annotations | Annotation[] |   |  
+| knative.env-vars | Env[] |   |  
+| knative.working-dir | String |   |  
+| knative.command | String[] |   |  
+| knative.arguments | String[] |   |  
+| knative.service-account | String |   |  
+| knative.host | String |   |  
+| knative.ports | Port[] |   |  
+| knative.service-type | ServiceType |   | ClusterIP 
+| knative.pvc-volumes | PersistentVolumeClaimVolume[] |   |  
+| knative.secret-volumes | SecretVolume[] |   |  
+| knative.config-map-volumes | ConfigMapVolume[] |   |  
+| knative.git-repo-volumes | GitRepoVolume[] |   |  
+| knative.aws-elastic-block-store-volumes | AwsElasticBlockStoreVolume[] |   |  
+| knative.azure-disk-volumes | AzureDiskVolume[] |   |  
+| knative.azure-file-volumes | AzureFileVolume[] |   |  
+| knative.mounts | Mount[] |   |  
+| knative.image-pull-policy | ImagePullPolicy |   | IfNotPresent 
+| knative.image-pull-secrets | String[] |   |  
+| knative.liveness-probe | Probe |   | ( see Probe ) 
+| knative.readiness-probe | Probe |   | ( see Probe ) 
+| knative.sidecars | Container[] |   |  
+| knative.expose | boolean |   | false 
+| knative.auto-deploy-enabled | boolean |   | false 
 |====

@@ -14,6 +14,7 @@ import javax.enterprise.context.ApplicationScoped;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
+import io.quarkus.oidc.RefreshToken;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -37,10 +38,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private static QuarkusSecurityIdentity augmentIdentity(SecurityIdentity securityIdentity,
             String accessToken,
             String refreshToken) {
+        final RefreshToken refreshTokenCredential = new RefreshToken(refreshToken);
         return QuarkusSecurityIdentity.builder()
                 .setPrincipal(securityIdentity.getPrincipal())
                 .addCredentials(securityIdentity.getCredentials())
-                .addCredential(new AccessTokenCredential(accessToken, refreshToken))
+                .addCredential(new AccessTokenCredential(accessToken, refreshTokenCredential))
+                .addCredential(refreshTokenCredential)
                 .addRoles(securityIdentity.getRoles())
                 .addAttributes(securityIdentity.getAttributes())
                 .addPermissionChecker(new Function<Permission, CompletionStage<Boolean>>() {
@@ -96,10 +99,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private CompletionStage<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
             RoutingContext context) {
-        CompletableFuture<SecurityIdentity> cf = new CompletableFuture<>();
         JsonObject params = new JsonObject();
 
-        params.put("code", context.request().getParam("code"));
+        String code = context.request().getParam("code");
+        if (code == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        CompletableFuture<SecurityIdentity> cf = new CompletableFuture<>();
+        params.put("code", code);
         params.put("redirect_uri", buildRedirectUri(context));
 
         auth.authenticate(params, userAsyncResult -> {

@@ -22,7 +22,7 @@ public class ResolverSetupCleanup {
 
     @BeforeEach
     public void setup() throws Exception {
-        workDir = IoUtils.createRandomTmpDir();
+        workDir = initWorkDir();
         repoHome = IoUtils.mkdirs(workDir.resolve("repo"));
         resolver = initResolver();
         repo = TsRepoBuilder.getInstance(resolver, workDir);
@@ -30,9 +30,17 @@ public class ResolverSetupCleanup {
 
     @AfterEach
     public void cleanup() {
-        if(workDir != null) {
+        if(cleanWorkDir() && workDir != null) {
             IoUtils.recursiveDelete(workDir);
         }
+    }
+
+    protected Path initWorkDir() {
+        return IoUtils.createRandomTmpDir();
+    }
+
+    protected boolean cleanWorkDir() {
+        return true;
     }
 
     protected BootstrapAppModelResolver initResolver() throws AppModelResolverException {

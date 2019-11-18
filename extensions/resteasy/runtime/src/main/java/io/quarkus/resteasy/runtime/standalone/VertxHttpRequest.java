@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -26,7 +25,9 @@ import org.jboss.resteasy.spi.NotImplementedYetException;
 import org.jboss.resteasy.spi.ResteasyAsynchronousContext;
 import org.jboss.resteasy.spi.ResteasyAsynchronousResponse;
 
+import io.quarkus.arc.ManagedContext;
 import io.vertx.core.Context;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * Abstraction for an inbound http request on the server, or a response from a server to a client
@@ -43,18 +44,21 @@ public final class VertxHttpRequest extends BaseHttpRequest {
     private String httpMethod;
     private LazyHostSupplier remoteHost;
     private InputStream inputStream;
-    private Map<String, Object> attributes;
     private VertxHttpResponse response;
     private VertxExecutionContext executionContext;
+    private final RoutingContext routingContext;
     private final Context context;
+    private final ManagedContext requestContext;
+    private final ManagedContext.ContextState requestContextState;
 
     public VertxHttpRequest(Context context,
+            RoutingContext routingContext,
             ResteasyHttpHeaders httpHeaders,
             ResteasyUriInfo uri,
             String httpMethod,
             LazyHostSupplier remoteHost,
             SynchronousDispatcher dispatcher,
-            VertxHttpResponse response) {
+            VertxHttpResponse response, ManagedContext requestContext) {
         super(uri);
         this.context = context;
         this.response = response;
@@ -62,6 +66,9 @@ public final class VertxHttpRequest extends BaseHttpRequest {
         this.httpMethod = httpMethod;
         this.remoteHost = remoteHost;
         this.executionContext = new VertxExecutionContext(this, response, dispatcher);
+        this.requestContext = requestContext;
+        this.requestContextState = requestContext.getState();
+        this.routingContext = routingContext;
     }
 
     @Override
@@ -76,7 +83,7 @@ public final class VertxHttpRequest extends BaseHttpRequest {
 
     @Override
     public Enumeration<String> getAttributeNames() {
-        final Map<String, Object> attributes = this.attributes;
+        final Map<String, Object> attributes = routingContext.data();
         if (attributes == null) {
             return Collections.emptyEnumeration();
         } else {
@@ -104,22 +111,17 @@ public final class VertxHttpRequest extends BaseHttpRequest {
 
     @Override
     public Object getAttribute(String attribute) {
-        return attributes != null ? attributes.get(attribute) : null;
+        return routingContext.get(attribute);
     }
 
     @Override
     public void setAttribute(String name, Object value) {
-        if (attributes == null) {
-            attributes = new HashMap<String, Object>();
-        }
-        attributes.put(name, value);
+        routingContext.put(name, value);
     }
 
     @Override
     public void removeAttribute(String name) {
-        if (attributes != null) {
-            attributes.remove(name);
-        }
+        routingContext.remove(name);
     }
 
     @Override
@@ -241,11 +243,12 @@ public final class VertxHttpRequest extends BaseHttpRequest {
             @Override
             public void complete() {
                 synchronized (responseLock) {
-                    if (done)
+                    if (done || cancelled) {
                         return;
-                    if (cancelled)
-                        return;
+                    }
                     done = true;
+                    requestContext.activate(requestContextState);
+                    requestContext.terminate();
                     vertxFlush();
                 }
             }
@@ -258,7 +261,12 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                     if (cancelled)
                         return false;
                     done = true;
-                    return internalResume(entity, t -> vertxFlush());
+                    requestContext.activate(requestContextState);
+                    try {
+                        return internalResume(entity, t -> vertxFlush());
+                    } finally {
+                        requestContext.terminate();
+                    }
                 }
             }
 
@@ -270,7 +278,12 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                     if (cancelled)
                         return false;
                     done = true;
-                    return internalResume(ex, t -> vertxFlush());
+                    requestContext.activate(requestContextState);
+                    try {
+                        return internalResume(ex, t -> vertxFlush());
+                    } finally {
+                        requestContext.terminate();
+                    }
                 }
             }
 
@@ -285,7 +298,12 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                     }
                     done = true;
                     cancelled = true;
-                    return internalResume(Response.status(Response.Status.SERVICE_UNAVAILABLE).build(), t -> vertxFlush());
+                    requestContext.activate(requestContextState);
+                    try {
+                        return internalResume(Response.status(Response.Status.SERVICE_UNAVAILABLE).build(), t -> vertxFlush());
+                    } finally {
+                        requestContext.terminate();
+                    }
                 }
             }
 
@@ -298,10 +316,15 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                         return false;
                     done = true;
                     cancelled = true;
-                    return internalResume(
-                            Response.status(Response.Status.SERVICE_UNAVAILABLE).header(HttpHeaders.RETRY_AFTER, retryAfter)
-                                    .build(),
-                            t -> vertxFlush());
+                    requestContext.activate(requestContextState);
+                    try {
+                        return internalResume(
+                                Response.status(Response.Status.SERVICE_UNAVAILABLE).header(HttpHeaders.RETRY_AFTER, retryAfter)
+                                        .build(),
+                                t -> vertxFlush());
+                    } finally {
+                        requestContext.terminate();
+                    }
                 }
             }
 
@@ -322,10 +345,15 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                         return false;
                     done = true;
                     cancelled = true;
-                    return internalResume(
-                            Response.status(Response.Status.SERVICE_UNAVAILABLE).header(HttpHeaders.RETRY_AFTER, retryAfter)
-                                    .build(),
-                            t -> vertxFlush());
+                    requestContext.activate(requestContextState);
+                    try {
+                        return internalResume(
+                                Response.status(Response.Status.SERVICE_UNAVAILABLE).header(HttpHeaders.RETRY_AFTER, retryAfter)
+                                        .build(),
+                                t -> vertxFlush());
+                    } finally {
+                        requestContext.terminate();
+                    }
                 }
             }
 

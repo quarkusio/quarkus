@@ -27,6 +27,7 @@ import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientRecorder;
+import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 public class KubernetesClientProcessor {
 
@@ -45,6 +46,9 @@ public class KubernetesClientProcessor {
     @Inject
     BuildProducer<IgnoreJsonDeserializeClassBuildItem> ignoredJsonDeserializationClasses;
 
+    @Inject
+    BuildProducer<KubernetesRoleBuildItem> roleProducer;
+
     KubernetesClientBuildConfig buildConfig;
 
     @Record(STATIC_INIT)
@@ -55,6 +59,7 @@ public class KubernetesClientProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem,
             KubernetesClientRecorder recorder) {
         featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.KUBERNETES_CLIENT));
+        roleProducer.produce(new KubernetesRoleBuildItem("view"));
 
         Set<String> watchedClasses = new HashSet<>();
         // make sure the watchers fully (and not weakly) register Kubernetes classes for reflection

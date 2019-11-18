@@ -1,6 +1,5 @@
 package io.quarkus.dynamodb.deployment;
 
-import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -12,6 +11,7 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.InjectionPointInfo;
@@ -30,21 +30,16 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
-import io.quarkus.dynamodb.runtime.AwsCredentialsProviderType;
+import io.quarkus.dynamodb.runtime.DynamodbBuildTimeConfig;
 import io.quarkus.dynamodb.runtime.DynamodbClientProducer;
 import io.quarkus.dynamodb.runtime.DynamodbConfig;
 import io.quarkus.dynamodb.runtime.DynamodbRecorder;
-import io.quarkus.dynamodb.runtime.NettyHttpClientConfig;
-import io.quarkus.dynamodb.runtime.SyncHttpClientConfig;
-import io.quarkus.dynamodb.runtime.SyncHttpClientConfig.SyncClientType;
-import io.quarkus.dynamodb.runtime.TlsManagersProviderConfig;
-import io.quarkus.dynamodb.runtime.TlsManagersProviderType;
+import io.quarkus.dynamodb.runtime.SyncHttpClientBuildTimeConfig.SyncClientType;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
 import software.amazon.awssdk.http.SdkHttpService;
 import software.amazon.awssdk.http.async.SdkAsyncHttpService;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.utils.StringUtils;
 
 public class DynamodbProcessor {
     public static final String AWS_SDK_APPLICATION_ARCHIVE_MARKERS = "software/amazon/awssdk";
@@ -61,7 +56,7 @@ public class DynamodbProcessor {
     private static final DotName SYNC_CLIENT_NAME = DotName.createSimple(DynamoDbClient.class.getName());
     private static final DotName ASYNC_CLIENT_NAME = DotName.createSimple(DynamoDbAsyncClient.class.getName());
 
-    DynamodbConfig config;
+    DynamodbBuildTimeConfig buildTimeConfig;
 
     @BuildStep
     JniBuildItem jni() {
@@ -93,7 +88,14 @@ public class DynamodbProcessor {
                 .stream()
                 .map(c -> c.name().toString()).collect(Collectors.toList());
 
-        checkConfig(config, knownInterceptorImpls);
+        buildTimeConfig.sdk.interceptors.stream().forEach(interceptorClass -> {
+            if (!knownInterceptorImpls.contains(interceptorClass.getName())) {
+                throw new ConfigurationError(
+                        String.format(
+                                "quarkus.dynamodb.sdk.interceptors (%s) - must list only existing implementations of software.amazon.awssdk.core.interceptor.ExecutionInterceptor",
+                                buildTimeConfig.sdk.interceptors.toString()));
+            }
+        });
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false,
                 knownInterceptorImpls.toArray(new String[knownInterceptorImpls.size()])));
@@ -123,7 +125,7 @@ public class DynamodbProcessor {
         }
 
         if (createSyncClient) {
-            if (config.syncClient.type == SyncClientType.APACHE) {
+            if (buildTimeConfig.syncClient.type == SyncClientType.APACHE) {
                 checkClasspath(APACHE_HTTP_SERVICE, "apache-client");
 
                 //Register Apache client as sync client
@@ -148,22 +150,20 @@ public class DynamodbProcessor {
         return new DynamodbClientBuildItem(createSyncClient, createAsyncClient);
     }
 
-    private void checkClasspath(String className, String dependencyName) {
-        try {
-            Class.forName(className, true, Thread.currentThread().getContextClassLoader());
-        } catch (ClassNotFoundException e) {
-            throw new DeploymentException(
-                    "Missing 'software.amazon.awssdk:" + dependencyName + "' dependency on the classpath");
-        }
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void initializeConfiguration(BuildProducer<BeanContainerListenerBuildItem> containerListenerProducer,
+            DynamodbRecorder recorder) {
+        containerListenerProducer.produce(new BeanContainerListenerBuildItem(recorder.setDynamodbBuildConfig(buildTimeConfig)));
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void buildClients(DynamodbClientBuildItem clientBuildItem, DynamodbRecorder recorder,
+    void buildClients(DynamodbClientBuildItem clientBuildItem, DynamodbConfig runtimeConfig, DynamodbRecorder recorder,
             BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown) {
 
         if (clientBuildItem.isCreateSyncClient() || clientBuildItem.isCreateAsyncClient()) {
-            recorder.configureRuntimeConfig(config);
+            recorder.configureRuntimeConfig(runtimeConfig);
 
             if (clientBuildItem.isCreateSyncClient()) {
                 recorder.createClient(beanContainer.getValue(), shutdown);
@@ -175,152 +175,12 @@ public class DynamodbProcessor {
         }
     }
 
-    private static void checkConfig(DynamodbConfig config, List<String> knownInterceptorImpls) {
-        if (config.sdk != null) {
-            if (config.sdk.endpointOverride.isPresent()) {
-                URI endpointOverride = config.sdk.endpointOverride.get();
-                if (StringUtils.isBlank(endpointOverride.getScheme())) {
-                    throw new ConfigurationError(
-                            String.format("quarkus.dynamodb.sdk.endpoint-override (%s) - scheme must be specified",
-                                    endpointOverride.toString()));
-                }
-            }
-            config.sdk.interceptors.stream().forEach(interceptorClass -> {
-                if (!knownInterceptorImpls.contains(interceptorClass.getName())) {
-                    throw new ConfigurationError(
-                            String.format(
-                                    "quarkus.dynamodb.sdk.interceptors (%s) - must list only existing implementations of software.amazon.awssdk.core.interceptor.ExecutionInterceptor",
-                                    config.sdk.interceptors.toString()));
-                }
-            });
-        }
-
-        if (config.aws != null) {
-            if (config.aws.credentials.type == AwsCredentialsProviderType.STATIC) {
-                if (StringUtils.isBlank(config.aws.credentials.staticProvider.accessKeyId)
-                        || StringUtils.isBlank(config.aws.credentials.staticProvider.secretAccessKey)) {
-                    throw new ConfigurationError(
-                            "quarkus.dynamodb.aws.credentials.static-provider.access-key-id and "
-                                    + "quarkus.dynamodb.aws.credentials.static-provider.secret-access-key cannot be empty if STATIC credentials provider used.");
-                }
-            }
-            if (config.aws.credentials.type == AwsCredentialsProviderType.PROCESS) {
-                if (StringUtils.isBlank(config.aws.credentials.processProvider.command)) {
-                    throw new ConfigurationError(
-                            "quarkus.dynamodb.aws.credentials.process-provider.command cannot be empty if PROCESS credentials provider used.");
-                }
-            }
-        }
-
-        if (config.syncClient != null) {
-            checkSyncClientConfig(config.syncClient);
-        }
-        if (config.asyncClient != null) {
-            checkAsyncClientConfig(config.asyncClient);
-        }
-    }
-
-    private static void checkSyncClientConfig(SyncHttpClientConfig syncClient) {
-        if (syncClient.type == SyncClientType.APACHE) {
-            if (syncClient.apache.maxConnections <= 0) {
-                throw new ConfigurationError("quarkus.dynamodb.sync-client.max-connections may not be negative or zero.");
-            }
-            if (syncClient.apache.proxy != null && syncClient.apache.proxy.enabled) {
-                URI proxyEndpoint = syncClient.apache.proxy.endpoint;
-                if (proxyEndpoint != null) {
-                    validateProxyEndpoint(proxyEndpoint, "sync");
-                }
-            }
-            validateTlsManagersProvider(syncClient.apache.tlsManagersProvider, "sync");
-        }
-    }
-
-    private static void checkAsyncClientConfig(NettyHttpClientConfig asyncClient) {
-        if (asyncClient.maxConcurrency <= 0) {
-            throw new ConfigurationError("quarkus.dynamodb.async-client.max-concurrency may not be negative or zero.");
-        }
-        if (asyncClient.maxHttp2Streams < 0) {
-            throw new ConfigurationError(
-                    "quarkus.dynamodb.async-client.max-http2-streams may not be negative.");
-        }
-        if (asyncClient.maxPendingConnectionAcquires <= 0) {
-            throw new ConfigurationError(
-                    "quarkus.dynamodb.async-client.max-pending-connection-acquires may not be negative or zero.");
-        }
-        if (asyncClient.eventLoop.override) {
-            if (asyncClient.eventLoop.numberOfThreads.isPresent() && asyncClient.eventLoop.numberOfThreads.get() <= 0) {
-                throw new ConfigurationError(
-                        "quarkus.dynamodb.async-client.event-loop.number-of-threads may not be negative or zero.");
-            }
-        }
-        if (asyncClient.proxy != null && asyncClient.proxy.enabled) {
-            URI proxyEndpoint = asyncClient.proxy.endpoint;
-            if (proxyEndpoint != null) {
-                validateProxyEndpoint(proxyEndpoint, "async");
-            }
-        }
-        validateTlsManagersProvider(asyncClient.tlsManagersProvider, "async");
-    }
-
-    private static void validateProxyEndpoint(URI endpoint, String clientType) {
-        if (StringUtils.isBlank(endpoint.getScheme())) {
-            throw new ConfigurationError(
-                    String.format("quarkus.dynamodb.%s-client.proxy.endpoint (%s) - scheme must be specified",
-                            clientType, endpoint.toString()));
-        }
-        if (StringUtils.isBlank(endpoint.getHost())) {
-            throw new ConfigurationError(
-                    String.format("quarkus.dynamodb.%s-client.proxy.endpoint (%s) - host must be specified",
-                            clientType, endpoint.toString()));
-        }
-        if (StringUtils.isNotBlank(endpoint.getUserInfo())) {
-            throw new ConfigurationError(
-                    String.format("quarkus.dynamodb.%s-client.proxy.endpoint (%s) - user info is not supported.",
-                            clientType, endpoint.toString()));
-        }
-        if (StringUtils.isNotBlank(endpoint.getPath())) {
-            throw new ConfigurationError(
-                    String.format("quarkus.dynamodb.%s-client.proxy.endpoint (%s) - path is not supported.",
-                            clientType, endpoint.toString()));
-        }
-        if (StringUtils.isNotBlank(endpoint.getQuery())) {
-            throw new ConfigurationError(
-                    String.format("quarkus.dynamodb.%s-client.proxy.endpoint (%s) - query is not supported.",
-                            clientType, endpoint.toString()));
-        }
-        if (StringUtils.isNotBlank(endpoint.getFragment())) {
-            throw new ConfigurationError(
-                    String.format("quarkus.dynamodb.%s-client.proxy.endpoint (%s) - fragment is not supported.",
-                            clientType, endpoint.toString()));
-        }
-    }
-
-    private static void validateTlsManagersProvider(TlsManagersProviderConfig config, String clientType) {
-        if (config.type == TlsManagersProviderType.FILE_STORE) {
-            if (config.fileStore == null) {
-                throw new ConfigurationError(
-                        String.format(
-                                "quarkus.dynamodb.%s-client.tls-managers-provider.file-store must be specified if 'FILE_STORE' provider type is used",
-                                clientType));
-            }
-            if (config.fileStore.path == null) {
-                throw new ConfigurationError(
-                        String.format(
-                                "quarkus.dynamodb.%s-client.tls-managers-provider.file-store.path should not be empty if 'FILE_STORE' provider is used.",
-                                clientType));
-            }
-            if (StringUtils.isBlank(config.fileStore.type)) {
-                throw new ConfigurationError(
-                        String.format(
-                                "quarkus.dynamodb.%s-client.tls-managers-provider.file-store.type should not be empty if 'FILE_STORE' provider is used.",
-                                clientType));
-            }
-            if (StringUtils.isBlank(config.fileStore.password)) {
-                throw new ConfigurationError(
-                        String.format(
-                                "quarkus.dynamodb.%s-client.tls-managers-provider.file-store.password should not be empty if 'FILE_STORE' provider is used.",
-                                clientType));
-            }
+    private void checkClasspath(String className, String dependencyName) {
+        try {
+            Class.forName(className, true, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new DeploymentException(
+                    "Missing 'software.amazon.awssdk:" + dependencyName + "' dependency on the classpath");
         }
     }
 }

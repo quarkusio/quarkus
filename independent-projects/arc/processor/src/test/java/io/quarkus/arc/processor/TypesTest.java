@@ -38,7 +38,7 @@ public class TypesTest {
                 Collections.emptyMap(),
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
                         Collections.emptyList(), null,
-                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList()),
+                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false),
                 resolvedTypeVariables::put);
         assertEquals(3, bazTypes.size());
         assertTrue(bazTypes.contains(Type.create(bazName, Kind.CLASS)));
@@ -55,7 +55,7 @@ public class TypesTest {
         Set<Type> fooTypes = Types.getClassBeanTypeClosure(fooClass,
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
                         Collections.emptyList(), null,
-                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList()));
+                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false));
         assertEquals(2, fooTypes.size());
         for (Type t : fooTypes) {
             if (t.kind().equals(Kind.PARAMETERIZED_TYPE)) {
@@ -71,7 +71,7 @@ public class TypesTest {
         Set<Type> producerMethodTypes = Types.getProducerMethodTypeClosure(producerMethod,
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
                         Collections.emptyList(), null,
-                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList()));
+                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false));
         assertEquals(1, producerMethodTypes.size());
 
         // Object is the sole type
@@ -79,7 +79,7 @@ public class TypesTest {
         Set<Type> producerFieldTypes = Types.getProducerFieldTypeClosure(producerField,
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
                         Collections.emptyList(), null,
-                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList()));
+                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false));
         assertEquals(1, producerFieldTypes.size());
     }
 

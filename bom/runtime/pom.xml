@@ -16,7 +16,7 @@
     <properties>
         <aesh.version>1.11</aesh.version>
         <jandex.version>2.1.1.Final</jandex.version>
-        <resteasy.version>4.4.0.Final</resteasy.version>
+        <resteasy.version>4.4.1.Final</resteasy.version>
         <opentracing.version>0.31.0</opentracing.version>
         <opentracing-jaxrs.version>0.4.1</opentracing-jaxrs.version>
         <opentracing-web-servlet-filter.version>0.2.3</opentracing-web-servlet-filter.version>
@@ -24,7 +24,7 @@
         <opentracing-concurrent.version>0.2.0</opentracing-concurrent.version>
         <opentracing-jdbc.version>0.0.12</opentracing-jdbc.version>
         <jaeger.version>0.34.0</jaeger.version>
-        <quarkus-http.version>3.0.0.Beta3</quarkus-http.version>
+        <quarkus-http.version>3.0.0.Final</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <microprofile-config-api.version>1.3</microprofile-config-api.version>
         <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
@@ -75,14 +75,14 @@
         <plexus-component-annotations.version>1.7.1</plexus-component-annotations.version>
         <!-- What we actually depend on for the annotations, as latest Graal is not available in Maven fast enough: -->
         <graal-sdk.version>19.2.1</graal-sdk.version>
-        <gizmo.version>1.0.0.Alpha8</gizmo.version>
+        <gizmo.version>1.0.0.Final</gizmo.version>
         <jackson.version>2.9.10.20191020</jackson.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.9</commons-lang3.version>
         <commons-codec.version>1.13</commons-codec.version>
         <classmate.version>1.3.4</classmate.version>
         <hibernate-validator.version>6.1.0.Final</hibernate-validator.version>
-        <hibernate-orm.version>5.4.8.Final</hibernate-orm.version>
+        <hibernate-orm.version>5.4.9.Final</hibernate-orm.version>
         <hibernate-search.version>6.0.0.Beta2</hibernate-search.version>
         <narayana.version>5.10.0.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
@@ -106,9 +106,10 @@
         <httpclient.version>4.5.9</httpclient.version>
         <httpcore.version>4.4.11</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
+        <cronutils.version>9.0.1</cronutils.version>
         <quartz.version>2.3.1</quartz.version>
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
-        <postgresql-jdbc.version>42.2.6</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.2.8</postgresql-jdbc.version>
         <mariadb-jdbc.version>2.4.4</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.17</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.1.jre8</mssql-jdbc.version>
@@ -139,7 +140,7 @@
         <awssdk.version>2.10.3</awssdk.version>
         <azure-functions-java-library.version>1.3.0</azure-functions-java-library.version>
         <kotlin.version>1.3.41</kotlin.version>
-        <dekorate.version>0.9.4</dekorate.version>
+        <dekorate.version>0.9.9</dekorate.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <jline.version>2.14.6</jline.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>
@@ -160,7 +161,7 @@
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kogito.version>0.5.1</kogito.version>
-        <kubernetes-client.version>4.6.1</kubernetes-client.version>
+        <kubernetes-client.version>4.6.3</kubernetes-client.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <wiremock.version>2.24.1</wiremock.version>
@@ -170,7 +171,7 @@
         <mockito.version>3.0.0</mockito.version>
         <jna.version>5.3.1</jna.version>
         <antlr.version>4.7.2</antlr.version>
-        <quarkus-security.version>1.0.0.Beta1</quarkus-security.version>
+        <quarkus-security.version>1.0.0.Final</quarkus-security.version>
         <keycloak.version>7.0.1</keycloak.version>
     </properties>
 
@@ -598,6 +599,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-quartz</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-spring-di</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -739,7 +745,12 @@
                 <version>${dekorate.version}</version>
                 <classifier>noapt</classifier>
             </dependency>
-
+            <dependency>
+                <groupId>io.dekorate</groupId>
+                <artifactId>knative-annotations</artifactId>
+                <version>${dekorate.version}</version>
+                <classifier>noapt</classifier>
+            </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging</artifactId>
@@ -1807,6 +1818,11 @@
             </dependency>
             <dependency>
                 <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-jpamodelgen</artifactId>
+                <version>${hibernate-orm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate</groupId>
                 <artifactId>quarkus-local-cache</artifactId>
                 <version>${hibernate-quarkus-local-cache.version}</version>
             </dependency>
@@ -1990,6 +2006,11 @@
                 </exclusions>
             </dependency>
 
+            <dependency>
+                <groupId>com.cronutils</groupId>
+                <artifactId>cron-utils</artifactId>
+                <version>${cronutils.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.quartz-scheduler</groupId>
                 <artifactId>quartz</artifactId>

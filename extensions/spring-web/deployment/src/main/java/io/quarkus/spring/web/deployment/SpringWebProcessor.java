@@ -161,8 +161,6 @@ public class SpringWebProcessor {
             return;
         }
 
-        validate(annotations);
-
         final Set<String> classNames = new HashSet<>();
         for (AnnotationInstance annotation : annotations) {
             classNames.add(annotation.target().asClass().toString());
@@ -183,25 +181,6 @@ public class SpringWebProcessor {
         }));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, SpringResourceBuilder.class.getName()));
-    }
-
-    private void validate(Collection<AnnotationInstance> restControllerInstances) {
-        for (AnnotationInstance restControllerInstance : restControllerInstances) {
-            ClassInfo restControllerClass = restControllerInstance.target().asClass();
-
-            Map<DotName, List<AnnotationInstance>> annotations = restControllerClass.annotations();
-            for (Map.Entry<DotName, List<AnnotationInstance>> entry : annotations.entrySet()) {
-                DotName dotName = entry.getKey();
-                if (PATH_VARIABLE.equals(dotName)) {
-                    List<AnnotationInstance> pathVariableInstances = entry.getValue();
-                    for (AnnotationInstance pathVariableInstance : pathVariableInstances) {
-                        if (pathVariableInstance.target().kind() != AnnotationTarget.Kind.METHOD_PARAMETER) {
-                            continue;
-                        }
-                    }
-                }
-            }
-        }
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -422,12 +401,6 @@ public class SpringWebProcessor {
 
             if (!RESPONSE_ENTITY.equals(returnTypeDotName)) {
                 reflectiveClassProducer.produce(new ReflectiveClassBuildItem(true, true, returnTypeDotName.toString()));
-            }
-
-            AnnotationInstance responseStatusInstance = method.annotation(RESPONSE_STATUS);
-            if ((method.returnType().kind() == Type.Kind.VOID) && (responseStatusInstance == null)) {
-                throw new IllegalStateException(
-                        "void methods annotated with @ExceptionHandler must also be annotated with @ResponseStatus");
             }
 
             // we need to generate one JAX-RS ExceptionMapper per Exception type

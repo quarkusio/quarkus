@@ -22,4 +22,10 @@ public @interface TestHTTPResource {
      * @return The path part of the URL
      */
     String value() default "";
+
+    /**
+     *
+     * @return If the URL should use the HTTPS protocol and SSL port
+     */
+    boolean ssl() default false;
 }

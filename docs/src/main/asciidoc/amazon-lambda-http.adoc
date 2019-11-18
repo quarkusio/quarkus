@@ -12,7 +12,7 @@ The `quarkus-amazon-lambda-http` extension allows you to write microservices wit
 Undertow (servlet), or Vert.x Web and make these microservices deployable as an Amazon Lambda
 using https://aws.amazon.com/api-gateway/[Amazon's API Gateway] and https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html[Amazon's SAM framework].
 
-You can deploy your Lambda as a pure Java jar, or you can compile your project to a native image (GraalVM) and deploy that for a smaller
+You can deploy your Lambda as a pure Java jar, or you can compile your project to a native image and deploy that for a smaller
 memory footprint and startup time.
 
 == Prerequisites
@@ -58,8 +58,8 @@ mvn clean install
 ----
 
 This will compile the code and run the unit tests included within the generated project.
-Unit testing is all regular local Java and does not require running on Amazon.  Quarkus dev-mode is also
-usable.
+Unit testing is the same as any other Java project and does not require running on Amazon.  Quarkus dev-mode is also
+available with this extension.
 
 If you want to build for native too, make sure you have GraalVM installed correctly and just add a `native` property
 to the build
@@ -79,15 +79,15 @@ After you have built your maven project, execute this command
 sam local start-api --template sam.jvm.yaml
 ----
 
-This will start a docker container that mimic's Amazon's Lamba's deployment environment.  Once the environment
-is started, you can invoke the example lambda in your browser by going to
+This will start a docker container that mimics Amazon's Lambda's deployment environment.  Once the environment
+is started you can invoke the example lambda in your browser by going to
 
 http://127.0.0.1:3000/hello
 
-In the console you'll see startup messages of the example lambda.  This particular deployment starts a JVM and loads your
+In the console you'll see startup messages from the lambda.  This particular deployment starts a JVM and loads your
 lambda as pure Java.
 
-If you want to deploy a native GraalVM executable of your lambda, use a different yaml template that is provided in your
+If you want to deploy a native executable of your lambda, use a different yaml template that is provided in your
 generated project:
 
 [source, subs=attributes+]
@@ -232,15 +232,4 @@ you'll see this:
             DISABLE_SIGNAL_HANDLERS: true
 ----
 
-This environment variable resolves some incompatibilites between GraalVM and the Amazon Lambda Custom Runtime environment.
-
-
-
-
-
-
-
-
-
-
-
+This environment variable resolves some incompatibilities between Quarkus and the Amazon Lambda Custom Runtime environment.

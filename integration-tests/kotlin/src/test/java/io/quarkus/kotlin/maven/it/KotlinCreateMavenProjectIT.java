@@ -73,6 +73,10 @@ public class KotlinCreateMavenProjectIT extends MojoTestBase {
 
     private InvocationResult setup(Properties params)
             throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
+
+        params.setProperty("platformArtifactId", "quarkus-bom");
+        params.setProperty("platformVersion", MojoUtils.getPluginVersion());
+
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(

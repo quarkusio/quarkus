@@ -1,12 +1,16 @@
 package io.quarkus.resteasy.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.resteasy.deployment.SecurityTransformerUtils.hasSecurityAnnotation;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -21,6 +25,7 @@ import io.quarkus.resteasy.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
 import io.quarkus.resteasy.runtime.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
+import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
 import io.quarkus.undertow.deployment.StaticResourceFilesBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
@@ -36,10 +41,19 @@ public class ResteasyBuiltinsProcessor {
     void setUpDenyAllJaxRs(CombinedIndexBuildItem index,
             JaxRsSecurityConfig config,
             ResteasyDeploymentBuildItem resteasyDeployment,
-            BuildProducer<AnnotationsTransformerBuildItem> transformers) {
+            BuildProducer<AdditionalSecuredClassesBuildIem> additionalSecuredClasses) {
         if (config.denyJaxRs) {
-            DenyJaxRsTransformer transformer = new DenyJaxRsTransformer(resteasyDeployment.getDeployment());
-            transformers.produce(new AnnotationsTransformerBuildItem(transformer));
+            Set<ClassInfo> classes = new HashSet<>();
+
+            List<String> resourceClasses = resteasyDeployment.getDeployment().getScannedResourceClasses();
+            for (String className : resourceClasses) {
+                ClassInfo classInfo = index.getIndex().getClassByName(DotName.createSimple(className));
+                if (!hasSecurityAnnotation(classInfo)) {
+                    classes.add(classInfo);
+                }
+            }
+
+            additionalSecuredClasses.produce(new AdditionalSecuredClassesBuildIem(classes));
         }
     }
 

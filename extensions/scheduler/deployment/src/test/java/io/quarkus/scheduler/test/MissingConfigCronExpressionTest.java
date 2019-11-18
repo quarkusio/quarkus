@@ -1,5 +1,7 @@
 package io.quarkus.scheduler.test;
 
+import java.util.NoSuchElementException;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -12,12 +14,12 @@ public class MissingConfigCronExpressionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(IllegalStateException.class)
+            .setExpectedException(NoSuchElementException.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MissingConfigCronExpressionTest.InvalidBean.class));
 
     @Test
-    public void test() throws InterruptedException {
+    public void test() {
     }
 
     static class InvalidBean {

@@ -87,7 +87,7 @@ final class SummaryTableDocFormatter implements DocFormatter {
 
     @Override
     public void format(Writer writer, ConfigDocSection configDocSection) throws IOException {
-        String anchor = anchorPrefix + getAnchor(configDocSection.getSectionDetailsTitle());
+        String anchor = anchorPrefix + getAnchor(configDocSection.getName());
         final String sectionRow = String.format(TABLE_SECTION_ROW_FORMAT, anchor, anchor,
                 configDocSection.getSectionDetailsTitle());
         writer.append(sectionRow);

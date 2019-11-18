@@ -2,6 +2,7 @@ package io.quarkus.it.spring.data.jpa;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.persistence.NoResultException;
 import javax.ws.rs.GET;
@@ -34,6 +35,14 @@ public class CountryResource {
     public String page(@PathParam("size") int pageSize, @PathParam("num") int pageNum) {
         Page<Country> page = countryRepository.findAll(PageRequest.of(pageNum, pageSize));
         return page.hasPrevious() + " - " + page.hasNext() + " / " + page.getNumberOfElements();
+    }
+
+    @GET
+    @Path("/page-sorted/{size}/{num}")
+    @Produces("text/plain")
+    public String pageSorted(@PathParam("size") int pageSize, @PathParam("num") int pageNum) {
+        Page<Country> page = countryRepository.findAll(PageRequest.of(pageNum, pageSize, Sort.by(Sort.Direction.DESC, "id")));
+        return page.stream().map(Country::getId).map(Object::toString).collect(Collectors.joining(","));
     }
 
     @GET

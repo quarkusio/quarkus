@@ -34,7 +34,8 @@ public class ClassTransformingBuildStep {
 
     private static final Logger log = Logger.getLogger(ClassTransformingBuildStep.class);
 
-    @BuildStep
+    //we specify loadsApplicationClasses=true in case the transformation process attempts to load app classes
+    @BuildStep(loadsApplicationClasses = true)
     TransformedClassesBuildItem handleClassTransformation(List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems,
             ApplicationArchivesBuildItem appArchives) throws ExecutionException, InterruptedException {
         if (bytecodeTransformerBuildItems.isEmpty()) {

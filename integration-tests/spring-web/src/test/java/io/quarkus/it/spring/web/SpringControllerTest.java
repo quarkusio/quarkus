@@ -70,6 +70,14 @@ public class SpringControllerTest {
     }
 
     @Test
+    public void testExceptionHandlerWithoutResponseStatusOnExceptionOrMethod() {
+        RestAssured.when().get("/exception/unannotated").then()
+                .contentType("text/plain")
+                .body(isEmptyString())
+                .statusCode(204);
+    }
+
+    @Test
     public void testExceptionHandlerResponseEntityType() {
         RestAssured.when().get("/exception/responseEntity").then()
                 .contentType("application/json")
@@ -89,5 +97,13 @@ public class SpringControllerTest {
     public void testRestControllerWithoutRequestMapping() {
         RestAssured.when().get("/hello").then()
                 .body(containsString("hello"));
+    }
+
+    @Test
+    public void testResponseEntityWithIllegalArgumentException() {
+        RestAssured.when().get("/exception/re").then()
+                .contentType("application/json")
+                .body(containsString("hello from error"))
+                .statusCode(402);
     }
 }

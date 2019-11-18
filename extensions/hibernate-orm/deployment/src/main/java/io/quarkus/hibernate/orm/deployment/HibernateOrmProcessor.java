@@ -107,6 +107,16 @@ public final class HibernateOrmProcessor {
      */
     HibernateOrmConfig hibernateConfig;
 
+    // We do our own enhancement during the compilation phase, so disable any
+    // automatic entity enhancement by Hibernate ORM
+    // This has to happen before Hibernate ORM classes are initialized: see
+    // org.hibernate.cfg.Environment#BYTECODE_PROVIDER_INSTANCE
+    @BuildStep
+    public SystemPropertyBuildItem enforceDisableRuntimeEnhancer() {
+        return new SystemPropertyBuildItem(AvailableSettings.BYTECODE_PROVIDER,
+                org.hibernate.cfg.Environment.BYTECODE_PROVIDER_NAME_NONE);
+    }
+
     @BuildStep
     List<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles(LaunchModeBuildItem launchMode) {
         List<HotDeploymentWatchedFileBuildItem> watchedFiles = new ArrayList<>();
@@ -170,12 +180,13 @@ public final class HibernateOrmProcessor {
         // remember how to run the enhancers later
         domainObjectsProducer.produce(domainObjects);
 
-        if (!hasEntities(domainObjects, nonJpaModelBuildItems)) {
+        final boolean enableORM = hasEntities(domainObjects, nonJpaModelBuildItems);
+        recorder.callHibernateFeatureInit(enableORM);
+
+        if (!enableORM) {
             // we can bail out early
             return;
         }
-
-        recorder.callHibernateFeatureInit();
 
         // handle the implicit persistence unit
         List<ParsedPersistenceXmlDescriptor> allDescriptors = new ArrayList<>(explicitDescriptors.size() + 1);

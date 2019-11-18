@@ -43,11 +43,7 @@ public class QuarkusNative extends QuarkusTask {
 
     private boolean enableAllSecurityServices;
 
-    private boolean enableRetainedHeapReporting;
-
     private boolean enableIsolates;
-
-    private boolean enableCodeSizeReporting;
 
     private String graalvmHome = System.getenv("GRAALVM_HOME");
 
@@ -188,17 +184,6 @@ public class QuarkusNative extends QuarkusTask {
 
     @Optional
     @Input
-    public boolean isEnableRetainedHeapReporting() {
-        return enableRetainedHeapReporting;
-    }
-
-    @Option(description = "Specify if retained heap reporting should be enabled", option = "enable-retained-heap-reporting")
-    public void setEnableRetainedHeapReporting(boolean enableRetainedHeapReporting) {
-        this.enableRetainedHeapReporting = enableRetainedHeapReporting;
-    }
-
-    @Optional
-    @Input
     public boolean isEnableIsolates() {
         return enableIsolates;
     }
@@ -206,17 +191,6 @@ public class QuarkusNative extends QuarkusTask {
     @Option(description = "Report errors at runtime", option = "enable-isolates")
     public void setEnableIsolates(boolean enableIsolates) {
         this.enableIsolates = enableIsolates;
-    }
-
-    @Optional
-    @Input
-    public boolean isEnableCodeSizeReporting() {
-        return enableCodeSizeReporting;
-    }
-
-    @Option(description = "Report errors at runtime", option = "enable-code-size-reporting")
-    public void setEnableCodeSizeReporting(boolean enableCodeSizeReporting) {
-        this.enableCodeSizeReporting = enableCodeSizeReporting;
     }
 
     @Optional
@@ -462,14 +436,12 @@ public class QuarkusNative extends QuarkusTask {
                 }
                 configs.add("quarkus.native.dump-proxies", dumpProxies);
                 configs.add("quarkus.native.enable-all-security-services", enableAllSecurityServices);
-                configs.add("quarkus.native.enable-code-size-reporting", enableCodeSizeReporting);
                 configs.add("quarkus.native.enable-fallback-images", enableFallbackImages);
                 configs.add("quarkus.native.enable-https-url-handler", enableHttpsUrlHandler);
 
                 configs.add("quarkus.native.enable-http-url-handler", enableHttpUrlHandler);
                 configs.add("quarkus.native.enable-isolates", enableIsolates);
                 configs.add("quarkus.native.enable-jni", enableJni);
-                configs.add("quarkus.native.enable-retained-heap-reporting", enableRetainedHeapReporting);
 
                 configs.add("quarkus.native.enable-server", enableServer);
 

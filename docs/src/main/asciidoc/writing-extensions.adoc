@@ -1768,7 +1768,7 @@ An example of parsing a XML config file using JAXB is shown in the `TestProcesso
         Unmarshaller unmarshaller = context.createUnmarshaller();
         InputStream is = getClass().getResourceAsStream("/config.xml"); <1>
         if (is != null) {
-            log.infof("Have XmlConfig, loading");
+            log.info("Have XmlConfig, loading");
             XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is); <2>
 ...
         }
@@ -1854,7 +1854,7 @@ You can use the `io.quarkus.arc.runtime.BeanContainer` interface to interact wit
     public void configureBeans(BeanContainer beanContainer, Class<IConfigConsumer> beanClass,
             TestBuildAndRunTimeConfig buildTimeConfig,
             TestRunTimeConfig runTimeConfig) {
-        log.infof("Begin BeanContainerListener callback\n");
+        log.info("Begin BeanContainerListener callback\n");
         IConfigConsumer instance = beanContainer.instance(beanClass); <4>
         instance.loadConfig(buildTimeConfig, runTimeConfig); <5>
         log.infof("configureBeans, instance=%s\n", instance);
@@ -1881,9 +1881,9 @@ A common purpose for an extension is to integrate a non-CDI aware service into t
         Unmarshaller unmarshaller = context.createUnmarshaller();
         InputStream is = getClass().getResourceAsStream("/config.xml");
         if (is != null) {
-            log.infof("Have XmlConfig, loading");
+            log.info("Have XmlConfig, loading");
             XmlConfig config = (XmlConfig) unmarshaller.unmarshal(is);
-            log.infof("Loaded XmlConfig, creating service");
+            log.info("Loaded XmlConfig, creating service");
             RuntimeValue<RuntimeXmlConfigService> service = recorder.initRuntimeService(config); //<1>
             serviceBuildItem = new RuntimeServiceBuildItem(service); //<3>
         }
@@ -2025,15 +2025,102 @@ public final class MyExtProcessor {
         resource.produce(new NativeImageResourceBuildItem("/security/runtime.keys")); //<1>
 
         resource.produce(new NativeImageResourceBuildItem(
-                "META-INF/services/" + io.quarkus.SomeService.class.getName())); //<2>
+                "META-INF/my-descriptor.xml")); //<2>
 
         resourceBundle.produce(new NativeImageResourceBuildItem("javax.xml.bind.Messages")); //<3>
     }
 }
 ----
 <1> Indicate that the /security/runtime.keys classpath resource should be copied into native image.
-<2> Indicate that the `io.quarkus.SomeService` ServiceLoader resource should be copied into native image.
+<2> Indicate that the `META-INF/my-descriptor.xml` resource should be copied into native image
 <3> Indicate that the "javax.xml.bind.Messages" resource bundle should be copied into native image.
+
+==== Service files
+
+If you are using `META-INF/services` files you need to register the files as resources so that your native image can find them,
+but you also need to register each listed class for reflection so they can be instantiated or inspected at run-time:
+
+[source,java]
+----
+public final class MyExtProcessor {
+
+    @BuildStep
+    void registerNativeImageReources(BuildProducer<NativeImageResourceBuildItem> resource,
+                                     BuildProducer<ReflectiveClassBuildItem> reflectionClasses) {
+        String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
+        
+        // register the service file so it is visible in native-image
+        resource.produce(new NativeImageResourceBuildItem(service));
+        
+        // register every listed implementation class so they can be inspected/instantiated 
+        // in native-image at run-time
+        Set<String> implementations = 
+            ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
+                                          service);
+        reflectionClasses.produce(
+            new ReflectiveClassBuildItem(true, true, implementations.toArray(new String[0])));
+    }
+}
+----
+
+This is the easiest way to get your services running natively, but it's less efficient than scanning the implementation
+classes at build time and generating code that registers them at static-init time instead of relying on reflection.
+
+You can achieve that by adapting the previous build step to use a static-init recorder instead of registering 
+classes for reflection:
+
+[source,java]
+----
+public final class MyExtProcessor {
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void registerNativeImageReources(RecorderContext recorderContext, 
+                                     SomeServiceRecorder recorder) {
+        String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
+        
+        // read the implementation classes
+        Collection<Class<? extends io.quarkus.SomeService>> implementationClasses = new LinkedHashSet<>();
+        Set<String> implementations = ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
+                                                                    service);
+        for(String implementation : implementations) {
+            implementationClasses.add((Class<? extends io.quarkus.SomeService>) 
+                recorderContext.classProxy(implementation));
+        }
+        
+        // produce a static-initializer with those classes
+        recorder.configure(implementationClasses);
+    }
+}
+
+@Recorder
+public class SomeServiceRecorder {
+
+    public void configure(List<Class<? extends io.quarkus.SomeService>> implementations) {
+        // configure our service statically
+        SomeServiceProvider serviceProvider = SomeServiceProvider.instance();
+        SomeServiceBuilder builder = serviceProvider.getSomeServiceBuilder();
+
+        List<io.quarkus.SomeService> services = new ArrayList<>(implementations.size());
+        // instantiate the service implementations
+        for (Class<? extends io.quarkus.SomeService> implementationClass : implementations) {
+            try {
+                services.add(implementationClass.getConstructor().newInstance());
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Unable to instantiate service " + implementationClass, e);
+            }
+        }
+
+        // build our service
+        builder.withSomeServices(implementations.toArray(new io.quarkus.SomeService[0]));
+        ServiceManager serviceManager = builder.build();
+
+        // register it
+        serviceProvider.registerServiceManager(serviceManager, Thread.currentThread().getContextClassLoader());
+    }
+}
+----
+
 
 ==== Object Substitution
 Objects created during the build phase that are passed into the runtime need to have a default constructor in order for them to be created and configured at startup of the runtime from the build time state. If an object does not have a default constructor you will see an error similar to the following during generation of the augmented artifacts:
@@ -2052,7 +2139,7 @@ Objects created during the build phase that are passed into the runtime need to 
 There is a `io.quarkus.runtime.ObjectSubstitution` interface that can be implemented to tell Quarkus how to handle such classes. An example implementation for the `DSAPublicKey` is shown here:
 
 .DSAPublicKeyObjectSubstitution Example
-[source,bash]
+[source,java]
 ----
 package io.quarkus.extest.runtime.subst;
 
@@ -2112,7 +2199,7 @@ An extension registers this substitution by producing an `ObjectSubstitutionBuil
         ObjectSubstitutionBuildItem keysub = new ObjectSubstitutionBuildItem(holder);
         substitutions.produce(keysub);
 
-        log.infof("loadDSAPublicKey run");
+        log.info("loadDSAPublicKey run");
         return new PublicKeyBuildItem(publicKey);
     }
 ----

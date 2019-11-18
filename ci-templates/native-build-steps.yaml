@@ -36,7 +36,7 @@ jobs:
       - script: docker run --rm --publish 8000:8000 --name build-dynamodb -d amazon/dynamodb-local:1.11.477
         displayName: 'start dynamodb'
     - ${{ if eq(parameters.keycloak, 'true') }}:
-        - script: docker run --rm --publish 8180:8080 --name build-keycloak  -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -e JAVA_OPTS="-server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -Dkeycloak.profile.feature.upload_scripts=enabled" -d quay.io/keycloak/keycloak
+        - script: docker run --rm --publish 8180:8080 --name build-keycloak  -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -e JAVA_OPTS="-server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -Dkeycloak.profile.feature.upload_scripts=enabled" -d quay.io/keycloak/keycloak:7.0.1
           displayName: 'start keycloak'
     - ${{ if eq(parameters.mysql, 'true') }}:
       - bash: |
@@ -49,4 +49,4 @@ jobs:
       inputs:
         goals: 'install'
         mavenOptions: $(MAVEN_OPTS)
-        options: '-pl integration-tests/${{ join('',integration-tests/'', parameters.modules) }} -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dnative-image.xmx=6g -Dnative -Dno-format'
+        options: '-pl integration-tests/${{ join('',integration-tests/'', parameters.modules) }} -B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dnative-image.xmx=6g -Dnative -Dno-format'

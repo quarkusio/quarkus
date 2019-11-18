@@ -2,7 +2,6 @@ package io.quarkus.dynamodb.runtime;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -43,21 +42,4 @@ public class SdkConfig {
      */
     @ConfigItem
     public Optional<Duration> apiCallAttemptTimeout;
-
-    /**
-     * List of execution interceptors that will have access to read and modify the request and response objects as they are
-     * processed by the AWS SDK.
-     * <p>
-     * The list should consists of class names which implements
-     * {@code software.amazon.awssdk.core.interceptor.ExecutionInterceptor} interface.
-     *
-     * @see software.amazon.awssdk.core.interceptor.ExecutionInterceptor
-     */
-    @ConfigItem
-    public List<Class<?>> interceptors;
-
-    public boolean isClientOverrideConfig() {
-        return apiCallTimeout.isPresent() || apiCallAttemptTimeout.isPresent()
-                || (interceptors != null && !interceptors.isEmpty());
-    }
 }

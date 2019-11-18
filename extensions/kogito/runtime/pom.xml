@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-kogito</artifactId>
     <name>Quarkus - Kogito - Runtime</name>
-    <description>Add business automation capabilities with Kogito</description>
+    <description>Add business automation capabilities - processes and rules with Kogito (a toolkit that originates from projects Drools and jBPM)</description>
     <dependencies>
 
         <!-- quarkus -->

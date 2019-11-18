@@ -4,6 +4,7 @@ metadata:
   keywords:
   - "oauth2"
   - "openid-connect"
+  - "oidc"
   guide: "https://quarkus.io/guides/security-openid-connect"
   categories:
   - "security"

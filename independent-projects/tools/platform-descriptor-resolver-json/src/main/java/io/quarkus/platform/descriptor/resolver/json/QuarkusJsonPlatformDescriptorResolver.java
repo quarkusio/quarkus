@@ -46,7 +46,7 @@ import io.quarkus.platform.tools.ToolsUtils;
  */
 public class QuarkusJsonPlatformDescriptorResolver {
 
-    private static final String DEFAULT_QUARKUS_PLATFORM_VERSION_RANGE = "[0.28.1,2)";
+    private static final String DEFAULT_QUARKUS_PLATFORM_VERSION_RANGE = "[1.0.0.CR2,2)";
     private static final String DEFAULT_NON_QUARKUS_VERSION_RANGE = "[0,)";
     public static final String PROP_PLATFORM_JSON_GROUP_ID = "quarkus.platform.json.groupId";
     public static final String PROP_PLATFORM_JSON_ARTIFACT_ID = "quarkus.platform.json.artifactId";

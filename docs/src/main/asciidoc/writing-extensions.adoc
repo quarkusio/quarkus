@@ -485,11 +485,11 @@ will only run _after_ every step which can produce them has run.
 .Example of a multiple build item
 [source%nowrap,java]
 ----
-public final class ServiceProviderBuildItem extends MultiBuildItem {
+public final class ServiceWriterBuildItem extends MultiBuildItem {
     private final String serviceName;
     private final List<String> implementations;
 
-    public ServiceProviderBuildItem(String serviceName, String... implementations) {
+    public ServiceWriterBuildItem(String serviceName, String... implementations) {
         this.serviceName = serviceName;
         // Make sure it's immutable
         this.implementations = Collections.unmodifiableList(
@@ -517,8 +517,8 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
  * providers of one configuration-related service.
  */
 @BuildStep
-public ServiceProviderBuildItem registerOneService() {
-    return new ServiceProviderBuildItem(
+public ServiceWriterBuildItem registerOneService() {
+    return new ServiceWriterBuildItem(
         Converter.class.getName(),
         MyFirstConfigConverterImpl.class.getName(),
         MySecondConfigConverterImpl.class.getName()
@@ -531,14 +531,14 @@ public ServiceProviderBuildItem registerOneService() {
  */
 @BuildStep
 public void registerSeveralSerivces(
-    BuildProducer<ServiceProviderBuildItem> providerProducer
+    BuildProducer<ServiceWriterBuildItem> providerProducer
 ) {
-    providerProducer.produce(new ServiceProviderBuildItem(
+    providerProducer.produce(new ServiceWriterBuildItem(
         Converter.class.getName(),
         MyThirdConfigConverterImpl.class.getName(),
         MyFourthConfigConverterImpl.class.getName()
     ));
-    providerProducer.produce(new ServiceProviderBuildItem(
+    providerProducer.produce(new ServiceWriterBuildItem(
         ConfigSource.class.getName(),
         MyConfigSourceImpl.class.getName()
     ));
@@ -550,13 +550,13 @@ public void registerSeveralSerivces(
  */
 @BuildStep
 public void produceServiceFiles(
-    List<ServiceProviderBuildItem> items,
+    List<ServiceWriterBuildItem> items,
     BuildProducer<GeneratedResourceBuildItem> resourceProducer
 ) throws IOException {
     // Aggregate all of the providers
 
     Map<String, Set<String>> map = new HashMap<>();
-    for (ServiceProviderBuildItem item : items) {
+    for (ServiceWriterBuildItem item : items) {
         String serviceName = item.getName();
         for (String implName : item.getImplementations()) {
             map.computeIfAbsent(

@@ -109,11 +109,24 @@ public class NativeImageLauncher implements Closeable {
                             return file.getAbsolutePath();
                         }
                     }
+                } else if (url.getProtocol().equals("file") && url.getPath().contains("/target/surefire/")) {
+                    //this will make mvn failsafe:integration-test work
+                    String path = url.getPath();
+                    int index = path.lastIndexOf("/target/");
+                    File targetDir = new File(path.substring(0, index) + "/target/");
+                    for (File file : targetDir.listFiles()) {
+                        if (file.getName().endsWith("-runner")) {
+                            logGuessedPath(file.getAbsolutePath());
+                            return file.getAbsolutePath();
+                        }
+                    }
+
                 }
             }
         }
 
-        throw new RuntimeException("Unable to find native image, make sure native.image.path is set");
+        throw new RuntimeException(
+                "Unable to automatically find native image, please set the native.image.path to the native executable you wish to test");
     }
 
     private static void logGuessedPath(String guessedPath) {
@@ -133,6 +146,9 @@ public class NativeImageLauncher implements Closeable {
         long bailout = System.currentTimeMillis() + imageWaitTime * 1000;
 
         while (System.currentTimeMillis() < bailout) {
+            if (!quarkusProcess.isAlive()) {
+                throw new RuntimeException("Failed to start native image, process has exited");
+            }
             try {
                 Thread.sleep(100);
                 for (NativeImageStartedNotifier i : startedNotifiers) {

@@ -16,7 +16,7 @@ Embraces [12 factor architecture](https://12factor.net) in environments like Kub
 * **Unify imperative and reactive**:
 Brings under one programming model non blocking and imperative styles of development.
 * **Standards-based**:
-Based on the standards and frameworks you love and use (RESTEasy, Hibernate, Netty, Eclipse Vert.x, Apache Camel...)
+Based on the standards and frameworks you love and use (RESTEasy and JAX-RS, Hibernate ORM and JPA, Netty, Eclipse Vert.x, Eclipse MicroProfile, Apache Camel...)
 * **Microservice First**:
 Brings lightning fast startup time and code turn around to Java apps
 * **Developer Joy**:

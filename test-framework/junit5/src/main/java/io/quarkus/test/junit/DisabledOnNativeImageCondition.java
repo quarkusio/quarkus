@@ -8,11 +8,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
-import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.platform.commons.util.StringUtils;
-
-import io.quarkus.test.junit.QuarkusTestExtension.ExtensionState;
 
 public class DisabledOnNativeImageCondition implements ExecutionCondition {
 
@@ -28,16 +24,15 @@ public class DisabledOnNativeImageCondition implements ExecutionCondition {
         Optional<AnnotatedElement> element = context.getElement();
         Optional<DisabledOnNativeImage> disabled = findAnnotation(element, DisabledOnNativeImage.class);
         if (disabled.isPresent()) {
-            Store store = context.getStore(Namespace.GLOBAL);
-            ExtensionState state = (ExtensionState) store.get(ExtensionState.class.getName());
-            if (state != null && state.isNativeImage()) {
+            // Cannot use ExtensionState here because this condition needs to be evaluated before QuarkusTestExtension
+            boolean nativeImage = findAnnotation(context.getTestClass(), NativeImageTest.class).isPresent();
+            if (nativeImage) {
                 String reason = disabled.map(DisabledOnNativeImage::value)
                         .filter(StringUtils::isNotBlank)
                         .orElseGet(() -> element.get() + " is @DisabledOnNativeImage");
                 return ConditionEvaluationResult.disabled(reason);
             }
         }
-
         return ENABLED;
     }
 

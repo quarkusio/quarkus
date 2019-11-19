@@ -434,6 +434,15 @@ quarkus.http.port=9090
 
 And then set the `QUARKUS_PROFILE` environment variable to `staging` to activate my profile.
 
+=== Clearing properties
+
+Run time properties which are optional, and which have had values set at build time or which have a default value,
+may be explicitly cleared by assigning an empty string to the property.  Note that this will _only_ affect
+run time properties, and will _only_ work with properties whose values are not required.
+
+The property may be cleared by setting the corresponding `application.properties` property, setting the
+corresponding system property, or setting the corresponding environment variable.
+
 ==== Miscellaneous
 The default Quarkus application runtime profile is set to the profile used to build the application.
 For example:

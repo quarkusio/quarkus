@@ -23,7 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *
  */
 @Target(ElementType.TYPE)
-@ExtendWith({ QuarkusTestExtension.class, DisabledOnNativeImageCondition.class })
+@ExtendWith({ DisabledOnNativeImageCondition.class, QuarkusTestExtension.class })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NativeImageTest {
 }

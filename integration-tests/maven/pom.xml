@@ -52,7 +52,7 @@
                     <settingsFile>src/it/settings.xml</settingsFile>
                     <postBuildHookScript>verify</postBuildHookScript>
                     <addTestClassPath>true</addTestClassPath>
-                    <skipInvocation>${maven.test.skip}</skipInvocation>
+                    <skipInvocation>${skipTests}</skipInvocation>
                     <streamLogs>true</streamLogs>
                     <invokerPropertiesFile>invoker.properties</invokerPropertiesFile>
                 </configuration>

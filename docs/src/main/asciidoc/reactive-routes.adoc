@@ -52,30 +52,26 @@ import io.vertx.ext.web.RoutingContext;
 
 import javax.enterprise.context.ApplicationScoped;
 
-@ApplicationScoped
+@ApplicationScoped <1>
 public class MyDeclarativeRoutes {
 
 
-    @Route(path = "/", methods = HttpMethod.GET)
-    public void handle(RoutingContext rc) {
+    @Route(path = "/", methods = HttpMethod.GET) <2>
+    public void handle(RoutingContext rc) { <3>
         rc.response().end("hello");
     }
 
     @Route(path = "/hello", methods = HttpMethod.GET)
-    public void greetings(RoutingContext rc) {
-        String name = rc.request().getParam("name");
-        if (name == null) {
-            name = "world";
-        }
-        rc.response().end("hello " + name);
+    public void greetings(RoutingExchange ex) { <4>
+        ex.ok("hello " + ex.getParam("name").orElse("world"));
     }
 }
 ----
 
-The `@Route` annotation indicates that the method is a reactive route.
-Again, by default, the code contained in the method must not block.
-The method gets a https://vertx.io/docs/apidocs/io/vertx/ext/web/RoutingContext.html[`RoutingContext`] as a parameter.
-From the `RoutingContext` you can retrieve the HTTP request (using `request()`) and write the response using `response().end(...)`.
+<1> If there is a reactive route found on a class with no scope annotation then `@javax.inject.Singleton` is added automatically.
+<2> The `@Route` annotation indicates that the method is a reactive route. Again, by default, the code contained in the method must not block.
+<3> The method gets a https://vertx.io/docs/apidocs/io/vertx/ext/web/RoutingContext.html[`RoutingContext`] as a parameter. From the `RoutingContext` you can retrieve the HTTP request (using `request()`) and write the response using `response().end(...)`.
+<4> `RoutingExchange` is a convenient wrapper of `RoutingContext` which provides some useful methods.
 
 More details about using the `RoutingContext` is available in the https://vertx.io/docs/vertx-web/java/[Vert.x Web documentation].
 
@@ -104,10 +100,8 @@ You can also declare several routes for a single method using `@Routes`:
 
 [source,java]
 ----
-@Route.Routes({
-    @Route(path = "/first"),
-    @Route(path = "/second")
-})
+@Route(path = "/first")
+@Route(path = "/second")
 public void route(RoutingContext rc) {
     // ...
 }
@@ -166,8 +160,8 @@ public class MyFilter {
 
 The registration is done using `Filters.register`.
 The first parameter is the handler receiving the `RoutingContext`.
-The handler is likely required to call the `next()` method to continue to chain.
-The second parameter is the priority used to sort the filters Highest priority are called first.
+The handler is likely required to call the `next()` method to continue the chain.
+The second parameter is the priority used to sort the filters - filters with higher priority are called first.
 
 == Conclusion
 

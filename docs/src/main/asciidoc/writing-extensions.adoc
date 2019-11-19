@@ -2062,6 +2062,11 @@ public final class MyExtProcessor {
 }
 ----
 
+WARNING: `ServiceProviderBuildItem` takes a list of service implementation classes as parameters: if
+you are not reading them from the service file, make sure that they correspond to the service file contents
+because the service file will still be read and used at run-time. This is not a substitute for writing a service
+file.
+
 NOTE: This only registers the implementation classes for instantiation via reflection (you will not be able
 to inspect its fields and methods). If you need to do that, you can do it this way:
 

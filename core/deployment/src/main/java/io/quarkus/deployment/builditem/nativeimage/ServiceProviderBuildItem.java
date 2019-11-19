@@ -18,10 +18,26 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
     private final String serviceInterface;
     private final List<String> providers;
 
+    /**
+     * Registers the specified service interface descriptor to be embedded and allow reflection (instantiation only)
+     * of the specified provider classes. Note that the service interface descriptor file has to exist and match the
+     * list of specified provider class names.
+     *
+     * @param serviceInterfaceClassName the interface whose service interface descriptor file we want to embed
+     * @param providerClassNames the list of provider class names that must already be mentioned in the file
+     */
     public ServiceProviderBuildItem(String serviceInterfaceClassName, String... providerClassNames) {
         this(serviceInterfaceClassName, Arrays.asList(providerClassNames));
     }
 
+    /**
+     * Registers the specified service interface descriptor to be embedded and allow reflection (instantiation only)
+     * of the specified provider classes. Note that the service interface descriptor file has to exist and match the
+     * list of specified provider class names.
+     *
+     * @param serviceInterfaceClassName the interface whose service interface descriptor file we want to embed
+     * @param providers the list of provider class names that must already be mentioned in the file
+     */
     public ServiceProviderBuildItem(String serviceInterfaceClassName, List<String> providers) {
         this.serviceInterface = Objects.requireNonNull(serviceInterfaceClassName, "The service interface must not be `null`");
         this.providers = providers;

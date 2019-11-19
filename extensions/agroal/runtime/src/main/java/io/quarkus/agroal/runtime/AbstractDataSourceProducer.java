@@ -68,7 +68,8 @@ public abstract class AbstractDataSourceProducer {
 
     public AgroalDataSource createDataSource(String dataSourceName,
             DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
-            Optional<DataSourceRuntimeConfig> dataSourceRuntimeConfigOptional) {
+            Optional<DataSourceRuntimeConfig> dataSourceRuntimeConfigOptional,
+            boolean mpMetricsPresent) {
         if (!dataSourceRuntimeConfigOptional.isPresent() || !dataSourceRuntimeConfigOptional.get().url.isPresent()) {
             log.warn("Datasource " + dataSourceName + " not started: driver and/or url are not defined.");
             return null;
@@ -126,7 +127,12 @@ public abstract class AbstractDataSourceProducer {
         }
 
         // metrics
-        dataSourceConfiguration.metricsEnabled(dataSourceBuildTimeConfig.enableMetrics);
+        if (dataSourceBuildTimeConfig.enableMetrics.isPresent()) {
+            dataSourceConfiguration.metricsEnabled(dataSourceBuildTimeConfig.enableMetrics.get());
+        } else {
+            // if the enable-metrics property is unspecified, treat it as true if MP Metrics are being exposed
+            dataSourceConfiguration.metricsEnabled(buildTimeConfig.metricsEnabled && mpMetricsPresent);
+        }
 
         // Authentication
         if (dataSourceRuntimeConfig.username.isPresent()) {

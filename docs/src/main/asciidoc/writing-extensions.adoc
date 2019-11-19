@@ -485,11 +485,11 @@ will only run _after_ every step which can produce them has run.
 .Example of a multiple build item
 [source%nowrap,java]
 ----
-public final class ServiceProviderBuildItem extends MultiBuildItem {
+public final class ServiceWriterBuildItem extends MultiBuildItem {
     private final String serviceName;
     private final List<String> implementations;
 
-    public ServiceProviderBuildItem(String serviceName, String... implementations) {
+    public ServiceWriterBuildItem(String serviceName, String... implementations) {
         this.serviceName = serviceName;
         // Make sure it's immutable
         this.implementations = Collections.unmodifiableList(
@@ -517,8 +517,8 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
  * providers of one configuration-related service.
  */
 @BuildStep
-public ServiceProviderBuildItem registerOneService() {
-    return new ServiceProviderBuildItem(
+public ServiceWriterBuildItem registerOneService() {
+    return new ServiceWriterBuildItem(
         Converter.class.getName(),
         MyFirstConfigConverterImpl.class.getName(),
         MySecondConfigConverterImpl.class.getName()
@@ -531,14 +531,14 @@ public ServiceProviderBuildItem registerOneService() {
  */
 @BuildStep
 public void registerSeveralSerivces(
-    BuildProducer<ServiceProviderBuildItem> providerProducer
+    BuildProducer<ServiceWriterBuildItem> providerProducer
 ) {
-    providerProducer.produce(new ServiceProviderBuildItem(
+    providerProducer.produce(new ServiceWriterBuildItem(
         Converter.class.getName(),
         MyThirdConfigConverterImpl.class.getName(),
         MyFourthConfigConverterImpl.class.getName()
     ));
-    providerProducer.produce(new ServiceProviderBuildItem(
+    providerProducer.produce(new ServiceWriterBuildItem(
         ConfigSource.class.getName(),
         MyConfigSourceImpl.class.getName()
     ));
@@ -550,13 +550,13 @@ public void registerSeveralSerivces(
  */
 @BuildStep
 public void produceServiceFiles(
-    List<ServiceProviderBuildItem> items,
+    List<ServiceWriterBuildItem> items,
     BuildProducer<GeneratedResourceBuildItem> resourceProducer
 ) throws IOException {
     // Aggregate all of the providers
 
     Map<String, Set<String>> map = new HashMap<>();
-    for (ServiceProviderBuildItem item : items) {
+    for (ServiceWriterBuildItem item : items) {
         String serviceName = item.getName();
         for (String implName : item.getImplementations()) {
             map.computeIfAbsent(
@@ -2045,6 +2045,36 @@ but you also need to register each listed class for reflection so they can be in
 public final class MyExtProcessor {
 
     @BuildStep
+    void registerNativeImageReources(BuildProducer<ServiceProviderBuildItem> services) {
+        String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
+        
+        // find out all the implementation classes listed in the service files
+        Set<String> implementations = 
+            ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
+                                          service);
+
+        // register every listed implementation class so they can be instantiated 
+        // in native-image at run-time
+        services.produce(
+            new ServiceProviderBuildItem(io.quarkus.SomeService.class.getName(), 
+                                         implementations.toArray(new String[0])));
+    }
+}
+----
+
+WARNING: `ServiceProviderBuildItem` takes a list of service implementation classes as parameters: if
+you are not reading them from the service file, make sure that they correspond to the service file contents
+because the service file will still be read and used at run-time. This is not a substitute for writing a service
+file.
+
+NOTE: This only registers the implementation classes for instantiation via reflection (you will not be able
+to inspect its fields and methods). If you need to do that, you can do it this way:
+
+[source,java]
+----
+public final class MyExtProcessor {
+
+    @BuildStep
     void registerNativeImageReources(BuildProducer<NativeImageResourceBuildItem> resource,
                                      BuildProducer<ReflectiveClassBuildItem> reflectionClasses) {
         String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
@@ -2063,7 +2093,7 @@ public final class MyExtProcessor {
 }
 ----
 
-This is the easiest way to get your services running natively, but it's less efficient than scanning the implementation
+While this is the easiest way to get your services running natively, it's less efficient than scanning the implementation
 classes at build time and generating code that registers them at static-init time instead of relying on reflection.
 
 You can achieve that by adapting the previous build step to use a static-init recorder instead of registering 

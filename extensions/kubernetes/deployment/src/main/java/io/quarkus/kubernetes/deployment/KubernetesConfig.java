@@ -1,24 +1,22 @@
 
 package io.quarkus.kubernetes.deployment;
 
+import java.util.List;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot
 public class KubernetesConfig {
 
-    private static final String KUBERNETES = "kubernetes";
-    private static final String OPENSHIFT = "openshift";
-    private static final String KNATIVE = "knative";
-
     /**
      * The target deployment platform.
-     * Defaults to kubernetes. Can be kubernetes, openshift, knative or any combination of the above as coma separated list.
+     * Defaults to kubernetes. Can be kubernetes, openshift, knative or any combination of the above as comma separated list.
      */
-    @ConfigItem(defaultValue = KUBERNETES)
-    String deploymentTarget = KUBERNETES;
+    @ConfigItem(defaultValue = "kubernetes")
+    List<DeploymentTarget> deploymentTarget;
 
-    public String getDeploymentTarget() {
+    public List<DeploymentTarget> getDeploymentTarget() {
         return this.deploymentTarget;
     }
 }

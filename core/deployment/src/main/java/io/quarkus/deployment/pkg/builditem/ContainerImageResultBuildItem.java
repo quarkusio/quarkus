@@ -3,13 +3,13 @@ package io.quarkus.deployment.pkg.builditem;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
-public final class DockerImageResultBuildItem extends SimpleBuildItem {
+public final class ContainerImageResultBuildItem extends SimpleBuildItem {
 
     private final String imageId;
     private final String repository;
     private final String tag;
 
-    public DockerImageResultBuildItem(String imageId, String repository, String tag) {
+    public ContainerImageResultBuildItem(String imageId, String repository, String tag) {
         this.imageId = imageId;
         this.repository = repository;
         this.tag = tag;

@@ -473,6 +473,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-container-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-docker-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kubernetes-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>

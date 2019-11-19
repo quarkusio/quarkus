@@ -107,6 +107,7 @@ class KubernetesProcessor {
                 .stream(config.getOptionalValue(DEPLOYMENT_TARGET, String.class)
                         .orElse(KUBERNETES).split(","))
                 .map(String::trim)
+                .map(String::toLowerCase)
                 .collect(Collectors.toList());
 
         Map<String, Object> configAsMap = StreamSupport.stream(config.getPropertyNames().spliterator(), false)

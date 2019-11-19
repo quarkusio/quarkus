@@ -13,8 +13,8 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
+import io.quarkus.deployment.pkg.builditem.ContainerImageResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
-import io.quarkus.deployment.pkg.builditem.DockerImageResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.ExecUtil;
 

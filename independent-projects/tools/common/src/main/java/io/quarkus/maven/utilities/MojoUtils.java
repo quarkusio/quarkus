@@ -88,6 +88,14 @@ public class MojoUtils {
         return properties;
     }
 
+    public static Model getPomTemplate() {
+        try {
+            return getPlatformDescriptor().loadResource("templates/basic-rest/java/pom.xml-template.ftl", is -> {return readPom(is);});
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to load template for the project's pom.xml", e);
+        }
+    }
+
     private MojoUtils() {
         // Avoid direct instantiation
     }

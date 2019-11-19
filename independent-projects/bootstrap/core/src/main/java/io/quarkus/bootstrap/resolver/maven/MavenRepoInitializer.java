@@ -77,13 +77,13 @@ public class MavenRepoInitializer {
     private static final String BASEDIR = "basedir";
     private static final String MAVEN_CMD_LINE_ARGS = "MAVEN_CMD_LINE_ARGS";
     private static final String DOT_M2 = ".m2";
-    private static final String MAVEN_HOME = "maven.home";
-    private static final String M2_HOME = "M2_HOME";
+    private static final String MAVEN_DOT_HOME = "maven.home";
+    private static final String MAVEN_HOME = "MAVEN_HOME";
     private static final String SETTINGS_XML = "settings.xml";
 
     private static final String userHome = PropertyUtils.getUserHome();
     private static final File userMavenConfigurationHome = new File(userHome, DOT_M2);
-    private static final String envM2Home = System.getenv(M2_HOME);
+    private static final String envM2Home = System.getenv(MAVEN_HOME);
     private static final File USER_SETTINGS_FILE;
     private static final File GLOBAL_SETTINGS_FILE;
 
@@ -109,7 +109,7 @@ public class MavenRepoInitializer {
         File f = userSettings != null ? resolveUserSettings(userSettings) : new File(userMavenConfigurationHome, SETTINGS_XML);
         USER_SETTINGS_FILE = f != null && f.exists() ? f : null;
 
-        f = globalSettings != null ? resolveUserSettings(globalSettings) : new File(PropertyUtils.getProperty(MAVEN_HOME, envM2Home != null ? envM2Home : ""), "conf/settings.xml");
+        f = globalSettings != null ? resolveUserSettings(globalSettings) : new File(PropertyUtils.getProperty(MAVEN_DOT_HOME, envM2Home != null ? envM2Home : ""), "conf/settings.xml");
         GLOBAL_SETTINGS_FILE = f != null && f.exists() ? f : null;
     }
 

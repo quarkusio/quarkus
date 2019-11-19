@@ -459,6 +459,17 @@ quarkus.resteasy.gzip.max-input=10M // <2>
 <2> Configure the upper limit on deflated request body. This is useful to mitigate potential attacks by limiting their reach. The default value is `10M`.
 This configuration option would recognize strings in this format (shown as a regular expression): `[0-9]+[KkMmGgTtPpEeZzYy]?`. If no suffix is given, assume bytes.
 
+== Servlet compatibility
+
+In Quarkus, RESTEasy can either run directly on top of the Vert.x HTTP server, or on top of Undertow if you have any servlet dependency.
+
+As a result, certain classes, such as `HttpServletRequest` are not always available for injection. Most use-cases for this particular
+class are covered by JAX-RS equivalents, except for getting the remote client's IP. RESTEasy comes with a replacement API which you can inject:
+https://docs.jboss.org/resteasy/docs/4.4.1.Final/javadocs/org/jboss/resteasy/spi/HttpRequest.html[`HttpRequest`], which has the methods
+https://docs.jboss.org/resteasy/docs/4.4.1.Final/javadocs/org/jboss/resteasy/spi/HttpRequest.html#getRemoteAddress--[`getRemoteAddress()`]
+and https://docs.jboss.org/resteasy/docs/4.4.1.Final/javadocs/org/jboss/resteasy/spi/HttpRequest.html#getRemoteHost--[`getRemoteHost()`]
+to solve this problem.
+
 == What's Different from Jakarta EE Development
 
 === No Need for `Application` Class

@@ -126,7 +126,7 @@ public abstract class AbstractDataSourceProducer {
         }
 
         // metrics
-        dataSourceConfiguration.metricsEnabled(dataSourceRuntimeConfig.enableMetrics);
+        dataSourceConfiguration.metricsEnabled(dataSourceBuildTimeConfig.enableMetrics);
 
         // Authentication
         if (dataSourceRuntimeConfig.username.isPresent()) {

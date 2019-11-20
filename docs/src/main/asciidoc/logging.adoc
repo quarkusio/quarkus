@@ -40,7 +40,7 @@ The root logger category is handled separately, and is configured via the follow
 |quarkus.log.level|INFO|The default minimum log level for every log category.
 |===
 
-[id="format_string"]
+[id="format-string"]
 == Format String
 
 The logging format string supports the following symbols:
@@ -75,14 +75,14 @@ The logging format string supports the following symbols:
 |%x|Nested Diagnostics context values|Renders all the values from Nested Diagnostics Context in format {value1.value2}
 |===
 
-[id="alt_console_format"]
+[id="alt-console-format"]
 === Alternative Console Logging Formats
 
 It is possible to change the output format of the console log. This can be useful in environments where the output
 of the Quarkus application is captured by a service which can, for example, process and store the log information for
 later analysis.
 
-[id="json_logging"]
+[id="json-logging"]
 ==== JSON Logging
 
 In order to configure JSON logging, the `quarkus-logging-json` extension may be employed.  Add this extension to your

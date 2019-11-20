@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
+import javax.persistence.LockModeType;
 import javax.persistence.NoResultException;
 import javax.persistence.NonUniqueResultException;
 import javax.persistence.PersistenceException;
@@ -87,6 +88,10 @@ public class TestEndpoint {
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
 
+        persons = Person.find("name = ?1", "stef").withLock(LockModeType.PESSIMISTIC_READ).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
         persons = Person.list("name = ?1", "stef");
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
@@ -130,6 +135,10 @@ public class TestEndpoint {
         Assertions.assertEquals(person, Person.find("name", "stef").singleResult());
 
         Person byId = Person.findById(person.id);
+        Assertions.assertEquals(person, byId);
+        Assertions.assertEquals("Person<" + person.id + ">", byId.toString());
+
+        byId = Person.findById(person.id, LockModeType.PESSIMISTIC_READ);
         Assertions.assertEquals(person, byId);
         Assertions.assertEquals("Person<" + person.id + ">", byId.toString());
 
@@ -359,6 +368,10 @@ public class TestEndpoint {
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
 
+        persons = personDao.find("name = ?1", "stef").withLock(LockModeType.PESSIMISTIC_READ).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
         persons = personDao.list("name = ?1", "stef");
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
@@ -402,6 +415,9 @@ public class TestEndpoint {
         Assertions.assertEquals(person, personDao.find("name", "stef").singleResult());
 
         Person byId = personDao.findById(person.id);
+        Assertions.assertEquals(person, byId);
+
+        byId = personDao.findById(person.id, LockModeType.PESSIMISTIC_READ);
         Assertions.assertEquals(person, byId);
 
         personDao.delete(person);

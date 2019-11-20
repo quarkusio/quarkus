@@ -6,6 +6,7 @@ import java.util.Map.Entry;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
 import javax.persistence.PersistenceException;
 import javax.persistence.Query;
 import javax.transaction.SystemException;
@@ -194,6 +195,10 @@ public class JpaOperations {
 
     public static Object findById(Class<?> entityClass, Object id) {
         return getEntityManager().find(entityClass, id);
+    }
+
+    public static Object findById(Class<?> entityClass, Object id, LockModeType lockModeType) {
+        return getEntityManager().find(entityClass, id, lockModeType);
     }
 
     public static PanacheQuery<?> find(Class<?> entityClass, String query, Object... params) {

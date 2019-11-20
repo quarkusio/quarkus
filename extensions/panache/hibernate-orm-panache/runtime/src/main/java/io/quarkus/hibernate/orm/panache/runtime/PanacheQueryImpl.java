@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
 import javax.persistence.Query;
 
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
@@ -88,6 +89,12 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     public Page page() {
         return page;
+    }
+
+    @Override
+    public <T extends Entity> PanacheQuery<T> withLock(LockModeType lockModeType) {
+        jpaQuery.setLockMode(lockModeType);
+        return (PanacheQuery<T>) this;
     }
 
     // Results

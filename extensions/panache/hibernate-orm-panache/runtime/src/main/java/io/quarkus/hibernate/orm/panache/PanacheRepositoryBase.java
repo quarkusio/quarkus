@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import javax.persistence.LockModeType;
+
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
@@ -96,6 +98,18 @@ public interface PanacheRepositoryBase<Entity, Id> {
      */
     @GenerateBridge(targetReturnTypeErased = true)
     public default Entity findById(Id id) {
+        throw JpaOperations.implementationInjectionMissing();
+    }
+
+    /**
+     * Find an entity of this type by ID and lock it.
+     *
+     * @param id the ID of the entity to find.
+     * @param lockModeType the locking strategy to be used when retrieving the entity.
+     * @return the entity found, or <code>null</code> if not found.
+     */
+    @GenerateBridge(targetReturnTypeErased = true)
+    public default Entity findById(Id id, LockModeType lockModeType) {
         throw JpaOperations.implementationInjectionMissing();
     }
 

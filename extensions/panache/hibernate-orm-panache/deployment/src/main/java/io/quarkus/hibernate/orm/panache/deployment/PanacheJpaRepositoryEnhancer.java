@@ -70,6 +70,25 @@ public class PanacheJpaRepositoryEnhancer extends PanacheRepositoryEnhancer {
                 mv.visitInsn(Opcodes.ARETURN);
                 mv.visitMaxs(0, 0);
                 mv.visitEnd();
+
+                mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE,
+                        "findById",
+                        "(Ljava/lang/Object;Ljavax/persistence/LockModeType;)Ljava/lang/Object;",
+                        null,
+                        null);
+                mv.visitParameter("id", 0);
+                mv.visitParameter("lockModeType", 0);
+                mv.visitCode();
+                mv.visitIntInsn(Opcodes.ALOAD, 0);
+                mv.visitIntInsn(Opcodes.ALOAD, 1);
+                mv.visitIntInsn(Opcodes.ALOAD, 2);
+                mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
+                        daoBinaryName,
+                        "findById",
+                        "(Ljava/lang/Object;Ljavax/persistence/LockModeType;)" + entitySignature, false);
+                mv.visitInsn(Opcodes.ARETURN);
+                mv.visitMaxs(0, 0);
+                mv.visitEnd();
             }
             super.visitEnd();
         }

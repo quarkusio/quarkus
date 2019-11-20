@@ -8,6 +8,7 @@ import java.util.Random;
 
 import javax.json.bind.annotation.JsonbDateFormat;
 import javax.json.bind.annotation.JsonbProperty;
+import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -118,7 +119,8 @@ public class Person {
         @Column(name = "zip_code")
         private String zipCode;
 
-        @OneToMany
+        @JsonbTransient
+        @OneToMany(mappedBy = "address")
         private List<Person> people;
 
         public Long getId() {

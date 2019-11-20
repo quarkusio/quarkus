@@ -3,7 +3,7 @@ package io.quarkus.jdbc.mssql.deployment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.NativeEnableAllCharsetsBuildItem;
+import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 
 public class MsSQLProcessor {
@@ -15,9 +15,9 @@ public class MsSQLProcessor {
 
     @BuildStep
     void nativeResources(BuildProducer<NativeImageResourceBundleBuildItem> resources,
-            BuildProducer<NativeEnableAllCharsetsBuildItem> nativeEnableAllCharsets) {
+            BuildProducer<NativeImageEnableAllCharsetsBuildItem> nativeEnableAllCharsets) {
         resources.produce(new NativeImageResourceBundleBuildItem("com.microsoft.sqlserver.jdbc.SQLServerResource"));
-        nativeEnableAllCharsets.produce(new NativeEnableAllCharsetsBuildItem());
+        nativeEnableAllCharsets.produce(new NativeImageEnableAllCharsetsBuildItem());
     }
 
 }

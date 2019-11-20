@@ -34,7 +34,7 @@ public class SolverFactoryInjectTest {
 
     @Test
     public void testRuleEvaluation() {
-        Solver solver = solverFactory.buildSolver();
+        Solver<TestdataPlanningSolution> solver = solverFactory.buildSolver();
         assertNotNull(solver);
     }
 

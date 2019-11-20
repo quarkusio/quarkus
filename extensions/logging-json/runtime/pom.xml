@@ -13,7 +13,8 @@
 
     <artifactId>quarkus-logging-json</artifactId>
 
-    <name>Quarkus - JSON Logging - Runtime</name>
+    <name>Quarkus - Logging - JSON - Runtime</name>
+    <description>Add JSON formatter for console logging</description>
 
     <dependencies>
         <dependency>

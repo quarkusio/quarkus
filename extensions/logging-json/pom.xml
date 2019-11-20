@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-logging-json-parent</artifactId>
-    <name>Quarkus - JSON Logging</name>
+    <name>Quarkus - Logging - JSON</name>
     <packaging>pom</packaging>
 
     <modules>

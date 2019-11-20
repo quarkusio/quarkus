@@ -183,9 +183,25 @@ public class MyClass {
 }
 ----
 
-==== Using a configuration file
+If you cannot modify the class (e.g. it is in a 3rd party jar) then you can instead specify the classes
+that you actually want to register in the `targets` member of the annotation:
 
-Obviously, adding `@RegisterForReflection` is not possible if the class is in a third-party jar.
+[source,java]
+----
+@RegisterForReflection(targets={ThirdPartyClass.class, OtherClass.class})
+public class EmptyClass {
+}
+----
+
+In this example only the `ThirdPartyClass` and `ThirdPartyClass` other class are registered, `EmptyClass` is ignored.
+
+There may also be cases where you want to include all dependencies of a class as well. Generally this is useful
+for serialization, where a serialization library may need to set all fields on a class. This can be done by
+setting `registerDependencies` to `true`, in which case Quarkus will attempt to discover all dependencies
+and also register them. This should be used with caution though, as it may result in a lot of other classes
+being registered.
+
+==== Using a configuration file
 
 In this case, you can use a configuration file to register classes for reflection.
 

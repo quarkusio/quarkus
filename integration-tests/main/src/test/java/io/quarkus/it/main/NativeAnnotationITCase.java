@@ -1,5 +1,6 @@
 package io.quarkus.it.main;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.NativeImageTest;
@@ -18,5 +19,12 @@ public class NativeAnnotationITCase {
     public void testClassInitialization() {
         RestAssured.when().get("/class-init").then()
                 .statusCode(200);
+    }
+
+    @Test
+    public void testProxyUse() {
+        RestAssured.when().get("/native-proxy").then()
+                .statusCode(200)
+                .body(Matchers.equalTo("passed"));
     }
 }

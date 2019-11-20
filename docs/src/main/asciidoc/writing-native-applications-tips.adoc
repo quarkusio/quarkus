@@ -327,8 +327,11 @@ In such a situation, the error you might encounter is:
 com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfaces [interface org.apache.http.conn.HttpClientConnectionManager, interface org.apache.http.pool.ConnPoolControl, interface com.amazonaws.http.conn.Wrapped] not found. Generating proxy classes at runtime is not supported. Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement. To define proxy classes use -H:DynamicProxyConfigurationFiles=<comma-separated-config-files> and -H:DynamicProxyConfigurationResources=<comma-separated-config-resources> options.
 ----
 
-Solving this issue requires adding the `-H:DynamicProxyConfigurationResources=<comma-separated-config-resources>` option and to provide a dynamic proxy configuration file.
-You can find all the information about the format of this file in https://github.com/oracle/graal/blob/master/substratevm/DYNAMIC_PROXY.md#manual-configuration[the GraalVM documentation].
+You can solve this issue by using the `@io.quarkus.runtime.annotations.RegisterProxy` annotation, which takes a list of
+interfaces. Using this annotation you can specify the interface combinations that you want to be able to create dynamic
+proxies for. Note that order is important, so the order of the annotation values must match the order that the interfaces
+are passed into the proxy create method. This is a repeatable annotation so multiple proxies can be declared on the same
+class.
 
 [[native-in-extension]]
 == Supporting native in a Quarkus extension

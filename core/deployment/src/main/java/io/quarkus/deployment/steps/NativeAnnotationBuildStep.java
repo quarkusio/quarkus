@@ -1,5 +1,8 @@
 package io.quarkus.deployment.steps;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import javax.inject.Inject;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -12,11 +15,13 @@ import org.jboss.jandex.Type;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.quarkus.runtime.annotations.RegisterProxy;
 import io.quarkus.runtime.annotations.RuntimeInitialized;
 import io.quarkus.runtime.annotations.RuntimeReinitialized;
 
@@ -36,6 +41,9 @@ public class NativeAnnotationBuildStep {
 
     @Inject
     BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy;
+
+    @Inject
+    BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition;
 
     @BuildStep
     public void build() throws Exception {
@@ -86,6 +94,23 @@ public class NativeAnnotationBuildStep {
                 }
             }
         }
+
+        //proxy registration
+        for (AnnotationInstance i : combinedIndexBuildItem.getIndex()
+                .getAnnotations(DotName.createSimple(RegisterProxy.class.getName()))) {
+            registerProxy(i);
+        }
+        for (AnnotationInstance i : combinedIndexBuildItem.getIndex()
+                .getAnnotations(DotName.createSimple(RegisterProxy.RegisterProxyList.class.getName()))) {
+            for (AnnotationInstance j : i.value().asNestedArray()) {
+                registerProxy(j);
+            }
+        }
+    }
+
+    private void registerProxy(AnnotationInstance i) {
+        proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(
+                Arrays.stream(i.value().asClassArray()).map(t -> t.name().toString()).collect(Collectors.toList())));
     }
 
     private void registerForReflection(boolean methods, boolean fields, DotName name, boolean dependencies) {

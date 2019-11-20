@@ -2,6 +2,7 @@ package io.quarkus.optaplanner.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,6 +26,9 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.optaplanner.OptaPlannerRecorder;
 import io.quarkus.optaplanner.SolverFactoryProvider;
+import org.optaplanner.core.api.score.stream.ConstraintStreamImplType;
+import org.optaplanner.core.config.score.director.ScoreDirectorFactoryConfig;
+import org.optaplanner.core.config.solver.SolverConfig;
 
 class OptaPlannerProcessor {
 
@@ -44,13 +48,50 @@ class OptaPlannerProcessor {
     void recordSolverFactory(OptaPlannerRecorder recorder, RecorderContext recorderContext,
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) {
+        ClassLoader classLoader = getClass().getClassLoader();
+        String solverConfigXML = null;
+        SolverConfig solverConfig;
+        if (solverConfigXML != null) {
+            if (classLoader.getResource(solverConfigXML) == null) {
+                throw new IllegalStateException("Invalid optaplanner.solverConfigXML property (" + solverConfigXML
+                        + "): that classpath resource does not exist.");
+            }
+            solverConfig = SolverConfig.createFromXmlResource(solverConfigXML, classLoader);
+        } else if (classLoader.getResource(OptaPlannerProperties.DEFAULT_SOLVER_CONFIG_URL) != null) {
+            solverConfig = SolverConfig.createFromXmlResource(
+                    OptaPlannerProperties.DEFAULT_SOLVER_CONFIG_URL, classLoader);
+        } else {
+            solverConfig = new SolverConfig(classLoader);
+        }
+        solverConfig.setClassLoader(null); // TODO HACK
+
         IndexView indexView = combinedIndex.getIndex();
-        Class<?> solutionClass = findSolutionClass(recorderContext, indexView);
-        List<Class<?>> entityClassList = findEntityClassList(recorderContext, indexView);
-        Class<? extends ConstraintProvider> constraintProviderClass = findConstraintProviderClass(recorderContext, indexView);
+        applySolverProperties(recorder, recorderContext, indexView, solverConfig);
+
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
-                        recorder.initializeSolverFactory(solutionClass, entityClassList, constraintProviderClass)));
+                        recorder.initializeSolverFactory(solverConfig)));
+    }
+
+    private void applySolverProperties(OptaPlannerRecorder recorder, RecorderContext recorderContext,
+            IndexView indexView, SolverConfig solverConfig) {
+//        if (solverProperties.getEnvironmentMode() != null) {
+//            solverConfig.setEnvironmentMode(solverProperties.getEnvironmentMode());
+//        }
+        if (solverConfig.getSolutionClass() == null) {
+            solverConfig.setSolutionClass(findSolutionClass(recorderContext, indexView));
+        }
+        if (solverConfig.getEntityClassList() == null) {
+            solverConfig.setEntityClassList(findEntityClassList(recorderContext, indexView));
+        }
+        if (solverConfig.getScoreDirectorFactoryConfig() == null) {
+            ScoreDirectorFactoryConfig scoreDirectorFactoryConfig = new ScoreDirectorFactoryConfig();
+            // Use Bavet to avoid Drools classpath issues (drools 7 vs kogito 1 code duplication)
+            scoreDirectorFactoryConfig.setConstraintStreamImplType(ConstraintStreamImplType.BAVET);
+            scoreDirectorFactoryConfig.setConstraintProviderClass(findConstraintProviderClass(recorderContext, indexView));
+            solverConfig.setScoreDirectorFactoryConfig(scoreDirectorFactoryConfig);
+        }
+//        applyTerminationProperties(solverConfig);
     }
 
     private Class<?> findSolutionClass(RecorderContext recorderContext, IndexView indexView) {

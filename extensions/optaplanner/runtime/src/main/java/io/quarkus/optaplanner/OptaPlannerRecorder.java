@@ -14,17 +14,8 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class OptaPlannerRecorder {
 
-    public BeanContainerListener initializeSolverFactory(Class<?> solutionClass, List<Class<?>> entityClassList,
-            Class<? extends ConstraintProvider> constraintProviderClass) {
+    public BeanContainerListener initializeSolverFactory(SolverConfig solverConfig) {
         return container -> {
-            SolverConfig solverConfig = new SolverConfig();
-            solverConfig.setSolutionClass(solutionClass);
-            solverConfig.setEntityClassList(entityClassList);
-            solverConfig.setScoreDirectorFactoryConfig(
-                    new ScoreDirectorFactoryConfig()
-                            // Use Bavet to avoid Drools classpath issues (drools 7 vs kogito 1 code duplication)
-                            .withConstraintStreamImplType(ConstraintStreamImplType.BAVET)
-                            .withConstraintProviderClass(constraintProviderClass));
             SolverFactoryProvider.solverFactory = SolverFactory.create(solverConfig);
         };
     }

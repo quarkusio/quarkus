@@ -17,7 +17,7 @@ import io.quarkus.optaplanner.domain.TestdataPlanningSolution;
 import io.quarkus.optaplanner.domain.TestdataPlanningValue;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class SolverFactoryInjectTest {
+public class SolverFactoryInjectWithoutXMLTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()

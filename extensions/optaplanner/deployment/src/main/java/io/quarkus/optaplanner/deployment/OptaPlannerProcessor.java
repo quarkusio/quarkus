@@ -1,8 +1,19 @@
 package io.quarkus.optaplanner.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.optaplanner.core.api.domain.entity.PlanningEntity;
+import org.optaplanner.core.api.domain.solution.PlanningSolution;
+import org.optaplanner.core.api.score.stream.ConstraintProvider;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -14,16 +25,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.optaplanner.OptaPlannerRecorder;
 import io.quarkus.optaplanner.SolverFactoryProvider;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
-import org.optaplanner.core.api.domain.entity.PlanningEntity;
-import org.optaplanner.core.api.domain.solution.PlanningSolution;
-import org.optaplanner.core.api.score.stream.ConstraintProvider;
-
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 class OptaPlannerProcessor {
 
@@ -89,7 +90,8 @@ class OptaPlannerProcessor {
                 .collect(Collectors.toList());
     }
 
-    private Class<? extends ConstraintProvider> findConstraintProviderClass(RecorderContext recorderContext, IndexView indexView) {
+    private Class<? extends ConstraintProvider> findConstraintProviderClass(RecorderContext recorderContext,
+            IndexView indexView) {
         Collection<ClassInfo> classInfos = indexView.getAllKnownImplementors(
                 DotName.createSimple(ConstraintProvider.class.getName()));
         if (classInfos.size() > 1) {

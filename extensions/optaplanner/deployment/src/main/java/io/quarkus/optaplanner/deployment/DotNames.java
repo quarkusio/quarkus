@@ -3,7 +3,6 @@ package io.quarkus.optaplanner.deployment;
 import org.jboss.jandex.DotName;
 import org.optaplanner.core.api.domain.entity.PlanningEntity;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
-import org.optaplanner.core.api.score.stream.ConstraintProvider;
 
 public final class DotNames {
 

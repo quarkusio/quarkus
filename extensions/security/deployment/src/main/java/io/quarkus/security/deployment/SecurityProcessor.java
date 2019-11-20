@@ -17,13 +17,14 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrarBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.processor.AnnotationStore;
@@ -35,7 +36,6 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
-import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.MethodCreator;
@@ -113,7 +113,7 @@ public class SecurityProcessor {
 
     @BuildStep
     void gatherSecurityChecks(BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
-            ApplicationIndexBuildItem indexBuildItem,
+            BeanArchiveIndexBuildItem beanArchiveBuildItem,
             BuildProducer<ApplicationClassPredicateBuildItem> classPredicate,
             List<AdditionalSecuredClassesBuildIem> additionalSecuredClasses) {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorage.AppPredicate()));
@@ -130,7 +130,8 @@ public class SecurityProcessor {
             @Override
             public void register(RegistrationContext registrationContext) {
 
-                Map<MethodInfo, AnnotationInstance> methodAnnotations = gatherSecurityAnnotationsByLooping(indexBuildItem,
+                Map<MethodInfo, AnnotationInstance> methodAnnotations = gatherSecurityAnnotationsByLooping(
+                        beanArchiveBuildItem.getIndex(),
                         registrationContext, additionalSecured);
 
                 DotName name = DotName.createSimple(SecurityCheckStorage.class.getName());
@@ -202,14 +203,13 @@ public class SecurityProcessor {
         return result;
     }
 
-    private Map<MethodInfo, AnnotationInstance> gatherSecurityAnnotationsByLooping(ApplicationIndexBuildItem indexBuildItem,
+    private Map<MethodInfo, AnnotationInstance> gatherSecurityAnnotationsByLooping(IndexView index,
             BeanRegistrar.RegistrationContext registrationContext,
             Set<ClassInfo> additionalSecuredClasses) {
         Set<DotName> securityAnnotations = SecurityAnnotationsRegistrar.SECURITY_BINDINGS.keySet();
         AnnotationStore annotationStore = registrationContext.get(BuildExtension.Key.ANNOTATION_STORE);
         Set<ClassInfo> classesWithSecurity = new HashSet<>(additionalSecuredClasses);
 
-        Index index = indexBuildItem.getIndex();
         for (DotName securityAnno : SecurityAnnotationsRegistrar.SECURITY_BINDINGS.keySet()) {
             for (AnnotationInstance annotation : index.getAnnotations(securityAnno)) {
                 AnnotationTarget target = annotation.target();

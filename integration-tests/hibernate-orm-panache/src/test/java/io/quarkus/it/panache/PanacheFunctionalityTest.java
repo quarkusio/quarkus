@@ -1,9 +1,13 @@
 package io.quarkus.it.panache;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
@@ -48,5 +52,24 @@ public class PanacheFunctionalityTest {
     @Test
     public void testBug5274() {
         RestAssured.when().get("/test/5274").then().body(is("OK"));
+    }
+
+    /**
+     * This test is disabled in native mode as there is no interaction with the quarkus integration test endpoint.
+     */
+    @DisabledOnNativeImage
+    @Test
+    public void jacksonDeserilazationIgnoresPersitantAttribute() throws JsonProcessingException {
+        // set Up
+        Person person = new Person();
+        person.name = "max";
+        // do
+        ObjectMapper objectMapper = new ObjectMapper();
+        String personAsString = objectMapper.writeValueAsString(person);
+        // check 
+        // hence no 'persistence'-attribute
+        assertEquals(
+                "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
+                personAsString);
     }
 }

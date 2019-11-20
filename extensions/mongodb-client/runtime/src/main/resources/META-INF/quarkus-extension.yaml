@@ -6,6 +6,7 @@ metadata:
   - "mongodb"
   - "nosql"
   - "datastore"
+  guide: "https://quarkus.io/guides/mongodb"
   categories:
   - "data"
   status: "preview"

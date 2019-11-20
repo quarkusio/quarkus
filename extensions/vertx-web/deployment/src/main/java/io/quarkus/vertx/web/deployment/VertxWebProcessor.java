@@ -94,7 +94,7 @@ class VertxWebProcessor {
             BuildProducer<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
             BuildProducer<ValidationErrorBuildItem> errors) {
 
-        // We need to collect all business methods annotated with @Route first
+        // Collect all business methods annotated with @Route and @RouteFilter
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
         for (BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
             if (bean.isClassBean()) {

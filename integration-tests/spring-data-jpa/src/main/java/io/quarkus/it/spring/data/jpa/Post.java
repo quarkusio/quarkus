@@ -1,5 +1,6 @@
 package io.quarkus.it.spring.data.jpa;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +26,8 @@ public class Post {
     private List<PostComment> comments = new ArrayList<>();
 
     private boolean bypass;
+
+    private ZonedDateTime posted;
 
     public Long getId() {
         return id;
@@ -56,6 +59,14 @@ public class Post {
 
     public void setBypass(boolean bypass) {
         this.bypass = bypass;
+    }
+
+    public ZonedDateTime getPosted() {
+        return posted;
+    }
+
+    public void setPosted(ZonedDateTime postedAt) {
+        this.posted = postedAt;
     }
 
     public void addComment(PostComment comment) {

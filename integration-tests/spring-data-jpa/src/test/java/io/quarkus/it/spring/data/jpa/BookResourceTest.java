@@ -74,6 +74,15 @@ public class BookResourceTest {
     }
 
     @Test
+    void testByYear() {
+        when().get("/book/year/2012").then()
+                .statusCode(200)
+                .body(containsString("Sleepwalkers"));
+        when().get("/book/year/2050").then()
+                .statusCode(204);
+    }
+
+    @Test
     void testByNameNotFound() {
         when().get("/book/name/DoesNotExist").then()
                 .statusCode(200)

@@ -1,6 +1,7 @@
 package io.quarkus.it.spring.data.jpa;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.repository.Repository;
 
@@ -16,7 +17,9 @@ public interface BookRepository extends Repository<Book, Integer> {
 
     List<Book> findByName(String name);
 
-    boolean existsById(Integer id);
+    boolean existsByBid(Integer id);
 
     boolean existsBookByPublicationYearBetween(Integer start, Integer end);
+
+    Optional<Book> findByPublicationYear(Integer year);
 }

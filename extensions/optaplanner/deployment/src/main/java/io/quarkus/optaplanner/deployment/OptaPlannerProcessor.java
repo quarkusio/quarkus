@@ -6,13 +6,12 @@ import java.util.stream.Collectors;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
-import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.optaplanner.OptaPlannerRecorder;
 import io.quarkus.optaplanner.SolverFactoryProvider;
 import org.jboss.jandex.AnnotationInstance;
@@ -41,19 +40,19 @@ class OptaPlannerProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    void recordSolverFactory(OptaPlannerRecorder recorder,
+    void recordSolverFactory(OptaPlannerRecorder recorder, RecorderContext recorderContext,
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) {
         IndexView indexView = combinedIndex.getIndex();
-        String solutionClassName = findSolutionClassName(indexView);
-        List<String> entityClassNameList = findEntityClassNameList(indexView);
-        String constraintProviderClassName = findConstraintProviderClassName(indexView);
+        Class<?> solutionClass = findSolutionClass(recorderContext, indexView);
+        List<Class<?>> entityClassList = findEntityClassList(recorderContext, indexView);
+        Class<? extends ConstraintProvider> constraintProviderClass = findConstraintProviderClass(recorderContext, indexView);
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
-                        recorder.initializeSolverFactory(solutionClassName, entityClassNameList, constraintProviderClassName)));
+                        recorder.initializeSolverFactory(solutionClass, entityClassList, constraintProviderClass)));
     }
 
-    private String findSolutionClassName(IndexView indexView) {
+    private Class<?> findSolutionClass(RecorderContext recorderContext, IndexView indexView) {
         Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(DotNames.PLANNING_SOLUTION);
         if (annotationInstances.size() > 1) {
             throw new IllegalStateException("Multiple classes (" + convertAnnotationInstancesToString(annotationInstances)
@@ -69,10 +68,10 @@ class OptaPlannerProcessor {
                     + ") with a @" + PlanningSolution.class.getSimpleName() + " must be a class.");
         }
 
-        return solutionTarget.asClass().name().toString();
+        return recorderContext.classProxy(solutionTarget.asClass().name().toString());
     }
 
-    private List<String> findEntityClassNameList(IndexView indexView) {
+    private List<Class<?>> findEntityClassList(RecorderContext recorderContext, IndexView indexView) {
         Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(DotNames.PLANNING_ENTITY);
         if (annotationInstances.isEmpty()) {
             throw new IllegalStateException("No classes (" + convertAnnotationInstancesToString(annotationInstances)
@@ -85,10 +84,12 @@ class OptaPlannerProcessor {
             throw new IllegalStateException("All targets (" + targetList
                     + ") with a @" + PlanningEntity.class.getSimpleName() + " must be a class.");
         }
-        return targetList.stream().map(target -> target.asClass().name().toString()).collect(Collectors.toList());
+        return targetList.stream()
+                .map(target -> recorderContext.classProxy(target.asClass().name().toString()))
+                .collect(Collectors.toList());
     }
 
-    private String findConstraintProviderClassName(IndexView indexView) {
+    private Class<? extends ConstraintProvider> findConstraintProviderClass(RecorderContext recorderContext, IndexView indexView) {
         Collection<ClassInfo> classInfos = indexView.getAllKnownImplementors(
                 DotName.createSimple(ConstraintProvider.class.getName()));
         if (classInfos.size() > 1) {
@@ -99,7 +100,8 @@ class OptaPlannerProcessor {
             throw new IllegalStateException("No classes (" + convertClassInfosToString(classInfos)
                     + ") found that implement the interface " + ConstraintProvider.class.getSimpleName() + ".");
         }
-        return classInfos.iterator().next().name().toString();
+        // TODO use .asSubclass(ConstraintProvider.class) once https://github.com/quarkusio/quarkus/issues/5630 is fixed
+        return (Class<? extends ConstraintProvider>) recorderContext.classProxy(classInfos.iterator().next().name().toString());
     }
 
     private String convertAnnotationInstancesToString(Collection<AnnotationInstance> annotationInstances) {

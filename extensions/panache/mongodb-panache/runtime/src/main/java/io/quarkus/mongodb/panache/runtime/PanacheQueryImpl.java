@@ -2,6 +2,7 @@ package io.quarkus.mongodb.panache.runtime;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.bson.Document;
@@ -12,6 +13,7 @@ import com.mongodb.client.MongoCursor;
 
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.exception.PanacheQueryException;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     private MongoCollection collection;
@@ -134,13 +136,29 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     }
 
     @Override
+    public <T extends Entity> Optional<T> firstResultOptional() {
+        return Optional.ofNullable(firstResult());
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public <T extends Entity> T singleResult() {
         List<T> list = list();
         if (list.isEmpty() || list.size() > 1) {
-            throw new RuntimeException("There should be only one result");//TODO use proper exception
+            throw new PanacheQueryException("There should be only one result");
         }
 
         return list.get(0);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends Entity> Optional<T> singleResultOptional() {
+        List<T> list = list();
+        if (list.size() > 1) {
+            throw new PanacheQueryException("There should be no more than one result");
+        }
+
+        return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 }

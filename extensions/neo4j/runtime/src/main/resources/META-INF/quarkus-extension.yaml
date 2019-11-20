@@ -6,6 +6,7 @@ metadata:
   - "graph"
   - "nosql"
   - "datastore"
+  guide: "https://quarkus.io/guides/neo4j"
   categories:
   - "data"
   status: "preview"

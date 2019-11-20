@@ -6,5 +6,6 @@ metadata:
   - "artemis"
   categories:
   - "messaging"
+  guide: "https://quarkus.io/guides/jms"
   status: "preview"
   unlisted: true

@@ -6,6 +6,7 @@ metadata:
   - "database-connection-pool"
   - "datasource"
   - "jdbc"
+  guide: "https://quarkus.io/guides/datasource"
   categories:
   - "data"
   status: "stable"

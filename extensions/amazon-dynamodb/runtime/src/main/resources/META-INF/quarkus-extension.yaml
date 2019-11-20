@@ -6,6 +6,7 @@ metadata:
   - "dynamo"
   - "aws"
   - "amazon"
+  guide: "https://quarkus.io/guides/dynamodb"
   categories:
   - "data"
   status: "preview"

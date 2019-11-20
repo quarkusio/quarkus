@@ -6,4 +6,5 @@ metadata:
   - "parser"
   categories:
   - "miscellaneous"
+  guide: "https://quarkus.io/guides/tika"
   status: "stable"

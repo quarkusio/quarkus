@@ -8,6 +8,7 @@ metadata:
   - "context-propagation"
   - "context"
   - "reactive"
+  guide: "https://quarkus.io/guides/context-propagation"
   categories:
   - "reactive"
   status: "stable"

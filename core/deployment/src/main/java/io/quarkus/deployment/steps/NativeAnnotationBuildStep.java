@@ -16,12 +16,14 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.quarkus.runtime.annotations.RegisterProxy;
+import io.quarkus.runtime.annotations.RegisterResourceBundle;
 import io.quarkus.runtime.annotations.RuntimeInitialized;
 import io.quarkus.runtime.annotations.RuntimeReinitialized;
 
@@ -44,6 +46,9 @@ public class NativeAnnotationBuildStep {
 
     @Inject
     BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition;
+
+    @Inject
+    BuildProducer<NativeImageResourceBuildItem> resourceBundle;
 
     @BuildStep
     public void build() throws Exception {
@@ -105,6 +110,14 @@ public class NativeAnnotationBuildStep {
             for (AnnotationInstance j : i.value().asNestedArray()) {
                 registerProxy(j);
             }
+        }
+
+        //resource bundle
+
+        for (AnnotationInstance i : combinedIndexBuildItem.getIndex()
+                .getAnnotations(DotName.createSimple(RegisterResourceBundle.class.getName()))) {
+            String[] bundles = i.value().asStringArray();
+            resourceBundle.produce(new NativeImageResourceBuildItem(Arrays.asList(bundles)));
         }
     }
 

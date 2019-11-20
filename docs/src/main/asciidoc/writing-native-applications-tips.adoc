@@ -25,7 +25,7 @@ GraalVM imposes a number of constraints and making your application a native exe
 This guide covers some of the annotations that Quarkus supports to help generate native images. In some cases these
 annotations are applied directly to a relevant class, but in others the class that they are placed on does not actually
 matter (e.g. if you are referencing a class in a 3rd party jar). In this case we recommend creating an empty `NativeConfig`
-class somewhere in your application and placing all annotation that control native image generation on it, so they are all
+class somewhere in your application and placing all annotations that control native image generation on it, so they are all
 in the same place.
 
 === Including resources
@@ -197,11 +197,11 @@ that you actually want to register in the `targets` member of the annotation:
 [source,java]
 ----
 @RegisterForReflection(targets={ThirdPartyClass.class, OtherClass.class})
-public class EmptyClass {
+public class NativeConfig {
 }
 ----
 
-In this example only the `ThirdPartyClass` and `ThirdPartyClass` other class are registered, `EmptyClass` is ignored.
+In this example only the `ThirdPartyClass` and `ThirdPartyClass` other class are registered, `NativeConfig` is ignored.
 
 There may also be cases where you want to include all dependencies of a class as well. Generally this is useful
 for serialization, where a serialization library may need to set all fields on a class. This can be done by
@@ -332,6 +332,12 @@ interfaces. Using this annotation you can specify the interface combinations tha
 proxies for. Note that order is important, so the order of the annotation values must match the order that the interfaces
 are passed into the proxy create method. This is a repeatable annotation so multiple proxies can be declared on the same
 class.
+
+=== Resource Bundles
+
+By default native images do not include resource bundles. You can select the bundles to include with the
+`@io.quarkus.runtime.annotations.RegisterResourceBundle` annotation.
+
 
 [[native-in-extension]]
 == Supporting native in a Quarkus extension

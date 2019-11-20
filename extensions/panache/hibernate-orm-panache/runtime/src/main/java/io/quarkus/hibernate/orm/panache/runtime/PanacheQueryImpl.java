@@ -10,8 +10,6 @@ import javax.persistence.LockModeType;
 import javax.persistence.NonUniqueResultException;
 import javax.persistence.Query;
 
-import com.arjuna.ats.internal.jdbc.drivers.modifiers.list;
-
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 

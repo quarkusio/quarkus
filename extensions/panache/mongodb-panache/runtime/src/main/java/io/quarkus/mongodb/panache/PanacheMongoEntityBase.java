@@ -2,6 +2,7 @@ package io.quarkus.mongodb.panache;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.bson.Document;
@@ -82,6 +83,17 @@ public abstract class PanacheMongoEntityBase {
      */
     @GenerateBridge(targetReturnTypeErased = true)
     public static <T extends PanacheMongoEntityBase> T findById(Object id) {
+        throw MongoOperations.implementationInjectionMissing();
+    }
+
+    /**
+     * Find an entity of this type by ID.
+     *
+     * @param id the ID of the entity to find.
+     * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
+     */
+    @GenerateBridge
+    public static <T extends PanacheMongoEntityBase> Optional<T> findByIdOptional(Object id) {
         throw MongoOperations.implementationInjectionMissing();
     }
 

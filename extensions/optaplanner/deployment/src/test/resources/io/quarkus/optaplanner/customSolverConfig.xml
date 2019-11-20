@@ -1,0 +1,5 @@
+<solver>
+  <termination>
+    <secondsSpentLimit>3</secondsSpentLimit>
+  </termination>
+</solver>

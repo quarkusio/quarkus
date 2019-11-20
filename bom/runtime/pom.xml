@@ -166,6 +166,7 @@
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kogito.version>0.7.1</kogito.version>
         <kubernetes-client.version>4.8.0</kubernetes-client.version>
+        <optaplanner.version>7.33.0.Final</optaplanner.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <wiremock.version>2.24.1</wiremock.version>
@@ -250,6 +251,13 @@
                 <groupId>org.kie.kogito</groupId>
                 <artifactId>kogito-bom</artifactId>
                 <version>${kogito.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>org.optaplanner</groupId>
+                <artifactId>optaplanner-bom</artifactId>
+                <version>${optaplanner.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -716,6 +724,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kogito</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-optaplanner</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-optaplanner-jackson</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

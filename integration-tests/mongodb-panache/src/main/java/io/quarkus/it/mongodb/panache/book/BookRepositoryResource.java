@@ -73,6 +73,12 @@ public class BookRepositoryResource {
     }
 
     @GET
+    @Path("/optional/{id}")
+    public Book getBookOptional(@PathParam("id") String id) {
+        return bookRepository.findByIdOptional(new ObjectId(id)).orElseThrow(() -> new NotFoundException());
+    }
+
+    @GET
     @Path("/search/{author}")
     public List<Book> getBooksByAuthor(@PathParam("author") String author) {
         return bookRepository.list("author", author);
@@ -89,7 +95,7 @@ public class BookRepositoryResource {
         return bookRepository
                 .find("{'creationDate': {$gte: ?1}, 'creationDate': {$lte: ?2}}", LocalDate.parse(dateFrom),
                         LocalDate.parse(dateTo))
-                .firstResult();
+                .firstResultOptional().orElseThrow(() -> new NotFoundException());
     }
 
     @GET

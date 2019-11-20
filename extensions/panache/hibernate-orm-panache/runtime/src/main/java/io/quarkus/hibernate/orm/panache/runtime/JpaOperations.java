@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.panache.runtime;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
@@ -199,6 +200,14 @@ public class JpaOperations {
 
     public static Object findById(Class<?> entityClass, Object id, LockModeType lockModeType) {
         return getEntityManager().find(entityClass, id, lockModeType);
+    }
+
+    public static Optional<?> findByIdOptional(Class<?> entityClass, Object id) {
+        return Optional.ofNullable(findById(entityClass, id));
+    }
+
+    public static Optional<?> findByIdOptional(Class<?> entityClass, Object id, LockModeType lockModeType) {
+        return Optional.ofNullable(findById(entityClass, id, lockModeType));
     }
 
     public static PanacheQuery<?> find(Class<?> entityClass, String query, Object... params) {

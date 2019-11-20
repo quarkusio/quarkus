@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.panache;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.persistence.LockModeType;
@@ -164,6 +165,15 @@ public interface PanacheQuery<Entity> {
     public <T extends Entity> T firstResult();
 
     /**
+     * Returns the first result of the current page index. This ignores the current page size to fetch
+     * a single result.
+     *
+     * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
+     * @see #singleResultOptional()
+     */
+    public <T extends Entity> Optional<T> firstResultOptional();
+
+    /**
      * Executes this query for the current page and return a single result.
      * 
      * @return the single result (throws if there is not exactly one)
@@ -172,4 +182,13 @@ public interface PanacheQuery<Entity> {
      * @see #firstResult()
      */
     public <T extends Entity> T singleResult();
+
+    /**
+     * Executes this query for the current page and return a single result.
+     *
+     * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
+     * @throws NonUniqueResultException if there are more than one result
+     * @see #firstResultOptional()
+     */
+    public <T extends Entity> Optional<T> singleResultOptional();
 }

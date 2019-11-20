@@ -138,7 +138,15 @@ public class TestEndpoint {
         Assertions.assertEquals(person, byId);
         Assertions.assertEquals("Person<" + person.id + ">", byId.toString());
 
+        byId = Person.<Person> findByIdOptional(person.id).get();
+        Assertions.assertEquals(person, byId);
+        Assertions.assertEquals("Person<" + person.id + ">", byId.toString());
+
         byId = Person.findById(person.id, LockModeType.PESSIMISTIC_READ);
+        Assertions.assertEquals(person, byId);
+        Assertions.assertEquals("Person<" + person.id + ">", byId.toString());
+
+        byId = Person.<Person> findByIdOptional(person.id, LockModeType.PESSIMISTIC_READ).get();
         Assertions.assertEquals(person, byId);
         Assertions.assertEquals("Person<" + person.id + ">", byId.toString());
 
@@ -184,6 +192,8 @@ public class TestEndpoint {
         }
 
         Assertions.assertNotNull(Person.findAll().firstResult());
+
+        Assertions.assertNotNull(Person.findAll().firstResultOptional().get());
 
         Assertions.assertEquals(7, Person.deleteAll());
 
@@ -333,7 +343,11 @@ public class TestEndpoint {
         } catch (NoResultException x) {
         }
 
+        Assertions.assertFalse(personDao.findAll().singleResultOptional().isPresent());
+
         Assertions.assertNull(personDao.findAll().firstResult());
+
+        Assertions.assertFalse(personDao.findAll().firstResultOptional().isPresent());
 
         Person person = makeSavedPersonDao();
         Assertions.assertNotNull(person.id);
@@ -363,6 +377,7 @@ public class TestEndpoint {
 
         Assertions.assertEquals(person, personDao.findAll().firstResult());
         Assertions.assertEquals(person, personDao.findAll().singleResult());
+        Assertions.assertEquals(person, personDao.findAll().singleResultOptional().get());
 
         persons = personDao.find("name = ?1", "stef").list();
         Assertions.assertEquals(1, persons.size());
@@ -413,11 +428,18 @@ public class TestEndpoint {
 
         Assertions.assertEquals(person, personDao.find("name", "stef").firstResult());
         Assertions.assertEquals(person, personDao.find("name", "stef").singleResult());
+        Assertions.assertEquals(person, personDao.find("name", "stef").singleResultOptional().get());
 
         Person byId = personDao.findById(person.id);
         Assertions.assertEquals(person, byId);
 
+        byId = personDao.findByIdOptional(person.id).get();
+        Assertions.assertEquals(person, byId);
+
         byId = personDao.findById(person.id, LockModeType.PESSIMISTIC_READ);
+        Assertions.assertEquals(person, byId);
+
+        byId = personDao.findByIdOptional(person.id, LockModeType.PESSIMISTIC_READ).get();
         Assertions.assertEquals(person, byId);
 
         personDao.delete(person);

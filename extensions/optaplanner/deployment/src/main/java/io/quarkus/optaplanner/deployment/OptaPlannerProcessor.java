@@ -29,11 +29,6 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 class OptaPlannerProcessor {
 
     @BuildStep
-    CapabilityBuildItem capability() {
-        return new CapabilityBuildItem(Capabilities.OPTAPLANNER);
-    }
-
-    @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.OPTAPLANNER);
     }

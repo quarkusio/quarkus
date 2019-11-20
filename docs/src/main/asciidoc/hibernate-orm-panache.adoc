@@ -161,6 +161,10 @@ List<Person> allPersons = Person.listAll();
 // finding a specific person by ID
 person = Person.findById(personId);
 
+// finding a specific person by ID via an Optional
+Optional<Person> optional = Person.findByIdOptional(personId);
+person = optional.orElseThrow(() -> NotFoundException());
+
 // finding all living persons
 List<Person> livingPersons = Person.list("status", Status.Alive);
 

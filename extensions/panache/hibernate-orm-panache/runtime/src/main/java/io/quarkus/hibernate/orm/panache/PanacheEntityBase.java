@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.panache;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.json.bind.annotation.JsonbTransient;
@@ -112,6 +113,29 @@ public abstract class PanacheEntityBase {
      */
     @GenerateBridge(targetReturnTypeErased = true)
     public static <T extends PanacheEntityBase> T findById(Object id, LockModeType lockModeType) {
+        throw JpaOperations.implementationInjectionMissing();
+    }
+
+    /**
+     * Find an entity of this type by ID.
+     *
+     * @param id the ID of the entity to find.
+     * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
+     */
+    @GenerateBridge
+    public static <T extends PanacheEntityBase> Optional<T> findByIdOptional(Object id) {
+        throw JpaOperations.implementationInjectionMissing();
+    }
+
+    /**
+     * Find an entity of this type by ID.
+     *
+     * @param id the ID of the entity to find.
+     * @param lockModeType the locking strategy to be used when retrieving the entity.
+     * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
+     */
+    @GenerateBridge
+    public static <T extends PanacheEntityBase> Optional<T> findByIdOptional(Object id, LockModeType lockModeType) {
         throw JpaOperations.implementationInjectionMissing();
     }
 

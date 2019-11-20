@@ -2561,11 +2561,6 @@
                 <artifactId>jbpm-bpmn2</artifactId>
                 <version>${kogito.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.optaplanner</groupId>
-                <artifactId>optaplanner-core</artifactId>
-                <version>${optaplanner.version}</version>
-            </dependency>
 
             <!-- Spring -->
             <dependency>

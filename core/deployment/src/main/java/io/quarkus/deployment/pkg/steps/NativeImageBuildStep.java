@@ -145,6 +145,7 @@ public class NativeImageBuildStep {
                 process.waitFor();
             }
             Boolean enableSslNative = false;
+            boolean enableAllTimeZones = false;
             for (NativeImageSystemPropertyBuildItem prop : nativeImageProperties) {
                 //todo: this should be specific build items
                 if (prop.getKey().equals("quarkus.ssl.native") && prop.getValue() != null) {
@@ -155,6 +156,8 @@ public class NativeImageBuildStep {
                     nativeConfig.enableAllSecurityServices |= Boolean.parseBoolean(prop.getValue());
                 } else if (prop.getKey().equals("quarkus.native.enable-all-charsets") && prop.getValue() != null) {
                     nativeConfig.addAllCharsets |= Boolean.parseBoolean(prop.getValue());
+                } else if (prop.getKey().equals("quarkus.native.enable-all-timezones") && prop.getValue() != null) {
+                    enableAllTimeZones = Boolean.parseBoolean(prop.getValue());
                 } else {
                     // todo maybe just -D is better than -J-D in this case
                     if (prop.getValue() == null) {
@@ -221,6 +224,9 @@ public class NativeImageBuildStep {
                 command.add("-H:+AddAllCharsets");
             } else {
                 command.add("-H:-AddAllCharsets");
+            }
+            if (enableAllTimeZones) {
+                command.add("-H:+IncludeAllTimeZones");
             }
             if (!protocols.isEmpty()) {
                 command.add("-H:EnableURLProtocols=" + String.join(",", protocols));

@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.NativeEnableAllCharsetsBuildItem;
+import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -191,5 +193,10 @@ public class DeprecatedBuildItemProcessor {
             newProps.add(new NativeImageSystemPropertyBuildItem(oldProp.getKey(), oldProp.getValue()));
         }
         return newProps;
+    }
+
+    @BuildStep
+    NativeImageEnableAllCharsetsBuildItem enableAllCharsets(List<NativeEnableAllCharsetsBuildItem> oldProps) {
+        return new NativeImageEnableAllCharsetsBuildItem();
     }
 }

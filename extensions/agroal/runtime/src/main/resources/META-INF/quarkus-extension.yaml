@@ -4,6 +4,8 @@ metadata:
   keywords:
   - "agroal"
   - "database-connection-pool"
+  - "datasource"
+  - "jdbc"
   categories:
   - "data"
   status: "stable"

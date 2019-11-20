@@ -36,11 +36,11 @@ public @interface RegisterForReflection {
      * to register all classes this class depends on. This includes:
      *
      * <ul>
-     *     <li>Superclasses</li>
-     *     <li>Field types</li>
-     *     <li>Method return types</li>
-     *     <li>Method parameter types</li>
-     *     <li>Type parameters of the above (e.g. a field of type List&lt;Foo&gt; would result in Foo being registered)</li>
+     * <li>Superclasses</li>
+     * <li>Field types</li>
+     * <li>Method return types</li>
+     * <li>Method parameter types</li>
+     * <li>Type parameters of the above (e.g. a field of type List&lt;Foo&gt; would result in Foo being registered)</li>
      * </ul>
      *
      * This process is applied recursively, so every type registered in this way will also have it's dependencies registered.

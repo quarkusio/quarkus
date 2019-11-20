@@ -20,6 +20,14 @@ Please refer to the appropriate section depending on your context.
 
 GraalVM imposes a number of constraints and making your application a native executable might require a few tweaks.
 
+=== Quarkus Annotations
+
+This guide covers some of the annotations that Quarkus supports to help generate native images. In some cases these
+annotations are applied directly to a relevant class, but in others the class that they are placed on does not actually
+matter (e.g. if you are referencing a class in a 3rd party jar). In this case we recommend creating an empty `NativeConfig`
+class somewhere in your application and placing all annotation that control native image generation on it, so they are all
+in the same place.
+
 === Including resources
 
 By default, when building a native executable, GraalVM will not include any of the resources that are on the classpath into the native executable it creates.
@@ -279,7 +287,7 @@ buildNative {
 }
 ----
 
-=== Delaying class initialization
+=== Delaying and re-running class initialization
 
 By default, Quarkus initializes all classes at build time.
 
@@ -294,9 +302,14 @@ method com.amazonaws.services.s3.model.CryptoConfiguration.<init>(CryptoMode)
 Call path from entry point to com.amazonaws.services.s3.model.CryptoConfiguration.<init>(CryptoMode):
 ----
 
-If you need to delay the initialization of a class, you can use the `--initialize-at-run-time=<package or class>` configuration knob.
+If you need to delay the initialization of a class, you can use the `@io.quarkus.runtime.annotations.RuntimeInitialized` annotation
+to indicate that a class should be initialized at runtime. If the class cannot be modified (e.g. it is part of a 3rd party jar)
+then you can place this annotation on a different class in your application, and use the `targets` member to indicate the
+actual classes that should be runtime initialized.
 
-It should be added to the `native-image` configuration using an `<additionalBuildArg>` as shown in the examples above.
+Native mode also supports the notion of 'runtime reinitialization' where static init is run at image generation time, and
+then re-run at startup. This can be done via the `@io.quarkus.runtime.annotations.RuntimeReinitialized` annotation in a
+similar manner to above.
 
 [NOTE]
 ====

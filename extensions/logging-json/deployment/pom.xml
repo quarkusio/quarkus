@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>quarkus-logging-json-deployment</artifactId>
-    <name>Quarkus - JSON Logging - Deployment</name>
+    <name>Quarkus - Logging - JSON - Deployment</name>
 
     <dependencies>
         <dependency>

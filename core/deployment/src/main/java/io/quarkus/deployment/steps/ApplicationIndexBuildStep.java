@@ -10,12 +10,15 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
+import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 
 public class ApplicationIndexBuildStep {
+
+    private static final Logger log = Logger.getLogger(ApplicationIndexBuildStep.class);
 
     @BuildStep
     ApplicationIndexBuildItem build(ArchiveRootBuildItem root) throws IOException {
@@ -30,6 +33,7 @@ public class ApplicationIndexBuildStep {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 if (file.toString().endsWith(".class")) {
+                    log.debugf("Indexing %s", file);
                     try (InputStream stream = Files.newInputStream(file)) {
                         indexer.index(stream);
                     }

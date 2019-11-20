@@ -127,8 +127,8 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     @Override
     public <T extends Entity> T firstResult() {
-        List<T> list = list();
         jpaQuery.setMaxResults(1);
+        List<T> list = jpaQuery.getResultList();
         return list.isEmpty() ? null : list.get(0);
     }
 

@@ -66,7 +66,7 @@ class AgroalProcessor {
 
     @SuppressWarnings("unchecked")
     @Record(STATIC_INIT)
-    @BuildStep
+    @BuildStep(loadsApplicationClasses = true)
     BeanContainerListenerBuildItem build(
             RecorderContext recorderContext,
             AgroalRecorder recorder,

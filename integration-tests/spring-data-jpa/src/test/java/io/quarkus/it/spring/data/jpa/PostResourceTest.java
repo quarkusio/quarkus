@@ -2,6 +2,7 @@ package io.quarkus.it.spring.data.jpa;
 
 import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.is;
 
 import java.util.List;
 
@@ -30,5 +31,12 @@ public class PostResourceTest {
     void testByBypassTrue() {
         when().get("/post/bypass/true").then()
                 .statusCode(204);
+    }
+
+    @Test
+    void testByPostedAtBefore() {
+        when().get("/post/postedBeforeNow").then()
+                .statusCode(200)
+                .body("size()", is(3));
     }
 }

@@ -34,9 +34,9 @@ INSERT INTO person(id, name, age, joined, active, address_id) VALUES (4, 'DeMar'
 INSERT INTO person(id, name, age, joined, active, address_id) VALUES (5, 'DeMar', 20, '2019-05-05', true, NULL);
 INSERT INTO person(id, name, age, joined, active, address_id) VALUES (6, null , 22, '2019-06-06', true, NULL);
 
-INSERT INTO post(id, title, bypass) VALUES (1, 'Quarkus first public release!', false);
-INSERT INTO post(id, title, bypass) VALUES (2, 'Quarkus 0.12.0 released', false);
-INSERT INTO post(id, title, bypass) VALUES (3, 'Quarkus 0.20 released', false);
+INSERT INTO post(id, title, bypass, posted) VALUES (1, 'Quarkus first public release!', false, '2019-03-01 12:00:00.000');
+INSERT INTO post(id, title, bypass, posted) VALUES (2, 'Quarkus 0.12.0 released', false, '2019-04-01 12:00:00.000');
+INSERT INTO post(id, title, bypass, posted) VALUES (3, 'Quarkus 0.20 released', false, '2019-06-01 12:00:00.000');
 
 INSERT INTO post_comment(id, post_id, review) VALUES (1, 1, 'Excellent!');
 INSERT INTO post_comment(id, post_id, review) VALUES (2, 1, 'Wonderful!');

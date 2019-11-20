@@ -1,11 +1,13 @@
 package io.quarkus.it.spring.data.jpa;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Response;
 
 @Path("/book")
 public class BookResource {
@@ -33,7 +35,7 @@ public class BookResource {
     @Path("/exists/bid/{bid}")
     @GET
     public boolean existsById(@PathParam("bid") Integer bid) {
-        return bookRepository.existsById(bid);
+        return bookRepository.existsByBid(bid);
     }
 
     @Path("/exists/publicationBetween/{start}/{end}")
@@ -47,5 +49,13 @@ public class BookResource {
     @Produces("application/json")
     public List<Book> byName(@PathParam("name") String name) {
         return bookRepository.findByName(name);
+    }
+
+    @GET
+    @Path("/year/{year}")
+    @Produces("application/json")
+    public Response findByPublicationYear(@PathParam("year") Integer year) {
+        Optional<Book> book = bookRepository.findByPublicationYear(year);
+        return book.map(b -> Response.ok(book).build()).orElse(Response.noContent().build());
     }
 }

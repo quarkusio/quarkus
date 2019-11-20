@@ -6,4 +6,5 @@ metadata:
   - "kafka-streams"
   categories:
   - "messaging"
+  guide: "https://quarkus.io/guides/kafka-streams"
   status: "stable"

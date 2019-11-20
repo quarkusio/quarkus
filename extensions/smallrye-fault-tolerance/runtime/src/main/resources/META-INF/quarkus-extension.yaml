@@ -7,6 +7,7 @@ metadata:
   - "microprofile-fault-tolerance"
   - "circuit-breaker"
   - "bulkhead"
+  guide: "https://quarkus.io/guides/microprofile-fault-tolerance"
   categories:
   - "cloud"
   status: "stable"

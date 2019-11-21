@@ -1,0 +1,41 @@
+package io.quarkus.quartz.runtime;
+
+import java.util.Optional;
+
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
+
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+public class QuartzBuildTimeConfig {
+    /**
+     * Enable cluster mode or not.
+     * <p>
+     * If enabled make sure to set the appropriate cluster properties.
+     */
+    @ConfigItem
+    public boolean clustered;
+
+    /**
+     * The type of store to use.
+     * <p>
+     * When using the `db` store type configuration value make sure that you have the datasource configured.
+     * See <a href="https://quarkus.io/guides/datasource"> Configuring your datasource</a> for more information.
+     * <p>
+     * To create Quartz tables, you can perform a schema migration via the <a href="https://quarkus.io/guides/flyway"> Flyway
+     * extension</a> using a SQL script matching your database picked from <a href=
+     * "https://github.com/quartz-scheduler/quartz/blob/master/quartz-core/src/main/resources/org/quartz/impl/jdbcjobstore">Quartz
+     * repository</a>.
+     */
+    @ConfigItem(defaultValue = "ram")
+    public StoreType storeType;
+
+    /**
+     * The name of the datasource to use.
+     * <p>
+     * Optionally needed when using the `db` store type.
+     * If not specified, defaults to using the default datasource.
+     */
+    @ConfigItem(name = "datasource")
+    public Optional<String> dataSourceName;
+}

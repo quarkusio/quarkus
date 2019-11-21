@@ -88,6 +88,37 @@ public class SpringDIProcessor {
         return new FeatureBuildItem(FeatureBuildItem.SPRING_DI);
     }
 
+    /*
+     * This Build Item can't be generated in the beanTransformer method because the annotation transformer
+     * is generated lazily.
+     * However the logic is the same
+     */
+    @BuildStep
+    SpringBeanNameToDotNameBuildItem createBeanNamesMap(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
+        final Map<String, DotName> result = new HashMap<>();
+
+        final IndexView index = beanArchiveIndexBuildItem.getIndex();
+        final Collection<AnnotationInstance> stereotypeInstances = new ArrayList<>();
+        stereotypeInstances.addAll(index.getAnnotations(SPRING_COMPONENT));
+        stereotypeInstances.addAll(index.getAnnotations(SPRING_REPOSITORY));
+        stereotypeInstances.addAll(index.getAnnotations(SPRING_SERVICE));
+        for (AnnotationInstance stereotypeInstance : stereotypeInstances) {
+            if (stereotypeInstance.target().kind() != AnnotationTarget.Kind.CLASS) {
+                continue;
+            }
+            result.put(getBeanNameFromStereotypeInstance(stereotypeInstance), stereotypeInstance.target().asClass().name());
+        }
+
+        for (AnnotationInstance beanInstance : index.getAnnotations(BEAN_ANNOTATION)) {
+            if (beanInstance.target().kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
+            }
+            result.put(getBeanNameFromBeanInstance(beanInstance), beanInstance.target().asMethod().returnType().name());
+        }
+
+        return new SpringBeanNameToDotNameBuildItem(result);
+    }
+
     @BuildStep
     AnnotationsTransformerBuildItem beanTransformer(
             final BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
@@ -276,17 +307,8 @@ public class SpringDIProcessor {
                     if (scopeNames != null) {
                         scopes.addAll(scopeNames);
                     }
-                    if (SPRING_STEREOTYPE_ANNOTATIONS.contains(clazzAnnotation)) {
-                        //check if the spring annotation defines a name for the bean
-                        final AnnotationValue value = classInfo.classAnnotation(clazzAnnotation).value();
-                        if (value == null) {
-                            continue;
-                        }
-                        final String name = value.asString();
-                        if (name == null || name.isEmpty()) {
-                            continue;
-                        }
-                        names.add(name);
+                    if (SPRING_STEREOTYPE_ANNOTATIONS.contains(clazzAnnotation) && !isAnnotation(classInfo.flags())) {
+                        names.add(getBeanNameFromStereotypeInstance(classInfo.classAnnotation(clazzAnnotation)));
                     }
                 }
             }
@@ -377,12 +399,11 @@ public class SpringDIProcessor {
                             Collections.emptyList()));
                 }
 
-                //check if the spring annotation defines a name for the bean
-                final AnnotationValue beanNameAnnotationValue = methodInfo.annotation(BEAN_ANNOTATION).value("name");
-                final AnnotationValue beanValueAnnotationValue = methodInfo.annotation(BEAN_ANNOTATION).value("value");
-                if (!addCDINamedAnnotation(target, beanNameAnnotationValue, annotationsToAdd)) {
-                    addCDINamedAnnotation(target, beanValueAnnotationValue, annotationsToAdd);
-                }
+                String beanName = getBeanNameFromBeanInstance(methodInfo.annotation(BEAN_ANNOTATION));
+                annotationsToAdd.add(create(
+                        CDI_NAMED_ANNOTATION,
+                        target,
+                        Collections.singletonList(AnnotationValue.createStringValue("value", beanName))));
             }
 
             // add method parameter conversion annotations
@@ -405,6 +426,79 @@ public class SpringDIProcessor {
 
         }
         return annotationsToAdd;
+    }
+
+    /**
+     * Meant to be called with instances of @Component, @Service, @Repository
+     */
+    private String getBeanNameFromStereotypeInstance(AnnotationInstance annotationInstance) {
+        if (annotationInstance.target().kind() != AnnotationTarget.Kind.CLASS) {
+            throw new IllegalStateException(
+                    "AnnotationInstance " + annotationInstance + " is an invalid target. Only Class targets are supported");
+        }
+        final AnnotationValue value = annotationInstance.value();
+        if ((value == null) || value.asString().isEmpty()) {
+            return getDefaultBeanNameFromClass(annotationInstance.target().asClass().name().toString());
+        } else {
+            return value.asString();
+        }
+    }
+
+    /**
+     * Meant to be called with instances of @Bean
+     */
+    private String getBeanNameFromBeanInstance(AnnotationInstance annotationInstance) {
+        if (annotationInstance.target().kind() != AnnotationTarget.Kind.METHOD) {
+            throw new IllegalStateException(
+                    "AnnotationInstance " + annotationInstance + " is an invalid target. Only Method targets are supported");
+        }
+
+        String beanName = null;
+        final AnnotationValue beanNameAnnotationValue = annotationInstance.value("name");
+        if (beanNameAnnotationValue != null) {
+            beanName = determineName(beanNameAnnotationValue);
+        }
+        if (beanName == null || beanName.isEmpty()) {
+            final AnnotationValue beanValueAnnotationValue = annotationInstance.value();
+            if (beanNameAnnotationValue != null) {
+                beanName = determineName(beanValueAnnotationValue);
+            }
+        }
+        if (beanName == null || beanName.isEmpty()) {
+            beanName = annotationInstance.target().asMethod().name();
+        }
+
+        return beanName;
+    }
+
+    // this does what Spring's AnnotationBeanNameGenerator does to generate a name
+    private String getDefaultBeanNameFromClass(String className) {
+        return decapitalize(getShortNameOfClass(className));
+    }
+
+    private String getShortNameOfClass(String className) {
+        int lastDotIndex = className.lastIndexOf('.');
+        int nameEndIndex = className.indexOf("$$");
+        if (nameEndIndex == -1) {
+            nameEndIndex = className.length();
+        }
+        String shortName = className.substring(lastDotIndex + 1, nameEndIndex);
+        shortName = shortName.replace('$', '.');
+        return shortName;
+    }
+
+    private String decapitalize(String name) {
+        if (name != null && name.length() != 0) {
+            if (name.length() > 1 && Character.isUpperCase(name.charAt(1)) && Character.isUpperCase(name.charAt(0))) {
+                return name;
+            } else {
+                char[] chars = name.toCharArray();
+                chars[0] = Character.toLowerCase(chars[0]);
+                return new String(chars);
+            }
+        } else {
+            return name;
+        }
     }
 
     private void addSpringValueAnnotations(AnnotationTarget target, AnnotationInstance annotation, boolean addInject,
@@ -438,26 +532,6 @@ public class SpringDIProcessor {
                     target,
                     Collections.emptyList()));
         }
-    }
-
-    private static boolean addCDINamedAnnotation(AnnotationTarget target,
-            AnnotationValue annotationValue,
-            Set<AnnotationInstance> annotationsToAdd) {
-        if (annotationValue == null) {
-            return false;
-        }
-
-        final String beanName = determineName(annotationValue);
-        if (beanName != null && !"".equals(beanName)) {
-            annotationsToAdd.add(create(
-                    CDI_NAMED_ANNOTATION,
-                    target,
-                    Collections.singletonList(AnnotationValue.createStringValue("value", beanName))));
-
-            return true;
-        }
-
-        return false;
     }
 
     private static String determineName(AnnotationValue annotationValue) {

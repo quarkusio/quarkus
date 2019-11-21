@@ -104,7 +104,7 @@ class VertxWebProcessor {
 
         // Collect all business methods annotated with @Route and @RouteFilter
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
-        for (BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
+        for (BeanInfo bean : validationPhase.getContext().beans().classBeans()) {
             if (bean.isClassBean()) {
                 // NOTE: inherited business methods are not taken into account
                 ClassInfo beanClass = bean.getTarget().get().asClass();

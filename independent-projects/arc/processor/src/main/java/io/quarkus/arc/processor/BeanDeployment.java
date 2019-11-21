@@ -241,6 +241,10 @@ public class BeanDeployment {
                 if (bean.getName() != null) {
                     continue test;
                 }
+                // Unremovable synthetic beans
+                if (!bean.isRemovable()) {
+                    continue test;
+                }
                 // Custom exclusions
                 for (Predicate<BeanInfo> exclusion : unusedExclusions) {
                     if (exclusion.test(bean)) {
@@ -294,6 +298,9 @@ public class BeanDeployment {
             }
             LOGGER.debugf("Removed %s unused beans in %s ms", removable.size(), System.currentTimeMillis() - removalStart);
         }
+
+        buildContext.putInternal(BuildExtension.Key.REMOVED_BEANS.asString(), Collections.unmodifiableSet(removedBeans));
+
         LOGGER.debugf("Bean deployment initialized in %s ms", System.currentTimeMillis() - start);
     }
 
@@ -836,6 +843,11 @@ public class BeanDeployment {
                 return buildContext.put(key, value);
             }
 
+            @Override
+            public BeanStream beans() {
+                return new BeanStream(get(BuildExtension.Key.BEANS));
+            }
+
         };
         for (BeanRegistrar registrar : beanRegistrars) {
             registrar.register(registrationContext);
@@ -954,6 +966,16 @@ public class BeanDeployment {
         @Override
         public List<Throwable> getDeploymentProblems() {
             return Collections.unmodifiableList(errors);
+        }
+
+        @Override
+        public BeanStream beans() {
+            return new BeanStream(get(BuildExtension.Key.BEANS));
+        }
+
+        @Override
+        public BeanStream removedBeans() {
+            return new BeanStream(get(BuildExtension.Key.REMOVED_BEANS));
         }
 
     }

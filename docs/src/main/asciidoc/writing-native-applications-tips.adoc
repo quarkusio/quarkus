@@ -68,7 +68,7 @@ Multiple options may be separated by a comma. For example, one could use:
 [source,properties]
 ----
 quarkus.native.additional-build-args =\
-    -H:ResourceConfigurationFiles=resource-config.json,\
+    -H:ResourceConfigurationFiles=resources-config.json,\
     -H:ReflectionConfigurationFiles=reflection-config.json
 ----
 
@@ -215,7 +215,7 @@ The final order of business is to make the configuration file known to the `nati
 
 [source,properties]
 ----
-quarkus.native.additional-build-args =-H:ResourceConfigurationFiles=reflection-config.json
+quarkus.native.additional-build-args =-H:ReflectionConfigurationFiles=reflection-config.json
 ----
 
 In the previous snippet we were able to simply use `reflection-config.json` instead of specifying the entire path of the file simply because it was added to `src/main/resources`.
@@ -228,7 +228,7 @@ Multiple options may be separated by a comma. For example, one could use:
 [source,properties]
 ----
 quarkus.native.additional-build-args =\
-    -H:ResourceConfigurationFiles=resource-config.json,\
+    -H:ResourceConfigurationFiles=resources-config.json,\
     -H:ReflectionConfigurationFiles=reflection-config.json
 ----
 

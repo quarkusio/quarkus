@@ -88,12 +88,7 @@ class MainClassBuildStep {
         List<Class<?>> additionalConfigTypes = typeItems.stream().map(ConfigurationTypeBuildItem::getValueType)
                 .collect(Collectors.toList());
 
-        ClassOutput classOutput = new ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
-            }
-        };
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
         RunTimeConfigurationGenerator.generate(readResult, classOutput, defaults, additionalConfigTypes);
 

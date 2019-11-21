@@ -40,6 +40,10 @@
 
                         <!-- ConversationScope not supported in Quarkus -->
                         <exclude>org.eclipse.microprofile.rest.client.tck.cditests.HasConversationScopeTest</exclude>
+
+                        <!-- We have our own version of these tests which set up a config environment -->
+                        <exclude>org.eclipse.microprofile.rest.client.tck.InvokeWithJsonBProviderTest</exclude>
+                        <exclude>org.eclipse.microprofile.rest.client.tck.InvokeWithJsonPProviderTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>

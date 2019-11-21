@@ -17,7 +17,6 @@ import java.util.function.Consumer;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Providers;
 
-import io.quarkus.deployment.GizmoAdaptor;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -36,6 +35,7 @@ import org.jboss.resteasy.spring.web.ResponseStatusFeature;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -338,7 +338,7 @@ public class SpringWebProcessor {
         // Look for all exception classes that are annotated with @ResponseStatus
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
-        ClassOutput classOutput = new GizmoAdaptor(generatedExceptionMappers, false);
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedExceptionMappers, false);
         generateMappersForResponseStatusOnException(providersProducer, index, classOutput, typesUtil);
         generateMappersForExceptionHandlerInControllerAdvice(providersProducer, reflectiveClassProducer, index, classOutput,
                 typesUtil);

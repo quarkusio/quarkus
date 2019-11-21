@@ -23,6 +23,7 @@ import org.springframework.data.repository.query.QueryByExampleExecutor;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -98,12 +99,7 @@ public class SpringDataJPAProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             List<ClassInfo> crudRepositoriesToImplement, IndexView index) {
 
-        ClassOutput classOutput = new ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                generatedBeans.produce(new GeneratedBeanBuildItem(name, data));
-            }
-        };
+        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
 
         // index the Spring Data repository interfaces that extend Repository because we need to pull the generic types from it
         Indexer indexer = new Indexer();

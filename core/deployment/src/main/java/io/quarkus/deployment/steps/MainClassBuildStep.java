@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import org.graalvm.nativeimage.ImageInfo;
 
 import io.quarkus.builder.Version;
-import io.quarkus.deployment.GizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
@@ -70,7 +70,7 @@ class MainClassBuildStep {
         appClassNameProducer.produce(new ApplicationClassNameBuildItem(APP_CLASS));
 
         // Application class
-        GizmoAdaptor gizmoOutput = new GizmoAdaptor(generatedClass, true);
+        GeneratedClassGizmoAdaptor gizmoOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
         ClassCreator file = new ClassCreator(gizmoOutput, APP_CLASS, null,
                 Application.class.getName());
 

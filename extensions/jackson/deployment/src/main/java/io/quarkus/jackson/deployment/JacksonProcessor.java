@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -138,12 +139,7 @@ public class JacksonProcessor {
             return;
         }
 
-        ClassOutput classOutput = new ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                generatedBeans.produce(new GeneratedBeanBuildItem(name, data));
-            }
-        };
+        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
 
         try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
                 .className("io.quarkus.jackson.customizer.RegisterSerializersAndDeserializersCustomizer")

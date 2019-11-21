@@ -21,7 +21,8 @@ import org.jboss.jandex.IndexView;
 import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.deployment.GizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
@@ -48,14 +49,8 @@ public class ConfigPropertiesBuildStep {
             return;
         }
 
-        ClassOutput beansClassOutput = new ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                generatedBeans.produce(new GeneratedBeanBuildItem(name, data));
-            }
-        };
-
-        ClassOutput nonBeansClassOutput = new GizmoAdaptor(generatedClasses, true);
+        ClassOutput beansClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
+        ClassOutput nonBeansClassOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
 
         /*
          * We generate CDI producer bean containing one method for each of the @ConfigProperties

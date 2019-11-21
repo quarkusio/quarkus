@@ -34,7 +34,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.GizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -126,7 +126,7 @@ public class KafkaProcessor {
     @BuildStep
     public void replaceJava9Code(BuildProducer<GeneratedClassBuildItem> producer) {
         // make our own class output to ensure that our step is run.
-        ClassOutput classOutput = new GizmoAdaptor(producer, false);
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(producer, false);
         try (ClassCreator cc = ClassCreator.builder().className(TARGET_JAVA_9_CHECKSUM_FACTORY)
                 .classOutput(classOutput).setFinal(true).superClass(Object.class).build()) {
 

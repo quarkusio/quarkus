@@ -4,12 +4,12 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 
-public class GizmoAdaptor implements ClassOutput {
+public class GeneratedClassGizmoAdaptor implements ClassOutput {
 
     private final BuildProducer<GeneratedClassBuildItem> classOutput;
     private final boolean applicationClass;
 
-    public GizmoAdaptor(BuildProducer<GeneratedClassBuildItem> classOutput, boolean applicationClass) {
+    public GeneratedClassGizmoAdaptor(BuildProducer<GeneratedClassBuildItem> classOutput, boolean applicationClass) {
         this.classOutput = classOutput;
         this.applicationClass = applicationClass;
     }

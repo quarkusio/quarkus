@@ -33,7 +33,7 @@ import org.objectweb.asm.Opcodes;
 
 import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.deployment.ApplicationArchive;
-import io.quarkus.deployment.GizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -321,7 +321,7 @@ public class ConfigurationSetup {
             Consumer<BytecodeRecorderObjectLoaderBuildItem> objectLoaderConsumer,
             List<ConfigurationTypeBuildItem> configTypeItems,
             List<RunTimeConfigurationSourceBuildItem> runTimeSources) {
-        final ClassOutput classOutput = new GizmoAdaptor(classConsumer, true);
+        final ClassOutput classOutput = new GeneratedClassGizmoAdaptor(classConsumer, true);
 
         // General run time setup
 

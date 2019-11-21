@@ -31,6 +31,7 @@ import io.quarkus.agroal.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.agroal.runtime.TransactionIntegration;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -220,12 +221,7 @@ class AgroalProcessor {
      */
     private void createDataSourceProducerBean(BuildProducer<GeneratedBeanBuildItem> generatedBean,
             String dataSourceProducerClassName) {
-        ClassOutput classOutput = new ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                generatedBean.produce(new GeneratedBeanBuildItem(name, data));
-            }
-        };
+        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBean);
 
         ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
                 .className(dataSourceProducerClassName)

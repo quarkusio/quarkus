@@ -86,23 +86,20 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
                             continue;
                         }
                         // We don't know which BOM is the platform one, so we are trying every BOM here
-                        String bomVersion = dep.getVersion();
-                        if (bomVersion.startsWith("${") && bomVersion.endsWith("}")) {
-                            final String prop = bomVersion.substring(2, bomVersion.length() - 1);
-                            bomVersion = mvnBuild.getProperty(prop);
-                            if (bomVersion == null) {
-                                getLog().debug("Failed to resolve version of " + dep);
-                                continue;
-                            }
+                        final String bomVersion = resolveValue(dep.getVersion(), buildFile);
+                        final String bomGroupId = resolveValue(dep.getGroupId(), buildFile);
+                        final String bomArtifactId = resolveValue(dep.getArtifactId(), buildFile);
+                        if (bomVersion == null || bomGroupId == null || bomArtifactId == null) {
+                            continue;
                         }
-                        Artifact jsonArtifact = new DefaultArtifact(dep.getGroupId(), dep.getArtifactId(), dep.getClassifier(),
-                                "json", bomVersion);
+
+                        Artifact jsonArtifact = new DefaultArtifact(bomGroupId, bomArtifactId, null, "json", bomVersion);
                         try {
                             jsonArtifact = mvn.resolve(jsonArtifact).getArtifact();
                         } catch (Exception e) {
                             log.debug("Failed to resolve JSON descriptor as %s", jsonArtifact);
-                            jsonArtifact = new DefaultArtifact(dep.getGroupId(), dep.getArtifactId() + "-descriptor-json",
-                                    dep.getClassifier(), "json", bomVersion);
+                            jsonArtifact = new DefaultArtifact(bomGroupId, bomArtifactId + "-descriptor-json", null, "json",
+                                    bomVersion);
                             try {
                                 jsonArtifact = mvn.resolve(jsonArtifact).getArtifact();
                             } catch (Exception e1) {
@@ -113,7 +110,6 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
                         descrArtifact = jsonArtifact;
                         break;
                     }
-
                     if (descrArtifact != null) {
                         log.debug("Quarkus platform JSON descriptor resolved from %s", descrArtifact);
                         final QuarkusPlatformDescriptor platform = QuarkusJsonPlatformDescriptorResolver.newInstance()
@@ -153,4 +149,15 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
     }
 
     protected abstract void doExecute(BuildFile buildFile) throws MojoExecutionException;
+
+    private String resolveValue(String expr, BuildFile buildFile) throws IOException {
+        if (expr.startsWith("${") && expr.endsWith("}")) {
+            final String v = buildFile.getProperty(expr.substring(2, expr.length() - 1));
+            if (v == null) {
+                getLog().debug("Failed to resolve version of " + v);
+            }
+            return v;
+        }
+        return expr;
+    }
 }

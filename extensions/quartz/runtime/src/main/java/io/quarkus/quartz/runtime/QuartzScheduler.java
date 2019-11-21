@@ -9,6 +9,8 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.PreDestroy;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.event.Observes;
 import javax.inject.Singleton;
 
@@ -17,8 +19,8 @@ import org.jboss.logging.Logger;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.Job;
 import org.quartz.JobBuilder;
+import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 import org.quartz.ScheduleBuilder;
 import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
@@ -55,7 +57,6 @@ public class QuartzScheduler implements Scheduler {
     private final Map<String, ScheduledInvoker> invokers;
 
     public QuartzScheduler(SchedulerSupport schedulerSupport, QuartzSupport quartzSupport, Config config) {
-
         if (schedulerSupport.getScheduledMethods().isEmpty()) {
             this.triggerNameSequence = null;
             this.scheduler = null;
@@ -66,21 +67,7 @@ public class QuartzScheduler implements Scheduler {
             this.invokers = new HashMap<>();
 
             try {
-                Properties props = new Properties();
-                props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_ID, "QuarkusQuartzScheduler");
-                props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, "QuarkusQuartzScheduler");
-                props.put(StdSchedulerFactory.PROP_SCHED_WRAP_JOB_IN_USER_TX, false);
-                props.put(StdSchedulerFactory.PROP_SCHED_SCHEDULER_THREADS_INHERIT_CONTEXT_CLASS_LOADER_OF_INITIALIZING_THREAD,
-                        true);
-                props.put(StdSchedulerFactory.PROP_THREAD_POOL_CLASS, "org.quartz.simpl.SimpleThreadPool");
-                props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadCount",
-                        "" + quartzSupport.getRuntimeConfig().threadCount);
-                props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadPriority",
-                        "" + quartzSupport.getRuntimeConfig().threadPriority);
-                props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".misfireThreshold", "60000");
-                props.put(StdSchedulerFactory.PROP_JOB_STORE_CLASS, "org.quartz.simpl.RAMJobStore");
-                props.put(StdSchedulerFactory.PROP_SCHED_RMI_EXPORT, false);
-                props.put(StdSchedulerFactory.PROP_SCHED_RMI_PROXY, false);
+                Properties props = getSchedulerConfigurationProperties(quartzSupport);
 
                 SchedulerFactory schedulerFactory = new StdSchedulerFactory(props);
                 scheduler = schedulerFactory.getScheduler();
@@ -109,8 +96,9 @@ public class QuartzScheduler implements Scheduler {
                     for (Scheduled scheduled : method.getSchedules()) {
                         String name = triggerNameSequence.getAndIncrement() + "_" + method.getInvokerClassName();
                         JobBuilder jobBuilder = JobBuilder.newJob(InvokerJob.class)
-                                .withIdentity(name, Scheduler.class.getName()).usingJobData(INVOKER_KEY,
-                                        method.getInvokerClassName());
+                                .withIdentity(name, Scheduler.class.getName())
+                                .usingJobData(INVOKER_KEY, method.getInvokerClassName())
+                                .requestRecovery();
                         ScheduleBuilder<?> scheduleBuilder;
 
                         String cron = scheduled.cron().trim();
@@ -161,8 +149,13 @@ public class QuartzScheduler implements Scheduler {
                                     .plusMillis(scheduled.delayUnit().toMillis(scheduled.delay())).toEpochMilli()));
                         }
 
-                        scheduler.scheduleJob(jobBuilder.build(), triggerBuilder.build());
-                        LOGGER.debugf("Scheduled business method %s with config %s", method.getMethodDescription(), scheduled);
+                        JobDetail job = jobBuilder.build();
+                        if (scheduler.checkExists(job.getKey())) {
+                            scheduler.deleteJob(job.getKey());
+                        }
+                        scheduler.scheduleJob(job, triggerBuilder.build());
+                        LOGGER.debugf("Scheduled business method %s with config %s", method.getMethodDescription(),
+                                scheduled);
                     }
                 }
             } catch (SchedulerException e) {
@@ -204,21 +197,76 @@ public class QuartzScheduler implements Scheduler {
         }
     }
 
+    /**
+     * Need to gracefully shutdown the scheduler making sure that all triggers have been
+     * released before datasource shutdown.
+     *
+     * @param event ignored
+     */
+    void destroy(@BeforeDestroyed(ApplicationScoped.class) Object event) { //
+        if (scheduler != null) {
+            try {
+                scheduler.shutdown(true); // gracefully shutdown
+            } catch (SchedulerException e) {
+                LOGGER.warnf("Unable to gracefully shutdown the scheduler", e);
+            }
+        }
+    }
+
     @PreDestroy
     void destroy() {
         if (scheduler != null) {
             try {
-                scheduler.shutdown();
+                if (!scheduler.isShutdown()) {
+                    scheduler.shutdown(false); // force shutdown
+                }
             } catch (SchedulerException e) {
-                LOGGER.warnf("Unable to shutdown scheduler", e);
+                LOGGER.warnf("Unable to shutdown the scheduler", e);
             }
         }
+    }
+
+    private Properties getSchedulerConfigurationProperties(QuartzSupport quartzSupport) {
+        Properties props = new Properties();
+        QuartzBuildTimeConfig buildTimeConfig = quartzSupport.getBuildTimeConfig();
+        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_ID, "AUTO");
+        props.put("org.quartz.scheduler.skipUpdateCheck", "true");
+        props.put(StdSchedulerFactory.PROP_SCHED_INSTANCE_NAME, "QuarkusQuartzScheduler");
+        props.put(StdSchedulerFactory.PROP_SCHED_WRAP_JOB_IN_USER_TX, "false");
+        props.put(StdSchedulerFactory.PROP_SCHED_SCHEDULER_THREADS_INHERIT_CONTEXT_CLASS_LOADER_OF_INITIALIZING_THREAD, "true");
+        props.put(StdSchedulerFactory.PROP_THREAD_POOL_CLASS, "org.quartz.simpl.SimpleThreadPool");
+        props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadCount",
+                "" + quartzSupport.getRuntimeConfig().threadCount);
+        props.put(StdSchedulerFactory.PROP_THREAD_POOL_PREFIX + ".threadPriority",
+                "" + quartzSupport.getRuntimeConfig().threadPriority);
+        props.put(StdSchedulerFactory.PROP_SCHED_RMI_EXPORT, "false");
+        props.put(StdSchedulerFactory.PROP_SCHED_RMI_PROXY, "false");
+        props.put(StdSchedulerFactory.PROP_JOB_STORE_CLASS, buildTimeConfig.storeType.clazz);
+
+        if (buildTimeConfig.storeType == StoreType.DB) {
+            String dataSource = buildTimeConfig.dataSourceName.orElse("QUARKUS_QUARTZ_DEFAULT_DATASOURCE");
+            QuarkusQuartzConnectionPoolProvider.setDataSourceName(dataSource);
+            props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".useProperties", "true");
+            props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".misfireThreshold", "60000");
+            props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".tablePrefix", "QRTZ_");
+            props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".dataSource", dataSource);
+            props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".driverDelegateClass",
+                    quartzSupport.getDriverDialect().get());
+            props.put(StdSchedulerFactory.PROP_DATASOURCE_PREFIX + "." + dataSource + ".connectionProvider.class",
+                    QuarkusQuartzConnectionPoolProvider.class.getName());
+            if (buildTimeConfig.clustered) {
+                props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".isClustered", "true");
+                props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".clusterCheckinInterval", "20000"); // 20 seconds
+            }
+        }
+
+        return props;
     }
 
     class InvokerJob implements Job {
 
         @Override
-        public void execute(JobExecutionContext context) throws JobExecutionException {
+        public void execute(JobExecutionContext context) {
             Trigger trigger = new Trigger() {
 
                 @Override
@@ -239,23 +287,25 @@ public class QuartzScheduler implements Scheduler {
                 }
             };
             String invokerClass = context.getJobDetail().getJobDataMap().getString(INVOKER_KEY);
-            invokers.get(invokerClass).invoke(new ScheduledExecution() {
+            ScheduledInvoker scheduledInvoker = invokers.get(invokerClass);
+            if (scheduledInvoker != null) { // could be null from previous runs
+                scheduledInvoker.invoke(new ScheduledExecution() {
+                    @Override
+                    public Trigger getTrigger() {
+                        return trigger;
+                    }
 
-                @Override
-                public Trigger getTrigger() {
-                    return trigger;
-                }
+                    @Override
+                    public Instant getScheduledFireTime() {
+                        return context.getScheduledFireTime().toInstant();
+                    }
 
-                @Override
-                public Instant getScheduledFireTime() {
-                    return context.getScheduledFireTime().toInstant();
-                }
-
-                @Override
-                public Instant getFireTime() {
-                    return context.getFireTime().toInstant();
-                }
-            });
+                    @Override
+                    public Instant getFireTime() {
+                        return context.getFireTime().toInstant();
+                    }
+                });
+            }
         }
     }
 

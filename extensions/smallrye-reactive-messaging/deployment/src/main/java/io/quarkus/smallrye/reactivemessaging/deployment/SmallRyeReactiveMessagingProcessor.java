@@ -38,6 +38,7 @@ import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.deployment.GizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -205,12 +206,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
         List<QuarkusMediatorConfiguration> configurations = new ArrayList<>(mediatorMethods.size());
 
-        ClassOutput classOutput = new ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
-            }
-        };
+        ClassOutput classOutput = new GizmoAdaptor(generatedClass, true);
 
         /*
          * Go through the collected MediatorMethods and build up the corresponding MediaConfiguration

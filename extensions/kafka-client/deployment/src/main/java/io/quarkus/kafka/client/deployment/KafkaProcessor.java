@@ -34,6 +34,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.GizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -123,14 +124,9 @@ public class KafkaProcessor {
      * @return the generated class
      */
     @BuildStep
-    public GeneratedClassBuildItem replaceJava9Code() {
+    public void replaceJava9Code(BuildProducer<GeneratedClassBuildItem> producer) {
         // make our own class output to ensure that our step is run.
-        byte[][] holder = new byte[1][];
-        ClassOutput classOutput = new ClassOutput() {
-            public void write(final String name, final byte[] data) {
-                holder[0] = data;
-            }
-        };
+        ClassOutput classOutput = new GizmoAdaptor(producer, false);
         try (ClassCreator cc = ClassCreator.builder().className(TARGET_JAVA_9_CHECKSUM_FACTORY)
                 .classOutput(classOutput).setFinal(true).superClass(Object.class).build()) {
 
@@ -143,6 +139,5 @@ public class KafkaProcessor {
                 mc.returnValue(mc.newInstance(MethodDescriptor.ofConstructor("java.util.zip.CRC32C")));
             }
         }
-        return new GeneratedClassBuildItem(false, TARGET_JAVA_9_CHECKSUM_FACTORY, holder[0]);
     }
 }

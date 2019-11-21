@@ -74,6 +74,7 @@ public class JandexProtoGenerator implements ProtoGenerator<ClassInfo> {
             String fieldTypeString = pd.type().name().toString();
 
             DotName fieldType = pd.type().name();
+            String protoType;
             if (pd.type().kind() == Kind.PARAMETERIZED_TYPE) {
                 fieldTypeString = "Collection";
 
@@ -83,8 +84,10 @@ public class JandexProtoGenerator implements ProtoGenerator<ClassInfo> {
                             + " uses collection without type information");
                 }
                 fieldType = typeParameters.get(0).name();
+                protoType = protoType(fieldType.toString());
+            } else {
+                protoType = protoType(fieldTypeString);
             }
-            String protoType = protoType(fieldTypeString);
 
             if (protoType == null) {
                 ProtoMessage another = messageFromClass(proto, index.getClassByName(fieldType), index, packageName,

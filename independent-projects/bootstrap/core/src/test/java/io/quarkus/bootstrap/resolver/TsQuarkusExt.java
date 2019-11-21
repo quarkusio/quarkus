@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap.resolver;
 
-import java.io.IOException;
-
 import io.quarkus.bootstrap.BootstrapConstants;
 
 public class TsQuarkusExt {
@@ -34,7 +32,7 @@ public class TsQuarkusExt {
         return this;
     }
 
-    public void install(TsRepoBuilder repo) throws IOException {
+    public void install(TsRepoBuilder repo) {
         repo.install(deployment);
         repo.install(runtime);
     }

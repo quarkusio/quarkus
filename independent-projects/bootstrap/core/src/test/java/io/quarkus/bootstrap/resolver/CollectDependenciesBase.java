@@ -19,6 +19,7 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
 
     protected TsArtifact root;
     protected List<AppDependency> expectedResult = Collections.emptyList();
+    protected List<AppDependency> deploymentDeps = Collections.emptyList();
 
     @Override
     @BeforeEach
@@ -33,8 +34,17 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
     @Test
     public void testCollectedDependencies() throws Exception {
         install(root);
+
+        List<AppDependency> expected;
+        if(deploymentDeps.isEmpty()) {
+            expected = expectedResult;
+        } else {
+            expected = new ArrayList<>(expectedResult.size() + deploymentDeps.size());
+            expected.addAll(expectedResult);
+            expected.addAll(deploymentDeps);
+        }
         final List<AppDependency> resolvedDeps = resolver.resolveModel(root.toAppArtifact()).getAllDependencies();
-        assertEquals(expectedResult, resolvedDeps);
+        assertEquals(expected, resolvedDeps);
     }
 
     protected TsArtifact install(TsArtifact dep, boolean collected) {
@@ -55,6 +65,25 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
             addCollectedDep(dep, collectedInScope, false);
         }
         return dep;
+    }
+
+    protected void install(TsQuarkusExt ext) {
+        install(ext, true);
+    }
+
+    protected void install(TsQuarkusExt ext, boolean collected) {
+        ext.install(repo);
+        if(collected) {
+            addCollectedDep(ext.getRuntime(), "compile", false);
+            addCollectedDeploymentDep(ext.getDeployment());
+        }
+    }
+
+    protected void installAsDep(TsQuarkusExt ext) {
+        ext.install(repo);
+        root.addDependency(ext);
+        addCollectedDep(ext.getRuntime(), "compile", false);
+        addCollectedDeploymentDep(ext.getDeployment());
     }
 
     protected void installAsDep(TsArtifact dep) {
@@ -100,6 +129,13 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
             expectedResult = new ArrayList<>();
         }
         expectedResult.add(new AppDependency(artifact.toAppArtifact(), scope, optional));
+    }
+
+    protected void addCollectedDeploymentDep(TsArtifact ext) {
+        if(deploymentDeps.isEmpty()) {
+            deploymentDeps = new ArrayList<>();
+        }
+        deploymentDeps.add(new AppDependency(ext.toAppArtifact(), "compile", false));
     }
 
     protected void addManagedDep(TsArtifact dep) {

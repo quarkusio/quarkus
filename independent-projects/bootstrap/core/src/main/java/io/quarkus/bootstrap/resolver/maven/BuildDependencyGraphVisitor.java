@@ -115,7 +115,7 @@ public class BuildDependencyGraphVisitor {
     private void visitEnter(DependencyNode node) {
         final Dependency dep = node.getDependency();
         if (deploymentNode == null) {
-            runtimeArtifact = DeploymentInjectingDependencyVisitor.getInjectedDependency(node);
+            runtimeArtifact = DeploymentInjectingDependencyVisitor.getRuntimeArtifact(node);
             if (runtimeArtifact != null) {
                 deploymentNode = node;
             }

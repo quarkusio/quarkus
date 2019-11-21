@@ -108,23 +108,20 @@ class VertxProcessor {
 
         // We need to collect all business methods annotated with @MessageConsumer first
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
-        for (BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
-            if (bean.isClassBean()) {
-                // TODO: inherited business methods?
-                for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
-                    AnnotationInstance consumeEvent = annotationStore.getAnnotation(method, CONSUME_EVENT);
-                    if (consumeEvent != null) {
-                        // Validate method params and return type
-                        List<Type> params = method.parameters();
-                        if (params.size() != 1) {
-                            throw new IllegalStateException(String.format(
-                                    "Event consumer business method must accept exactly one parameter: %s [method: %s, bean:%s",
-                                    params, method, bean));
-                        }
-                        messageConsumerBusinessMethods
-                                .produce(new EventConsumerBusinessMethodItem(bean, method, consumeEvent));
-                        LOGGER.debugf("Found event consumer business method %s declared on %s", method, bean);
+        for (BeanInfo bean : validationPhase.getContext().beans().classBeans()) {
+            for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
+                AnnotationInstance consumeEvent = annotationStore.getAnnotation(method, CONSUME_EVENT);
+                if (consumeEvent != null) {
+                    // Validate method params and return type
+                    List<Type> params = method.parameters();
+                    if (params.size() != 1) {
+                        throw new IllegalStateException(String.format(
+                                "Event consumer business method must accept exactly one parameter: %s [method: %s, bean:%s",
+                                params, method, bean));
                     }
+                    messageConsumerBusinessMethods
+                            .produce(new EventConsumerBusinessMethodItem(bean, method, consumeEvent));
+                    LOGGER.debugf("Found event consumer business method %s declared on %s", method, bean);
                 }
             }
         }

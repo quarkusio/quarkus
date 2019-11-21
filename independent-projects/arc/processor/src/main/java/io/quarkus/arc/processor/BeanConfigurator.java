@@ -59,7 +59,9 @@ public final class BeanConfigurator<T> {
 
     private final Map<String, Object> params;
 
-    private boolean isDefaultBean;
+    private boolean defaultBean;
+
+    private boolean removable;
 
     /**
      *
@@ -77,6 +79,7 @@ public final class BeanConfigurator<T> {
         this.scope = BuiltinScope.DEPENDENT.getInfo();
         this.params = new HashMap<>();
         this.name = null;
+        this.removable = true;
     }
 
     public BeanConfigurator<T> param(String name, Class<?> value) {
@@ -152,7 +155,12 @@ public final class BeanConfigurator<T> {
     }
 
     public BeanConfigurator<T> defaultBean() {
-        this.isDefaultBean = true;
+        this.defaultBean = true;
+        return this;
+    }
+
+    public BeanConfigurator<T> unremovable() {
+        this.removable = false;
         return this;
     }
 
@@ -216,7 +224,7 @@ public final class BeanConfigurator<T> {
                     .beanDeployment(beanDeployment).scope(scope).types(types)
                     .qualifiers(qualifiers)
                     .alternativePriority(alternativePriority).name(name).creator(creatorConsumer).destroyer(destroyerConsumer)
-                    .params(params).defaultBean(isDefaultBean).build());
+                    .params(params).defaultBean(defaultBean).removable(removable).build());
         }
     }
 

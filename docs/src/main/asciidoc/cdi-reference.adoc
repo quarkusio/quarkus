@@ -379,8 +379,8 @@ NOTE: A bean registration that is a result of an `AdditionalBeanBuildItem` is re
 === Synthetic Beans
 
 Sometimes it is very useful to register a synthetic bean, i.e. a bean that doesn't need to have a corresponding java class.
-In CDI this could be achieved using `AfterBeanDiscovery.addBean()` methods.
-In Quarkus we produce a `BeanRegistrarBuildItem` and leverage the `io.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
+In CDI, this could be achieved using `AfterBeanDiscovery.addBean()` methods.
+In Quarkus, we produce a `BeanRegistrarBuildItem` and leverage the `io.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
 
 [source,java]
 ----
@@ -397,6 +397,8 @@ BeanRegistrarBuildItem syntheticBean() {
 ----
 
 NOTE: The output of a `BeanConfigurator` is recorded as bytecode. Therefore there are some limitations in how a synthetic bean instance is created. See also `BeanConfigurator.creator()` methods.
+
+TIP: You can easily filter all class-based beans via the convenient `BeanStream` returned from the `RegistrationContext.beans()` method.
 
 If an extension needs to produce other build items during the "bean registration" phase it should use the `BeanRegistrationPhaseBuildItem` instead.
 The reason is that injected objects are only valid during a `@BuildStep` method invocation.
@@ -511,7 +513,7 @@ BeanDeploymentValidatorBuildItem beanDeploymentValidator() {
 }
 ----
 
-NOTE: See also `io.quarkus.arc.processor.BuildExtension.Key` to discover the available metadata.
+TIP: You can easily filter all registered beans via the convenient `BeanStream` returned from the `ValidationContext.beans()` method.
 
 If an extension needs to produce other build items during the "validation" phase it should use the `ValidationPhaseBuildItem` instead.
 The reason is that injected objects are only valid during a `@BuildStep` method invocation.
@@ -574,13 +576,15 @@ The built-in keys located in `io.quarkus.arc.processor.BuildExtension.Key` are:
 * `ANNOTATION_STORE`
 ** Contains an `AnnotationStore` that keeps information about all `AnnotationTarget` annotations after application of annotation transformers
 * `INJECTION_POINTS`
-** `List<InjectionPointInfo>` containing all injection points
+** `Collection<InjectionPointInfo>` containing all injection points
 * `BEANS`
-** `List<BeanInfo>` containing all beans
+** `Collection<BeanInfo>` containing all beans
+* `REMOVED_BEANS`
+** `Collection<BeanInfo>` containing all the removed beans; see <<remove_unused_beans>> for more information
 * `OBSERVERS`
-** `List<ObserverInfo>` containing all observers
+** `Collection<ObserverInfo>` containing all observers
 * `SCOPES`
-** `List<ScopeInfo>` containing all scopes, including custom ones
+** `Collection<ScopeInfo>` containing all scopes, including custom ones
 * `QUALIFIERS`
 ** `Map<DotName, ClassInfo>` containing all qualifiers
 * `INTERCEPTOR_BINDINGS`
@@ -600,7 +604,7 @@ Here is a summary of which extensions can access which metadata:
 * `InjectionPointsTransformer`
 ** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`
 * `BeanRegistrar`
-** Has access to all build metadata
+** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`, `BEANS`
 * `BeanDeploymentValidator`
 ** Has access to all build metadata
 

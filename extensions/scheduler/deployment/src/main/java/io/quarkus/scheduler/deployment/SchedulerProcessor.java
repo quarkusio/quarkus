@@ -127,12 +127,10 @@ public class SchedulerProcessor {
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
 
         // We need to collect all business methods annotated with @Scheduled first
-        for (BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
-            if (bean.isClassBean()) {
-                collectScheduledMethods(config, beanArchives.getIndex(), annotationStore, bean,
-                        bean.getTarget().get().asClass(),
-                        scheduledBusinessMethods, validationPhase.getContext());
-            }
+        for (BeanInfo bean : validationPhase.getContext().beans().classBeans()) {
+            collectScheduledMethods(config, beanArchives.getIndex(), annotationStore, bean,
+                    bean.getTarget().get().asClass(),
+                    scheduledBusinessMethods, validationPhase.getContext());
         }
     }
 

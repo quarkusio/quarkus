@@ -23,6 +23,13 @@ https://www.vaultproject.io/docs/secrets/kv/index.html[Vault kv secret engine] a
 Under the hood, the Quarkus Vault extension takes care of authentication when negotiating a client Vault token plus
 any transparent token or lease renewals according to ttl and max-ttl.
 
+[NOTE]
+====
+This extension is considered `preview`.
+API or configuration properties might change as the extension matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
+
 == Prerequisites
 
 To complete this guide, you need:

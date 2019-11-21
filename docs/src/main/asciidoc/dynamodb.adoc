@@ -17,6 +17,13 @@ NOTE: The DynamoDB extension is based on https://docs.aws.amazon.com/sdk-for-jav
 It's a major rewrite of the 1.x code base that offers two programming models (Blocking & Async).
 Keep in mind it's actively developed and does not support yet all the features available in SDK 1.x such as https://github.com/aws/aws-sdk-java-v2/issues/36[Document APIs] or https://github.com/aws/aws-sdk-java-v2/issues/35[Object Mappers]
 
+[NOTE]
+====
+This extension is considered `preview`.
+API or configuration properties might change as the extension matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
+
 The Quarkus extension supports two programming models:
 
 * Blocking access using URL Connection HTTP client (by default) or the Apache HTTP Client

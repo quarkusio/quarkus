@@ -14,7 +14,12 @@ MongoDB with Panache provides active record style entities (and repositories) li
 
 It is built on top of the link:mongodb[MongoDB Client] extension.
 
-WARNING: This extension is still experimental, feedback is welcome on the https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+[NOTE]
+====
+This extension is considered `preview`.
+API or configuration properties might change as the extension matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
 
 == First: an example
 

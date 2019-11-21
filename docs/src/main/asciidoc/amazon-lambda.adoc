@@ -7,12 +7,18 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-
 The `quarkus-amazon-lambda` extension allows you to use Quarkus to build your Amazon Lambdas.
 Your lambdas can use injection annotations from CDI or Spring and other Quarkus facilities as you need them.
 
 Quarkus lambdas can be deployed using the Amazon Java Runtime, or you can build a native executable and use
 Amazon's Custom Runtime if you want a smaller memory footprint and faster cold boot startup time.
+
+[NOTE]
+====
+This extension is considered `preview`.
+API or configuration properties might change as the extension matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
 
 == Prerequisites
 

@@ -14,10 +14,10 @@ We will also explore how you can can query your Elasticsearch cluster using the 
 
 [WARNING]
 ====
-The version of Hibernate Search shipped with Quarkus is still a Beta.
-
-While APIs are quite stable and the code is of production quality and thoroughly tested,
-some features are still missing, performance might not be optimal and some APIs might change before the final release.
+This extension is considered `preview`.
+It is based on a beta version of Hibernate Search.
+While APIs are quite stable and the code is of production quality and thoroughly tested, some features are still missing, performance might not be optimal and some APIs or configuration properties might change as the extension matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
 ====
 
 == Prerequisites

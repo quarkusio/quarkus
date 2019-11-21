@@ -34,9 +34,15 @@ The driver itself is released under the Apache 2.0 license,
 while Neo4j itself is available in a GPL3-licensed open-source "community edition",
 with online backup and high availability extensions licensed under a closed-source commercial license.
 
-== Programming model
+[WARNING]
+====
+This extension is considered `preview`.
+It is based on an alpha version of the Neo4j driver.
+Some interactions with the driver, the API or configuration properties might change as the extension matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
 
-NOTE: The Neo4j extension is based on an alpha version of the Neo4j driver. Some interactions with the driver might change in the future.
+== Programming model
 
 The driver and thus the Quarkus extension support three different programming models:
 

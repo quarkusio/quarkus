@@ -791,6 +791,15 @@ to be 'Application Archives', and will therefore get indexed. This is done via t
 example the ArC extension registers `META-INF/beans.xml`, which means that all archives on the class path with a `beans.xml`
 file will be indexed.
 
+NOTE: `BuildStep.applicationArchiveMarkers()` is deprecated and will be removed at some point post Quarkus 1.1. Extensions are encouraged to use `io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem` instead.
+
+==== Using Thread's Context Class Loader
+
+If `@BuildStep.loadsApplicationClasses()` is set to `true` the build step will be run with a TCCL that can load user classes from the deployment in a transformer-safe way.
+This class loader only lasts for the life of the augmentation, and is discarded afterwards.
+The classes will be loaded again in a different class loader at runtime.
+This means that loading a class during augmentation does not stop it from being transformed when running in the development/test mode.
+
 === Configuration
 
 Configuration in Quarkus is based on SmallRye Config, an implementation of the MicroProfile Config specification.

@@ -141,6 +141,24 @@ The default scope can also be defined on the interface.
 
 Note that `org.acme.restclient.CountriesService` _must_ match the fully qualified name of the `CountriesService` interface we created in the previous section.
 
+To facilitate the configuration, you can use the `@RegisterRestClient` `configKey` property that allows to use another configuration root than the fully qualified name of your interface.
+
+[source, java]
+----
+
+@RegisterRestClient(configKey="country-api")
+public interface CountriesService {
+    [...]
+}
+----
+
+[source,properties]
+----
+# Your configuration properties
+country-api/mp-rest/url=https://restcountries.eu/rest #
+country-api/mp-rest/scope=javax.inject.Singleton # /
+----
+
 == Update the JAX-RS resource
 
 Open the `src/main/java/org/acme/restclient/CountriesResource.java` file and update it with the following content:

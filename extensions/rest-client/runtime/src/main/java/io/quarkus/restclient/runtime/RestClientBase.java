@@ -189,8 +189,11 @@ public class RestClientBase {
                 && !propertyOptional.isPresent()) {
             throw new IllegalArgumentException(
                     String.format(
-                            "Unable to determine the proper baseUrl/baseUri. Consider registering using @RegisterRestClient(baseUri=\"someuri\", configKey=\"orkey\"), or by adding '%s' to your Quarkus configuration",
-                            propertyPrefix));
+                            "Unable to determine the proper baseUrl/baseUri. " +
+                                    "Consider registering using @RegisterRestClient(baseUri=\"someuri\"), @RegisterRestClient(configKey=\"orkey\"), "
+                                    +
+                                    "or by adding '%s' or '%s' to your Quarkus configuration",
+                            String.format(REST_URL_FORMAT, propertyPrefix), String.format(REST_URI_FORMAT, propertyPrefix)));
         }
         String baseUrl = propertyOptional.orElse(baseUriFromAnnotation);
 

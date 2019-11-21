@@ -30,6 +30,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.GizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -131,12 +132,7 @@ class VertxWebProcessor {
             BodyHandlerBuildItem bodyHandler,
             BuildProducer<RouteBuildItem> routeProducer) throws IOException {
 
-        ClassOutput classOutput = new ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
-            }
-        };
+        ClassOutput classOutput = new GizmoAdaptor(generatedClass, true);
         for (AnnotatedRouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
             String handlerClass = generateHandler(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));

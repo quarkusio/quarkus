@@ -10,6 +10,7 @@ import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -45,10 +46,12 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.web.Route;
+import io.quarkus.vertx.web.RouteFilter;
 import io.quarkus.vertx.web.RoutingExchange;
 import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
 import io.quarkus.vertx.web.runtime.VertxWebRecorder;
@@ -62,11 +65,14 @@ class VertxWebProcessor {
 
     private static final DotName ROUTE = DotName.createSimple(Route.class.getName());
     private static final DotName ROUTES = DotName.createSimple(Route.Routes.class.getName());
+    private static final DotName ROUTE_FILTER = DotName.createSimple(RouteFilter.class.getName());
     private static final DotName ROUTING_CONTEXT = DotName.createSimple(RoutingContext.class.getName());
     private static final DotName RX_ROUTING_CONTEXT = DotName
             .createSimple(io.vertx.reactivex.ext.web.RoutingContext.class.getName());
     private static final DotName ROUTING_EXCHANGE = DotName.createSimple(RoutingExchange.class.getName());
     private static final String HANDLER_SUFFIX = "_RouteHandler";
+    private static final DotName[] ROUTE_PARAM_TYPES = { ROUTING_CONTEXT, RX_ROUTING_CONTEXT, ROUTING_EXCHANGE };
+    private static final DotName[] ROUTE_FILTER_TYPES = { ROUTING_CONTEXT };
 
     HttpConfiguration httpConfiguration;
 
@@ -79,36 +85,53 @@ class VertxWebProcessor {
     void unremovableBeans(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(ROUTE)));
         unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(ROUTES)));
+        unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(ROUTE_FILTER)));
     }
 
     @BuildStep
     void validateBeanDeployment(
             ValidationPhaseBuildItem validationPhase,
             BuildProducer<AnnotatedRouteHandlerBuildItem> routeHandlerBusinessMethods,
+            BuildProducer<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
             BuildProducer<ValidationErrorBuildItem> errors) {
 
-        // We need to collect all business methods annotated with @Route first
+        // Collect all business methods annotated with @Route and @RouteFilter
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
         for (BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
             if (bean.isClassBean()) {
-                // TODO: inherited business methods?
+                // NOTE: inherited business methods are not taken into account
                 for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
                     List<AnnotationInstance> routes = new LinkedList<>();
                     AnnotationInstance routeAnnotation = annotationStore.getAnnotation(method, ROUTE);
                     if (routeAnnotation != null) {
-                        validateMethod(bean, method);
+                        validateRouteMethod(bean, method, ROUTE_PARAM_TYPES);
                         routes.add(routeAnnotation);
                     }
                     if (routes.isEmpty()) {
                         AnnotationInstance routesAnnotation = annotationStore.getAnnotation(method, ROUTES);
                         if (routesAnnotation != null) {
-                            validateMethod(bean, method);
+                            validateRouteMethod(bean, method, ROUTE_PARAM_TYPES);
                             Collections.addAll(routes, routesAnnotation.value().asNestedArray());
                         }
                     }
                     if (!routes.isEmpty()) {
                         LOGGER.debugf("Found route handler business method %s declared on %s", method, bean);
                         routeHandlerBusinessMethods.produce(new AnnotatedRouteHandlerBuildItem(bean, method, routes));
+                    }
+                    // 
+                    AnnotationInstance filterAnnotation = annotationStore.getAnnotation(method, ROUTE_FILTER);
+                    if (filterAnnotation != null) {
+                        if (!routes.isEmpty()) {
+                            errors.produce(new ValidationErrorBuildItem(new IllegalStateException(
+                                    String.format(
+                                            "@Route and @RouteFilter cannot be declared on business method %s declared on %s",
+                                            method, bean))));
+                        } else {
+                            validateRouteMethod(bean, method, ROUTE_FILTER_TYPES);
+                            routeFilterBusinessMethods
+                                    .produce(new AnnotatedRouteFilterBuildItem(bean, method, filterAnnotation));
+                            LOGGER.debugf("Found route filter business method %s declared on %s", method, bean);
+                        }
                     }
                 }
             }
@@ -126,11 +149,13 @@ class VertxWebProcessor {
     void addAdditionalRoutes(
             VertxWebRecorder recorder,
             List<AnnotatedRouteHandlerBuildItem> routeHandlerBusinessMethods,
+            List<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BodyHandlerBuildItem bodyHandler,
-            BuildProducer<RouteBuildItem> routeProducer) throws IOException {
+            BuildProducer<RouteBuildItem> routeProducer,
+            BuildProducer<FilterBuildItem> filterProducer) throws IOException {
 
         ClassOutput classOutput = new GizmoAdaptor(generatedClass, true);
         for (AnnotatedRouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
@@ -162,6 +187,15 @@ class VertxWebProcessor {
                 routeProducer.produce(new RouteBuildItem(routeFunction, routingHandler, handlerType));
             }
         }
+
+        for (AnnotatedRouteFilterBuildItem filterMethod : routeFilterBusinessMethods) {
+            String handlerClass = generateHandler(filterMethod.getBean(), filterMethod.getMethod(), classOutput);
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
+            Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
+            AnnotationValue priorityValue = filterMethod.getRouteFilter().value();
+            filterProducer.produce(new FilterBuildItem(routingHandler,
+                    priorityValue != null ? priorityValue.asInt() : RouteFilter.DEFAULT_PRIORITY));
+        }
     }
 
     @BuildStep
@@ -175,10 +209,11 @@ class VertxWebProcessor {
 
             @Override
             public void transform(TransformationContext context) {
-                if (context.getAnnotations().isEmpty()) {
-                    // Class with no annotations but with a method annotated with @Route
-                    if (context.getTarget().asClass().annotations().containsKey(ROUTE)
-                            || context.getTarget().asClass().annotations().containsKey(ROUTES)) {
+                if (context.getAnnotations().isEmpty() || !BuiltinScope.isIn(context.getAnnotations())) {
+                    // Class with no scope annotation but with a method annotated with @Route, @RouteFilter
+                    ClassInfo target = context.getTarget().asClass();
+                    if (target.annotations().containsKey(ROUTE) || target.annotations().containsKey(ROUTES)
+                            || target.annotations().containsKey(ROUTE_FILTER)) {
                         LOGGER.debugf(
                                 "Found route handler business methods on a class %s with no scope annotation - adding @Singleton",
                                 context.getTarget());
@@ -189,7 +224,7 @@ class VertxWebProcessor {
         });
     }
 
-    private void validateMethod(BeanInfo bean, MethodInfo method) {
+    private void validateRouteMethod(BeanInfo bean, MethodInfo method, DotName[] validParamTypes) {
         if (!method.returnType().kind().equals(Type.Kind.VOID)) {
             throw new IllegalStateException(
                     String.format("Route handler business method must return void [method: %s, bean: %s]", method, bean));
@@ -198,15 +233,16 @@ class VertxWebProcessor {
         boolean hasInvalidParam = true;
         if (params.size() == 1) {
             DotName paramTypeName = params.get(0).name();
-            if (ROUTING_CONTEXT.equals(paramTypeName) || RX_ROUTING_CONTEXT.equals(paramTypeName)
-                    || ROUTING_EXCHANGE.equals(paramTypeName)) {
-                hasInvalidParam = false;
+            for (DotName type : validParamTypes) {
+                if (type.equals(paramTypeName)) {
+                    hasInvalidParam = false;
+                }
             }
         }
         if (hasInvalidParam) {
             throw new IllegalStateException(String.format(
-                    "Route handler business method must accept exactly one parameter of type RoutingContext/RoutingExchange: %s [method: %s, bean: %s]",
-                    params, method, bean));
+                    "Route business method must accept exactly one parameter of type %s: %s [method: %s, bean: %s]",
+                    validParamTypes, params, method, bean));
         }
     }
 

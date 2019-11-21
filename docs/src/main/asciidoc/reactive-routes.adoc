@@ -141,27 +141,20 @@ For example, the following code snippet registers a filter adding an HTTP header
 ----
 package org.acme.quarkus.sample;
 
-import io.quarkus.vertx.http.runtime.filters.Filters;
+import io.vertx.ext.web.RoutingContext;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+public class MyFilters {
 
-@ApplicationScoped
-public class MyFilter {
-
-    public void registerMyFilter(@Observes Filters filters) {
-        filters.register(rc -> {
-            rc.response().putHeader("X-Header", "intercepting the request");
-            rc.next();
-        }, 100);
+    @RouteFilter(100) <1>
+    void myFilter(RoutingContext rc) {
+       rc.response().putHeader("X-Header", "intercepting the request");
+       rc.next(); <2>
     }
 }
 ----
 
-The registration is done using `Filters.register`.
-The first parameter is the handler receiving the `RoutingContext`.
-The handler is likely required to call the `next()` method to continue the chain.
-The second parameter is the priority used to sort the filters - filters with higher priority are called first.
+<1> The `RouteFilter#value()` defines the priority used to sort the filters - filters with higher priority are called first.
+<2> The filter is likely required to call the `next()` method to continue the chain.
 
 == Conclusion
 

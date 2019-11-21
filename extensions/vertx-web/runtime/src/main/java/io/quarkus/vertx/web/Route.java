@@ -10,12 +10,13 @@ import io.quarkus.vertx.web.Route.Routes;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.RoutingContext;
 
 /**
- * Annotation used to configure a {@link io.quarkus.vertx.web.Route} in a declarative way.
+ * Annotation used to configure reactive routes in a declarative way.
  * <p>
- * The target business method must return {@code void} and accept exactly one argument of type {@link RoutingContext}.
+ * The target business method must return {@code void} and accept exactly one argument. must return {@code void} and accept
+ * exactly one argument. The type of the argument can be {@link io.vertx.ext.web.RoutingContext},
+ * {@link io.vertx.reactivex.ext.web.RoutingContext} or {@link io.quarkus.vertx.web.RoutingExchange}.
  */
 @Repeatable(Routes.class)
 @Retention(RetentionPolicy.RUNTIME)
@@ -38,7 +39,7 @@ public @interface Route {
 
     /**
      *
-     * @see Route#methods()
+     * @see io.vertx.ext.web.Route#methods()
      * @return the HTTP methods
      */
     HttpMethod[] methods() default {};
@@ -52,20 +53,20 @@ public @interface Route {
     /**
      * If set to a positive number, it indicates the place of the route in the chain.
      * 
-     * @see Route#order()
+     * @see io.vertx.ext.web.Route#order()
      */
     int order() default 0;
 
     /**
      *
-     * @see io.quarkus.vertx.web.Route#produces(String)
+     * @see io.vertx.ext.web.Route#produces(String)
      * @return the produced content types
      */
     String[] produces() default {};
 
     /**
      *
-     * @see io.quarkus.vertx.web.Route#consumes(String)
+     * @see io.vertx.ext.web.Route#consumes(String)
      * @return the consumed content types
      */
     String[] consumes() default {};

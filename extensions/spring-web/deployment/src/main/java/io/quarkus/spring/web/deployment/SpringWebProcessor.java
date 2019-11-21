@@ -326,7 +326,7 @@ public class SpringWebProcessor {
         return false;
     }
 
-    @BuildStep
+    @BuildStep(loadsApplicationClasses = true)
     public void generateExceptionMapperProviders(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedExceptionMappers,
             BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,

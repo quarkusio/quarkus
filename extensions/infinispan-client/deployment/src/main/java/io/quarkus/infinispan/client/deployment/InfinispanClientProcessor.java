@@ -47,7 +47,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
-import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -71,7 +70,7 @@ class InfinispanClientProcessor {
      */
     InfinispanClientBuildTimeConfig infinispanClient;
 
-    @BuildStep
+    @BuildStep(loadsApplicationClasses = true)
     InfinispanPropertiesBuildItem setup(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeployment,
@@ -80,7 +79,6 @@ class InfinispanClientProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<NativeImageConfigBuildItem> nativeImageConfig,
-            DeploymentClassLoaderBuildItem classLoaderBuildItem,
             ApplicationIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.INFINISPAN_CLIENT));
@@ -91,8 +89,7 @@ class InfinispanClientProcessor {
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.INFINISPAN_CLIENT));
 
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        InputStream stream = cl.getResourceAsStream(HOTROD_CLIENT_PROPERTIES);
+        InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(HOTROD_CLIENT_PROPERTIES);
         Properties properties;
         if (stream == null) {
             properties = new Properties();
@@ -151,12 +148,11 @@ class InfinispanClientProcessor {
             }
 
             InfinispanClientProducer.handleProtoStreamRequirements(properties);
-            ClassLoader classLoader = classLoaderBuildItem.getClassLoader();
             Set<ClassInfo> initializerClasses = index.getAllKnownImplementors(DotName.createSimple(
                     SerializationContextInitializer.class.getName()));
             Set<SerializationContextInitializer> initializers = new HashSet<>(initializerClasses.size());
             for (ClassInfo ci : initializerClasses) {
-                Class<?> initializerClass = classLoader.loadClass(ci.toString());
+                Class<?> initializerClass = Thread.currentThread().getContextClassLoader().loadClass(ci.toString());
                 try {
                     SerializationContextInitializer sci = (SerializationContextInitializer) initializerClass
                             .getDeclaredConstructor().newInstance();

@@ -17,6 +17,9 @@ import io.vertx.ext.web.Router;
  * The target business method must return {@code void} and accept exactly one argument. must return {@code void} and accept
  * exactly one argument. The type of the argument can be {@link io.vertx.ext.web.RoutingContext},
  * {@link io.vertx.reactivex.ext.web.RoutingContext} or {@link io.quarkus.vertx.web.RoutingExchange}.
+ * <p>
+ * If neither {@link #path()()} nor {@link #regex()} is set the route will match a path derived from the name of the
+ * method. This is done by de-camel-casing the name and then joining the segments with hyphens.
  */
 @Repeatable(Routes.class)
 @Retention(RetentionPolicy.RUNTIME)
@@ -58,13 +61,15 @@ public @interface Route {
     int order() default 0;
 
     /**
-     *
+     * Used for content-based routing.
+     * 
      * @see io.vertx.ext.web.Route#produces(String)
      * @return the produced content types
      */
     String[] produces() default {};
 
     /**
+     * Used for content-based routing.
      *
      * @see io.vertx.ext.web.Route#consumes(String)
      * @return the consumed content types

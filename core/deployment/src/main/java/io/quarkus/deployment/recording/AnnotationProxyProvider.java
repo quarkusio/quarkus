@@ -88,6 +88,8 @@ public class AnnotationProxyProvider {
 
         Map<String, Object> getDefaultValues();
 
+        Map<String, Object> getValues();
+
     }
 
     public class AnnotationProxyBuilder<A> {
@@ -97,6 +99,7 @@ public class AnnotationProxyProvider {
         private final AnnotationInstance annotationInstance;
         private final Class<A> annotationType;
         private final Map<String, Object> defaultValues = new HashMap<>();
+        private final Map<String, Object> values = new HashMap<>();
 
         AnnotationProxyBuilder(AnnotationInstance annotationInstance, Class<A> annotationType, String annotationLiteral,
                 ClassInfo annotationClass) {
@@ -104,6 +107,18 @@ public class AnnotationProxyProvider {
             this.annotationType = annotationType;
             this.annotationLiteral = annotationLiteral;
             this.annotationClass = annotationClass;
+        }
+
+        /**
+         * Explicit values override the default values from the annotation class.
+         * 
+         * @param name
+         * @param value
+         * @return self
+         */
+        public AnnotationProxyBuilder<A> withValue(String name, Object value) {
+            values.put(name, value);
+            return this;
         }
 
         /**
@@ -180,6 +195,8 @@ public class AnnotationProxyProvider {
                                     return annotationInstance;
                                 case "getDefaultValues":
                                     return defaultValues;
+                                case "getValues":
+                                    return values;
                                 default:
                                     break;
                             }

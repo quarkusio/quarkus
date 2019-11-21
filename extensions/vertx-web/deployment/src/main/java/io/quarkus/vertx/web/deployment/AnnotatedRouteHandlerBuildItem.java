@@ -12,12 +12,15 @@ public final class AnnotatedRouteHandlerBuildItem extends MultiBuildItem {
 
     private final BeanInfo bean;
     private final List<AnnotationInstance> routes;
+    private final AnnotationInstance routeBase;
     private final MethodInfo method;
 
-    public AnnotatedRouteHandlerBuildItem(BeanInfo bean, MethodInfo method, List<AnnotationInstance> routes) {
+    public AnnotatedRouteHandlerBuildItem(BeanInfo bean, MethodInfo method, List<AnnotationInstance> routes,
+            AnnotationInstance routeBase) {
         this.bean = bean;
         this.method = method;
         this.routes = routes;
+        this.routeBase = routeBase;
     }
 
     public BeanInfo getBean() {
@@ -30,6 +33,10 @@ public final class AnnotatedRouteHandlerBuildItem extends MultiBuildItem {
 
     public List<AnnotationInstance> getRoutes() {
         return routes;
+    }
+
+    public AnnotationInstance getRouteBase() {
+        return routeBase;
     }
 
 }

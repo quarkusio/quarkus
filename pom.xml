@@ -43,6 +43,7 @@
         <module>independent-projects/arc</module>
         <module>independent-projects/bootstrap</module>
         <module>independent-projects/tools</module>
+        <module>independent-projects/qute</module>
 
         <!-- BOMs and parent POM -->
         <module>bom/runtime</module>

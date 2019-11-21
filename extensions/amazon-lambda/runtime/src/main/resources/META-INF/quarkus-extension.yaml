@@ -7,4 +7,5 @@ metadata:
   - "amazon"
   categories:
   - "cloud"
+  guide: "https://quarkus.io/guides/amazon-lambda"
   status: "preview"

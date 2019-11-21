@@ -13,7 +13,6 @@ import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.ProjectGenerator;
 import io.quarkus.generators.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 
 public class BasicRestProjectGenerator implements ProjectGenerator {
 
@@ -124,7 +123,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
                 throws IOException {
             if (!writer.exists(outputFilePath)) {
                 String path = templateName;
-                String template = QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor().getTemplate(path);
+                String template = MojoUtils.getPlatformDescriptor().getTemplate(path);
                 if (template == null) {
                     throw new IOException("Template resource is missing: " + path);
                 }

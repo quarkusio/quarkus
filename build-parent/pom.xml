@@ -17,7 +17,7 @@
     <properties>
         <!-- Maven plugin versions -->
         <elasticsearch-maven-plugin.version>6.14</elasticsearch-maven-plugin.version>
-        <elasticsearch-server.version>7.4.0</elasticsearch-server.version>
+        <elasticsearch-server.version>7.4.2</elasticsearch-server.version>
         <scala-maven-plugin.version>4.1.1</scala-maven-plugin.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->

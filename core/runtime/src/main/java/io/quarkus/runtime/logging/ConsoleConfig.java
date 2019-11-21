@@ -5,7 +5,6 @@ import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.DefaultConverter;
 
 @ConfigGroup
 public class ConsoleConfig {
@@ -25,7 +24,6 @@ public class ConsoleConfig {
     /**
      * The console log level
      */
-    @DefaultConverter
     @ConfigItem(defaultValue = "ALL")
     Level level;
 
@@ -33,7 +31,7 @@ public class ConsoleConfig {
      * If the console logging should be in color. If undefined quarkus takes
      * best guess based on operating system and environment.
      */
-    @ConfigItem()
+    @ConfigItem
     Optional<Boolean> color;
 
     /**

@@ -21,6 +21,7 @@ public class SyslogConfig {
     boolean enable;
 
     /**
+     *
      * The IP address and port of the syslog server
      */
     @ConfigItem(defaultValue = "localhost:514")
@@ -60,13 +61,13 @@ public class SyslogConfig {
      * Set to {@code true} if the message being sent should be prefixed with the size of the message
      */
     @ConfigItem
-    public boolean useCountingFraming;
+    boolean useCountingFraming;
 
     /**
      * Set to {@code true} if the message should be truncated
      */
     @ConfigItem(defaultValue = "true")
-    public boolean truncate;
+    boolean truncate;
 
     /**
      * Enables or disables blocking when attempting to reconnect a

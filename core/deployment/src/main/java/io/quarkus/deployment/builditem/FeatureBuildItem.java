@@ -46,6 +46,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String REACTIVE_MYSQL_CLIENT = "reactive-mysql-client";
     public static final String NEO4J = "neo4j";
     public static final String OIDC = "oidc";
+    public static final String QUTE = "qute";
     public static final String RESTEASY = "resteasy";
     public static final String RESTEASY_JACKSON = "resteasy-jackson";
     public static final String RESTEASY_JAXB = "resteasy-jaxb";

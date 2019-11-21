@@ -87,6 +87,7 @@
         <module>spring-di</module>
         <module>spring-web</module>
         <module>spring-data-jpa</module>
+        <module>spring-security</module>
 
         <!-- Security -->
         <module>security</module>

@@ -1,7 +1,9 @@
 package io.quarkus.security.runtime.interceptor.check;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,7 +21,7 @@ public class RolesAllowedCheck implements SecurityCheck {
      * In such cases there is no need to have multiple instances of the class hanging around
      * for the entire lifecycle of the application
      */
-    private static final Map<List<String>, RolesAllowedCheck> CACHE = new ConcurrentHashMap<>();
+    private static final Map<Collection<String>, RolesAllowedCheck> CACHE = new ConcurrentHashMap<>();
 
     private final String[] allowedRoles;
 
@@ -28,12 +30,22 @@ public class RolesAllowedCheck implements SecurityCheck {
     }
 
     public static RolesAllowedCheck of(String[] allowedRoles) {
-        return CACHE.computeIfAbsent(Arrays.asList(allowedRoles), new Function<List<String>, RolesAllowedCheck>() {
+        return CACHE.computeIfAbsent(getCollectionForKey(allowedRoles), new Function<Collection<String>, RolesAllowedCheck>() {
             @Override
-            public RolesAllowedCheck apply(List<String> allowedRolesList) {
+            public RolesAllowedCheck apply(Collection<String> allowedRolesList) {
                 return new RolesAllowedCheck(allowedRolesList.toArray(new String[0]));
             }
         });
+    }
+
+    private static Collection<String> getCollectionForKey(String[] allowedRoles) {
+        if (allowedRoles.length == 0) { // shouldn't happen, but lets be on the safe side
+            return Collections.emptyList();
+        } else if (allowedRoles.length == 1) {
+            return Collections.singletonList(allowedRoles[0]);
+        }
+        // use a set in order to avoid caring about the order of elements
+        return new HashSet<>(Arrays.asList(allowedRoles));
     }
 
     @Override

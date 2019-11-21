@@ -3,6 +3,7 @@ package io.quarkus.hibernate.validator.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.lang.annotation.Annotation;
+import java.lang.annotation.Repeatable;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashMap;
@@ -76,6 +77,8 @@ class HibernateValidatorProcessor {
 
     private static final DotName VALID = DotName.createSimple(Valid.class.getName());
 
+    private static final DotName REPEATABLE = DotName.createSimple(Repeatable.class.getName());
+
     @BuildStep
     HotDeploymentWatchedFileBuildItem configFile() {
         return new HotDeploymentWatchedFileBuildItem("META-INF/validation.xml");
@@ -138,6 +141,14 @@ class HibernateValidatorProcessor {
         // Add the constraint annotations present in the application itself
         for (AnnotationInstance constraint : indexView.getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
             consideredAnnotations.add(constraint.target().asClass().name());
+
+            if (constraint.target().asClass().annotations().containsKey(REPEATABLE)) {
+                for (AnnotationInstance repeatableConstraint : constraint.target().asClass().annotations()
+                        .get(REPEATABLE)) {
+                    consideredAnnotations.add(repeatableConstraint.value().asClass().name());
+                }
+            }
+
         }
 
         // Also consider elements that are marked with @Valid
@@ -217,6 +228,14 @@ class HibernateValidatorProcessor {
         Set<Class<? extends Annotation>> builtinConstraints = new ConstraintHelper().getBuiltinConstraints();
         for (Class<? extends Annotation> builtinConstraint : builtinConstraints) {
             constraintCollector.add(DotName.createSimple(builtinConstraint.getName()));
+
+            if (builtinConstraint.isAnnotationPresent(Repeatable.class)) {
+                Repeatable repeatable = builtinConstraint.getAnnotation(Repeatable.class);
+                if (repeatable.value() != null) {
+                    constraintCollector.add(DotName.createSimple(repeatable.value().getName()));
+                }
+            }
+
         }
     }
 

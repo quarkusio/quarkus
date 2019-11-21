@@ -1,1 +1,0 @@
-aws lambda delete-function --function-name my-function

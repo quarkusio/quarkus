@@ -67,10 +67,10 @@ public class MojoUtils {
 
     private static Properties properties;
 
-    private static QuarkusPlatformDescriptor platformDescr;
-
-    private static QuarkusPlatformDescriptor getPlatformDescriptor() {
-        return platformDescr == null ? platformDescr = QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor() : platformDescr;
+    public static QuarkusPlatformDescriptor getPlatformDescriptor() {
+        return QuarkusPlatformConfig.hasThreadLocal()
+                ? QuarkusPlatformConfig.getThreadLocal().getPlatformDescriptor()
+                : QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor();
     }
 
     private static Properties getProperties() {
@@ -269,7 +269,7 @@ public class MojoUtils {
     }
 
     public static List<Extension> loadExtensions() {
-        return QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor().getExtensions();
+        return getPlatformDescriptor().getExtensions();
     }
 
     public static String credentials(final Dependency d) {

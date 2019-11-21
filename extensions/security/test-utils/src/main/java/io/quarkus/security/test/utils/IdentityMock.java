@@ -22,21 +22,28 @@ import io.quarkus.security.identity.SecurityIdentity;
 @Priority(1)
 public class IdentityMock implements SecurityIdentity {
 
-    public static final AuthData ANONYMOUS = new AuthData(null, true);
-    public static final AuthData USER = new AuthData(Collections.singleton("user"), false);
-    public static final AuthData ADMIN = new AuthData(Collections.singleton("admin"), false);
+    public static final AuthData ANONYMOUS = new AuthData(null, true, null);
+    public static final AuthData USER = new AuthData(Collections.singleton("user"), false, "user");
+    public static final AuthData ADMIN = new AuthData(Collections.singleton("admin"), false, "admin");
 
     private static volatile boolean anonymous;
     private static volatile Set<String> roles;
+    private static volatile String name;
 
     public static void setUpAuth(AuthData auth) {
         IdentityMock.anonymous = auth.anonymous;
         IdentityMock.roles = auth.roles;
+        IdentityMock.name = auth.name;
     }
 
     @Override
     public Principal getPrincipal() {
-        return () -> "whatever";
+        return new Principal() {
+            @Override
+            public String getName() {
+                return name;
+            }
+        };
     }
 
     @Override

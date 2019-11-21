@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
+            <artifactId>quarkus-spring-di-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

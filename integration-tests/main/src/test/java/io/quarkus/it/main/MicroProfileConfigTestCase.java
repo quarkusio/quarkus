@@ -25,4 +25,11 @@ public class MicroProfileConfigTestCase {
                 .when().get("/microprofile-config/get-custom-value")
                 .then().body(is("456"));
     }
+
+    @Test
+    public void testCidrAddress() {
+        RestAssured
+                .when().get("/microprofile-config/get-cidr-address")
+                .then().body(is("10.0.0.0"));
+    }
 }

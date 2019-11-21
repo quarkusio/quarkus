@@ -77,6 +77,7 @@ import io.quarkus.runtime.configuration.HyphenateEnumConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
+import io.quarkus.runtime.graal.InetRunTime;
 import io.smallrye.config.Converters;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -820,5 +821,10 @@ public class ConfigurationSetup {
 
     ) {
 
+    }
+
+    @BuildStep
+    RuntimeInitializedClassBuildItem runtimeInitializedClass() {
+        return new RuntimeInitializedClassBuildItem(InetRunTime.class.getName());
     }
 }

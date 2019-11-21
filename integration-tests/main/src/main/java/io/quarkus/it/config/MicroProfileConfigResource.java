@@ -6,6 +6,7 @@ import javax.ws.rs.Path;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.wildfly.common.net.CidrAddress;
 
 /**
  * Test some MicroProfile config primitives.
@@ -18,6 +19,9 @@ public class MicroProfileConfigResource {
 
     @ConfigProperty(name = "microprofile.custom.value")
     MicroProfileCustomValue value;
+
+    @ConfigProperty(name = "microprofile.cidr-address")
+    CidrAddress cidrAddress;
 
     @Inject
     Config config;
@@ -35,5 +39,11 @@ public class MicroProfileConfigResource {
     @Path("/get-custom-value")
     public String getCustomValue() {
         return Integer.toString(value.getNumber());
+    }
+
+    @GET
+    @Path("/get-cidr-address")
+    public String getCidrAddress() {
+        return cidrAddress.getNetworkAddress().getHostAddress();
     }
 }

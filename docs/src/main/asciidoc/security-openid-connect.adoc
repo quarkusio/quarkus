@@ -13,6 +13,13 @@ Bearer Token Authorization is the process of authorizing HTTP requests based on 
 
 We are going to give you a guideline on how to use OpenId Connect and OAuth 2.0 in your JAX-RS applications using the Quarkus OpenID Connect Extension.
 
+[NOTE]
+====
+This extension is considered `preview`.
+API or configuration properties might change as the extension matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
+
 == Prerequisites
 
 To complete this guide, you need:

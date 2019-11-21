@@ -10,6 +10,13 @@ include::./attributes.adoc[]
 Modern applications often need to run specific tasks periodically.
 In this guide, you learn how to schedule periodic tasks.
 
+[NOTE]
+====
+This extension is considered `preview`.
+API or configuration properties might change as the extension matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
+
 == Prerequisites
 
 To complete this guide, you need:
@@ -18,8 +25,6 @@ To complete this guide, you need:
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
-
-
 
 == Architecture
 

@@ -11,6 +11,13 @@ While users are encouraged to use CDI annotations for injection, Quarkus provide
 
 This guide explains how a Quarkus application can leverage the well known Dependency Injection annotations included in the Spring Framework.
 
+[NOTE]
+====
+This extension is considered `preview`.
+API or configuration properties might change as the extension matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
+
 == Prerequisites
 
 To complete this guide, you need:

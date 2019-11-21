@@ -130,16 +130,10 @@ public class NativeImageLauncher implements Closeable {
     }
 
     private static void logGuessedPath(String guessedPath) {
-        String errorString = "\n=native.image.path was not set, making a guess that  " + guessedPath
-                + " is the correct native image=";
-        for (int i = 0; i < errorString.length(); ++i) {
-            System.err.print("=");
-        }
-        System.err.println(errorString);
-        for (int i = 0; i < errorString.length(); ++i) {
-            System.err.print("=");
-        }
-        System.err.println();
+        System.err.println("======================================================================================");
+        System.err.println("  native.image.path was not set, making a guess for the correct path of native image");
+        System.err.println("  guessed path: " + guessedPath);
+        System.err.println("======================================================================================");
     }
 
     private void waitForQuarkus() {

@@ -17,6 +17,7 @@ public final class OptionalOf extends ConverterType {
         return type;
     }
 
+    @Override
     public int hashCode() {
         int hashCode = this.hashCode;
         if (hashCode == 0) {
@@ -29,6 +30,7 @@ public final class OptionalOf extends ConverterType {
         return hashCode;
     }
 
+    @Override
     public boolean equals(final Object obj) {
         return obj instanceof OptionalOf && equals((OptionalOf) obj);
     }

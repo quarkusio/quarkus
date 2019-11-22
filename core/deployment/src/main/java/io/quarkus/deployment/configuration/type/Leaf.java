@@ -17,6 +17,7 @@ public final class Leaf extends ConverterType {
         this.convertWith = (Class<? extends Converter<?>>) convertWith;
     }
 
+    @Override
     public Class<?> getLeafType() {
         return type;
     }
@@ -25,6 +26,7 @@ public final class Leaf extends ConverterType {
         return convertWith;
     }
 
+    @Override
     public int hashCode() {
         int hashCode = this.hashCode;
         if (hashCode == 0) {
@@ -37,6 +39,7 @@ public final class Leaf extends ConverterType {
         return hashCode;
     }
 
+    @Override
     public boolean equals(final Object obj) {
         return obj instanceof Leaf && equals((Leaf) obj);
     }

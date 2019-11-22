@@ -52,6 +52,13 @@ public final class FlywayRuntimeConfig {
     public Optional<String> repeatableSqlMigrationPrefix;
 
     /**
+     * true to execute Flyway clean command automatically when the application starts, false otherwise.
+     *
+     */
+    @ConfigItem
+    public boolean cleanAtStart;
+
+    /**
      * true to execute Flyway automatically when the application starts, false otherwise.
      *
      */

@@ -17,8 +17,8 @@ import java.util.stream.Collectors;
 
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
+import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
-import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -47,9 +47,9 @@ public class NativeImageAutoFeatureStep {
     private static final String GRAAL_AUTOFEATURE = "io/quarkus/runner/AutoFeature";
     private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup", Object.class,
             Class.class);
-    private static final MethodDescriptor INITIALIZE_AT_RUN_TIME = ofMethod(RuntimeClassInitializationSupport.class,
+    private static final MethodDescriptor INITIALIZE_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
             "initializeAtRunTime", void.class, Class.class, String.class);
-    private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(RuntimeClassInitializationSupport.class,
+    private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(RuntimeClassInitialization.class,
             "rerunInitialization", void.class, Class.class, String.class);
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
@@ -99,7 +99,7 @@ public class NativeImageAutoFeatureStep {
         }
 
         ResultHandle initSingleton = overallCatch.invokeStaticMethod(IMAGE_SINGLETONS_LOOKUP,
-                overallCatch.loadClass(RuntimeClassInitializationSupport.class));
+                overallCatch.loadClass(RuntimeClassInitialization.class));
         ResultHandle quarkus = overallCatch.load("Quarkus");
 
         if (!runtimeInitializedClassBuildItems.isEmpty()) {

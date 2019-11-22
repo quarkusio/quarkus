@@ -28,7 +28,8 @@ public class JavaCompilationProvider implements CompilationProvider {
     // -g is used to make the java compiler generate all debugging info
     // -parameters is used to generate metadata for reflection on method parameters
     // this is useful when people using debuggers against their hot-reloaded app
-    private static final Set<String> COMPILER_OPTIONS = new HashSet<>(Arrays.asList("-g", "-parameters"));
+    private static final Set<String> COMPILER_OPTIONS = new HashSet<>(
+            Arrays.asList("-g", "-parameters"));
 
     @Override
     public Set<String> handledExtensions() {

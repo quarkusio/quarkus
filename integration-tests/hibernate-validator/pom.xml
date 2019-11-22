@@ -70,7 +70,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <!-- force the locale as we want to explicitly test message interpolation -->
-                    <argLine>-Duser.language=en</argLine>
+                    <argLine>
+                      -Duser.language=en
+                    </argLine>
                 </configuration>
             </plugin>
         </plugins>

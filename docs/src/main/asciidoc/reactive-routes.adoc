@@ -55,14 +55,14 @@ import javax.enterprise.context.ApplicationScoped;
 @ApplicationScoped <1>
 public class MyDeclarativeRoutes {
 
-
-    @Route(path = "/", methods = HttpMethod.GET) <2>
-    public void handle(RoutingContext rc) { <3>
+    // neither path nor regex is set - match a path derived from the method name
+    @Route(methods = HttpMethod.GET) <2> 
+    void hello(RoutingContext rc) { <3>
         rc.response().end("hello");
     }
 
-    @Route(path = "/hello", methods = HttpMethod.GET)
-    public void greetings(RoutingExchange ex) { <4>
+    @Route(path = "/greetings", methods = HttpMethod.GET)
+    void greetings(RoutingExchange ex) { <4>
         ex.ok("hello " + ex.getParam("name").orElse("world"));
     }
 }
@@ -77,9 +77,8 @@ More details about using the `RoutingContext` is available in the https://vertx.
 
 The `@Route` annotation allows to configure:
 
-* The `path` - using the https://vertx.io/docs/vertx-web/java/#_capturing_path_parameters[Vert.x Web format]
-* The `regex` - when `path` is not used.
-See https://vertx.io/docs/vertx-web/java/#_routing_with_regular_expressions[for more details]
+* The `path` - for routing by path, using the https://vertx.io/docs/vertx-web/java/#_capturing_path_parameters[Vert.x Web format]
+* The `regex` - for routing with regular expressions, see https://vertx.io/docs/vertx-web/java/#_routing_with_regular_expressions[for more details]
 * The `methods` - the HTTP verb triggering the route such as `GET`, `POST`...
 * The `type` - it can be _normal_ (non-blocking), _blocking_ (method dispatched on a worker thread), or _failure_ to indicate that this route is called on failures
 * The `order` - the order of the route when several routes are involved in handling the incoming request.
@@ -108,6 +107,24 @@ public void route(RoutingContext rc) {
 ----
 
 Each route can use different paths, methods...
+
+=== `@RouteBase`
+
+This annotation can be used to configure some defaults for reactive routes declared on a class.
+
+[source,java]
+----
+@RouteBase(path = "simple", produces = "text/plain") <1>
+public class SimpleRoutes {
+
+    @Route(path = "ping") // the final path is /simple/ping
+    void ping(RoutingContext rc) {
+        rc.response().end("pong");
+    }
+}
+----
+<1> The `path` value is used as a prefix for any route method declared on the class where `Route#path()` is used. The `produces` value is used for content-based routing for all routes where `Route#produces()` is empty.
+
 
 == Using the Vert.x Web Router
 

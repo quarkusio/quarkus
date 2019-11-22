@@ -18,7 +18,9 @@ import io.vertx.ext.web.Router;
  * exactly one argument. The type of the argument can be {@link io.vertx.ext.web.RoutingContext},
  * {@link io.vertx.reactivex.ext.web.RoutingContext} or {@link io.quarkus.vertx.web.RoutingExchange}.
  * <p>
- * If neither {@link #path()()} nor {@link #regex()} is set the route will match a path derived from the name of the
+ * If both {@link #path()} and {@link #regex()} are set the regular expression is used for matching.
+ * <p>
+ * If neither {@link #path()} nor {@link #regex()} is set the route will match a path derived from the name of the
  * method. This is done by de-camel-casing the name and then joining the segments with hyphens.
  */
 @Repeatable(Routes.class)

@@ -1,5 +1,7 @@
 package io.quarkus.security.runtime.interceptor.check;
 
+import java.lang.reflect.Method;
+
 import io.quarkus.security.identity.SecurityIdentity;
 
 public class PermitAllCheck implements SecurityCheck {
@@ -10,6 +12,6 @@ public class PermitAllCheck implements SecurityCheck {
     }
 
     @Override
-    public void apply(SecurityIdentity identity) {
+    public void apply(SecurityIdentity identity, Method method, Object[] parameters) {
     }
 }

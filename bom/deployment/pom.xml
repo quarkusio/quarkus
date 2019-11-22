@@ -508,6 +508,11 @@
                 <artifactId>quarkus-scala-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-config-viewer-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Quarkus test dependencies -->
 

@@ -15,7 +15,8 @@ import org.wildfly.common.net.Inet;
 public class CidrAddressConverter implements Converter<CidrAddress> {
 
     @Override
-    public CidrAddress convert(final String value) {
+    public CidrAddress convert(String value) {
+        value = value.trim();
         if (value.isEmpty()) {
             return null;
         }

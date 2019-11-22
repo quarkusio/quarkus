@@ -35,11 +35,10 @@ public final class HyphenateEnumConverter<E extends Enum<E>> implements Converte
 
     @Override
     public E convert(String value) {
-        if (value == null || value.trim().isEmpty()) {
+        value = value.trim();
+        if (value.isEmpty()) {
             return null;
         }
-
-        value = value.trim();
         final String hyphenatedValue = hyphenate(value);
         final Enum<?> enumValue = values.get(hyphenatedValue);
 

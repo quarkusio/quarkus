@@ -19,7 +19,8 @@ import org.wildfly.common.net.Inet;
 public class InetSocketAddressConverter implements Converter<InetSocketAddress> {
 
     @Override
-    public InetSocketAddress convert(final String value) {
+    public InetSocketAddress convert(String value) {
+        value = value.trim();
         if (value.isEmpty()) {
             return null;
         }

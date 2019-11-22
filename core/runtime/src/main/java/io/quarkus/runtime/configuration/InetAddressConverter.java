@@ -17,7 +17,8 @@ import org.wildfly.common.net.Inet;
 public class InetAddressConverter implements Converter<InetAddress> {
 
     @Override
-    public InetAddress convert(final String value) {
+    public InetAddress convert(String value) {
+        value = value.trim();
         if (value.isEmpty()) {
             return null;
         }

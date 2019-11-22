@@ -32,6 +32,7 @@ public class DurationConverter implements Converter<Duration> {
      */
     @Override
     public Duration convert(String value) {
+        value = value.trim();
         if (value.isEmpty()) {
             return null;
         }

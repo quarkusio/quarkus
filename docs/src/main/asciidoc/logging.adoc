@@ -40,7 +40,7 @@ The root logger category is handled separately, and is configured via the follow
 |quarkus.log.level|INFO|The default minimum log level for every log category.
 |===
 
-[id="format_string"]
+[id="format-string"]
 == Format String
 
 The logging format string supports the following symbols:
@@ -75,6 +75,57 @@ The logging format string supports the following symbols:
 |%x|Nested Diagnostics context values|Renders all the values from Nested Diagnostics Context in format {value1.value2}
 |===
 
+[id="alt-console-format"]
+=== Alternative Console Logging Formats
+
+It is possible to change the output format of the console log. This can be useful in environments where the output
+of the Quarkus application is captured by a service which can, for example, process and store the log information for
+later analysis.
+
+[id="json-logging"]
+==== JSON Logging
+
+In order to configure JSON logging, the `quarkus-logging-json` extension may be employed.  Add this extension to your
+application POM as the following snippet illustrates.
+
+.Modifications to POM file to add the JSON logging extension
+[source,xml]
+----
+<build>
+  <dependencies>
+    <!-- ... your other dependencies are here ... -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-logging-json</artifactId>
+    </dependency>
+  </dependencies>
+</build>
+----
+
+The presence of this extension will, by default, replace the output format configuration from the console configuration.
+This means that the format string and the color settings (if any) will be ignored.  The other console configuration items
+(including those controlling asynchronous logging and the log level) will continue to be applied.
+
+===== Configuration
+
+The JSON logging extension can be configured in various ways.  The following properties are supported:
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|quarkus.log.json|true|Determine whether JSON logging is enabled; disabling this property will allow the normal console logging to function.
+|quarkus.log.json.pretty-print|false|Determine whether the JSON output is "pretty-printed".
+|quarkus.log.json.date-format|default|Specify the date format to use; `default` indicates that the default format is used.
+|quarkus.log.json.record-delimiter||Specify a record delimiter to add. By default, no delimiter is used.
+|quarkus.log.json.zone-id|default|Specify the time zone ID to use for logging dates; `default` indicates that the default is used.
+|quarkus.log.json.exception-output-type|detailed|Specify the exception output type; values of `detailed`, `formatted`, or `detailed-and-formatted` are allowed.
+|quarkus.log.json.print-details|false|Specify whether detailed caller information should be logged.
+|===
+
+WARNING: Enabling pretty printing might cause certain processors and JSON parsers to fail.
+
+NOTE: Printing the details can be expensive as the values are retrieved from the caller. The details include the
+source class name, source file name, source method name and source line number.
 
 == Examples
 

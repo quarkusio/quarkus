@@ -99,7 +99,19 @@ public class ZipUtils {
     }
 
     public static FileSystem newZip(Path zipFile) throws IOException {
-        return newFileSystem(toZipUri(zipFile), Files.exists(zipFile) ? Collections.emptyMap() : CREATE_ENV);
+        final Map<String, ?> env;
+        if (Files.exists(zipFile)) {
+            env = Collections.emptyMap();
+        } else {
+            env = CREATE_ENV;
+            // explicitly create any parent dirs, since the ZipFileSystem only creates a new file
+            // with "create" = "true", but doesn't create any parent dirs.
+
+            // It's OK to not check the existence of the parent dir(s) first, since the API,
+            // as per its contract doesn't throw any exception if the parent dir(s) already exist
+            Files.createDirectories(zipFile.getParent());
+        }
+        return newFileSystem(toZipUri(zipFile), env);
     }
 
     private static void copyToZip(Path srcRoot, Path srcPath, FileSystem zipfs) throws IOException {

@@ -43,7 +43,7 @@ import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.GizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -215,7 +215,7 @@ public class SchedulerProcessor {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SCHEDULER));
         List<ScheduledMethodMetadata> scheduledMethods = new ArrayList<>();
-        ClassOutput classOutput = new GizmoAdaptor(generatedClass, true);
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
         for (ScheduledBusinessMethodItem businessMethod : scheduledBusinessMethods) {
             ScheduledMethodMetadata scheduledMethod = new ScheduledMethodMetadata();

@@ -23,10 +23,12 @@ public final class LowerBoundCheckOf extends ConverterType {
         return classConverterType;
     }
 
+    @Override
     public Class<?> getLeafType() {
         return classConverterType.getLeafType();
     }
 
+    @Override
     public int hashCode() {
         int hashCode = this.hashCode;
         if (hashCode == 0) {
@@ -39,6 +41,7 @@ public final class LowerBoundCheckOf extends ConverterType {
         return hashCode;
     }
 
+    @Override
     public boolean equals(final Object obj) {
         return obj instanceof LowerBoundCheckOf && equals((LowerBoundCheckOf) obj);
     }

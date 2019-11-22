@@ -23,6 +23,7 @@ public final class PatternValidated extends ConverterType {
         return patternString;
     }
 
+    @Override
     public int hashCode() {
         int hashCode = this.hashCode;
         if (hashCode == 0) {
@@ -35,6 +36,7 @@ public final class PatternValidated extends ConverterType {
         return hashCode;
     }
 
+    @Override
     public boolean equals(final Object obj) {
         return obj instanceof PatternValidated && equals((PatternValidated) obj);
     }
@@ -43,6 +45,7 @@ public final class PatternValidated extends ConverterType {
         return obj == this || obj != null && type.equals(obj.type) && patternString.equals(obj.patternString);
     }
 
+    @Override
     public Class<?> getLeafType() {
         return type.getLeafType();
     }

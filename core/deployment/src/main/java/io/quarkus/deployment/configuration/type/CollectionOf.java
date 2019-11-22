@@ -19,6 +19,7 @@ public final class CollectionOf extends ConverterType {
         return type;
     }
 
+    @Override
     public Class<?> getLeafType() {
         return type.getLeafType();
     }
@@ -27,6 +28,7 @@ public final class CollectionOf extends ConverterType {
         return collectionClass;
     }
 
+    @Override
     public int hashCode() {
         int hashCode = this.hashCode;
         if (hashCode == 0) {
@@ -39,6 +41,7 @@ public final class CollectionOf extends ConverterType {
         return hashCode;
     }
 
+    @Override
     public boolean equals(final Object obj) {
         return obj instanceof CollectionOf && equals((CollectionOf) obj);
     }

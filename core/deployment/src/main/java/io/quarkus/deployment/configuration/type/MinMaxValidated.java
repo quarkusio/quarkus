@@ -42,10 +42,12 @@ public final class MinMaxValidated extends ConverterType {
         return maxInclusive;
     }
 
+    @Override
     public Class<?> getLeafType() {
         return type.getLeafType();
     }
 
+    @Override
     public int hashCode() {
         int hashCode = this.hashCode;
         if (hashCode == 0) {
@@ -58,6 +60,7 @@ public final class MinMaxValidated extends ConverterType {
         return hashCode;
     }
 
+    @Override
     public boolean equals(final Object obj) {
         return obj instanceof MinMaxValidated && equals((MinMaxValidated) obj);
     }

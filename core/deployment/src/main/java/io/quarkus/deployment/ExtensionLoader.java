@@ -190,9 +190,6 @@ public final class ExtensionLoader {
 
         builder.withSources(ds1, ds2, pcs);
 
-        // populate builder with all converters loaded from ServiceLoader
-        ConverterSupport.populateConverters(builder);
-
         if (configCustomizer != null) {
             configCustomizer.accept(builder);
         }

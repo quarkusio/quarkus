@@ -1,0 +1,14 @@
+version: 1
+update_configs:
+  - package_manager: "java:maven"
+    directory: "/bom/runtime"
+    update_schedule: "daily"
+    allowed_updates:
+      - match:
+          update_type: "security"
+      - match:
+          dependency_name: "org.flywaydb:flyway-core"
+      - match:
+          dependency_name: "org.eclipse.jgit:org.eclipse.jgit"
+      - match:
+          dependency_name: "io.fabric8:kubernetes-client-bom"

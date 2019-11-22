@@ -17,4 +17,5 @@ public class FlywayFunctionalityTest {
     public void testFlywayQuarkusFunctionality() {
         when().get("/flyway/migrate").then().body(is("1.0.1"));
     }
+
 }

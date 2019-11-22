@@ -21,6 +21,10 @@ public class FlywayRecorder {
     }
 
     public void doStartActions(FlywayRuntimeConfig config, BeanContainer container) {
+        if (config.cleanAtStart) {
+            Flyway flyway = container.instance(Flyway.class);
+            flyway.clean();
+        }
         if (config.migrateAtStart) {
             Flyway flyway = container.instance(Flyway.class);
             flyway.migrate();

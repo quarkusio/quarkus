@@ -27,4 +27,5 @@ public class FlywayFunctionalityResource {
                 "Version is null! Migration was not applied");
         return version.toString();
     }
+
 }

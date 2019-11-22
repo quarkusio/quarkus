@@ -1,5 +1,6 @@
 package io.quarkus.security.runtime.interceptor.check;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,7 +50,7 @@ public class RolesAllowedCheck implements SecurityCheck {
     }
 
     @Override
-    public void apply(SecurityIdentity identity) {
+    public void apply(SecurityIdentity identity, Method method, Object[] parameters) {
         Set<String> roles = identity.getRoles();
         if (roles != null) {
             for (String role : allowedRoles) {

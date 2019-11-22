@@ -15,6 +15,13 @@ It can be used to implement an application authentication mechanism based on tok
 
 If your OAuth2 Authentication server provides JWT tokens, you should use link:security-jwt[MicroProfile JWT RBAC] instead, this extension aims to be used with opaque tokens and validate the token by calling an introspection endpoint.
 
+[NOTE]
+====
+This extension is considered `preview`.
+API or configuration properties might change as the extension matures.
+Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
+====
+
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.

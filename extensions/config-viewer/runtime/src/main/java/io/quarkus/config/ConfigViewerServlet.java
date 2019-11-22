@@ -73,7 +73,7 @@ import org.eclipse.microprofile.config.Config;
  * </pre>
  */
 @WebServlet
-public class ConfigServlet extends HttpServlet {
+public class ConfigViewerServlet extends HttpServlet {
 
     private static final Map<String, ?> JSON_CONFIG = Collections.singletonMap(JsonGenerator.PRETTY_PRINTING, true);
 
@@ -88,7 +88,7 @@ public class ConfigServlet extends HttpServlet {
         JsonBuilderFactory builderFactory = Json.createBuilderFactory(JSON_CONFIG);
         JsonWriterFactory writerFactory = Json.createWriterFactory(JSON_CONFIG);
         JsonWriter writer = writerFactory.createWriter(resp.getWriter());
-        JsonObject json = new ConfigDumper().dump(config, builderFactory);
+        JsonObject json = new ConfigViewer().dump(config, builderFactory);
         writer.write(json);
     }
 }

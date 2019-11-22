@@ -57,7 +57,7 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
  * }
  * </pre>
  */
-class ConfigDumper {
+class ConfigViewer {
 
     private static final Logger log = Logger.getLogger("io.quarkus.config");
 

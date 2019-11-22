@@ -88,6 +88,7 @@
         <module>spring-di</module>
         <module>spring-web</module>
         <module>spring-data-jpa</module>
+        <module>spring-security</module>
 
         <!-- Security -->
         <module>security</module>
@@ -129,6 +130,9 @@
         <!-- vault -->
         <module>vault</module>
         <module>vertx-graphql</module>
+
+        <!-- Logging -->
+        <module>logging-json</module>
     </modules>
 
     <!-- Unfortunately the config below introduces a build dependency on the maven plugin

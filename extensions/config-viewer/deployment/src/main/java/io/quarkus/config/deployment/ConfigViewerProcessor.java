@@ -1,7 +1,12 @@
 package io.quarkus.config.deployment;
 
+import javax.inject.Singleton;
+
+import org.jboss.jandex.DotName;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.config.ConfigViewerServlet;
+import io.quarkus.config.ConfigHolder;
+import io.quarkus.config.ConfigViewerHandler;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -9,12 +14,14 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.undertow.deployment.ServletBuildItem;
+import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.runtime.HandlerType;
 
-/** Provides a servlet, which lists all configured properties. */
+/** Produces a Vert.x route with a handler, which lists all configured properties. */
 class ConfigViewerProcessor {
 
-    private static final String FEATURE = "config";
+    private static final DotName SINGLETON = DotName.createSimple(Singleton.class.getName());
+    private static final String FEATURE = "config-viewer";
 
     /** The configuration for config extension. */
     ConfigConfig config;
@@ -31,14 +38,16 @@ class ConfigViewerProcessor {
     public void build(LaunchModeBuildItem launchMode,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<AdditionalBeanBuildItem> beans,
-            BuildProducer<ServletBuildItem> servlets) {
+            BuildProducer<RouteBuildItem> routes) {
 
         if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
             feature.produce(new FeatureBuildItem(FEATURE));
-            beans.produce(new AdditionalBeanBuildItem(ConfigViewerServlet.class));
-            servlets.produce(ServletBuildItem.builder("config", ConfigViewerServlet.class.getName())
-                    .addMapping(config.path)
+            beans.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClass(ConfigHolder.class)
+                    .setDefaultScope(SINGLETON)
+                    .setUnremovable()
                     .build());
+            routes.produce(new RouteBuildItem(config.path, new ConfigViewerHandler(), HandlerType.BLOCKING));
         }
     }
 }

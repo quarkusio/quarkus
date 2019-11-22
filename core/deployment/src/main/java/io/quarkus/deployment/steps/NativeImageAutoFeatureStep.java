@@ -54,7 +54,7 @@ public class NativeImageAutoFeatureStep {
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
-    static final String LOCALIZATION_SUPPORT = "com.oracle.svm.core.jdk.LocalizationSupport";
+    static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
 
     @BuildStep
     void generateFeature(BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
@@ -170,7 +170,7 @@ public class NativeImageAutoFeatureStep {
         }
 
         if (!resourceBundles.isEmpty()) {
-            ResultHandle locClass = overallCatch.loadClass(LOCALIZATION_SUPPORT);
+            ResultHandle locClass = overallCatch.loadClass(LOCALIZATION_FEATURE);
 
             ResultHandle params = overallCatch.marshalAsArray(Class.class, overallCatch.loadClass(String.class));
             ResultHandle registerMethod = overallCatch.invokeVirtualMethod(

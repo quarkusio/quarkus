@@ -25,13 +25,14 @@ import org.eclipse.aether.util.graph.transformer.ConflictIdSorter;
 import org.eclipse.aether.util.graph.transformer.ConflictMarker;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.version.Version;
+
+import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.maven.BuildDependencyGraphVisitor;
 import io.quarkus.bootstrap.resolver.maven.DeploymentInjectingDependencyVisitor;
-import io.quarkus.bootstrap.resolver.maven.DeploymentInjectionException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.SimpleDependencyGraphTransformationContext;
 
@@ -170,8 +171,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         final DeploymentInjectingDependencyVisitor deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn,
                 managedDeps, mvn.aggregateRepositories(managedRepos, mvn.newResolutionRepositories(mvn.resolveDescriptor(toAetherArtifact(appArtifact)).getRepositories())));
         try {
-            resolvedDeps.accept(new TreeDependencyVisitor(deploymentInjector));
-        } catch (DeploymentInjectionException e) {
+            deploymentInjector.injectDeploymentDependencies(resolvedDeps);
+        } catch (BootstrapDependencyProcessingException e) {
             throw new AppModelResolverException("Failed to inject extension deployment dependencies for " + resolvedDeps.getArtifact(), e.getCause());
         }
 

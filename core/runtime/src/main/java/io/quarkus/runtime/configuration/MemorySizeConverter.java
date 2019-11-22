@@ -42,6 +42,7 @@ public class MemorySizeConverter implements Converter<MemorySize> {
      * @return {@link MemorySize} - a memory size represented by the given value
      */
     public MemorySize convert(String value) {
+        value = value.trim();
         if (value.isEmpty()) {
             return null;
         }

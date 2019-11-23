@@ -17,7 +17,7 @@ import io.quarkus.gradle.GradleBuildFileFromConnector;
  */
 public class QuarkusListExtensions extends QuarkusPlatformTask {
 
-    private boolean all = true;
+    private Boolean all = true;
 
     private String format = "concise";
 
@@ -25,12 +25,12 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
 
     @Optional
     @Input
-    public boolean isAll() {
+    public Boolean isAll() {
         return all;
     }
 
     @Option(description = "List all extensions or just the installable.", option = "all")
-    public void setAll(boolean all) {
+    public void setAll(Boolean all) {
         this.all = all;
     }
 

@@ -103,8 +103,8 @@
         <vertx.version>3.8.3</vertx.version>
         <!-- patch release of vert.x web -->
         <vertx-web.version>3.8.3-01</vertx-web.version>
-        <httpclient.version>4.5.9</httpclient.version>
-        <httpcore.version>4.4.11</httpcore.version>
+        <httpclient.version>4.5.10</httpclient.version>
+        <httpcore.version>4.4.12</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
         <cronutils.version>9.0.1</cronutils.version>
         <quartz.version>2.3.2</quartz.version>

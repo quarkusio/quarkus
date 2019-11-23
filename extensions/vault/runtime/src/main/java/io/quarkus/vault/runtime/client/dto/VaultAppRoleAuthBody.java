@@ -2,7 +2,7 @@ package io.quarkus.vault.runtime.client.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class VaultAppRoleAuthBody {
+public class VaultAppRoleAuthBody implements VaultModel {
 
     @JsonProperty("role_id")
     public String roleId;

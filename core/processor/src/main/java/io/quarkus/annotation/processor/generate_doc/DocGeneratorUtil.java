@@ -458,18 +458,20 @@ public class DocGeneratorUtil {
     }
 
     static String deriveConfigRootName(String simpleClassName, ConfigPhase configPhase) {
-        int length = simpleClassName.length();
+        String simpleNameInLowerCase = simpleClassName.toLowerCase();
+        int length = simpleNameInLowerCase.length();
 
-        if (simpleClassName.endsWith(CONFIG)) {
+        if (simpleNameInLowerCase.endsWith(CONFIG.toLowerCase())) {
             String sanitized = simpleClassName.substring(0, length - CONFIG.length());
             return deriveConfigRootName(sanitized, configPhase);
-        } else if (simpleClassName.endsWith(CONFIGURATION)) {
+        } else if (simpleNameInLowerCase.endsWith(CONFIGURATION.toLowerCase())) {
             String sanitized = simpleClassName.substring(0, length - CONFIGURATION.length());
             return deriveConfigRootName(sanitized, configPhase);
-        } else if (simpleClassName.endsWith(configPhase.getConfigSuffix())) {
+        } else if (simpleNameInLowerCase.endsWith(configPhase.getConfigSuffix().toLowerCase())) {
             String sanitized = simpleClassName.substring(0, length - configPhase.getConfigSuffix().length());
             return deriveConfigRootName(sanitized, configPhase);
         }
+
         return Constants.QUARKUS + Constants.DOT + hyphenate(simpleClassName);
     }
 

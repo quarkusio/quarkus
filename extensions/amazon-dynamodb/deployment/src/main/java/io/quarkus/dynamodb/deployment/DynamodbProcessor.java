@@ -1,6 +1,7 @@
 package io.quarkus.dynamodb.deployment;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -81,14 +82,14 @@ public class DynamodbProcessor {
         // Indicates that this extension would like the SSL support to be enabled
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.DYNAMODB));
 
-        INTERCEPTOR_PATHS.stream().forEach(path -> resource.produce(new NativeImageResourceBuildItem(path)));
+        INTERCEPTOR_PATHS.forEach(path -> resource.produce(new NativeImageResourceBuildItem(path)));
 
         List<String> knownInterceptorImpls = combinedIndexBuildItem.getIndex()
                 .getAllKnownImplementors(EXECUTION_INTERCEPTOR_NAME)
                 .stream()
                 .map(c -> c.name().toString()).collect(Collectors.toList());
 
-        buildTimeConfig.sdk.interceptors.stream().forEach(interceptorClass -> {
+        buildTimeConfig.sdk.interceptors.orElse(Collections.emptyList()).forEach(interceptorClass -> {
             if (!knownInterceptorImpls.contains(interceptorClass.getName())) {
                 throw new ConfigurationError(
                         String.format(

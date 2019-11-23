@@ -1,7 +1,6 @@
 package io.quarkus.deployment.pkg;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,7 +15,7 @@ public class NativeConfig {
      * Additional arguments to pass to the build process
      */
     @ConfigItem
-    public List<String> additionalBuildArgs;
+    public Optional<List<String>> additionalBuildArgs;
 
     /**
      * If the HTTP url handler should be enabled, allowing you to do URL.openConnection() for HTTP URLs
@@ -52,7 +51,7 @@ public class NativeConfig {
      * The location of the Graal distribution
      */
     @ConfigItem(defaultValue = "${GRAALVM_HOME:}")
-    public String graalvmHome;
+    public Optional<String> graalvmHome;
 
     /**
      * The location of the JDK
@@ -141,13 +140,13 @@ public class NativeConfig {
      * a container build is always done.
      */
     @ConfigItem
-    public String containerRuntime = "";
+    public Optional<String> containerRuntime;
 
     /**
      * Options to pass to the container runtime
      */
     @ConfigItem
-    public List<String> containerRuntimeOptions = new ArrayList<>();
+    public Optional<List<String>> containerRuntimeOptions;
 
     /**
      * If the resulting image should allow VM introspection

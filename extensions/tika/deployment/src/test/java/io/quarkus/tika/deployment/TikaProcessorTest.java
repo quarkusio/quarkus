@@ -7,9 +7,42 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.util.List;
 import java.util.Optional;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
+
 public class TikaProcessorTest {
+
+    // We must register a configuration otherwise we'll get an exception.
+
+    static volatile SmallRyeConfig config;
+
+    @BeforeAll
+    public static void setItUp() {
+        final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
+        builder.addDefaultSources();
+        builder.addDiscoveredConverters();
+        builder.addDiscoveredSources();
+        config = builder.build();
+        QuarkusConfigFactory.setConfig(config);
+        ConfigProviderResolver cpr = ConfigProviderResolver.instance();
+        final Config existingConfig = cpr.getConfig();
+        if (existingConfig != TikaProcessorTest.config) {
+            cpr.releaseConfig(existingConfig);
+        }
+    }
+
+    @AfterAll
+    public static void tearItDown() {
+        ConfigProviderResolver cpr = ConfigProviderResolver.instance();
+        cpr.releaseConfig(config);
+    }
 
     @Test
     public void testSupportedParserNames() throws Exception {

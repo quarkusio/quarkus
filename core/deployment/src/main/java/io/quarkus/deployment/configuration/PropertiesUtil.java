@@ -4,20 +4,20 @@ public class PropertiesUtil {
     private PropertiesUtil() {
     }
 
-    public static boolean escape(int codePoint) {
+    public static boolean needsEscape(int codePoint) {
         return codePoint == '#' || codePoint == '!' || codePoint == '=' || codePoint == ':';
     }
 
-    public static boolean escapeForKey(int codePoint) {
-        return Character.isSpaceChar(codePoint) || escape(codePoint);
+    public static boolean needsEscapeForKey(int codePoint) {
+        return Character.isSpaceChar(codePoint) || needsEscape(codePoint);
     }
 
-    public static boolean escapeForValueFirst(int codePoint) {
-        return escapeForKey(codePoint);
+    public static boolean needsEscapeForValueFirst(int codePoint) {
+        return needsEscapeForKey(codePoint);
     }
 
-    public static boolean escapeForValueSubsequent(int codePoint) {
-        return escape(codePoint);
+    public static boolean needsEscapeForValueSubsequent(int codePoint) {
+        return needsEscape(codePoint);
     }
 
     public static String quotePropertyName(String name) {
@@ -25,7 +25,7 @@ public class PropertiesUtil {
         int cp;
         for (int i = 0; i < length; i = name.offsetByCodePoints(i, 1)) {
             cp = name.codePointAt(i);
-            if (escapeForKey(cp)) {
+            if (needsEscapeForKey(cp)) {
                 final StringBuilder b = new StringBuilder(length + (length >> 2));
                 // get leading section
                 b.append(name, 0, i);
@@ -33,7 +33,7 @@ public class PropertiesUtil {
                 b.append('\\').appendCodePoint(cp);
                 for (i = name.offsetByCodePoints(i, 1); i < length; i = name.offsetByCodePoints(i, 1)) {
                     cp = name.codePointAt(i);
-                    if (escapeForKey(cp)) {
+                    if (needsEscapeForKey(cp)) {
                         b.append('\\');
                     }
                     b.appendCodePoint(cp);
@@ -50,7 +50,7 @@ public class PropertiesUtil {
         int cp;
         for (int i = 0; i < length; i = value.offsetByCodePoints(i, 1)) {
             cp = value.codePointAt(i);
-            if (i == 0 ? escapeForValueFirst(cp) : escapeForValueSubsequent(cp)) {
+            if (i == 0 ? needsEscapeForValueFirst(cp) : needsEscapeForValueSubsequent(cp)) {
                 final StringBuilder b = new StringBuilder(length + (length >> 2));
                 // get leading section
                 b.append(value, 0, i);
@@ -58,7 +58,7 @@ public class PropertiesUtil {
                 b.append('\\').appendCodePoint(cp);
                 for (i = value.offsetByCodePoints(i, 1); i < length; i = value.offsetByCodePoints(i, 1)) {
                     cp = value.codePointAt(i);
-                    if (escapeForValueSubsequent(cp)) {
+                    if (needsEscapeForValueSubsequent(cp)) {
                         b.append('\\');
                     }
                     b.appendCodePoint(cp);

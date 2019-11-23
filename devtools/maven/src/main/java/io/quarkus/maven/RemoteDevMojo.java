@@ -20,12 +20,15 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.toolchain.ToolchainManager;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.remotedev.AgentRunner;
+import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.smallrye.config.PropertiesConfigSource;
-import io.smallrye.config.SmallRyeConfigProviderResolver;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * The dev mojo, that connects to a remote host.
@@ -101,13 +104,15 @@ public class RemoteDevMojo extends AbstractMojo {
             Path config = Paths.get(resources).resolve("application.properties");
             if (Files.exists(config)) {
                 try {
-                    Config built = SmallRyeConfigProviderResolver.instance().getBuilder()
-                            .addDefaultSources()
-                            .addDiscoveredConverters()
-                            .addDiscoveredSources()
+                    SmallRyeConfig built = ConfigUtils.configBuilder(false)
                             .withSources(new PropertiesConfigSource(config.toUri().toURL())).build();
-                    SmallRyeConfigProviderResolver.instance().registerConfig(built,
-                            Thread.currentThread().getContextClassLoader());
+                    QuarkusConfigFactory.setConfig(built);
+                    final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
+                    final Config existing = cpr.getConfig();
+                    if (existing != built) {
+                        cpr.releaseConfig(existing);
+                        // subsequent calls will get the new config
+                    }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

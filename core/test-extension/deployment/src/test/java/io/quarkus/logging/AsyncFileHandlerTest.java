@@ -11,6 +11,8 @@ import java.util.logging.Logger;
 import org.jboss.logmanager.handlers.AsyncHandler;
 import org.jboss.logmanager.handlers.DelayedHandler;
 import org.jboss.logmanager.handlers.FileHandler;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,6 +24,8 @@ public class AsyncFileHandlerTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-async-file-log.properties")
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
             .setLogFileName("AsyncFileHandlerTest.log");
 
     @Test

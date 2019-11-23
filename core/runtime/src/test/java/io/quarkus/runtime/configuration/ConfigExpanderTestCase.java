@@ -34,7 +34,11 @@ public class ConfigExpanderTestCase {
 
     @AfterEach
     public void doAfter() {
-        cpr.releaseConfig(config);
+        try {
+            cpr.releaseConfig(cpr.getConfig());
+        } catch (IllegalStateException ignored) {
+            // just means no config was installed, which is fine
+        }
     }
 
     private SmallRyeConfig buildConfig(Map<String, String> configMap) {

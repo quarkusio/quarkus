@@ -14,6 +14,8 @@ import java.util.logging.Logger;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.DelayedHandler;
 import org.jboss.logmanager.handlers.SyslogHandler;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +26,9 @@ public class SyslogHandlerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("application-syslog-output.properties");
+            .withConfigurationResource("application-syslog-output.properties")
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addAsManifestResource("application.properties", "microprofile-config.properties"));
 
     @Test
     public void syslogOutputTest() {

@@ -74,8 +74,6 @@ class VertxWebProcessor {
     private static final DotName[] ROUTE_PARAM_TYPES = { ROUTING_CONTEXT, RX_ROUTING_CONTEXT, ROUTING_EXCHANGE };
     private static final DotName[] ROUTE_FILTER_TYPES = { ROUTING_CONTEXT };
 
-    HttpConfiguration httpConfiguration;
-
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.VERTX_WEB);

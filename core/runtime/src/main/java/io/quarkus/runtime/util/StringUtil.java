@@ -1,6 +1,8 @@
 package io.quarkus.runtime.util;
 
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -97,6 +99,13 @@ public final class StringUtil {
         };
     }
 
+    /**
+     * @deprecated Use {@link String#join} instead.
+     * @param delim delimiter
+     * @param it iterator
+     * @return the joined string
+     */
+    @Deprecated
     public static String join(String delim, Iterator<String> it) {
         final StringBuilder b = new StringBuilder();
         if (it.hasNext()) {
@@ -165,6 +174,34 @@ public final class StringUtil {
                 return next;
             }
         };
+    }
+
+    @SafeVarargs
+    public static <T> List<T> withoutSuffix(List<T> list, T... segments) {
+        if (list.size() < segments.length) {
+            return list;
+        }
+        for (int i = 0; i < segments.length; i++) {
+            if (!list.get(list.size() - i - 1).equals(segments[segments.length - i - 1])) {
+                return list;
+            }
+        }
+        return list.subList(0, list.size() - segments.length);
+    }
+
+    public static List<String> toList(Iterator<String> orig) {
+        return toList(orig, 0);
+    }
+
+    private static List<String> toList(Iterator<String> orig, int idx) {
+        if (orig.hasNext()) {
+            final String item = orig.next();
+            final List<String> list = toList(orig, idx + 1);
+            list.set(idx, item);
+            return list;
+        } else {
+            return Arrays.asList(new String[idx]);
+        }
     }
 
     @SafeVarargs

@@ -1,6 +1,7 @@
 package io.quarkus.dynamodb.runtime;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 
@@ -91,15 +92,15 @@ public class DynamodbClientProducer {
         config.region.ifPresent(builder::region);
 
         if (config.credentials.type == AwsCredentialsProviderType.STATIC) {
-            if (StringUtils.isBlank(config.credentials.staticProvider.accessKeyId)
-                    || StringUtils.isBlank(config.credentials.staticProvider.secretAccessKey)) {
+            if (!config.credentials.staticProvider.accessKeyId.isPresent()
+                    || !config.credentials.staticProvider.secretAccessKey.isPresent()) {
                 throw new RuntimeConfigurationError(
                         "quarkus.dynamodb.aws.credentials.static-provider.access-key-id and "
                                 + "quarkus.dynamodb.aws.credentials.static-provider.secret-access-key cannot be empty if STATIC credentials provider used.");
             }
         }
         if (config.credentials.type == AwsCredentialsProviderType.PROCESS) {
-            if (StringUtils.isBlank(config.credentials.processProvider.command)) {
+            if (!config.credentials.processProvider.command.isPresent()) {
                 throw new RuntimeConfigurationError(
                         "quarkus.dynamodb.aws.credentials.process-provider.command cannot be empty if PROCESS credentials provider used.");
             }
@@ -121,7 +122,7 @@ public class DynamodbClientProducer {
         ClientOverrideConfiguration.Builder overrides = ClientOverrideConfiguration.builder();
         config.apiCallTimeout.ifPresent(overrides::apiCallTimeout);
         config.apiCallAttemptTimeout.ifPresent(overrides::apiCallAttemptTimeout);
-        buildTimeConfig.sdk.interceptors.stream()
+        buildTimeConfig.sdk.interceptors.orElse(Collections.emptyList()).stream()
                 .map(this::createInterceptor)
                 .filter(Objects::nonNull)
                 .forEach(overrides::addExecutionInterceptor);
@@ -163,12 +164,12 @@ public class DynamodbClientProducer {
         builder.maxConnections(config.apache.maxConnections);
         builder.useIdleConnectionReaper(config.apache.useIdleConnectionReaper);
 
-        if (config.apache.proxy.enabled) {
+        if (config.apache.proxy.enabled && config.apache.proxy.endpoint.isPresent()) {
             ProxyConfiguration.Builder proxyBuilder = ProxyConfiguration.builder()
-                    .endpoint(config.apache.proxy.endpoint);
+                    .endpoint(config.apache.proxy.endpoint.get());
             config.apache.proxy.username.ifPresent(proxyBuilder::username);
             config.apache.proxy.password.ifPresent(proxyBuilder::password);
-            config.apache.proxy.nonProxyHosts.forEach(proxyBuilder::addNonProxyHost);
+            config.apache.proxy.nonProxyHosts.ifPresent(c -> c.forEach(proxyBuilder::addNonProxyHost));
             config.apache.proxy.ntlmDomain.ifPresent(proxyBuilder::ntlmDomain);
             config.apache.proxy.ntlmWorkstation.ifPresent(proxyBuilder::ntlmWorkstation);
             config.apache.proxy.preemptiveBasicAuthenticationEnabled
@@ -199,14 +200,14 @@ public class DynamodbClientProducer {
         config.sslProvider.ifPresent(builder::sslProvider);
         builder.useIdleConnectionReaper(config.useIdleConnectionReaper);
 
-        if (config.proxy.enabled) {
+        if (config.proxy.enabled && config.proxy.endpoint.isPresent()) {
             software.amazon.awssdk.http.nio.netty.ProxyConfiguration.Builder proxyBuilder = software.amazon.awssdk.http.nio.netty.ProxyConfiguration
-                    .builder().scheme(config.proxy.endpoint.getScheme())
-                    .host(config.proxy.endpoint.getHost())
-                    .nonProxyHosts(new HashSet<>(config.proxy.nonProxyHosts));
+                    .builder().scheme(config.proxy.endpoint.get().getScheme())
+                    .host(config.proxy.endpoint.get().getHost())
+                    .nonProxyHosts(new HashSet<>(config.proxy.nonProxyHosts.orElse(Collections.emptyList())));
 
-            if (config.proxy.endpoint.getPort() != -1) {
-                proxyBuilder.port(config.proxy.endpoint.getPort());
+            if (config.proxy.endpoint.get().getPort() != -1) {
+                proxyBuilder.port(config.proxy.endpoint.get().getPort());
             }
             builder.proxyConfiguration(proxyBuilder.build());
         }
@@ -239,11 +240,8 @@ public class DynamodbClientProducer {
         if (config.apache.maxConnections <= 0) {
             throw new RuntimeConfigurationError("quarkus.dynamodb.sync-client.max-connections may not be negative or zero.");
         }
-        if (config.apache.proxy != null && config.apache.proxy.enabled) {
-            URI proxyEndpoint = config.apache.proxy.endpoint;
-            if (proxyEndpoint != null) {
-                validateProxyEndpoint(proxyEndpoint, "sync");
-            }
+        if (config.apache.proxy.enabled) {
+            config.apache.proxy.endpoint.ifPresent(u -> validateProxyEndpoint(u, "sync"));
         }
         validateTlsManagersProvider(config.apache.tlsManagersProvider, "sync");
     }
@@ -266,11 +264,8 @@ public class DynamodbClientProducer {
                         "quarkus.dynamodb.async-client.event-loop.number-of-threads may not be negative or zero.");
             }
         }
-        if (asyncClient.proxy != null && asyncClient.proxy.enabled) {
-            URI proxyEndpoint = asyncClient.proxy.endpoint;
-            if (proxyEndpoint != null) {
-                validateProxyEndpoint(proxyEndpoint, "async");
-            }
+        if (asyncClient.proxy.enabled) {
+            asyncClient.proxy.endpoint.ifPresent(proxyEndpoint -> validateProxyEndpoint(proxyEndpoint, "async"));
         }
         validateTlsManagersProvider(asyncClient.tlsManagersProvider, "async");
     }
@@ -310,28 +305,10 @@ public class DynamodbClientProducer {
 
     private void validateTlsManagersProvider(TlsManagersProviderConfig config, String clientType) {
         if (config.type == TlsManagersProviderType.FILE_STORE) {
-            if (config.fileStore == null) {
+            if (!config.fileStore.isPresent()) {
                 throw new RuntimeConfigurationError(
                         String.format(
                                 "quarkus.dynamodb.%s-client.tls-managers-provider.file-store must be specified if 'FILE_STORE' provider type is used",
-                                clientType));
-            }
-            if (config.fileStore.path == null) {
-                throw new RuntimeConfigurationError(
-                        String.format(
-                                "quarkus.dynamodb.%s-client.tls-managers-provider.file-store.path should not be empty if 'FILE_STORE' provider is used.",
-                                clientType));
-            }
-            if (StringUtils.isBlank(config.fileStore.type)) {
-                throw new RuntimeConfigurationError(
-                        String.format(
-                                "quarkus.dynamodb.%s-client.tls-managers-provider.file-store.type should not be empty if 'FILE_STORE' provider is used.",
-                                clientType));
-            }
-            if (StringUtils.isBlank(config.fileStore.password)) {
-                throw new RuntimeConfigurationError(
-                        String.format(
-                                "quarkus.dynamodb.%s-client.tls-managers-provider.file-store.password should not be empty if 'FILE_STORE' provider is used.",
                                 clientType));
             }
         }

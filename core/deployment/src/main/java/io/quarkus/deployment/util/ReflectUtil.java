@@ -1,10 +1,16 @@
 package io.quarkus.deployment.util;
 
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Member;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.UndeclaredThrowableException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -74,6 +80,24 @@ public final class ReflectUtil {
         }
     }
 
+    private static final Class<?>[] NO_CLASSES = new Class[0];
+
+    public static Class<?>[] rawTypesOfDestructive(final Type[] types) {
+        if (types.length == 0) {
+            return NO_CLASSES;
+        }
+        Type t;
+        Class<?> r;
+        for (int i = 0; i < types.length; i++) {
+            t = types[i];
+            r = rawTypeOf(t);
+            if (r != t) {
+                types[i] = r;
+            }
+        }
+        return Arrays.copyOf(types, types.length, Class[].class);
+    }
+
     public static Type typeOfParameter(final Type type, final int paramIdx) {
         if (type instanceof ParameterizedType) {
             return ((ParameterizedType) type).getActualTypeArguments()[paramIdx];
@@ -89,6 +113,26 @@ public final class ReflectUtil {
     public static void setFieldVal(Field field, Object obj, Object value) {
         try {
             field.set(obj, value);
+        } catch (IllegalAccessException e) {
+            throw toError(e);
+        }
+    }
+
+    public static <T> T newInstance(Class<T> clazz) {
+        try {
+            return clazz.getConstructor().newInstance();
+        } catch (InstantiationException e) {
+            throw toError(e);
+        } catch (InvocationTargetException e) {
+            try {
+                throw e.getCause();
+            } catch (RuntimeException | Error e2) {
+                throw e2;
+            } catch (Throwable t) {
+                throw new UndeclaredThrowableException(t);
+            }
+        } catch (NoSuchMethodException e) {
+            throw toError(e);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
@@ -116,5 +160,28 @@ public final class ReflectUtil {
         final NoSuchFieldError error = new NoSuchFieldError(e.getMessage());
         error.setStackTrace(e.getStackTrace());
         return error;
+    }
+
+    public static UndeclaredThrowableException unwrapInvocationTargetException(InvocationTargetException original) {
+        try {
+            throw original.getCause();
+        } catch (RuntimeException | Error e) {
+            throw e;
+        } catch (Throwable t) {
+            return new UndeclaredThrowableException(t);
+        }
+    }
+
+    public static IllegalArgumentException reportError(AnnotatedElement e, String fmt, Object... args) {
+        if (e instanceof Member) {
+            return new IllegalArgumentException(
+                    String.format(fmt, args) + " at " + e + " of " + ((Member) e).getDeclaringClass());
+        } else if (e instanceof Parameter) {
+            return new IllegalArgumentException(
+                    String.format(fmt, args) + " at " + e + " of " + ((Parameter) e).getDeclaringExecutable() + " of "
+                            + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
+        } else {
+            return new IllegalArgumentException(String.format(fmt, args) + " at " + e);
+        }
     }
 }

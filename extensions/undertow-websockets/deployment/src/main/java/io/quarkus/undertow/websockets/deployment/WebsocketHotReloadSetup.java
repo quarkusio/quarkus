@@ -6,10 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.Properties;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.devmode.HotReplacementContext;
@@ -33,24 +31,17 @@ public class WebsocketHotReloadSetup implements HotReplacementSetup {
 
     @Override
     public void setupHotDeployment(HotReplacementContext hotReplacementContext) {
-        Optional<String> password = ConfigProvider.getConfig()
-                .getOptionalValue(HotReplacementWebsocketEndpoint.QUARKUS_HOT_RELOAD_PASSWORD, String.class);
-        if (password.isPresent()) {
-            replacementPassword = password.get();
-        } else {
-
-            List<Path> resources = hotReplacementContext.getResourcesDir();
-            if (!resources.isEmpty()) {
-                //TODO: fix this
-                File appConfig = resources.get(0).resolve("application.properties").toFile();
-                if (appConfig.isFile()) {
-                    try (InputStream pw = new FileInputStream(appConfig)) {
-                        Properties p = new Properties();
-                        p.load(pw);
-                        replacementPassword = p.getProperty(HotReplacementWebsocketEndpoint.QUARKUS_HOT_RELOAD_PASSWORD);
-                    } catch (IOException e) {
-                        logger.error("Failed to read application.properties", e);
-                    }
+        List<Path> resources = hotReplacementContext.getResourcesDir();
+        if (!resources.isEmpty()) {
+            //TODO: fix this
+            File appConfig = resources.get(0).resolve("application.properties").toFile();
+            if (appConfig.isFile()) {
+                try (InputStream pw = new FileInputStream(appConfig)) {
+                    Properties p = new Properties();
+                    p.load(pw);
+                    replacementPassword = p.getProperty(HotReplacementWebsocketEndpoint.QUARKUS_HOT_RELOAD_PASSWORD);
+                } catch (IOException e) {
+                    logger.error("Failed to read application.properties", e);
                 }
             }
         }

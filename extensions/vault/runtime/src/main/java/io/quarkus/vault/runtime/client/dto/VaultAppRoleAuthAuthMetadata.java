@@ -1,4 +1,4 @@
 package io.quarkus.vault.runtime.client.dto;
 
-public class VaultAppRoleAuthAuthMetadata {
+public class VaultAppRoleAuthAuthMetadata implements VaultModel {
 }

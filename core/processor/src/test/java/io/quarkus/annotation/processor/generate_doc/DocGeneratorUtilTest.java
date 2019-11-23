@@ -337,6 +337,10 @@ public class DocGeneratorUtilTest {
         actual = deriveConfigRootName(simpleClassName, ConfigPhase.RUN_TIME);
         assertEquals("quarkus.root-name", actual);
 
+        simpleClassName = "RootNameRuntimeConfig";
+        actual = deriveConfigRootName(simpleClassName, ConfigPhase.RUN_TIME);
+        assertEquals("quarkus.root-name", actual);
+
         simpleClassName = "RootNameRunTimeConfiguration";
         actual = deriveConfigRootName(simpleClassName, ConfigPhase.RUN_TIME);
         assertEquals("quarkus.root-name", actual);

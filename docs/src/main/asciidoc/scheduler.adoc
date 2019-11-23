@@ -10,6 +10,8 @@ include::./attributes.adoc[]
 Modern applications often need to run specific tasks periodically.
 In this guide, you learn how to schedule periodic tasks.
 
+TIP: If you need a clustered scheduler use the link:quartz[Quartz extension].
+
 == Prerequisites
 
 To complete this guide, you need:

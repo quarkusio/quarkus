@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -92,7 +93,9 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         agentDir = initProject("projects/classic", "projects/project-classic-run-config-change-local");
         assertThat(testDir).isDirectory();
         running = new RunningInvoker(testDir, false);
-        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
+        final Properties mvnRunProps = new Properties();
+        mvnRunProps.setProperty("debug", "false");
+        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
 
         String resp = getHttpResponse();
         runningAgent = new RunningInvoker(agentDir, false);

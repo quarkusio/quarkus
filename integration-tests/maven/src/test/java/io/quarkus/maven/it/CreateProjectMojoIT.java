@@ -302,7 +302,9 @@ public class CreateProjectMojoIT extends MojoTestBase {
         // As the directory is not empty (log) navigate to the artifactID directory
         testDir = new File(testDir, "acme");
         running = new RunningInvoker(testDir, false);
-        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
+        final Properties mvnRunProps = new Properties();
+        mvnRunProps.setProperty("debug", "false");
+        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
 
         String resp = getHttpResponse();
 

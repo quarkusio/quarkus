@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -215,7 +214,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         }
 
         try {
-            for (String folder : module.getClassesPath().split(Pattern.quote(File.pathSeparator))) {
+            for (String folder : module.getClassesPath().split(File.pathSeparator)) {
                 final Path moduleClassesPath = Paths.get(folder);
                 try (final Stream<Path> classesStream = Files.walk(moduleClassesPath)) {
                     final Set<Path> classFilePaths = classesStream

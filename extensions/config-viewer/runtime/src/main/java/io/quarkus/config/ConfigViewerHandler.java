@@ -12,6 +12,8 @@ import javax.json.JsonWriter;
 import javax.json.JsonWriterFactory;
 import javax.json.stream.JsonGenerator;
 
+import org.eclipse.microprofile.config.Config;
+
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
@@ -25,12 +27,12 @@ public class ConfigViewerHandler implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext routingContext) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ConfigHolder configHolder = CDI.current().select(ConfigHolder.class).get();
+        Config config = CDI.current().select(Config.class).get();
 
         JsonBuilderFactory builderFactory = Json.createBuilderFactory(JSON_CONFIG);
         JsonWriterFactory factory = Json.createWriterFactory(JSON_CONFIG);
         JsonWriter writer = factory.createWriter(out);
-        JsonObject json = new ConfigViewer().dump(configHolder.config, builderFactory);
+        JsonObject json = new ConfigViewer().dump(config, builderFactory);
         writer.writeObject(json);
         writer.close();
 

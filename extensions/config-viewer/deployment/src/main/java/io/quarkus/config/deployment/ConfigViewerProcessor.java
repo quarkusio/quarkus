@@ -2,10 +2,10 @@ package io.quarkus.config.deployment;
 
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.Config;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.config.ConfigHolder;
 import io.quarkus.config.ConfigViewerHandler;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -43,7 +43,7 @@ class ConfigViewerProcessor {
         if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
             feature.produce(new FeatureBuildItem(FEATURE));
             beans.produce(AdditionalBeanBuildItem.builder()
-                    .addBeanClass(ConfigHolder.class)
+                    .addBeanClass(Config.class)
                     .setDefaultScope(SINGLETON)
                     .setUnremovable()
                     .build());

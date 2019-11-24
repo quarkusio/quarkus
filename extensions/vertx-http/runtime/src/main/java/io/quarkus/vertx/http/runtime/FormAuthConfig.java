@@ -35,6 +35,13 @@ public class FormAuthConfig {
     public String landingPage;
 
     /**
+     * Option to disable redirect to landingPage if there is no saved page to redirect back to. Form Auth POST is followed
+     * by redirect to landingPage by default.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean redirectAfterLogin;
+
+    /**
      * The inactivity timeout
      */
     @ConfigItem(defaultValue = "PT30M")

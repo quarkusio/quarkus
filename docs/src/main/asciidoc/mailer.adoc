@@ -62,6 +62,24 @@ quarkus.mailer.username=....
 quarkus.mailer.password=....
 ----
 
+[NOTE]
+====
+It is recommended to encrypt any sensitive data, such as the `quarkus.mailer.password`.
+One approach is to save the value into a secure store like HashiCorp Vault, and refer to it from the configuration.
+Assuming for instance that Vault contains key `mail-password` at path `myapps/myapp/myconfig`, then the mailer
+extension can be simply configured as:
+```
+...
+# path within the kv secret engine where is located the application sensitive configuration
+quarkus.vault.secret-config-kv-path=myapps/myapp/myconfig
+
+...
+quarkus.mailer.password=${mail-password}
+```
+Please note that the password value is evaluated only once, at startup time. If `mail-password` was changed in Vault,
+the only way to get the new value would be to restart the application.
+====
+
 [TIP]
 For more information about the Mailer extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
 

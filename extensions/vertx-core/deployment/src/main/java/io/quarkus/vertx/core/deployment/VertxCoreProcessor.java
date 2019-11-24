@@ -13,6 +13,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.runtime.VertxCoreProducer;
@@ -78,5 +79,10 @@ class VertxCoreProcessor {
             LaunchModeBuildItem launchModeBuildItem) {
         RuntimeValue<Vertx> vertx = recorder.initializeWeb(config, context, launchModeBuildItem.getLaunchMode());
         return new InternalWebVertxBuildItem(vertx);
+    }
+
+    @BuildStep
+    LogCleanupFilterBuildItem filterNettyHostsFileParsingWarn() {
+        return new LogCleanupFilterBuildItem("io.netty.resolver.HostsFileParser", "Failed to load and parse hosts file");
     }
 }

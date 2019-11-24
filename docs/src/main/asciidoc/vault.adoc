@@ -426,6 +426,21 @@ quarkus.datasource.credentials-provider = mydatabase
 quarkus.hibernate-orm.database.generation=drop-and-create
 ----
 
+[NOTE]
+====
+Another way to specify the datasource password is with property indirection. Assuming that vault path
+`myapps/vault-quickstart/config` contains key `my-db-password`, all is required on the datasource configuration is:
+```
+quarkus.datasource.username = sarah
+quarkus.datasource.password = ${my-db-password}
+```
+The only drawback is that the password will never be fetched again from vault after the initial property loading.
+This means that if the db password was changed while running, the application would have to be restarted after
+vault has been updated with the new password.
+This contrasts with the credentials provider approach, which fetches the password from vault everytime a connection
+creation is attempted.
+====
+
 Restart the application after rebuilding it, and test it with the new endpoint:
 
 [source,shell]

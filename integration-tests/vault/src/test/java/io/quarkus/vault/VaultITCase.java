@@ -56,6 +56,8 @@ public class VaultITCase {
 
     private static final Logger log = Logger.getLogger(VaultITCase.class);
 
+    public static final String MY_PASSWORD = "my-password";
+
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
@@ -69,6 +71,9 @@ public class VaultITCase {
 
     @ConfigProperty(name = PASSWORD_PROPERTY_NAME)
     String someSecret;
+
+    @ConfigProperty(name = MY_PASSWORD)
+    String someSecretThroughIndirection;
 
     @Test
     public void credentialsProvider() {
@@ -86,6 +91,15 @@ public class VaultITCase {
 
         Config config = ConfigProviderResolver.instance().getConfig();
         String value = config.getValue(PASSWORD_PROPERTY_NAME, String.class);
+        assertEquals(DB_PASSWORD, value);
+    }
+
+    @Test
+    public void configPropertyIndirection() {
+        assertEquals(DB_PASSWORD, someSecretThroughIndirection);
+
+        Config config = ConfigProviderResolver.instance().getConfig();
+        String value = config.getValue(MY_PASSWORD, String.class);
         assertEquals(DB_PASSWORD, value);
     }
 

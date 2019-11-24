@@ -23,7 +23,7 @@ import io.quarkus.creator.phase.augment.AugmentTask;
  */
 public class QuarkusBuild extends QuarkusTask {
 
-    private Boolean uberJar;
+    private boolean uberJar;
 
     private List<String> ignoredEntries = new ArrayList<>();
 
@@ -33,12 +33,12 @@ public class QuarkusBuild extends QuarkusTask {
 
     @Optional
     @Input
-    public Boolean isUberJar() {
+    public boolean isUberJar() {
         return uberJar;
     }
 
     @Option(description = "Set to true if the build task should build an uberjar", option = "uber-jar")
-    public void setUberJar(Boolean uberJar) {
+    public void setUberJar(boolean uberJar) {
         this.uberJar = uberJar;
     }
 

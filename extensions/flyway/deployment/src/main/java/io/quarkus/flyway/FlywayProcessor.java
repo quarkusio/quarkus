@@ -42,6 +42,7 @@ import io.quarkus.flyway.runtime.FlywayProducer;
 import io.quarkus.flyway.runtime.FlywayRecorder;
 import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
 import io.quarkus.flyway.runtime.graal.QuarkusPathLocationScanner;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class FlywayProcessor {
 
@@ -175,6 +176,12 @@ class FlywayProcessor {
         final Map<String, String> env = new HashMap<>();
         env.put("create", "true");
         return FileSystems.newFileSystem(uri, env);
+    }
+
+    @BuildStep
+    HealthBuildItem addHealthCheck(FlywayBuildConfig flywayBuildConfig) {
+        return new HealthBuildItem("io.quarkus.flyway.runtime.health.DatabaseMigrationHealthCheck",
+                flywayBuildConfig.healthEnabled, "flyway");
     }
 
 }

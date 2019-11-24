@@ -121,6 +121,13 @@
             <version>${project.version}</version>
         </dependency>
 
+		<!-- Flyway -->
+		<dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Context Propagation -->
         <dependency>
             <groupId>io.quarkus</groupId>

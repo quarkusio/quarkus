@@ -27,8 +27,10 @@ public class HealthTestCase {
                     .contentType(ContentType.JSON)
                     .header("Content-Type", containsString("charset=UTF-8"))
                     .body("status", is("UP"),
-                            "checks.status", containsInAnyOrder("UP"),
-                            "checks.name", containsInAnyOrder("Database connection(s) health check"));
+                            "checks.status", containsInAnyOrder("UP", "UP"),
+                            "checks.name",
+                            containsInAnyOrder("Database connection(s) health check",
+                                    "Flyway database migrations health check"));
         } finally {
             RestAssured.reset();
         }

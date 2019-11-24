@@ -194,3 +194,12 @@ public class MigrationService {
 <1> Inject the Flyway object if you want to use it directly
 <2> Use the Flyway instance directly
 
+
+== Flyway database migrations Health Check
+
+If you are using the `quarkus-smallrye-health` extension, `quarkus-flyway` will automatically add a readiness health check
+to validate the datasource.
+
+So when you access the `/health/ready` endpoint of your application you will have information about the Flyway migration validation status.
+
+This behavior can be disabled by setting `quarkus.flyway.health.enabled`.

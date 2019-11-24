@@ -18,4 +18,10 @@ public final class FlywayBuildConfig {
      */
     @ConfigItem
     public Optional<List<String>> locations;
+
+    /**
+     * Whether or not a health check is published in case the smallrye-health extension is present.
+     */
+    @ConfigItem(name = "health.enabled", defaultValue = "true")
+    public boolean healthEnabled;
 }

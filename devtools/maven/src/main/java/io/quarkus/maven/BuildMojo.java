@@ -94,12 +94,6 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
 
-    /**
-     * The directory for library jars
-     */
-    @Parameter(defaultValue = "${project.build.directory}/lib")
-    private File libDir;
-
     @Parameter(defaultValue = "${project.build.finalName}")
     private String finalName;
 

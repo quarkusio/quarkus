@@ -21,6 +21,6 @@ public class RegexConverter implements Converter<Pattern> {
     }
 
     public Pattern convert(final String value) {
-        return Pattern.compile(value);
+        return value.isEmpty() ? null : Pattern.compile(value);
     }
 }

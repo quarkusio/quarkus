@@ -7,10 +7,12 @@ import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.spi.Converter;
 
+import io.quarkus.runtime.util.StringUtil;
+
 /**
- * A converter for hyphenated enums
+ * A converter for hyphenated enums.
  */
-final public class HyphenateEnumConverter<E extends Enum<E>> implements Converter<E> {
+public final class HyphenateEnumConverter<E extends Enum<E>> implements Converter<E> {
     private static final String HYPHEN = "-";
     private static final Pattern PATTERN = Pattern.compile("([-_]+)");
 
@@ -27,13 +29,16 @@ final public class HyphenateEnumConverter<E extends Enum<E>> implements Converte
         }
     }
 
+    public static <E extends Enum<E>> HyphenateEnumConverter<E> of(Class<E> enumType) {
+        return new HyphenateEnumConverter<E>(enumType);
+    }
+
     @Override
     public E convert(String value) {
-        if (value == null || value.trim().isEmpty()) {
+        value = value.trim();
+        if (value.isEmpty()) {
             return null;
         }
-
-        value = value.trim();
         final String hyphenatedValue = hyphenate(value);
         final Enum<?> enumValue = values.get(hyphenatedValue);
 
@@ -46,7 +51,7 @@ final public class HyphenateEnumConverter<E extends Enum<E>> implements Converte
 
     private String hyphenate(String value) {
         StringBuffer target = new StringBuffer();
-        String hyphenate = io.quarkus.runtime.util.StringUtil.hyphenate(value);
+        String hyphenate = StringUtil.hyphenate(value);
         Matcher matcher = PATTERN.matcher(hyphenate);
         while (matcher.find()) {
             matcher.appendReplacement(target, HYPHEN);

@@ -1,5 +1,7 @@
 package io.quarkus.oidc.deployment;
 
+import java.util.function.BooleanSupplier;
+
 import org.eclipse.microprofile.jwt.Claim;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -12,6 +14,7 @@ import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.oidc.runtime.BearerAuthenticationMechanism;
 import io.quarkus.oidc.runtime.CodeAuthenticationMechanism;
+import io.quarkus.oidc.runtime.OidcBuildTimeConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.oidc.runtime.OidcIdentityProvider;
 import io.quarkus.oidc.runtime.OidcJsonWebTokenProducer;
@@ -25,14 +28,16 @@ import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 @SuppressWarnings("deprecation")
 public class OidcBuildStep {
 
-    @BuildStep
+    OidcBuildTimeConfig buildTimeConfig;
+
+    @BuildStep(onlyIf = IsEnabled.class)
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem(FeatureBuildItem.OIDC);
     }
 
-    @BuildStep
-    AdditionalBeanBuildItem jwtClaimIntegration(Capabilities capabilities, OidcConfig config) {
-        if (!capabilities.isCapabilityPresent(Capabilities.JWT) && config.enabled) {
+    @BuildStep(onlyIf = IsEnabled.class)
+    AdditionalBeanBuildItem jwtClaimIntegration(Capabilities capabilities) {
+        if (!capabilities.isCapabilityPresent(Capabilities.JWT)) {
             AdditionalBeanBuildItem.Builder removable = AdditionalBeanBuildItem.builder();
             removable.addBeanClass(CommonJwtProducer.class);
             removable.addBeanClass(RawClaimTypeProducer.class);
@@ -43,35 +48,37 @@ public class OidcBuildStep {
         return null;
     }
 
-    @BuildStep
-    public AdditionalBeanBuildItem beans(OidcConfig config) {
-        if (config.enabled) {
-            AdditionalBeanBuildItem.Builder beans = AdditionalBeanBuildItem.builder().setUnremovable();
+    @BuildStep(onlyIf = IsEnabled.class)
+    public AdditionalBeanBuildItem beans() {
+        AdditionalBeanBuildItem.Builder beans = AdditionalBeanBuildItem.builder().setUnremovable();
 
-            if (OidcConfig.ApplicationType.SERVICE.equals(config.getApplicationType())) {
-                beans.addBeanClass(BearerAuthenticationMechanism.class);
-            } else if (OidcConfig.ApplicationType.WEB_APP.equals(config.getApplicationType())) {
-                beans.addBeanClass(CodeAuthenticationMechanism.class);
-            }
-            return beans.addBeanClass(OidcJsonWebTokenProducer.class)
-                    .addBeanClass(OidcTokenCredentialProducer.class)
-                    .addBeanClass(OidcIdentityProvider.class).build();
+        if (OidcBuildTimeConfig.ApplicationType.SERVICE.equals(buildTimeConfig.applicationType)) {
+            beans.addBeanClass(BearerAuthenticationMechanism.class);
+        } else if (OidcBuildTimeConfig.ApplicationType.WEB_APP.equals(buildTimeConfig.applicationType)) {
+            beans.addBeanClass(CodeAuthenticationMechanism.class);
         }
-
-        return null;
+        return beans.addBeanClass(OidcJsonWebTokenProducer.class)
+                .addBeanClass(OidcTokenCredentialProducer.class)
+                .addBeanClass(OidcIdentityProvider.class).build();
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsEnabled.class)
     EnableAllSecurityServicesBuildItem security() {
         return new EnableAllSecurityServicesBuildItem();
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep
+    @BuildStep(onlyIf = IsEnabled.class)
     public void setup(OidcConfig config, OidcRecorder recorder, InternalWebVertxBuildItem vertxBuildItem,
             BeanContainerBuildItem bc) {
-        if (config.enabled) {
-            recorder.setup(config, vertxBuildItem.getVertx(), bc.getValue());
+        recorder.setup(config, buildTimeConfig, vertxBuildItem.getVertx(), bc.getValue());
+    }
+
+    static class IsEnabled implements BooleanSupplier {
+        OidcBuildTimeConfig config;
+
+        public boolean getAsBoolean() {
+            return config.enabled;
         }
     }
 }

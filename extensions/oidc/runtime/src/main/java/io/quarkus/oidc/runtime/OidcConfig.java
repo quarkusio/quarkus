@@ -13,12 +13,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class OidcConfig {
 
     /**
-     * If the OIDC extension is enabled.
-     */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
-
-    /**
      * The base URL of the OpenID Connect (OIDC) server, for example, 'https://host:port/auth'.
      * All the other OIDC server page and service URLs are derived from this URL.
      * Note if you work with Keycloak OIDC server, make sure the base URL is in the following format:
@@ -75,12 +69,6 @@ public class OidcConfig {
      */
     Authentication authentication;
 
-    /**
-     * The application type, which can be one of the following values from enum {@link ApplicationType}..
-     */
-    @ConfigItem(defaultValue = "service")
-    ApplicationType applicationType;
-
     public String getAuthServerUrl() {
         return authServerUrl;
     }
@@ -95,10 +83,6 @@ public class OidcConfig {
 
     public Roles getRoles() {
         return roles;
-    }
-
-    public ApplicationType getApplicationType() {
-        return applicationType;
     }
 
     @ConfigGroup
@@ -163,22 +147,6 @@ public class OidcConfig {
          *
          */
         @ConfigItem
-        public List<String> scopes;
-    }
-
-    public enum ApplicationType {
-        /**
-         * A {@code WEB_APP} is a client that server pages, usually a frontend application. For this type of client the
-         * Authorization Code Flow is
-         * defined as the preferred method for authenticating users.
-         */
-        WEB_APP,
-
-        /**
-         * A {@code SERVICE} is a client that has a set of protected HTTP resources, usually a backend application following the
-         * RESTful Architectural Design. For this type of client, the Bearer Authorization method is defined as the preferred
-         * method for authenticating and authorizing users.
-         */
-        SERVICE
+        public Optional<List<String>> scopes;
     }
 }

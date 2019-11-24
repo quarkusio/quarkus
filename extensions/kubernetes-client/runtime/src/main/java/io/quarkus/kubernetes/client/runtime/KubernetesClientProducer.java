@@ -43,17 +43,9 @@ public class KubernetesClientProducer {
                 .withHttpsProxy(buildConfig.httpsProxy.orElse(base.getHttpsProxy()))
                 .withProxyUsername(buildConfig.proxyUsername.orElse(base.getProxyUsername()))
                 .withProxyPassword(buildConfig.proxyPassword.orElse(base.getProxyPassword()))
-                .withNoProxy(buildConfig.noProxy.size() > 0 ? buildConfig.noProxy.toArray(new String[0]) : base.getNoProxy())
+                .withNoProxy(buildConfig.noProxy.isPresent() ? buildConfig.noProxy.get() : base.getNoProxy())
                 .build();
 
-    }
-
-    private String or(String value, String fallback) {
-        if (value.isEmpty()) {
-            return fallback;
-        } else {
-            return value;
-        }
     }
 
     @DefaultBean

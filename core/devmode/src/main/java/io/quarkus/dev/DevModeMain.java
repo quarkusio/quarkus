@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import io.quarkus.builder.BuildChainBuilder;
@@ -32,7 +33,7 @@ import io.quarkus.deployment.devmode.HotReplacementSetup;
 import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.Timing;
-import io.smallrye.config.SmallRyeConfigProviderResolver;
+import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 
 /**
  * The main entry point for the dev mojo execution
@@ -262,7 +263,13 @@ public class DevModeMain implements Closeable {
                 Thread.currentThread().setContextClassLoader(old);
             }
         }
-        SmallRyeConfigProviderResolver.instance().releaseConfig(SmallRyeConfigProviderResolver.instance().getConfig());
+        QuarkusConfigFactory.setConfig(null);
+        final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
+        try {
+            cpr.releaseConfig(cpr.getConfig());
+        } catch (IllegalStateException ignored) {
+            // just means no config was installed, which is fine
+        }
         DevModeMain.runner = null;
     }
 

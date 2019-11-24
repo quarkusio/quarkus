@@ -1,23 +1,24 @@
 package io.quarkus.runtime.configuration;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.Converter;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.Converters;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
@@ -30,7 +31,6 @@ import io.smallrye.config.SmallRyeConfig;
  */
 public class ConfigInstantiator {
 
-    private static final Pattern COMMA_PATTERN = Pattern.compile(",");
     // certain well-known classname suffixes that we support
     private static Set<String> supportedClassNameSuffix;
 
@@ -71,59 +71,54 @@ public class ConfigInstantiator {
                     String name = configItem.name();
                     if (name.equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
                         name = dashify(field.getName());
+                    } else if (name.equals(ConfigItem.ELEMENT_NAME)) {
+                        name = field.getName();
                     }
                     String fullName = prefix + "." + name;
-                    String defaultValue = configItem.defaultValue();
-                    if (defaultValue.equals(ConfigItem.NO_DEFAULT)) {
-                        defaultValue = null;
-                    }
                     final Type genericType = field.getGenericType();
-                    Optional<?> val;
-                    final boolean fieldIsOptional = fieldClass.equals(Optional.class);
-                    final boolean fieldIsList = fieldClass.equals(List.class);
-                    if (fieldIsOptional) {
-                        Class<?> actualType = (Class<?>) ((ParameterizedType) genericType)
-                                .getActualTypeArguments()[0];
-                        val = config.getOptionalValue(fullName, actualType);
-                    } else if (fieldIsList) {
-                        Class<?> actualType = (Class<?>) ((ParameterizedType) genericType)
-                                .getActualTypeArguments()[0];
-                        val = config.getOptionalValues(fullName, actualType, ArrayList::new);
-                    } else {
-                        val = config.getOptionalValue(fullName, fieldClass);
-                    }
-                    if (val.isPresent()) {
-                        field.set(o, fieldIsOptional ? val : val.get());
-                    } else if (defaultValue != null) {
-                        if (fieldIsList) {
-                            Class<?> listType = (Class<?>) ((ParameterizedType) genericType)
-                                    .getActualTypeArguments()[0];
-                            String[] parts = COMMA_PATTERN.split(defaultValue);
-                            List<Object> list = new ArrayList<>();
-                            for (String i : parts) {
-                                list.add(config.convert(i, listType));
-                            }
-                            field.set(o, list);
-                        } else if (fieldIsOptional) {
-                            Class<?> optionalType = (Class<?>) ((ParameterizedType) genericType)
-                                    .getActualTypeArguments()[0];
-                            field.set(o, Optional.of(config.convert(defaultValue, optionalType)));
-                        } else {
-                            field.set(o, config.convert(defaultValue, fieldClass));
-                        }
-                    } else if (fieldIsOptional) {
-                        field.set(o, Optional.empty());
-                    } else if (fieldClass.equals(OptionalInt.class)) {
-                        field.set(o, OptionalInt.empty());
-                    } else if (fieldClass.equals(OptionalDouble.class)) {
-                        field.set(o, OptionalDouble.empty());
-                    } else if (fieldClass.equals(OptionalLong.class)) {
-                        field.set(o, OptionalLong.empty());
+                    final Converter<?> conv = getConverterFor(genericType);
+                    try {
+                        field.set(o, config.getValue(fullName, conv));
+                    } catch (NoSuchElementException ignored) {
                     }
                 }
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private static Converter<?> getConverterFor(Type type) {
+        // hopefully this is enough
+        final SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
+        Class<?> rawType = rawTypeOf(type);
+        if (rawType == Optional.class) {
+            return Converters.newOptionalConverter(getConverterFor(typeOfParameter(type, 0)));
+        } else if (rawType == List.class) {
+            return Converters.newCollectionConverter(getConverterFor(typeOfParameter(type, 0)), ArrayList::new);
+        } else {
+            return config.getConverter(rawTypeOf(type));
+        }
+    }
+
+    // cribbed from io.quarkus.deployment.util.ReflectUtil
+    private static Class<?> rawTypeOf(final Type type) {
+        if (type instanceof Class<?>) {
+            return (Class<?>) type;
+        } else if (type instanceof ParameterizedType) {
+            return rawTypeOf(((ParameterizedType) type).getRawType());
+        } else if (type instanceof GenericArrayType) {
+            return Array.newInstance(rawTypeOf(((GenericArrayType) type).getGenericComponentType()), 0).getClass();
+        } else {
+            throw new IllegalArgumentException("Type has no raw type class: " + type);
+        }
+    }
+
+    static Type typeOfParameter(final Type type, final int paramIdx) {
+        if (type instanceof ParameterizedType) {
+            return ((ParameterizedType) type).getActualTypeArguments()[paramIdx];
+        } else {
+            throw new IllegalArgumentException("Type is not parameterized: " + type);
         }
     }
 

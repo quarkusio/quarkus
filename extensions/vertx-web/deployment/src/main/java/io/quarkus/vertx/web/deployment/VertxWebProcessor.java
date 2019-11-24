@@ -40,6 +40,7 @@ import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxyBuilder;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -51,6 +52,7 @@ import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.web.Route;
+import io.quarkus.vertx.web.RouteBase;
 import io.quarkus.vertx.web.RouteFilter;
 import io.quarkus.vertx.web.RoutingExchange;
 import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
@@ -66,6 +68,7 @@ class VertxWebProcessor {
     private static final DotName ROUTE = DotName.createSimple(Route.class.getName());
     private static final DotName ROUTES = DotName.createSimple(Route.Routes.class.getName());
     private static final DotName ROUTE_FILTER = DotName.createSimple(RouteFilter.class.getName());
+    private static final DotName ROUTE_BASE = DotName.createSimple(RouteBase.class.getName());
     private static final DotName ROUTING_CONTEXT = DotName.createSimple(RoutingContext.class.getName());
     private static final DotName RX_ROUTING_CONTEXT = DotName
             .createSimple(io.vertx.reactivex.ext.web.RoutingContext.class.getName());
@@ -74,7 +77,11 @@ class VertxWebProcessor {
     private static final DotName[] ROUTE_PARAM_TYPES = { ROUTING_CONTEXT, RX_ROUTING_CONTEXT, ROUTING_EXCHANGE };
     private static final DotName[] ROUTE_FILTER_TYPES = { ROUTING_CONTEXT };
 
-    HttpConfiguration httpConfiguration;
+    private static final String VALUE_PATH = "path";
+    private static final String VALUE_REGEX = "regex";
+    private static final String VALUE_PRODUCES = "produces";
+    private static final String VALUE_CONSUMES = "consumes";
+    private static final String DASH = "/";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -100,7 +107,9 @@ class VertxWebProcessor {
         for (BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
             if (bean.isClassBean()) {
                 // NOTE: inherited business methods are not taken into account
-                for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
+                ClassInfo beanClass = bean.getTarget().get().asClass();
+                AnnotationInstance routeBaseAnnotation = beanClass.classAnnotation(ROUTE_BASE);
+                for (MethodInfo method : beanClass.methods()) {
                     List<AnnotationInstance> routes = new LinkedList<>();
                     AnnotationInstance routeAnnotation = annotationStore.getAnnotation(method, ROUTE);
                     if (routeAnnotation != null) {
@@ -116,7 +125,8 @@ class VertxWebProcessor {
                     }
                     if (!routes.isEmpty()) {
                         LOGGER.debugf("Found route handler business method %s declared on %s", method, bean);
-                        routeHandlerBusinessMethods.produce(new AnnotatedRouteHandlerBuildItem(bean, method, routes));
+                        routeHandlerBusinessMethods
+                                .produce(new AnnotatedRouteHandlerBuildItem(bean, method, routes, routeBaseAnnotation));
                     }
                     // 
                     AnnotationInstance filterAnnotation = annotationStore.getAnnotation(method, ROUTE_FILTER);
@@ -158,12 +168,68 @@ class VertxWebProcessor {
             BuildProducer<FilterBuildItem> filterProducer) throws IOException {
 
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
+
         for (AnnotatedRouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
+
             String handlerClass = generateHandler(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
             Handler<RoutingContext> routingHandler = recorder.createHandler(handlerClass);
+
+            AnnotationInstance routeBaseAnnotation = businessMethod.getRouteBase();
+            String pathPrefix = null;
+            String[] produces = null;
+            String[] consumes = null;
+
+            if (routeBaseAnnotation != null) {
+                AnnotationValue pathPrefixValue = routeBaseAnnotation.value(VALUE_PATH);
+                if (pathPrefixValue != null) {
+                    pathPrefix = pathPrefixValue.asString();
+                }
+                AnnotationValue producesValue = routeBaseAnnotation.value(VALUE_PRODUCES);
+                if (producesValue != null) {
+                    produces = producesValue.asStringArray();
+                }
+                AnnotationValue consumesValue = routeBaseAnnotation.value(VALUE_CONSUMES);
+                if (consumesValue != null) {
+                    consumes = consumesValue.asStringArray();
+                }
+            }
+
             for (AnnotationInstance routeAnnotation : businessMethod.getRoutes()) {
-                Route route = annotationProxy.builder(routeAnnotation, Route.class).build(classOutput);
+                AnnotationProxyBuilder<Route> builder = annotationProxy.builder(routeAnnotation, Route.class);
+                AnnotationValue regexValue = routeAnnotation.value(VALUE_REGEX);
+                AnnotationValue pathValue = routeAnnotation.value(VALUE_PATH);
+
+                if (regexValue == null) {
+                    if (pathPrefix != null) {
+                        StringBuilder path = new StringBuilder();
+                        path.append(pathPrefix);
+                        if (pathValue == null) {
+                            path.append(DASH);
+                            path.append(dashify(businessMethod.getMethod().name()));
+                        } else {
+                            String pathValueStr = pathValue.asString();
+                            if (!pathValueStr.startsWith(DASH)) {
+                                path.append(DASH);
+                            }
+                            path.append(pathValue.asString());
+                        }
+                        builder.withValue(VALUE_PATH, path.toString());
+                    } else {
+                        if (pathValue == null) {
+                            builder.withDefaultValue(VALUE_PATH, dashify(businessMethod.getMethod().name()));
+                        }
+                    }
+                }
+
+                if (routeAnnotation.value(VALUE_PRODUCES) == null && produces != null) {
+                    builder.withValue(VALUE_PRODUCES, produces);
+                }
+                if (routeAnnotation.value(VALUE_CONSUMES) == null && consumes != null) {
+                    builder.withValue(VALUE_CONSUMES, consumes);
+                }
+
+                Route route = builder.build(classOutput);
                 Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(route,
                         bodyHandler.getHandler());
                 AnnotationValue typeValue = routeAnnotation.value("type");
@@ -315,5 +381,18 @@ class VertxWebProcessor {
 
         invokerCreator.close();
         return generatedName.replace('/', '.');
+    }
+
+    private static String dashify(String value) {
+        StringBuilder ret = new StringBuilder();
+        char[] chars = value.toCharArray();
+        for (int i = 0; i < chars.length; i++) {
+            char c = chars[i];
+            if (i != 0 && i != (chars.length - 1) && Character.isUpperCase(c)) {
+                ret.append('-');
+            }
+            ret.append(Character.toLowerCase(c));
+        }
+        return ret.toString();
     }
 }

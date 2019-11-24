@@ -22,7 +22,7 @@ public final class FlywayRuntimeConfig {
      * It will also be the one containing the schema history table.
      */
     @ConfigItem
-    public List<String> schemas;
+    public Optional<List<String>> schemas;
     /**
      * The name of Flyway's schema history table.
      * By default (single-schema mode) the schema history table is placed in the default schema for the connection provided by

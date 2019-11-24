@@ -397,6 +397,20 @@ curl -X GET http://localhost:8080/persons \
 
 To learn more about persistence in Kogito visit https://github.com/kiegroup/kogito-runtimes/wiki/Persistence[this page]
 
+== Using decision tables
+
+Kogito allows to define business rules as decision tables using the Microsoft Excel file formats.
+To be able to use such assets in your application, an additional dependency is required:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.kie.kogito</groupId>
+    <artifactId>drools-decisiontables</artifactId>
+</dependency>
+----
+
+Once the dependency is added to the project, decision tables in `xls` or `xlsx` format can be properly handled.
 
 == References
 

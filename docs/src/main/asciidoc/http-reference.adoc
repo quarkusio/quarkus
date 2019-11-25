@@ -41,12 +41,12 @@ want to use the HTTP root as this affects everything that Quarkus serves.
 If both are specified then all non-Servlet web endpoints will be relative to `quarkus.http.root-path`, while Servlet's
 will be served relative to `{quarkus.http.root-path}/{quarkus.servlet.context-path}`.
 
-If Restassured is used for testing and `quarkus.http.root-path` is set then Quarkus will automatically configure the
+If REST Assured is used for testing and `quarkus.http.root-path` is set then Quarkus will automatically configure the
 base URL for use in Quarkus tests, so test URL's should not include the root path.
 
 == Supporting secure connections with SSL
 
-In order to have Undertow support secure connections, you must either provide a certificate and associated key file, or supply a keystore.
+In order to have Quarkus support secure connections, you must either provide a certificate and associated key file, or supply a keystore.
 
 In both cases, a password must be provided. See the designated paragraph for a detailed description of how to provide it.
 
@@ -153,8 +153,10 @@ quarkus.http.cors.exposed-headers=Content-Disposition
 quarkus.http.cors.access-control-max-age=24H
 ----
 
-== Http Limits Configuration
+== HTTP Limits Configuration
+
 The following properties are supported.
+
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
@@ -164,7 +166,8 @@ The following properties are supported.
 
 [NOTE]
 ====
-The following config options would recognize strings in this format (shown as a regular expression): `[0-9]+[KkMmGgTtPpEeZzYy]?`. If no suffix is given, assume bytes.
+The following config options will recognize sizes expressed as strings in this format (shown as a regular expression): `[0-9]+[KkMmGgTtPpEeZzYy]?`.
+If no unit suffix is given, bytes are assumed.
 
 * `quarkus.http.limits.max-body-size`,
 * `quarkus.http.limits.max-header-size`

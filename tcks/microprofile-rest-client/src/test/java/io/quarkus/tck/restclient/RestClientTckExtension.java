@@ -6,6 +6,6 @@ import org.jboss.arquillian.core.spi.LoadableExtension;
 public class RestClientTckExtension implements LoadableExtension {
     @Override
     public void register(ExtensionBuilder builder) {
-        builder.service(ApplicationArchiveProcessor.class, SslArchiveProcessor.class);
+        builder.service(ApplicationArchiveProcessor.class, RestClientProcessor.class);
     }
 }

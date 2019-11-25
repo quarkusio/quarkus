@@ -276,6 +276,7 @@ stages:
             - flyway
             - hibernate-orm-panache
             - reactive-pg-client
+            - hibernate-orm-envers
           name: data_3
           postgres: true
 

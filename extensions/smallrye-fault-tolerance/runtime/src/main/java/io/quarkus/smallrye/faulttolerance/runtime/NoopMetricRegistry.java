@@ -1,14 +1,11 @@
-package io.quarkus.smallrye.faulttolerance.deployment;
+package io.quarkus.smallrye.faulttolerance.runtime;
 
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.SortedSet;
 
-import javax.inject.Singleton;
-
 import org.eclipse.microprofile.metrics.*;
 
-@Singleton
 public class NoopMetricRegistry extends MetricRegistry {
 
     @Override

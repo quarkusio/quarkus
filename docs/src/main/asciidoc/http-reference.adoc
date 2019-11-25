@@ -190,25 +190,27 @@ link:http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates-
 
 === Configuring HTTP Access Logs
 
-You can add HTTP request logging adding the AccessHandler configuration to the undertow-handler.conf file.
+You can add HTTP request logging by configuring the `AccessHandler` in the `undertow-handlers.conf` file.
 
 The simplest possible configuration can be a standard Apache `common` Log Format:
 
-[source,properties]
+[source]
 ----
 access-log('common')
 ----
 
-this will log every request to Quarkus configured logging system under the `io.undertow.accesslog` category.
+This will log every request using the standard Quarkus logging infrastructure under the `io.undertow.accesslog` category.
 
-In case you can also configure another category such this:
+You can customize the category like this:
 
+[source]
 ----
 access-log(format='common', category='my.own.category')
 ----
 
 Finally the logging format can be customized:
 
+[source]
 ----
 access-log(format='%h %l %u %t "%r" %s %b %D "%{i,Referer}" "%{i,User-Agent}" "%{i,X-Request-ID}"', category='my.own.category')
 ----

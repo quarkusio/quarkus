@@ -33,13 +33,23 @@
  * at the end.
  * </p>
  * <p>
- * If your query does not start with <code>from</code>, we support the following additional forms:
+ * If your select query does not start with <code>from</code>, we support the following additional forms:
  * </p>
  * <ul>
  * <li><code>order by ...</code> which will expand to <code>from EntityName order by ...</code></li>
  * <li><code>&lt;singleColumnName&gt;</code> (and single parameter) which will expand to
  * <code>from EntityName where &lt;singleColumnName&gt; = ?</code></li>
  * <li><code>&lt;query&gt;</code> will expand to <code>from EntityName where &lt;query&gt;</code></li>
+ * </ul>
+ * 
+ * If your update query does not start with <code>update from</code>, we support the following additional forms:
+ * </p>
+ * <ul>
+ * <li><code>from EntityName ...</code> which will expand to <code>update from EntityName ...</code></li>
+ * <li><code>set? &lt;singleColumnName&gt;</code> (and single parameter) which will expand to
+ * <code>update from EntityName set &lt;singleColumnName&gt; = ?</code></li>
+ * <li><code>set? &lt;update-query&gt;</code> will expand to
+ * <code>update from EntityName set &lt;update-query&gt; = ?</code></li>
  * </ul>
  * 
  * @author Stéphane Épardaud

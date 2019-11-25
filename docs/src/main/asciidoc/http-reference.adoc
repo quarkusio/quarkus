@@ -182,13 +182,40 @@ To use Servlet you need to explicitly include `quarkus-undertow`:
 </dependency>
 ----
 
-
 === undertow-handlers.conf
 
 You can make use of the Undertow predicate language using an `undertow-handlers.conf` file. This file should be placed
 in the `META-INF` directory of your application jar. This file contains handlers defined using the
 link:http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates-attributes-and-handlers[Undertow predicate language].
 
+=== Configuring HTTP Access Logs
+
+You can add HTTP request logging by configuring the `AccessHandler` in the `undertow-handlers.conf` file.
+
+The simplest possible configuration can be a standard Apache `common` Log Format:
+
+[source]
+----
+access-log('common')
+----
+
+This will log every request using the standard Quarkus logging infrastructure under the `io.undertow.accesslog` category.
+
+You can customize the category like this:
+
+[source]
+----
+access-log(format='common', category='my.own.category')
+----
+
+Finally the logging format can be customized:
+
+[source]
+----
+access-log(format='%h %l %u %t "%r" %s %b %D "%{i,Referer}" "%{i,User-Agent}" "%{i,X-Request-ID}"', category='my.own.category')
+----
+
 === web.xml
 
 If you are using a `web.xml` file as your configuration file, you can place it in the `src/main/resources/META-INF` directory.
+

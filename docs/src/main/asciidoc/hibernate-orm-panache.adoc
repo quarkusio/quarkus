@@ -179,6 +179,10 @@ Person.delete("status", Status.Alive);
 
 // delete all persons
 Person.deleteAll();
+
+// update all living persons
+Person.update("name = 'Moral' where status = ?1", Status.Alive);
+
 ----
 
 All `list` methods have equivalent `stream` versions.
@@ -286,11 +290,17 @@ public class Person extends PanacheEntity {
 Normally, HQL queries are of this form: `from EntityName [where ...] [order by ...]`, with optional elements
 at the end.
 
-If your query does not start with `from`, we support the following additional forms:
+If your select query does not start with `from`, we support the following additional forms:
 
 - `order by ...` which will expand to `from EntityName order by ...`
 - `<singleColumnName>` (and single parameter) which will expand to `from EntityName where <singleColumnName> = ?`
 - `<query>` will expand to `from EntityName where <query>`
+
+If your update query does not start with `update`, we support the following additional forms:
+
+- `from EntityName ...` which will expand to `update from EntityName ...`
+- `set? <singleColumnName>` (and single parameter) which will expand to `update from EntityName set <singleColumnName> = ?`
+- `set? <update-query>` will expand to `update from EntityName set <update-query>`
 
 NOTE: You can also write your queries in plain
 link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#hql[HQL]:
@@ -298,8 +308,8 @@ link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_Us
 [source,java]
 ----
 Order.find("select distinct o from Order o left join fetch o.lineItems");
+Order.update("update from Person set name = 'Moral' where status = ?", Status.Alive);
 ----
-
 
 == Query parameters
 

@@ -1,4 +1,4 @@
-package io.quarkus.it.spring.security.security;
+package io.quarkus.it.spring.security;
 
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.stereotype.Service;

@@ -27,6 +27,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 public class ArtemisCoreProcessor {
 
@@ -76,6 +77,17 @@ public class ArtemisCoreProcessor {
         for (Class c : BUILTIN_LOADBALANCING_POLICIES) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, c));
         }
+    }
+
+    @BuildStep
+    HealthBuildItem health(ArtemisBuildTimeConfig buildConfig, Optional<ArtemisJmsBuildItem> artemisJms) {
+        if (artemisJms.isPresent()) {
+            return null;
+        }
+
+        return new HealthBuildItem(
+                "io.quarkus.artemis.core.runtime.health.ServerLocatorHealthCheck",
+                buildConfig.healthEnabled, "artemis");
     }
 
     @BuildStep

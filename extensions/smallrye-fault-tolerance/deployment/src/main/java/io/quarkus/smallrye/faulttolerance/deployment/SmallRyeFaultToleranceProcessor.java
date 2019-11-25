@@ -35,6 +35,7 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -44,6 +45,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
@@ -75,7 +77,9 @@ public class SmallRyeFaultToleranceProcessor {
     @BuildStep
     public void build(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
             BuildProducer<FeatureBuildItem> feature, BuildProducer<AdditionalBeanBuildItem> additionalBean,
-            BuildProducer<BeanDefiningAnnotationBuildItem> additionalBda) throws Exception {
+            BuildProducer<BeanDefiningAnnotationBuildItem> additionalBda,
+            Capabilities capabilities,
+            BuildProducer<SystemPropertyBuildItem> systemProperty) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_FAULT_TOLERANCE));
 
@@ -143,6 +147,12 @@ public class SmallRyeFaultToleranceProcessor {
                 DefaultCommandListenersProvider.class,
                 MetricsCollectorFactory.class);
         additionalBean.produce(builder.build());
+
+        if (!capabilities.isCapabilityPresent(Capabilities.METRICS)) {
+            //disable fault tolerance metrics with the MP sys props and provides a No-op metric registry.
+            additionalBean.produce(new AdditionalBeanBuildItem(NoopMetricRegistry.class));
+            systemProperty.produce(new SystemPropertyBuildItem("MP_Fault_Tolerance_Metrics_Enabled", "false"));
+        }
     }
 
     @BuildStep

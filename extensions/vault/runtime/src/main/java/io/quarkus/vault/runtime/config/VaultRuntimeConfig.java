@@ -8,6 +8,7 @@ import static io.quarkus.vault.runtime.config.VaultAuthenticationType.USERPASS;
 
 import java.net.URL;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -82,10 +83,35 @@ public class VaultRuntimeConfig {
     public Duration secretConfigCachePeriod;
 
     /**
-     * Vault path in kv store, where all properties will be available as MP config.
+     * List of comma separated vault paths in kv store,
+     * where all properties will be available as MP config properties as-is, with no prefix.
+     * For instance, if vault contains property {@code foo}, it will be made available to the
+     * quarkus application as
+     * {@code @ConfigProperty(name = "foo") String foo;}
+     * <p>
+     * If 2 paths contain the same property, the last path will win. For instance if
+     * {@code secret/base-config} contains {@code foo='bar'} and
+     * {@code secret/myapp/config} contains {@code foo='myappbar'}, then
+     * {@code @ConfigProperty(name = "foo") String foo;} will have for value {@code "bar"}
+     * with application properties
+     * {@code quarkus.vault.secret-config-kv-path=base-config,myapp/config}
      */
     @ConfigItem
-    public Optional<String> secretConfigKvPath;
+    public Optional<List<String>> secretConfigKvPath;
+
+    /**
+     * List of comma separated vault paths in kv store,
+     * where all properties will be available as prefixed MP config properties.
+     * For instance if the application properties contains
+     * {@code quarkus.vault.secret-config-kv-path-prefix.myprefix=config}, all properties located
+     * in vault path {@code secret/config} contains {@code foo='bar'}, then {@code myprefix.foo}
+     * will be available in the MP config.
+     * <p>
+     * If the same property is available in 2 different paths for the same prefix, the last one
+     * will win.
+     */
+    @ConfigItem(name = "secret-config-kv-path")
+    public Map<String, List<String>> secretConfigKvPrefixPath;
 
     /**
      * Used to hide confidential infos, for logging in particular.

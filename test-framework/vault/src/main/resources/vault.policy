@@ -8,6 +8,11 @@ path "secret/config" {
   capabilities = ["read"]
 }
 
+# vault config source kv engine v1 with multi paths
+path "secret/multi/*" {
+  capabilities = ["read"]
+}
+
 # kv engine v2
 path "secret-v2/data/foo" {
   capabilities = ["read"]

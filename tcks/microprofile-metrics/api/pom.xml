@@ -31,10 +31,6 @@
                     <environmentVariables>
                         <MP_METRICS_TAGS>tier=integration</MP_METRICS_TAGS>
                     </environmentVariables>
-                    <excludes>
-                        <!-- GlobalTagsTest registers ConfigSources at runtime which is not supported -->
-                        <exclude>org/eclipse/microprofile/metrics/tck/tags/GlobalTagsTest.java</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
         </plugins>

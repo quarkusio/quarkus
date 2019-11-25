@@ -51,7 +51,7 @@ If you have not done so on this machine, you need to:
  
 * Install Git and configure your GitHub access
 * Install Java SDK (OpenJDK recommended)
-* Install [GraalVM](http://www.graalvm.org/downloads/) (community edition is enough)
+* Install [GraalVM](https://quarkus.io/guides/building-native-image)
 * Install platform C developer tools:
     * Linux
         * Make sure headers are available on your system (you'll hit 'Basic header file missing (<zlib.h>)' error if they aren't).

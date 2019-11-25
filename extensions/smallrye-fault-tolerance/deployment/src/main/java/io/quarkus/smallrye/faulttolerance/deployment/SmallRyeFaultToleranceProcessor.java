@@ -8,6 +8,7 @@ import java.util.Set;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.eclipse.microprofile.faulttolerance.Asynchronous;
 import org.eclipse.microprofile.faulttolerance.Bulkhead;
@@ -49,6 +50,7 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.smallrye.faulttolerance.runtime.NoopMetricRegistry;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.SmallryeFaultToleranceRecorder;
@@ -150,7 +152,8 @@ public class SmallRyeFaultToleranceProcessor {
 
         if (!capabilities.isCapabilityPresent(Capabilities.METRICS)) {
             //disable fault tolerance metrics with the MP sys props and provides a No-op metric registry.
-            additionalBean.produce(new AdditionalBeanBuildItem(NoopMetricRegistry.class));
+            additionalBean.produce(AdditionalBeanBuildItem.builder().addBeanClass(NoopMetricRegistry.class).setRemovable()
+                    .setDefaultScope(DotName.createSimple(Singleton.class.getName())).build());
             systemProperty.produce(new SystemPropertyBuildItem("MP_Fault_Tolerance_Metrics_Enabled", "false"));
         }
     }

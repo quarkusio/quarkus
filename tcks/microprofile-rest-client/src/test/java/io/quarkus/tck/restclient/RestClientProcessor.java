@@ -4,9 +4,10 @@ import org.jboss.arquillian.container.test.spi.client.deployment.ApplicationArch
 import org.jboss.arquillian.test.spi.TestClass;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.jboss.shrinkwrap.api.container.ClassContainer;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 
-public class SslArchiveProcessor implements ApplicationArchiveProcessor {
+public class RestClientProcessor implements ApplicationArchiveProcessor {
     @Override
     public void process(Archive<?> applicationArchive, TestClass testClass) {
         // Only apply the processor to SSL tests
@@ -20,8 +21,19 @@ public class SslArchiveProcessor implements ApplicationArchiveProcessor {
             }
 
             WebArchive war = applicationArchive.as(WebArchive.class);
-
             war.addAsResource(new StringAsset("quarkus.ssl.native=true"), "application.properties");
+        }
+
+        // Make sure the test class and all of its superclasses are added to the test deployment
+        // This ensures that all the classes from the hierarchy are loaded by the RuntimeClassLoader
+        if (ClassContainer.class.isInstance(applicationArchive) && testClass.getJavaClass().getSuperclass() != null) {
+            ClassContainer<?> classContainer = ClassContainer.class.cast(applicationArchive);
+            Class<?> clazz = testClass.getJavaClass().getSuperclass();
+            while (clazz != Object.class && clazz != null) {
+                classContainer.addClass(clazz);
+                clazz = clazz.getSuperclass();
+            }
+
         }
     }
 }

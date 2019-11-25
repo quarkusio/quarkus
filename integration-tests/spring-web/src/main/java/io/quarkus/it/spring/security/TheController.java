@@ -1,4 +1,4 @@
-package io.quarkus.it.spring.security.security;
+package io.quarkus.it.spring.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

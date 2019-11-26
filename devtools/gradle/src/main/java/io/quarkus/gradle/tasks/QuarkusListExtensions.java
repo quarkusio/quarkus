@@ -22,7 +22,6 @@ public class QuarkusListExtensions extends QuarkusPlatformTask {
 
     private String searchPattern;
 
-    @Optional
     @Input
     public boolean isAll() {
         return all;

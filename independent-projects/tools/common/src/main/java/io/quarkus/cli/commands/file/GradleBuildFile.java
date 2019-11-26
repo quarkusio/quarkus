@@ -23,19 +23,43 @@ public class GradleBuildFile extends BuildFile {
     private static final String SETTINGS_GRADLE_PATH = "settings.gradle";
     private static final String GRADLE_PROPERTIES_PATH = "gradle.properties";
 
+    private final ProjectWriter rootWriter;
+
     private Model model;
 
     public GradleBuildFile(ProjectWriter writer) {
         super(writer, BuildTool.GRADLE);
+        rootWriter = writer;
+    }
+
+    public GradleBuildFile(ProjectWriter writer, ProjectWriter rootWriter) {
+        super(writer, BuildTool.GRADLE);
+        this.rootWriter = rootWriter;
+    }
+
+    protected void rootWrite(String fileName, String content) throws IOException {
+        rootWriter.write(fileName, content);
+    }
+
+    protected ProjectWriter getRootWriter() {
+        return rootWriter;
     }
 
     @Override
     public void close() throws IOException {
-        write(SETTINGS_GRADLE_PATH, getModel().getSettingsContent());
+        if (getWriter() == getRootWriter()) {
+            write(SETTINGS_GRADLE_PATH, getModel().getSettingsContent());
+        } else {
+            rootWrite(SETTINGS_GRADLE_PATH, getModel().getSettingsContent());
+        }
         write(BUILD_GRADLE_PATH, getModel().getBuildContent());
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             getModel().getPropertiesContent().store(out, "Gradle properties");
-            write(GRADLE_PROPERTIES_PATH, out.toString(StandardCharsets.UTF_8.toString()));
+            if (getModel().isRootProperties()) {
+                rootWrite(GRADLE_PROPERTIES_PATH, out.toString(StandardCharsets.UTF_8.toString()));
+            } else {
+                write(GRADLE_PROPERTIES_PATH, out.toString(StandardCharsets.UTF_8.toString()));
+            }
         }
     }
 
@@ -220,9 +244,17 @@ public class GradleBuildFile extends BuildFile {
         String settingsContent = "";
         String buildContent = "";
         Properties propertiesContent = new Properties();
-        if (getWriter().exists(SETTINGS_GRADLE_PATH)) {
-            final byte[] settings = getWriter().getContent(SETTINGS_GRADLE_PATH);
-            settingsContent = new String(settings, StandardCharsets.UTF_8);
+        boolean isRootProperties = false;
+        if (getWriter() == getRootWriter()) {
+            if (getWriter().exists(SETTINGS_GRADLE_PATH)) {
+                final byte[] settings = getWriter().getContent(SETTINGS_GRADLE_PATH);
+                settingsContent = new String(settings, StandardCharsets.UTF_8);
+            }
+        } else {
+            if (getRootWriter().exists(SETTINGS_GRADLE_PATH)) {
+                final byte[] settings = getRootWriter().getContent(SETTINGS_GRADLE_PATH);
+                settingsContent = new String(settings, StandardCharsets.UTF_8);
+            }
         }
         if (getWriter().exists(BUILD_GRADLE_PATH)) {
             final byte[] build = getWriter().getContent(BUILD_GRADLE_PATH);
@@ -232,7 +264,17 @@ public class GradleBuildFile extends BuildFile {
             final byte[] properties = getWriter().getContent(GRADLE_PROPERTIES_PATH);
             propertiesContent.load(new ByteArrayInputStream(properties));
         }
-        this.model = new Model(settingsContent, buildContent, propertiesContent);
+        if (!propertiesContent.containsKey("quarkusPluginVersion") &&
+                !propertiesContent.containsKey("quarkusPlatformGroupId") &&
+                !propertiesContent.containsKey("quarkusPlatformArtifactId") &&
+                !propertiesContent.containsKey("quarkusPlatformVersion")){
+            if (getRootWriter().exists(GRADLE_PROPERTIES_PATH)) {
+                final byte[] properties = getRootWriter().getContent(GRADLE_PROPERTIES_PATH);
+                propertiesContent.load(new ByteArrayInputStream(properties));
+            }
+            isRootProperties = true;
+        }
+        this.model = new Model(settingsContent, buildContent, propertiesContent, isRootProperties);
     }
 
     protected String getBuildContent() throws IOException {
@@ -243,11 +285,13 @@ public class GradleBuildFile extends BuildFile {
         private String settingsContent;
         private String buildContent;
         private Properties propertiesContent;
+        private boolean rootProperties;
 
-        public Model(String settingsContent, String buildContent, Properties propertiesContent) {
+        public Model(String settingsContent, String buildContent, Properties propertiesContent, boolean rootProperties) {
             this.settingsContent = settingsContent;
             this.buildContent = buildContent;
             this.propertiesContent = propertiesContent;
+            this.rootProperties = rootProperties;
         }
 
         public String getSettingsContent() {
@@ -268,6 +312,10 @@ public class GradleBuildFile extends BuildFile {
 
         public void setBuildContent(String buildContent) {
             this.buildContent = buildContent;
+        }
+
+        public boolean isRootProperties() {
+            return rootProperties;
         }
     }
 }

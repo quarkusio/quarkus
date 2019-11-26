@@ -1,7 +1,8 @@
+# Documentation in https://dependabot.com/docs/config-file/
 version: 1
 update_configs:
   - package_manager: "java:maven"
-    directory: "/bom/runtime"
+    directory: "/"
     update_schedule: "daily"
     allowed_updates:
       - match:

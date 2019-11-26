@@ -137,7 +137,7 @@
         <aws-lambda-java.version>1.1.0</aws-lambda-java.version>
         <aws-lambda-java-events.version>2.2.5</aws-lambda-java-events.version>
         <aws-lambda-serverless-java-container.version>1.3.1</aws-lambda-serverless-java-container.version>
-        <awssdk.version>2.10.3</awssdk.version>
+        <awssdk.version>2.10.24</awssdk.version>
         <azure-functions-java-library.version>1.3.0</azure-functions-java-library.version>
         <kotlin.version>1.3.41</kotlin.version>
         <dekorate.version>0.9.9</dekorate.version>

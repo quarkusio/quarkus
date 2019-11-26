@@ -9,15 +9,20 @@ if (JavaVersion.current().isJava9Compatible()) {
     compileJava.options.compilerArgs.addAll(['--release', '8'])
 }
 
-compileJava   {
+compileJava {
     sourceCompatibility = '1.8'
     targetCompatibility = '1.8'
 }
 
 repositories {
-    maven { url 'target/dependencies/' }
+    mavenLocal()
     mavenCentral()
-    maven { url 'https://repo.gradle.org/gradle/libs-releases-local/' }
+}
+
+// Add a source set for the integration test suite
+sourceSets {
+    functionalTest {
+    }
 }
 
 dependencies {

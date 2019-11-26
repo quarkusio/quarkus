@@ -172,7 +172,7 @@
         <jna.version>5.3.1</jna.version>
         <antlr.version>4.7.2</antlr.version>
         <quarkus-security.version>1.0.0.Final</quarkus-security.version>
-        <keycloak.version>7.0.1</keycloak.version>
+        <keycloak.version>8.0.0</keycloak.version>
     </properties>
 
     <dependencyManagement>

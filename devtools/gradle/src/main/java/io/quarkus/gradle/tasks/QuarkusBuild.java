@@ -31,7 +31,6 @@ public class QuarkusBuild extends QuarkusTask {
         super("Quarkus builds a runner jar based on the build jar");
     }
 
-    @Optional
     @Input
     public boolean isUberJar() {
         return uberJar;

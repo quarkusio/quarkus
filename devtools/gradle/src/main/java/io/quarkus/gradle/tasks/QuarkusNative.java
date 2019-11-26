@@ -81,7 +81,6 @@ public class QuarkusNative extends QuarkusTask {
         super("Building a native image");
     }
 
-    @Optional
     @Input
     public boolean isAddAllCharsets() {
         return addAllCharsets;
@@ -92,7 +91,6 @@ public class QuarkusNative extends QuarkusTask {
         this.addAllCharsets = addAllCharsets;
     }
 
-    @Optional
     @Input
     public boolean isReportErrorsAtRuntime() {
         return reportErrorsAtRuntime;
@@ -103,7 +101,6 @@ public class QuarkusNative extends QuarkusTask {
         this.reportErrorsAtRuntime = reportErrorsAtRuntime;
     }
 
-    @Optional
     @Input
     public boolean isDebugSymbols() {
         return debugSymbols;
@@ -114,7 +111,6 @@ public class QuarkusNative extends QuarkusTask {
         this.debugSymbols = debugSymbols;
     }
 
-    @Optional
     @Input
     public boolean isDebugBuildProcess() {
         return debugBuildProcess;
@@ -125,7 +121,6 @@ public class QuarkusNative extends QuarkusTask {
         this.debugBuildProcess = debugBuildProcess;
     }
 
-    @Optional
     @Input
     public boolean isCleanupServer() {
         return cleanupServer;
@@ -136,15 +131,13 @@ public class QuarkusNative extends QuarkusTask {
         this.cleanupServer = cleanupServer;
     }
 
-    @Optional
     @Input
     public boolean isEnableHttpUrlHandler() {
         return enableHttpUrlHandler;
     }
 
-    @Optional
     @Input
-    private boolean isEnableFallbackImages() {
+    public boolean isEnableFallbackImages() {
         return enableFallbackImages;
     }
 
@@ -160,7 +153,6 @@ public class QuarkusNative extends QuarkusTask {
         this.enableHttpUrlHandler = enableHttpUrlHandler;
     }
 
-    @Optional
     @Input
     public boolean isEnableHttpsUrlHandler() {
         return enableHttpsUrlHandler;
@@ -171,7 +163,6 @@ public class QuarkusNative extends QuarkusTask {
         this.enableHttpsUrlHandler = enableHttpsUrlHandler;
     }
 
-    @Optional
     @Input
     public boolean isEnableAllSecurityServices() {
         return enableAllSecurityServices;
@@ -182,7 +173,6 @@ public class QuarkusNative extends QuarkusTask {
         this.enableAllSecurityServices = enableAllSecurityServices;
     }
 
-    @Optional
     @Input
     public boolean isEnableIsolates() {
         return enableIsolates;
@@ -193,7 +183,6 @@ public class QuarkusNative extends QuarkusTask {
         this.enableIsolates = enableIsolates;
     }
 
-    @Optional
     @Input
     public String getGraalvmHome() {
         return graalvmHome;
@@ -204,7 +193,6 @@ public class QuarkusNative extends QuarkusTask {
         this.graalvmHome = graalvmHome;
     }
 
-    @Optional
     @Input
     public boolean isEnableServer() {
         return enableServer;
@@ -215,7 +203,6 @@ public class QuarkusNative extends QuarkusTask {
         this.enableServer = enableServer;
     }
 
-    @Optional
     @Input
     public boolean isEnableJni() {
         return enableJni;
@@ -226,7 +213,6 @@ public class QuarkusNative extends QuarkusTask {
         this.enableJni = enableJni;
     }
 
-    @Optional
     @Input
     public boolean isAutoServiceLoaderRegistration() {
         return autoServiceLoaderRegistration;
@@ -237,7 +223,6 @@ public class QuarkusNative extends QuarkusTask {
         this.autoServiceLoaderRegistration = autoServiceLoaderRegistration;
     }
 
-    @Optional
     @Input
     public boolean isDumpProxies() {
         return dumpProxies;
@@ -248,7 +233,6 @@ public class QuarkusNative extends QuarkusTask {
         this.dumpProxies = dumpProxies;
     }
 
-    @Optional
     @Input
     public String getNativeImageXmx() {
         return nativeImageXmx;
@@ -278,13 +262,11 @@ public class QuarkusNative extends QuarkusTask {
     }
 
     @Option(description = "Container runtime", option = "container-runtime")
-    @Optional
     public void setContainerRuntime(String containerRuntime) {
         this.containerRuntime = containerRuntime;
     }
 
     @Option(description = "Container runtime options", option = "container-runtime-options")
-    @Optional
     public void setContainerRuntimeOptions(String containerRuntimeOptions) {
         this.containerRuntimeOptions = containerRuntimeOptions;
     }
@@ -294,7 +276,6 @@ public class QuarkusNative extends QuarkusTask {
         this.dockerBuild = dockerBuild;
     }
 
-    @Optional
     @Input
     public boolean isEnableVMInspection() {
         return enableVMInspection;
@@ -305,7 +286,6 @@ public class QuarkusNative extends QuarkusTask {
         this.enableVMInspection = enableVMInspection;
     }
 
-    @Optional
     @Input
     public boolean isFullStackTraces() {
         return fullStackTraces;
@@ -316,7 +296,6 @@ public class QuarkusNative extends QuarkusTask {
         this.fullStackTraces = fullStackTraces;
     }
 
-    @Optional
     @Input
     public boolean isEnableReports() {
         return enableReports;
@@ -344,7 +323,6 @@ public class QuarkusNative extends QuarkusTask {
         this.additionalBuildArgs = additionalBuildArgs;
     }
 
-    @Optional
     @Input
     public boolean isReportExceptionStackTraces() {
         return reportExceptionStackTraces;

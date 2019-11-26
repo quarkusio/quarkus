@@ -21,30 +21,7 @@
         <skip.gradle.build>false</skip.gradle.build>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>gradle-official-repository</id>
-            <name>Gradle Official Repository</name>
-            <url>https://repo.gradle.org/gradle/libs-releases-local/</url>
-        </repository>
-    </repositories>
-
     <dependencies>
-        <!-- Special -->
-        <!-- NOT <scope>import</scope> because this is for the maven-dependency-plugin -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bom</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bom-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-        </dependency>
-
         <!-- Compile -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -69,11 +46,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-platform-descriptor-resolver-json</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-model</artifactId>
         </dependency>
     </dependencies>
     <build>

@@ -1,5 +1,4 @@
 plugins {
-    id 'com.gradle.build-scan' version '2.3'
     id 'com.gradle.plugin-publish' version '0.10.1'
     id 'java-gradle-plugin'
 }
@@ -19,20 +18,20 @@ repositories {
     mavenCentral()
 }
 
-// Add a source set for the integration test suite
+// Add a source set for the functional test suite
 sourceSets {
     functionalTest {
     }
 }
 
 dependencies {
-    compile "io.quarkus:quarkus-bootstrap-core:${version}"
-    compile "io.quarkus:quarkus-devtools-common:${version}"
-    compile "io.quarkus:quarkus-platform-descriptor-json:${version}"
-    compile "io.quarkus:quarkus-platform-descriptor-resolver-json:${version}"
-    compile "io.quarkus:quarkus-development-mode:${version}"
-    compile "io.quarkus:quarkus-creator:${version}"
-    compile gradleApi()
+    api gradleApi()
+    implementation "io.quarkus:quarkus-bootstrap-core:${version}"
+    implementation "io.quarkus:quarkus-devtools-common:${version}"
+    implementation "io.quarkus:quarkus-platform-descriptor-json:${version}"
+    implementation "io.quarkus:quarkus-platform-descriptor-resolver-json:${version}"
+    implementation "io.quarkus:quarkus-development-mode:${version}"
+    implementation "io.quarkus:quarkus-creator:${version}"
 
     testImplementation 'org.assertj:assertj-core:3.13.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.5.2'
@@ -69,7 +68,4 @@ gradlePlugin {
 }
 
 buildScan {
-    //See also: https://docs.gradle.com/build-scan-plugin/
-    termsOfServiceUrl = 'https://gradle.com/terms-of-service';
-    termsOfServiceAgree = 'yes'
 }

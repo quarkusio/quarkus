@@ -18,12 +18,6 @@ repositories {
     mavenCentral()
 }
 
-// Add a source set for the functional test suite
-sourceSets {
-    functionalTest {
-    }
-}
-
 dependencies {
     api gradleApi()
     implementation "io.quarkus:quarkus-bootstrap-core:${version}"
@@ -33,7 +27,7 @@ dependencies {
     implementation "io.quarkus:quarkus-development-mode:${version}"
     implementation "io.quarkus:quarkus-creator:${version}"
 
-    testImplementation 'org.assertj:assertj-core:3.13.2'
+    testImplementation 'org.assertj:assertj-core:3.14.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.5.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.5.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.5.2'
@@ -67,5 +61,26 @@ gradlePlugin {
     }
 }
 
-buildScan {
+// Add a source set for the functional test suite
+sourceSets {
+    functionalTest {
+    }
+}
+
+gradlePlugin.testSourceSets(sourceSets.functionalTest)
+configurations.functionalTestImplementation.extendsFrom(configurations.testImplementation)
+configurations.functionalTestRuntime.extendsFrom(configurations.testRuntimeOnly)
+
+// Add a task to run the functional tests
+task functionalTest(type: Test) {
+    description = "Runs functional tests"
+    group = "verification"
+    useJUnitPlatform()
+    testClassesDirs = sourceSets.functionalTest.output.classesDirs
+    classpath = sourceSets.functionalTest.runtimeClasspath
+}
+
+check {
+    // Run the functional tests as part of `check`
+    dependsOn(tasks.functionalTest)
 }

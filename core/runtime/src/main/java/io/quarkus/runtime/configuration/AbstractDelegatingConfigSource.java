@@ -16,7 +16,7 @@ import io.smallrye.config.ConfigSourceMap;
 public abstract class AbstractDelegatingConfigSource implements ConfigSource, Serializable {
     private static final long serialVersionUID = -6636734120743034580L;
     protected final ConfigSource delegate;
-    protected Map<String, String> propertiesMap;
+    private Map<String, String> propertiesMap;
 
     /**
      * Construct a new instance.

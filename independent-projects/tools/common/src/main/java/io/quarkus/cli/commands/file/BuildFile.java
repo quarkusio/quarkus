@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.TreeMap;
 
 import org.apache.maven.model.Dependency;
@@ -18,6 +19,7 @@ import io.quarkus.dependencies.Extension;
 import io.quarkus.generators.BuildTool;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
 public abstract class BuildFile implements Closeable {
 
@@ -36,11 +38,11 @@ public abstract class BuildFile implements Closeable {
         writer.write(fileName, content);
     }
 
-    public boolean addDependency(List<Dependency> dependenciesFromBom, Extension extension) throws IOException {
+    public boolean addDependency(QuarkusPlatformDescriptor platform, Extension extension) throws IOException {
         if (!hasDependency(extension)) {
             PRINTER.ok(" Adding extension " + extension.managementKey());
             Dependency dep;
-            if(containsBOM() && isDefinedInBom(dependenciesFromBom, extension)) {
+            if(containsBOM(platform.getBomGroupId(), platform.getBomArtifactId()) && isDefinedInBom(platform.getManagedDependencies(), extension)) {
                 dep = extension.toDependency(true);
             } else {
                 dep = extension.toDependency(false);
@@ -79,7 +81,7 @@ public abstract class BuildFile implements Closeable {
                 && dependency.getArtifactId().equalsIgnoreCase(extension.getArtifactId()));
     }
 
-    protected abstract boolean containsBOM() throws IOException;
+    protected abstract boolean containsBOM(String groupId, String artifactId) throws IOException;
 
     public abstract List<Dependency> getDependencies() throws IOException;
 
@@ -124,7 +126,7 @@ public abstract class BuildFile implements Closeable {
 
     protected abstract List<Dependency> getManagedDependencies() throws IOException;
 
-    public abstract void completeFile(String groupId, String artifactId, String version) throws IOException;
+    public abstract void completeFile(String groupId, String artifactId, String version, QuarkusPlatformDescriptor platform, Properties props) throws IOException;
 
     public BuildTool getBuildTool() {
         return buildTool;

@@ -8,7 +8,6 @@ import static io.quarkus.generators.ProjectGenerator.PROJECT_ARTIFACT_ID;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_GROUP_ID;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_VERSION;
 import static io.quarkus.generators.ProjectGenerator.SOURCE_TYPE;
-import static io.quarkus.maven.utilities.MojoUtils.getBomVersion;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -35,14 +34,16 @@ import org.junit.jupiter.api.Timeout;
 
 import com.google.common.collect.ImmutableMap;
 
+import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.cli.commands.PlatformAwareTestBase;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.generators.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;
 
-class BasicRestProjectGeneratorTest {
+class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
 
-    private static final Map<String, Object> BASIC_PROJECT_CONTEXT = ImmutableMap.<String, Object> builder()
+    private final Map<String, Object> BASIC_PROJECT_CONTEXT = ImmutableMap.<String, Object> builder()
             .put(PROJECT_GROUP_ID, "org.example")
             .put(PROJECT_ARTIFACT_ID, "quarkus-app")
             .put(PROJECT_VERSION, "0.0.1-SNAPSHOT")
@@ -61,11 +62,13 @@ class BasicRestProjectGeneratorTest {
         final CountDownLatch latch = new CountDownLatch(20);
         final BasicRestProjectGenerator basicRestProjectGenerator = new BasicRestProjectGenerator();
         List<Callable<Void>> collect = IntStream.range(0, 20).boxed().map(i -> (Callable<Void>) () -> {
-            File file = Files.createTempDirectory("test").toFile();
-            FileProjectWriter writer = new FileProjectWriter(file);
-            basicRestProjectGenerator.generate(writer, BASIC_PROJECT_CONTEXT);
+            final File file = Files.createTempDirectory("test").toFile();
+            try (FileProjectWriter writer = new FileProjectWriter(file)) {
+                basicRestProjectGenerator.generate(writer, BASIC_PROJECT_CONTEXT);
+            } finally {
+                IoUtils.recursiveDelete(file.toPath());
+            }
             latch.countDown();
-            file.delete();
             return null;
         }).collect(Collectors.toList());
         executorService.invokeAll(collect);
@@ -97,7 +100,7 @@ class BasicRestProjectGeneratorTest {
                 argThat(argument -> argument.contains("<groupId>org.example</groupId>")
                         && argument.contains("<artifactId>quarkus-app</artifactId")
                         && argument.contains("<version>0.0.1-SNAPSHOT</version>")
-                        && argument.contains("<" + MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME + ">" + MojoUtils.getPluginVersion())));// + "</" + MojoUtils.TEMPLATE_QUARKUS_PLATFORM_VERSION_NAME + ">")));
+                        && argument.contains("<" + MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME + ">" + getPluginVersion() + "</" + MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME + ">")));
         verify(mockWriter, times(1)).write(eq("src/main/java/org/example/ExampleResource.java"),
                 argThat(argument -> argument.contains("@Path(\"/hello\")")));
         verify(mockWriter, times(1)).write(eq("src/test/java/org/example/ExampleResourceTest.java"), anyString());

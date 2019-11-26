@@ -41,12 +41,16 @@
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
                 <filtering>true</filtering>
-            </resource>
-        </resources>
+            </testResource>
+            <testResource>
+                <directory>src/it</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
@@ -97,14 +101,15 @@
                         <version>${project.version}</version>
                         <exclusions>
                             <exclusion>
-                                <groupId>io.quarkus</groupId>
-                                <artifactId>quarkus-bootstrap-core</artifactId>
-                            </exclusion>
-                            <exclusion>
                                 <groupId>org.apache.maven</groupId>
                                 <artifactId>*</artifactId>
                             </exclusion>
                         </exclusions>
+                    </dependency>
+                    <dependency>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-platform-descriptor-resolver-json</artifactId>
+                        <version>${project.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>

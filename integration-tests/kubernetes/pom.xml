@@ -37,12 +37,12 @@
     </dependency>
   </dependencies>
   <build>
-    <resources>
-      <resource>
+    <testResources>
+      <testResource>
+        <directory>src/it</directory>
         <filtering>true</filtering>
-        <directory>src/main/resources</directory>
-      </resource>
-    </resources>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <artifactId>maven-invoker-plugin</artifactId>

@@ -12,9 +12,7 @@ import org.apache.maven.model.Model;
 import org.apache.maven.shared.invoker.*;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.maven.utilities.MojoUtils;
-
-class AddExtensionIT extends MojoTestBase {
+class AddExtensionIT extends QuarkusPlatformAwareMojoTestBase {
 
     private static final String QUARKUS_GROUPID = "io.quarkus";
     private static final String VERTX_ARTIFACT_ID = "quarkus-vertx";
@@ -101,11 +99,11 @@ class AddExtensionIT extends MojoTestBase {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
-                MojoUtils.getPluginKey() + ":" + MojoUtils.getPluginVersion() + ":add-extension"));
+                getPluginGroupId() + ":" + getPluginArtifactId() + ":" + getPluginVersion() + ":add-extension"));
         Properties properties = new Properties();
         properties.setProperty("platformGroupId", "io.quarkus");
         properties.setProperty("platformArtifactId", "quarkus-bom");
-        properties.setProperty("platformVersion", MojoUtils.getPluginVersion());
+        properties.setProperty("platformVersion", getPluginVersion());
         if (plural) {
             properties.setProperty("extensions", ext);
         } else {

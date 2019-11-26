@@ -74,7 +74,13 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
         final TsArtifact universeJson = new TsArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, "other-universe" + "-descriptor-json", null, "json", "1.0.0.CR80")
                 .setContent(new TestPlatformJsonDescriptorProvider(universeBom));
         install(universeJson);
+    }
 
+    @Test
+    public void testResolveBundled() throws Exception {
+        final QuarkusPlatformDescriptor platform = newResolver().resolveBundled();
+        assertBundledPlatform(platform, "1.0.0.CR90");
+        assertEquals("1.0.0.CR90", platform.getQuarkusVersion());
     }
 
     @Test
@@ -166,6 +172,13 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
         assertNotNull(platform);
         assertEquals(ToolsConstants.IO_QUARKUS, platform.getBomGroupId());
         assertEquals(ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID, platform.getBomArtifactId());
+        assertEquals(version, platform.getBomVersion());
+    }
+
+    private static void assertBundledPlatform(QuarkusPlatformDescriptor platform, String version) {
+        assertNotNull(platform);
+        assertEquals(ToolsConstants.IO_QUARKUS, platform.getBomGroupId());
+        assertEquals("quarkus-bom", platform.getBomArtifactId());
         assertEquals(version, platform.getBomVersion());
     }
 }

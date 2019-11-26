@@ -15,6 +15,7 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -46,8 +47,15 @@ import io.quarkus.platform.tools.ToolsUtils;
  */
 public class QuarkusJsonPlatformDescriptorResolver {
 
+    private static final String BUNDLED_QUARKUS_BOM_PATH = "quarkus-bom/pom.xml";
+    private static final String BUNDLED_QUARKUS_PROPERTIES_PATH = "quarkus.properties";
+    private static final String BUNDLED_EXTENSIONS_JSON_PATH = "quarkus-bom-descriptor/extensions.json";
+
+    private static final String QUARKUS_PLATFORM_DESCRIPTOR_JSON = "quarkus-platform-descriptor-json";
+
     private static final String DEFAULT_QUARKUS_PLATFORM_VERSION_RANGE = "[1.0.0.CR2,2)";
     private static final String DEFAULT_NON_QUARKUS_VERSION_RANGE = "[0,)";
+
     public static final String PROP_PLATFORM_JSON_GROUP_ID = "quarkus.platform.json.groupId";
     public static final String PROP_PLATFORM_JSON_ARTIFACT_ID = "quarkus.platform.json.artifactId";
     public static final String PROP_PLATFORM_JSON_VERSION = "quarkus.platform.json.version";
@@ -133,10 +141,9 @@ public class QuarkusJsonPlatformDescriptorResolver {
 
     public QuarkusPlatformDescriptor resolve() {
 
-        if(log == null) {
-            log = new DefaultMessageWriter();
-        }
+        ensureLoggerInitialized();
 
+        AppModelResolver artifactResolver = this.artifactResolver;
         if(artifactResolver == null) {
             try {
                 artifactResolver = new BootstrapAppModelResolver(MavenArtifactResolver.builder().build());
@@ -147,7 +154,7 @@ public class QuarkusJsonPlatformDescriptorResolver {
 
         try {
             if (jsonDescriptor != null) {
-                return loadFromFile(jsonDescriptor);
+                return loadFromFile(artifactResolver, jsonDescriptor);
             }
             return resolveJsonDescriptor(artifactResolver);
         } catch (VersionNotAvailableException | PlatformDescriptorLoadingException e) {
@@ -155,7 +162,26 @@ public class QuarkusJsonPlatformDescriptorResolver {
         }
     }
 
-    private QuarkusPlatformDescriptor loadFromFile(Path jsonFile) throws PlatformDescriptorLoadingException, VersionNotAvailableException {
+    public QuarkusPlatformDescriptor resolveBundled() {
+        ensureLoggerInitialized();
+        final Model bundledBom = loadBundledPom();
+        if(bundledBom == null) {
+            throw new IllegalStateException("Failed to locate bundled Quarkus platform BOM on the classpath");
+        }
+        try {
+            return loadFromBomCoords(null, getGroupId(bundledBom), getArtifactId(bundledBom), getVersion(bundledBom), bundledBom);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to load bundled Quarkus platform", e);
+        }
+    }
+
+    private void ensureLoggerInitialized() {
+        if(log == null) {
+            log = new DefaultMessageWriter();
+        }
+    }
+
+    private QuarkusPlatformDescriptor loadFromFile(AppModelResolver artifactResolver, Path jsonFile) throws PlatformDescriptorLoadingException, VersionNotAvailableException {
         log.debug("Loading Quarkus platform descriptor from %s", jsonFile);
         if(!Files.exists(jsonFile)) {
             throw new IllegalArgumentException("Failed to locate extensions JSON file at " + jsonFile);
@@ -175,7 +201,7 @@ public class QuarkusJsonPlatformDescriptorResolver {
         log.debug("Loaded Quarkus platform is based on Quarkus %s", quarkusCoreVersion);
 
         try (InputStream is = Files.newInputStream(jsonFile)) {
-            return loadPlatformDescriptor(artifactResolver, is, quarkusCoreVersion);
+            return loadPlatformDescriptor(toLoaderResolver(artifactResolver), is, quarkusCoreVersion);
         } catch (VersionNotAvailableException e) {
             throw e;
         } catch (Exception e) {
@@ -354,33 +380,20 @@ public class QuarkusJsonPlatformDescriptorResolver {
         }
         log.debug("Resolving Quarkus platform BOM %s:%s::pom:%s", bomGroupId, bomArtifactId, bomVersion);
 
-        bundledBom = loadBundledPomIfNull(bundledBom);
+        final Model theBundledBom = loadBundledPomIfNull(bundledBom);
         // Check whether the BOM on the classpath is matching the requested one
-        if(bundledBom != null
-                && bomArtifactId.equals(getArtifactId(bundledBom))
-                && bomVersion.equals(getVersion(bundledBom))
-                && bomGroupId.equals(getGroupId(bundledBom))) {
+        if(theBundledBom != null
+                && bomArtifactId.equals(getArtifactId(theBundledBom))
+                && bomVersion.equals(getVersion(theBundledBom))
+                && bomGroupId.equals(getGroupId(theBundledBom))) {
             log.debug("The requested Quarkus platform BOM version is available on the classpath");
             // If the BOM matches, there should also be the JSON file
-            final InputStream jsonStream = Thread.currentThread().getContextClassLoader()
-                    .getResourceAsStream("quarkus-bom-descriptor/extensions.json");
+            final InputStream jsonStream = getCpResourceAsStream(BUNDLED_EXTENSIONS_JSON_PATH);
             if (jsonStream != null) {
                 // The JSON is available, now there also should be quarkus.properties
-                final InputStream quarkusPropsStream = Thread.currentThread().getContextClassLoader()
-                        .getResourceAsStream("quarkus.properties");
-                if (quarkusPropsStream != null) {
-                    final Properties props = new Properties();
-                    try {
-                        props.load(quarkusPropsStream);
-                    } catch (IOException e) {
-                        throw new IllegalStateException("Failed to load quarkus.properties from the classpath", e);
-                    }
-                    final String quarkusVersion = props.getProperty("plugin-version");
-                    if (quarkusVersion == null) {
-                        throw new IllegalStateException(
-                                "quarkus.properties loaded from the classpath is missing plugin-version property");
-                    }
-                    return loadPlatformDescriptor(artifactResolver, jsonStream, quarkusVersion);
+                final String quarkusVersion = getBundledPlatformQuarkusVersionOrNull();
+                if (quarkusVersion != null) {
+                    return loadPlatformDescriptor(getBundledResolver(theBundledBom), jsonStream, quarkusVersion);
                 } else {
                     log.debug("Failed to locate quarkus.properties on the classpath");
                 }
@@ -399,7 +412,7 @@ public class QuarkusJsonPlatformDescriptorResolver {
     private QuarkusPlatformDescriptor loadFromJsonArtifact(AppModelResolver artifactResolver, AppArtifact jsonArtifact) throws VersionNotAvailableException {
         try {
             log.debug("Attempting to resolve Quarkus platform descriptor %s", jsonArtifact);
-            return loadFromFile(artifactResolver.resolve(jsonArtifact));
+            return loadFromFile(artifactResolver, artifactResolver.resolve(jsonArtifact));
         } catch(PlatformDescriptorLoadingException e) {
             // the artifact was successfully resolved but processing of it has failed
             throw new IllegalStateException("Failed to load Quarkus platform descriptor " + jsonArtifact, e);
@@ -409,7 +422,7 @@ public class QuarkusJsonPlatformDescriptorResolver {
             final AppArtifact fallbackArtifact = new AppArtifact(jsonArtifact.getGroupId(), jsonArtifact.getArtifactId() + "-descriptor-json", null, "json", jsonArtifact.getVersion());
             log.debug("Attempting to resolve Quarkus platform descriptor %s", fallbackArtifact);
             try {
-                return loadFromFile(artifactResolver.resolve(fallbackArtifact));
+                return loadFromFile(artifactResolver, artifactResolver.resolve(fallbackArtifact));
             } catch (AppModelResolverException e1) {
                 throw new VersionNotAvailableException("Failed to resolve Quarkus platform descriptor " + jsonArtifact, e);
             } catch(Exception e2) {
@@ -419,14 +432,14 @@ public class QuarkusJsonPlatformDescriptorResolver {
     }
 
     @SuppressWarnings("rawtypes")
-    private QuarkusPlatformDescriptor loadPlatformDescriptor(AppModelResolver mvn, final InputStream jsonStream,
+    private QuarkusPlatformDescriptor loadPlatformDescriptor(ArtifactResolver mvn, final InputStream jsonStream,
             String quarkusCoreVersion) throws PlatformDescriptorLoadingException, VersionNotAvailableException {
 
         ClassLoader jsonDescrLoaderCl = null;
 
         // check whether the quarkus-platform-descriptor-json used in the platform is already on the classpath
-        final String pomPropsPath = "META-INF/maven/" + ToolsConstants.IO_QUARKUS + "/quarkus-platform-descriptor-json/pom.properties";
-        final InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(pomPropsPath);
+        final String pomPropsPath = "META-INF/maven/" + ToolsConstants.IO_QUARKUS + "/" + QUARKUS_PLATFORM_DESCRIPTOR_JSON + "/pom.properties";
+        final InputStream is = getCpResourceAsStream(pomPropsPath);
         if(is != null) {
             final Properties props = new Properties();
             try {
@@ -447,11 +460,14 @@ public class QuarkusJsonPlatformDescriptorResolver {
 
         boolean externalLoader = false;
         if(jsonDescrLoaderCl == null) {
-            final AppArtifact jsonDescrArtifact = new AppArtifact(ToolsConstants.IO_QUARKUS, "quarkus-platform-descriptor-json", null, "jar", quarkusCoreVersion);
+            final AppArtifact jsonDescrArtifact = new AppArtifact(ToolsConstants.IO_QUARKUS, QUARKUS_PLATFORM_DESCRIPTOR_JSON, null, "jar", quarkusCoreVersion);
             log.debug("Resolving Quarkus JSON platform descriptor loader %s", jsonDescrArtifact);
             final URL jsonDescrUrl;
             try {
-                final Path path = mvn.resolve(jsonDescrArtifact);
+                final Path path = mvn.process(jsonDescrArtifact.getGroupId(), jsonDescrArtifact.getArtifactId(),
+                        jsonDescrArtifact.getClassifier(), jsonDescrArtifact.getType(), jsonDescrArtifact.getVersion(), p -> {
+                            return p;
+                        });
                 resourceLoader = Files.isDirectory(path) ? new DirectoryResourceLoader(path) : new ZipResourceLoader(path);
                 log.debug("Quarkus platform resources will be loaded from %s", path);
                 jsonDescrUrl = path.toUri().toURL();
@@ -476,44 +492,11 @@ public class QuarkusJsonPlatformDescriptorResolver {
                 throw new PlatformDescriptorLoadingException(
                         "Located more than one implementation of " + QuarkusJsonPlatformDescriptorLoader.class.getName());
             }
-            final ArtifactResolver loaderResolver = new ArtifactResolver() {
-
-                @Override
-                public <T> T process(String groupId, String artifactId, String classifier, String type, String version,
-                        Function<Path, T> processor) {
-                    final AppArtifact artifact = new AppArtifact(groupId, artifactId, classifier, type, version);
-                    try {
-                        return processor.apply(artifactResolver.resolve(artifact));
-                    } catch (AppModelResolverException e) {
-                        throw new IllegalStateException("Failed to resolve " + artifact, e);
-                    }
-                }
-
-                @Override
-                public List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier,
-                        String type, String version) {
-                    if (!"pom".equals(type)) {
-                        throw new IllegalStateException("This implementation expects artifacts of type pom");
-                    }
-                    final Path pom;
-                    final AppArtifact pomArtifact = new AppArtifact(groupId, artifactId, classifier, type, version);
-                    try {
-                        pom = artifactResolver.resolve(pomArtifact);
-                    } catch (AppModelResolverException e) {
-                        throw new IllegalStateException("Failed to resolve " + pomArtifact, e);
-                    }
-                    try {
-                        return ModelUtils.readModel(pom).getDependencyManagement().getDependencies();
-                    } catch (IOException e) {
-                        throw new IllegalStateException("Failed to read model of " + pom, e);
-                    }
-                }
-            };
 
             try {
                 return jsonDescrLoader.load(
                         new QuarkusJsonPlatformDescriptorLoaderContext(
-                                loaderResolver,
+                                mvn,
                                 resourceLoader == null ? new ClassPathResourceLoader() : resourceLoader,
                                 log) {
                             @Override
@@ -564,7 +547,7 @@ public class QuarkusJsonPlatformDescriptorResolver {
     }
 
     private Model loadBundledPom() {
-        final InputStream bomIs = Thread.currentThread().getContextClassLoader().getResourceAsStream("quarkus-bom/pom.xml");
+        final InputStream bomIs = getCpResourceAsStream(BUNDLED_QUARKUS_BOM_PATH);
         if(bomIs == null) {
             log.debug("Failed to locate quarkus-bom/pom.xml on the classpath");
             return null;
@@ -622,5 +605,103 @@ public class QuarkusJsonPlatformDescriptorResolver {
             }
         }
         throw new IllegalStateException("Failed to determine the version for the POM of " + model.getArtifactId());
+    }
+
+    private ArtifactResolver toLoaderResolver(AppModelResolver mvn) {
+        return new ArtifactResolver() {
+
+            @Override
+            public <T> T process(String groupId, String artifactId, String classifier, String type, String version,
+                    Function<Path, T> processor) throws AppModelResolverException {
+                final AppArtifact artifact = new AppArtifact(groupId, artifactId, classifier, type, version);
+                return processor.apply(mvn.resolve(artifact));
+            }
+
+            @Override
+            public List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier,
+                    String type, String version) {
+                if (!"pom".equals(type)) {
+                    throw new IllegalStateException("This implementation expects artifacts of type pom");
+                }
+                final Path pom;
+                final AppArtifact pomArtifact = new AppArtifact(groupId, artifactId, classifier, type, version);
+                try {
+                    pom = mvn.resolve(pomArtifact);
+                } catch (AppModelResolverException e) {
+                    throw new IllegalStateException("Failed to resolve " + pomArtifact, e);
+                }
+                try {
+                    return ModelUtils.readModel(pom).getDependencyManagement().getDependencies();
+                } catch (IOException e) {
+                    throw new IllegalStateException("Failed to read model of " + pom, e);
+                }
+            }
+        };
+    }
+
+    private ArtifactResolver getBundledResolver(final Model model) {
+
+        final Path platformResources;
+        try {
+            platformResources = MojoUtils.getResourceOrigin(Thread.currentThread().getContextClassLoader(), BUNDLED_QUARKUS_BOM_PATH);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to locate the bundled Quarkus platform resources on the classpath");
+        }
+
+        final ArtifactResolver bundledResolver = new ArtifactResolver() {
+
+            @Override
+            public <T> T process(String groupId, String artifactId, String classifier, String type, String version,
+                    Function<Path, T> processor) {
+                if (QUARKUS_PLATFORM_DESCRIPTOR_JSON.equals(artifactId)
+                        && ToolsConstants.IO_QUARKUS.equals(groupId)
+                        && "jar".equals(type)
+                        && StringUtils.isEmpty(classifier)
+                        && version.equals(getBundledPlatformQuarkusVersionOrNull())) {
+                    return processor.apply(platformResources);
+                }
+                throw new IllegalArgumentException("Unexpected artifact coordinates " + groupId + ":" + artifactId + ":"
+                        + classifier + ":" + type + ":" + version);
+            }
+
+            @Override
+            public List<Dependency> getManagedDependencies(String groupId, String artifactId, String classifier,
+                    String type, String version) {
+                if(getArtifactId(model).equals(artifactId)
+                        && "pom".equals(type)
+                        && getVersion(model).equals(version)
+                        && StringUtils.isEmpty(classifier)
+                        && getGroupId(model).equals(groupId)) {
+                    return model.getDependencyManagement().getDependencies();
+                }
+                throw new IllegalArgumentException(
+                        "Expected " + getGroupId(model) + ":" + getArtifactId(model) + "::pom:" + getVersion(model) + " but received "
+                                + groupId + ":" + artifactId + ":" + classifier + ":" + type + ":" + version);
+            }
+        };
+        return bundledResolver;
+    }
+
+    private static String getBundledPlatformQuarkusVersionOrNull() {
+        final InputStream quarkusPropsStream = getCpResourceAsStream(BUNDLED_QUARKUS_PROPERTIES_PATH);
+        if (quarkusPropsStream == null) {
+            return null;
+        }
+        final Properties props = new Properties();
+        try {
+            props.load(quarkusPropsStream);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to load quarkus.properties from the classpath", e);
+        }
+        final String quarkusVersion = props.getProperty("plugin-version");
+        if (quarkusVersion == null) {
+            throw new IllegalStateException(
+                    "quarkus.properties loaded from the classpath is missing plugin-version property");
+        }
+        return quarkusVersion;
+    }
+
+    private static InputStream getCpResourceAsStream(String name) {
+        return Thread.currentThread().getContextClassLoader().getResourceAsStream(name);
     }
 }

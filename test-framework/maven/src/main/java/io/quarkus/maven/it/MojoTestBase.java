@@ -28,22 +28,8 @@ import org.apache.maven.shared.invoker.DefaultInvoker;
 import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.utils.StringUtils;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-import org.junit.jupiter.api.BeforeAll;
-
-import com.google.common.collect.ImmutableMap;
-
-import io.quarkus.maven.utilities.MojoUtils;
 
 public class MojoTestBase {
-    private static ImmutableMap<String, String> VARIABLES;
-
-    @BeforeAll
-    public static void init() {
-        VARIABLES = ImmutableMap.of(
-                "@project.groupId@", MojoUtils.getPluginGroupId(),
-                "@project.artifactId@", MojoUtils.getPluginArtifactId(),
-                "@project.version@", MojoUtils.getPluginVersion());
-    }
 
     public static Invoker initInvoker(File root) {
         Invoker invoker = new DefaultInvoker();
@@ -73,6 +59,10 @@ public class MojoTestBase {
         return initProject(name, name);
     }
 
+    public static File getTargetDir(String name) {
+        return new File("target/test-classes/" + name);
+    }
+
     public static File initProject(String name, String output) {
         File tc = new File("target/test-classes");
         if (!tc.isDirectory()) {
@@ -81,7 +71,7 @@ public class MojoTestBase {
                     .log(Level.FINE, "test-classes created? " + mkdirs);
         }
 
-        File in = new File("src/test/resources", name);
+        File in = new File(tc, name);
         if (!in.isDirectory()) {
             throw new RuntimeException("Cannot find directory: " + in.getAbsolutePath());
         }
@@ -98,34 +88,8 @@ public class MojoTestBase {
         } catch (IOException e) {
             throw new RuntimeException("Cannot copy project resources", e);
         }
-        filterPom(out);
 
         return out;
-    }
-
-    private static void filterPom(File out) {
-
-        File pom = new File(out, "pom.xml");
-        if (pom.exists()) {
-            try {
-                filter(pom, VARIABLES);
-            } catch (IOException e) {
-                throw new IllegalArgumentException(e);
-            }
-        }
-        for (File i : out.listFiles()) {
-            if (i.isDirectory()) {
-                pom = new File(i, "pom.xml");
-                if (pom.exists()) {
-                    try {
-                        filter(pom, VARIABLES);
-                    } catch (IOException e) {
-                        throw new IllegalArgumentException(e);
-                    }
-                }
-            }
-        }
-
     }
 
     public static void filter(File input, Map<String, String> variables) throws IOException {

@@ -233,6 +233,7 @@ public class QuarkusNative extends QuarkusTask {
         this.dumpProxies = dumpProxies;
     }
 
+    @Optional
     @Input
     public String getNativeImageXmx() {
         return nativeImageXmx;

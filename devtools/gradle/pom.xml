@@ -19,6 +19,8 @@
         <gradle.executable>./gradlew</gradle.executable>
         <gradle.task>build</gradle.task>
         <skip.gradle.build>false</skip.gradle.build>
+        <maven.install.skip>true</maven.install.skip>
+        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencies>
@@ -76,6 +78,15 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <!-- Do not deploy this project-->
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>${nexus-staging-maven-plugin.version}</version>
+                <configuration>
+                    <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
+                </configuration>
             </plugin>
         </plugins>
     </build>

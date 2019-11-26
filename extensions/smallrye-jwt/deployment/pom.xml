@@ -55,7 +55,7 @@
         <dependency>
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
-            <version>6.7</version>
+            <version>7.9</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

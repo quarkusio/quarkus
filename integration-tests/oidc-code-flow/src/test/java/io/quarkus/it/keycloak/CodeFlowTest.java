@@ -208,7 +208,6 @@ public class CodeFlowTest {
     }
 
     @Test
-    //@Disabled
     public void testAccessTokenInjection() throws IOException, InterruptedException {
         try (final WebClient webClient = new WebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
@@ -247,6 +246,24 @@ public class CodeFlowTest {
             assertEquals("Welcome to Test App", page.getTitleText());
 
             page = webClient.getPage("http://localhost:8081/web-app/refresh");
+
+            assertEquals("RT injected", page.getBody().asText());
+        }
+    }
+
+    @Test
+    public void testAccessAndRefreshTokenInjectionWithoutIndexHtml() throws IOException, InterruptedException {
+        try (final WebClient webClient = new WebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/refresh");
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
 
             assertEquals("RT injected", page.getBody().asText());
         }

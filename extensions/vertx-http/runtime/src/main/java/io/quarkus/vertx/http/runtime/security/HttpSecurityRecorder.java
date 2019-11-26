@@ -15,6 +15,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -47,6 +48,11 @@ public class HttpSecurityRecorder {
                                         event.response().end();
                                     }
                                 });
+                            } else if (throwable instanceof AuthenticationRedirectException) {
+                                AuthenticationRedirectException redirectEx = (AuthenticationRedirectException) throwable;
+                                event.response().setStatusCode(redirectEx.getCode());
+                                event.response().headers().set(HttpHeaders.LOCATION, redirectEx.getRedirectUri());
+                                event.response().end();
                             } else {
                                 event.fail(throwable);
                             }

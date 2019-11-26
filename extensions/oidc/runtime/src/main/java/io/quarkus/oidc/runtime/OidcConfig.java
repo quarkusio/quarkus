@@ -138,12 +138,23 @@ public class OidcConfig {
         }
     }
 
+    /**
+     * Defines the authorization request properties when authenticating
+     * users using the Authorization Code Grant Type.
+     */
     @ConfigGroup
     public static class Authentication {
+        /**
+         * Relative path for calculating a "redirect_uri" parameter.
+         * It set it will be appended to the request URI's host and port, otherwise the complete request URI will be used.
+         * It has to start from the forward slash, for example: "/service"
+         *
+         */
+        @ConfigItem
+        public Optional<String> redirectPath;
 
         /**
-         * Defines a fixed list of scopes which should be added to authorization requests when authenticating users using the
-         * Authorization Code Grant Type.
+         * List of scopes
          *
          */
         @ConfigItem

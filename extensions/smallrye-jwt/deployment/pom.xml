@@ -52,12 +52,6 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.nimbusds</groupId>
-            <artifactId>nimbus-jose-jwt</artifactId>
-            <version>6.7</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>

@@ -1,5 +1,7 @@
 package io.quarkus.runtime.configuration;
 
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
@@ -13,6 +15,7 @@ import org.wildfly.common.expression.Expression;
  */
 public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
 
+    private static final long serialVersionUID = 1075000015425893741L;
     private static final ThreadLocal<Boolean> NO_EXPAND = new ThreadLocal<>();
 
     public static UnaryOperator<ConfigSource> wrapper(Cache cache) {
@@ -42,6 +45,24 @@ public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
     public String getValue(final String propertyName) {
         final String delegateValue = delegate.getValue(propertyName);
         return isExpanding() ? expand(delegateValue) : delegateValue;
+    }
+
+    Object writeReplace() throws ObjectStreamException {
+        return new Ser(delegate);
+    }
+
+    static final class Ser implements Serializable {
+        private static final long serialVersionUID = 3633535720479375279L;
+
+        final ConfigSource d;
+
+        Ser(final ConfigSource d) {
+            this.d = d;
+        }
+
+        Object readResolve() {
+            return new ExpandingConfigSource(d, new Cache());
+        }
     }
 
     String expand(final String value) {
@@ -83,7 +104,9 @@ public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
     /**
      * An expression cache to use with {@link ExpandingConfigSource}.
      */
-    public static final class Cache {
+    public static final class Cache implements Serializable {
+        private static final long serialVersionUID = 6111143168103886992L;
+
         // this is a cache of compiled expressions, NOT a cache of expanded values
         final ConcurrentHashMap<String, Expression> exprCache = new ConcurrentHashMap<>();
 

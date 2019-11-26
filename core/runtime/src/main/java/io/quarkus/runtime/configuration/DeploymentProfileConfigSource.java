@@ -1,5 +1,7 @@
 package io.quarkus.runtime.configuration;
 
+import java.io.ObjectStreamException;
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.UnaryOperator;
@@ -11,6 +13,7 @@ import org.wildfly.common.Assert;
  * A configuration source which supports deployment profiles.
  */
 public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSource {
+    private static final long serialVersionUID = -8001338475089294128L;
 
     private final String profilePrefix;
 
@@ -33,6 +36,26 @@ public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSourc
         super(delegate);
         Assert.checkNotNullParam("profileName", profileName);
         profilePrefix = "%" + profileName + ".";
+    }
+
+    Object writeReplace() throws ObjectStreamException {
+        return new Ser(delegate, profilePrefix);
+    }
+
+    static final class Ser implements Serializable {
+        private static final long serialVersionUID = -4618790131794331510L;
+
+        final ConfigSource d;
+        final String p;
+
+        Ser(final ConfigSource d, String p) {
+            this.d = d;
+            this.p = p;
+        }
+
+        Object readResolve() {
+            return new DeploymentProfileConfigSource(d, p);
+        }
     }
 
     public Set<String> getPropertyNames() {

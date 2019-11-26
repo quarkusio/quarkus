@@ -1,5 +1,6 @@
 package io.quarkus.runtime.configuration;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 
@@ -12,7 +13,8 @@ import io.smallrye.config.ConfigSourceMap;
 /**
  * A base class for configuration sources which delegate to other configuration sources.
  */
-public abstract class AbstractDelegatingConfigSource implements ConfigSource {
+public abstract class AbstractDelegatingConfigSource implements ConfigSource, Serializable {
+    private static final long serialVersionUID = -6636734120743034580L;
     protected final ConfigSource delegate;
     private Map<String, String> propertiesMap;
 

@@ -75,42 +75,9 @@
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-model</artifactId>
         </dependency>
-
-        <!-- Test -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-dependencies</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <inherited>false</inherited>
-                        <configuration>
-                            <useBaseVersion>true</useBaseVersion>
-                            <addParentPoms>true</addParentPoms>
-                            <copyPom>true</copyPom>
-                            <useRepositoryLayout>true</useRepositoryLayout>
-                            <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -125,6 +92,7 @@
                                 <argument>${gradle.task}</argument>
                                 <argument>-Pdescription=${project.description}</argument>
                                 <argument>-S</argument>
+                                <argument>${env.MAVEN_OPTS}</argument>
                             </arguments>
                             <environmentVariables>
                                 <MAVEN_LOCAL_REPO>${settings.localRepository}</MAVEN_LOCAL_REPO>
@@ -134,83 +102,6 @@
                         <goals>
                             <goal>exec</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-gradle-jars</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-
-                        <configuration>
-                            <outputDirectory>${basedir}/target</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>build/libs/</directory>
-                                    <includes>
-                                        <include>${project.artifactId}-${project.version}.jar</include>
-                                        <include>${project.artifactId}-${project.version}-javadoc.jar</include>
-                                        <include>${project.artifactId}-${project.version}-sources.jar</include>
-                                    </includes>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <descriptors>
-                        <descriptor>src/assembly/copy.xml</descriptor>
-                    </descriptors>
-                    <attach>false</attach>
-                    <appendAssemblyId>false</appendAssemblyId>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>create-repo</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-artifacts</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>attach-artifact</goal>
-                        </goals>
-                        <configuration>
-                            <artifacts>
-                                <artifact>
-                                    <file>target/${project.artifactId}-${project.version}.jar</file>
-                                    <type>jar</type>
-                                </artifact>
-                                <artifact>
-                                    <file>target/${project.artifactId}-${project.version}-javadoc.jar</file>
-                                    <type>jar</type>
-                                    <classifier>javadoc</classifier>
-                                </artifact>
-                                <artifact>
-                                    <file>target/${project.artifactId}-${project.version}-sources.jar</file>
-                                    <type>jar</type>
-                                    <classifier>sources</classifier>
-                                </artifact>
-                            </artifacts>
-                            <skipAttach>${skip.gradle.build}</skipAttach>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -239,40 +130,6 @@
             <properties>
                 <gradle.task>assemble</gradle.task>
             </properties>
-        </profile>
-        <profile>
-            <id>full</id>
-            <activation>
-                <property>
-                    <name>full</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-zip</id>
-                                <goals>
-                                    <goal>attach-artifact</goal>
-                                </goals>
-                                <configuration>
-                                    <artifacts>
-                                        <artifact>
-                                            <file>${project.build.directory}/${project.artifactId}-${project.version}-docs.zip</file>
-                                            <type>zip</type>
-                                            <classifier>docs</classifier>
-                                        </artifact>
-                                    </artifacts>
-                                    <skipAttach>${skip.gradle.build}</skipAttach>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
 </project>

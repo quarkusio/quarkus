@@ -199,7 +199,7 @@ public class SecurityProcessor {
         ResultHandle result = ctor.newArray(String.class, ctor.load(parameters.size()));
 
         for (int i = 0; i < parameters.size(); i++) {
-            ctor.writeArrayValue(result, i, ctor.load(parameters.get(i).toString()));
+            ctor.writeArrayValue(result, i, ctor.load(parameters.get(i).name().toString()));
         }
 
         return result;

@@ -603,3 +603,4 @@ Quarkus support has more Spring compatibility features. See the following guides
 
 * link:spring-di[Quarkus - Extension for Spring DI]
 * link:spring-web[Quarkus - Extension for Spring Web]
+* link:spring-security[Quarkus - Extension for Spring Security]

@@ -325,5 +325,5 @@ Quarkus support has more Spring compatibility features. See the following guides
 
 * link:spring-di[Quarkus - Extension for Spring DI]
 * link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
-
+* link:spring-security[Quarkus - Extension for Spring Security]
 

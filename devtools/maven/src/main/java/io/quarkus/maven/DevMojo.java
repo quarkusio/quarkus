@@ -1,5 +1,7 @@
 package io.quarkus.maven;
 
+import static java.util.stream.Collectors.joining;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -617,14 +619,11 @@ public class DevMojo extends AbstractMojo {
 
         public void run() throws Exception {
             // Display the launch command line in dev mode
-            getLog().info("Launching JVM with command line: " + args.toString());
-            ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[0]));
-            pb.redirectError(ProcessBuilder.Redirect.INHERIT);
-            pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-            pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
-            pb.directory(workingDir);
-            process = pb.start();
-
+            getLog().info("Launching JVM with command line: " + args.stream().collect(joining(" ")));
+            process = new ProcessBuilder(args)
+                    .inheritIO()
+                    .directory(workingDir)
+                    .start();
             //https://github.com/quarkusio/quarkus/issues/232
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override

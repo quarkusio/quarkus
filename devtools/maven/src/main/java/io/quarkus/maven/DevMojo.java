@@ -55,7 +55,6 @@ import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
 import io.quarkus.maven.components.MavenVersionEnforcer;
@@ -381,23 +380,13 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void addToClassPaths(StringBuilder classPathManifest, DevModeContext classPath, File file) {
-        URI uri = file.toPath().toAbsolutePath().toUri();
+        final URI uri = file.toPath().toAbsolutePath().toUri();
         try {
             classPath.getClassPath().add(uri.toURL());
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
-        String path = uri.getRawPath();
-        if (PropertyUtils.isWindows()) {
-            if (path.length() > 2 && Character.isLetter(path.charAt(0)) && path.charAt(1) == ':') {
-                path = "/" + path;
-            }
-        }
-        classPathManifest.append(path);
-        if (file.isDirectory() && path.charAt(path.length() - 1) != '/') {
-            classPathManifest.append("/");
-        }
-        classPathManifest.append(" ");
+        classPathManifest.append(uri).append(" ");
     }
 
     class DevModeRunner {

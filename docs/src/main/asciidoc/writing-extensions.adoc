@@ -378,7 +378,24 @@ The above sequence of commands does the following:
 A Maven build performed immediately after generating the modules should fail due to a `fail()` assertion in one of the test classes.
 
 There is one step (specific to the Quarkus source tree) that you should do manually when creating a new extension:
-Add the extension coordinates to `devtools/common/src/main/filtered/extensions.json`.
+create a `quarkus-extension.yaml` file that describe your extension inside the runtime module `src/main/resources/META-INF` folder.
+
+This is the `quarkus-extension.yaml` of the `quarkus-agroal` extension, you can use it as an example:
+
+[source,yaml]
+----
+name: "Agroal - Database connection pool"
+metadata:
+  keywords:
+  - "agroal"
+  - "database-connection-pool"
+  - "datasource"
+  - "jdbc"
+  guide: "https://quarkus.io/guides/datasource"
+  categories:
+  - "data"
+  status: "stable"
+----
 
 Note that the parameters of the mojo that will be constant for all the extensions added to this source tree are configured in `extensions/pom.xml` so that they do not need to be passed on the command line each time a new extension is added:
 

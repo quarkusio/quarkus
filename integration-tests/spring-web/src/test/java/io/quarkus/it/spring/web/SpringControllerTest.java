@@ -133,12 +133,30 @@ public class SpringControllerTest {
         RestAssured.when().get("/exception/responseEntity").then()
                 .contentType("application/json")
                 .body(containsString("bad state"), containsString("responseEntity"))
-                .statusCode(402);
+                .statusCode(402)
+                .header("custom-header", "custom-value");
+    }
+
+    @Test
+    public void testExceptionHandlerResponseEntityTypeFromVoidReturningMethod() {
+        RestAssured.when().get("/exception/responseEntityFromVoidReturningMethod").then()
+                .contentType("application/json")
+                .body(containsString("bad state"), containsString("responseEntity"))
+                .statusCode(402)
+                .header("custom-header", "custom-value");
     }
 
     @Test
     public void testExceptionHandlerPojoEntityType() {
         RestAssured.when().get("/exception/pojo").then()
+                .contentType("application/json")
+                .body(containsString("hello from error"))
+                .statusCode(417);
+    }
+
+    @Test
+    public void testControllerMethodWithVoidReturnTypeAndExceptionHandlerPojoEntityType() {
+        RestAssured.when().get("/exception/pojoWithVoidReturnType").then()
                 .contentType("application/json")
                 .body(containsString("hello from error"))
                 .statusCode(417);

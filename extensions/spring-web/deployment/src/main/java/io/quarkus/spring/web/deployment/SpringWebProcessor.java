@@ -338,7 +338,7 @@ public class SpringWebProcessor {
         // Look for all exception classes that are annotated with @ResponseStatus
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedExceptionMappers, false);
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedExceptionMappers, true);
         generateMappersForResponseStatusOnException(providersProducer, index, classOutput, typesUtil);
         generateMappersForExceptionHandlerInControllerAdvice(providersProducer, reflectiveClassProducer, index, classOutput,
                 typesUtil);

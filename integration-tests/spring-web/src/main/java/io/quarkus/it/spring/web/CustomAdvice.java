@@ -26,7 +26,7 @@ public class CustomAdvice {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Error> handleIllegalStateException(IllegalStateException e,
             HttpServletRequest request, HttpServletResponse response) {
-        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).header("custom-header", "custom-value")
                 .body(new Error(request.getRequestURI() + ":" + e.getMessage()));
     }
 

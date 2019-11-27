@@ -9,6 +9,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -31,6 +32,7 @@ import io.quarkus.spring.web.runtime.ResponseEntityConverter;
 class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractExceptionMapperGenerator {
 
     private static final DotName RESPONSE_ENTITY = DotName.createSimple("org.springframework.http.ResponseEntity");
+    private static final DotName STRING = DotName.createSimple(String.class.getName());
 
     private final MethodInfo controllerAdviceMethod;
     private final TypesUtil typesUtil;
@@ -135,17 +137,39 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
 
             ResultHandle response;
             if (RESPONSE_ENTITY.equals(returnType.name())) {
+                /*
+                 * By default we will send JSON back unless the ResponseEntity has a String body
+                 */
+                boolean addDefaultJsonContentType = true;
+                if (returnType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                    if (returnType.asParameterizedType().arguments().size() == 1) {
+                        Type responseEntityParameterType = returnType.asParameterizedType().arguments().get(0);
+                        if (STRING.equals(responseEntityParameterType.name())) {
+                            addDefaultJsonContentType = false;
+                        }
+                    }
+                }
+
                 // convert Spring's ResponseEntity to JAX-RS Response
                 response = toResponse.invokeStaticMethod(
                         MethodDescriptor.ofMethod(ResponseEntityConverter.class.getName(), "toResponse",
-                                Response.class.getName(), RESPONSE_ENTITY.toString()),
-                        exceptionHandlerMethodResponse);
+                                Response.class.getName(), RESPONSE_ENTITY.toString(), boolean.class.getName()),
+                        exceptionHandlerMethodResponse, toResponse.load(addDefaultJsonContentType));
             } else {
                 ResultHandle status = toResponse.load(getStatus(controllerAdviceMethod.annotation(RESPONSE_STATUS)));
 
                 ResultHandle responseBuilder = toResponse.invokeStaticMethod(
                         MethodDescriptor.ofMethod(Response.class, "status", Response.ResponseBuilder.class, int.class),
                         status);
+                /*
+                 * By default we will send JSON back unless the ResponseEntity has a String body
+                 */
+                if (!STRING.equals(returnType.name())) {
+                    toResponse.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "type", Response.ResponseBuilder.class,
+                                    String.class),
+                            responseBuilder, toResponse.load(MediaType.APPLICATION_JSON));
+                }
 
                 toResponse.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "entity", Response.ResponseBuilder.class,

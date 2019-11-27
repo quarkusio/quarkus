@@ -22,7 +22,7 @@ public class ResponseEntityConverter {
     private static Headers<Object> toHeaders(HttpHeaders springHeaders) {
         Headers<Object> jaxRsHeaders = new Headers<>();
         for (Map.Entry<String, List<String>> entry : springHeaders.entrySet()) {
-            jaxRsHeaders.addAll(entry.getKey(), entry.getValue());
+            jaxRsHeaders.addAll(entry.getKey(), entry.getValue().toArray(new Object[0]));
         }
         return jaxRsHeaders;
     }

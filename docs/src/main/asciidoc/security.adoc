@@ -68,7 +68,8 @@ The following properties can be used to configure form based auth:
 
 include::{generated-dir}/config/quarkus-vertx-http-config-group-form-auth-config.adoc[opts=optional, leveloffset=+1]
 
-## Authorization in REST endpoints and CDI beans using annotations
+[#standard-security-annotations]
+== Authorization in REST endpoints and CDI beans using annotations
 
 Quarkus comes with built-in security to allow for Role-Based Access Control (link:https://en.wikipedia.org/wiki/Role-based_access_control[RBAC])
 based on the common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints and CDI beans.

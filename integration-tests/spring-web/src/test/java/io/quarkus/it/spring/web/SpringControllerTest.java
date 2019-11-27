@@ -133,7 +133,8 @@ public class SpringControllerTest {
         RestAssured.when().get("/exception/responseEntity").then()
                 .contentType("application/json")
                 .body(containsString("bad state"), containsString("responseEntity"))
-                .statusCode(402);
+                .statusCode(402)
+                .header("custom-header", "custom-value");
     }
 
     @Test

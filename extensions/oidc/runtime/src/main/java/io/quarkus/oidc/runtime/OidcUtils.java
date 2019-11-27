@@ -11,11 +11,12 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public final class OidcUtils {
+
     private OidcUtils() {
 
     }
 
-    public static List<String> findRoles(String clientId, OidcConfig.Roles rolesConfig, JsonObject json) throws Exception {
+    public static List<String> findRoles(String clientId, OidcConfig.Roles rolesConfig, JsonObject json) {
         // If the user configured a specific path - check and enforce a claim at this path exists
         if (rolesConfig.getRoleClaimPath().isPresent()) {
             return findClaimWithRoles(rolesConfig, rolesConfig.getRoleClaimPath().get(), json, true);
@@ -57,8 +58,7 @@ public final class OidcUtils {
         Object claimValue = json.getValue(pathArray[step]);
         if (claimValue == null) {
             if (mustExist) {
-                throw new OIDCException(
-                        "No claim exists at the path " + claimPath + " at the path segment " + pathArray[step]);
+                throw new OIDCException("No claim exists at the path " + claimPath + " at the path segment " + pathArray[step]);
             }
         } else if (step + 1 < pathArray.length) {
             if (claimValue instanceof JsonObject) {

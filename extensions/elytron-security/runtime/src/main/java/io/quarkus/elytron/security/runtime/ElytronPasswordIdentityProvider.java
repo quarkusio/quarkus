@@ -62,7 +62,7 @@ public class ElytronPasswordIdentityProvider implements IdentityProvider<Usernam
                     throw new RuntimeException(e);
                 } catch (SecurityException e) {
                     log.debug("Authentication failed", e);
-                    throw new AuthenticationFailedException();
+                    throw new AuthenticationFailedException(e);
                 }
             }
         });

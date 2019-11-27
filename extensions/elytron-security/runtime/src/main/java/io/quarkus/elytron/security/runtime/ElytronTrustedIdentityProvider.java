@@ -70,7 +70,7 @@ public class ElytronTrustedIdentityProvider implements IdentityProvider<TrustedA
                     throw new RuntimeException(e);
                 } catch (SecurityException e) {
                     log.debug("Authentication failed", e);
-                    throw new AuthenticationFailedException();
+                    throw new AuthenticationFailedException(e);
                 }
             }
         });

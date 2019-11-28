@@ -153,6 +153,15 @@ quarkus.http.cors.exposed-headers=Content-Disposition
 quarkus.http.cors.access-control-max-age=24H
 ----
 
+[TIP]
+====
+When CORS functionality is activated your filters - e.g. ContainerRequestFilter or ContainerResponseFilter - will not be invoked.
+
+By default, a browser will make first the `preflight` request and after that the real request to your server. For the preflight requests, your filters will not be invoked only Quarkus internal filters.
+
+That is why you will not see any custom header that is defined in your project, only those defined in quarkus.http.xxx configurations.
+====
+
 == HTTP Limits Configuration
 
 The following properties are supported.

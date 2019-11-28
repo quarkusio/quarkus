@@ -263,6 +263,8 @@ Spring classes and annotations are only used for reading metadata and / or are u
 What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover Spring infrastructure
 classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for example) will not be executed.
 
+`@PostConstruct` annotations will only be performed if the Bean is invoked. Just by being injected it will not run the post construct methods. After the project starts the post construct method is not executed by default, only when any method of the Bean is used for the first time. 
+
 == Conversion Table
 
 The following table shows how Spring DI annotations can be converted to CDI and / or MicroProfile annotations.

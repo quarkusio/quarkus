@@ -3,6 +3,7 @@ package io.quarkus.agroal.runtime;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.Statement;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -193,6 +194,21 @@ public abstract class AbstractDataSourceProducer {
         }
         if (dataSourceRuntimeConfig.maxLifetime.isPresent()) {
             poolConfiguration.maxLifetime(dataSourceRuntimeConfig.maxLifetime.get());
+        }
+
+        // CloudSQL config
+        if (dataSourceRuntimeConfig.useGcp) {
+            disableSslSupport();
+            String cloudSqlInstance = dataSourceRuntimeConfig.cloudSqlInstance.orElseThrow(
+                    () -> new RuntimeException("Cloud sql instance property is mandatory to use Gcp Cloudsql"));
+            if (cloudSqlInstance.split(":").length != 3) {
+                throw new RuntimeException("Cloud sql instance should match the pattern project-id:zone:cloudSqlInstance");
+            }
+            agroalConnectionFactoryConfigurationSupplier.jdbcUrl(
+                    MessageFormat.format("{0}?socketFactory=com.google.cloud.sql.postgres.SocketFactory&cloudSqlInstance={1}"
+                            ,url
+                            , cloudSqlInstance));
+
         }
 
         // SSL support: we should push the driver specific code to the driver extensions but it will have to do for now

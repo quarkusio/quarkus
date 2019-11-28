@@ -130,4 +130,16 @@ public class DataSourceRuntimeConfig {
      */
     @ConfigItem
     public Optional<String> validationQuerySql;
+
+    /**
+     * When enabled jdbc url will be forged to enable google socket factory
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean useGcp;
+
+    /**
+     * Query executed to validate a connection.
+     */
+    @ConfigItem
+    public Optional<String> cloudSqlInstance;
 }

@@ -12,6 +12,8 @@ update_configs:
       - match:
           dependency_name: "org.apache.activemq:artemis-jms-client"
       - match:
+          dependency_name: "org.apache.activemq:artemis-server"
+      - match:
           dependency_name: "org.flywaydb:flyway-core"
       - match:
           dependency_name: "org.freemarker:freemarker"

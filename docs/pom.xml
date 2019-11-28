@@ -97,6 +97,7 @@
                         <surefire-version>${version.surefire.plugin}</surefire-version>
                         <graalvm-version>${graal-sdk.version-for-documentation}</graalvm-version>
                         <restassured-version>${rest-assured.version}</restassured-version>
+                        <keycloak-docker-image>${keycloak.docker.image}</keycloak-docker-image>
                         <!-- Project website home page -->
                         <quarkus-home-url>${quarkus-home-url}</quarkus-home-url>
                         <!-- Root URL of the GitHub organization -->

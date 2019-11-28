@@ -12,7 +12,7 @@ public class KafkaStreamsHotReplacementSetup implements HotReplacementSetup {
     private static final long TWO_SECONDS = 2000;
 
     private HotReplacementContext context;
-    private long nextUpdate;
+    private volatile long nextUpdate;
     private final Executor executor = Executors.newSingleThreadExecutor();
 
     @Override

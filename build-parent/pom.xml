@@ -36,10 +36,10 @@
         <rest-assured.version>4.1.1</rest-assured.version>
         <axle-client.version>0.0.9</axle-client.version>
         <vertx.version>3.8.3</vertx.version>
-        <artemis.version>2.10.0</artemis.version>
+        <artemis.version>2.10.1</artemis.version>
 
         <!-- Dev tools -->
-        <freemarker.version>2.3.28</freemarker.version>
+        <freemarker.version>2.3.29</freemarker.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.5.0.Final</arquillian.version>

@@ -71,6 +71,30 @@ import io.quarkus.utilities.JavaBinFinder;
  */
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class DevMojo extends AbstractMojo {
+
+    /**
+     * running any one of these phases means the compile phase will have been run, if these have
+     * not been run we manually run compile
+     */
+    private static final Set<String> POST_COMPILE_PHASES = new HashSet<>(Arrays.asList(
+            "compile",
+            "process-classes",
+            "generate-test-sources",
+            "process-test-sources",
+            "generate-test-resources",
+            "process-test-resources",
+            "test-compile",
+            "process-test-classes",
+            "test",
+            "prepare-package",
+            "package",
+            "pre-integration-test",
+            "integration-test",
+            "post-integration-test",
+            "verify",
+            "install",
+            "deploy"));
+
     /**
      * The directory for compiled classes.
      */
@@ -224,8 +248,20 @@ public class DevMojo extends AbstractMojo {
         if (!sourceDir.isDirectory()) {
             getLog().warn("The project's sources directory does not exist " + sourceDir);
         }
+        //we check to see if there was a compile (or later) goal before this plugin
+        boolean compileNeeded = true;
+        for (String goal : session.getGoals()) {
+            if (POST_COMPILE_PHASES.contains(goal)) {
+                compileNeeded = false;
+                break;
+            }
+            if (goal.endsWith("quarkus:dev")) {
+                break;
+            }
+        }
 
-        if (!buildDir.isDirectory() || !new File(buildDir, "classes").isDirectory()) {
+        //if the user did not compile we run it for them
+        if (compileNeeded) {
             try {
                 InvocationRequest request = new DefaultInvocationRequest();
                 request.setBatchMode(true);

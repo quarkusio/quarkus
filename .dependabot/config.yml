@@ -13,3 +13,14 @@ update_configs:
           dependency_name: "org.eclipse.jgit:org.eclipse.jgit"
       - match:
           dependency_name: "io.fabric8:kubernetes-client-bom"
+      # JDBC Drivers
+      - match:
+          dependency_name: "org.postgresql:postgresql"
+      - match:
+          dependency_name: "org.mariadb.jdbc:mariadb-java-client"
+      - match:
+          dependency_name: "mysql:mysql-connector-java"
+      - match:
+          dependency_name: "org.apache.derby:derbyclient"
+      - match:
+          dependency_name: "com.microsoft.sqlserver:mssql-jdbc"

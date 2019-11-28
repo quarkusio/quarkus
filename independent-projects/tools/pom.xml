@@ -11,7 +11,7 @@
     <artifactId>quarkus-tools-parent</artifactId>
     <name>Quarkus - Dev tools - Parent</name>
     <packaging>pom</packaging>
-    <version>999-SNAPSHOT</version>
+    <version>1.0.1.Final</version>
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -48,7 +48,7 @@
         <maven-core.version>3.5.4</maven-core.version>
         <mockito.version>3.0.0</mockito.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <quarkus.version>999-SNAPSHOT</quarkus.version>
+        <quarkus.version>1.0.1.Final</quarkus.version>
         <quarkus-http.version>3.0.0.Beta1</quarkus-http.version>
     </properties>
     <modules>

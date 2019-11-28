@@ -19,7 +19,7 @@ public class TypeSafeLoopFailureTest {
                     .addAsResource(new StringAsset("{@java.util.List<io.quarkus.qute.deployment.Foo> list}"
                             + "{#for foo in list}"
                             + "{foo.name}={foo.ages}"
-                            + "{/}"), "META-INF/resources/templates/foo.html"))
+                            + "{/}"), "templates/foo.html"))
             .setExpectedException(TemplateException.class);
 
     @Test

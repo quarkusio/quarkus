@@ -52,7 +52,7 @@ public class EngineProducer {
         LOGGER.debug("Initializing Qute with: {}", resolverClasses);
 
         suffixes = config.suffixes;
-        basePath = "META-INF/resources/" + (config.basePath.endsWith("/") ? config.basePath : config.basePath + "/");
+        basePath = "templates/";
         tagPath = basePath + "tags/";
 
         EngineBuilder builder = Engine.builder()
@@ -134,6 +134,9 @@ public class EngineProducer {
      * @return the optional reader
      */
     private Optional<Reader> locate(String path) {
+        // Use the system separator
+        // TODO String path = path.replace('/', File.separatorChar);
+
         InputStream in = null;
         // First try to locate a tag template
         if (tags.stream().anyMatch(tag -> tag.startsWith(path))) {

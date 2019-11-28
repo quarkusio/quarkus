@@ -24,9 +24,9 @@ public class InjectionTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(SimpleBean.class)
                     .addAsResource(new StringAsset("quarkus.qute.suffixes=txt"), "application.properties")
-                    .addAsResource(new StringAsset("{this}"), "META-INF/resources/templates/foo.txt")
-                    .addAsResource(new StringAsset("<strong>{this}</strong>"), "META-INF/resources/templates/foo.html")
-                    .addAsResource(new StringAsset("{this}"), "META-INF/resources/templates/bars/bar.txt"));
+                    .addAsResource(new StringAsset("{this}"), "templates/foo.txt")
+                    .addAsResource(new StringAsset("<strong>{this}</strong>"), "templates/foo.html")
+                    .addAsResource(new StringAsset("{this}"), "templates/bars/bar.txt"));
 
     @Inject
     SimpleBean simpleBean;

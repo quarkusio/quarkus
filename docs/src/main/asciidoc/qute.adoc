@@ -10,7 +10,7 @@ include::./attributes.adoc[]
 Qute is a templating engine designed specifically to meet the Quarkus needs.
 The usage of reflection is minimized to reduce the size of native images.
 The API combines both the imperative and the non-blocking reactive style of coding.
-In the development mode, all files located in `META-INF/resources/templates` are watched for changes and modifications are immediately visible.
+In the development mode, all files located in `src/main/resources/templates` are watched for changes and modifications are immediately visible.
 Furthermore, we try to detect most of the template problems at build time.
 In this guide, you will learn how to easily render templates in your application.
 
@@ -42,7 +42,7 @@ Hello {name}! <1>
 ----
 <1> `{name}` is a value expression that is evaluated when the template is rendered.
 
-NOTE: By default, all files located in the `META-INF/resources/templates` directory and its subdirectories are registered as templates. Templates are validated during startup and watched for changes in the development mode.
+NOTE: By default, all files located in the `src/main/resources/templates` directory and its subdirectories are registered as templates. Templates are validated during startup and watched for changes in the development mode.
 
 Now let's inject the "compiled" template in the resource class.
 
@@ -72,7 +72,7 @@ public class HelloResource {
     }
 }
 ----
-<1> If there is no `@ResourcePath` qualifier provided the field name is used to locate the template. In this particular case, we're injecting a template with path `META-INF/resources/templates/hello.txt`.
+<1> If there is no `@ResourcePath` qualifier provided the field name is used to locate the template. In this particular case, we're injecting a template with path `templates/hello.txt`.
 <2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
 <3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
 
@@ -169,7 +169,7 @@ public class ItemResource {
     }
 }
 ----
-<1> Inject the template with path `META-INF/resources/templates/item.html`.
+<1> Inject the template with path `templates/item.html`.
 <2> Make the `Item` object accessible in the template.
 <3> A static template extension method can be used to add "computed properties" to a data class. The class of the first parameter is used to match the base object and the method name is used to match the property name.
 
@@ -261,7 +261,7 @@ public class ReportGenerator {
     }
 }
 ----
-<1> In this case, we use the `@ResourcePath` qualifier to specify the template path: `META-INF/resources/templates/reports/v1/report_01.html`.
+<1> In this case, we use the `@ResourcePath` qualifier to specify the template path: `templates/reports/v1/report_01.html`.
 <2> Use the `@Scheduled` annotation to instruct Quarkus to execute this method on the half hour. For more information see the link:scheduler[Scheduler] guide.
 <3> The `TemplateInstance.render()` method triggers rendering. Note that this method blocks the current thread.
 

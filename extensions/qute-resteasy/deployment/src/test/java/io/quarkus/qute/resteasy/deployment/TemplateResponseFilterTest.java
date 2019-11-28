@@ -17,7 +17,7 @@ public class TemplateResponseFilterTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(HelloResource.class)
-                    .addAsResource(new StringAsset("Hello {name}!"), "META-INF/resources/templates/hello.txt"));
+                    .addAsResource(new StringAsset("Hello {name}!"), "templates/hello.txt"));
 
     @Test
     public void testFilter() {

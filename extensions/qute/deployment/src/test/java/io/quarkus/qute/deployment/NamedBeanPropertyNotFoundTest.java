@@ -21,7 +21,7 @@ public class NamedBeanPropertyNotFoundTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(NamedFoo.class)
-                    .addAsResource(new StringAsset("{inject:foo.list.ping}"), "META-INF/resources/templates/fooping.html"))
+                    .addAsResource(new StringAsset("{inject:foo.list.ping}"), "templates/fooping.html"))
             .setExpectedException(TemplateException.class);
 
     @Test

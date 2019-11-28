@@ -171,10 +171,10 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
             BuildTool buildTool = getBuildTool();
             switch (buildTool) {
                 case MAVEN:
-                    generate("templates/README.maven.ftl", context, readme, "read me");
+                    generate("templates/README.maven.ftl", invocation, readme,"read me");
                     break;
                 case GRADLE:
-                    generate("templates/README.gradle.ftl", context, readme, "read me");
+                    generate("templates/README.gradle.ftl", invocation, readme, "read me");
                     break;
                 default:
                     throw new IllegalStateException("buildTool is none of Maven or Gradle");

@@ -8,7 +8,13 @@ update_configs:
       - match:
           update_type: "security"
       - match:
+          dependency_name: "org.apache.activemq:artemis-core-client"
+      - match:
+          dependency_name: "org.apache.activemq:artemis-jms-client"
+      - match:
           dependency_name: "org.flywaydb:flyway-core"
+      - match:
+          dependency_name: "org.freemarker:freemarker"
       - match:
           dependency_name: "org.eclipse.jgit:org.eclipse.jgit"
       - match:

@@ -12,9 +12,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.drools.modelcompiler.builder.GeneratedFile;
 import org.kie.kogito.codegen.ApplicationGenerator;
+import org.kie.kogito.codegen.GeneratedFile;
 import org.kie.kogito.codegen.Generator;
+import org.kie.kogito.codegen.GeneratorContext;
+import org.kie.kogito.codegen.context.QuarkusKogitoBuildContext;
 import org.kie.kogito.codegen.di.CDIDependencyInjectionAnnotator;
 
 import io.quarkus.dev.JavaCompilationProvider;
@@ -35,17 +37,21 @@ public abstract class KogitoCompilationProvider extends JavaCompilationProvider 
 
         File outputDirectory = context.getOutputDirectory();
         try {
+            GeneratorContext generationContext = GeneratorContext
+                    .ofResourcePath(context.getProjectDirectory().toPath().resolve("src/main/resources").toFile());
+            generationContext.withBuildContext(new QuarkusKogitoBuildContext());
 
             ApplicationGenerator appGen = new ApplicationGenerator(appPackageName, outputDirectory)
-                    .withDependencyInjection(new CDIDependencyInjectionAnnotator());
-            Generator generator = addGenerator(appGen, filesToCompile, context);
+                    .withDependencyInjection(new CDIDependencyInjectionAnnotator())
+                    .withGeneratorContext(generationContext);
+            addGenerator(appGen, filesToCompile, context);
 
-            Collection<GeneratedFile> generatedFiles = generator.generate();
+            Collection<GeneratedFile> generatedFiles = appGen.generate();
 
             HashSet<File> generatedSourceFiles = new HashSet<>();
             for (GeneratedFile file : generatedFiles) {
-                Path path = pathOf(outputDirectory.getPath(), file.getPath());
-                Files.write(path, file.getData());
+                Path path = pathOf(outputDirectory.getPath(), file.relativePath());
+                Files.write(path, file.contents());
                 generatedSourceFiles.add(path.toFile());
             }
             super.compile(generatedSourceFiles, context);

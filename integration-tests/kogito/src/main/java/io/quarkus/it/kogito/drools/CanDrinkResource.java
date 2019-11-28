@@ -10,7 +10,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.kie.kogito.rules.RuleUnit;
 import org.kie.kogito.rules.RuleUnitInstance;
-import org.kie.kogito.rules.impl.SessionData;
+import org.kie.kogito.rules.units.SessionData;
 
 @Path("/candrink/{name}/{age}")
 public class CanDrinkResource {

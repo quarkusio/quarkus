@@ -47,6 +47,12 @@
         <dependency>
             <groupId>org.kie.kogito</groupId>
             <artifactId>kogito-codegen</artifactId>
+            <exclusions>
+                <exclusion>
+                  <groupId>javax.validation</groupId>
+                  <artifactId>validation-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- test -->

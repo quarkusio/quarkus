@@ -19,6 +19,7 @@ public class SmallryeJwtDisabledTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
+                    .addAsResource("publicKey.pem")
                     .addAsResource("smallryeJwtDisabled.properties", "application.properties"));
 
     @Test

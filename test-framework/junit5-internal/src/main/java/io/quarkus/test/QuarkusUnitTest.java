@@ -81,6 +81,7 @@ public class QuarkusUnitTest
     private static final Timer timeoutTimer = new Timer("Test thread dump timer");
     private volatile TimerTask timeoutTask;
     private Properties customApplicationProperties;
+    private ClassLoader originalClassLoader;
 
     private final RestAssuredURLManager restAssuredURLManager;
 
@@ -196,6 +197,7 @@ public class QuarkusUnitTest
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        originalClassLoader = Thread.currentThread().getContextClassLoader();
         timeoutTask = new TimerTask() {
             @Override
             public void run() {
@@ -339,6 +341,7 @@ public class QuarkusUnitTest
                 afterUndeployListener.run();
             }
         } finally {
+            Thread.currentThread().setContextClassLoader(originalClassLoader);
             timeoutTask.cancel();
             timeoutTask = null;
             if (deploymentDir != null) {

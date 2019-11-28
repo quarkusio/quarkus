@@ -28,6 +28,8 @@ public class OpenApiHandler implements Handler<RoutingContext> {
      * This classloader must ONLY be used to load the OpenAPI document.
      *
      * In non dev mode, the TCCL is used.
+     *
+     * TODO: remove this once the vert.x class loader issues are resolved
      */
     public static volatile ClassLoader classLoader;
 

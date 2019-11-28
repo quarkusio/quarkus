@@ -462,7 +462,16 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         Path resourcePath = null;
 
         for (Path i : applicationClassDirectories) {
-            resourcePath = i.resolve(name);
+            // Resource names are always separated by the "/" character.
+            // Here we are trying to resolve those resources using a filesystem
+            // Path, so we replace the "/" character with the filesystem
+            // specific separator before resolving
+            String path = name;
+            final String pathSeparator = i.getFileSystem().getSeparator();
+            if (!pathSeparator.equals("/")) {
+                path = name.replace("/", pathSeparator);
+            }
+            resourcePath = i.resolve(path);
             if (Files.exists(resourcePath)) {
                 break;
             }

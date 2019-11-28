@@ -202,9 +202,10 @@ class JaxbProcessor {
                 .forEach(this::addResource);
 
         for (JaxbFileRootBuildItem i : fileRoots) {
-            iterateResources(i.getFileRoot())
-                    .filter(p -> p.getFileName().toString().equals("jaxb.index"))
-                    .forEach(this::handleJaxbFile);
+            try (Stream<Path> stream = iterateResources(i.getFileRoot())) {
+                stream.filter(p -> p.getFileName().toString().equals("jaxb.index"))
+                        .forEach(this::handleJaxbFile);
+            }
         }
 
         providerItem.produce(new ServiceProviderBuildItem(JAXBContext.class.getName(), "com.sun.xml.bind.v2.ContextFactory"));

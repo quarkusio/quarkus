@@ -33,7 +33,7 @@ class SmallRyeContextPropagationProcessor {
                 .produce(AdditionalBeanBuildItem.unremovableOf(SmallRyeContextPropagationProvider.class));
     }
 
-    @BuildStep
+    @BuildStep(loadsApplicationClasses = true)
     @Record(ExecutionTime.STATIC_INIT)
     void buildStatic(SmallRyeContextPropagationRecorder recorder)
             throws ClassNotFoundException, IOException {
@@ -43,7 +43,8 @@ class SmallRyeContextPropagationProcessor {
                 "META-INF/services/" + ThreadContextProvider.class.getName())) {
             if (provider.equals(ResteasyContextProvider.class)) {
                 try {
-                    Class.forName("org.jboss.resteasy.core.ResteasyContext");
+                    Class.forName("org.jboss.resteasy.core.ResteasyContext", false,
+                            Thread.currentThread().getContextClassLoader());
                 } catch (ClassNotFoundException e) {
                     continue; // resteasy is not being used so ditch this context provider
                 }

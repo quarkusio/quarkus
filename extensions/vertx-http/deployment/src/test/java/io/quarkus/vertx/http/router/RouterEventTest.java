@@ -1,14 +1,12 @@
 package io.quarkus.vertx.http.router;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import javax.enterprise.event.Observes;
 import javax.inject.Singleton;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,22 +22,16 @@ public class RouterEventTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(RouteProducer.class));
 
-    @BeforeAll
-    public static void setup() {
-        RouteProducer.counter = 0;
-    }
-
     @Test
     public void testRoute() {
         RestAssured.when().get("/boom").then().statusCode(200).body(is("ok"));
-        assertEquals(1, RouteProducer.counter);
 
         RestAssured.given()
                 .body("An example body")
                 .contentType("text/plain")
                 .post("/post")
                 .then()
-                .body(is("An example body"));
+                .body(is("1"));
     }
 
     @Singleton
@@ -53,7 +45,7 @@ public class RouterEventTest {
             Route post = router.post("/post");
             post.consumes("text/plain");
             post.handler(BodyHandler.create());
-            post.handler(ctx -> ctx.response().end(ctx.getBody()));
+            post.handler(ctx -> ctx.response().end(Integer.toString(counter)));
         }
 
     }

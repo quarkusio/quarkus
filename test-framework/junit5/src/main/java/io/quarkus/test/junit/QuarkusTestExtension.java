@@ -3,259 +3,112 @@ package io.quarkus.test.junit;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
-import java.io.BufferedReader;
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Enumeration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestInstanceFactory;
-import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
+import org.junit.jupiter.api.extension.InvocationInterceptor;
+import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
-import org.junit.platform.commons.JUnitException;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
 import org.opentest4j.TestAbortedException;
 
-import io.quarkus.bootstrap.BootstrapClassLoaderFactory;
-import io.quarkus.bootstrap.BootstrapException;
-import io.quarkus.bootstrap.DefineClassVisibleURLClassLoader;
-import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.bootstrap.app.AdditionalDependency;
+import io.quarkus.bootstrap.app.AugmentAction;
+import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.deployment.ClassOutput;
-import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.builditem.TestAnnotationBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
-import io.quarkus.deployment.util.IoUtil;
-import io.quarkus.runner.RuntimeRunner;
-import io.quarkus.runner.TransformerTarget;
-import io.quarkus.runtime.LaunchMode;
-import io.quarkus.test.common.NativeImageLauncher;
+import io.quarkus.runtime.Timing;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
-import io.quarkus.test.common.TestInjectionManager;
-import io.quarkus.test.common.TestInstantiator;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
+//todo: share common core with QuarkusUnitTest
 public class QuarkusTestExtension
-        implements BeforeEachCallback, AfterEachCallback, TestInstanceFactory, BeforeAllCallback {
+        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor,
+        AfterAllCallback {
 
-    private URLClassLoader appCl;
-    private ClassLoader originalCl;
+    protected static final String TEST_LOCATION = "test-location";
     private static boolean failedBoot;
 
-    /**
-     * As part of the test run we need to create files in the test-classes directory
-     *
-     * We attempt to clean these up with a shutdown hook, but if the processes is killed (e.g. hitting the red
-     * IDE button) it can leave these files behind which interfere with subsequent runs.
-     *
-     * To fix this we create a file that contains the names of all the files we have created, and at the start of a new
-     * run we remove them if this file exists.
-     */
-    private static final String CREATED_FILES = "CREATED_FILES.txt";
-    private final RestAssuredURLManager restAssuredURLManager = new RestAssuredURLManager(false);
+    private static Class<?> actualTestClass;
+    private static Object actualTestInstance;
+    private static ClassLoader originalCl;
+    private static RunningQuarkusApplication runningQuarkusApplication;
+    private static Path testClassLocation;
 
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
 
-        final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
+        try {
+            final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
 
-        Path appClassLocation = getAppClassLocation(context.getRequiredTestClass());
+            Path appClassLocation = getAppClassLocation(context.getRequiredTestClass());
 
-        appCl = createQuarkusBuildClassLoader(appClassLocation);
-        originalCl = setCCL(appCl);
+            final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder(appClassLocation)
+                    .setIsolateDeployment(true)
+                    .setMode(QuarkusBootstrap.Mode.TEST);
 
-        final ClassLoader testClassLoader = context.getRequiredTestClass().getClassLoader();
-        final Path testWiringClassesDir;
-        final RuntimeRunner.Builder runnerBuilder = RuntimeRunner.builder();
+            originalCl = Thread.currentThread().getContextClassLoader();
+            testClassLocation = getTestClassesLocation(context.getRequiredTestClass());
 
-        final Path testClassLocation = getTestClassesLocation(context.getRequiredTestClass());
-        if (Files.isDirectory(testClassLocation)) {
-            testWiringClassesDir = testClassLocation;
-        } else {
             if (!appClassLocation.equals(testClassLocation)) {
-                runnerBuilder.addAdditionalArchive(testClassLocation);
+                runnerBuilder.addAdditionalApplicationArchive(new AdditionalDependency(testClassLocation, false, true));
             }
-            testWiringClassesDir = Paths.get("").normalize().toAbsolutePath().resolve("target").resolve("test-classes");
-            if (Files.exists(testWiringClassesDir)) {
-                IoUtils.recursiveDelete(testWiringClassesDir);
-            }
-            try {
-                Files.createDirectories(testWiringClassesDir);
-            } catch (IOException e) {
-                throw new IllegalStateException(
-                        "Failed to create a directory for wiring test classes at " + testWiringClassesDir, e);
-            }
-        }
+            CuratedApplication curatedApplication = runnerBuilder
+                    .setTest(true)
+                    .setProjectRoot(new File("").toPath())
+                    .setLocalProjectDiscovery(true).build()
+                    .bootstrap();
+            Timing.staticInitStarted(curatedApplication.getBaseRuntimeClassLoader());
+            AugmentAction augmentAction = curatedApplication.createAugmentor(TestBuildChainFunction.class.getName(),
+                    Collections.singletonMap(TEST_LOCATION, testClassLocation));
+            runningQuarkusApplication = augmentAction.createInitialRuntimeApplication().run();
 
-        Path createdFilesPath = testWiringClassesDir.resolve(CREATED_FILES);
-        if (Files.exists(createdFilesPath)) {
-            cleanupOldRun(createdFilesPath);
-        }
-        try (OutputStream created = Files.newOutputStream(createdFilesPath)) {
+            ConfigProviderResolver.setInstance(new RunningAppConfigResolver(runningQuarkusApplication));
 
-            RuntimeRunner runtimeRunner = runnerBuilder
-                    .setLaunchMode(LaunchMode.TEST)
-                    .setClassLoader(appCl)
-                    .setTarget(appClassLocation)
-                    .addAdditionalArchive(testWiringClassesDir)
-                    .setClassOutput(new ClassOutput() {
-                        @Override
-                        public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
-                            Path location = testWiringClassesDir.resolve(className.replace('.', '/') + ".class");
-                            Files.createDirectories(location.getParent());
-                            Files.write(location, data);
-                            handleCreatedFile(location, created, testWiringClassesDir, shutdownTasks);
-                        }
+            Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
 
-                        @Override
-                        public void writeResource(String name, byte[] data) throws IOException {
-                            Path location = testWiringClassesDir.resolve(name);
-                            Files.createDirectories(location.getParent());
-                            Files.write(location, data);
-                            handleCreatedFile(location, created, testWiringClassesDir, shutdownTasks);
-                        }
-                    })
-                    .setTransformerTarget(new TransformerTarget() {
-                        @Override
-                        public void setTransformers(
-                                Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> functions) {
-                            ClassLoader main = Thread.currentThread().getContextClassLoader();
-
-                            //we need to use a temp class loader, or the old resource location will be cached
-                            ClassLoader temp = new ClassLoader() {
-                                @Override
-                                protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-                                    // First, check if the class has already been loaded
-                                    Class<?> c = findLoadedClass(name);
-                                    if (c == null) {
-                                        c = findClass(name);
-                                    }
-                                    if (resolve) {
-                                        resolveClass(c);
-                                    }
-                                    return c;
-                                }
-
-                                @Override
-                                public URL getResource(String name) {
-                                    return main.getResource(name);
-                                }
-
-                                @Override
-                                public Enumeration<URL> getResources(String name) throws IOException {
-                                    return main.getResources(name);
-                                }
-                            };
-                            for (Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> e : functions
-                                    .entrySet()) {
-                                String resourceName = e.getKey().replace('.', '/') + ".class";
-                                try (InputStream stream = temp.getResourceAsStream(resourceName)) {
-                                    if (stream == null) {
-                                        System.err.println("Failed to transform " + e.getKey());
-                                        continue;
-                                    }
-                                    byte[] data = IoUtil.readBytes(stream);
-
-                                    ClassReader cr = new ClassReader(data);
-                                    ClassWriter cw = new QuarkusClassWriter(cr,
-                                            ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES) {
-
-                                        @Override
-                                        protected ClassLoader getClassLoader() {
-                                            // this has been previously set to a safe for transformations CL
-                                            return main;
-                                        }
-                                    };
-                                    ClassLoader old = Thread.currentThread().getContextClassLoader();
-                                    Thread.currentThread().setContextClassLoader(temp);
-                                    try {
-                                        ClassVisitor visitor = cw;
-                                        for (BiFunction<String, ClassVisitor, ClassVisitor> i : e.getValue()) {
-                                            visitor = i.apply(e.getKey(), visitor);
-                                        }
-                                        cr.accept(visitor, 0);
-                                    } finally {
-                                        Thread.currentThread().setContextClassLoader(old);
-                                    }
-
-                                    Path location = testWiringClassesDir.resolve(resourceName);
-                                    Files.createDirectories(location.getParent());
-                                    Files.write(location, cw.toByteArray());
-                                    handleCreatedFile(location, created, testWiringClassesDir, shutdownTasks);
-                                } catch (IOException ex) {
-                                    ex.printStackTrace();
-                                }
-                            }
-                        }
-                    })
-                    .addChainCustomizer(new Consumer<BuildChainBuilder>() {
-                        @Override
-                        public void accept(BuildChainBuilder buildChainBuilder) {
-                            buildChainBuilder.addBuildStep(new BuildStep() {
-                                @Override
-                                public void execute(BuildContext context) {
-                                    context.produce(new TestClassPredicateBuildItem(new Predicate<String>() {
-                                        @Override
-                                        public boolean test(String className) {
-                                            return PathTestHelper.isTestClass(className, testClassLoader);
-                                        }
-                                    }));
-                                }
-                            }).produces(TestClassPredicateBuildItem.class)
-                                    .build();
-                        }
-                    })
-                    .addChainCustomizer(new Consumer<BuildChainBuilder>() {
-                        @Override
-                        public void accept(BuildChainBuilder buildChainBuilder) {
-                            buildChainBuilder.addBuildStep(new BuildStep() {
-                                @Override
-                                public void execute(BuildContext context) {
-                                    context.produce(new TestAnnotationBuildItem(QuarkusTest.class.getName()));
-                                }
-                            }).produces(TestAnnotationBuildItem.class)
-                                    .build();
-                        }
-                    })
-                    .build();
-            runtimeRunner.run();
-
-            System.setProperty("test.url", TestHTTPResourceManager.getUri());
+            System.setProperty("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication));
 
             Closeable shutdownTask = new Closeable() {
                 @Override
                 public void close() throws IOException {
-                    runtimeRunner.close();
-                    while (!shutdownTasks.isEmpty()) {
-                        shutdownTasks.pop().run();
+                    try {
+                        runningQuarkusApplication.close();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    } finally {
+                        while (!shutdownTasks.isEmpty()) {
+                            shutdownTasks.pop().run();
+                        }
                     }
                 }
             };
@@ -266,133 +119,64 @@ public class QuarkusTestExtension
                         shutdownTask.close();
                     } catch (IOException e) {
                         e.printStackTrace();
+                    } finally {
+                        curatedApplication.close();
                     }
                 }
             }, "Quarkus Test Cleanup Shutdown task"));
-            shutdownTasks.add(new DeleteRunnable(createdFilesPath));
-            return new ExtensionState(testResourceManager, shutdownTask, false);
-        } catch (IOException e) {
+            return new ExtensionState(testResourceManager, shutdownTask);
+        } catch (Exception e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    private void cleanupOldRun(Path createdFilesPath) {
-        try (BufferedReader reader = Files.newBufferedReader(createdFilesPath)) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                Files.deleteIfExists(createdFilesPath.getParent().resolve(line));
-            }
-            Files.deleteIfExists(createdFilesPath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void handleCreatedFile(Path location, OutputStream created, Path testWiringClassesDir,
-            LinkedBlockingDeque<Runnable> shutdownTasks) throws IOException {
-        created.write((testWiringClassesDir.relativize(location).toString() + "\n").getBytes(StandardCharsets.UTF_8));
-        created.flush();
-        shutdownTasks.add(new DeleteRunnable(location));
-    }
-
-    /**
-     * Creates a classloader that will be used to build the test application.
-     *
-     * This method assumes that the runtime classes are already on the classpath
-     * of the classloader that loaded this class.
-     * What this method does is it resolves the required deployment classpath
-     * and creates a new URL classloader that includes the deployment CP with
-     * the classloader that loaded this class as its parent.
-     *
-     * @param appClassLocation location of the test application classes
-     * @return application build classloader
-     */
-    private URLClassLoader createQuarkusBuildClassLoader(Path appClassLocation) {
-        // The deployment classpath could be passed in as a system property.
-        // This is how integration with the Gradle plugin is achieved.
-        final String deploymentCp = PropertyUtils.getProperty(BootstrapClassLoaderFactory.PROP_DEPLOYMENT_CP);
-        if (deploymentCp != null && !deploymentCp.isEmpty()) {
-            final List<URL> list = new ArrayList<>();
-            for (String entry : deploymentCp.split("\\s")) {
-                try {
-                    list.add(new URL(entry));
-                } catch (MalformedURLException e) {
-                    throw new IllegalStateException("Failed to parse a deployment classpath entry " + entry, e);
-                }
-            }
-            return new DefineClassVisibleURLClassLoader(list.toArray(new URL[list.size()]), getClass().getClassLoader());
-        }
-        try {
-            return BootstrapClassLoaderFactory.newInstance()
-                    .setAppClasses(appClassLocation)
-                    .setParent(getClass().getClassLoader())
-                    .setOffline(PropertyUtils.getBooleanOrNull(BootstrapClassLoaderFactory.PROP_OFFLINE))
-                    .setLocalProjectsDiscovery(
-                            PropertyUtils.getBoolean(BootstrapClassLoaderFactory.PROP_WS_DISCOVERY, true))
-                    .setEnableClasspathCache(PropertyUtils.getBoolean(BootstrapClassLoaderFactory.PROP_CP_CACHE, true))
-                    .newDeploymentClassLoader();
-        } catch (BootstrapException e) {
-            throw new IllegalStateException("Failed to create the boostrap class loader", e);
         }
     }
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
+        if (isNativeTest(context)) {
+            return;
+        }
         if (!failedBoot) {
             boolean nativeImageTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class)
-                    || context.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class);
-            restAssuredURLManager.clearURL();
-            TestScopeManager.tearDown(nativeImageTest);
+                    || isNativeTest(context);
+            runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
+                    .getDeclaredMethod("clearURL").invoke(null);
+            runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
+                    .getDeclaredMethod("tearDown", boolean.class).invoke(null, nativeImageTest);
         }
+    }
+
+    private boolean isNativeTest(ExtensionContext context) {
+        return context.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class)
+                | context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
+        if (isNativeTest(context)) {
+            return;
+        }
         if (!failedBoot) {
             boolean nativeImageTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class)
-                    || context.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class);
-            restAssuredURLManager.setURL();
-            TestScopeManager.setup(nativeImageTest);
+                    || isNativeTest(context);
+            if (runningQuarkusApplication != null) {
+                runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
+                        .getDeclaredMethod("setURL", boolean.class).invoke(null, false);
+                runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
+                        .getDeclaredMethod("setup", boolean.class).invoke(null, nativeImageTest);
+            }
         }
     }
 
-    @Override
-    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
-            throws TestInstantiationException {
-        if (failedBoot) {
-            try {
-                return extensionContext.getRequiredTestClass().newInstance();
-            } catch (Exception e) {
-                throw new TestInstantiationException("Boot failed", e);
-            }
-        }
+    private ExtensionState ensureStarted(ExtensionContext extensionContext) {
         ExtensionContext root = extensionContext.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
-        PropertyTestUtil.setLogFileProperty();
-        boolean nativeImageTest = extensionContext.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class)
-                || extensionContext.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class);
         if (state == null) {
+            PropertyTestUtil.setLogFileProperty();
             TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
             try {
-                Map<String, String> systemProps = testResourceManager.start();
-
-                if (nativeImageTest) {
-                    NativeImageLauncher launcher = new NativeImageLauncher(extensionContext.getRequiredTestClass());
-                    launcher.addSystemProperties(systemProps);
-                    try {
-                        launcher.start();
-                    } catch (IOException e) {
-                        try {
-                            launcher.close();
-                        } catch (Throwable t) {
-                        }
-                        throw new JUnitException("Quarkus native image start failed, original cause: " + e);
-                    }
-                    state = new ExtensionState(testResourceManager, launcher, true);
-                } else {
-                    state = doJavaStart(extensionContext, testResourceManager);
-                }
+                testResourceManager.start();
+                state = doJavaStart(extensionContext, testResourceManager);
                 store.put(ExtensionState.class.getName(), state);
 
             } catch (Throwable e) {
@@ -404,23 +188,8 @@ public class QuarkusTestExtension
                 failedBoot = true;
                 throw e;
             }
-        } else {
-            if (nativeImageTest != state.isNativeImage()) {
-                throw new RuntimeException(
-                        "Attempted to mix @NativeImageTest and JVM mode tests in the same test run. This is not allowed.");
-            }
         }
-
-        // non-static inner classes are not supported
-        Class<?> testClass = factoryContext.getTestClass();
-        if (testClass.getEnclosingClass() != null && !Modifier.isStatic(testClass.getModifiers())) {
-            throw new IllegalStateException("Test class " + testClass + " cannot be a non-static inner class.");
-        }
-        Object instance = TestInstantiator.instantiateTest(testClass);
-        TestHTTPResourceManager.inject(instance);
-        TestInjectionManager.inject(instance);
-        state.testResourceManager.inject(instance);
-        return instance;
+        return state;
     }
 
     private static ClassLoader setCCL(ClassLoader cl) {
@@ -432,65 +201,220 @@ public class QuarkusTestExtension
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
+        if (isNativeTest(context)) {
+            return;
+        }
+        ensureStarted(context);
         if (failedBoot) {
             throw new TestAbortedException("Not running test as boot failed");
         }
+    }
+
+    private void invokeQuarkusMethod(Class<? extends Annotation> annotation, Class<?> testClass) {
+        Class c = testClass;
+        while (c != Object.class && c != null) {
+            for (Method m : c.getDeclaredMethods()) {
+                boolean invoke = false;
+                for (Annotation i : m.getAnnotations()) {
+                    if (i.annotationType().getName().equals(annotation.getName())) {
+                        invoke = true;
+                        break;
+                    }
+                }
+                if (invoke) {
+                    m.setAccessible(true);
+                    try {
+                        m.invoke(Modifier.isStatic(m.getModifiers()) ? null : actualTestInstance);
+                    } catch (IllegalAccessException | InvocationTargetException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+            c = c.getSuperclass();
+        }
+    }
+
+    @Override
+    public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+        if (isNativeTest(extensionContext)) {
+            invocation.proceed();
+            return;
+        }
+        ensureStarted(extensionContext);
+        runExtensionMethod(invocationContext, extensionContext);
+        invocation.skip();
+    }
+
+    @Override
+    public <T> T interceptTestClassConstructor(Invocation<T> invocation,
+            ReflectiveInvocationContext<Constructor<T>> invocationContext, ExtensionContext extensionContext) throws Throwable {
+        if (isNativeTest(extensionContext)) {
+            return invocation.proceed();
+        }
+        T result = invocation.proceed();
+        ExtensionState state = ensureStarted(extensionContext);
+        initTestState(extensionContext, state);
+        return result;
+    }
+
+    private void initTestState(ExtensionContext extensionContext, ExtensionState state) {
+        try {
+            actualTestClass = Class.forName(extensionContext.getRequiredTestClass().getName(), true,
+                    Thread.currentThread().getContextClassLoader());
+
+            actualTestInstance = runningQuarkusApplication.instance(actualTestClass);
+            invokeQuarkusMethod(BeforeAll.class, actualTestClass);
+
+            Class<?> resM = Thread.currentThread().getContextClassLoader().loadClass(TestHTTPResourceManager.class.getName());
+            resM.getDeclaredMethod("inject", Object.class).invoke(null, actualTestInstance);
+            state.testResourceManager.inject(actualTestInstance);
+        } catch (Exception e) {
+            throw new TestInstantiationException("Failed to create test instance", e);
+        }
+    }
+
+    @Override
+    public void interceptBeforeEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+        if (isNativeTest(extensionContext)) {
+            invocation.proceed();
+            return;
+        }
+        runExtensionMethod(invocationContext, extensionContext);
+        invocation.skip();
+    }
+
+    @Override
+    public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+        if (isNativeTest(extensionContext)) {
+            invocation.proceed();
+            return;
+        }
+        runExtensionMethod(invocationContext, extensionContext);
+        invocation.skip();
+    }
+
+    @Override
+    public void interceptTestTemplateMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+        if (isNativeTest(extensionContext)) {
+            invocation.proceed();
+            return;
+        }
+        runExtensionMethod(invocationContext, extensionContext);
+        invocation.skip();
+    }
+
+    @Override
+    public void interceptAfterEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+        if (isNativeTest(extensionContext)) {
+            invocation.proceed();
+            return;
+        }
+        runExtensionMethod(invocationContext, extensionContext);
+        invocation.skip();
+    }
+
+    @Override
+    public void interceptAfterAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+        if (isNativeTest(extensionContext)) {
+            invocation.proceed();
+            return;
+        }
+        runExtensionMethod(invocationContext, extensionContext);
+        invocation.skip();
+    }
+
+    private void runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) {
+        Method newMethod = null;
+
+        try {
+            Class<?> c = Class.forName(extensionContext.getRequiredTestClass().getName(), true,
+                    Thread.currentThread().getContextClassLoader());
+            ;
+            while (c != Object.class) {
+                try {
+                    newMethod = c.getDeclaredMethod(invocationContext.getExecutable().getName(),
+                            invocationContext.getExecutable().getParameterTypes());
+                    break;
+                } catch (NoSuchMethodException e) {
+                    //ignore
+                }
+                c = c.getSuperclass();
+            }
+            if (newMethod == null) {
+                throw new RuntimeException("Could not find method " + invocationContext.getExecutable() + " on test class");
+            }
+            newMethod.setAccessible(true);
+            newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) throws Exception {
+        invokeQuarkusMethod(AfterAll.class, actualTestClass);
     }
 
     class ExtensionState implements ExtensionContext.Store.CloseableResource {
 
         private final TestResourceManager testResourceManager;
         private final Closeable resource;
-        private final boolean nativeImage;
 
-        ExtensionState(TestResourceManager testResourceManager, Closeable resource, boolean nativeImage) {
+        ExtensionState(TestResourceManager testResourceManager, Closeable resource) {
             this.testResourceManager = testResourceManager;
             this.resource = resource;
-            this.nativeImage = nativeImage;
         }
 
         @Override
         public void close() throws Throwable {
-            testResourceManager.stop();
             try {
                 resource.close();
             } finally {
                 if (QuarkusTestExtension.this.originalCl != null) {
                     setCCL(QuarkusTestExtension.this.originalCl);
                 }
+                testResourceManager.stop();
             }
-            if (appCl != null) {
-                appCl.close();
-            }
-        }
-
-        /**
-         * @deprecated Use {@link #isNativeImage()} instead.
-         */
-        @Deprecated
-        public boolean isSubstrate() {
-            return nativeImage;
-        }
-
-        public boolean isNativeImage() {
-            return nativeImage;
         }
     }
 
-    static class DeleteRunnable implements Runnable {
-        final Path path;
-
-        DeleteRunnable(Path path) {
-            this.path = path;
-        }
+    public static class TestBuildChainFunction implements Function<Map<String, Object>, List<Consumer<BuildChainBuilder>>> {
 
         @Override
-        public void run() {
-            try {
-                Files.deleteIfExists(path);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        public List<Consumer<BuildChainBuilder>> apply(Map<String, Object> stringObjectMap) {
+            Path testLocation = (Path) stringObjectMap.get(TEST_LOCATION);
+            return Collections.singletonList(new Consumer<BuildChainBuilder>() {
+                @Override
+                public void accept(BuildChainBuilder buildChainBuilder) {
+                    buildChainBuilder.addBuildStep(new BuildStep() {
+                        @Override
+                        public void execute(BuildContext context) {
+                            context.produce(new TestClassPredicateBuildItem(new Predicate<String>() {
+                                @Override
+                                public boolean test(String className) {
+                                    return PathTestHelper.isTestClass(className,
+                                            Thread.currentThread().getContextClassLoader(), testLocation);
+                                }
+                            }));
+                        }
+                    }).produces(TestClassPredicateBuildItem.class)
+                            .build();
+
+                    buildChainBuilder.addBuildStep(new BuildStep() {
+                        @Override
+                        public void execute(BuildContext context) {
+                            context.produce(new TestAnnotationBuildItem(QuarkusTest.class.getName()));
+                        }
+                    }).produces(TestAnnotationBuildItem.class)
+                            .build();
+                }
+            });
         }
     }
 }

@@ -10,11 +10,10 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 
 @QuarkusTest
-class BaseAuthTest {
+public class BaseAuthTest {
 
-    @Test
     @RepeatedTest(100)
-    void testPost() {
+    public void testPost() {
         // This is a regression test in that we had a problem where the Vert.x request was not paused
         // before the authentication filters ran and the post message was thrown away by Vert.x because
         // RESTEasy hadn't registered its request handlers yet.
@@ -30,7 +29,7 @@ class BaseAuthTest {
     }
 
     @Test
-    void testGet() {
+    public void testGet() {
         given()
                 .header("Authorization", "Basic am9objpqb2hu")
                 .when()

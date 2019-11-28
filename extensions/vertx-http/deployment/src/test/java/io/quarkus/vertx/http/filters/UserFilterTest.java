@@ -22,10 +22,10 @@ public class UserFilterTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyBean.class));
+                    .addClasses(MyBean.class, UserFilterTest.class));
 
     @Test
-    void test() {
+    public void test() {
         get("/").then().statusCode(200)
                 .header("X-Filter1", not(nullValue()))
                 .header("X-Filter2", not(nullValue()))

@@ -24,6 +24,7 @@ public class SyslogHandlerTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-syslog-output.properties")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(LoggingTestsHelper.class)
                     .addAsManifestResource("application.properties", "microprofile-config.properties"));
 
     @Test

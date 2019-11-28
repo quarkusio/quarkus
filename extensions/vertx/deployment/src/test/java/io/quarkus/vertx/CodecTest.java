@@ -21,7 +21,7 @@ public class CodecTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap
-                    .create(JavaArchive.class).addClasses(MyBean.class));
+                    .create(JavaArchive.class).addClasses(MyBean.class, MyPetCodec.class));
 
     @Inject
     MyBean bean;

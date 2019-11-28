@@ -125,7 +125,7 @@ public class ArcProcessor {
         BeanProcessor.Builder builder = BeanProcessor.builder();
         IndexView applicationClassesIndex = applicationArchivesBuildItem.getRootArchive().getIndex();
         builder.setApplicationClassPredicate(new AbstractCompositeApplicationClassesPredicate<DotName>(
-                applicationClassesIndex, generatedClassNames, applicationClassPredicates) {
+                applicationClassesIndex, generatedClassNames, applicationClassPredicates, testClassPredicate) {
             @Override
             protected DotName getDotName(DotName dotName) {
                 return dotName;
@@ -201,7 +201,7 @@ public class ArcProcessor {
         builder.setRemoveUnusedBeans(arcConfig.shouldEnableBeanRemoval());
         if (arcConfig.shouldOnlyKeepAppBeans()) {
             builder.addRemovalExclusion(new AbstractCompositeApplicationClassesPredicate<BeanInfo>(
-                    applicationClassesIndex, generatedClassNames, applicationClassPredicates) {
+                    applicationClassesIndex, generatedClassNames, applicationClassPredicates, testClassPredicate) {
                 @Override
                 protected DotName getDotName(BeanInfo bean) {
                     return bean.getBeanClass();
@@ -370,15 +370,18 @@ public class ArcProcessor {
         private final IndexView applicationClassesIndex;
         private final Set<DotName> generatedClassNames;
         private final List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems;
+        private final Optional<TestClassPredicateBuildItem> testClassPredicate;
 
         protected abstract DotName getDotName(T t);
 
         private AbstractCompositeApplicationClassesPredicate(IndexView applicationClassesIndex,
                 Set<DotName> generatedClassNames,
-                List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems) {
+                List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems,
+                Optional<TestClassPredicateBuildItem> testClassPredicate) {
             this.applicationClassesIndex = applicationClassesIndex;
             this.generatedClassNames = generatedClassNames;
             this.applicationClassPredicateBuildItems = applicationClassPredicateBuildItems;
+            this.testClassPredicate = testClassPredicate;
         }
 
         @Override
@@ -390,12 +393,17 @@ public class ArcProcessor {
             if (generatedClassNames.contains(dotName)) {
                 return true;
             }
+            String className = dotName.toString();
             if (!applicationClassPredicateBuildItems.isEmpty()) {
-                String className = dotName.toString();
                 for (ApplicationClassPredicateBuildItem predicate : applicationClassPredicateBuildItems) {
                     if (predicate.test(className)) {
                         return true;
                     }
+                }
+            }
+            if (testClassPredicate.isPresent()) {
+                if (testClassPredicate.get().getPredicate().test(className)) {
+                    return true;
                 }
             }
             return false;

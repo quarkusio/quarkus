@@ -1,9 +1,11 @@
 package io.quarkus.runtime;
 
+import java.io.Closeable;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.graalvm.nativeimage.ImageInfo;
 import org.wildfly.common.Assert;
 import org.wildfly.common.lock.Locks;
@@ -19,7 +21,7 @@ import sun.misc.SignalHandler;
  * setup logic. The base class does some basic error checking.
  */
 @SuppressWarnings("restriction")
-public abstract class Application {
+public abstract class Application implements Closeable {
 
     // WARNING: do not inject a logger here, it's too early: the log manager has not been properly set up yet
 
@@ -105,6 +107,20 @@ public abstract class Application {
     }
 
     protected abstract void doStart(String[] args);
+
+    public final void close() {
+        try {
+            stop();
+        } finally {
+            try {
+                ConfigProviderResolver.instance()
+                        .releaseConfig(
+                                ConfigProviderResolver.instance().getConfig(Thread.currentThread().getContextClassLoader()));
+            } catch (Throwable ignored) {
+
+            }
+        }
+    }
 
     /**
      * Stop the application. If another thread is also trying to stop the application, this method waits for that

@@ -22,6 +22,7 @@ public class AsyncConsoleHandlerTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-async-console-log.properties")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(LoggingTestsHelper.class)
                     .addAsManifestResource("application.properties", "microprofile-config.properties"))
             .setLogFileName("AsyncConsoleHandlerTest.log");
 

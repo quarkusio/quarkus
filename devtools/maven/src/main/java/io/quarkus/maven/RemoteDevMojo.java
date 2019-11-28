@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Plugin;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -74,9 +75,9 @@ public class RemoteDevMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
-        boolean found = MojoUtils.checkProjectForMavenBuildPlugin(project);
+        Plugin found = MojoUtils.checkProjectForMavenBuildPlugin(project);
 
-        if (!found) {
+        if (found == null) {
             getLog().warn("The quarkus-maven-plugin build goal was not configured for this project, " +
                     "skipping quarkus:remote-dev as this is assumed to be a support library. If you want to run Quarkus remote-dev"
                     +

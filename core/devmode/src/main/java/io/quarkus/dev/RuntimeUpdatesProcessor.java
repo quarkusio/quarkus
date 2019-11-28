@@ -27,9 +27,9 @@ import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.deployment.devmode.HotReplacementContext;
-import io.quarkus.deployment.devmode.HotReplacementSetup;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.dev.spi.HotReplacementContext;
+import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runtime.Timing;
 
 public class RuntimeUpdatesProcessor implements HotReplacementContext {
@@ -65,9 +65,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     private final List<Runnable> preScanSteps = new CopyOnWriteArrayList<>();
     private final List<Consumer<Set<String>>> noRestartChangesConsumers = new CopyOnWriteArrayList<>();
     private final List<HotReplacementSetup> hotReplacementSetup = new ArrayList<>();
-    private final DevModeMain devModeMain;
+    private final IsolatedDevModeMain devModeMain;
 
-    public RuntimeUpdatesProcessor(DevModeContext context, ClassLoaderCompiler compiler, DevModeMain devModeMain) {
+    public RuntimeUpdatesProcessor(DevModeContext context, ClassLoaderCompiler compiler, IsolatedDevModeMain devModeMain) {
         this.context = context;
         this.compiler = compiler;
         this.devModeMain = devModeMain;
@@ -102,7 +102,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     @Override
     public Throwable getDeploymentProblem() {
         //we differentiate between these internally, however for the error reporting they are the same
-        return DevModeMain.compileProblem != null ? DevModeMain.compileProblem : DevModeMain.deploymentProblem;
+        return IsolatedDevModeMain.compileProblem != null ? IsolatedDevModeMain.compileProblem
+                : IsolatedDevModeMain.deploymentProblem;
     }
 
     @Override
@@ -129,7 +130,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         //in an ideal world we would just check every resource file for changes, however as everything is already
         //all broken we just assume the reason that they have refreshed is because they have fixed something
         //trying to watch all resource files is complex and this is likely a good enough solution for what is already an edge case
-        boolean restartNeeded = classChanged || (DevModeMain.deploymentProblem != null && userInitiated);
+        boolean restartNeeded = classChanged || (IsolatedDevModeMain.deploymentProblem != null && userInitiated);
         if (!restartNeeded && !filesChanged.isEmpty()) {
             restartNeeded = filesChanged.stream().map(watchedFilePaths::get).anyMatch(Boolean.TRUE::equals);
         }
@@ -188,9 +189,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                         moduleChangedSourceFilePaths.addAll(changedPaths);
                         compiler.compile(sourcePath, changedSourceFiles.stream()
                                 .collect(groupingBy(this::getFileExtension, Collectors.toSet())));
-                        DevModeMain.compileProblem = null;
+                        IsolatedDevModeMain.compileProblem = null;
                     } catch (Exception e) {
-                        DevModeMain.compileProblem = e;
+                        IsolatedDevModeMain.compileProblem = e;
                         return false;
                     }
                 }

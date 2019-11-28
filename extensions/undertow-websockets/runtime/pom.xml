@@ -50,6 +50,13 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>org.jboss.spec.javax.websocket:jboss-websocket-api_1.0_spec</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.websocket:jboss-websocket-api_1.1_spec</excludedArtifact>
+                        <excludedArtifact>javax.websocket:javax.websocket-api</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

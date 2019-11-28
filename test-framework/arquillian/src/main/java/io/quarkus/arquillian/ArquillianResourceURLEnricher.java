@@ -1,7 +1,9 @@
 package io.quarkus.arquillian;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.net.URL;
 
 import org.jboss.arquillian.test.api.ArquillianResource;
@@ -19,13 +21,27 @@ public class ArquillianResourceURLEnricher implements TestEnricher {
             while (clazz != Object.class) {
                 Field[] fields = clazz.getDeclaredFields();
                 for (Field field : fields) {
-                    if (field.getType().equals(URL.class) && field.getAnnotation(ArquillianResource.class) != null) {
-                        try {
-                            field.setAccessible(true);
-                            URL url = new URL(System.getProperty("test.url"));
-                            field.set(QuarkusDeployableContainer.testInstance, url);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
+                    for (Annotation annotation : field.getAnnotations()) {
+                        if (annotation.annotationType().getName().equals(ArquillianResource.class.getName())) {
+                            if (field.getType().equals(URL.class)) {
+                                try {
+                                    field.setAccessible(true);
+                                    URL url = new URL(System.getProperty("test.url"));
+                                    field.set(QuarkusDeployableContainer.testInstance, url);
+                                    break;
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+                            } else if (field.getType().equals(URI.class)) {
+                                try {
+                                    field.setAccessible(true);
+                                    URI url = new URI(System.getProperty("test.url"));
+                                    field.set(QuarkusDeployableContainer.testInstance, url);
+                                    break;
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
                         }
                     }
                 }

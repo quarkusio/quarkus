@@ -29,6 +29,15 @@ public class Timing {
         }
     }
 
+    public static void staticInitStarted(ClassLoader cl) {
+        try {
+            Class<?> realTiming = cl.loadClass(Timing.class.getName());
+            realTiming.getMethod("staticInitStarted").invoke(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static void staticInitStopped() {
         if (bootStopTime < 0) {
             bootStopTime = System.nanoTime();
@@ -53,6 +62,15 @@ public class Timing {
 
     public static void restart() {
         bootStartTime = System.nanoTime();
+    }
+
+    public static void restart(ClassLoader cl) {
+        try {
+            Class<?> realTiming = cl.loadClass(Timing.class.getName());
+            realTiming.getMethod("restart").invoke(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static void printStartupTime(String name, String version, String quarkusVersion, String features, String profile,

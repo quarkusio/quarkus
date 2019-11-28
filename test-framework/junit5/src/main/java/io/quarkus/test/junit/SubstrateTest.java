@@ -26,7 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @Deprecated
 @Target(ElementType.TYPE)
-@ExtendWith({ QuarkusTestExtension.class, DisabledOnSubstrateCondition.class })
+@ExtendWith({ DisabledOnSubstrateCondition.class, QuarkusTestExtension.class, NativeTestExtension.class })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SubstrateTest {
 }

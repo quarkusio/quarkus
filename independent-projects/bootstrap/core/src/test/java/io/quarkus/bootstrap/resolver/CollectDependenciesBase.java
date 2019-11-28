@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.resolver;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 import io.quarkus.bootstrap.model.AppDependency;
@@ -43,7 +44,7 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
             expected.addAll(expectedResult);
             expected.addAll(deploymentDeps);
         }
-        final List<AppDependency> resolvedDeps = getTestResolver().resolveModel(root.toAppArtifact()).getAllDependencies();
+        final List<AppDependency> resolvedDeps = getTestResolver().resolveModel(root.toAppArtifact()).getFullDeploymentDeps();
         assertEquals(expected, resolvedDeps);
     }
 

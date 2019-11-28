@@ -1,11 +1,13 @@
 package io.quarkus.bootstrap.model;
 
+import java.io.Serializable;
+
 /**
  * Represents an application artifact dependency.
  *
  * @author Alexey Loubyansky
  */
-public class AppDependency {
+public class AppDependency implements Serializable {
 
     private final AppArtifact artifact;
     private final String scope;

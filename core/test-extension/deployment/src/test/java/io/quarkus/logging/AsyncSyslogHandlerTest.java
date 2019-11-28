@@ -22,6 +22,7 @@ public class AsyncSyslogHandlerTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-async-syslog.properties")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(LoggingTestsHelper.class)
                     .addAsManifestResource("application.properties", "microprofile-config.properties"))
             .setLogFileName("AsyncSyslogHandlerTest.log");
 

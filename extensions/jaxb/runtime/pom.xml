@@ -44,6 +44,14 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>javax.xml.bind:jaxb-api</excludedArtifact>
+                        <!-- for now, we use the JBoss API Spec artifacts for those two as that's what RESTEasy use -->
+                        <excludedArtifact>jakarta.xml.bind:jakarta.xml.bind-api</excludedArtifact>
+
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

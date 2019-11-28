@@ -37,6 +37,8 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
@@ -44,6 +46,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -55,6 +58,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
 import io.quarkus.smallrye.openapi.runtime.OpenApiHandler;
+import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
@@ -102,8 +106,10 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
     RouteBuildItem handler(DeploymentClassLoaderBuildItem deploymentClassLoaderBuildItem, LaunchModeBuildItem launch,
-            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints) {
+            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints, OpenApiRecorder recorder,
+            ShutdownContextBuildItem shutdownContext) {
         /*
          * <em>Ugly Hack</em>
          * In dev mode, we pass a classloader to load the up to date OpenAPI document.
@@ -116,10 +122,8 @@ public class SmallRyeOpenApiProcessor {
          * In non dev mode, the TCCL is used.
          */
         if (launch.getLaunchMode() == LaunchMode.DEVELOPMENT) {
-            OpenApiHandler.classLoader = deploymentClassLoaderBuildItem.getClassLoader();
+            recorder.setupClDevMode(shutdownContext);
             displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(openapi.path));
-        } else {
-            OpenApiHandler.classLoader = null;
         }
         return new RouteBuildItem(openapi.path, new OpenApiHandler(), HandlerType.BLOCKING);
     }

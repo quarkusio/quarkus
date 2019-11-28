@@ -25,6 +25,7 @@ public class DefaultGroupsUnitTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
+                    .addAsResource("publicKey.pem")
                     .addAsResource("applicationDefaultGroups.properties", "application.properties"));
 
     @BeforeEach

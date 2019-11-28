@@ -64,7 +64,7 @@ public class QuarkusDevModeTest
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
     }
 
-    boolean started = false;
+    private boolean started = false;
 
     private DevModeMain devModeMain;
     private Path deploymentDir;
@@ -155,6 +155,7 @@ public class QuarkusDevModeTest
             DevModeContext context = exportArchive(deploymentDir, projectSourceRoot);
             context.setTest(true);
             context.setAbortOnFailedStart(true);
+            context.setLocalProjectDiscovery(false);
             devModeMain = new DevModeMain(context);
             devModeMain.start();
             started = true;

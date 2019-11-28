@@ -26,6 +26,9 @@ public class BuildDependencyGraphVisitor {
     private DependencyNode runtimeNode;
     private Artifact runtimeArtifact;
 
+    /**
+     * Nodes that are only present in the deployment class loader
+     */
     private final List<DependencyNode> deploymentDepNodes = new ArrayList<>();
     private final List<ArtifactRequest> requests = new ArrayList<>();
 

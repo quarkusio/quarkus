@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -33,6 +34,7 @@ import org.gradle.jvm.tasks.Jar;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
@@ -116,12 +118,14 @@ public class AppModelGradleResolver implements AppModelResolver {
 
     @Override
     public AppModel resolveModel(AppArtifact appArtifact) throws AppModelResolverException {
+        AppModel.Builder appBuilder = new AppModel.Builder();
         if (appModel != null && appModel.getAppArtifact().equals(appArtifact)) {
             return appModel;
         }
         final Configuration compileCp = project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
         final List<Dependency> extensionDeps = new ArrayList<>();
         final List<AppDependency> userDeps = new ArrayList<>();
+        Map<AppArtifactKey, AppDependency> versionMap = new HashMap<>();
         Map<ModuleIdentifier, ModuleVersionIdentifier> userModules = new HashMap<>();
         for (ResolvedArtifact a : compileCp.getResolvedConfiguration().getResolvedArtifacts()) {
             final File f = a.getFile();
@@ -131,14 +135,17 @@ public class AppModelGradleResolver implements AppModelResolver {
             }
 
             userModules.put(getModuleId(a), a.getModuleVersion().getId());
-            userDeps.add(toAppDependency(a));
+            AppDependency dependency = toAppDependency(a);
+            userDeps.add(dependency);
+            versionMap.put(new AppArtifactKey(dependency.getArtifact().getGroupId(), dependency.getArtifact().getArtifactId(),
+                    dependency.getArtifact().getClassifier()), dependency);
 
             final Dependency dep;
             if (f.isDirectory()) {
-                dep = processQuarkusDir(a, f.toPath().resolve(BootstrapConstants.META_INF));
+                dep = processQuarkusDir(a, f.toPath().resolve(BootstrapConstants.META_INF), appBuilder);
             } else {
                 try (FileSystem artifactFs = FileSystems.newFileSystem(f.toPath(), null)) {
-                    dep = processQuarkusDir(a, artifactFs.getPath(BootstrapConstants.META_INF));
+                    dep = processQuarkusDir(a, artifactFs.getPath(BootstrapConstants.META_INF), appBuilder);
                 } catch (IOException e) {
                     throw new GradleException("Failed to process " + f, e);
                 }
@@ -148,6 +155,7 @@ public class AppModelGradleResolver implements AppModelResolver {
             }
         }
         List<AppDependency> deploymentDeps = new ArrayList<>();
+        List<AppDependency> fullDeploymentDeps = new ArrayList<>();
         if (!extensionDeps.isEmpty()) {
             final Configuration deploymentConfig = project.getConfigurations()
                     .detachedConfiguration(extensionDeps.toArray(new Dependency[extensionDeps.size()]));
@@ -157,7 +165,18 @@ public class AppModelGradleResolver implements AppModelResolver {
                 if (userVersion != null) {
                     continue;
                 }
-                deploymentDeps.add(toAppDependency(a));
+                AppDependency dependency = toAppDependency(a);
+                deploymentDeps.add(alignVersion(dependency, versionMap));
+            }
+        }
+        fullDeploymentDeps.addAll(deploymentDeps);
+        fullDeploymentDeps.addAll(userDeps);
+
+        Iterator<AppDependency> it = deploymentDeps.iterator();
+        while (it.hasNext()) {
+            AppDependency val = it.next();
+            if (userDeps.contains(val)) {
+                it.remove();
             }
         }
 
@@ -176,12 +195,32 @@ public class AppModelGradleResolver implements AppModelResolver {
                 }
             }
         }
-        return this.appModel = new AppModel(appArtifact, userDeps, deploymentDeps);
+        appBuilder.addRuntimeDeps(userDeps)
+                .addFullDeploymentDeps(fullDeploymentDeps)
+                .addDeploymentDeps(deploymentDeps)
+                .setAppArtifact(appArtifact);
+        return this.appModel = appBuilder.build();
+    }
+
+    private AppDependency alignVersion(AppDependency dependency, Map<AppArtifactKey, AppDependency> versionMap) {
+        AppArtifactKey appKey = new AppArtifactKey(dependency.getArtifact().getGroupId(),
+                dependency.getArtifact().getArtifactId(),
+                dependency.getArtifact().getClassifier());
+        if (versionMap.containsKey(appKey)) {
+            return versionMap.get(appKey);
+        }
+        return dependency;
     }
 
     @Override
     public AppModel resolveModel(AppArtifact root, List<AppDependency> deps) throws AppModelResolverException {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, AppArtifact managingProject)
+            throws AppModelResolverException {
+        return resolveModel(appArtifact);
     }
 
     private ModuleIdentifier getModuleId(ResolvedArtifact a) {
@@ -196,7 +235,7 @@ public class AppModelGradleResolver implements AppModelResolver {
         return new AppDependency(appArtifact, "runtime");
     }
 
-    private Dependency processQuarkusDir(ResolvedArtifact a, Path quarkusDir) {
+    private Dependency processQuarkusDir(ResolvedArtifact a, Path quarkusDir, AppModel.Builder appBuilder) {
         if (!Files.exists(quarkusDir)) {
             return null;
         }
@@ -208,6 +247,7 @@ public class AppModelGradleResolver implements AppModelResolver {
         if (extProps == null) {
             return null;
         }
+        appBuilder.handleExtensionProperties(extProps, a.toString());
         String value = extProps.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
         final String[] split = value.split(":");
 

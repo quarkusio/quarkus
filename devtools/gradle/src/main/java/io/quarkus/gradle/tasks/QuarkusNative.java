@@ -7,9 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.function.Consumer;
 
-import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
@@ -17,12 +15,12 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
+import io.quarkus.bootstrap.BootstrapException;
+import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.CuratedApplicationCreator;
-import io.quarkus.creator.phase.augment.AugmentTask;
 
 public class QuarkusNative extends QuarkusTask {
 
@@ -343,102 +341,100 @@ public class QuarkusNative extends QuarkusTask {
         } catch (AppModelResolverException e) {
             throw new GradleException("Failed to resolve application model " + appArtifact + " dependencies", e);
         }
-        final Map<String, ?> properties = getProject().getProperties();
-        final Properties realProperties = new Properties();
-        for (Map.Entry<String, ?> entry : properties.entrySet()) {
-            final String key = entry.getKey();
-            final Object value = entry.getValue();
-            if (key != null && value instanceof String && key.startsWith("quarkus.")) {
-                realProperties.setProperty(key, (String) value);
+        final Properties realProperties = getBuildSystemProperties(appArtifact);
+
+        Map<String, String> config = createCustomConfig();
+        Map<String, String> old = new HashMap<>();
+        for (Map.Entry<String, String> e : config.entrySet()) {
+            old.put(e.getKey(), System.getProperty(e.getKey()));
+            System.setProperty(e.getKey(), e.getValue());
+        }
+        try (CuratedApplication appCreationContext = QuarkusBootstrap.builder(appArtifact.getPath())
+                .setAppModelResolver(modelResolver)
+                .setBaseClassLoader(getClass().getClassLoader())
+                .setTargetDirectory(getProject().getBuildDir().toPath())
+                .setBaseName(extension().finalName())
+                .setLocalProjectDiscovery(false)
+                .setBuildSystemProperties(realProperties)
+                .setIsolateDeployment(true)
+                //.setConfigDir(extension().outputConfigDirectory().toPath())
+                //.setTargetDirectory(extension().outputDirectory().toPath())
+                .build().bootstrap()) {
+            appCreationContext.createAugmentor().createProductionApplication();
+
+        } catch (BootstrapException e) {
+            throw new GradleException("Failed to build a runnable JAR", e);
+        } finally {
+            for (Map.Entry<String, String> e : old.entrySet()) {
+                if (e.getValue() == null) {
+                    System.clearProperty(e.getKey());
+                } else {
+                    System.setProperty(e.getKey(), e.getValue());
+                }
             }
         }
-        realProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
-        realProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());
-
-        try (CuratedApplicationCreator appCreationContext = CuratedApplicationCreator.builder()
-                .setWorkDir(getProject().getBuildDir().toPath())
-                .setModelResolver(modelResolver)
-                .setBaseName(extension().finalName())
-                .setAppArtifact(appArtifact).build()) {
-
-            AugmentTask task = AugmentTask.builder().setBuildSystemProperties(realProperties)
-                    .setConfigCustomizer(createCustomConfig())
-                    .setAppClassesDir(extension().outputDirectory().toPath())
-                    .setConfigDir(extension().outputConfigDirectory().toPath()).build();
-            appCreationContext.runTask(task);
-        } catch (AppCreatorException e) {
-            throw new GradleException("Failed to generate a native image", e);
-        }
-
     }
 
-    private Consumer<ConfigBuilder> createCustomConfig() {
-        return new Consumer<ConfigBuilder>() {
-            @Override
-            public void accept(ConfigBuilder configBuilder) {
-                InMemoryConfigSource type = new InMemoryConfigSource(Integer.MAX_VALUE, "Native Image Type")
-                        .add("quarkus.package.type", "native");
+    private Map<String, String> createCustomConfig() {
+        Map<String, String> configs = new HashMap<>();
+        configs.put("quarkus.package.type", "native");
 
-                InMemoryConfigSource configs = new InMemoryConfigSource(0, "Native Image Maven Settings");
+        configs.put("quarkus.native.add-all-charsets", Boolean.toString(addAllCharsets));
 
-                configs.add("quarkus.native.add-all-charsets", addAllCharsets);
+        if (additionalBuildArgs != null && !additionalBuildArgs.isEmpty()) {
+            configs.put("quarkus.native.additional-build-args",
+                    additionalBuildArgs.stream()
+                            .map(val -> val.replace("\\", "\\\\"))
+                            .map(val -> val.replace(",", "\\,"))
+                            .collect(joining(",")));
+        }
+        configs.put("quarkus.native.auto-service-loader-registration", Boolean.toString(autoServiceLoaderRegistration));
 
-                if (additionalBuildArgs != null && !additionalBuildArgs.isEmpty()) {
-                    configs.add("quarkus.native.additional-build-args",
-                            additionalBuildArgs.stream()
-                                    .map(val -> val.replace("\\", "\\\\"))
-                                    .map(val -> val.replace(",", "\\,"))
-                                    .collect(joining(",")));
+        configs.put("quarkus.native.cleanup-server", Boolean.toString(cleanupServer));
+        configs.put("quarkus.native.debug-build-process", Boolean.toString(debugBuildProcess));
+
+        configs.put("quarkus.native.debug-symbols", Boolean.toString(debugSymbols));
+        configs.put("quarkus.native.enable-reports", Boolean.toString(enableReports));
+        if (containerRuntime != null && !containerRuntime.trim().isEmpty()) {
+            configs.put("quarkus.native.container-runtime", containerRuntime);
+        } else if (dockerBuild != null && !dockerBuild.trim().isEmpty()) {
+            if (!dockerBuild.isEmpty() && !dockerBuild.toLowerCase().equals("false")) {
+                if (dockerBuild.toLowerCase().equals("true")) {
+                    configs.put("quarkus.native.container-runtime", "docker");
+                } else {
+                    configs.put("quarkus.native.container-runtime", dockerBuild);
                 }
-                configs.add("quarkus.native.auto-service-loader-registration", autoServiceLoaderRegistration);
-
-                configs.add("quarkus.native.cleanup-server", cleanupServer);
-                configs.add("quarkus.native.debug-build-process", debugBuildProcess);
-
-                configs.add("quarkus.native.debug-symbols", debugSymbols);
-                configs.add("quarkus.native.enable-reports", enableReports);
-                if (containerRuntime != null && !containerRuntime.trim().isEmpty()) {
-                    configs.add("quarkus.native.container-runtime", containerRuntime);
-                } else if (dockerBuild != null && !dockerBuild.trim().isEmpty()) {
-                    if (!dockerBuild.isEmpty() && !dockerBuild.toLowerCase().equals("false")) {
-                        if (dockerBuild.toLowerCase().equals("true")) {
-                            configs.add("quarkus.native.container-runtime", "docker");
-                        } else {
-                            configs.add("quarkus.native.container-runtime", dockerBuild);
-                        }
-                    }
-                }
-                if (containerRuntimeOptions != null && !containerRuntimeOptions.trim().isEmpty()) {
-                    configs.add("quarkus.native.container-runtime-options", containerRuntimeOptions);
-                }
-                configs.add("quarkus.native.dump-proxies", dumpProxies);
-                configs.add("quarkus.native.enable-all-security-services", enableAllSecurityServices);
-                configs.add("quarkus.native.enable-fallback-images", enableFallbackImages);
-                configs.add("quarkus.native.enable-https-url-handler", enableHttpsUrlHandler);
-
-                configs.add("quarkus.native.enable-http-url-handler", enableHttpUrlHandler);
-                configs.add("quarkus.native.enable-isolates", enableIsolates);
-                configs.add("quarkus.native.enable-jni", enableJni);
-
-                configs.add("quarkus.native.enable-server", enableServer);
-
-                configs.add("quarkus.native.enable-vm-inspection", enableVMInspection);
-
-                configs.add("quarkus.native.full-stack-traces", fullStackTraces);
-
-                if (graalvmHome != null && !graalvmHome.trim().isEmpty()) {
-                    configs.add("quarkus.native.graalvm-home", graalvmHome);
-                }
-                if (nativeImageXmx != null && !nativeImageXmx.trim().isEmpty()) {
-                    configs.add("quarkus.native.native-image-xmx", nativeImageXmx);
-                }
-                configs.add("quarkus.native.report-errors-at-runtime", reportErrorsAtRuntime);
-
-                configs.add("quarkus.native.report-exception-stack-traces", reportExceptionStackTraces);
-
-                configBuilder.withSources(type, configs);
             }
-        };
+        }
+        if (containerRuntimeOptions != null && !containerRuntimeOptions.trim().isEmpty()) {
+            configs.put("quarkus.native.container-runtime-options", containerRuntimeOptions);
+        }
+        configs.put("quarkus.native.dump-proxies", Boolean.toString(dumpProxies));
+        configs.put("quarkus.native.enable-all-security-services", Boolean.toString(enableAllSecurityServices));
+        configs.put("quarkus.native.enable-fallback-images", Boolean.toString(enableFallbackImages));
+        configs.put("quarkus.native.enable-https-url-handler", Boolean.toString(enableHttpsUrlHandler));
+
+        configs.put("quarkus.native.enable-http-url-handler", Boolean.toString(enableHttpUrlHandler));
+        configs.put("quarkus.native.enable-isolates", Boolean.toString(enableIsolates));
+        configs.put("quarkus.native.enable-jni", Boolean.toString(enableJni));
+
+        configs.put("quarkus.native.enable-server", Boolean.toString(enableServer));
+
+        configs.put("quarkus.native.enable-vm-inspection", Boolean.toString(enableVMInspection));
+
+        configs.put("quarkus.native.full-stack-traces", Boolean.toString(fullStackTraces));
+
+        if (graalvmHome != null && !graalvmHome.trim().isEmpty()) {
+            configs.put("quarkus.native.graalvm-home", graalvmHome);
+        }
+        if (nativeImageXmx != null && !nativeImageXmx.trim().isEmpty()) {
+            configs.put("quarkus.native.native-image-xmx", nativeImageXmx);
+        }
+        configs.put("quarkus.native.report-errors-at-runtime", Boolean.toString(reportErrorsAtRuntime));
+
+        configs.put("quarkus.native.report-exception-stack-traces", Boolean.toString(reportExceptionStackTraces));
+
+        return configs;
 
     }
 

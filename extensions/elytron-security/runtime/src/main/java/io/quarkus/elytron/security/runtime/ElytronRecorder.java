@@ -18,6 +18,7 @@ import org.wildfly.security.permission.PermissionVerifier;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
@@ -101,7 +102,14 @@ public class ElytronRecorder {
      *
      * 19.3.1 should fix this, see https://github.com/oracle/graal/issues/1883
      */
-    public void registerPasswordProvider() {
-        Security.addProvider(new WildFlyElytronPasswordProvider());
+    public void registerPasswordProvider(ShutdownContext context) {
+        WildFlyElytronPasswordProvider provider = new WildFlyElytronPasswordProvider();
+        context.addShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                Security.removeProvider(provider.getName());
+            }
+        });
+        Security.addProvider(provider);
     }
 }

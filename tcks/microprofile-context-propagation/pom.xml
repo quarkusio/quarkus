@@ -41,6 +41,20 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-context-propagation</artifactId>
+            <exclusions>
+                <!-- By default we check if resteasy is present and don't register this provider
+                however the TCK builds the context manually in some cases which does not take this
+                into account so we need to either exclude this or include RESTeasy
+
+                Really we should have smart dependencies, that are automatically excluded if
+                dependencies they require are not present, which should be fairly simple with
+                the new class loading architecture.
+                -->
+                <exclusion>
+                    <groupId>org.jboss.resteasy</groupId>
+                    <artifactId>resteasy-context-propagation</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -42,11 +42,6 @@
             <artifactId>quarkus-undertow-deployment</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
-            <scope>test</scope>
-        </dependency>
         <!-- For Single tests -->        
         <dependency>
             <groupId>io.reactivex.rxjava2</groupId>

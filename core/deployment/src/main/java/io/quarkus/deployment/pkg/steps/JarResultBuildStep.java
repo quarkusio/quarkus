@@ -47,7 +47,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
@@ -184,7 +183,6 @@ public class JarResultBuildStep {
 
             log.info("Building fat jar: " + runnerJar);
 
-            final AppModelResolver depResolver = curateOutcomeBuildItem.getResolver();
             final Map<String, String> seen = new HashMap<>();
             final Map<String, Set<AppDependency>> duplicateCatcher = new HashMap<>();
             final StringBuilder classPath = new StringBuilder();
@@ -201,7 +199,7 @@ public class JarResultBuildStep {
 
             for (AppDependency appDep : appDeps) {
                 final AppArtifact depArtifact = appDep.getArtifact();
-                final Path resolvedDep = depResolver.resolve(depArtifact);
+                final Path resolvedDep = depArtifact.getPath();
 
                 // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
                 if (!resolvedDep.getFileName().toString().endsWith(".jar")) {
@@ -381,23 +379,25 @@ public class JarResultBuildStep {
             throws IOException {
         // this will contain all the resources in both maven and gradle cases - the latter is true because we copy them in AugmentTask
         Path classesLocation = applicationArchivesBuildItem.getRootArchive().getArchiveLocation();
-        Files.find(classesLocation, 1, new BiPredicate<Path, BasicFileAttributes>() {
+        try (Stream<Path> stream = Files.find(classesLocation, 1, new BiPredicate<Path, BasicFileAttributes>() {
             @Override
             public boolean test(Path path, BasicFileAttributes basicFileAttributes) {
                 return basicFileAttributes.isRegularFile() && path.toString().endsWith(".json");
             }
-        }).forEach(new Consumer<Path>() {
-            @Override
-            public void accept(Path jsonPath) {
-                try {
-                    Files.copy(jsonPath, thinJarDirectory.resolve(jsonPath.getFileName()));
-                } catch (IOException e) {
-                    throw new UncheckedIOException(
-                            "Unable to copy json config file from " + jsonPath + " to " + thinJarDirectory,
-                            e);
+        })) {
+            stream.forEach(new Consumer<Path>() {
+                @Override
+                public void accept(Path jsonPath) {
+                    try {
+                        Files.copy(jsonPath, thinJarDirectory.resolve(jsonPath.getFileName()));
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(
+                                "Unable to copy json config file from " + jsonPath + " to " + thinJarDirectory,
+                                e);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     private void doThinJarGeneration(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -410,14 +410,13 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> allClasses,
             FileSystem runnerZipFs)
             throws BootstrapDependencyProcessingException, AppModelResolverException, IOException {
-        final AppModelResolver depResolver = curateOutcomeBuildItem.getResolver();
         final Map<String, String> seen = new HashMap<>();
         final StringBuilder classPath = new StringBuilder();
         final Map<String, List<byte[]>> services = new HashMap<>();
 
         final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
 
-        copyLibraryJars(transformedClasses, libDir, depResolver, classPath, appDeps);
+        copyLibraryJars(transformedClasses, libDir, classPath, appDeps);
 
         AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
         // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
@@ -427,11 +426,11 @@ public class JarResultBuildStep {
                 generatedResources, seen);
     }
 
-    private void copyLibraryJars(TransformedClassesBuildItem transformedClasses, Path libDir, AppModelResolver depResolver,
-            StringBuilder classPath, List<AppDependency> appDeps) throws AppModelResolverException, IOException {
+    private void copyLibraryJars(TransformedClassesBuildItem transformedClasses, Path libDir,
+            StringBuilder classPath, List<AppDependency> appDeps) throws IOException {
         for (AppDependency appDep : appDeps) {
             final AppArtifact depArtifact = appDep.getArtifact();
-            final Path resolvedDep = depResolver.resolve(depArtifact);
+            final Path resolvedDep = depArtifact.getPath();
 
             // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
             if (!resolvedDep.getFileName().toString().endsWith(".jar")) {

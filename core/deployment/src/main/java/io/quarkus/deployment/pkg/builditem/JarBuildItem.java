@@ -2,6 +2,7 @@ package io.quarkus.deployment.pkg.builditem;
 
 import java.nio.file.Path;
 
+import io.quarkus.bootstrap.app.JarResult;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class JarBuildItem extends SimpleBuildItem {
@@ -30,5 +31,9 @@ public final class JarBuildItem extends SimpleBuildItem {
 
     public Path getOriginalArtifact() {
         return originalArtifact;
+    }
+
+    public JarResult toJarResult() {
+        return new JarResult(path, originalArtifact, libraryDir);
     }
 }

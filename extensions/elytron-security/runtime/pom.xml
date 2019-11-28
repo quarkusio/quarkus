@@ -75,6 +75,12 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>org.jboss.spec.javax.security.auth.message:jboss-jaspi-api_1.1_spec</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.security.jacc:jboss-jacc-api_1.5_spec</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

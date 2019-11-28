@@ -59,6 +59,13 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <parentFirstArtifacts>
+                        <parentFirstArtifact>io.fabric8:kubernetes-server-mock</parentFirstArtifact>
+                        <parentFirstArtifact>io.fabric8:mockwebserver</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus:quarkus-test-kubernetes-client</parentFirstArtifact>
+                    </parentFirstArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

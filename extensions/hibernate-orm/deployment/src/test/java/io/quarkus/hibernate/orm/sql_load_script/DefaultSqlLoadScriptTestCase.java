@@ -15,6 +15,7 @@ public class DefaultSqlLoadScriptTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("application.properties")
+                    .addAsResource("import.sql")
                     .addClasses(SqlLoadScriptTestResource.class, MyEntity.class));
 
     @Test

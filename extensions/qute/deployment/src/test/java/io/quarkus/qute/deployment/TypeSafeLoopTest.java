@@ -24,7 +24,7 @@ public class TypeSafeLoopTest {
                     .addAsResource(new StringAsset("{@java.util.List<io.quarkus.qute.deployment.Foo> list}"
                             + "{#for foo in list}"
                             + "{foo.name}={foo.age}={foo.charlie.name}"
-                            + "{/}"), "META-INF/resources/templates/foo.html"));
+                            + "{/}"), "templates/foo.html"));
 
     @Inject
     Template foo;

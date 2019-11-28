@@ -466,7 +466,7 @@ public class QuteProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources)
             throws IOException {
         ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
-        String basePath = "META-INF/resources/" + config.basePath + "/";
+        String basePath = "templates/";
         Path templatesPath = applicationArchive.getChildPath(basePath);
 
         if (templatesPath != null) {
@@ -495,7 +495,7 @@ public class QuteProcessor {
             throws IOException {
 
         ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
-        String basePath = "META-INF/resources/" + config.basePath + "/";
+        String basePath = "templates/";
         Path templatesPath = applicationArchive.getChildPath(basePath);
 
         // Remove suffix from the path; e.g. "items.html" becomes "items"

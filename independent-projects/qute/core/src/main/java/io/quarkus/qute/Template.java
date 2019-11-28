@@ -3,7 +3,7 @@ package io.quarkus.qute;
 import java.util.Set;
 
 /**
- * Compiled template.
+ * Represents a template definition.
  */
 public interface Template {
 

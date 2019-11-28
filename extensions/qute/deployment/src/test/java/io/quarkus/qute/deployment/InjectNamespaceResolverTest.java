@@ -20,7 +20,7 @@ public class InjectNamespaceResolverTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(SimpleBean.class, Hello.class)
-                    .addAsResource(new StringAsset("{inject:hello.ping}"), "META-INF/resources/templates/foo.html"));
+                    .addAsResource(new StringAsset("{inject:hello.ping}"), "templates/foo.html"));
 
     @Inject
     SimpleBean simpleBean;

@@ -22,8 +22,8 @@ public class VariantTemplateTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(SimpleBean.class)
-                    .addAsResource(new StringAsset("{this}"), "META-INF/resources/templates/foo.txt")
-                    .addAsResource(new StringAsset("<strong>{this}</strong>"), "META-INF/resources/templates/foo.html"));
+                    .addAsResource(new StringAsset("{this}"), "templates/foo.txt")
+                    .addAsResource(new StringAsset("<strong>{this}</strong>"), "templates/foo.html"));
 
     @Inject
     SimpleBean simpleBean;

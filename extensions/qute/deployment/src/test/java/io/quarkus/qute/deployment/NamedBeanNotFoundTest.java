@@ -15,7 +15,7 @@ public class NamedBeanNotFoundTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset("{inject:bing.ping}"), "META-INF/resources/templates/bing.html"))
+                    .addAsResource(new StringAsset("{inject:bing.ping}"), "templates/bing.html"))
             .setExpectedException(TemplateException.class);
 
     @Test

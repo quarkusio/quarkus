@@ -34,10 +34,10 @@ public class QuteRecorder {
         Set<String> pathIds = paths.stream().map(path -> {
             String id = path;
             if (path.startsWith(engineProducer.getTagPath())) {
-                // ["META-INF/resources/templates/tags/item.html"] -> ["item.html"]
+                // ["templates/tags/item.html"] -> ["item.html"]
                 id = path.substring(engineProducer.getTagPath().length());
             } else if (path.startsWith(engineProducer.getBasePath())) {
-                // ["META-INF/resources/templates/items.html"] -> ["items.html"]
+                // ["templates/items.html"] -> ["items.html"]
                 id = path.substring(engineProducer.getBasePath().length());
             }
             return id;

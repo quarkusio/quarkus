@@ -22,23 +22,50 @@
                 <directory>src/main/filtered</directory>
                 <filtering>true</filtering>
             </resource>
-            <resource>
-                <directory>${project.basedir}/../../bom/runtime</directory>
-                <targetPath>quarkus-bom</targetPath>
-                <filtering>true</filtering>
-                <includes>
-                    <include>pom.xml</include>
-                </includes>
-            </resource>
-            <resource>
-                <directory>${project.basedir}/../bom-descriptor-json/target</directory>
-                <targetPath>quarkus-bom-descriptor</targetPath>
-                <filtering>false</filtering>
-                <includes>
-                    <include>extensions.json</include>
-                </includes>
-            </resource>
         </resources>
+        <plugins>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-bom</id>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-bom</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>pom</type>
+                                    <outputDirectory>${project.build.outputDirectory}/quarkus-bom</outputDirectory>
+                                    <destFileName>pom.xml</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-bom-descriptor-json</id>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>io.quarkus</groupId>
+                                    <artifactId>quarkus-bom-descriptor-json</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>json</type>
+                                    <outputDirectory>${project.build.outputDirectory}/quarkus-bom-descriptor</outputDirectory>
+                                    <destFileName>extensions.json</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
     <dependencies>

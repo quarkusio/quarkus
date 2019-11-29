@@ -1,11 +1,12 @@
 ---
-name: "Scheduler - tasks"
+name: "Quartz"
 metadata:
   keywords:
   - "scheduler"
+  - "quartz"
   - "tasks"
   - "periodic-tasks"
-  guide: "https://quarkus.io/guides/scheduler"
+  guide: "https://quarkus.io/guides/quartz"
   categories:
   - "miscellaneous"
   status: "preview"

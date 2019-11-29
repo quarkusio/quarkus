@@ -349,6 +349,7 @@ stages:
           modules:
             - kogito
             - kubernetes-client
+            - quartz
           name: misc_3
 
       - template: native-build-steps.yaml

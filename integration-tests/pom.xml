@@ -86,6 +86,7 @@
         <module>elytron-security-jdbc</module>
         <module>vertx-graphql</module>
         <module>jpa-without-entity</module>
+        <module>quartz</module>
     </modules>
 
     <build>

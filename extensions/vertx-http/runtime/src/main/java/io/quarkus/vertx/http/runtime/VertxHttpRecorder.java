@@ -468,16 +468,20 @@ public class VertxHttpRecorder {
     }
 
     public void addRoute(RuntimeValue<Router> router, Function<Router, Route> route, Handler<RoutingContext> handler,
-            HandlerType blocking) {
+            HandlerType blocking, boolean resume) {
 
         Route vr = route.apply(router.getValue());
 
+        Handler<RoutingContext> requestHandler = handler;
+        if (resume) {
+            requestHandler = new ResumeHandler(handler);
+        }
         if (blocking == HandlerType.BLOCKING) {
-            vr.blockingHandler(new ResumeHandler(handler));
+            vr.blockingHandler(requestHandler);
         } else if (blocking == HandlerType.FAILURE) {
-            vr.failureHandler(new ResumeHandler(handler));
+            vr.failureHandler(requestHandler);
         } else {
-            vr.handler(new ResumeHandler(handler));
+            vr.handler(requestHandler);
         }
     }
 

@@ -389,4 +389,9 @@ One thing to note is that the live reload feature is not available when making c
 
 == Packaging the application
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file. You can also build the native executable using `./mvnw package -Pnative`, or `./gradlew buildNative`.  
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file. You can also build the native executable using `./mvnw package -Pnative`, or `./gradlew buildNative`.
+
+== Kotlin and Jackson
+
+If the `com.fasterxml.jackson.module:jackson-module-kotlin` dependency and the `quarkus-jackson` extension (or the `quarkus-resteasy-extension`) have been added to project,
+then Quarkus automatically registers the `KotlinModule` to the `ObjectMapper` bean (see link:rest-json#Jackson[this] guide for more details).

@@ -153,6 +153,7 @@
         <mongo-reactivestreams-client.version>1.11.0</mongo-reactivestreams-client.version>
         <artemis.version>2.10.1</artemis.version>
         <okhttp.version>3.12.6</okhttp.version>
+        <sentry.version>1.7.28</sentry.version>
         <!-- Used for integration tests, to make sure webjars work-->
         <bootstrap.version>3.1.0</bootstrap.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
@@ -708,6 +709,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-logging-json</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-logging-sentry</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -1345,7 +1351,11 @@
                 <artifactId>okhttp</artifactId>
                 <version>${okhttp.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>io.sentry</groupId>
+                <artifactId>sentry</artifactId>
+                <version>${sentry.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.apache.maven.plugin-tools</groupId>
                 <artifactId>maven-plugin-annotations</artifactId>

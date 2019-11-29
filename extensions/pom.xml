@@ -133,7 +133,8 @@
 
         <!-- Logging -->
         <module>logging-json</module>
-        
+        <module>logging-sentry</module>
+
         <!-- Templating -->
         <module>qute</module>
     </modules>

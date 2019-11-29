@@ -19,6 +19,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-scala</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson-spi</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

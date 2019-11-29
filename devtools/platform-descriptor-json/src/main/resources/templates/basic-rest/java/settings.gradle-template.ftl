@@ -1,6 +1,11 @@
 pluginManagement {
-  plugins {
-    id 'io.quarkus' version "${quarkusPluginVersion}"
-  }
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+      id 'io.quarkus' version "${quarkusPluginVersion}"
+    }
 }
 rootProject.name='${project_artifactId}'

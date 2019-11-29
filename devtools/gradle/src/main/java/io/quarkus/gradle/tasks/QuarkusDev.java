@@ -36,6 +36,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ProjectDependency;
+import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -248,6 +249,11 @@ public class QuarkusDev extends QuarkusTask {
             wiringClassesDirectory.mkdirs();
             addToClassPaths(classPathManifest, context, wiringClassesDirectory);
 
+            //we also want to add the maven plugin jar to the class path
+            //this allows us to just directly use classes, without messing around copying them
+            //to the runner jar
+            addGradlePluginDeps(classPathManifest, context);
+
             //now we need to build a temporary jar to actually run
 
             File tempFile = new File(getBuildDir(), extension.finalName() + "-dev.jar");
@@ -386,6 +392,18 @@ public class QuarkusDev extends QuarkusTask {
         } catch (Exception e) {
             throw new GradleException("Failed to copy output to console", e);
         }
+    }
+
+    private void addGradlePluginDeps(StringBuilder classPathManifest, DevModeContext context) {
+        Configuration conf = getProject().getBuildscript().getConfigurations().getByName("classpath");
+        ResolvedDependency quarkusDep = conf.getResolvedConfiguration().getFirstLevelModuleDependencies().stream()
+                .filter(rd -> "io.quarkus.gradle.plugin".equals(rd.getModuleName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Unable to find quarkus-gradle-plugin dependency"));
+
+        quarkusDep.getAllModuleArtifacts().stream()
+                .map(ra -> ra.getFile())
+                .forEach(f -> addToClassPaths(classPathManifest, context, f));
     }
 
     private void addToClassPaths(StringBuilder classPathManifest, DevModeContext context, File file) {

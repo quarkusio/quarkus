@@ -10,7 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-gradle-plugin</artifactId>
+    <artifactId>io.quarkus.gradle.plugin</artifactId>
     <packaging>pom</packaging>
     <name>Quarkus - Gradle Plugin</name>
     <description>Quarkus - Gradle Plugin</description>
@@ -19,8 +19,6 @@
         <gradle.executable>./gradlew</gradle.executable>
         <gradle.task>build</gradle.task>
         <skip.gradle.build>false</skip.gradle.build>
-        <maven.install.skip>true</maven.install.skip>
-        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencies>
@@ -76,6 +74,38 @@
                         <goals>
                             <goal>exec</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-artifacts</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <file>build/libs/quarkus-gradle-plugin-${project.version}.jar</file>
+                                    <type>jar</type>
+                                </artifact>
+                                <artifact>
+                                    <file>build/libs/quarkus-gradle-plugin-${project.version}-javadoc.jar</file>
+                                    <type>jar</type>
+                                    <classifier>javadoc</classifier>
+                                </artifact>
+                                <artifact>
+                                    <file>build/libs/quarkus-gradle-plugin-${project.version}-sources.jar</file>
+                                    <type>jar</type>
+                                    <classifier>sources</classifier>
+                                </artifact>
+                            </artifacts>
+                            <skipAttach>${skip.gradle.build}</skipAttach>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

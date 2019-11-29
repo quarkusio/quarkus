@@ -85,6 +85,11 @@ public class GradleBuildFile extends BuildFile {
         if (!settingsContent.contains("id 'io.quarkus'")) {
             res.append(System.lineSeparator());
             res.append("pluginManagement {").append(System.lineSeparator());
+            res.append("    repositories {").append(System.lineSeparator());
+            res.append("        mavenLocal()").append(System.lineSeparator());
+            res.append("        mavenCentral()").append(System.lineSeparator());
+            res.append("        gradlePluginPortal()").append(System.lineSeparator());
+            res.append("    }").append(System.lineSeparator());
             res.append("    plugins {").append(System.lineSeparator());
             res.append("        id 'io.quarkus' version \"${quarkusPluginVersion}\"").append(System.lineSeparator());
             res.append("    }").append(System.lineSeparator());

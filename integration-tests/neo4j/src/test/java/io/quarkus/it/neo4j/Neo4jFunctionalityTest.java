@@ -44,4 +44,12 @@ public class Neo4jFunctionalityTest {
                 .then().statusCode(200)
                 .contentType("text/event-stream");
     }
+
+    @Test
+    public void health() throws Exception {
+        RestAssured.when().get("/health/ready").then()
+                .body("status", is("UP"),
+                        "checks.status", containsInAnyOrder("UP"),
+                        "checks.name", containsInAnyOrder("Neo4j connection health check"));
+    }
 }

@@ -400,6 +400,15 @@ It can be run with `java -jar target/neo4j-quickstart-1.0-SNAPSHOT-runner.jar`.
 With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
 Depending on your system, that will take some time.
 
+=== Connection Health Check
+
+If you are using the `quarkus-smallrye-health` extension, `quarkus-neo4j` will automatically add a readiness health check
+to validate the connection to Neo4j.
+
+So when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
+
+This behavior can be disabled via the property `quarkus.neo4j.health.enabled`.
+
 === Explore Cypher and the Graph
 
 There are tons of options to model your domain within a Graph.

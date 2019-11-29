@@ -1,8 +1,5 @@
 package io.quarkus.cli.commands;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.contentOf;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -28,16 +25,19 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import io.quarkus.cli.commands.file.GradleBuildFile;
+import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.cli.commands.writer.ZipProjectWriter;
+import io.quarkus.maven.utilities.MojoUtils;
 import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import io.quarkus.cli.commands.file.GradleBuildFile;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.cli.commands.writer.ZipProjectWriter;
-import io.quarkus.maven.utilities.MojoUtils;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.contentOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CreateProjectTest extends PlatformAwareTestBase {
     @Test
@@ -48,12 +48,12 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .artifactId("basic-rest")
                 .version("1.0.0-SNAPSHOT");
 
-        Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
+        assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         final File gitignore = new File(file, ".gitignore");
-        Assertions.assertTrue(gitignore.exists());
+        assertTrue(gitignore.exists());
         final String gitignoreContent = new String(Files.readAllBytes(gitignore.toPath()), StandardCharsets.UTF_8);
-        Assertions.assertTrue(gitignoreContent.contains("\ntarget/\n"));
+        assertTrue(gitignoreContent.contains("\ntarget/\n"));
     }
 
     @Test
@@ -66,17 +66,17 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .version("1.0.0-SNAPSHOT")
                 .buildFile(new GradleBuildFile(writer));
 
-        Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
+        assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         final File gitignore = new File(file, ".gitignore");
-        Assertions.assertTrue(gitignore.exists());
+        assertTrue(gitignore.exists());
         final String gitignoreContent = new String(Files.readAllBytes(gitignore.toPath()), StandardCharsets.UTF_8);
         Assertions.assertFalse(gitignoreContent.contains("\ntarget/\n"));
-        Assertions.assertTrue(gitignoreContent.contains("\nbuild/"));
-        Assertions.assertTrue(gitignoreContent.contains("\n.gradle/\n"));
+        assertTrue(gitignoreContent.contains("\nbuild/"));
+        assertTrue(gitignoreContent.contains("\n.gradle/\n"));
 
-				assertThat(new File(file, "README.md")).exists();
-				assertThat(contentOf(new File(file, "README.md"), "UTF-8")).contains("./gradlew");
+        assertThat(new File(file, "README.md")).exists();
+        assertThat(contentOf(new File(file, "README.md"), "UTF-8")).contains("./gradlew");
     }
 
     @Test
@@ -96,23 +96,21 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .version("1.0.0-SNAPSHOT")
                 .buildFile(new GradleBuildFile(writer));
 
-        Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
+        assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         final File gitignore = new File(testDir, ".gitignore");
-        Assertions.assertTrue(gitignore.exists());
+        assertTrue(gitignore.exists());
         final String gitignoreContent = new String(Files.readAllBytes(gitignore.toPath()), StandardCharsets.UTF_8);
         Assertions.assertFalse(gitignoreContent.contains("\ntarget/\n"));
-        Assertions.assertTrue(gitignoreContent.contains("\nbuild/"));
-        Assertions.assertTrue(gitignoreContent.contains("\n.gradle/\n"));
-
-        assertThat(contentOf(new File(testDir, "settings.gradle"), "UTF-8"))
-                .containsIgnoringCase("io.quarkus:quarkus-gradle-plugin");
+        assertTrue(gitignoreContent.contains("\nbuild/"));
+        assertTrue(gitignoreContent.contains("\n.gradle/\n"));
 
         assertThat(contentOf(new File(testDir, "build.gradle"), "UTF-8"))
+                .contains("id 'io.quarkus'")
                 .contains("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}");
 
         final Properties props = new Properties();
-        try(InputStream is = Files.newInputStream(testDir.toPath().resolve("gradle.properties"))) {
+        try (InputStream is = Files.newInputStream(testDir.toPath().resolve("gradle.properties"))) {
             props.load(is);
         }
         Assertions.assertEquals(getBomGroupId(), props.get("quarkusPlatformGroupId"));
@@ -120,8 +118,8 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         Assertions.assertEquals(getBomVersion(), props.get("quarkusPlatformVersion"));
 
         assertThat(new File(testDir, "README.md")).exists();
-				assertThat(contentOf(new File(testDir, "README.md"), "UTF-8")).contains("./gradlew");
-		}
+        assertThat(contentOf(new File(testDir, "README.md"), "UTF-8")).contains("./gradlew");
+    }
 
     @Test
     public void createOnTopPomWithoutResource() throws IOException {
@@ -140,7 +138,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .artifactId("wrong")
                 .version("1.0.0-SNAPSHOT");
 
-        Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
+        assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         assertThat(contentOf(pom, "UTF-8"))
                 .contains(getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
@@ -148,8 +146,8 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
-  			assertThat(new File(testDir, "README.md")).exists();
-			  assertThat(contentOf(new File(testDir, "README.md"), "UTF-8")).contains("./mvnw");
+        assertThat(new File(testDir, "README.md")).exists();
+        assertThat(contentOf(new File(testDir, "README.md"), "UTF-8")).contains("./mvnw");
         assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory().matches(f -> {
@@ -184,7 +182,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .className("org.foo.MyResource")
                 .version("1.0.0-SNAPSHOT");
 
-        Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
+        assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         assertThat(contentOf(pom, "UTF-8"))
                 .contains(getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
@@ -192,8 +190,8 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
-				assertThat(new File(testDir, "README.md")).exists();
-				assertThat(contentOf(new File(testDir, "README.md"), "UTF-8")).contains("./mvnw");
+        assertThat(new File(testDir, "README.md")).exists();
+        assertThat(contentOf(new File(testDir, "README.md"), "UTF-8")).contains("./mvnw");
         assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
@@ -229,7 +227,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
                 .version("1.0.0-SNAPSHOT")
                 .extensions(extensions);
 
-        Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
+        assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         assertThat(contentOf(pom, "UTF-8"))
                 .contains(getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
@@ -237,8 +235,8 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
-				assertThat(new File(testDir, "README.md")).exists();
-				assertThat(contentOf(new File(testDir, "README.md"), "UTF-8")).contains("./mvnw");
+        assertThat(new File(testDir, "README.md")).exists();
+        assertThat(contentOf(new File(testDir, "README.md"), "UTF-8")).contains("./mvnw");
         assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
@@ -266,11 +264,11 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "commons-io:commons-io:2.5");
 
-        Assertions.assertTrue(new CreateProject(new FileProjectWriter(testDir)).groupId("org.acme")
-                .artifactId("acme")
-                .version("1.0.0-SNAPSHOT")
-                .className("org.acme.MyResource")
-                .doCreateProject(properties));
+        assertTrue(new CreateProject(new FileProjectWriter(testDir)).groupId("org.acme")
+                                      .artifactId("acme")
+                                      .version("1.0.0-SNAPSHOT")
+                                      .className("org.acme.MyResource")
+                                      .doCreateProject(properties));
 
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
@@ -338,14 +336,14 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         file.mkdirs();
         File zipFile = new File(file, "project.zip");
         try (FileOutputStream fos = new FileOutputStream(zipFile);
-                ZipOutputStream zos = new ZipOutputStream(fos);
-                ZipProjectWriter zipWriter = new ZipProjectWriter(zos)) {
+             ZipOutputStream zos = new ZipOutputStream(fos);
+             ZipProjectWriter zipWriter = new ZipProjectWriter(zos)) {
             final CreateProject createProject = new CreateProject(zipWriter).groupId("io.quarkus")
                     .artifactId("basic-rest")
                     .version("1.0.0-SNAPSHOT");
-            Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
+            assertTrue(createProject.doCreateProject(new HashMap<>()));
         }
-        Assertions.assertTrue(zipFile.exists());
+        assertTrue(zipFile.exists());
         File unzipProject = new File(file, "unzipProject");
         try (FileInputStream fis = new FileInputStream(zipFile); ZipInputStream zis = new ZipInputStream(fis)) {
             ZipEntry zipEntry = zis.getNextEntry();
@@ -368,9 +366,9 @@ public class CreateProjectTest extends PlatformAwareTestBase {
             zis.closeEntry();
         }
         final File gitignore = new File(unzipProject, ".gitignore");
-        Assertions.assertTrue(gitignore.exists());
+        assertTrue(gitignore.exists());
         final String gitignoreContent = new String(Files.readAllBytes(gitignore.toPath()), StandardCharsets.UTF_8);
-        Assertions.assertTrue(gitignoreContent.contains("\ntarget/\n"));
+        assertTrue(gitignoreContent.contains("\ntarget/\n"));
     }
 
     private static File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {

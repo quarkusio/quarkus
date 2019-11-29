@@ -223,7 +223,7 @@ public class ResteasyStandaloneBuildStep {
             // We need to register a special handler for non-default deployment path (specified as application path or resteasyConfig.path)
             Handler<RoutingContext> handler = recorder.vertxRequestHandler(vertx.getVertx(), beanContainer.getValue());
             // Exact match for resources matched to the root path
-            routes.produce(new RouteBuildItem(standalone.deploymentRootPath, handler));
+            routes.produce(new RouteBuildItem(standalone.deploymentRootPath, handler, false));
             String matchPath = standalone.deploymentRootPath;
             if (matchPath.endsWith("/")) {
                 matchPath += "*";
@@ -231,7 +231,7 @@ public class ResteasyStandaloneBuildStep {
                 matchPath += "/*";
             }
             // Match paths that begin with the deployment path
-            routes.produce(new RouteBuildItem(matchPath, handler));
+            routes.produce(new RouteBuildItem(matchPath, handler, false));
         }
 
         boolean isVirtual = requireVirtual.isPresent();

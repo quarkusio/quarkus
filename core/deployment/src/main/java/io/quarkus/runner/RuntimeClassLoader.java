@@ -460,25 +460,21 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
 
     private URL findApplicationResource(String name) {
         Path resourcePath = null;
-
+        // Resource names are always separated by the "/" character.
+        // Here we are trying to resolve those resources using a filesystem
+        // Path, so we replace the "/" character with the filesystem
+        // specific separator before resolving
+        if (File.separatorChar != '/') {
+            name = name.replace('/', File.separatorChar);
+        }
         for (Path i : applicationClassDirectories) {
-            // Resource names are always separated by the "/" character.
-            // Here we are trying to resolve those resources using a filesystem
-            // Path, so we replace the "/" character with the filesystem
-            // specific separator before resolving
-            String path = name;
-            final String pathSeparator = i.getFileSystem().getSeparator();
-            if (!pathSeparator.equals("/")) {
-                path = name.replace("/", pathSeparator);
-            }
-            resourcePath = i.resolve(path);
+            resourcePath = i.resolve(name);
             if (Files.exists(resourcePath)) {
                 break;
             }
         }
         try {
-            return resourcePath != null && Files.exists(resourcePath) ? resourcePath.toUri()
-                    .toURL() : null;
+            return resourcePath != null && Files.exists(resourcePath) ? resourcePath.toUri().toURL() : null;
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
@@ -531,14 +527,20 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         URL url = null;
         if (applicationClasspath != null) {
             try {
-                URI uri = new URI("file", null, applicationClasspath.toString(), null);
+                String path = applicationClasspath.toString();
+                if (File.separatorChar != '/') {
+                    // Note that windows separator is always quoted in the URI constructor
+                    path = path.replace('/', File.separatorChar);
+                }
+                URI uri = new URI("file", null, path, null);
                 url = uri.toURL();
             } catch (URISyntaxException | MalformedURLException e) {
-                log.error("URL codeSource location for path " + applicationClasspath + " could not be created.");
+                log.error("URL codeSource location for path " + applicationClasspath + " could not be created.", e);
             }
         }
         CodeSource codesource = new CodeSource(url, (Certificate[]) null);
         ProtectionDomain protectionDomain = new ProtectionDomain(codesource, null, this, null);
         return protectionDomain;
     }
+    
 }

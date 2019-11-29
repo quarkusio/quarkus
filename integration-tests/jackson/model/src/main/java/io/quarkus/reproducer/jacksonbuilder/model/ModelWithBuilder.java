@@ -2,17 +2,13 @@ package io.quarkus.reproducer.jacksonbuilder.model;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+
+import io.quarkus.arc.Arc;
 
 /**
  * Simple model class.
@@ -136,18 +132,7 @@ public class ModelWithBuilder {
     // -------------------------------------------------------------------------
 
     private static ObjectMapper getObjectMapper() {
-        if (null == objectMapper) {
-            objectMapper = new ObjectMapper()
-                    .configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false)
-                    .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-                    .configure(SerializationFeature.WRITE_DATE_KEYS_AS_TIMESTAMPS, false)
-                    .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-                    .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
-                    .registerModule(new ParameterNamesModule())
-                    .registerModule(new Jdk8Module())
-                    .registerModule(new JavaTimeModule());
-        }
-        return objectMapper;
+        return Arc.container().instance(ObjectMapper.class).get();
     }
 
 }

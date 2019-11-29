@@ -3,6 +3,7 @@ package io.quarkus.qute.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static java.util.stream.Collectors.toMap;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
@@ -501,10 +502,14 @@ public class QuteProcessor {
         // Remove suffix from the path; e.g. "items.html" becomes "items"
         Set<String> filePaths = new HashSet<String>();
         for (TemplatePathBuildItem templatePath : templatePaths) {
-            filePaths.add(templatePath.getPath());
-            int idx = templatePath.getPath().lastIndexOf('.');
+            String filePath = templatePath.getPath();
+            if (File.separatorChar != '/') {
+                filePath = filePath.replace(File.separatorChar, '/');
+            }
+            filePaths.add(filePath);
+            int idx = filePath.lastIndexOf('.');
             if (idx != -1) {
-                filePaths.add(templatePath.getPath().substring(0, idx));
+                filePaths.add(filePath.substring(0, idx));
             }
         }
 

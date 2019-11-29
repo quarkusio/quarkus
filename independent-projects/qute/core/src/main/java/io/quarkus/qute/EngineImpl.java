@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -127,14 +128,10 @@ class EngineImpl implements Engine {
         for (Function<String, Optional<Reader>> locator : locators) {
             Optional<Reader> reader = locator.apply(id);
             if (reader.isPresent()) {
-                try {
-                    return new Parser(this).parse(reader.get());
-                } finally {
-                    try {
-                        reader.get().close();
-                    } catch (IOException e) {
-                        LOGGER.warn("Unable to close the reader for " + id, e);
-                    }
+                try (Reader r = reader.get()) {
+                    return new Parser(this).parse(ensureBufferedReader(reader.get()));
+                } catch (IOException e) {
+                    LOGGER.warn("Unable to close the reader for " + id, e);
                 }
             }
         }
@@ -146,6 +143,12 @@ class EngineImpl implements Engine {
         // Higher priority wins
         sorted.sort(Comparator.comparingInt(WithPriority::getPriority).reversed());
         return ImmutableList.copyOf(sorted);
+    }
+
+    private Reader ensureBufferedReader(Reader reader) {
+        return reader instanceof BufferedReader ? reader
+                : new BufferedReader(
+                        reader);
     }
 
 }

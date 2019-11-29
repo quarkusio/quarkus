@@ -1,14 +1,20 @@
-package io.quarkus.qute.resteasy.deployment;
+package io.quarkus.resteasy.qute.deployment;
 
 import org.jboss.jandex.DotName;
 
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.resteasy.TemplateResponseFilter;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.qute.runtime.TemplateResponseFilter;
 
-public class QuteResteasyProcessor {
+public class ResteasyQuteProcessor {
+
+    @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(FeatureBuildItem.RESTEASY_QUTE);
+    }
 
     @BuildStep
     ResteasyJaxrsProviderBuildItem registerProviders() {

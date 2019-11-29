@@ -13,8 +13,7 @@ import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
@@ -32,7 +31,7 @@ public class EngineProducer {
 
     public static final String INJECT_NAMESPACE = "inject";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EngineProducer.class);
+    private static final Logger LOGGER = Logger.getLogger(EngineProducer.class);
 
     @Inject
     Event<EngineBuilder> event;
@@ -49,7 +48,7 @@ public class EngineProducer {
             LOGGER.warn("Qute already initialized!");
             return;
         }
-        LOGGER.debug("Initializing Qute with: {}", resolverClasses);
+        LOGGER.debugf("Initializing Qute with: %s", resolverClasses);
 
         suffixes = config.suffixes;
         basePath = "templates/";
@@ -78,14 +77,14 @@ public class EngineProducer {
         // Add generated resolvers
         for (String resolverClass : resolverClasses) {
             builder.addValueResolver(createResolver(resolverClass));
-            LOGGER.debug("Added generated value resolver: {}", resolverClass);
+            LOGGER.debugf("Added generated value resolver: %s", resolverClass);
         }
         // Add tags
         this.tags = tags;
         for (String tag : tags) {
             // Strip suffix, item.html -> item
             String tagName = tag.contains(".") ? tag.substring(0, tag.lastIndexOf('.')) : tag;
-            LOGGER.debug("Registered UserTagSectionHelper for {}", tagName);
+            LOGGER.debugf("Registered UserTagSectionHelper for %s", tagName);
             builder.addSectionHelper(new UserTagSectionHelper.Factory(tagName));
         }
         // Add locator
@@ -134,13 +133,10 @@ public class EngineProducer {
      * @return the optional reader
      */
     private Optional<Reader> locate(String path) {
-        // Use the system separator
-        // TODO String path = path.replace('/', File.separatorChar);
-
         InputStream in = null;
         // First try to locate a tag template
         if (tags.stream().anyMatch(tag -> tag.startsWith(path))) {
-            LOGGER.debug("Locate tag for {}", path);
+            LOGGER.debugf("Locate tag for %s", path);
             in = locatePath(tagPath + path);
             // Try path with suffixes
             for (String suffix : suffixes) {
@@ -152,7 +148,7 @@ public class EngineProducer {
         }
         if (in == null) {
             String templatePath = basePath + path;
-            LOGGER.debug("Locate template for {}", templatePath);
+            LOGGER.debugf("Locate template for %s", templatePath);
             in = locatePath(templatePath);
         }
         if (in != null) {

@@ -1,4 +1,4 @@
-package io.quarkus.qute.resteasy;
+package io.quarkus.resteasy.qute.runtime;
 
 import static io.quarkus.qute.api.VariantTemplate.SELECTED_VARIANT;
 import static io.quarkus.qute.api.VariantTemplate.VARIANTS;

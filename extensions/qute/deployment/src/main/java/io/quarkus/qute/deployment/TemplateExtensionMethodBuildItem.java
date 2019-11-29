@@ -6,6 +6,11 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.qute.TemplateExtension;
 
+/**
+ * Represents a template extension method.
+ * 
+ * @see TemplateExtension
+ */
 public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
 
     private final MethodInfo method;

@@ -521,7 +521,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-qute-resteasy-deployment</artifactId>
+                <artifactId>quarkus-resteasy-qute-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -3,7 +3,6 @@ package io.quarkus.qute;
 import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 import io.quarkus.qute.TemplateNode.Origin;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayDeque;
@@ -82,7 +81,6 @@ class Parser implements Function<String, Expression> {
     Template parse(Reader reader) {
         long start = System.currentTimeMillis();
         templateId = engine.generateId();
-        reader = ensureBufferedReader(reader);
         try {
             int val;
             while ((val = reader.read()) != -1) {
@@ -416,12 +414,6 @@ class Parser implements Function<String, Expression> {
             }
         }
         return -1;
-    }
-
-    private Reader ensureBufferedReader(Reader reader) {
-        return reader instanceof BufferedReader ? reader
-                : new BufferedReader(
-                        reader);
     }
 
     static Iterator<String> splitSectionParams(String content) {

@@ -30,7 +30,7 @@ In your `pom.xml` file, add:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-qute-resteasy</artifactId>
+    <artifactId>quarkus-resteasy-qute</artifactId>
 </dependency>
 ----
 
@@ -72,12 +72,13 @@ public class HelloResource {
     }
 }
 ----
-<1> If there is no `@ResourcePath` qualifier provided the field name is used to locate the template. In this particular case, we're injecting a template with path `templates/hello.txt`.
+<1> If there is no `@ResourcePath` qualifier provided, the field name is used to locate the template. In this particular case, we're injecting a template with path `templates/hello.txt`.
 <2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
 <3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
 
-If running your application, you can request the endpoint:
+If your application is running, you can request the endpoint:
 
+[source, shell]
 ```
 $ curl -w "\n" http://localhost:8080/hello?name=Martin
 Hello Martin!
@@ -176,7 +177,7 @@ public class ItemResource {
 == Rendering Periodic Reports
 
 Templating engine could be also very useful when rendering periodic reports.
-You'll need to add `quarkus-scheduler` and `quarkus-qute` extensions first.
+You'll need to add the `quarkus-scheduler` and `quarkus-qute` extensions first.
 In your `pom.xml` file, add:
 
 [source,xml]
@@ -230,7 +231,7 @@ The template is simple:
 </html>
 ----
 <1> The loop section makes it possible to iterate over iterables, maps and streams.
-<2> This value expression is using https://en.wikipedia.org/wiki/Elvis_operator[elvis operator] - if the name is null the default value is used.
+<2> This value expression is using the https://en.wikipedia.org/wiki/Elvis_operator[elvis operator] - if the name is null the default value is used.
 
 [source,java]
 .ReportGenerator.java

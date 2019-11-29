@@ -116,7 +116,7 @@ class EvaluatorImpl implements Evaluator {
             this.resolutionContext = resolutionContext;
             if (Expressions.isVirtualMethod(name)) {
                 this.params = Expressions.parseVirtualMethodParams(name);
-                this.name = Expressions.parserVirtualMethodName(name);
+                this.name = Expressions.parseVirtualMethodName(name);
             } else {
                 this.params = Collections.emptyList();
                 this.name = name;

@@ -69,9 +69,11 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final String name;
 
-    private final boolean isDefaultBean;
+    private final boolean defaultBean;
 
-    // Gizmo consumers are only used by synthetic beans
+    // Following fields are only used by synthetic beans
+
+    private final boolean removable;
 
     private final Consumer<MethodCreator> creatorConsumer;
 
@@ -87,7 +89,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
                 alternativePriority,
                 stereotypes, name, isDefaultBean, null, null,
-                Collections.emptyMap());
+                Collections.emptyMap(), true);
     }
 
     BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
@@ -97,7 +99,7 @@ public class BeanInfo implements InjectionTargetInfo {
             List<StereotypeInfo> stereotypes,
             String name, boolean isDefaultBean, Consumer<MethodCreator> creatorConsumer,
             Consumer<MethodCreator> destroyerConsumer,
-            Map<String, Object> params) {
+            Map<String, Object> params, boolean isRemovable) {
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
             implClazz = initImplClazz(target, beanDeployment);
@@ -126,9 +128,10 @@ public class BeanInfo implements InjectionTargetInfo {
         this.alternativePriority = alternativePriority;
         this.stereotypes = stereotypes;
         this.name = name;
-        this.isDefaultBean = isDefaultBean;
+        this.defaultBean = isDefaultBean;
         this.creatorConsumer = creatorConsumer;
         this.destroyerConsumer = destroyerConsumer;
+        this.removable = isRemovable;
         this.params = params;
         // Identifier must be unique for a specific deployment
         this.identifier = Hashes.sha1(toString());
@@ -176,6 +179,10 @@ public class BeanInfo implements InjectionTargetInfo {
 
     public boolean isSynthetic() {
         return !target.isPresent();
+    }
+
+    public boolean isRemovable() {
+        return removable;
     }
 
     public DotName getBeanClass() {
@@ -259,6 +266,10 @@ public class BeanInfo implements InjectionTargetInfo {
         return !lifecycleInterceptors.isEmpty();
     }
 
+    public boolean hasAroundInvokeInterceptors() {
+        return !interceptedMethods.isEmpty();
+    }
+
     boolean isSubclassRequired() {
         return !interceptedMethods.isEmpty() || lifecycleInterceptors.containsKey(InterceptionType.PRE_DESTROY);
     }
@@ -323,7 +334,7 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     public boolean isDefaultBean() {
-        return isDefaultBean;
+        return defaultBean;
     }
 
     Consumer<MethodCreator> getCreatorConsumer() {
@@ -653,6 +664,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
         private Map<String, Object> params;
 
+        private boolean removable = true;
+
         Builder() {
             injections = Collections.emptyList();
             stereotypes = Collections.emptyList();
@@ -743,11 +756,15 @@ public class BeanInfo implements InjectionTargetInfo {
             return this;
         }
 
+        Builder removable(boolean val) {
+            this.removable = val;
+            return this;
+        }
+
         BeanInfo build() {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
-                    declaringBean,
-                    disposer, alternativePriority,
-                    stereotypes, name, isDefaultBean, creatorConsumer, destroyerConsumer, params);
+                    declaringBean, disposer, alternativePriority, stereotypes, name, isDefaultBean, creatorConsumer,
+                    destroyerConsumer, params, removable);
         }
 
     }

@@ -19,7 +19,7 @@ public interface BeanDeploymentValidator extends BuildExtension {
      * @see Key#OBSERVERS
      * @see DeploymentException
      */
-    default void validate(ValidationContext validationContext) {
+    default void validate(ValidationContext context) {
     }
 
     /**
@@ -37,6 +37,18 @@ public interface BeanDeploymentValidator extends BuildExtension {
         void addDeploymentProblem(Throwable t);
 
         List<Throwable> getDeploymentProblems();
+
+        /**
+         * 
+         * @return a new stream of beans that form the deployment
+         */
+        BeanStream beans();
+
+        /**
+         * 
+         * @return a new stream of beans that are considered {@code unused} and were removed from the deployment
+         */
+        BeanStream removedBeans();
 
     }
 

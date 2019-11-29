@@ -338,39 +338,37 @@ public class SmallRyeMetricsProcessor {
             ValidationPhaseBuildItem validationPhase,
             BeanArchiveIndexBuildItem beanArchiveIndex) {
         IndexView index = beanArchiveIndex.getIndex();
-        for (io.quarkus.arc.processor.BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
-            if (bean.isProducerField() || bean.isProducerMethod()) {
-                MetricType metricType = getMetricType(bean.getImplClazz());
-                if (metricType != null) {
-                    AnnotationTarget target = bean.getTarget().get();
-                    AnnotationInstance metricAnnotation = null;
-                    String memberName = null;
-                    if (bean.isProducerField()) {
-                        FieldInfo field = target.asField();
-                        metricAnnotation = field.annotation(METRIC);
-                        memberName = field.name();
-                    }
-                    if (bean.isProducerMethod()) {
-                        MethodInfo method = target.asMethod();
-                        metricAnnotation = method.annotation(METRIC);
-                        memberName = method.name();
-                    }
-                    if (metricAnnotation != null) {
-                        String nameValue = metricAnnotation.valueWithDefault(index, "name").asString();
-                        boolean absolute = metricAnnotation.valueWithDefault(index, "absolute").asBoolean();
-                        String metricSimpleName = !nameValue.isEmpty() ? nameValue : memberName;
-                        String declaringClassName = bean.getDeclaringBean().getImplClazz().name().toString();
-                        String metricsFinalName = absolute ? metricSimpleName
-                                : MetricRegistry.name(declaringClassName, metricSimpleName);
-                        recorder.registerMetricFromProducer(
-                                bean.getIdentifier(),
-                                metricType,
-                                metricsFinalName,
-                                metricAnnotation.valueWithDefault(index, "tags").asStringArray(),
-                                metricAnnotation.valueWithDefault(index, "description").asString(),
-                                metricAnnotation.valueWithDefault(index, "displayName").asString(),
-                                metricAnnotation.valueWithDefault(index, "unit").asString());
-                    }
+        for (io.quarkus.arc.processor.BeanInfo bean : validationPhase.getContext().beans().producers()) {
+            MetricType metricType = getMetricType(bean.getImplClazz());
+            if (metricType != null) {
+                AnnotationTarget target = bean.getTarget().get();
+                AnnotationInstance metricAnnotation = null;
+                String memberName = null;
+                if (bean.isProducerField()) {
+                    FieldInfo field = target.asField();
+                    metricAnnotation = field.annotation(METRIC);
+                    memberName = field.name();
+                }
+                if (bean.isProducerMethod()) {
+                    MethodInfo method = target.asMethod();
+                    metricAnnotation = method.annotation(METRIC);
+                    memberName = method.name();
+                }
+                if (metricAnnotation != null) {
+                    String nameValue = metricAnnotation.valueWithDefault(index, "name").asString();
+                    boolean absolute = metricAnnotation.valueWithDefault(index, "absolute").asBoolean();
+                    String metricSimpleName = !nameValue.isEmpty() ? nameValue : memberName;
+                    String declaringClassName = bean.getDeclaringBean().getImplClazz().name().toString();
+                    String metricsFinalName = absolute ? metricSimpleName
+                            : MetricRegistry.name(declaringClassName, metricSimpleName);
+                    recorder.registerMetricFromProducer(
+                            bean.getIdentifier(),
+                            metricType,
+                            metricsFinalName,
+                            metricAnnotation.valueWithDefault(index, "tags").asStringArray(),
+                            metricAnnotation.valueWithDefault(index, "description").asString(),
+                            metricAnnotation.valueWithDefault(index, "displayName").asString(),
+                            metricAnnotation.valueWithDefault(index, "unit").asString());
                 }
             }
         }

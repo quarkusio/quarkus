@@ -34,7 +34,6 @@ import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.QuarkusConfig;
@@ -192,10 +191,8 @@ public class SmallRyeFaultToleranceProcessor {
     void validateFaultToleranceAnnotations(
             ValidationPhaseBuildItem validationPhase, SmallryeFaultToleranceRecorder recorder) {
         List<String> beanNames = new ArrayList<>();
-        for (BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
-            if (bean.isClassBean()) {
-                beanNames.add(bean.getBeanClass().toString());
-            }
+        for (BeanInfo bean : validationPhase.getContext().beans().classBeans()) {
+            beanNames.add(bean.getBeanClass().toString());
         }
         recorder.validate(beanNames);
     }

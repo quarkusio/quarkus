@@ -12,9 +12,9 @@ public interface BeanRegistrar extends BuildExtension {
 
     /**
      *
-     * @param registrationContext
+     * @param context
      */
-    void register(RegistrationContext registrationContext);
+    void register(RegistrationContext context);
 
     interface RegistrationContext extends BuildContext {
 
@@ -33,6 +33,14 @@ public interface BeanRegistrar extends BuildExtension {
         default <T> BeanConfigurator<T> configure(Class<?> beanClass) {
             return configure(DotName.createSimple(beanClass.getName()));
         }
+
+        /**
+         * The returned stream contains all non-synthetic beans (beans derived from classes) and beans
+         * registered by other {@link BeanRegistrar}s before the stream is created.
+         * 
+         * @return a new stream of beans
+         */
+        BeanStream beans();
 
     }
 

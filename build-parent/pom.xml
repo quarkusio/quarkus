@@ -35,7 +35,7 @@
         <graal-sdk.version-for-documentation>19.2.1</graal-sdk.version-for-documentation>
         <rest-assured.version>4.1.1</rest-assured.version>
         <axle-client.version>0.0.9</axle-client.version>
-        <vertx.version>3.8.3</vertx.version>
+        <vertx.version>3.8.4</vertx.version>
         <artemis.version>2.10.1</artemis.version>
 
         <!-- Dev tools -->

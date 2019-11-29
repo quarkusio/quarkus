@@ -20,7 +20,7 @@ public class SecurityHandler {
         if (alreadyHandled(ic)) {
             return ic.proceed();
         }
-        constrainer.checkRoles(ic.getMethod());
+        constrainer.check(ic.getMethod(), ic.getParameters());
         return ic.proceed();
     }
 

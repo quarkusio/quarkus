@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.jboss.jandex.DotName;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 
@@ -16,6 +17,7 @@ public class SpringSecurityAnnotationsRegistrar implements InterceptorBindingReg
 
     static {
         SECURITY_BINDINGS.put(DotName.createSimple(Secured.class.getName()), Collections.singleton("value"));
+        SECURITY_BINDINGS.put(DotName.createSimple(PreAuthorize.class.getName()), Collections.singleton("value"));
     }
 
     @Override

@@ -17,7 +17,7 @@ public class SecurityCheckInstantiationUtil {
     private SecurityCheckInstantiationUtil() {
     }
 
-    public static Function<BytecodeCreator, ResultHandle> rolesAllowedSecurityCheck(final String[] rolesAllowed) {
+    public static Function<BytecodeCreator, ResultHandle> rolesAllowedSecurityCheck(String... rolesAllowed) {
         return new Function<BytecodeCreator, ResultHandle>() {
             @Override
             public ResultHandle apply(BytecodeCreator creator) {

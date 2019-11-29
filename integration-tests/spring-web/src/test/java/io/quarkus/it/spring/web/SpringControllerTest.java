@@ -26,6 +26,34 @@ public class SpringControllerTest {
     }
 
     @Test
+    public void testAllowedForAdminOrViewer() {
+        String path = "/api/allowedForUserOrViewer";
+        assertForAnonymous(path, 401, Optional.empty());
+        assertStatusAndContent(RestAssured.given().auth().preemptive().basic("aurea", "auri"), path, 403, Optional.empty());
+        assertStatusAndContent(RestAssured.given().auth().preemptive().basic("stuart", "test"), path, 200,
+                Optional.of("allowedForUserOrViewer"));
+        assertStatusAndContent(RestAssured.given().auth().preemptive().basic("george", "geo"), path, 200,
+                Optional.of("allowedForUserOrViewer"));
+    }
+
+    @Test
+    public void testWithAlwaysFalseChecker() {
+        String path = "/api/withAlwaysFalseChecker";
+        assertForAnonymous(path, 401, Optional.empty());
+        assertStatusAndContent(RestAssured.given().auth().preemptive().basic("george", "geo"), path, 403, Optional.empty());
+    }
+
+    @Test
+    public void testPreAuthorizeOnController() {
+        String path = "/api/preAuthorizeOnController";
+        assertForAnonymous(path, 401, Optional.empty());
+        assertStatusAndContent(RestAssured.given().auth().preemptive().basic("stuart", "test"), path, 200,
+                Optional.of("preAuthorizeOnController"));
+        assertStatusAndContent(RestAssured.given().auth().preemptive().basic("aurea", "auri"), path, 200,
+                Optional.of("preAuthorizeOnController"));
+    }
+
+    @Test
     public void shouldAccessAllowed() {
         assertForAnonymous("/api/accessibleForAllMethod", 200, Optional.of("accessibleForAll"));
         assertForUsers("/api/accessibleForAllMethod", 200, Optional.of("accessibleForAll"));

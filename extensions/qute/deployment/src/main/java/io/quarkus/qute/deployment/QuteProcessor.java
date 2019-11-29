@@ -36,8 +36,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
@@ -87,7 +86,7 @@ import io.quarkus.qute.rxjava.RxjavaPublisherFactory;
 
 public class QuteProcessor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(QuteProcessor.class);
+    private static final Logger LOGGER = Logger.getLogger(QuteProcessor.class);
 
     public static final DotName RESOURCE_PATH = DotName.createSimple(ResourcePath.class.getName());
     public static final DotName TEMPLATE = DotName.createSimple(Template.class.getName());
@@ -147,7 +146,9 @@ public class QuteProcessor {
         long start = System.currentTimeMillis();
         List<TemplateAnalysis> analysis = new ArrayList<>();
 
+        // A dummy engine instance is used to parse and validate all templates during the build. The real engine instance is created at startup.
         Engine dummyEngine = Engine.builder().addDefaultSectionHelpers().computeSectionHelper(name -> {
+            // Create a dummy section helper factory for an uknown section that could be potentially registered at runtime 
             return new SectionHelperFactory<SectionHelper>() {
                 @Override
                 public SectionHelper initialize(SectionInitContext context) {
@@ -169,7 +170,7 @@ public class QuteProcessor {
                 LOGGER.warn("Unable to analyze the template from path: " + path.getFullPath(), e);
             }
         }
-        LOGGER.debug("Finished analysis of {} templates  in {} ms",
+        LOGGER.debugf("Finished analysis of %s templates  in %s ms",
                 analysis.size(), System.currentTimeMillis() - start);
         return new TemplatesAnalysisBuildItem(analysis);
     }
@@ -216,7 +217,7 @@ public class QuteProcessor {
                             member = findTemplateExtensionMethod(name, match.clazz, templateExtensionMethods);
                         }
                         if (member == null && excludes.stream().anyMatch(e -> e.getPredicate().test(name, match.clazz))) {
-                            LOGGER.debug("No property found for {} in [{}] but it is intentionally ignored", name,
+                            LOGGER.debugf("No property found for %s in [%s] but it is intentionally ignored", name,
                                     expression.toOriginalString(), match.clazz);
                             break;
                         }
@@ -324,7 +325,7 @@ public class QuteProcessor {
                             }
                             if (member == null
                                     && excludes.stream().anyMatch(e -> e.getPredicate().test(name, match.clazz))) {
-                                LOGGER.debug("No property found for {} in [{}] but it is intentionally ignored", name,
+                                LOGGER.debugf("No property found for %s in [%s] but it is intentionally ignored", name,
                                         expression.toOriginalString(), match.clazz);
                                 break;
                             }
@@ -409,7 +410,7 @@ public class QuteProcessor {
                 }
                 String className = name.substring(0, idx).replace("/", ".");
                 boolean appClass = appClassPredicate.test(className);
-                LOGGER.debug("Writing {} [appClass={}]", name, appClass);
+                LOGGER.debugf("Writing %s [appClass=%s]", name, appClass);
                 generatedClass.produce(new GeneratedClassBuildItem(appClass, name, data));
             }
         };
@@ -443,18 +444,18 @@ public class QuteProcessor {
             generator.generate(data);
         }
 
-        Set<String> generateTypes = new HashSet<>();
-        generateTypes.addAll(generator.getGeneratedTypes());
+        Set<String> generatedTypes = new HashSet<>();
+        generatedTypes.addAll(generator.getGeneratedTypes());
 
         ExtensionMethodGenerator extensionMethodGenerator = new ExtensionMethodGenerator(classOutput);
         for (TemplateExtensionMethodBuildItem templateExtension : templateExtensionMethods) {
             extensionMethodGenerator.generate(templateExtension.getMethod());
         }
-        generateTypes.addAll(extensionMethodGenerator.getGeneratedTypes());
+        generatedTypes.addAll(extensionMethodGenerator.getGeneratedTypes());
 
-        LOGGER.debug("Generated types: {}", generateTypes);
+        LOGGER.debugf("Generated types: %s", generatedTypes);
 
-        for (String generateType : generateTypes) {
+        for (String generateType : generatedTypes) {
             generatedResolvers.produce(new GeneratedValueResolverBuildItem(generateType));
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generateType));
         }
@@ -477,15 +478,18 @@ public class QuteProcessor {
         String tagBasePath = basePath + "tags/";
         Path tagsPath = applicationArchive.getChildPath(tagBasePath);
         if (tagsPath != null) {
-            Iterator<Path> tagFiles = Files.list(tagsPath)
-                    .filter(Files::isRegularFile)
-                    .iterator();
-            while (tagFiles.hasNext()) {
-                Path path = tagFiles.next();
-                String tagPath = path.getFileName().toString();
-                LOGGER.debug("Found tag: {}", path);
-                produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources, tagBasePath, tagPath, path, true);
+            try (Stream<Path> tagFiles = Files.list(tagsPath)) {
+                Iterator<Path> iter = tagFiles.filter(Files::isRegularFile)
+                        .iterator();
+                while (iter.hasNext()) {
+                    Path path = iter.next();
+                    String tagPath = path.getFileName().toString();
+                    LOGGER.debugf("Found tag: %s", path);
+                    produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources, tagBasePath, tagPath, path,
+                            true);
+                }
             }
+
         }
     }
 
@@ -563,7 +567,7 @@ public class QuteProcessor {
             Map<String, List<String>> variants = new HashMap<>();
             scanVariants(basePath, templatesPath, templatesPath, variantBases, variants);
             templateVariants.produce(new TemplateVariantsBuildItem(variants));
-            LOGGER.debug("Variant templates found: {}", variants);
+            LOGGER.debugf("Variant templates found: %s", variants);
         }
     }
 
@@ -749,7 +753,7 @@ public class QuteProcessor {
                             new AnnotationValue[] { ignoreValue, propertiesValue });
                 });
             } else {
-                LOGGER.warn("@TemplateData#target() not available: {}", annotationTarget.asClass().name());
+                LOGGER.warnf("@TemplateData#target() not available: %s", annotationTarget.asClass().name());
             }
         }
     }
@@ -804,37 +808,40 @@ public class QuteProcessor {
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources)
             throws IOException {
-        Iterator<Path> files = Files.list(directory).iterator();
-        while (files.hasNext()) {
-            Path path = files.next();
-            if (Files.isRegularFile(path)) {
-                LOGGER.debug("Found template: {}", path);
-                String templatePath = root.relativize(path).toString();
-                produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources, basePath, templatePath, path,
-                        false);
-            } else if (Files.isDirectory(path) && !path.getFileName().toString().equals("tags")) {
-                LOGGER.debug("Scan directory: {}", path);
-                scan(root, path, basePath, watchedPaths, templatePaths, nativeImageResources);
+        try (Stream<Path> files = Files.list(directory)) {
+            Iterator<Path> iter = files.iterator();
+            while (iter.hasNext()) {
+                Path path = iter.next();
+                if (Files.isRegularFile(path)) {
+                    LOGGER.debugf("Found template: %s", path);
+                    String templatePath = root.relativize(path).toString();
+                    produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources, basePath, templatePath, path,
+                            false);
+                } else if (Files.isDirectory(path) && !path.getFileName().toString().equals("tags")) {
+                    LOGGER.debugf("Scan directory: %s", path);
+                    scan(root, path, basePath, watchedPaths, templatePaths, nativeImageResources);
+                }
             }
         }
     }
 
     void scanVariants(String basePath, Path root, Path directory, Set<String> variantBases, Map<String, List<String>> variants)
             throws IOException {
-        Iterator<Path> files = Files.list(directory)
-                .iterator();
-        while (files.hasNext()) {
-            Path path = files.next();
-            if (Files.isRegularFile(path)) {
-                for (String base : variantBases) {
-                    if (path.toAbsolutePath().toString().contains(base)) {
-                        // Variants are relative paths to base, e.g. "detail/item2"
-                        variants.computeIfAbsent(base, i -> new ArrayList<>())
-                                .add(root.relativize(path).toString());
+        try (Stream<Path> files = Files.list(directory)) {
+            Iterator<Path> iter = files.iterator();
+            while (iter.hasNext()) {
+                Path path = iter.next();
+                if (Files.isRegularFile(path)) {
+                    for (String base : variantBases) {
+                        if (path.toAbsolutePath().toString().contains(base)) {
+                            // Variants are relative paths to base, e.g. "detail/item2"
+                            variants.computeIfAbsent(base, i -> new ArrayList<>())
+                                    .add(root.relativize(path).toString());
+                        }
                     }
+                } else if (Files.isDirectory(path)) {
+                    scanVariants(basePath, root, path, variantBases, variants);
                 }
-            } else if (Files.isDirectory(path)) {
-                scanVariants(basePath, root, path, variantBases, variants);
             }
         }
     }

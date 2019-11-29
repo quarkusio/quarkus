@@ -11,8 +11,8 @@
         <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-qute-resteasy-parent</artifactId>
-    <name>Quarkus - Qute RESTEasy</name>
+    <artifactId>quarkus-resteasy-qute-parent</artifactId>
+    <name>Quarkus - RESTEasy - Qute</name>
     <packaging>pom</packaging>
 
     <modules>

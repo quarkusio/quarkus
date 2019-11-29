@@ -11,13 +11,9 @@ import java.lang.annotation.Target;
 import javax.enterprise.util.Nonbinding;
 import javax.inject.Qualifier;
 
-import io.quarkus.qute.runtime.QuteConfig;
-
 /**
  * Qualifies an injected template. The {@link #value()} is used to locate the template; it represents the path relative from
- * {@code META-INF/resources/${basePath}}.
- * 
- * @see QuteConfig#basePath
+ * the base path.
  */
 @Qualifier
 @Retention(RUNTIME)
@@ -25,8 +21,7 @@ import io.quarkus.qute.runtime.QuteConfig;
 public @interface ResourcePath {
 
     /**
-     * @return the path relative from {@code META-INF/resources/${basePath}}, must not be an empty string
-     * @see QuteConfig#basePath
+     * @return the path relative from the base path, must not be an empty string
      */
     @Nonbinding
     String value();

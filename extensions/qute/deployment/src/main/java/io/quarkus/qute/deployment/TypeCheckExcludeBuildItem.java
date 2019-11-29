@@ -6,6 +6,9 @@ import org.jboss.jandex.ClassInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ * Makes it possible to intentionally ignore some classes when performing type-safe checking.
+ */
 public final class TypeCheckExcludeBuildItem extends MultiBuildItem {
 
     private final BiPredicate<String, ClassInfo> predicate;

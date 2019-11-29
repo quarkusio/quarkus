@@ -17,10 +17,7 @@ import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.qute.Expressions;
 
-/**
- *
- */
-public class TypeCheckInfo {
+class TypeCheckInfo {
 
     static final String LEFT_ANGLE = "<";
     static final String RIGHT_ANGLE = ">";

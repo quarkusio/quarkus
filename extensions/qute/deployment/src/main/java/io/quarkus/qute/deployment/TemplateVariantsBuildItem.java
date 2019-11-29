@@ -5,6 +5,9 @@ import java.util.Map;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
+/**
+ * Holds all template variants found.
+ */
 public final class TemplateVariantsBuildItem extends SimpleBuildItem {
 
     private final Map<String, List<String>> variants;

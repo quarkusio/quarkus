@@ -94,9 +94,9 @@ public final class EngineBuilder {
     }
 
     /**
+     * A {@link Reader} instance produced by a locator is immediately closed right after the template content is parsed.
      * 
      * @param locator
-     * @return self
      * @return self
      * @see Engine#getTemplate(String)
      */

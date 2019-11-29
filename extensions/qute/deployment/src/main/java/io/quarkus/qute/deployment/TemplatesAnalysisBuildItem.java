@@ -6,6 +6,9 @@ import java.util.Set;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.qute.Expression;
 
+/**
+ * Represents the result of analysis of all templates.
+ */
 public final class TemplatesAnalysisBuildItem extends SimpleBuildItem {
 
     private final List<TemplateAnalysis> analysis;

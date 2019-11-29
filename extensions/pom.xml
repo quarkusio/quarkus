@@ -45,6 +45,7 @@
         <module>resteasy-jsonb</module>
         <module>resteasy-jackson</module>
         <module>resteasy-jaxb</module>
+        <module>resteasy-qute</module>
         <module>rest-client</module>
         <module>smallrye-openapi-common</module>
         <module>smallrye-openapi</module>
@@ -135,7 +136,6 @@
         
         <!-- Templating -->
         <module>qute</module>
-        <module>qute-resteasy</module>
     </modules>
 
     <!-- Unfortunately the config below introduces a build dependency on the maven plugin

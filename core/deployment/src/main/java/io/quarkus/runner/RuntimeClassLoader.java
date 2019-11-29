@@ -12,7 +12,6 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
@@ -527,14 +526,9 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         URL url = null;
         if (applicationClasspath != null) {
             try {
-                String path = applicationClasspath.toString();
-                if (File.separatorChar != '/') {
-                    // Note that windows separator is always quoted in the URI constructor
-                    path = path.replace('/', File.separatorChar);
-                }
-                URI uri = new URI("file", null, path, null);
+                URI uri = applicationClasspath.toUri();
                 url = uri.toURL();
-            } catch (URISyntaxException | MalformedURLException e) {
+            } catch (MalformedURLException e) {
                 log.error("URL codeSource location for path " + applicationClasspath + " could not be created.", e);
             }
         }
@@ -542,5 +536,5 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         ProtectionDomain protectionDomain = new ProtectionDomain(codesource, null, this, null);
         return protectionDomain;
     }
-    
+
 }

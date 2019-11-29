@@ -19,9 +19,8 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.jboss.logging.Logger;
 import org.reactivestreams.Publisher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
@@ -35,7 +34,7 @@ import io.quarkus.qute.api.VariantTemplate;
 @Singleton
 public class VariantTemplateProducer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(VariantTemplateProducer.class);
+    private static final Logger LOGGER = Logger.getLogger(VariantTemplateProducer.class);
 
     @Inject
     Instance<Engine> engine;
@@ -47,7 +46,7 @@ public class VariantTemplateProducer {
             LOGGER.warn("Qute VariantTemplateProducer already initialized!");
             return;
         }
-        LOGGER.debug("Initializing VariantTemplateProducer: {}", templateVariants);
+        LOGGER.debugf("Initializing VariantTemplateProducer: %s", templateVariants);
 
         templateVariants = new HashMap<>();
         for (Entry<String, List<String>> entry : variants.entrySet()) {
@@ -69,7 +68,7 @@ public class VariantTemplateProducer {
                 name = parameter.getJavaParameter().getName();
             } else {
                 name = injectionPoint.getMember().getName();
-                LOGGER.warn("Parameter name not present - using the method name as the template name instead {}", name);
+                LOGGER.warnf("Parameter name not present - using the method name as the template name instead %s", name);
             }
         }
         return new VariantTemplateImpl(name);
@@ -87,7 +86,7 @@ public class VariantTemplateProducer {
             }
         }
         if (path == null || path.value().isEmpty()) {
-            throw new IllegalStateException("No variant template reource path specified");
+            throw new IllegalStateException("No variant template resource path specified");
         }
         return new VariantTemplateImpl(path.value());
     }

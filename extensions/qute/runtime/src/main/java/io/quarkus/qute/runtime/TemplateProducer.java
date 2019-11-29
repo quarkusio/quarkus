@@ -11,8 +11,7 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Template;
@@ -22,7 +21,7 @@ import io.quarkus.qute.api.ResourcePath;
 @Singleton
 public class TemplateProducer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TemplateProducer.class);
+    private static final Logger LOGGER = Logger.getLogger(TemplateProducer.class);
 
     @Inject
     EngineProducer engineProducer;
@@ -39,7 +38,7 @@ public class TemplateProducer {
                 name = parameter.getJavaParameter().getName();
             } else {
                 name = injectionPoint.getMember().getName();
-                LOGGER.warn("Parameter name not present - using the method name as the template name instead {}", name);
+                LOGGER.warnf("Parameter name not present - using the method name as the template name instead %s", name);
             }
         }
         // Note that engine may not be initialized and so we inject a delegating template
@@ -68,21 +67,25 @@ public class TemplateProducer {
         private final Supplier<Template> template;
 
         public InjectableTemplate(String path, Iterable<String> suffixes) {
-            this.template = () -> {
-                Template template = engineProducer.getEngine().getTemplate(path);
-                if (template == null) {
-                    // Try path with suffixes
-                    for (String suffix : suffixes) {
-                        template = engineProducer.getEngine().getTemplate(path + "." + suffix);
-                        if (template != null) {
-                            break;
+            this.template = new Supplier<Template>() {
+
+                @Override
+                public Template get() {
+                    Template template = engineProducer.getEngine().getTemplate(path);
+                    if (template == null) {
+                        // Try path with suffixes
+                        for (String suffix : suffixes) {
+                            template = engineProducer.getEngine().getTemplate(path + "." + suffix);
+                            if (template != null) {
+                                break;
+                            }
+                        }
+                        if (template == null) {
+                            throw new IllegalStateException("No template found for path: " + path);
                         }
                     }
-                    if (template == null) {
-                        throw new IllegalStateException("No template found for path: " + path);
-                    }
+                    return template;
                 }
-                return template;
             };
         }
 

@@ -4,6 +4,9 @@ import java.nio.file.Path;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ * Represents a template path.
+ */
 public final class TemplatePathBuildItem extends MultiBuildItem {
 
     private final String path;

@@ -18,7 +18,7 @@ public final class Expressions {
         return value.indexOf(LEFT_BRACKET) != -1;
     }
 
-    public static String parserVirtualMethodName(String value) {
+    public static String parseVirtualMethodName(String value) {
         int start = value.indexOf(LEFT_BRACKET);
         return value.substring(0, start);
     }

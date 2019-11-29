@@ -49,22 +49,11 @@ public class GradleBuildFile extends BuildFile {
     private void completeBuildContent(String groupId, String version, QuarkusPlatformDescriptor platform, Properties props) throws IOException {
         final String buildContent = getModel().getBuildContent();
         StringBuilder res = new StringBuilder(buildContent);
-        if (!buildContent.contains("io.quarkus:quarkus-gradle-plugin")) {
-            res.append(System.lineSeparator());
-            res.append("buildscript {").append(System.lineSeparator());
-            res.append("    repositories {").append(System.lineSeparator());
-            res.append("        mavenLocal()").append(System.lineSeparator());
-            res.append("    }").append(System.lineSeparator());
-            res.append("    dependencies {").append(System.lineSeparator());
-            res.append("        classpath \"io.quarkus:quarkus-gradle-plugin:")
-                    .append(ToolsUtils.getPluginVersion(props))
-                    .append("\"")
-                    .append(System.lineSeparator());
-            res.append("    }").append(System.lineSeparator());
-            res.append("}").append(System.lineSeparator());
-        }
-        if (!buildContent.contains("apply plugin: 'io.quarkus'") && !buildContent.contains("id 'io.quarkus'")) {
-            res.append(System.lineSeparator()).append("apply plugin: 'io.quarkus'").append(System.lineSeparator());
+        if (!buildContent.contains("id 'io.quarkus'")) {
+            res.append("plugins {");
+            res.append(System.lineSeparator()).append("    id 'java'").append(System.lineSeparator());
+            res.append(System.lineSeparator()).append("    id 'io.quarkus'").append(System.lineSeparator());
+            res.append("}");
         }
         if (!containsBOM(platform.getBomGroupId(), platform.getBomArtifactId())) {
             res.append(System.lineSeparator());
@@ -92,22 +81,12 @@ public class GradleBuildFile extends BuildFile {
 
     private void completeSettingsContent(String artifactId) throws IOException {
         final String settingsContent = getModel().getSettingsContent();
-        final StringBuilder res = new StringBuilder(settingsContent);
-        if (!settingsContent.contains("io.quarkus:quarkus-gradle-plugin")) {
+        final StringBuilder res = new StringBuilder();
+        if (!settingsContent.contains("id 'io.quarkus'")) {
             res.append(System.lineSeparator());
             res.append("pluginManagement {").append(System.lineSeparator());
-            res.append("    repositories {").append(System.lineSeparator());
-            res.append("        mavenLocal()").append(System.lineSeparator());
-            res.append("        mavenCentral()").append(System.lineSeparator());
-            res.append("        gradlePluginPortal()").append(System.lineSeparator());
-            res.append("    }").append(System.lineSeparator());
-            res.append("    resolutionStrategy {").append(System.lineSeparator());
-            res.append("        eachPlugin {").append(System.lineSeparator());
-            res.append("            if (requested.id.id == 'io.quarkus') {").append(System.lineSeparator());
-            res.append("                useModule(\"io.quarkus:quarkus-gradle-plugin:${quarkusPluginVersion}\")")
-                    .append(System.lineSeparator());
-            res.append("            }").append(System.lineSeparator());
-            res.append("        }").append(System.lineSeparator());
+            res.append("    plugins {").append(System.lineSeparator());
+            res.append("        id 'io.quarkus' version \"${quarkusPluginVersion}\"").append(System.lineSeparator());
             res.append("    }").append(System.lineSeparator());
             res.append("}").append(System.lineSeparator());
         }
@@ -115,6 +94,7 @@ public class GradleBuildFile extends BuildFile {
             res.append(System.lineSeparator()).append("rootProject.name='").append(artifactId).append("'")
                     .append(System.lineSeparator());
         }
+        res.append(settingsContent);
         getModel().setSettingsContent(res.toString());
     }
 

@@ -66,9 +66,12 @@ public class ResteasyBuiltinsProcessor {
         providers.produce(new ResteasyJaxrsProviderBuildItem(ForbiddenExceptionMapper.class.getName()));
     }
 
+    @Record(STATIC_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
-    void setupExceptionMapper(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
+    void setupExceptionMapper(BuildProducer<ResteasyJaxrsProviderBuildItem> providers, HttpRootPathBuildItem httpRoot,
+            ExceptionMapperRecorder recorder) {
         providers.produce(new ResteasyJaxrsProviderBuildItem(NotFoundExceptionMapper.class.getName()));
+        recorder.setHttpRoot(httpRoot.getRootPath());
     }
 
     @Record(STATIC_INIT)
@@ -92,7 +95,7 @@ public class ResteasyBuiltinsProcessor {
             ExceptionMapperRecorder recorder, HttpRootPathBuildItem httpRoot) {
         List<String> endpoints = displayableEndpoints
                 .stream()
-                .map(displayableAdditionalBuildItem -> httpRoot.adjustPath(displayableAdditionalBuildItem.getEndpoint())
+                .map(displayableAdditionalBuildItem -> displayableAdditionalBuildItem.getEndpoint()
                         .substring(1))
                 .sorted()
                 .collect(Collectors.toList());

@@ -32,7 +32,7 @@ class MockMailerImplTest {
 
     @AfterAll
     static void stop() {
-        vertx.close();
+        vertx.close().toCompletableFuture().join();
     }
 
     @BeforeEach

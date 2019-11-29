@@ -4,12 +4,13 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
-
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -20,12 +21,22 @@ import io.vertx.core.http.WebSocketConnectOptions;
 
 @QuarkusTest
 class VertxGraphqlTest {
-
-    @Inject
-    Vertx vertx;
-
     public static int getPortFromConfig() {
         return ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class).orElse(8081);
+    }
+
+    private static Vertx vertx;
+
+    @BeforeAll
+    public static void initializeVertx() {
+        vertx = Vertx.vertx();
+    }
+
+    @AfterAll
+    public static void closeVertx() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        vertx.close((h) -> latch.countDown());
+        latch.await();
     }
 
     @Test

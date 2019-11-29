@@ -97,6 +97,12 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         return (PanacheQuery<T>) this;
     }
 
+    @Override
+    public <T extends Entity> PanacheQuery<T> withHint(String hintName, Object value) {
+        jpaQuery.setHint(hintName, value);
+        return (PanacheQuery<T>) this;
+    }
+
     // Results
 
     @Override

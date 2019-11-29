@@ -123,6 +123,15 @@ public interface PanacheQuery<Entity> {
      */
     public <T extends Entity> PanacheQuery<T> withLock(LockModeType lockModeType);
 
+    /**
+     * Set a query property or hint on the underlying JPA Query.
+     *
+     * @param hintName name of the property or hint.
+     * @param value value for the property or hint.
+     * @return this query, modified
+     */
+    public <T extends Entity> PanacheQuery<T> withHint(String hintName, Object value);
+
     // Results
 
     /**

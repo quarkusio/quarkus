@@ -313,3 +313,4 @@ Quarkus supports additional Spring compatibility features. See the following gui
 
 * link:spring-web[Quarkus - Extension for Spring Web]
 * link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
+* link:spring-security[Quarkus - Extension for Spring Security]

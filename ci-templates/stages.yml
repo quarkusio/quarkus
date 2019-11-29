@@ -85,7 +85,7 @@ stages:
       - job: Build_JDK8_Linux
         displayName: 'Build JDK8 Linux'
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
-        timeoutInMinutes: 60
+        timeoutInMinutes: 75
         pool:
           vmImage: 'Ubuntu 16.04'
 
@@ -105,7 +105,7 @@ stages:
       - job: Windows_Build
         displayName: 'Windows JVM Build'
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
-        timeoutInMinutes: 60
+        timeoutInMinutes: 75
         pool:
           # Always use hosted pool for windows
           vmImage: 'vs2017-win2016'
@@ -127,7 +127,7 @@ stages:
               options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
 
       - job: Build_JDK11_Linux
-        timeoutInMinutes: 60
+        timeoutInMinutes: 75
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         displayName: 'Linux JDK11 Build'
         pool: ${{parameters.poolSettings}}
@@ -141,7 +141,7 @@ stages:
           - template: prepare-cache.yaml
 
       - job: Build_JDK12_Linux
-        timeoutInMinutes: 60
+        timeoutInMinutes: 75
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         displayName: 'Linux JDK12 Build'
         pool: ${{parameters.poolSettings}}

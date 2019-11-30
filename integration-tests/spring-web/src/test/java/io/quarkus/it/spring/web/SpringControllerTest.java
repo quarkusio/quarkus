@@ -1,7 +1,8 @@
 package io.quarkus.it.spring.web;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.isEmptyString;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.is;
 
 import java.util.Optional;
 
@@ -136,7 +137,7 @@ public class SpringControllerTest {
     public void testSecondResponseStatusHoldingException() {
         RestAssured.when().get("/exception/second").then()
                 .contentType("text/plain")
-                .body(isEmptyString())
+                .body(is(emptyString()))
                 .statusCode(503);
     }
 
@@ -144,7 +145,7 @@ public class SpringControllerTest {
     public void testExceptionHandlerVoidReturnType() {
         RestAssured.when().get("/exception/void").then()
                 .contentType("text/plain")
-                .body(isEmptyString())
+                .body(is(emptyString()))
                 .statusCode(400);
     }
 
@@ -152,7 +153,7 @@ public class SpringControllerTest {
     public void testExceptionHandlerWithoutResponseStatusOnExceptionOrMethod() {
         RestAssured.when().get("/exception/unannotated").then()
                 .contentType("text/plain")
-                .body(isEmptyString())
+                .body(is(emptyString()))
                 .statusCode(204);
     }
 

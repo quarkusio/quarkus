@@ -150,6 +150,12 @@ public class MongoClientConfig {
     public boolean tlsInsecure;
 
     /**
+     * Class name for custom SSLContext, must implement {@code SSLContextConfig}.
+     */
+    @ConfigItem
+    public Optional<String> sslContextClass;
+
+    /**
      * Whether to connect using TLS.
      */
     @ConfigItem(defaultValue = "false")

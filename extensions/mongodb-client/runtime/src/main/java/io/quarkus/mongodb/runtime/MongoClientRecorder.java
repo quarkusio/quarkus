@@ -5,6 +5,7 @@ import static com.mongodb.AuthenticationMechanism.MONGODB_X509;
 import static com.mongodb.AuthenticationMechanism.PLAIN;
 import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_1;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -13,6 +14,8 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import javax.net.ssl.SSLContext;
 
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistries;
@@ -133,7 +136,10 @@ public class MongoClientRecorder {
         }
 
         if (config.tls) {
-            settings.applyToSslSettings(builder -> builder.enabled(true).invalidHostNameAllowed(config.tlsInsecure));
+            settings.applyToSslSettings(builder -> {
+                builder.enabled(true).invalidHostNameAllowed(config.tlsInsecure);
+                config.sslContextClass.ifPresent(i -> builder.context(getSSLContext(config.sslContextClass.get())));
+            });
         }
 
         settings.applyToClusterSettings(builder -> {
@@ -266,4 +272,22 @@ public class MongoClientRecorder {
                     }
                 }).collect(Collectors.toList());
     }
+
+    private SSLContext getSSLContext(String className) {
+        try {
+            Class clazz = Class.forName(className);
+            if (SSLContextConfig.class.isAssignableFrom(clazz)) {
+                SSLContextConfig SSLContextConfig = (SSLContextConfig) clazz.getDeclaredConstructor().newInstance();
+                return SSLContextConfig.getSSLContext();
+            } else {
+                throw new IllegalArgumentException(
+                        "The class you specified in quarkus.mongodb.ssl-context-class does not implement io.quarkus.mongodb.runtime.SSLContextConfig");
+            }
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new IllegalArgumentException("Impossible to instantiate : '" + className + "' to set the SSLContext");
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Impossible to find class : '" + className + "' to set the SSLContext");
+        }
+    }
+
 }

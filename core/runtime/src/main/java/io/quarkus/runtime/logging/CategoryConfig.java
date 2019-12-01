@@ -7,12 +7,6 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class CategoryConfig {
 
     /**
-     * The minimum level that this category can be set to
-     */
-    @ConfigItem(defaultValue = "inherit")
-    String minLevel;
-
-    /**
      * The log level level for this category
      */
     @ConfigItem(defaultValue = "inherit")

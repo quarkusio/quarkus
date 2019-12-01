@@ -104,7 +104,8 @@ class NativeImageConfigBuildStep {
                 } else {
                     // On MacOS, the SunEC library is directly in jre/lib/
                     // This is useful for testing or if you have a similar environment in production
-                    systemProperty.produce(new SystemPropertyBuildItem("java.library.path", graalVmLibDirectory.toString()));
+                    javaLibraryPathAdditionalPath
+                            .produce(new JavaLibraryPathAdditionalPathBuildItem(graalVmLibDirectory.toString()));
                 }
 
                 // This is useful for testing but the user will have to override it.

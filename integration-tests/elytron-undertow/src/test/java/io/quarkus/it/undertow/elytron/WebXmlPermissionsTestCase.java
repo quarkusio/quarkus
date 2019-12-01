@@ -21,7 +21,7 @@ class WebXmlPermissionsTestCase {
                 .body("Bill")
                 .contentType(ContentType.TEXT)
                 .when()
-                .post("/")
+                .post("/foo/")
                 .then()
                 .statusCode(200)
                 .body(is("hello Bill"));
@@ -31,7 +31,7 @@ class WebXmlPermissionsTestCase {
     void testOpenApiNoPermissions() {
         given()
                 .when()
-                .get("/openapi")
+                .get("/foo/openapi")
                 .then()
                 .statusCode(401);
     }
@@ -41,7 +41,7 @@ class WebXmlPermissionsTestCase {
         given()
                 .header("Authorization", "Basic am9objpqb2hu")
                 .when()
-                .get("/openapi")
+                .get("/foo/openapi")
                 .then()
                 .statusCode(403);
     }
@@ -52,7 +52,7 @@ class WebXmlPermissionsTestCase {
                 .auth()
                 .basic("mary", "mary")
                 .when()
-                .get("/openapi")
+                .get("/foo/openapi")
                 .then()
                 .statusCode(200);
     }
@@ -62,7 +62,7 @@ class WebXmlPermissionsTestCase {
         given()
                 .header("Authorization", "Basic am9objpqb2hu")
                 .when()
-                .get("/secure/a")
+                .get("/foo/secure/a")
                 .then()
                 .statusCode(403);
     }
@@ -71,7 +71,7 @@ class WebXmlPermissionsTestCase {
     void testSecuredServletWithNoAuth() {
         given()
                 .when()
-                .get("/secure/a")
+                .get("/foo/secure/a")
                 .then()
                 .statusCode(401);
     }
@@ -82,7 +82,7 @@ class WebXmlPermissionsTestCase {
                 .auth()
                 .basic("mary", "mary")
                 .when()
-                .get("/secure/a")
+                .get("/foo/secure/a")
                 .then()
                 .statusCode(200);
     }

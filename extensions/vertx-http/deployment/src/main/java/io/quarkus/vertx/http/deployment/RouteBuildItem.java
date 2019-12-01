@@ -15,19 +15,34 @@ public final class RouteBuildItem extends MultiBuildItem {
     private final Function<Router, Route> routeFunction;
     private final Handler<RoutingContext> handler;
     private final HandlerType type;
+    private final boolean resume;
 
-    public RouteBuildItem(Function<Router, Route> routeFunction, Handler<RoutingContext> handler, HandlerType type) {
+    public RouteBuildItem(Function<Router, Route> routeFunction, Handler<RoutingContext> handler, HandlerType type,
+            boolean resume) {
         this.routeFunction = routeFunction;
         this.handler = handler;
         this.type = type;
+        this.resume = resume;
+    }
+
+    public RouteBuildItem(Function<Router, Route> routeFunction, Handler<RoutingContext> handler, HandlerType type) {
+        this(routeFunction, handler, type, true);
     }
 
     public RouteBuildItem(Function<Router, Route> routeFunction, Handler<RoutingContext> handler) {
         this(routeFunction, handler, HandlerType.NORMAL);
     }
 
+    public RouteBuildItem(String route, Handler<RoutingContext> handler, HandlerType type, boolean resume) {
+        this(new BasicRoute(route), handler, type, resume);
+    }
+
     public RouteBuildItem(String route, Handler<RoutingContext> handler, HandlerType type) {
         this(new BasicRoute(route), handler, type);
+    }
+
+    public RouteBuildItem(String route, Handler<RoutingContext> handler, boolean resume) {
+        this(new BasicRoute(route), handler, HandlerType.NORMAL, resume);
     }
 
     public RouteBuildItem(String route, Handler<RoutingContext> handler) {
@@ -46,4 +61,7 @@ public final class RouteBuildItem extends MultiBuildItem {
         return routeFunction;
     }
 
+    public boolean isResume() {
+        return resume;
+    }
 }

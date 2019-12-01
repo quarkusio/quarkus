@@ -98,12 +98,6 @@ public final class ExtensionLoader {
     }
 
     private static final Logger cfgLog = Logger.getLogger("io.quarkus.configuration");
-
-    public static final String BUILD_TIME_CONFIG = "io.quarkus.runtime.generated.BuildTimeConfig";
-    public static final String BUILD_TIME_CONFIG_ROOT = "io.quarkus.runtime.generated.BuildTimeConfigRoot";
-    public static final String RUN_TIME_CONFIG = "io.quarkus.runtime.generated.RunTimeConfig";
-    public static final String RUN_TIME_CONFIG_ROOT = "io.quarkus.runtime.generated.RunTimeConfigRoot";
-
     private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
 
     @SuppressWarnings("deprecation")

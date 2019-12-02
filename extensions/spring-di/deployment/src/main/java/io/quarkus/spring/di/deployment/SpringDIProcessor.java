@@ -129,7 +129,8 @@ public class SpringDIProcessor {
         for (final DotName name : stereotypeScopes.keySet()) {
             instances.put(name, index.getAnnotations(name)
                     .stream()
-                    .filter(it -> isAnnotation(it.target().asClass().flags()))
+                    .filter(it -> it.target().kind() == AnnotationTarget.Kind.CLASS
+                            && isAnnotation(it.target().asClass().flags()))
                     .collect(Collectors.toSet()));
         }
         additionalStereotypeBuildItemBuildProducer.produce(new AdditionalStereotypeBuildItem(instances));

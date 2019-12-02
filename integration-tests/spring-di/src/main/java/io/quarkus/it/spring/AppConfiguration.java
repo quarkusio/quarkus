@@ -33,11 +33,21 @@ public class AppConfiguration {
         return new AnotherRequestBean();
     }
 
+    @Bean
+    @CustomPrototype
+    public CustomPrototypeBean beanWithCustomPrototype() {
+        return new CustomPrototypeBean();
+    }
+
     private static class SingletonBean {
 
     }
 
     private static class AnotherRequestBean {
+
+    }
+
+    public static class CustomPrototypeBean {
 
     }
 }

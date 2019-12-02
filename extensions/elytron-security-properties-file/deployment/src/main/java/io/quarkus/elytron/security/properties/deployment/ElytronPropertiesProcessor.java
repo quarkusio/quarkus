@@ -1,11 +1,8 @@
 package io.quarkus.elytron.security.properties.deployment;
 
-import java.util.Set;
-
 import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.SecurityRealm;
 
-import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -106,24 +103,6 @@ class ElytronPropertiesProcessor {
         if (propertiesConfig.embedded.enabled) {
             MPRealmConfig realmConfig = propertiesConfig.embedded;
             log.info("Configuring from MPRealmConfig");
-            // These are not being populated correctly by the core config Map logic for some reason, so reparse them here
-            log.debugf("MPRealmConfig.users: %s", realmConfig.users);
-            log.debugf("MPRealmConfig.roles: %s", realmConfig.roles);
-            Set<String> userKeys = QuarkusConfig.getNames(USERS_PREFIX);
-
-            log.debugf("userKeys: %s", userKeys);
-            for (String key : userKeys) {
-                String pass = QuarkusConfig.getString(USERS_PREFIX + '.' + key, null, false);
-                log.debugf("%s.pass = %s", key, pass);
-                realmConfig.users.put(key, pass);
-            }
-            Set<String> roleKeys = QuarkusConfig.getNames(ROLES_PREFIX);
-            log.debugf("roleKeys: %s", roleKeys);
-            for (String key : roleKeys) {
-                String roles = QuarkusConfig.getString(ROLES_PREFIX + '.' + key, null, false);
-                log.debugf("%s.roles = %s", key, roles);
-                realmConfig.roles.put(key, roles);
-            }
 
             RuntimeValue<SecurityRealm> realm = recorder.createRealm(realmConfig);
             securityRealm

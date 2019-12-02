@@ -1,5 +1,6 @@
 package io.quarkus.gradle;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,7 +34,7 @@ public class QuarkusPluginTest {
 
         TaskContainer tasks = project.getTasks();
 
-        assertTrue(tasks.getByName("assemble").getDependsOn().contains(tasks.getByName("quarkusBuild")));
+        assertThat(tasks.getByName("assemble").getDependsOn()).contains(tasks.getByName("quarkusBuild"));
     }
 
     @Test
@@ -44,7 +45,7 @@ public class QuarkusPluginTest {
 
         TaskContainer tasks = project.getTasks();
 
-        assertTrue(tasks.getByName("quarkusBuild").getDependsOn().contains(tasks.getByName("classes")));
-        assertTrue(tasks.getByName("quarkusDev").getDependsOn().contains(tasks.getByName("classes")));
+        assertThat(tasks.getByName("quarkusBuild").getDependsOn()).contains(tasks.getByName("classes"));
+        assertThat(tasks.getByName("quarkusDev").getDependsOn()).contains(tasks.getByName("classes"));
     }
 }

@@ -1,5 +1,7 @@
 package io.quarkus.it.spring;
 
+import static io.quarkus.it.spring.AppConfiguration.CustomPrototypeBean;
+
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
@@ -18,6 +20,8 @@ public class InjectedSpringBeansResource {
     RequestBean requestBean;
     @Inject
     SessionBean sessionBean;
+    @Inject
+    CustomPrototypeBean anotherRequestBean;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)

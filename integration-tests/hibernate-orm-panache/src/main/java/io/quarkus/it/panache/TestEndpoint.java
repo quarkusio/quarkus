@@ -18,6 +18,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.hibernate.engine.spi.SelfDirtinessTracker;
+import org.hibernate.jpa.QueryHints;
 import org.junit.jupiter.api.Assertions;
 
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
@@ -89,6 +90,11 @@ public class TestEndpoint {
         Assertions.assertEquals(person, persons.get(0));
 
         persons = Person.find("name = ?1", "stef").withLock(LockModeType.PESSIMISTIC_READ).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        // next calls to this query will be cached
+        persons = Person.find("name = ?1", "stef").withHint(QueryHints.HINT_CACHEABLE, "true").list();
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
 

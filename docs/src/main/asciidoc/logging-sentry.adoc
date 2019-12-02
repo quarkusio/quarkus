@@ -1,0 +1,63 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Configuring Sentry Logging
+
+include::./attributes.adoc[]
+
+This guide explains sentry logging and how to configure it.
+
+== Run Time Configuration
+
+Run time configuration of logging is done through the normal `application.properties` file.
+
+include::{generated-dir}/config/quarkus-logging-sentry.adoc[opts=optional, leveloffset=+1]
+
+== Description
+
+Sentry is a really easy way to be notified of errors happening on you Quarkus application.
+
+It is a Open Source, Self-hosted and cloud-based error monitoring that helps software teams discover, triage, and prioritize errors in real-time.
+
+They offer a free starter price for cloud-based or you can self host it for free.
+
+== Configuration
+
+To start of, you need to get a Sentry DSN either by https://sentry.io/signup/[creating a Sentry account] or https://docs.sentry.io/server/[installing your self-hosted Sentry].
+
+In order to configure Sentry logging, the `quarkus-logging-sentry` extension should be employed. Add this extension to your
+application POM as the following snippet illustrates.
+
+.Modifications to POM file to add the Sentry logging extension
+[source,xml]
+----
+<build>
+  <dependencies>
+    <!-- ... your other dependencies are here ... -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-logging-sentry</artifactId>
+    </dependency>
+  </dependencies>
+</build>
+----
+
+== Example
+
+.All errors and warnings occuring in any the packages will be sent to Sentry with DSN `https://abcd@sentry.io/1234`
+[source, properties]
+----
+quarkus.log.sentry=true
+quarkus.log.sentry.dsn=https://abcd@sentry.io/1234
+----
+
+.All errors occuring in the package `org.example` will be sent to Sentry with DSN `https://abcd@sentry.io/1234`
+[source, properties]
+----
+quarkus.log.sentry=true
+quarkus.log.sentry.dsn=https://abcd@sentry.io/1234
+quarkus.log.sentry.level=ERROR
+quarkus.log.sentry.in-app-packages=org.example
+----

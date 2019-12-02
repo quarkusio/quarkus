@@ -737,6 +737,16 @@
                 <artifactId>quarkus-test-kubernetes-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-qute</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-qute</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- External dependencies -->
 
@@ -2456,6 +2466,23 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-vertx-graphql</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            
+            <!--  Qute  -->
+            <dependency>
+                <groupId>io.quarkus.qute</groupId>
+                <artifactId>qute-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus.qute</groupId>
+                <artifactId>qute-generator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus.qute</groupId>
+                <artifactId>qute-rxjava</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

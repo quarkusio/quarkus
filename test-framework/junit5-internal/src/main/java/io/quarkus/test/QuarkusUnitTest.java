@@ -362,8 +362,12 @@ public class QuarkusUnitTest
 
                     @Override
                     public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                        Files.delete(dir);
-                        return FileVisitResult.CONTINUE;
+                        if (exc == null) {
+                            Files.delete(dir);
+                            return FileVisitResult.CONTINUE;
+                        } else {
+                            throw exc;
+                        }
                     }
                 });
             }

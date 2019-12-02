@@ -1,0 +1,10 @@
+---
+name: "Qute - templating"
+metadata:
+  keywords:
+  - "templating"
+  - "templates"
+  guide: "https://quarkus.io/guides/qute"
+  categories:
+  - "miscellaneous"
+  status: "preview"

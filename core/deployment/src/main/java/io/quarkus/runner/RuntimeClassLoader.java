@@ -12,7 +12,6 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
@@ -460,7 +459,13 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
 
     private URL findApplicationResource(String name) {
         Path resourcePath = null;
-
+        // Resource names are always separated by the "/" character.
+        // Here we are trying to resolve those resources using a filesystem
+        // Path, so we replace the "/" character with the filesystem
+        // specific separator before resolving
+        if (File.separatorChar != '/') {
+            name = name.replace('/', File.separatorChar);
+        }
         for (Path i : applicationClassDirectories) {
             resourcePath = i.resolve(name);
             if (Files.exists(resourcePath)) {
@@ -468,8 +473,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
             }
         }
         try {
-            return resourcePath != null && Files.exists(resourcePath) ? resourcePath.toUri()
-                    .toURL() : null;
+            return resourcePath != null && Files.exists(resourcePath) ? resourcePath.toUri().toURL() : null;
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
@@ -522,14 +526,15 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         URL url = null;
         if (applicationClasspath != null) {
             try {
-                URI uri = new URI("file", null, applicationClasspath.toString(), null);
+                URI uri = applicationClasspath.toUri();
                 url = uri.toURL();
-            } catch (URISyntaxException | MalformedURLException e) {
-                log.error("URL codeSource location for path " + applicationClasspath + " could not be created.");
+            } catch (MalformedURLException e) {
+                log.error("URL codeSource location for path " + applicationClasspath + " could not be created.", e);
             }
         }
         CodeSource codesource = new CodeSource(url, (Certificate[]) null);
         ProtectionDomain protectionDomain = new ProtectionDomain(codesource, null, this, null);
         return protectionDomain;
     }
+
 }

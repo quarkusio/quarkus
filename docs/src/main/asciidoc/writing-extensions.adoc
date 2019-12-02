@@ -1663,8 +1663,11 @@ A class that will be initialized at runtime rather than build time. This will ca
 `io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem`::
 A convenience feature that allows you to control most of the above features from a single build item.
 
-`io.quarkus.deployment.builditem.NativeEnableAllCharsetsBuildItem`::
+`io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem`::
 Indicates that all charsets should be enabled in native image.
+
+`io.quarkus.deployment.builditem.NativeImageEnableAllTimeZonesBuildItem`::
+Indicates that all timezones should be enabled in native image.
 
 `io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem`::
 A convenient way to tell Quarkus that the extension requires SSL and it should be enabled during native image build.

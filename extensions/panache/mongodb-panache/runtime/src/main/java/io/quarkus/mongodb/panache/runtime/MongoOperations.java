@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -280,6 +281,10 @@ public class MongoOperations {
     public static Object findById(Class<?> entityClass, Object id) {
         MongoCollection collection = mongoCollection(entityClass);
         return collection.find(new Document(ID, id)).first();
+    }
+
+    public static Optional findByIdOptional(Class<?> entityClass, Object id) {
+        return Optional.ofNullable(findById(entityClass, id));
     }
 
     public static PanacheQuery<?> find(Class<?> entityClass, String query, Object... params) {

@@ -42,8 +42,8 @@ import io.restassured.parsing.Parser;
 import io.restassured.response.Response;
 
 @QuarkusTest
-class BookResourceTest {
-    private static final Logger LOGGER = Logger.getLogger(BookResourceTest.class);
+class MongodbPanacheResourceTest {
+    private static final Logger LOGGER = Logger.getLogger(MongodbPanacheResourceTest.class);
     private static final TypeRef<List<BookDTO>> LIST_OF_BOOK_TYPE_REF = new TypeRef<List<BookDTO>>() {
     };
     private static final TypeRef<List<Person>> LIST_OF_PERSON_TYPE_REF = new TypeRef<List<Person>>() {
@@ -195,8 +195,13 @@ class BookResourceTest {
 
         //check that the title has been updated and the transient description ignored
         book = get(endpoint + "/" + book.getId().toString()).as(BookDTO.class);
+        Assertions.assertNotNull(book);
         Assertions.assertEquals("Notre-Dame de Paris 2", book.getTitle());
         Assertions.assertNull(book.getTransientDescription());
+
+        //test findByIdOptional
+        book = get(endpoint + "/optional/" + book.getId().toString()).as(BookDTO.class);
+        Assertions.assertNotNull(book);
 
         //delete a book
         response = RestAssured

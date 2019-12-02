@@ -2,10 +2,12 @@ package io.quarkus.hibernate.orm.panache.runtime;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
+import javax.persistence.NonUniqueResultException;
 import javax.persistence.Query;
 
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
@@ -146,9 +148,26 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     }
 
     @Override
+    public <T extends Entity> Optional<T> firstResultOptional() {
+        return Optional.ofNullable(firstResult());
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public <T extends Entity> T singleResult() {
         jpaQuery.setMaxResults(page.size);
         return (T) jpaQuery.getSingleResult();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends Entity> Optional<T> singleResultOptional() {
+        jpaQuery.setMaxResults(2);
+        List<T> list = jpaQuery.getResultList();
+        if (list.size() == 2) {
+            throw new NonUniqueResultException();
+        }
+
+        return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 }

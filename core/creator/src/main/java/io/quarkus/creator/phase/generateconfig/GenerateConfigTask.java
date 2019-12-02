@@ -32,7 +32,6 @@ import io.quarkus.creator.CuratedApplicationCreator;
 import io.quarkus.creator.CuratedTask;
 import io.quarkus.creator.curator.CurateOutcome;
 import io.quarkus.deployment.ExtensionLoader;
-import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
@@ -115,7 +114,6 @@ public class GenerateConfigTask implements CuratedTask<Path> {
                 chainBuilder.loadProviders(runnerClassLoader);
 
                 chainBuilder
-                        .addInitial(QuarkusConfig.class)
                         .addInitial(ShutdownContextBuildItem.class)
                         .addInitial(LaunchModeBuildItem.class)
                         .addInitial(ArchiveRootBuildItem.class)
@@ -126,7 +124,6 @@ public class GenerateConfigTask implements CuratedTask<Path> {
                 BuildChain chain = chainBuilder
                         .build();
                 BuildExecutionBuilder execBuilder = chain.createExecutionBuilder("main")
-                        .produce(QuarkusConfig.INSTANCE)
                         .produce(new LaunchModeBuildItem(LaunchMode.NORMAL))
                         .produce(new ShutdownContextBuildItem())
                         .produce(new LiveReloadBuildItem())

@@ -4,12 +4,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.faulttolerance.Asynchronous;
 import org.eclipse.microprofile.faulttolerance.Bulkhead;
 import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
@@ -36,7 +39,6 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -172,12 +174,13 @@ public class SmallRyeFaultToleranceProcessor {
                             .equals("io.smallrye.faulttolerance.HystrixCommandInterceptor")) {
                         return;
                     }
+                    final Config config = ConfigProvider.getConfig();
 
-                    Integer priority = QuarkusConfig.getBoxedInt("mp.fault.tolerance.interceptor.priority", null, true);
-                    if (priority != null) {
+                    OptionalInt priority = config.getValue("mp.fault.tolerance.interceptor.priority", OptionalInt.class);
+                    if (priority.isPresent()) {
                         ctx.transform()
                                 .remove(ann -> ann.name().toString().equals(Priority.class.getName()))
-                                .add(Priority.class, AnnotationValue.createIntegerValue("value", priority))
+                                .add(Priority.class, AnnotationValue.createIntegerValue("value", priority.getAsInt()))
                                 .done();
                     }
                 }

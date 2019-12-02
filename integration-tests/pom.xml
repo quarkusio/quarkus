@@ -69,6 +69,7 @@
         <module>tika</module>
         <module>neo4j</module>
         <module>mongodb-client</module>
+        <module>mongodb-client-ssl</module>
         <module>jackson</module>
         <module>jsonb</module>
         <module>resteasy-jackson</module>

@@ -93,7 +93,15 @@ public class ElytronRecorder {
      * @return the security domain runtime value
      */
     public RuntimeValue<SecurityDomain> buildDomain(RuntimeValue<SecurityDomain.Builder> builder) {
-        Security.addProvider(new WildFlyElytronPasswordProvider());
         return new RuntimeValue<>(builder.getValue().build());
+    }
+
+    /**
+     * As of Graal 19.3.0 this has to be registered at runtime, due to a bug.
+     *
+     * 19.3.1 should fix this, see https://github.com/oracle/graal/issues/1883
+     */
+    public void registerPasswordProvider() {
+        Security.addProvider(new WildFlyElytronPasswordProvider());
     }
 }

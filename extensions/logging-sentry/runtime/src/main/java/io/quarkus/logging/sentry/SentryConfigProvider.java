@@ -2,6 +2,8 @@ package io.quarkus.logging.sentry;
 
 import static java.lang.String.join;
 
+import java.util.Objects;
+
 import io.sentry.DefaultSentryClientFactory;
 import io.sentry.config.provider.ConfigurationProvider;
 
@@ -20,7 +22,9 @@ class SentryConfigProvider implements ConfigurationProvider {
     public String getProperty(String key) {
         switch (key) {
             case DefaultSentryClientFactory.IN_APP_FRAMES_OPTION:
-                return config.inAppPackages.map(p -> join(",", p)).orElse("");
+                return config.inAppPackages.map(p -> join(",", p))
+                        .filter(s -> !Objects.equals(s, "*"))
+                        .orElse("");
             // New SentryConfig options should be mapped here
             default:
                 return null;

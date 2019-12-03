@@ -44,13 +44,30 @@ application POM as the following snippet illustrates.
 </build>
 ----
 
+[id="in-app-packages"]
+=== “In Application” Stack Frames
+Sentry differentiates stack frames that are directly related to your application (“in application”) from stack frames that come from other packages such as the standard library, frameworks, or other dependencies. The difference is visible in the Sentry web interface where only the “in application” frames are displayed by default.
+
+You can configure which package prefixes your application uses with the stacktrace.app.packages option, which takes a comma separated list.
+[source, properties]
+----
+quarkus.log.sentry.in-app-packages=com.mycompany,com.other.name
+----
+If you don’t want to use this feature but want to disable the warning, simply set it to "*":
+
+[source, properties]
+----
+quarkus.log.sentry.in-app-packages=*
+----
+
 == Example
 
 .All errors and warnings occuring in any the packages will be sent to Sentry with DSN `https://abcd@sentry.io/1234`
 [source, properties]
-----
+`
 quarkus.log.sentry=true
 quarkus.log.sentry.dsn=https://abcd@sentry.io/1234
+quarkus.log.sentry.in-app-packages=*
 ----
 
 .All errors occuring in the package `org.example` will be sent to Sentry with DSN `https://abcd@sentry.io/1234`

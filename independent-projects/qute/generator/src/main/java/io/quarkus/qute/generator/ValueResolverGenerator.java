@@ -5,6 +5,7 @@ import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -12,15 +13,20 @@ import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.TemplateData;
 import io.quarkus.qute.ValueResolver;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -146,7 +152,6 @@ public class ValueResolverGenerator {
 
         ResultHandle evalContext = resolve.getMethodParam(0);
         ResultHandle base = resolve.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
-
         ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
         ResultHandle params = resolve.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
         ResultHandle paramsCount = resolve.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, params);
@@ -176,125 +181,336 @@ public class ValueResolverGenerator {
             }
         }
 
-        // Methods
-        for (MethodInfo method : clazz.methods().stream().filter(filter::test).collect(Collectors.toList())) {
-            LOGGER.debugf("Method added %s", method);
-            List<Type> methodParams = method.parameters();
+        List<MethodInfo> methods = clazz.methods().stream().filter(filter::test).collect(Collectors.toList());
+        if (!methods.isEmpty()) {
 
-            BytecodeCreator matchScope = resolve.createScope();
-            // Match name
-            BytecodeCreator notMatched = matchScope.ifNonZero(matchScope.invokeVirtualMethod(Descriptors.EQUALS,
-                    matchScope.load(method.name()),
-                    name))
-                    .falseBranch();
-            // Match the property name for getters,  ie. "foo" for "getFoo"
-            if (methodParams.size() == 0 && isGetterName(method.name())) {
-                notMatched.ifNonZero(notMatched.invokeVirtualMethod(Descriptors.EQUALS,
-                        notMatched.load(getPropertyName(method.name())),
-                        name)).falseBranch().breakScope(matchScope);
-            } else {
-                notMatched.breakScope(matchScope);
-            }
-            // Match number of params
-            matchScope.ifNonZero(matchScope.invokeStaticMethod(Descriptors.INTEGER_COMPARE,
-                    matchScope.load(methodParams.size()), paramsCount)).trueBranch().breakScope(matchScope);
+            Map<Match, List<MethodInfo>> matches = new HashMap<>();
 
-            // Invoke the method
-            ResultHandle ret;
-            boolean hasCompletionStage = !skipMemberType(method.returnType())
-                    && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
-            if (method.parameters().size() > 0) {
-                // We need to evaluate the params 
-                ret = matchScope
-                        .newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
+            for (MethodInfo method : methods) {
 
-                ResultHandle resultsArray = matchScope.newArray(CompletableFuture.class,
-                        matchScope.load(methodParams.size()));
-                for (int i = 0; i < methodParams.size(); i++) {
-                    ResultHandle evalResult = matchScope.invokeInterfaceMethod(
-                            Descriptors.EVALUATE, evalContext,
-                            matchScope.invokeInterfaceMethod(Descriptors.LIST_GET, params,
-                                    matchScope.load(i)));
-                    matchScope.writeArrayValue(resultsArray, i,
-                            matchScope.invokeInterfaceMethod(Descriptors.CF_TO_COMPLETABLE_FUTURE, evalResult));
-                }
-                ResultHandle allOf = matchScope.invokeStaticMethod(Descriptors.COMPLETABLE_FUTURE_ALL_OF,
-                        resultsArray);
+                List<Type> methodParams = method.parameters();
+                if (methodParams.isEmpty()) {
 
-                FunctionCreator whenCompleteFun = matchScope.createFunction(BiConsumer.class);
-                matchScope.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, allOf, whenCompleteFun.getInstance());
+                    LOGGER.debugf("Method added %s", method);
+                    BytecodeCreator matchScope = createMatchScope(resolve, method.name(), methodParams.size(), name, params,
+                            paramsCount);
 
-                BytecodeCreator whenComplete = whenCompleteFun.getBytecode();
+                    // Invoke the method - no params
+                    ResultHandle ret;
+                    boolean hasCompletionStage = !skipMemberType(method.returnType())
+                            && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
 
-                // TODO workaround for https://github.com/quarkusio/gizmo/issues/6
-                AssignableResultHandle whenBase = whenComplete.createVariable(Object.class);
-                whenComplete.assign(whenBase, base);
-                AssignableResultHandle whenRet = whenComplete.createVariable(CompletableFuture.class);
-                whenComplete.assign(whenRet, ret);
-                AssignableResultHandle whenResults = whenComplete.createVariable(CompletableFuture[].class);
-                whenComplete.assign(whenResults, resultsArray);
+                    ResultHandle invokeRet;
+                    if (Modifier.isInterface(clazz.flags())) {
+                        invokeRet = matchScope.invokeInterfaceMethod(MethodDescriptor.of(method), base);
+                    } else {
+                        invokeRet = matchScope.invokeVirtualMethod(MethodDescriptor.of(method), base);
+                    }
+                    if (hasCompletionStage) {
+                        ret = invokeRet;
+                    } else {
+                        ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, invokeRet);
+                    }
+                    matchScope.returnValue(ret);
 
-                BranchResult throwableIsNull = whenComplete.ifNull(whenComplete.getMethodParam(1));
-
-                // complete
-                BytecodeCreator success = throwableIsNull.trueBranch();
-
-                ResultHandle[] paramsHandle = new ResultHandle[methodParams.size()];
-                for (int i = 0; i < methodParams.size(); i++) {
-                    ResultHandle paramResult = success.readArrayValue(whenResults, i);
-                    paramsHandle[i] = success.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_GET, paramResult);
-                }
-                ResultHandle invokeRet;
-                if (Modifier.isInterface(clazz.flags())) {
-                    invokeRet = success.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, paramsHandle);
                 } else {
-                    invokeRet = success.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, paramsHandle);
+                    // Collect methods with params
+                    Match match = new Match(method.name(), method.parameters().size());
+                    List<MethodInfo> infos = matches.get(match);
+                    if (infos == null) {
+                        infos = new ArrayList<>();
+                        matches.put(match, infos);
+                    }
+                    infos.add(method);
                 }
+            }
 
-                if (hasCompletionStage) {
-                    FunctionCreator invokeWhenCompleteFun = success.createFunction(BiConsumer.class);
-                    success.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, invokeRet, invokeWhenCompleteFun.getInstance());
-                    BytecodeCreator invokeWhenComplete = invokeWhenCompleteFun.getBytecode();
+            for (Entry<Match, List<MethodInfo>> entry : matches.entrySet()) {
+
+                if (entry.getValue().size() == 1) {
+                    // Single method matches the name and number of params
+                    MethodInfo method = entry.getValue().get(0);
+                    List<Type> methodParams = method.parameters();
+
+                    LOGGER.debugf("Method added %s", method);
+
+                    BytecodeCreator matchScope = createMatchScope(resolve, method.name(), methodParams.size(), name, params,
+                            paramsCount);
+
+                    // Invoke the method
+                    ResultHandle ret;
+                    boolean hasCompletionStage = !skipMemberType(method.returnType())
+                            && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
+                    // Evaluate the params first
+                    ret = matchScope
+                            .newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
+
+                    ResultHandle resultsArray = matchScope.newArray(CompletableFuture.class,
+                            matchScope.load(methodParams.size()));
+                    for (int i = 0; i < methodParams.size(); i++) {
+                        ResultHandle evalResult = matchScope.invokeInterfaceMethod(
+                                Descriptors.EVALUATE, evalContext,
+                                matchScope.invokeInterfaceMethod(Descriptors.LIST_GET, params,
+                                        matchScope.load(i)));
+                        matchScope.writeArrayValue(resultsArray, i,
+                                matchScope.invokeInterfaceMethod(Descriptors.CF_TO_COMPLETABLE_FUTURE, evalResult));
+                    }
+                    ResultHandle allOf = matchScope.invokeStaticMethod(Descriptors.COMPLETABLE_FUTURE_ALL_OF,
+                            resultsArray);
+
+                    FunctionCreator whenCompleteFun = matchScope.createFunction(BiConsumer.class);
+                    matchScope.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, allOf, whenCompleteFun.getInstance());
+
+                    BytecodeCreator whenComplete = whenCompleteFun.getBytecode();
 
                     // TODO workaround for https://github.com/quarkusio/gizmo/issues/6
-                    AssignableResultHandle invokeWhenRet = invokeWhenComplete.createVariable(CompletableFuture.class);
-                    invokeWhenComplete.assign(invokeWhenRet, whenRet);
+                    AssignableResultHandle whenBase = whenComplete.createVariable(Object.class);
+                    whenComplete.assign(whenBase, base);
+                    AssignableResultHandle whenRet = whenComplete.createVariable(CompletableFuture.class);
+                    whenComplete.assign(whenRet, ret);
+                    AssignableResultHandle whenResults = whenComplete.createVariable(CompletableFuture[].class);
+                    whenComplete.assign(whenResults, resultsArray);
 
-                    BranchResult invokeThrowableIsNull = invokeWhenComplete.ifNull(invokeWhenComplete.getMethodParam(1));
-                    BytecodeCreator invokeSuccess = invokeThrowableIsNull.trueBranch();
-                    invokeSuccess.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, invokeWhenRet,
-                            invokeWhenComplete.getMethodParam(0));
-                    BytecodeCreator invokeFailure = invokeThrowableIsNull.falseBranch();
-                    invokeFailure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, invokeWhenRet,
-                            invokeWhenComplete.getMethodParam(1));
-                    invokeWhenComplete.returnValue(null);
+                    BranchResult throwableIsNull = whenComplete.ifNull(whenComplete.getMethodParam(1));
+
+                    // complete
+                    BytecodeCreator success = throwableIsNull.trueBranch();
+
+                    ResultHandle[] paramsHandle = new ResultHandle[methodParams.size()];
+                    for (int i = 0; i < methodParams.size(); i++) {
+                        ResultHandle paramResult = success.readArrayValue(whenResults, i);
+                        paramsHandle[i] = success.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_GET, paramResult);
+                    }
+
+                    AssignableResultHandle invokeRet = success.createVariable(Object.class);
+                    // try
+                    TryBlock tryCatch = success.tryBlock();
+                    // catch (Throwable e)
+                    CatchBlockCreator exception = tryCatch.addCatch(Throwable.class);
+                    // CompletableFuture.completeExceptionally(Throwable)
+                    exception.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
+                            exception.getCaughtException());
+
+                    if (Modifier.isInterface(clazz.flags())) {
+                        tryCatch.assign(invokeRet,
+                                tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+                    } else {
+                        tryCatch.assign(invokeRet,
+                                tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+                    }
+
+                    if (hasCompletionStage) {
+                        FunctionCreator invokeWhenCompleteFun = tryCatch.createFunction(BiConsumer.class);
+                        tryCatch.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, invokeRet,
+                                invokeWhenCompleteFun.getInstance());
+                        BytecodeCreator invokeWhenComplete = invokeWhenCompleteFun.getBytecode();
+
+                        // TODO workaround for https://github.com/quarkusio/gizmo/issues/6
+                        AssignableResultHandle invokeWhenRet = invokeWhenComplete.createVariable(CompletableFuture.class);
+                        invokeWhenComplete.assign(invokeWhenRet, whenRet);
+
+                        BranchResult invokeThrowableIsNull = invokeWhenComplete.ifNull(invokeWhenComplete.getMethodParam(1));
+                        BytecodeCreator invokeSuccess = invokeThrowableIsNull.trueBranch();
+                        invokeSuccess.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, invokeWhenRet,
+                                invokeWhenComplete.getMethodParam(0));
+
+                        BytecodeCreator invokeFailure = invokeThrowableIsNull.falseBranch();
+                        invokeFailure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, invokeWhenRet,
+                                invokeWhenComplete.getMethodParam(1));
+                        invokeWhenComplete.returnValue(null);
+                    } else {
+                        tryCatch.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
+                    }
+                    // CompletableFuture.completeExceptionally(Throwable)
+                    BytecodeCreator failure = throwableIsNull.falseBranch();
+                    failure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
+                            whenComplete.getMethodParam(1));
+                    whenComplete.returnValue(null);
+
+                    matchScope.returnValue(ret);
+
                 } else {
-                    success.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
+                    // Multiple methods match the name and number of params
+                    LOGGER.debugf("Methods added %s", entry.getValue());
+                    BytecodeCreator matchScope = createMatchScope(resolve, entry.getKey().name, entry.getKey().paramsCount,
+                            name, params,
+                            paramsCount);
+
+                    // Evaluate the params first
+                    ResultHandle ret = matchScope
+                            .newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
+
+                    ResultHandle resultsArray = matchScope.newArray(CompletableFuture.class,
+                            matchScope.load(entry.getKey().paramsCount));
+                    for (int i = 0; i < entry.getKey().paramsCount; i++) {
+                        ResultHandle evalResult = matchScope.invokeInterfaceMethod(
+                                Descriptors.EVALUATE, evalContext,
+                                matchScope.invokeInterfaceMethod(Descriptors.LIST_GET, params,
+                                        matchScope.load(i)));
+                        matchScope.writeArrayValue(resultsArray, i,
+                                matchScope.invokeInterfaceMethod(Descriptors.CF_TO_COMPLETABLE_FUTURE, evalResult));
+                    }
+                    ResultHandle allOf = matchScope.invokeStaticMethod(Descriptors.COMPLETABLE_FUTURE_ALL_OF,
+                            resultsArray);
+
+                    FunctionCreator whenCompleteFun = matchScope.createFunction(BiConsumer.class);
+                    matchScope.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, allOf, whenCompleteFun.getInstance());
+
+                    BytecodeCreator whenComplete = whenCompleteFun.getBytecode();
+
+                    // TODO workaround for https://github.com/quarkusio/gizmo/issues/6
+                    AssignableResultHandle whenBase = whenComplete.createVariable(Object.class);
+                    whenComplete.assign(whenBase, base);
+                    AssignableResultHandle whenRet = whenComplete.createVariable(CompletableFuture.class);
+                    whenComplete.assign(whenRet, ret);
+                    AssignableResultHandle whenResults = whenComplete.createVariable(CompletableFuture[].class);
+                    whenComplete.assign(whenResults, resultsArray);
+
+                    BranchResult throwableIsNull = whenComplete.ifNull(whenComplete.getMethodParam(1));
+                    // complete
+                    BytecodeCreator success = throwableIsNull.trueBranch();
+
+                    ResultHandle[] paramsHandle = new ResultHandle[entry.getKey().paramsCount];
+                    for (int i = 0; i < entry.getKey().paramsCount; i++) {
+                        ResultHandle paramResult = success.readArrayValue(whenResults, i);
+                        paramsHandle[i] = success.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_GET, paramResult);
+                    }
+
+                    ResultHandle paramClasses = success.newArray(Class.class, success.load(entry.getKey().paramsCount));
+                    for (int i = 0; i < entry.getKey().paramsCount; i++) {
+                        success.writeArrayValue(paramClasses, i, success.invokeVirtualMethod(Descriptors.GET_CLASS,
+                                paramsHandle[i]));
+                    }
+
+                    for (MethodInfo method : entry.getValue()) {
+                        // Try to match parameter types
+                        BytecodeCreator paramMatchScope = success.createScope();
+                        int idx = 0;
+                        for (Type paramType : method.parameters()) {
+                            ResultHandle paramHandleClass = paramMatchScope.readArrayValue(paramClasses, idx++);
+                            ResultHandle testClass = loadParamType(paramMatchScope, paramType);
+                            ResultHandle baseClassTest = paramMatchScope.invokeVirtualMethod(Descriptors.IS_ASSIGNABLE_FROM,
+                                    testClass,
+                                    paramHandleClass);
+                            paramMatchScope.ifNonZero(baseClassTest).falseBranch().breakScope(paramMatchScope);
+                        }
+                        boolean hasCompletionStage = !skipMemberType(method.returnType())
+                                && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
+
+                        AssignableResultHandle invokeRet = paramMatchScope.createVariable(Object.class);
+                        // try
+                        TryBlock tryCatch = paramMatchScope.tryBlock();
+                        // catch (Throwable e)
+                        CatchBlockCreator exception = tryCatch.addCatch(Throwable.class);
+                        // CompletableFuture.completeExceptionally(Throwable)
+                        exception.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
+                                exception.getCaughtException());
+
+                        if (Modifier.isInterface(clazz.flags())) {
+                            tryCatch.assign(invokeRet,
+                                    tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+                        } else {
+                            tryCatch.assign(invokeRet,
+                                    tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+                        }
+
+                        if (hasCompletionStage) {
+                            FunctionCreator invokeWhenCompleteFun = tryCatch.createFunction(BiConsumer.class);
+                            tryCatch.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, invokeRet,
+                                    invokeWhenCompleteFun.getInstance());
+                            BytecodeCreator invokeWhenComplete = invokeWhenCompleteFun.getBytecode();
+
+                            // TODO workaround for https://github.com/quarkusio/gizmo/issues/6
+                            AssignableResultHandle invokeWhenRet = invokeWhenComplete.createVariable(CompletableFuture.class);
+                            invokeWhenComplete.assign(invokeWhenRet, whenRet);
+
+                            BranchResult invokeThrowableIsNull = invokeWhenComplete
+                                    .ifNull(invokeWhenComplete.getMethodParam(1));
+                            BytecodeCreator invokeSuccess = invokeThrowableIsNull.trueBranch();
+                            invokeSuccess.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, invokeWhenRet,
+                                    invokeWhenComplete.getMethodParam(0));
+                            BytecodeCreator invokeFailure = invokeThrowableIsNull.falseBranch();
+                            invokeFailure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
+                                    invokeWhenRet,
+                                    invokeWhenComplete.getMethodParam(1));
+                            invokeWhenComplete.returnValue(null);
+                        } else {
+                            tryCatch.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
+                        }
+                    }
+
+                    // CompletableFuture.completeExceptionally(Throwable)
+                    BytecodeCreator failure = throwableIsNull.falseBranch();
+                    failure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
+                            whenComplete.getMethodParam(1));
+
+                    // No method matches
+                    ResultHandle exc = whenComplete.newInstance(
+                            MethodDescriptor.ofConstructor(IllegalStateException.class, String.class),
+                            whenComplete.load("No method matches"));
+                    whenComplete.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
+                            exc);
+                    whenComplete.returnValue(null);
+
+                    matchScope.returnValue(ret);
                 }
 
-                // completeExceptionally
-                BytecodeCreator failure = throwableIsNull.falseBranch();
-                failure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
-                        whenComplete.getMethodParam(1));
-                whenComplete.returnValue(null);
-
-            } else {
-                // No params
-                ResultHandle invokeRet;
-                if (Modifier.isInterface(clazz.flags())) {
-                    invokeRet = matchScope.invokeInterfaceMethod(MethodDescriptor.of(method), base);
-                } else {
-                    invokeRet = matchScope.invokeVirtualMethod(MethodDescriptor.of(method), base);
-                }
-                if (hasCompletionStage) {
-                    ret = invokeRet;
-                } else {
-                    ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, invokeRet);
-                }
             }
-            matchScope.returnValue(ret);
+
         }
+
         resolve.returnValue(resolve.readStaticField(Descriptors.RESULT_NOT_FOUND));
+    }
+
+    private ResultHandle loadParamType(BytecodeCreator creator, Type paramType) {
+        if (org.jboss.jandex.Type.Kind.PRIMITIVE.equals(paramType.kind())) {
+            switch (paramType.asPrimitiveType().primitive()) {
+                case INT:
+                    return creator.loadClass(Integer.class);
+                case LONG:
+                    return creator.loadClass(Long.class);
+                case BOOLEAN:
+                    return creator.loadClass(Boolean.class);
+                case BYTE:
+                    return creator.loadClass(Byte.class);
+                case CHAR:
+                    return creator.loadClass(Character.class);
+                case DOUBLE:
+                    return creator.loadClass(Double.class);
+                case FLOAT:
+                    return creator.loadClass(Float.class);
+                case SHORT:
+                    return creator.loadClass(Short.class);
+                default:
+                    throw new IllegalArgumentException("Unsupported primitive type: " + paramType);
+            }
+        }
+        // TODO: we should probably use the TCCL to load the param type
+        return creator.loadClass(paramType.name().toString());
+    }
+
+    private BytecodeCreator createMatchScope(BytecodeCreator bytecodeCreator, String methodName, int methodParams,
+            ResultHandle name, ResultHandle params, ResultHandle paramsCount) {
+
+        BytecodeCreator matchScope = bytecodeCreator.createScope();
+        // Match name
+        BytecodeCreator notMatched = matchScope.ifNonZero(matchScope.invokeVirtualMethod(Descriptors.EQUALS,
+                matchScope.load(methodName),
+                name))
+                .falseBranch();
+        // Match the property name for getters,  ie. "foo" for "getFoo"
+        if (methodParams == 0 && isGetterName(methodName)) {
+            notMatched.ifNonZero(notMatched.invokeVirtualMethod(Descriptors.EQUALS,
+                    notMatched.load(getPropertyName(methodName)),
+                    name)).falseBranch().breakScope(matchScope);
+        } else {
+            notMatched.breakScope(matchScope);
+        }
+        // Match number of params
+        matchScope.ifNonZero(matchScope.invokeStaticMethod(Descriptors.INTEGER_COMPARE,
+                matchScope.load(methodParams), paramsCount)).trueBranch().breakScope(matchScope);
+
+        return matchScope;
     }
 
     private void implementAppliesTo(ClassCreator valueResolver, ClassInfo clazz) {
@@ -522,6 +738,38 @@ public class ValueResolverGenerator {
             }
         }
         return false;
+    }
+
+    private static class Match {
+
+        final String name;
+        final int paramsCount;
+
+        public Match(String name, int paramsCount) {
+            this.name = name;
+            this.paramsCount = paramsCount;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(name, paramsCount);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            Match other = (Match) obj;
+            return Objects.equals(name, other.name) && paramsCount == other.paramsCount;
+        }
+
     }
 
 }

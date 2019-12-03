@@ -42,7 +42,7 @@ public final class Expressions {
         }
         boolean stringLiteral = false;
         boolean separator = false;
-        boolean infix = false;
+        char infix = 0;
         boolean brackets = false;
         ImmutableList.Builder<String> builder = ImmutableList.builder();
         StringBuilder buffer = new StringBuilder();
@@ -68,11 +68,19 @@ public final class Expressions {
                 // Non-separator char
                 if (!stringLiteral) {
                     if (!brackets && c == ' ') {
-                        if (infix) {
+                        if (infix == 1) {
+                            // The second space after the infix method
                             buffer.append(LEFT_BRACKET);
+                            infix++;
+                        } else if (infix == 2) {
+                            // Next infix method
+                            infix = 1;
+                            buffer.append(RIGHT_BRACKET);
+                            builder.add(buffer.toString());
+                            buffer = new StringBuilder();
                         } else {
-                            // Separator
-                            infix = true;
+                            // First space - start infix method
+                            infix++;
                             if (buffer.length() > 0) {
                                 builder.add(buffer.toString());
                                 buffer = new StringBuilder();
@@ -91,7 +99,7 @@ public final class Expressions {
                 }
             }
         }
-        if (infix) {
+        if (infix > 0) {
             buffer.append(RIGHT_BRACKET);
         }
         if (buffer.length() > 0) {

@@ -24,6 +24,7 @@ public class ExpressionTest {
         verify("item.name or 'John'", null, ImmutableList.of("item", "name", "or('John')"), null);
         verify("name.func('John', 1)", null, ImmutableList.of("name", "func('John', 1)"), null);
         verify("name ?: 'John Bug'", null, ImmutableList.of("name", "?:('John Bug')"), null);
+        verify("name ? 'John' : 'Bug'", null, ImmutableList.of("name", "?('John')", ":('Bug')"), null);
         verify("name.func(data:foo)", null, ImmutableList.of("name", "func(data:foo)"), null);
     }
 

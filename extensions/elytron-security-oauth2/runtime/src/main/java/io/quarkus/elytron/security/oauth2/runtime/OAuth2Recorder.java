@@ -13,7 +13,6 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -85,13 +84,8 @@ public class OAuth2Recorder {
         }
     }
 
-    public Supplier<OAuth2Augmentor> augmentor(OAuth2Config config) {
-        return new Supplier<OAuth2Augmentor>() {
-            @Override
-            public OAuth2Augmentor get() {
-                return new OAuth2Augmentor(config.roleClaim);
-            }
-        };
+    public RuntimeValue<OAuth2Augmentor> augmentor(OAuth2Config config) {
+        return new RuntimeValue<>(new OAuth2Augmentor(config.roleClaim));
     }
 
 }

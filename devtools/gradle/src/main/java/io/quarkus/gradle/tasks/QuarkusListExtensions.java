@@ -11,9 +11,6 @@ import io.quarkus.cli.commands.QuarkusCommandInvocation;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.gradle.GradleBuildFileFromConnector;
 
-/**
- * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
- */
 public class QuarkusListExtensions extends QuarkusPlatformTask {
 
     private boolean all = true;

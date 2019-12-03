@@ -18,9 +18,6 @@ import io.quarkus.creator.AppCreatorException;
 import io.quarkus.creator.CuratedApplicationCreator;
 import io.quarkus.creator.phase.augment.AugmentTask;
 
-/**
- * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
- */
 public class QuarkusBuild extends QuarkusTask {
 
     private boolean uberJar;

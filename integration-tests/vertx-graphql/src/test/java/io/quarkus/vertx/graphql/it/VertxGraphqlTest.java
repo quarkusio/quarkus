@@ -1,7 +1,10 @@
 package io.quarkus.vertx.graphql.it;
 
 import static io.restassured.RestAssured.given;
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -9,23 +12,26 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketConnectOptions;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.handler.graphql.ApolloWSMessageType;
 
 @QuarkusTest
 class VertxGraphqlTest {
+    private static Vertx vertx;
+
     public static int getPortFromConfig() {
         return ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class).orElse(8081);
     }
-
-    private static Vertx vertx;
 
     @BeforeAll
     public static void initializeVertx() {
@@ -51,9 +57,34 @@ class VertxGraphqlTest {
         HttpClient httpClient = vertx.createHttpClient();
         WebSocketConnectOptions options = new WebSocketConnectOptions().setPort(getPortFromConfig())
                 .addSubProtocol("graphql-ws").setURI("/graphql");
-        CompletableFuture<Boolean> wsFuture = new CompletableFuture<>();
-        httpClient.webSocket(options, event -> wsFuture.complete(event.succeeded()));
-        Assertions.assertTrue(wsFuture.get(1, TimeUnit.MINUTES));
+        String graphql = "{\"id\" : \"2\", \"type\" : \"start\", \"payload\" : { \"query\" : \"{ hello }\" } }";
+        CompletableFuture<JsonObject> wsFuture = new CompletableFuture<>();
+        wsFuture.whenComplete((r, t) -> httpClient.close());
+        httpClient.webSocket(options, ws -> {
+            if (ws.succeeded()) {
+                WebSocket webSocket = ws.result();
+                webSocket.handler(message -> {
+                    JsonObject json = message.toJsonObject();
+                    String type = json.getString("type");
+                    if (ApolloWSMessageType.DATA.getText().equals(type)) {
+                        wsFuture.complete(message.toJsonObject());
+                    } else {
+                        wsFuture.completeExceptionally(new RuntimeException(
+                                format("Unexpected message type: %s\nMessage: %s", type, message.toString())));
+                    }
+                });
+
+                webSocket.write(Buffer.buffer(graphql));
+            } else {
+                wsFuture.completeExceptionally(ws.cause());
+            }
+        });
+
+        JsonObject json = wsFuture.get(1, TimeUnit.MINUTES);
+        assertNotNull(json);
+        assertEquals("2", json.getString("id"));
+        assertEquals("data", json.getString("type"));
+        assertEquals("world", json.getJsonObject("payload").getJsonObject("data").getString("hello"));
     }
 
 }

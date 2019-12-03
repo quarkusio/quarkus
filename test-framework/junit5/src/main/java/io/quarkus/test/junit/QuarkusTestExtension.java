@@ -190,7 +190,8 @@ public class QuarkusTestExtension
 
                                         @Override
                                         protected ClassLoader getClassLoader() {
-                                            return temp;
+                                            // this has been previously set to a safe for transformations CL
+                                            return main;
                                         }
                                     };
                                     ClassLoader old = Thread.currentThread().getContextClassLoader();

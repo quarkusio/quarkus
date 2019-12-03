@@ -29,6 +29,7 @@ import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
@@ -118,7 +119,14 @@ public class RuntimeRunner implements Runnable, Closeable {
                     functions.computeIfAbsent(i.getClassToTransform(), (f) -> new ArrayList<>()).add(i.getVisitorFunction());
                 }
 
+                DeploymentClassLoaderBuildItem deploymentClassLoaderBuildItem = result
+                        .consume(DeploymentClassLoaderBuildItem.class);
+                ClassLoader previous = Thread.currentThread().getContextClassLoader();
+
+                // make sure we use the DeploymentClassLoader for executing transformers since this is the only safe CL for transformations at this point
+                Thread.currentThread().setContextClassLoader(deploymentClassLoaderBuildItem.getClassLoader());
                 transformerTarget.setTransformers(functions);
+                Thread.currentThread().setContextClassLoader(previous);
             }
 
             if (loader instanceof RuntimeClassLoader) {

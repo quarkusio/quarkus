@@ -102,14 +102,13 @@ public class QuarkusPlugin implements Plugin<Project> {
                     testNative.dependsOn(buildNative);
                     testNative.setShouldRunAfter(Collections.singletonList(tasks.findByName(JavaPlugin.TEST_TASK_NAME)));
                     tasks.getByName(JavaBasePlugin.CHECK_TASK_NAME).dependsOn(testNative);
+                    tasks.withType(Test.class).forEach(t -> {
+                        // Quarkus test configuration task which should be executed before any Quarkus test
+                        t.dependsOn(quarkusTestConfig);
+                        // also make each task use the JUnit platform since it's the only supported test environment
+                        t.useJUnitPlatform();
+                    });
                 });
-
-        tasks.withType(Test.class).forEach(t -> {
-            // Quarkus test configuration task which should be executed before any Quarkus test
-            t.dependsOn(quarkusTestConfig);
-            // also make each task use the JUnit platform since it's the only supported test environment
-            t.useJUnitPlatform();
-        });
     }
 
     private void verifyGradleVersion() {

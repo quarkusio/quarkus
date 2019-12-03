@@ -25,6 +25,7 @@ public class QuarkusPluginFunctionalTest {
                 .forwardOutput()
                 .withPluginClasspath()
                 .withArguments("listExtensions")
+                .withEnvironment(System.getenv())
                 .withProjectDir(projectRoot)
                 .build();
 
@@ -40,6 +41,7 @@ public class QuarkusPluginFunctionalTest {
                 .forwardOutput()
                 .withPluginClasspath()
                 .withArguments("quarkusBuild")
+                .withEnvironment(System.getenv())
                 .withProjectDir(projectRoot)
                 .build();
 

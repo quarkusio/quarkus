@@ -99,6 +99,12 @@ class ElytronDeploymentProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void registerPasswordProvider(ElytronRecorder recorder) {
+        recorder.registerPasswordProvider();
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void identityManager(ElytronRecorder recorder, SecurityDomainBuildItem securityDomain, BeanContainerBuildItem bc) {
         if (securityDomain != null) {

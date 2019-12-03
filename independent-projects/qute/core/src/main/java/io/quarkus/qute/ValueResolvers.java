@@ -32,7 +32,7 @@ public final class ValueResolvers {
         return new ValueResolver() {
 
             public boolean appliesTo(EvalContext context) {
-                return ValueResolver.matchClass(context, Object.class) && thisAppliesTo(context);
+                return context.getBase() != null && THIS.equals(context.getName());
             }
 
             @Override
@@ -43,18 +43,48 @@ public final class ValueResolvers {
     }
 
     /**
-     * {@code foo.or(bar)},{@code foo or true},{@code name ?: 'elvis'}
+     * Returns the default value if the base object is null or {@link Result#NOT_FOUND}.
+     * 
+     * {@code foo.or(bar)}, {@code foo or true}, {@code name ?: 'elvis'}
      */
     public static ValueResolver orResolver() {
         return new ValueResolver() {
 
             public boolean appliesTo(EvalContext context) {
-                return ValueResolver.matchClass(context, Object.class) && orAppliesTo(context);
+                return context.getParams().size() == 1
+                        && ("?:".equals(context.getName()) || "or".equals(context.getName()) || ":".equals(context.getName()));
             }
 
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
-                return orResolveAsync(context);
+                if (context.getBase() == null || Results.Result.NOT_FOUND.equals(context.getBase())) {
+                    return context.evaluate(context.getParams().get(0));
+                }
+                return CompletableFuture.completedFuture(context.getBase());
+            }
+
+        };
+    }
+
+    /**
+     * Can be used together with {@link #orResolver()} to form a ternary operator.
+     * 
+     * {@code person.isElvis ? 'elvis' : notElvis}
+     */
+    public static ValueResolver trueResolver() {
+        return new ValueResolver() {
+
+            public boolean appliesTo(EvalContext context) {
+                return context.getParams().size() == 1
+                        && ("?".equals(context.getName()));
+            }
+
+            @Override
+            public CompletionStage<Object> resolve(EvalContext context) {
+                if (Boolean.TRUE.equals(context.getBase())) {
+                    return context.evaluate(context.getParams().get(0));
+                }
+                return Results.NOT_FOUND;
             }
 
         };
@@ -130,22 +160,6 @@ public final class ValueResolvers {
             default:
                 return Results.NOT_FOUND;
         }
-    }
-
-    private static boolean thisAppliesTo(EvalContext context) {
-        return THIS.equals(context.getName());
-    }
-
-    private static boolean orAppliesTo(EvalContext context) {
-        return context.getParams().size() == 1
-                && ("?:".equals(context.getName()) || "or".equals(context.getName()));
-    }
-
-    private static CompletionStage<Object> orResolveAsync(EvalContext context) {
-        if (context.getBase() == null || Results.Result.NOT_FOUND.equals(context.getBase())) {
-            return context.evaluate(context.getParams().get(0));
-        }
-        return CompletableFuture.completedFuture(context.getBase());
     }
 
     private static Object entryResolve(Entry<?, ?> entry, String name) {

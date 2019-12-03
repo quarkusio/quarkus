@@ -73,9 +73,23 @@ public class SimpleTest {
                 .build();
         Map<String, Object> data = new HashMap<>();
         data.put("surname", "Bug");
+        data.put("foo", null);
         assertEquals("John Bug", engine.parse("{name.or('John')} {surname.or('John')}").render(data));
         assertEquals("John Bug", engine.parse("{name ?: 'John'} {surname or 'John'}").render(data));
         assertEquals("John Bug", engine.parse("{name ?: \"John Bug\"}").render(data));
+        assertEquals("Is null", engine.parse("{foo ?: 'Is null'}").render(data));
+    }
+
+    @Test
+    public void testTernaryOperator() {
+        Engine engine = Engine.builder()
+                .addValueResolvers(ValueResolvers.mapResolver(), ValueResolvers.trueResolver(),
+                        ValueResolvers.orResolver())
+                .build();
+
+        Template template = engine
+                .parse("{name ? 'Name true' : 'Name false'}. {surname ? 'Surname true' : foo}.");
+        assertEquals("Name true. baz.", template.data("name", true).data("foo", "baz").render());
     }
 
     @Test

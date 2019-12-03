@@ -60,9 +60,6 @@ import io.quarkus.dev.DevModeMain;
 import io.quarkus.gradle.QuarkusPluginExtension;
 import io.quarkus.utilities.JavaBinFinder;
 
-/**
- * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
- */
 public class QuarkusDev extends QuarkusTask {
 
     private Set<File> filesIncludedInClasspath = new HashSet<>();

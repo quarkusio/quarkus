@@ -16,9 +16,6 @@ import io.quarkus.cli.commands.QuarkusCommandInvocation;
 import io.quarkus.cli.commands.file.GradleBuildFile;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 
-/**
- * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
- */
 public class QuarkusAddExtension extends QuarkusPlatformTask {
 
     public QuarkusAddExtension() {

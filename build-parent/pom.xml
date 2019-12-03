@@ -79,7 +79,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update native-build-steps.yaml to match the version -->
-        <keycloak.docker.image>quay.io/keycloak/keycloak:7.0.1</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:8.0.1</keycloak.docker.image>
     </properties>
 
     <dependencyManagement>

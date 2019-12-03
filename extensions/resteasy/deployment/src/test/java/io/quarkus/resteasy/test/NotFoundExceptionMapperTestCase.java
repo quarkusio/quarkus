@@ -7,7 +7,6 @@ import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -54,9 +53,8 @@ public class NotFoundExceptionMapperTestCase {
                 .contentType(ContentType.JSON);
     }
 
-    @Disabled("https://github.com/quarkusio/quarkus/issues/5424")
     @Test
-    public void shouldDisplayNewAddedFileIn404ErrorPage() throws InterruptedException {
+    public void shouldDisplayNewAddedFileIn404ErrorPage() {
         String CONTENT = "html content";
         test.addResourceFile(META_INF_RESOURCES + "index2.html", CONTENT);
 
@@ -74,9 +72,8 @@ public class NotFoundExceptionMapperTestCase {
                 .body(containsString("index2.html")); // check that index2.html is displayed
     }
 
-    @Disabled("https://github.com/quarkusio/quarkus/issues/5424")
     @Test
-    public void shouldNotDisplayDeletedFileIn404ErrorPage() throws InterruptedException {
+    public void shouldNotDisplayDeletedFileIn404ErrorPage() {
         String TEST_CONTENT = "test html content";
         test.addResourceFile(META_INF_RESOURCES + "test.html", TEST_CONTENT);
 

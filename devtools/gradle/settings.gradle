@@ -8,6 +8,7 @@ gradleEnterprise {
         //See also: https://docs.gradle.com/enterprise/gradle-plugin/
         termsOfServiceUrl = 'https://gradle.com/terms-of-service';
         termsOfServiceAgree = 'yes'
+        publishOnFailure()
     }
 }
 

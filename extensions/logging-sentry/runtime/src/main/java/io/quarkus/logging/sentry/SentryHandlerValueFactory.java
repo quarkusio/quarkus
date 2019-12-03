@@ -22,7 +22,7 @@ public class SentryHandlerValueFactory {
         }
         if (!config.inAppPackages.isPresent()) {
             LOG.warn(
-                    "No 'quarkus.sentry.in-app-packages' was configured, this option is highly recommended as it affects stacktrace grouping and display on Sentry.");
+                    "No 'quarkus.sentry.in-app-packages' was configured, this option is highly recommended as it affects stacktrace grouping and display on Sentry. See https://quarkus.io/guides/logging-sentry#in-app-packages");
         }
         final SentryConfigProvider provider = new SentryConfigProvider(config);
         Sentry.init(SentryOptions.from(new Lookup(provider, provider), config.dsn));

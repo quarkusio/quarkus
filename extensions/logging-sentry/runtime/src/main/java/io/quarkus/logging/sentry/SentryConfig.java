@@ -43,7 +43,7 @@ public class SentryConfig {
      * You can configure which package prefixes your application uses with this option.
      *
      * This option is highly recommended as it affects stacktrace grouping and display on Sentry. See documentation:
-     * https://docs.sentry.io/clients/java/config/#in-application-stack-frames
+     * https://quarkus.io/guides/logging-sentry#in-app-packages
      */
     @ConfigItem
     public Optional<List<String>> inAppPackages;

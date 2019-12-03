@@ -91,6 +91,7 @@ class JGitProcessor {
     List<RuntimeInitializedClassBuildItem> runtimeInitializedClasses() {
         return Arrays.asList(
                 new RuntimeInitializedClassBuildItem("org.eclipse.jgit.transport.HttpAuthMethod$Digest"),
+                new RuntimeInitializedClassBuildItem("org.eclipse.jgit.lib.GpgSigner"),
                 new RuntimeInitializedClassBuildItem(PortWatcherRunTime.class.getName()));
     }
 

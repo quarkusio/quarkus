@@ -377,7 +377,7 @@ Some examples of allowed expressions are:
     }
 ----
 
-Also to be noted that currently parenthesis are not supported and also each of expressions are evaluated from left to right when needed.
+Also to be noted that currently parentheses are not supported and expressions are evaluated from left to right when needed.
 
 == Important Technical Note
 

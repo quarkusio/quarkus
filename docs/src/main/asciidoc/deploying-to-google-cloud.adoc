@@ -16,7 +16,7 @@ This guide covers:
 For this guide you need:
 
 * roughly 1 hour
-* having access to an Google cloud plateform project with owner rights.
+* having access to an Google cloud platform project with owner rights.
 
 This guide will take as input an application developed in the link:datasource.adoc[datasource guide].
 

@@ -339,7 +339,6 @@
         <profile>
             <id>format</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
                 <property>
                     <name>!no-format</name>
                 </property>

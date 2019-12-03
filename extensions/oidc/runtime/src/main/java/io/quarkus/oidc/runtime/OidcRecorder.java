@@ -48,6 +48,9 @@ public class OidcRecorder {
                     .setAlgorithm("RS256")
                     .setPublicKey(config.publicKey.get()));
         }
+        if (config.token.issuer.isPresent()) {
+            options.setValidateIssuer(false);
+        }
 
         final long connectionDelayInSecs = config.connectionDelay.isPresent() ? config.connectionDelay.get().toMillis() / 1000
                 : 0;

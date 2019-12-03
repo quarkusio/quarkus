@@ -25,6 +25,8 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.internal.artifacts.DefaultModuleIdentifier;
+import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
+import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
 import org.gradle.api.provider.Provider;
 import org.gradle.jvm.tasks.Jar;
 
@@ -74,12 +76,12 @@ public class AppModelGradleResolver implements AppModelResolver {
     public Path resolve(AppArtifact appArtifact) throws AppModelResolverException {
         if (!appArtifact.isResolved()) {
 
-            final GradleDependencyArtifact dep = new GradleDependencyArtifact();
+            final DefaultDependencyArtifact dep = new DefaultDependencyArtifact();
             dep.setExtension(appArtifact.getType());
             dep.setType(appArtifact.getType());
             dep.setName(appArtifact.getArtifactId());
 
-            final QuarkusExtDependency gradleDep = new QuarkusExtDependency(appArtifact.getGroupId(),
+            final DefaultExternalModuleDependency gradleDep = new DefaultExternalModuleDependency(appArtifact.getGroupId(),
                     appArtifact.getArtifactId(), appArtifact.getVersion(), null);
             gradleDep.addArtifact(dep);
 
@@ -205,7 +207,7 @@ public class AppModelGradleResolver implements AppModelResolver {
         String value = extProps.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
         final String[] split = value.split(":");
 
-        return new QuarkusExtDependency(split[0], split[1], split[2], null);
+        return new DefaultExternalModuleDependency(split[0], split[1], split[2], null);
     }
 
     private Properties resolveDescriptor(final Path path) {

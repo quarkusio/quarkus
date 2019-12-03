@@ -597,62 +597,71 @@ public final class HibernateOrmProcessor {
                                 .setProperty(AvailableSettings.IMPLICIT_NAMING_STRATEGY, namingStrategy));
 
                 // Database
-                desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION,
-                        hibernateConfig.database.generation);
+                hibernateConfig.database.ifPresent(database -> {
 
-                if (hibernateConfig.database.generationHaltOnError) {
-                    desc.getProperties().setProperty(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
-                }
+                    desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION, database.generation);
 
-                hibernateConfig.database.charset.ifPresent(
-                        charset -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME, charset));
+                    if (database.generationHaltOnError) {
+                        desc.getProperties().setProperty(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
+                    }
 
-                hibernateConfig.database.defaultCatalog.ifPresent(
-                        catalog -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_CATALOG, catalog));
+                    database.charset.ifPresent(
+                            charset -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME, charset));
 
-                hibernateConfig.database.defaultSchema.ifPresent(
-                        schema -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_SCHEMA, schema));
+                    database.defaultCatalog
+                            .ifPresent(catalog -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_CATALOG, catalog));
 
-                if (hibernateConfig.database.globallyQuotedIdentifiers) {
-                    desc.getProperties().setProperty(AvailableSettings.GLOBALLY_QUOTED_IDENTIFIERS, "true");
-                }
+                    database.defaultSchema
+                            .ifPresent(schema -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_SCHEMA, schema));
+
+                    if (database.globallyQuotedIdentifiers) {
+                        desc.getProperties().setProperty(AvailableSettings.GLOBALLY_QUOTED_IDENTIFIERS, "true");
+                    }
+
+                });
 
                 // Query
-                if (hibernateConfig.batchFetchSize > 0) {
-                    desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE,
-                            Integer.toString(hibernateConfig.batchFetchSize));
+                hibernateConfig.batchFetchSize.ifPresent(fetchSize -> {
+                    desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE, Integer.toString(fetchSize));
                     desc.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
-                }
+                });
 
-                hibernateConfig.query.queryPlanCacheMaxSize.ifPresent(
-                        maxSize -> desc.getProperties().setProperty(AvailableSettings.QUERY_PLAN_CACHE_MAX_SIZE, maxSize));
+                hibernateConfig.query.ifPresent(query -> {
 
-                hibernateConfig.query.defaultNullOrdering.ifPresent(
-                        defaultNullOrdering -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,
-                                defaultNullOrdering));
+                    query.queryPlanCacheMaxSize.ifPresent(
+                            maxSize -> desc.getProperties().setProperty(AvailableSettings.QUERY_PLAN_CACHE_MAX_SIZE, maxSize));
+
+                    query.defaultNullOrdering.ifPresent(defaultNullOrdering -> desc.getProperties()
+                            .setProperty(AvailableSettings.DEFAULT_NULL_ORDERING, defaultNullOrdering));
+
+                });
 
                 // JDBC
-                hibernateConfig.jdbc.timezone.ifPresent(
-                        timezone -> desc.getProperties().setProperty(AvailableSettings.JDBC_TIME_ZONE, timezone));
+                hibernateConfig.jdbc.ifPresent(jdbc -> {
 
-                hibernateConfig.jdbc.statementFetchSize.ifPresent(
-                        fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_FETCH_SIZE,
-                                fetchSize.toString()));
+                    jdbc.timezone.ifPresent(
+                            timezone -> desc.getProperties().setProperty(AvailableSettings.JDBC_TIME_ZONE, timezone));
 
-                hibernateConfig.jdbc.statementBatchSize.ifPresent(
-                        fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,
-                                fetchSize.toString()));
+                    jdbc.statementFetchSize.ifPresent(fetchSize -> desc.getProperties()
+                            .setProperty(AvailableSettings.STATEMENT_FETCH_SIZE, fetchSize.toString()));
+
+                    jdbc.statementBatchSize.ifPresent(batchSize -> desc.getProperties()
+                            .setProperty(AvailableSettings.STATEMENT_BATCH_SIZE, batchSize.toString()));
+
+                });
 
                 // Logging
-                if (hibernateConfig.log.sql) {
-                    desc.getProperties().setProperty(AvailableSettings.SHOW_SQL, "true");
-                    desc.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
-                }
+                hibernateConfig.log.ifPresent(log -> {
 
-                if (hibernateConfig.log.jdbcWarnings.isPresent()) {
-                    desc.getProperties().setProperty(AvailableSettings.LOG_JDBC_WARNINGS,
-                            hibernateConfig.log.jdbcWarnings.get().toString());
-                }
+                    if (log.sql) {
+                        desc.getProperties().setProperty(AvailableSettings.SHOW_SQL, "true");
+                        desc.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
+                    }
+
+                    log.jdbcWarnings.ifPresent(warnings -> desc.getProperties().setProperty(AvailableSettings.LOG_JDBC_WARNINGS,
+                            warnings.toString()));
+
+                });
 
                 // Statistics
                 if (hibernateConfig.metricsEnabled
@@ -708,21 +717,21 @@ public final class HibernateOrmProcessor {
 
                 descriptors.add(desc);
             });
-        } else {
-            if (hibernateConfig.isAnyPropertySet()) {
-                throw new ConfigurationError(
-                        "Hibernate ORM configuration present in persistence.xml and Quarkus config file at the same time\n"
-                                + "If you use persistence.xml remove all " + HIBERNATE_ORM_CONFIG_PREFIX
-                                + "* properties from the Quarkus config file.");
-            }
+        } else if (hibernateConfig.isAnyPropertySet()) {
+            throw new ConfigurationError(
+                    "Hibernate ORM configuration present in persistence.xml and Quarkus config file at the same time\n"
+                            + "If you use persistence.xml remove all " + HIBERNATE_ORM_CONFIG_PREFIX
+                            + "* properties from the Quarkus config file.");
         }
     }
 
     @BuildStep
     public void produceLoggingCategories(BuildProducer<LogCategoryBuildItem> categories) {
-        if (hibernateConfig.log.bindParam) {
-            categories.produce(new LogCategoryBuildItem("org.hibernate.type.descriptor.sql.BasicBinder", Level.TRACE));
-        }
+        hibernateConfig.log.ifPresent(log -> {
+            if (log.bindParam) {
+                categories.produce(new LogCategoryBuildItem("org.hibernate.type.descriptor.sql.BasicBinder", Level.TRACE));
+            }
+        });
     }
 
     private Optional<String> guessDialect(Optional<String> dbKind) {

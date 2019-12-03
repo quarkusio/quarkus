@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.deployment;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -77,13 +78,9 @@ public class HibernateOrmConfig {
 
     /**
      * The size of the batches used when loading entities and collections.
-     *
-     * `-1` means batch loading is disabled. This is the default.
-     *
-     * @asciidoclet
      */
-    @ConfigItem(defaultValue = "-1")
-    public int batchFetchSize;
+    @ConfigItem
+    public OptionalInt batchFetchSize;
 
     /**
      * Pluggable strategy contract for applying physical naming rules for database object names.
@@ -106,28 +103,28 @@ public class HibernateOrmConfig {
      */
     @ConfigItem
     @ConfigDocSection
-    public HibernateOrmConfigQuery query;
+    public Optional<HibernateOrmConfigQuery> query;
 
     /**
      * Database related configuration.
      */
     @ConfigItem
     @ConfigDocSection
-    public HibernateOrmConfigDatabase database;
+    public Optional<HibernateOrmConfigDatabase> database;
 
     /**
      * JDBC related configuration.
      */
     @ConfigItem
     @ConfigDocSection
-    public HibernateOrmConfigJdbc jdbc;
+    public Optional<HibernateOrmConfigJdbc> jdbc;
 
     /**
      * Logging configuration.
      */
     @ConfigItem
     @ConfigDocSection
-    public HibernateOrmConfigLog log;
+    public Optional<HibernateOrmConfigLog> log;
 
     /**
      * Caching configuration
@@ -163,12 +160,12 @@ public class HibernateOrmConfig {
         return dialect.isPresent() ||
                 dialectStorageEngine.isPresent() ||
                 sqlLoadScript.isPresent() ||
-                batchFetchSize > 0 ||
+                batchFetchSize.isPresent() ||
                 statistics.isPresent() ||
-                query.isAnyPropertySet() ||
-                database.isAnyPropertySet() ||
-                jdbc.isAnyPropertySet() ||
-                log.isAnyPropertySet() ||
+                query.isPresent() ||
+                database.isPresent() ||
+                jdbc.isPresent() ||
+                log.isPresent() ||
                 !cache.isEmpty();
     }
 
@@ -190,10 +187,6 @@ public class HibernateOrmConfig {
          */
         @ConfigItem
         public Optional<String> defaultNullOrdering;
-
-        public boolean isAnyPropertySet() {
-            return queryPlanCacheMaxSize.isPresent() || defaultNullOrdering.isPresent();
-        }
     }
 
     @ConfigGroup
@@ -238,13 +231,6 @@ public class HibernateOrmConfig {
          */
         @ConfigItem(defaultValue = "false")
         public boolean globallyQuotedIdentifiers;
-
-        public boolean isAnyPropertySet() {
-            return !"none".equals(generation) || defaultCatalog.isPresent() || defaultSchema.isPresent()
-                    || generationHaltOnError
-                    || charset.isPresent()
-                    || globallyQuotedIdentifiers;
-        }
     }
 
     @ConfigGroup
@@ -267,10 +253,6 @@ public class HibernateOrmConfig {
          */
         @ConfigItem
         public Optional<Integer> statementBatchSize;
-
-        public boolean isAnyPropertySet() {
-            return timezone.isPresent() || statementFetchSize.isPresent() || statementBatchSize.isPresent();
-        }
     }
 
     @ConfigGroup
@@ -297,10 +279,6 @@ public class HibernateOrmConfig {
          */
         @ConfigItem(defaultValueDocumentation = "depends on dialect")
         public Optional<Boolean> jdbcWarnings;
-
-        public boolean isAnyPropertySet() {
-            return sql || bindParam || jdbcWarnings.isPresent();
-        }
     }
 
     @ConfigGroup

@@ -19,6 +19,9 @@
         <module>scheduler</module>
         <module>quartz</module>
 
+        <!-- Configuration -->
+        <module>config-yaml</module>
+
         <!-- Formats -->
         <module>jackson</module>
         <module>jaxb</module>

@@ -250,6 +250,44 @@ quarkus.smallrye-openapi.path=/swagger
 
 Hit `CTRL+C` to stop the application.
 
+== Providing Application Level OpenAPI Annotations
+
+There are some MicroProfile OpenAPI annotations which describe global API information, such as the following:
+
+* API Title
+* API Description
+* Version
+* Contact Information
+* License
+
+All of this information (and more) can be included in your Java code by using appropriate OpenAPI annotations 
+on a JAX-RS `Application` class.  Because a JAX-RS `Application` class is not required in Quarkus, you will
+likely have to create one.  It can simply be an empty class that extends `javax.ws.rs.core.Application`.  This
+empty class can then be annotated with various OpenAPI annotations such as `@OpenAPIDefinition`.  For example:
+
+[source, java]
+----
+@OpenAPIDefinition(
+    tags = {
+            @Tag(name="widget", description="Widget operations."),
+            @Tag(name="gasket", description="Operations related to gaskets")
+    },
+    info = @Info(
+        title="Example API", 
+        version = "1.0.1",
+        contact = @Contact(
+            name = "Example API Support",
+            url = "http://exampleurl.com/contact",
+            email = "techsupport@example.com"),
+        license = @License(
+            name = "Apache 2.0",
+            url = "http://www.apache.org/licenses/LICENSE-2.0.html"))
+)
+public class ExampleApiApplication extends Application {
+}
+----
+
+
 == Loading OpenAPI Schema From Static Files
 
 Instead of dynamically creating OpenAPI schemas from annotation scanning, Quarkus also supports serving static OpenAPI documents.
@@ -398,4 +436,3 @@ include::{generated-dir}/config/quarkus-smallrye-openapi.adoc[opts=optional, lev
 === Swagger UI
 
 include::{generated-dir}/config/quarkus-swaggerui.adoc[opts=optional, leveloffset=+1]
-

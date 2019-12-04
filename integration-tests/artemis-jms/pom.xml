@@ -29,6 +29,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-artemis-jms</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-artemis</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Health check -->
         <dependency>

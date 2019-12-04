@@ -14,6 +14,7 @@
     <name>Quarkus - Test Framework</name>
     <packaging>pom</packaging>
     <modules>
+        <module>artemis-test</module>
         <module>common</module>
         <module>h2</module>
         <module>derby</module>

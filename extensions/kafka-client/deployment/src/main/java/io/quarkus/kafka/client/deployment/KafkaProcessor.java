@@ -42,6 +42,7 @@ import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 public class KafkaProcessor {
 
@@ -106,5 +107,11 @@ public class KafkaProcessor {
 
         // enable JNI
         jni.produce(new JniBuildItem());
+    }
+
+    @BuildStep
+    HealthBuildItem addHealthCheck(KafkaBuildTimeConfig buildTimeConfig) {
+        return new HealthBuildItem("io.quarkus.kafka.client.health.KafkaHealthCheck",
+                buildTimeConfig.healthEnabled, "kafka");
     }
 }

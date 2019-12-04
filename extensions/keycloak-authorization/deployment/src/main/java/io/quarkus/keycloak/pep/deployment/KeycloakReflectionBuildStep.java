@@ -34,7 +34,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.keycloak.pep.runtime.PortWatcherRunTime;
 
 public class KeycloakReflectionBuildStep {
 
@@ -80,7 +79,12 @@ public class KeycloakReflectionBuildStep {
     }
 
     @BuildStep
-    RuntimeInitializedClassBuildItem runtimeInitializedClass() {
-        return new RuntimeInitializedClassBuildItem(PortWatcherRunTime.class.getName());
+    public void runtimeInit(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit) {
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.BouncyIntegration"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.PemUtils"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.DerUtils"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.KeystoreUtil"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.CertificateUtils"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.OCSPUtils"));
     }
 }

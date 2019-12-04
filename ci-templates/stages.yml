@@ -345,7 +345,7 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 25
+          timeoutInMinutes: 35
           modules:
             - kogito
             - kubernetes-client

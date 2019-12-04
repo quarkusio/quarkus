@@ -100,7 +100,8 @@ public class MongoWithReplicasTestBase {
 
             // Check replica set status before to proceed
             await()
-                    .pollDelay(1, TimeUnit.SECONDS)
+                    .pollInterval(100, TimeUnit.MILLISECONDS)
+                    .atMost(1, TimeUnit.MINUTES)
                     .until(() -> {
                         Document result = mongoAdminDB.runCommand(new Document("replSetGetStatus", 1));
                         LOGGER.infof("replSetGetStatus: %s", result);

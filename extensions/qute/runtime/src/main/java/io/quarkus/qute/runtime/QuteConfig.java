@@ -10,7 +10,12 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class QuteConfig {
 
     /**
-     * The set of suffixes used when attempting to locate a template.
+     * The set of suffixes used when attempting to locate a template file.
+     * 
+     * By default, `engine.getTemplate("foo")` would result in several lookups: `src/main/resources/templates/foo`,
+     * `src/main/resources/templates/foo.html` and `src/main/resources/templates/foo.txt`.
+     * 
+     * @asciidoclet
      */
     @ConfigItem(defaultValue = "html,txt")
     public List<String> suffixes;

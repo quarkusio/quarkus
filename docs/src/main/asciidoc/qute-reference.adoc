@@ -1,0 +1,699 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Qute Reference Guide
+
+include::./attributes.adoc[]
+
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+:toc:
+
+== Hello World Example
+
+In this example, we'd like to demonstrate the basic workflow when working with Qute templates.
+Let's start with a simple hello world example.
+We will always need some *template contents*:
+
+.hello.html
+[source,html]
+----
+<html>
+ <p>Hello {name}! <1>
+</html>
+----
+<1> `{name}` is a value expression that is evaluated when the template is rendered.
+
+Then, we will need to parse the contents into a *template definition* Java object.
+A template definition is an instance of `io.quarkus.qute.Template`.
+
+If using Qute "standalone" you'll need to create an instance of `io.quarkus.qute.Engine` first.
+The `Engine` represents a central point for template management with dedicated configuration. 
+Let's use the convenient builder:
+
+[source,java]
+----
+Engine engine = Engine.builder().addDefaults().build();
+----
+
+TIP: In Quarkus, there is a preconfigured `Engine` available for injection - see <<quarkus_integration>>.
+
+If we have an `Engine` instance we could parse the template contents:
+
+[source,java]
+----
+Template helloTemplate = engine.parse(helloHtmlContent);
+----
+
+TIP: In Quarkus, you can simply inject the template definition. The template is automatically parsed and cached - see <<quarkus_integration>>.
+
+Finally, we will create a *template instance*, set the data and render the output:
+
+[source,java]
+----
+// Renders <html><p>Hello Jim!</p></html>
+helloTemplate.data("name", "Jim").render(); <1> 
+----
+<1> `Template.data(String, Object)` is a convenient method that creates a template instance and sets the data in one step.
+
+So the workflow is simple: 
+
+1. Create template contents (`hello.html`),
+2. Parse template definition (`io.quarkus.qute.Template`),
+3. Create template instance (`io.quarkus.qute.TemplateInstance`),
+4. Render output.
+
+The `Engine` is able to cache the definitions so that it's not necessary to parse the contents again and again.
+
+NOTE: In Quarkus, the caching is done automatically.
+
+== Core Features
+
+=== Syntax and Building Blocks
+
+The dynamic parts of a template include:
+
+* *comment* 
+** `{! This is a comment !}`,
+** could be multi-line,
+** may contain expressions and sections: `{! {#if true} !}`.
+* *expression*
+** outputs the evaluated value,
+** simple properties: `{foo}`, `{item.name}`,
+** virtual methods: `{item.get(name)}`, `{name ?: 'John'}`,
+** with namespace: `{inject:colors}`.
+* *section tag*
+** may contain expressions and sections: `{#if foo}{foo.name}{/if}`,
+** the name in the closing tag is optional: `{#if active}ACTIVE!{/}`,
+** can be empty: `{#myTag image=true /}`,
+** may declare nested section blocks: `{#if item.valid} Valid. {#else} Invalid. {/if}` and decide which block to render.
+
+==== Expressions
+
+An expression consists of:
+
+* an optional namespace followed by a colon `:`, 
+* parts separated by dot `.`.
+
+The first part of the expression is always resolved against the <<current_context_object, current context object>>.
+If no result is found for the first part it's resolved against the parent context object (if available).
+For an expression that starts with a namespace the current context object is found using the available ``NamespaceResolver``s.
+For an expression that does not start with a namespace the current context object is *derived from the position* of the tag.
+All other parts are resolved using `ValueResolver` s against the result of the previous resolution.
+
+For example, expression `{name}` has no namespace and single part - "name".
+The "name" will be resolved using all available value resolvers against the current context object.
+However, the expression `{global:colors}` has the namespace "global" and single part - "colors".
+First, all available `NamespaceResolver` s will be used to find the current context object.
+And afterwards value resolvers will be used to resolve "colors" against the context object found. 
+
+[source]
+----
+{name} <1>
+{item.name} <2>
+{global:colors} <3> 
+----
+<1> no namespace, one part -`name`
+<2> no namespace, two parts - `item`, `name`
+<3> namespace `global`, one part - `colors`
+
+An expression part could be a "virtual method" in which case the name can be followed by parameters in parentheses. 
+
+[source]
+----
+{item.getLabels(1)} <1>
+{name or 'John'} <2>
+----
+<1> no namespace, two parts - `item`, `getLabels(1)`, the second part is a virtual method with name `getLabels` and params `1`
+<2> infix notation, translated to `name.or('John')`; no namespace, two parts - `name`, `or('John')`
+
+[[current_context_object]]
+===== Current Context
+
+If an expression does not specify a namespace the current context object is derived from the position of the tag.
+By default, the current context object represents the data passed to the template instance.
+However, sections may change the current context object.
+A typical example is the for/each loop - during iteration the content of the section is rendered with each element as the current context object:
+
+[source]
+----
+{#each items}
+ {count}. {it.name} <1>
+{/each}
+
+{! Another form of iteration... !}
+{#for item in items}
+  {count}. {item.name} <2>
+{/for}
+----
+<1> `it` is an implicit alias. `name` is resolved against the current iteration element.
+<2> Loop with an explicit alias `item`.
+
+[TIP]
+====
+Data passed to the template instance are always accessible using the `data` namespace. 
+This could be useful to access data for which the key is overriden:  
+
+[source,html]
+----
+<html>
+{item.name} <1>
+<ul>
+{#for item in item.getDerivedItems()} <2>
+  <li>
+  {item.name} <3> 
+  is derived from
+  {data:item.name} <4>
+  </li>
+{/for}
+</ul>
+</html>
+----
+<1> `item` is passed to the template instance as a data object.
+<2> Iterate over the list of derived items.
+<3> `item` is an alias for the iterated element.
+<4> Use the `data` namespace to access the `item` data object.
+
+====
+
+==== Sections
+
+A section:
+
+* has a start tag
+** starts with `#`, followed by the name of the section such as `{#if}` and `{#each}`,
+* may be empty 
+** tag ends with `/`, ie. `{#emptySection /}`
+* may contain other expression, sections, etc.
+** the end tag starts with `/` and contains the name of the section (optional): `{#if foo}Foo!{/if}` or `{#if foo}Foo!{/}`,
+
+The start tag can also define parameters.
+The parameters have optional names.
+A section may contain several content *blocks*. 
+The "main" block is always present.
+Additional/nested blocks also start with `#` and can have parameters too - `{#else if item.isActive}`.
+A section helper that defines the logic of a section can "execute" any of the blocks and evaluate the parameters.
+
+[source]
+----
+{#if item.name is 'sword'}
+  It's a sword!
+{#else if item.name is 'shield'}
+  It's a shield!
+{#else}
+  Item is neither a sword nor a shield.
+{/if}
+----
+
+===== Loop Section
+
+The loop section makes it possible to iterate over an instance of `Iterable`, `Map` 's entry set and `Stream`.
+It has two flavors.
+The first one is using the `each` name alias.
+
+[source]
+----
+{#each items}
+ {it.name} <1>
+{/each}
+----
+<1> `it` is an implicit alias. `name` is resolved against the current iteration element.
+
+The other form is using the `for` name alias and can specify the alias used to reference the iteration element:
+
+[source]
+----
+{#for item in items}
+  {item.name}
+{/for}
+----
+
+It's also possible to access the iteration metadata inside the loop:
+
+[source]
+----
+{#each items}
+ {count}. {it.name} <1>
+{/each}
+----
+<1> `count` represents one-based index. Metadata also include zero-based `index`, `hasNext`, `odd`, `even`.
+
+===== If Section
+
+A basic control flow section.
+The simplest possible version accepts a single parameter and renders the content if it's evaluated to `true` (or `Boolean.TRUE`).
+
+[source]
+----
+{#if item.active}
+ This item is active.
+{/if}
+----
+
+You can also use the following operators:
+
+|===
+|Operator |Aliases 
+
+|equals 
+|`eq`, `==`, `is` 
+
+|not equals 
+|`ne`, `!=`
+
+|greater than 
+|`gt`, `>`
+
+|greater than or equal to
+|`ge`, `>=`
+
+|less than 
+|`lt`, `<`
+
+|less than or equal to
+|`le`, `\<=`
+
+|===
+
+[source]
+----
+{#if item.age > 10}
+ This item is very old.
+{/if}
+----
+
+NOTE: Multiple conditions are not supported.
+
+You can add any number of "else" blocks:
+
+[source]
+----
+{#if item.age > 10}
+ This item is very old.
+{#else if item.age > 5}
+ This item is quite old.
+{#else if item.age > 2}
+ This item is old.
+{#else}
+ This item is not old at all!
+{/if}
+----
+
+===== With Section
+
+This section can be used to set the current context object.
+This could be useful to simplify the template structure.
+
+[source]
+----
+{#with item.parent}
+ {name}  <1>
+{/with}
+----
+<1> The name will be resolved against the `item.parent`.
+
+It's also possible to specify an alias for the context object:
+
+[source]
+----
+{#with item.parent as myParent}
+ {myParent.name}
+{/with}
+----
+
+[[include_helper]]
+===== Include/Insert Sections
+
+These sections can be used to include another template and possibly override some parts of the template (template inheritance).
+
+.Template "base"
+[source,html]
+----
+<html>
+<head>
+<meta charset="UTF-8">
+<title>{#insert title}Default Title{/}</title> <1>
+</head>
+<body>
+    {#insert body}No body!{/} <2>
+</body>
+</html>
+----
+<1> `insert` sections are used to specify parts that could be overriden by a template that includes the given template.
+<2> An `insert` section may define the default content that is rendered if not overriden.
+
+.Template "detail"
+[source,html]
+----
+{#include base} <1>
+    {#title}My Title{/title} <2>
+    {#body}
+    <div>
+        My body.
+    </div>
+{/include}
+----
+<1> `include` section is used to specify the extended template.
+<2> Nested blocks are used to specify the parts that should be overriden.
+
+NOTE: Section blocks can also define an optional end tag - `{/title}`.
+
+[[user_tags]]
+===== User-defined Tags
+
+User-defined tags can be used to include a template and optionally pass some parameters.
+Let's suppose we have a template called `item.html`:
+
+[source]
+----
+{#if showImage} <1>
+  {it.image} <2>
+{/if}
+----
+<1> `showImage` is a named parameter.
+<2> `it` is a special key that is replaced with the first unnamed param of the tag.
+
+Now if we register this template under the name `item` and if we add a `UserTagSectionHelper` to the engine:
+
+[source,java]
+----
+Engine engine = Engine.builder()
+                   .addSectionHelper(new UserTagSectionHelper.Factory("item"))
+                   .build();
+----
+
+NOTE: In Quarkus, all files from the `src/main/resources/templates/tags` are registered and monitored automatically.
+
+We can include the tag like this:
+
+[source,html]
+----
+<ul>
+{#each items}
+ <li>
+ {#item this showImage=true /} <1>
+ </li>
+{/each}
+</ul>
+----
+<1> `this` is resolved to an iteration element and can be referenced using the `it` key in the tag template.
+
+=== Engine Configuration
+
+==== Template Locator
+
+Manual registration is sometimes handy but it's also possible to register a template locator using `EngineBuilder.addLocator(Function<String, Optional<Reader>>)`.
+This locator is used whenever the `Engine.getTemplate()` method is called and the engine has no template for a given id stored in the cache.
+
+NOTE: In Quarkus, all templates from the `src/main/resources/templates` are located automatically.
+
+[[quarkus_integration]]
+== Quarkus Integration
+
+If you want to use Qute in your Quarkus application add the following dependency to your project:
+
+[source,xml]
+----
+<dependency>
+   <groupId>io.quarkus</groupId>
+   <artifactId>quarkus-qute</artifactId>
+</dependency>
+----
+
+In Quarkus, a preconfigured engine instance is provided and available for injection - a bean with scope `@Singleton`, bean type `io.quarkus.qute.Engine` and qualifier `@Default` is registered automatically.
+Moreover, all templates located in the `src/main/resources/templates` directory are validated and can be easily injected. 
+
+[source,java]
+----
+import io.quarkus.qute.Engine;
+import io.quarkus.qute.Template;
+import io.quarkus.qute.api.ResourcePath;
+
+class MyBean {
+
+  @Inject 
+  Template items; <1>
+  
+  @ResourcePath("detail/items2_v1.html") <2>
+  Template items2;
+  
+  @Inject
+  Engine engine; <3>
+  
+}
+----
+<1> If there is no `ResourcePath` qualifier provided, the field name is used to locate the template. In this particular case, the container will attempt to locate a template with path `src/main/resources/templates/items.html`.
+<2> The `ResourcePath` qualifier instructs the container to inject a template from a path relative from `src/main/resources/templates`. In this case, the full path is `src/main/resources/templates/detail/items2_v1.html`. 
+<3> Inject the configured `Engine` instance.
+
+=== Injecting Beans Directly In Templates
+
+A CDI bean annotated with `@Named` can be referenced in any template through the `inject` namespace:
+
+[source,html]
+----
+{inject:foo.price} <1>
+----
+<1> First, a bean with name `foo` is found and then used as the base object.
+
+All expressions using the `inject` namespace are validated during build.
+For the expression `inject:foo.price` the implementation class of the injected bean must either have the `price` property (e.g. a `getPrice()` method) or a matching <<template_extension_methods,template extension method>> must exist. 
+
+NOTE: A `ValueResolver` is also generated for all beans annotated with `@Named` so that it's possible to access its properties without reflection.
+
+=== Parameter Declarations
+
+It is possible to specify optional parameter declarations in a template.
+Quarkus attempts to validate all expressions that reference such parameters.
+If an invalid/incorrect expression is found the build fails.
+
+NOTE: Only properties are currently validated in expressions; virtual methods are currently ignored.
+
+[source,html]
+----
+{@org.acme.Foo foo} <1>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Qute Hello</title>
+</head>
+<body>
+    <h1>{title}</h1> <2>
+    Hello {foo.message}! <3>
+</body>
+</html>
+----
+<1> Parameter declaration - maps `foo` to `org.acme.Foo`.
+<2> Not validated - not matching a param declaration.
+<3> This expression is validated. `org.acme.Foo` must have a property `message` or a matching template extension method must exist. 
+
+NOTE: A value resolver is also generated for all types used in parameter declarations so that it's possible to access its properties without reflection.
+
+==== Overriding Parameter Declarations
+
+[source,html]
+----
+{@org.acme.Foo foo}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Qute Hello</title>
+</head>
+<body>
+    <h1>{foo.message}</h1> <1>
+    {#for foo in baz.foos}
+     <p>Hello {foo.message}!</p> <2>
+    {/for}
+</body>
+</html>
+----
+<1> Validated against `org.acme.Foo`.
+<2> Not validated - `foo` is overriden in the loop section.
+
+[[template_extension_methods]]
+=== Template Extension Methods
+
+A value resolver is automatically generated for a template extension method annotated with `@TemplateExtension`.
+The method must be static, must not return `void` and must accept at least one parameter. 
+The class of the first parameter is used to match the base object and the method name is used to match the property name.
+
+[source,java]
+----
+package org.acme;
+
+class Item {
+
+    public final BigDecimal price;
+
+    public Item(BigDecimal price) {
+        this.price = price;
+    }
+}
+
+class MyExtensions {
+
+    @TemplateExtension
+    static BigDecimal discountedPrice(Item item) { <1>
+        return item.getPrice().multiply(new BigDecimal("0.9"));
+    }
+}
+----
+<1> The method matches `Item.class` and `discountedPrice` property name.
+
+This template extension method makes it possible to render the following template:
+
+[source,html]
+----
+{#each items} <1>
+   {it.discountedPrice}
+{/each}
+----
+<1> `items` is resolved to a list of `org.acme.Item` instances.
+
+=== @TemplateData
+
+A value resolver is automatically generated for a type annotated with `@TemplateData`.
+This allows Quarkus to avoid using reflection to access the data at runtime.
+
+NOTE: Non-public members, constructors, static initializers, static, synthetic and void methods are always ignored.
+
+[source,java]
+----
+package org.acme;
+
+@TemplateData
+class Item {
+
+    public final BigDecimal price;
+
+    public Item(BigDecimal price) {
+        this.price = price;
+    }
+    
+    public BigDecimal getDiscountedPrice() {
+        return price.multiply(new BigDecimal("0.9"));
+    }
+}
+----
+
+Any instance of `Item` can be used directly in the template:
+
+[source,html]
+----
+{#each items} <1>
+   {it.price} / {it.discountedPrice}
+{/each}
+----
+<1> `items` is resolved to a list of `org.acme.Item` instances.
+
+Furthermore, `@TemplateData.properties()` and `@TemplateData.ignore()` can be used to fine-tune the generated resolver.
+Finally, it is also possible to specify the "target" of the annotation - this could be useful for third-party classes not controlled by the application:
+
+[source,java]
+----
+@TemplateData(target = BigDecimal.class)
+@TemplateData
+class Item {
+
+    public final BigDecimal price;
+
+    public Item(BigDecimal price) {
+        this.price = price;
+    }
+}
+----
+
+[source,html]
+----
+{#each items} <1>
+   {it.price.setScale(2, rounding)} <1>
+{/each}
+----
+<1> The generated value resolver knows how to invoke the `BigDecimal.setScale()` method.
+
+=== RESTEasy Integration
+
+If you want to use Qute in your JAX-RS application, you'll need to add the `quarkus-resteasy-qute` extension first.
+In your `pom.xml` file, add:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-qute</artifactId>
+</dependency>
+----
+
+This extension registers a special `ContainerResponseFilter` implementation so that a resource method can return a `TemplateInstance` and the filter takes care of all necessary steps.
+A simple JAX-RS resource may look like this:
+
+.HelloResource.java
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
+
+import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.Template;
+
+@Path("hello")
+public class HelloResource {
+
+    @Inject
+    Template hello; <1>
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public TemplateInstance get(@QueryParam("name") String name) {
+        return hello.data("name", name); <2> <3>
+    }
+}
+----
+<1> If there is no `@ResourcePath` qualifier provided, the field name is used to locate the template. In this particular case, we're injecting a template with path `templates/hello.txt`.
+<2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
+<3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
+
+==== Variant Templates
+
+Sometimes it could be useful to render a specific variant of the template based on the content negotiation.
+`VariantTemplate` is a perfect match for this use case:
+
+[source,java]
+----
+@Path("/detail")
+class DetailResource {
+  
+  @Inject
+  VariantTemplate item; <1>
+
+  @GET
+  @Produces({ MediaType.TEXT_HTML, MediaType.TEXT_PLAIN })
+  public Rendering item() {
+      return item.data(new Item("Alpha", 1000)); <2>
+  }
+}
+----
+<1> Inject a variant template with base path derived from the injected field - `src/main/resources/templates/item`.
+<2> The resulting output depends on the `Accept` header received from the client. For `text/plain` the `src/main/resources/templates/item.txt` template is used. For `text/html` the `META-INF/resources/templates/item.html` template is used.
+
+
+=== Development Mode
+
+In the development mode, all files located in `src/main/resources/templates` are watched for changes and modifications are immediately visible.
+
+=== Configuration Reference
+
+include::{generated-dir}/config/quarkus-qute.adoc[leveloffset=+1, opts=optional]
+
+== Extension Points
+
+TODO

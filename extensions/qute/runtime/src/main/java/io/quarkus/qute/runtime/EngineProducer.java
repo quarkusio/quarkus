@@ -59,7 +59,7 @@ public class EngineProducer {
 
         // We don't register the map resolver because of param declaration validation
         // See DefaultTemplateExtensions
-        builder.addValueResolvers(ValueResolvers.thisResolver(), ValueResolvers.orResolver(),
+        builder.addValueResolvers(ValueResolvers.thisResolver(), ValueResolvers.orResolver(), ValueResolvers.trueResolver(),
                 ValueResolvers.collectionResolver(), ValueResolvers.mapperResolver(), ValueResolvers.mapEntryResolver());
 
         // Fallback reflection resolver

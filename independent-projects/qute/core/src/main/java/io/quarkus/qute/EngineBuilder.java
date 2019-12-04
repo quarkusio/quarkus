@@ -6,6 +6,7 @@ import static io.quarkus.qute.ValueResolvers.mapResolver;
 import static io.quarkus.qute.ValueResolvers.mapperResolver;
 import static io.quarkus.qute.ValueResolvers.orResolver;
 import static io.quarkus.qute.ValueResolvers.thisResolver;
+import static io.quarkus.qute.ValueResolvers.trueResolver;
 
 import java.io.Reader;
 import java.util.ArrayList;
@@ -85,7 +86,11 @@ public final class EngineBuilder {
      */
     public EngineBuilder addDefaultValueResolvers() {
         return addValueResolvers(mapResolver(), mapperResolver(), mapEntryResolver(), collectionResolver(),
-                thisResolver(), orResolver());
+                thisResolver(), orResolver(), trueResolver());
+    }
+
+    public EngineBuilder addDefaults() {
+        return addDefaultSectionHelpers().addDefaultValueResolvers();
     }
 
     public EngineBuilder addNamespaceResolver(NamespaceResolver resolver) {

@@ -6,13 +6,17 @@ import javax.enterprise.inject.Produces;
 import org.apache.activemq.artemis.api.core.client.ActiveMQClient;
 import org.apache.activemq.artemis.api.core.client.ServerLocator;
 
+import io.quarkus.arc.DefaultBean;
+
 @ApplicationScoped
 public class ArtemisCoreProducer {
 
     private ArtemisRuntimeConfig config;
 
     @Produces
-    public ServerLocator produceServerLocator() throws Exception {
+    @ApplicationScoped
+    @DefaultBean
+    public ServerLocator serverLocator() throws Exception {
         return ActiveMQClient.createServerLocator(config.url);
     }
 

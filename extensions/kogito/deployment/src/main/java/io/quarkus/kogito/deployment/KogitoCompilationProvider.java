@@ -12,8 +12,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.drools.modelcompiler.builder.GeneratedFile;
 import org.kie.kogito.codegen.ApplicationGenerator;
-import org.kie.kogito.codegen.GeneratedFile;
 import org.kie.kogito.codegen.Generator;
 import org.kie.kogito.codegen.di.CDIDependencyInjectionAnnotator;
 
@@ -44,8 +44,8 @@ public abstract class KogitoCompilationProvider extends JavaCompilationProvider 
 
             HashSet<File> generatedSourceFiles = new HashSet<>();
             for (GeneratedFile file : generatedFiles) {
-                Path path = pathOf(outputDirectory.getPath(), file.relativePath());
-                Files.write(path, file.contents());
+                Path path = pathOf(outputDirectory.getPath(), file.getPath());
+                Files.write(path, file.getData());
                 generatedSourceFiles.add(path.toFile());
             }
             super.compile(generatedSourceFiles, context);

@@ -158,7 +158,7 @@
         <bootstrap.version>3.1.0</bootstrap.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kogito.version>0.5.1</kogito.version>
+        <kogito.version>0.6.0</kogito.version>
         <kubernetes-client.version>4.6.4</kubernetes-client.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
@@ -2483,7 +2483,7 @@
                 <artifactId>quarkus-vertx-graphql</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+
             <!--  Qute  -->
             <dependency>
                 <groupId>io.quarkus.qute</groupId>

@@ -237,6 +237,18 @@ public class BytecodeRecorderImpl implements RecorderContext {
             T recordingProxy = factory.newInstance(new InvocationHandler() {
                 @Override
                 public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                    if (staticInit) {
+                        for (int i = 0; i < args.length; ++i) {
+                            if (args[i] instanceof ReturnedProxy) {
+                                ReturnedProxy p = (ReturnedProxy) args[i];
+                                if (!p.__static$$init()) {
+                                    throw new RuntimeException("Invalid proxy passed to recorder. Parameter " + i + " of type "
+                                            + method.getParameterTypes()[i]
+                                            + " was created in a runtime recorder method, while this recorder is for a static init method. The object will not have been created at the time this method is run.");
+                                }
+                            }
+                        }
+                    }
                     StoredMethodCall storedMethodCall = new StoredMethodCall(theClass, method, args);
                     storedMethodCalls.add(storedMethodCall);
                     Class<?> returnType = method.getReturnType();

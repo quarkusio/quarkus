@@ -311,10 +311,10 @@ public class QuarkusUnitTest
                         } else if (cause != null) {
                             assertException.accept(cause);
                         } else {
-                            fail("Unable to unwrap build exception from: " + e);
+                            fail("Unable to unwrap the build exception from: " + e);
                         }
                     } else {
-                        fail("Unable to unwrap build exception from: " + e);
+                        fail("Unable to unwrap the build exception from: " + e);
                     }
                 } else {
                     throw e;

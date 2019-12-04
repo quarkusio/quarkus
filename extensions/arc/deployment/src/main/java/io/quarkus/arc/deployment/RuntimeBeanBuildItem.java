@@ -22,10 +22,12 @@ public final class RuntimeBeanBuildItem extends MultiBuildItem {
     final RuntimeValue<?> runtimeValue;
     final NavigableMap<String, NavigableMap<String, Object>> qualifiers;
     final boolean removable;
+    final boolean staticInit;
 
     RuntimeBeanBuildItem(String scope, String type, Supplier<Object> supplier,
             NavigableMap<String, NavigableMap<String, Object>> qualifiers, boolean removable,
-            RuntimeValue<?> runtimeValue) {
+            RuntimeValue<?> runtimeValue, boolean staticInit) {
+        this.staticInit = staticInit;
         if (supplier != null && runtimeValue != null) {
             throw new IllegalArgumentException("It is not possible to specify both - a supplier and a runtime value");
         }
@@ -35,6 +37,10 @@ public final class RuntimeBeanBuildItem extends MultiBuildItem {
         this.qualifiers = qualifiers;
         this.removable = removable;
         this.runtimeValue = runtimeValue;
+    }
+
+    public boolean isStaticInit() {
+        return staticInit;
     }
 
     public String getScope() {
@@ -78,6 +84,7 @@ public final class RuntimeBeanBuildItem extends MultiBuildItem {
         Supplier<Object> supplier;
         RuntimeValue<?> value;
         final NavigableMap<String, NavigableMap<String, Object>> qualifiers = new TreeMap<>();
+        boolean staticInit = true;
 
         public Builder(String type) {
             this.type = type;
@@ -126,8 +133,17 @@ public final class RuntimeBeanBuildItem extends MultiBuildItem {
             return this;
         }
 
+        public boolean isStaticInit() {
+            return staticInit;
+        }
+
+        public Builder setStaticInit(boolean staticInit) {
+            this.staticInit = staticInit;
+            return this;
+        }
+
         public RuntimeBeanBuildItem build() {
-            return new RuntimeBeanBuildItem(scope, type, supplier, qualifiers, removable, value);
+            return new RuntimeBeanBuildItem(scope, type, supplier, qualifiers, removable, value, staticInit);
         }
     }
 }

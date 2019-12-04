@@ -12,12 +12,14 @@ import javax.enterprise.inject.Produces;
 
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.runtime.ArcRecorder;
+import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.AnnotationCreator;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -29,7 +31,7 @@ public class RuntimeBeanProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void build(List<RuntimeBeanBuildItem> beans,
+    RuntimeBeanSupplierMapsBuildItem build(List<RuntimeBeanBuildItem> beans,
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
             ArcRecorder recorder,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
@@ -43,8 +45,10 @@ public class RuntimeBeanProcessor {
         }, beanName, null, Object.class.getName());
 
         classCreator.addAnnotation(ApplicationScoped.class);
-        Map<String, Supplier<Object>> map = new HashMap<>();
+        Map<String, Supplier<Object>> staticBeans = new HashMap<>();
+        Map<String, Supplier<Object>> runtimeBeans = new HashMap<>();
         for (RuntimeBeanBuildItem bean : beans) {
+            Map<String, Supplier<Object>> map = bean.isStaticInit() ? staticBeans : runtimeBeans;
             //deterministic name
             //as we know the maps are sorted this will result in the same hash for the same bean
             String name = bean.type.replace(".", "_") + "_" + HashUtil.sha1(bean.qualifiers.toString());
@@ -77,11 +81,39 @@ public class RuntimeBeanProcessor {
                     .readStaticField(FieldDescriptor.of(ArcRecorder.class, "supplierMap", Map.class));
             ResultHandle supplier = producer.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class), staticMap, producer.load(name));
+            BranchResult branch = producer.ifNull(supplier);
+            branch.trueBranch().throwException(IllegalStateException.class,
+                    "Bean has not been initialized, have you used a runtime initialized bean at static init time?");
             ResultHandle result = producer.invokeInterfaceMethod(MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
                     supplier);
             producer.returnValue(result);
         }
         classCreator.close();
-        recorder.initSupplierBeans(map);
+        return new RuntimeBeanSupplierMapsBuildItem(staticBeans, runtimeBeans);
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void initStatic(RuntimeBeanSupplierMapsBuildItem infoBuildItem,
+            ArcRecorder recorder) {
+        recorder.initStaticSupplierBeans(infoBuildItem.staticInitBeans);
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void initRuntime(RuntimeBeanSupplierMapsBuildItem infoBuildItem,
+            ArcRecorder recorder) {
+        recorder.initRuntimeSupplierBeans(infoBuildItem.runtimeInitBeans);
+    }
+
+    static final class RuntimeBeanSupplierMapsBuildItem extends SimpleBuildItem {
+        final Map<String, Supplier<Object>> staticInitBeans;
+        final Map<String, Supplier<Object>> runtimeInitBeans;
+
+        RuntimeBeanSupplierMapsBuildItem(Map<String, Supplier<Object>> staticInitBeans,
+                Map<String, Supplier<Object>> runtimeInitBeans) {
+            this.staticInitBeans = staticInitBeans;
+            this.runtimeInitBeans = runtimeInitBeans;
+        }
     }
 }

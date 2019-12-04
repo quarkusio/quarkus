@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
@@ -45,8 +46,12 @@ public class ArcRecorder {
         Arc.setExecutor(executor);
     }
 
-    public void initSupplierBeans(Map<String, Supplier<Object>> beans) {
-        supplierMap = beans;
+    public void initStaticSupplierBeans(Map<String, Supplier<Object>> beans) {
+        supplierMap = new ConcurrentHashMap<>(beans);
+    }
+
+    public void initRuntimeSupplierBeans(Map<String, Supplier<Object>> beans) {
+        supplierMap.putAll(beans);
     }
 
     public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> listeners,

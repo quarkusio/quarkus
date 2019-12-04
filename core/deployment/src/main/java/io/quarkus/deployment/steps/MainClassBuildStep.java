@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.graalvm.nativeimage.ImageInfo;
+import org.jboss.logging.Logger;
 
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -58,6 +59,7 @@ class MainClassBuildStep {
     private static final String APP_CLASS = "io.quarkus.runner.ApplicationImpl";
     private static final String MAIN_CLASS = "io.quarkus.runner.GeneratedMain";
     private static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
+    private static final String LOG = "LOG";
     private static final String JAVA_LIBRARY_PATH = "java.library.path";
     private static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
 
@@ -101,6 +103,9 @@ class MainClassBuildStep {
 
         // Application class: static init
 
+        // LOG static field
+        FieldCreator logField = file.getFieldCreator(LOG, Logger.class).setModifiers(Modifier.STATIC);
+
         FieldCreator scField = file.getFieldCreator(STARTUP_CONTEXT, StartupContext.class);
         scField.setModifiers(Modifier.STATIC);
 
@@ -117,6 +122,10 @@ class MainClassBuildStep {
 
         // ensure that the config class is initialized
         mv.invokeStaticMethod(RunTimeConfigurationGenerator.C_ENSURE_INITIALIZED);
+
+        // Init the LOG instance
+        mv.writeStaticField(logField.getFieldDescriptor(), mv.invokeStaticMethod(
+                ofMethod(Logger.class, "getLogger", Logger.class, String.class), mv.load("io.quarkus.application")));
 
         ResultHandle startupContext = mv.newInstance(ofConstructor(StartupContext.class));
         mv.writeStaticField(scField.getFieldDescriptor(), startupContext);
@@ -235,7 +244,9 @@ class MainClassBuildStep {
                 tryBlock.load(LaunchMode.DEVELOPMENT.equals(launchMode.getLaunchMode())));
 
         cb = tryBlock.addCatch(Throwable.class);
-        cb.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cb.getCaughtException());
+        cb.invokeVirtualMethod(ofMethod(Logger.class, "error", void.class, Object.class, Throwable.class),
+                cb.readStaticField(logField.getFieldDescriptor()), cb.load("Failed to start application"),
+                cb.getCaughtException());
         cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
         cb.throwException(RuntimeException.class, "Failed to start quarkus", cb.getCaughtException());
         mv.returnValue(null);

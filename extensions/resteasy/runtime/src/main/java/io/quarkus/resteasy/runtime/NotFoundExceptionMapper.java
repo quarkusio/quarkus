@@ -43,6 +43,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
     private final static Variant HTML_VARIANT = new Variant(MediaType.TEXT_HTML_TYPE, (String) null, null);
     private final static List<Variant> VARIANTS = Arrays.asList(JSON_VARIANT, HTML_VARIANT);
 
+    private volatile static String httpRoot = "";
     private volatile static List<String> servletMappings = Collections.EMPTY_LIST;
     private volatile static List<String> staticResources = Collections.EMPTY_LIST;
     private volatile static List<String> additionalEndpoints = Collections.EMPTY_LIST;
@@ -53,6 +54,10 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
 
     @Context
     private HttpHeaders headers;
+
+    public static void setHttpRoot(String rootPath) {
+        httpRoot = rootPath;
+    }
 
     public static final class MethodDescription {
         public String method;
@@ -208,7 +213,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             TemplateHtmlBuilder sb = new TemplateHtmlBuilder("404 - Resource Not Found", "", "Resources overview");
             sb.resourcesStart("REST resources");
             for (ResourceDescription resource : descriptions) {
-                sb.resourcePath(resource.basePath);
+                sb.resourcePath(adjustRoot(resource.basePath));
                 for (MethodDescription method : resource.calls) {
                     sb.method(method.method, method.fullPath);
                     if (method.consumes != null) {
@@ -229,7 +234,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             if (!servletMappings.isEmpty()) {
                 sb.resourcesStart("Servlet mappings");
                 for (String servletMapping : servletMappings) {
-                    sb.servletMapping(servletMapping);
+                    sb.servletMapping(adjustRoot(servletMapping));
                 }
                 sb.resourcesEnd();
             }
@@ -237,7 +242,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             if (!staticResources.isEmpty()) {
                 sb.resourcesStart("Static resources");
                 for (String staticResource : staticResources) {
-                    sb.staticResourcePath(staticResource);
+                    sb.staticResourcePath(adjustRoot(staticResource));
                 }
                 sb.resourcesEnd();
             }
@@ -245,7 +250,7 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             if (!additionalEndpoints.isEmpty()) {
                 sb.resourcesStart("Additional endpoints");
                 for (String additionalEndpoint : additionalEndpoints) {
-                    sb.staticResourcePath(additionalEndpoint);
+                    sb.staticResourcePath(adjustRoot(additionalEndpoint));
                 }
                 sb.resourcesEnd();
             }
@@ -253,6 +258,28 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             return Response.status(Status.NOT_FOUND).entity(sb.toString()).type(MediaType.TEXT_HTML_TYPE).build();
         }
         return Response.status(Status.NOT_FOUND).build();
+    }
+
+    private String adjustRoot(String basePath) {
+        //httpRoot can optionally end with a slash
+        //also some templates want the returned path to start with a / and some don't
+        //to make this work we check if the basePath starts with a / or not, and make sure we
+        //the return value follows the same pattern
+
+        if (httpRoot.equals("/")) {
+            //leave it alone
+            return basePath;
+        }
+        if (basePath.startsWith("/")) {
+            if (!httpRoot.endsWith("/")) {
+                return httpRoot + basePath;
+            }
+            return httpRoot.substring(0, httpRoot.length() - 1) + basePath;
+        }
+        if (httpRoot.endsWith("/")) {
+            return httpRoot.substring(1) + basePath;
+        }
+        return httpRoot.substring(1) + "/" + basePath;
     }
 
     private static Variant selectVariant(HttpHeaders headers) {

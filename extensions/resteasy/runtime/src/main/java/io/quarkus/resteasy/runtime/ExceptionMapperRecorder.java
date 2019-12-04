@@ -32,4 +32,7 @@ public class ExceptionMapperRecorder {
         NotFoundExceptionMapper.nonJaxRsClassNameToMethodPaths(nonJaxRsClassNameToMethodPaths);
     }
 
+    public void setHttpRoot(String rootPath) {
+        NotFoundExceptionMapper.setHttpRoot(rootPath);
+    }
 }

@@ -287,6 +287,10 @@ public class SpringWebProcessor {
                     useAllAvailable = true;
                     break OUTER;
                 }
+                if (collectProviders(providersToRegister, categorizedContextResolvers, instance, "produces")) {
+                    useAllAvailable = true;
+                    break OUTER;
+                }
 
                 if (collectProviders(providersToRegister, categorizedReaders, instance, "consumes")) {
                     useAllAvailable = true;

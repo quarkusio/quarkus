@@ -204,4 +204,13 @@ public class SpringControllerTest {
                 .body(containsString("hello from error"))
                 .statusCode(402);
     }
+
+    @Test
+    public void testMethodReturningXmlContent() {
+        RestAssured.when().get("/book")
+                .then()
+                .statusCode(200)
+                .contentType("application/xml")
+                .body(containsString("steel"));
+    }
 }

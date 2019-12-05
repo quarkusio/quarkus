@@ -73,8 +73,6 @@ public class NativeImageBuildStep {
 
         final String runnerJarName = runnerJar.getFileName().toString();
 
-        isThisGraalVMVersionObsolete();
-
         HashMap<String, String> env = new HashMap<>(System.getenv());
         List<String> nativeImage;
 
@@ -129,6 +127,28 @@ public class NativeImageBuildStep {
                 }
             }
             nativeImage = Collections.singletonList(getNativeImageExecutable(graal, java, env).getAbsolutePath());
+        }
+
+        Optional<String> graalVMVersion = Optional.empty();
+
+        try {
+            List<String> versionCommand = new ArrayList<>(nativeImage);
+            versionCommand.add("--version");
+
+            Process versionProcess = new ProcessBuilder(versionCommand.toArray(new String[0]))
+                    .start();
+            versionProcess.waitFor();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(versionProcess.getInputStream()))) {
+                graalVMVersion = reader.lines().filter((l) -> l.startsWith("GraalVM Version")).findFirst();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get GraalVM version", e);
+        }
+
+        if (graalVMVersion.isPresent()) {
+            checkGraalVMVersion(graalVMVersion.get());
+        } else {
+            log.error("Unable to get GraalVM version from the native-image binary.");
         }
 
         try {
@@ -293,14 +313,13 @@ public class NativeImageBuildStep {
         }
     }
 
-    //FIXME remove after transition period
-    private void isThisGraalVMVersionObsolete() {
-        final String vmName = System.getProperty("java.vm.name");
-        log.info("Running Quarkus native-image plugin on " + vmName);
+    private void checkGraalVMVersion(String version) {
+        log.info("Running Quarkus native-image plugin on " + version);
         final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.", "19.2.");
-        final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
+        final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(v -> version.contains(" " + v));
         if (vmVersionIsObsolete) {
-            log.error("Out of date build of GraalVM detected! Please upgrade to GraalVM 19.3.0.");
+            throw new IllegalStateException(
+                    "Out of date build of GraalVM detected: " + version + ". Please upgrade to GraalVM 19.3.0.");
         }
     }
 

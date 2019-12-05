@@ -34,9 +34,10 @@ public class ArtemisJmsProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configure(ArtemisJmsRecorder recorder, ArtemisRuntimeConfig runtimeConfig,
+    ArtemisJmsConfiguredBuildItem configure(ArtemisJmsRecorder recorder, ArtemisRuntimeConfig runtimeConfig,
             BeanContainerBuildItem beanContainer) {
 
         recorder.setConfig(runtimeConfig, beanContainer.getValue());
+        return new ArtemisJmsConfiguredBuildItem();
     }
 }

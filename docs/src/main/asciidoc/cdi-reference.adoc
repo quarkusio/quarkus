@@ -168,6 +168,89 @@ public class CounterBean {
 
 == Non-standard Features
 
+=== Eager Instantiation of Beans
+
+[[lazy_by_default]]
+==== Lazy By Default
+
+By default, CDI beans are created lazily, when needed.
+What exactly "needed" means depends on the scope of a bean.
+
+* A *normal scoped bean* (`@ApplicationScoped`, `@RequestScoped`, etc.) is needed when a method is invoked upon an injected instance (contextual reference per the specification). 
++
+In other words, injecting a normal scoped bean will not suffice because a _client proxy_ is injected instead of a contextual instance of the bean.
+
+* A *bean with a pseudo-scope* (`@Dependent` and `@Singleton` ) is created when injected.
+
+.Lazy Instantiation Example
+[source,java]
+----
+@Singleton // => pseudo-scope
+class AmazingService {
+  String ping() {
+    return "amazing";
+  }
+}
+
+@ApplicationScoped // => normal scope
+class CoolService {
+  String ping() {
+    return "cool";
+  }
+}
+
+@Path("/ping")
+public class PingResource {
+
+  @Inject
+  AmazingService s1; <1>
+  
+  @Inject
+  CoolService s2; <2>
+  
+  @GET
+  public String ping() {
+    return s1.ping() + s2.ping(); <3>
+  }
+}
+----
+<1> Injection triggers the instantiation of `AmazingService`.
+<2> Injection itself does not result in the instantiation of `CoolService`. A client proxy is injected. 
+<3> The first invocation upon the injected proxy triggers the instantiation of `CoolService`.
+
+==== Startup Event
+
+However, if you really need to instantiate a bean eagerly you can:
+
+* Declare an observer of the `StartupEvent` - the scope of the bean does not matter in this case:
++
+[source,java]
+----
+@ApplicationScoped
+class CoolService {
+  void startup(@Observes StartupEvent event) { <1>
+  }
+}
+----
+<1> A `CoolService` is created during startup to service the observer method invocation.
+
+* Use the bean in an observer of the `StartupEvent` - normal scoped beans must be used as described in <<lazy_by_default>>:    
++
+[source,java]
+----
+@Dependent
+class MyBeanStarter {
+
+  void startup(@Observes StartupEvent event, AmazingService amazing, CoolService cool) { <1>
+    cool.toString(); <2>
+  }
+}
+----
+<1> The `AmazingService` is created during injection.
+<2> The `CoolService` is a normal scoped bean so we have to invoke a method upon the injected proxy to force the instantiation.
+
+NOTE: Quarkus users are encouraged to always prefer the `@Observes StartupEvent` to `@Initialized(ApplicationScoped.class)` as explained in the link:lifecycle[Application Initialization and Termination] guide. 
+
 === Qualified Injected Fields
 
 In CDI, if you declare a field injection point you need to use `@Inject` and optionally a set of qualifiers:

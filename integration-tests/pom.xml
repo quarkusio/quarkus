@@ -88,6 +88,7 @@
         <module>vertx-graphql</module>
         <module>jpa-without-entity</module>
         <module>quartz</module>
+        <module>logging-gelf</module>
     </modules>
 
     <build>

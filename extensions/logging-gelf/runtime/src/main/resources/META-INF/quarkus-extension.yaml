@@ -1,0 +1,11 @@
+---
+name: "Logging GELF"
+metadata:
+  keywords:
+  - "logging"
+  - "gelf"
+  - "handler"
+  guide: "https://quarkus.io/guides/central-logging"
+  categories:
+  - "core"
+  status: "preview"

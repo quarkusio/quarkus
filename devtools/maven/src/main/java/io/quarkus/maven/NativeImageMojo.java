@@ -100,7 +100,7 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private Boolean enableServer;
 
-    @Parameter(defaultValue = "false")
+    @Parameter(defaultValue = "true")
     private Boolean enableJni;
 
     @Parameter(defaultValue = "false")

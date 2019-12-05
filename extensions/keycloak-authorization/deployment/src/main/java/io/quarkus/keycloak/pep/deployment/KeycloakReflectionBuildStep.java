@@ -32,6 +32,7 @@ import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 
 public class KeycloakReflectionBuildStep {
@@ -75,5 +76,15 @@ public class KeycloakReflectionBuildStep {
                 HttpClaimInformationPointProviderFactory.class.getName(),
                 ClaimsInformationPointProviderFactory.class.getName()));
 
+    }
+
+    @BuildStep
+    public void runtimeInit(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit) {
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.BouncyIntegration"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.PemUtils"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.DerUtils"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.KeystoreUtil"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.CertificateUtils"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.OCSPUtils"));
     }
 }

@@ -16,7 +16,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.oracle.substratevm</groupId>
+            <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
         </dependency>
         <dependency>

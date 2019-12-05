@@ -10,6 +10,7 @@ import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
 import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -64,7 +65,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 try {
                     jwtPrincipal = new OidcJwtCallerPrincipal(JwtClaims.parse(token.accessToken().encode()));
                 } catch (InvalidJwtException e) {
-                    result.completeExceptionally(e);
+                    result.completeExceptionally(new AuthenticationFailedException(e));
                     return;
                 }
                 builder.setPrincipal(jwtPrincipal);
@@ -74,7 +75,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         builder.addRole(role);
                     }
                 } catch (Exception e) {
-                    result.completeExceptionally(e);
+                    result.completeExceptionally(new ForbiddenException(e));
                     return;
                 }
 

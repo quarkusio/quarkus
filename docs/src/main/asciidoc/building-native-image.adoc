@@ -37,7 +37,7 @@ What does having a working C developer environment mean?
 [source,shell]
 ----
 # dnf (rpm-based)
-sudo dnf install gcc glibc-devel zlib-devel
+sudo dnf install gcc glibc-devel zlib-devel libstdc++-static
 # Debian-based distributions:
 sudo apt-get install build-essential libz-dev zlib1g-dev
 ----

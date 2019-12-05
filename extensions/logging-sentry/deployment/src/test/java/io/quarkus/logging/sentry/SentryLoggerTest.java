@@ -27,6 +27,11 @@ public class SentryLoggerTest {
 
     @Test
     public void sentryLoggerDefaultTest() {
+        assertThat(getSentryHandler().getLevel()).isEqualTo(org.jboss.logmanager.Level.WARN);
+        assertThat(FrameCache.shouldCacheThrowable(new IllegalStateException("Test frame"), 1)).isFalse();
+    }
+
+    public static SentryHandler getSentryHandler() {
         LogManager logManager = LogManager.getLogManager();
         assertThat(logManager).isInstanceOf(org.jboss.logmanager.LogManager.class);
 
@@ -39,8 +44,7 @@ public class SentryLoggerTest {
                 .findFirst().orElse(null);
         SentryHandler sentryHandler = (SentryHandler) handler;
         assertThat(sentryHandler).isNotNull();
-        assertThat(sentryHandler.getLevel()).isEqualTo(org.jboss.logmanager.Level.WARN);
-        assertThat(FrameCache.shouldCacheThrowable(new IllegalStateException("Test frame"), 1)).isFalse();
+        return sentryHandler;
     }
 
     @AfterAll

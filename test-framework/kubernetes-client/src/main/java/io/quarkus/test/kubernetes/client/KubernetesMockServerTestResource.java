@@ -18,12 +18,12 @@ public class KubernetesMockServerTestResource implements QuarkusTestResourceLife
         mockServer.init();
 
         final Map<String, String> systemProps = new HashMap<>();
-        systemProps.put(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY,
+        systemProps.put("quarkus.kubernetes-client.master-url",
                 mockServer.createClient().getConfiguration().getMasterUrl());
-        systemProps.put(Config.KUBERNETES_TRUST_CERT_SYSTEM_PROPERTY, "true");
+        systemProps.put("quarkus.kubernetes-client.trust-certs", "true");
         systemProps.put(Config.KUBERNETES_AUTH_TRYKUBECONFIG_SYSTEM_PROPERTY, "false");
         systemProps.put(Config.KUBERNETES_AUTH_TRYSERVICEACCOUNT_SYSTEM_PROPERTY, "false");
-        systemProps.put(Config.KUBERNETES_NAMESPACE_SYSTEM_PROPERTY, "test");
+        systemProps.put("quarkus.kubernetes-client.namespace", "test");
 
         return systemProps;
     }

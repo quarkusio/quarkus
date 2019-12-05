@@ -52,14 +52,13 @@ class ElytronPropertiesProcessor {
      * to include the build artifact.
      *
      * @param recorder - runtime security recorder
-     * @param resources - NativeImageResourceBuildItem used to register the realm user/roles properties files names.
      * @param securityRealm - the producer factory for the SecurityRealmBuildItem
      * @return the AuthConfigBuildItem for the realm authentication mechanism if there was an enabled PropertiesRealmConfig,
      *         null otherwise
      * @throws Exception - on any failure
      */
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     void configureFileRealmAuthConfig(ElytronPropertiesFileRecorder recorder,
             BuildProducer<NativeImageResourceBuildItem> resources,
             BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
@@ -67,13 +66,19 @@ class ElytronPropertiesProcessor {
             PropertiesRealmConfig realmConfig = propertiesConfig.file;
             log.debugf("Configuring from PropertiesRealmConfig, users=%s, roles=%s", realmConfig.users,
                     realmConfig.roles);
-            // Add the users/roles properties files resource names to build artifact
-            resources.produce(new NativeImageResourceBuildItem(realmConfig.users, realmConfig.roles));
             // Have the runtime recorder create the LegacyPropertiesSecurityRealm and create the build item
             RuntimeValue<SecurityRealm> realm = recorder.createRealm(realmConfig);
             securityRealm
                     .produce(new SecurityRealmBuildItem(realm, realmConfig.realmName, recorder.loadRealm(realm, realmConfig)));
             // Return the realm authentication mechanism build item
+        }
+    }
+
+    @BuildStep
+    void nativeResource(BuildProducer<NativeImageResourceBuildItem> resources) throws Exception {
+        if (propertiesConfig.file.enabled) {
+            PropertiesRealmConfig realmConfig = propertiesConfig.file;
+            resources.produce(new NativeImageResourceBuildItem(realmConfig.users, realmConfig.roles));
         }
     }
 
@@ -97,7 +102,7 @@ class ElytronPropertiesProcessor {
      * @throws Exception - on any failure
      */
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     void configureMPRealmConfig(ElytronPropertiesFileRecorder recorder,
             BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
         if (propertiesConfig.embedded.enabled) {

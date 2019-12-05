@@ -205,9 +205,8 @@ public abstract class AbstractDataSourceProducer {
                 throw new RuntimeException("Cloud sql instance should match the pattern project-id:zone:cloudSqlInstance");
             }
             agroalConnectionFactoryConfigurationSupplier.jdbcUrl(
-                    MessageFormat.format("{0}?socketFactory=com.google.cloud.sql.postgres.SocketFactory&cloudSqlInstance={1}"
-                            ,url
-                            , cloudSqlInstance));
+                    MessageFormat.format("{0}?socketFactory=com.google.cloud.sql.postgres.SocketFactory&cloudSqlInstance={1}",
+                            url, cloudSqlInstance));
 
         }
 

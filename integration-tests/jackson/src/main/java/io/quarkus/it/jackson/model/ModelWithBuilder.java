@@ -18,12 +18,6 @@ import io.quarkus.arc.Arc;
 public class ModelWithBuilder {
 
     // -------------------------------------------------------------------------
-    // Class attributes
-    // -------------------------------------------------------------------------
-
-    private static ObjectMapper objectMapper;
-
-    // -------------------------------------------------------------------------
     // Object attributes
     // -------------------------------------------------------------------------
 
@@ -46,12 +40,11 @@ public class ModelWithBuilder {
     // -------------------------------------------------------------------------
 
     public String toJson() throws IOException {
-        String json = getObjectMapper().writeValueAsString(this);
-        return json;
+        return toJson(getObjectMapper());
     }
 
-    public static String toJson(final ModelWithBuilder model) throws IOException {
-        return model.toJson();
+    public String toJson(ObjectMapper objectMapper) throws IOException {
+        return objectMapper.writeValueAsString(this);
     }
 
     public static ModelWithBuilder fromJson(final String json) throws IOException {

@@ -14,12 +14,6 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 public class RegisteredPojoModel {
 
     // -------------------------------------------------------------------------
-    // Class attributes
-    // -------------------------------------------------------------------------
-
-    private static ObjectMapper objectMapper;
-
-    // -------------------------------------------------------------------------
     // Object attributes
     // -------------------------------------------------------------------------
 
@@ -39,12 +33,11 @@ public class RegisteredPojoModel {
     // -------------------------------------------------------------------------
 
     public String toJson() throws IOException {
-        String json = getObjectMapper().writeValueAsString(this);
-        return json;
+        return toJson(getObjectMapper());
     }
 
-    public static String toJson(final RegisteredPojoModel model) throws IOException {
-        return model.toJson();
+    public String toJson(ObjectMapper objectMapper) throws IOException {
+        return objectMapper.writeValueAsString(this);
     }
 
     public static RegisteredPojoModel fromJson(final String json) throws IOException {

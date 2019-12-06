@@ -41,11 +41,13 @@ public class QuarkusPluginFunctionalTest {
         BuildResult build = GradleRunner.create()
                 .forwardOutput()
                 .withPluginClasspath()
-                .withArguments(arguments("quarkusBuild"))
+                .withArguments(arguments("build"))
                 .withProjectDir(projectRoot)
                 .build();
 
-        assertThat(build.task(":quarkusBuild").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+        assertThat(build.task(":build").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+        // gradle build should not build the native image
+        assertThat(build.task(":buildNative")).isNull();
     }
 
     private List<String> arguments(String argument) {

@@ -51,6 +51,10 @@ Also, you can customize the Flyway behaviour by using the following properties:
 **true** to execute Flyway automatically when the application starts, **false** otherwise. +
 **default:** false
 
+`quarkus.flyway.clean-at-start`::
+**true** to execute Flyway clean command automatically when the application starts, **false** otherwise. +
+**default:** false
+
 `quarkus.flyway.locations`::
 Comma-separated list of locations to scan recursively for migrations. The location type is determined by its prefix.
 Unprefixed locations or locations starting with classpath: point to a package on the classpath and may contain both SQL

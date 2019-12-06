@@ -1,6 +1,5 @@
 package io.quarkus.keycloak.pep.runtime;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -23,8 +22,10 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.VertxInputStream;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.impl.CookieImpl;
@@ -107,7 +108,16 @@ public class VertxHttpFacade implements OIDCHttpFacade {
 
             @Override
             public String getHeader(String name) {
-                return request.getHeader(name);
+                //TODO: this logic should be removed once KEYCLOAK-12412 is fixed
+                String value = request.getHeader(name);
+
+                if (name.equalsIgnoreCase(HttpHeaders.CONTENT_TYPE.toString())) {
+                    if (value.indexOf(';') != -1) {
+                        return value.substring(0, value.indexOf(';'));
+                    }
+                }
+
+                return value;
             }
 
             @Override
@@ -122,7 +132,17 @@ public class VertxHttpFacade implements OIDCHttpFacade {
 
             @Override
             public InputStream getInputStream(boolean buffered) {
-                return new BufferedInputStream(new ByteArrayInputStream(routingContext.getBody().getBytes()));
+                try {
+                    if (routingContext.getBody() != null) {
+                        return new ByteArrayInputStream(routingContext.getBody().getBytes());
+                    }
+                    if (routingContext.request().isEnded()) {
+                        return new ByteArrayInputStream(new byte[0]);
+                    }
+                    return new VertxInputStream(request);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             @Override

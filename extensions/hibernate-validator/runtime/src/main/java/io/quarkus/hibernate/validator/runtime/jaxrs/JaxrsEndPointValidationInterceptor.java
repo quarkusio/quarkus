@@ -13,6 +13,7 @@ import javax.interceptor.InvocationContext;
 import javax.validation.ConstraintViolationException;
 import javax.ws.rs.core.MediaType;
 
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.util.MediaTypeHelper;
 
 import io.quarkus.hibernate.validator.runtime.interceptor.AbstractMethodValidationInterceptor;
@@ -21,6 +22,8 @@ import io.quarkus.hibernate.validator.runtime.interceptor.AbstractMethodValidati
 @Interceptor
 @Priority(Interceptor.Priority.PLATFORM_AFTER + 800)
 public class JaxrsEndPointValidationInterceptor extends AbstractMethodValidationInterceptor {
+
+    private static final Logger LOGGER = Logger.getLogger(JaxrsEndPointValidationInterceptor.class);
 
     @AroundInvoke
     @Override

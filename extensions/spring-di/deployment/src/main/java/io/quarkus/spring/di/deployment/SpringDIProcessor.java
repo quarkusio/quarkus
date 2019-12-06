@@ -199,7 +199,7 @@ public class SpringDIProcessor {
      *
      * @param target The annotated element declaring the @Scope
      * @return A CDI built in (or session) scope that mostly matches
-     *         the spring one. Websocket scope is currently mapped to @Dependant
+     *         the spring one. Websocket scope is currently mapped to @Dependent
      *         and spring custom scopes are not currently handled.
      */
     private DotName getScope(final AnnotationTarget target) {
@@ -270,7 +270,7 @@ public class SpringDIProcessor {
 
     /**
      * Map spring annotations from an annotated class to equivalent CDI annotations
-     * 
+     *
      * @param target The annotated class
      * @param stereotypeScopes A map on spring stereotype classes to all the scopes
      *        they, or any of their stereotypes (etc) declare
@@ -547,7 +547,7 @@ public class SpringDIProcessor {
     /**
      * Get a single scope from the available options or throw a {@link DefinitionException} explaining
      * where the annotations conflict.
-     * 
+     *
      * @param clazz The class annotated with the scopes
      * @param scopes The scopes from the class and its stereotypes
      * @param scopeStereotypes The stereotype annotations that declared the conflicting scopes
@@ -574,7 +574,7 @@ public class SpringDIProcessor {
 
     /**
      * Get the name of a bean or throw a {@link DefinitionException} if it has more than one name
-     * 
+     *
      * @param clazz The class annotated with the names
      * @param names The names
      * @return The bane name

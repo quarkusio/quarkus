@@ -1,20 +1,15 @@
 package io.quarkus.vertx.web.runtime;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Optional;
 import java.util.function.Function;
 
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.runtime.configuration.MemorySize;
-import io.quarkus.vertx.http.runtime.BodyConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.web.Route;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.BodyHandler;
 
 @Recorder
 public class VertxWebRecorder {
@@ -66,29 +61,10 @@ public class VertxWebRecorder {
                         route.consumes(consumes);
                     }
                 }
-                route.handler(bodyHandler);
+                if (bodyHandler != null) {
+                    route.handler(bodyHandler);
+                }
                 return route;
-            }
-        };
-    }
-
-    public Handler<RoutingContext> createBodyHandler(HttpConfiguration httpConfiguration) {
-        BodyHandler bodyHandler = BodyHandler.create();
-        Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
-        if (maxBodySize.isPresent()) {
-            bodyHandler.setBodyLimit(maxBodySize.get().asLongValue());
-        }
-        final BodyConfig bodyConfig = httpConfiguration.body;
-        bodyHandler.setHandleFileUploads(bodyConfig.handleFileUploads);
-        bodyHandler.setUploadsDirectory(bodyConfig.uploadsDirectory);
-        bodyHandler.setDeleteUploadedFilesOnEnd(bodyConfig.deleteUploadedFilesOnEnd);
-        bodyHandler.setMergeFormAttributes(bodyConfig.mergeFormAttributes);
-        bodyHandler.setPreallocateBodyBuffer(bodyConfig.preallocateBodyBuffer);
-        return new Handler<RoutingContext>() {
-            @Override
-            public void handle(RoutingContext event) {
-                event.request().resume();
-                bodyHandler.handle(event);
             }
         };
     }

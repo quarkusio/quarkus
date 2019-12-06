@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.runtime.standalone;
+package io.quarkus.vertx.http.runtime;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +10,7 @@ import io.netty.buffer.ByteBuf;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 
 public class VertxInputStream extends InputStream {
@@ -80,6 +81,7 @@ public class VertxInputStream extends InputStream {
         if (finished) {
             return -1;
         }
+
         return exchange.readBytesAvailable();
     }
 
@@ -199,7 +201,14 @@ public class VertxInputStream extends InputStream {
             if (input1 != null) {
                 return input1.getByteBuf().readableBytes();
             }
-            return 0;
+
+            String length = request.getHeader(HttpHeaders.CONTENT_LENGTH);
+
+            if (length == null) {
+                return 0;
+            }
+
+            return Integer.parseInt(length);
         }
     }
 

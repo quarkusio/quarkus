@@ -8,7 +8,6 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.BasePlugin;
-import org.gradle.api.plugins.JavaBasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
@@ -101,7 +100,6 @@ public class QuarkusPlugin implements Plugin<Project> {
                     Task testNative = tasks.create(TEST_NATIVE_TASK_NAME, QuarkusTestNative.class);
                     testNative.dependsOn(buildNative);
                     testNative.setShouldRunAfter(Collections.singletonList(tasks.findByName(JavaPlugin.TEST_TASK_NAME)));
-                    tasks.getByName(JavaBasePlugin.CHECK_TASK_NAME).dependsOn(testNative);
                     tasks.withType(Test.class).forEach(t -> {
                         // Quarkus test configuration task which should be executed before any Quarkus test
                         t.dependsOn(quarkusTestConfig);

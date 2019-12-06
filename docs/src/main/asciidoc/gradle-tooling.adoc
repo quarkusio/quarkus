@@ -309,6 +309,18 @@ The native executable would then be produced by executing:
 ./gradlew buildNative
 ----
 
+
+== Running native tests
+
+Run the native tests using:
+
+[source,shell]
+----
+./gradlew testNative
+----
+
+This task depends on `buildNative`, so it will generate the native image before running the tests.
+
 == Building Uber-Jars
 
 Quarkus Gradle plugin supports the generation of Uber-Jars by specifying an `--uber-jar` argument as follows:
@@ -329,8 +341,4 @@ The entries are relative to the root of the generated Uber-Jar. You can specify 
 
 == Building with `./gradlew build`
 
-By default, `./gradlew build` will build the native image also. To skip it, use
-```
-./gradlew build -x buildNative -x testNative
-```
-
+Starting from 1.1.0.Final, `./gradlew build` will no longer build the native image. Use the `buildNative` task explicitly as explained above if needed.

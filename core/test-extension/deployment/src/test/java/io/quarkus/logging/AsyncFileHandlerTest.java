@@ -1,22 +1,19 @@
 package io.quarkus.logging;
 
+import static io.quarkus.logging.LoggingTestsHelper.getHandler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
 import java.util.logging.Handler;
 import java.util.logging.Level;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
 import org.jboss.logmanager.handlers.AsyncHandler;
-import org.jboss.logmanager.handlers.DelayedHandler;
 import org.jboss.logmanager.handlers.FileHandler;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.runtime.logging.InitialConfigurator;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class AsyncFileHandlerTest {
@@ -30,17 +27,7 @@ public class AsyncFileHandlerTest {
 
     @Test
     public void asyncFileHandlerConfigurationTest() {
-        LogManager logManager = LogManager.getLogManager();
-        assertThat(logManager).isInstanceOf(org.jboss.logmanager.LogManager.class);
-
-        DelayedHandler delayedHandler = InitialConfigurator.DELAYED_HANDLER;
-        assertThat(Logger.getLogger("").getHandlers()).contains(delayedHandler);
-        assertThat(delayedHandler.getLevel()).isEqualTo(Level.ALL);
-
-        Handler handler = Arrays.stream(delayedHandler.getHandlers())
-                .filter(h -> (h instanceof AsyncHandler))
-                .findFirst().get();
-        assertThat(handler).isNotNull();
+        Handler handler = getHandler(AsyncHandler.class);
         assertThat(handler.getLevel()).isEqualTo(Level.INFO);
 
         AsyncHandler asyncHandler = (AsyncHandler) handler;

@@ -102,6 +102,7 @@ export PATH=${GRAALVM_HOME}/bin:$PATH
 ====
 GraalVM binaries are not (yet) notarized for macOS Catalina as reported in this https://github.com/oracle/graal/issues/1724[GraalVM issue]. This means that you may see the following error when using `gu`:
 
+[source,shell]
 ----
 “gu” cannot be opened because the developer cannot be verified
 ----

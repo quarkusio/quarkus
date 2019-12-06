@@ -1,10 +1,12 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import org.eclipse.microprofile.jwt.Claims;
 
 import io.quarkus.oidc.OIDCException;
 import io.vertx.core.json.JsonArray;
@@ -16,6 +18,28 @@ public final class OidcUtils {
 
     }
 
+    public static boolean validateClaims(OidcConfig.Token tokenConfig, JsonObject json) {
+        if (tokenConfig.issuer.isPresent()) {
+            String issuer = json.getString(Claims.iss.name());
+            if (!tokenConfig.issuer.get().equals(issuer)) {
+                throw new OIDCException("Invalid issuer");
+            }
+        }
+        if (tokenConfig.audience.isPresent()) {
+            Object claimValue = json.getValue(Claims.aud.name());
+            List<String> audience = Collections.emptyList();
+            if (claimValue instanceof JsonArray) {
+                audience = convertJsonArrayToList((JsonArray) claimValue);
+            } else if (claimValue != null) {
+                audience = Arrays.asList((String) claimValue);
+            }
+            if (!audience.containsAll(tokenConfig.audience.get())) {
+                throw new OIDCException("Invalid audience");
+            }
+        }
+        return true;
+    }
+
     public static List<String> findRoles(String clientId, OidcConfig.Roles rolesConfig, JsonObject json) {
         // If the user configured a specific path - check and enforce a claim at this path exists
         if (rolesConfig.getRoleClaimPath().isPresent()) {
@@ -23,9 +47,9 @@ public final class OidcUtils {
         }
 
         // Check 'groups' next
-        List<String> groups = findClaimWithRoles(rolesConfig, "groups", json, false);
+        List<String> groups = findClaimWithRoles(rolesConfig, Claims.groups.name(), json, false);
         if (!groups.isEmpty()) {
-            return groups.stream().map(v -> v.toString()).collect(Collectors.toList());
+            return groups;
         } else {
             // Finally, check if this token has been issued by Keycloak.
             // Return an empty or populated list of realm and resource access roles
@@ -45,7 +69,7 @@ public final class OidcUtils {
         Object claimValue = findClaimValue(claimPath, json, claimPath.split("/"), 0, mustExist);
 
         if (claimValue instanceof JsonArray) {
-            return ((JsonArray) claimValue).stream().map(v -> v.toString()).collect(Collectors.toList());
+            return convertJsonArrayToList((JsonArray) claimValue);
         } else if (claimValue != null) {
             String sep = rolesConfig.getRoleClaimSeparator().isPresent() ? rolesConfig.getRoleClaimSeparator().get() : " ";
             return Arrays.asList(claimValue.toString().split(sep));
@@ -70,5 +94,13 @@ public final class OidcUtils {
         }
 
         return claimValue;
+    }
+
+    private static List<String> convertJsonArrayToList(JsonArray claimValue) {
+        List<String> list = new ArrayList<>(claimValue.size());
+        for (int i = 0; i < claimValue.size(); i++) {
+            list.add(claimValue.getString(i));
+        }
+        return list;
     }
 }

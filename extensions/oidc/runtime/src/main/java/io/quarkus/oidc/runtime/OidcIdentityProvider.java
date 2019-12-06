@@ -9,6 +9,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
+import io.quarkus.oidc.OIDCException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -59,6 +60,13 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     return;
                 }
                 AccessToken token = event.result();
+                try {
+                    OidcUtils.validateClaims(config.token, token.accessToken());
+                } catch (OIDCException e) {
+                    result.completeExceptionally(new AuthenticationFailedException(e));
+                    return;
+                }
+
                 QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
 
                 JsonWebToken jwtPrincipal;

@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,6 +58,12 @@ public class OidcConfig {
      */
     @ConfigItem
     Roles roles;
+
+    /**
+     * Configuration how to validate the token claims.
+     */
+    @ConfigItem
+    Token token;
 
     /**
      * Credentials which the OIDC adapter will use to authenticate to the OIDC server.
@@ -159,5 +166,35 @@ public class OidcConfig {
          */
         @ConfigItem
         public Optional<List<String>> scopes;
+    }
+
+    @ConfigGroup
+    public static class Token {
+
+        /**
+         * Expected issuer 'iss' claim value
+         */
+        @ConfigItem
+        public Optional<String> issuer;
+
+        /**
+         * Expected audience `aud` claim value which may be a string or an array of strings
+         */
+        @ConfigItem
+        public Optional<List<String>> audience;
+
+        public static Token fromIssuer(String issuer) {
+            Token tokenClaims = new Token();
+            tokenClaims.issuer = Optional.of(issuer);
+            tokenClaims.audience = Optional.ofNullable(null);
+            return tokenClaims;
+        }
+
+        public static Token fromAudience(String... audience) {
+            Token tokenClaims = new Token();
+            tokenClaims.issuer = Optional.ofNullable(null);
+            tokenClaims.audience = Optional.of(Arrays.asList(audience));
+            return tokenClaims;
+        }
     }
 }

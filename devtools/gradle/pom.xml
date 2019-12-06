@@ -64,10 +64,10 @@
                                 <argument>${gradle.task}</argument>
                                 <argument>-Pdescription=${project.description}</argument>
                                 <argument>-S</argument>
-                                <argument>${env.MAVEN_OPTS}</argument>
                             </arguments>
                             <environmentVariables>
                                 <MAVEN_LOCAL_REPO>${settings.localRepository}</MAVEN_LOCAL_REPO>
+                                <GRADLE_OPTS>${env.MAVEN_OPTS}</GRADLE_OPTS>
                             </environmentVariables>
                             <skip>${skip.gradle.build}</skip>
                         </configuration>

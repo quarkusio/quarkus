@@ -233,6 +233,8 @@ class MainClassBuildStep {
                 .map(f -> f.getInfo())
                 .sorted()
                 .collect(Collectors.joining(", ")));
+        ResultHandle activeProfile = tryBlock
+                .invokeStaticMethod(ofMethod(ProfileManager.class, "getActiveProfile", String.class));
         tryBlock.invokeStaticMethod(
                 ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class, String.class, String.class,
                         String.class, boolean.class),
@@ -240,7 +242,7 @@ class MainClassBuildStep {
                 tryBlock.load(applicationInfo.getVersion()),
                 tryBlock.load(Version.getVersion()),
                 featuresHandle,
-                tryBlock.load(ProfileManager.getActiveProfile()),
+                activeProfile,
                 tryBlock.load(LaunchMode.DEVELOPMENT.equals(launchMode.getLaunchMode())));
 
         cb = tryBlock.addCatch(Throwable.class);

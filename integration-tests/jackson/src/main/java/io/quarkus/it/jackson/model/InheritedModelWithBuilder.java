@@ -4,8 +4,11 @@ import java.io.IOException;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+
+import io.quarkus.arc.Arc;
 
 /**
  * Simple model class.
@@ -34,12 +37,11 @@ public class InheritedModelWithBuilder extends InheritedModelWithBuilderBase {
     // -------------------------------------------------------------------------
 
     public String toJson() throws IOException {
-        String json = getObjectMapper().writeValueAsString(this);
-        return json;
+        return toJson(getObjectMapper());
     }
 
-    public static String toJson(final InheritedModelWithBuilder model) throws IOException {
-        return model.toJson();
+    public String toJson(ObjectMapper objectMapper) throws IOException {
+        return objectMapper.writeValueAsString(this);
     }
 
     public static InheritedModelWithBuilder fromJson(final String json) throws IOException {
@@ -95,5 +97,9 @@ public class InheritedModelWithBuilder extends InheritedModelWithBuilderBase {
         public InheritedModelWithBuilder build() {
             return new InheritedModelWithBuilder(this);
         }
+    }
+
+    private static ObjectMapper getObjectMapper() {
+        return Arc.container().instance(ObjectMapper.class).get();
     }
 }

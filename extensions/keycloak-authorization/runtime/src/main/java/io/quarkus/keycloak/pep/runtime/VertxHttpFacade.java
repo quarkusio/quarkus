@@ -1,6 +1,5 @@
 package io.quarkus.keycloak.pep.runtime;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -23,6 +22,7 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.VertxInputStream;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
@@ -122,7 +122,17 @@ public class VertxHttpFacade implements OIDCHttpFacade {
 
             @Override
             public InputStream getInputStream(boolean buffered) {
-                return new BufferedInputStream(new ByteArrayInputStream(routingContext.getBody().getBytes()));
+                try {
+                    if (routingContext.getBody() != null) {
+                        return new ByteArrayInputStream(routingContext.getBody().getBytes());
+                    }
+                    if (routingContext.request().isEnded()) {
+                        return new ByteArrayInputStream(new byte[0]);
+                    }
+                    return new VertxInputStream(request);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             @Override

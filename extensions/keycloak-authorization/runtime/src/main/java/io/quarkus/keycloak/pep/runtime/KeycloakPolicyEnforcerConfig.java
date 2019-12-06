@@ -41,13 +41,13 @@ public class KeycloakPolicyEnforcerConfig {
          * Specifies how policies are enforced.
          */
         @ConfigItem(defaultValue = "ENFORCING")
-        String enforcementMode;
+        public String enforcementMode;
 
         /**
          * Specifies the paths to protect.
          */
         @ConfigItem
-        Map<String, PathConfig> paths;
+        public Map<String, PathConfig> paths;
 
         /**
          * Defines how the policy enforcer should track associations between paths in your application and resources defined in
@@ -56,7 +56,7 @@ public class KeycloakPolicyEnforcerConfig {
          * protected resources
          */
         @ConfigItem
-        PathCacheConfig pathCache;
+        public PathCacheConfig pathCache;
 
         /**
          * Specifies how the adapter should fetch the server for resources associated with paths in your application. If true,
@@ -65,14 +65,14 @@ public class KeycloakPolicyEnforcerConfig {
          * enforcer is going to fetch resources on-demand accordingly with the path being requested
          */
         @ConfigItem(defaultValue = "true")
-        boolean lazyLoadPaths;
+        public boolean lazyLoadPaths;
 
         /**
          * Defines a set of one or more claims that must be resolved and pushed to the Keycloak server in order to make these
          * claims available to policies
          */
         @ConfigItem
-        ClaimInformationPointConfig claimInformationPoint;
+        public ClaimInformationPointConfig claimInformationPoint;
 
         /**
          * Specifies how scopes should be mapped to HTTP methods. If set to true, the policy enforcer will use the HTTP method
@@ -80,7 +80,7 @@ public class KeycloakPolicyEnforcerConfig {
          * the current request to check whether or not access should be granted
          */
         @ConfigItem
-        boolean httpMethodAsScope;
+        public boolean httpMethodAsScope;
 
         @ConfigGroup
         public static class PathConfig {
@@ -89,13 +89,13 @@ public class KeycloakPolicyEnforcerConfig {
              * The name of a resource on the server that is to be associated with a given path
              */
             @ConfigItem
-            Optional<String> name;
+            public Optional<String> name;
 
             /**
              * A URI relative to the application’s context path that should be protected by the policy enforcer
              */
             @ConfigItem
-            Optional<String> path;
+            public Optional<String> path;
 
             /**
              * The HTTP methods (for example, GET, POST, PATCH) to protect and how they are associated with the scopes for a
@@ -103,14 +103,14 @@ public class KeycloakPolicyEnforcerConfig {
              * resource in the server
              */
             @ConfigItem
-            Map<String, MethodConfig> methods;
+            public Map<String, MethodConfig> methods;
 
             /**
              * Specifies how policies are enforced
              */
             @DefaultConverter
             @ConfigItem(defaultValue = "ENFORCING")
-            PolicyEnforcerConfig.EnforcementMode enforcementMode;
+            public PolicyEnforcerConfig.EnforcementMode enforcementMode;
 
             /**
              * Defines a set of one or more claims that must be resolved and pushed to the Keycloak server in order to make
@@ -118,7 +118,7 @@ public class KeycloakPolicyEnforcerConfig {
              * claims available to policies
              */
             @ConfigItem
-            ClaimInformationPointConfig claimInformationPoint;
+            public ClaimInformationPointConfig claimInformationPoint;
         }
 
         @ConfigGroup
@@ -128,20 +128,20 @@ public class KeycloakPolicyEnforcerConfig {
              * The name of the HTTP method
              */
             @ConfigItem
-            String method;
+            public String method;
 
             /**
              * An array of strings with the scopes associated with the method
              */
             @ConfigItem
-            List<String> scopes;
+            public List<String> scopes;
 
             /**
              * A string referencing the enforcement mode for the scopes associated with a method
              */
             @DefaultConverter
             @ConfigItem(defaultValue = "ALL")
-            PolicyEnforcerConfig.ScopeEnforcementMode scopesEnforcementMode;
+            public PolicyEnforcerConfig.ScopeEnforcementMode scopesEnforcementMode;
         }
 
         @ConfigGroup
@@ -151,13 +151,13 @@ public class KeycloakPolicyEnforcerConfig {
              * Defines the time in milliseconds when the entry should be expired
              */
             @ConfigItem(defaultValue = "1000")
-            int maxEntries = 1000;
+            public int maxEntries = 1000;
 
             /**
              * Defines the limit of entries that should be kept in the cache
              */
             @ConfigItem(defaultValue = "30000")
-            long lifespan = 30000;
+            public long lifespan = 30000;
         }
 
         @ConfigGroup
@@ -167,13 +167,13 @@ public class KeycloakPolicyEnforcerConfig {
              *
              */
             @ConfigItem(name = ConfigItem.PARENT)
-            Map<String, Map<String, Map<String, String>>> complexConfig;
+            public Map<String, Map<String, Map<String, String>>> complexConfig;
 
             /**
              *
              */
             @ConfigItem(name = ConfigItem.PARENT)
-            Map<String, Map<String, String>> simpleConfig;
+            public Map<String, Map<String, String>> simpleConfig;
         }
     }
 }

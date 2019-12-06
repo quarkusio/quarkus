@@ -7,6 +7,7 @@ import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.core.SecurityContext;
 
+import io.quarkus.vertx.http.runtime.VertxInputStream;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.ResteasyContext;
 import org.jboss.resteasy.core.SynchronousDispatcher;
@@ -61,9 +62,14 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     public void handle(RoutingContext request) {
         // have to create input stream here.  Cannot execute in another thread
         // otherwise request handlers may not get set up before request ends
-        VertxInputStream is;
+        InputStream is;
         try {
-            is = new VertxInputStream(request.request());
+            if (request.get("quarkus.request.inputstream") != null) {
+                is = request.get("quarkus.request.inputstream");
+                is.mark(0);
+            } else {
+                is = new VertxInputStream(request.request());
+            }
         } catch (IOException e) {
             request.fail(e);
             return;

@@ -11,6 +11,8 @@ import java.util.List;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.security.cert.X509Certificate;
 
+import io.quarkus.vertx.http.runtime.VertxInputStream;
+import io.vertx.core.http.HttpHeaders;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.OIDCHttpFacade;
 import org.keycloak.adapters.spi.AuthenticationError;
@@ -107,7 +109,15 @@ public class VertxHttpFacade implements OIDCHttpFacade {
 
             @Override
             public String getHeader(String name) {
-                return request.getHeader(name);
+                String value = request.getHeader(name);
+
+                if (name.equalsIgnoreCase(HttpHeaders.CONTENT_TYPE.toString())) {
+                    if (value.indexOf(';') != -1) {
+                        return value.substring(0, value.indexOf(';'));
+                    }
+                }
+
+                return value;
             }
 
             @Override
@@ -122,7 +132,19 @@ public class VertxHttpFacade implements OIDCHttpFacade {
 
             @Override
             public InputStream getInputStream(boolean buffered) {
-                return new BufferedInputStream(new ByteArrayInputStream(routingContext.getBody().getBytes()));
+                try {
+                    if (routingContext.get("quarkus.request.inputstream") != null) {
+                        return routingContext.get("quarkus.request.inputstream");
+                    }
+
+                    BufferedInputStream stream = new BufferedInputStream(new VertxInputStream(request));
+
+                    routingContext.put("quarkus.request.inputstream", stream);
+
+                    return stream;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             @Override

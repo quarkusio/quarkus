@@ -26,6 +26,7 @@ import org.keycloak.util.JsonSerialization;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -116,6 +117,7 @@ public class PolicyEnforcerTest {
         configurePermissionResourcePermission(authorizationSettings);
         configureClaimBasedPermission(authorizationSettings);
         configureHttpResponseClaimBasedPermission(authorizationSettings);
+        configureBodyClaimBasedPermission(authorizationSettings);
 
         client.setAuthorizationSettings(authorizationSettings);
 
@@ -153,6 +155,20 @@ public class PolicyEnforcerTest {
                 settings);
         createPermission(settings, createResource(settings, "Http Response Claim Protected Resource",
                 "/api/permission/http-response-claim-protected"), policy);
+    }
+
+    private static void configureBodyClaimBasedPermission(ResourceServerRepresentation settings) {
+        PolicyRepresentation policy = createJSPolicy("Body Claim-Based Policy",
+                "var context = $evaluation.getContext();\n"
+                        + "print(context.getAttributes().toMap());"
+                        + "var attributes = context.getAttributes();\n"
+                        + "\n"
+                        + "if (attributes.containsValue('from-body', 'grant')) {\n"
+                        + "    $evaluation.grant();\n"
+                        + "}",
+                settings);
+        createPermission(settings, createResource(settings, "Body Claim Protected Resource",
+                "/api/permission/body-claim"), policy);
     }
 
     private static void createPermission(ResourceServerRepresentation settings, ResourceRepresentation resource,
@@ -258,6 +274,18 @@ public class PolicyEnforcerTest {
                 .when().get("/api/permission/http-response-claim-protected")
                 .then()
                 .statusCode(403);
+    }
+
+    @Test
+    public void testBodyClaim() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice"))
+                .contentType(ContentType.JSON)
+                .body("{\"from-body\": \"grant\"}")
+                .when()
+                .post("/api/permission/body-claim")
+                .then()
+                .statusCode(200)
+                .and().body(Matchers.containsString("Body Claim Protected Resource"));
     }
 
     @Test

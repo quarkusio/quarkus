@@ -107,6 +107,8 @@ public class TestRunTimeConfig {
     @ConvertWith(WholeNumberConverter.class)
     public Map<String, Integer> mapOfNumbers;
 
+    public Map<String, Map<String, String>> mapMap;
+
     @Override
     public String toString() {
         return "TestRunTimeConfig{" +

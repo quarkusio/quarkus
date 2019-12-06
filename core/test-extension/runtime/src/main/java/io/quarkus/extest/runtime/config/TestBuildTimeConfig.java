@@ -1,5 +1,7 @@
 package io.quarkus.extest.runtime.config;
 
+import java.util.Map;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -24,6 +26,8 @@ public class TestBuildTimeConfig {
     /** A nested config group with all supported value types */
     @ConfigItem
     public AllValuesConfig allValues;
+
+    public Map<String, Map<String, String>> mapMap;
 
     public TestBuildTimeConfig() {
 

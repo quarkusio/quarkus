@@ -9,9 +9,6 @@ import org.gradle.api.plugins.JavaPluginConvention;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 
-/**
- * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
- */
 public class QuarkusPluginExtension {
 
     private final Project project;

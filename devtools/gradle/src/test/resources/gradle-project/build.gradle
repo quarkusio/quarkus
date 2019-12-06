@@ -5,9 +5,7 @@ plugins {
 }
 
 repositories {
-    maven {
-        url uri(System.getenv('MAVEN_LOCAL_REPO'))
-    }
+    mavenLocal()
     mavenCentral()
 }
 

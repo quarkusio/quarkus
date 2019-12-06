@@ -35,8 +35,10 @@ import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
+import io.vertx.core.Handler;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 
 class VertxHttpProcessor {
 
@@ -99,6 +101,12 @@ class VertxHttpProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
+    BodyHandlerBuildItem bodyHandler(VertxHttpRecorder recorder, HttpConfiguration httpConfiguration) {
+        return new BodyHandlerBuildItem(recorder.createBodyHandler(httpConfiguration));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem finalizeRouter(
             VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer,
             Optional<RequireVirtualHttpBuildItem> requireVirtual, InternalWebVertxBuildItem vertx,
@@ -106,7 +114,9 @@ class VertxHttpProcessor {
             List<DefaultRouteBuildItem> defaultRoutes, List<FilterBuildItem> filters,
             VertxWebRouterBuildItem router, EventLoopCountBuildItem eventLoopCount,
             HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass, List<WebsocketSubProtocolsBuildItem> websocketSubProtocols)
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass, List<WebsocketSubProtocolsBuildItem> websocketSubProtocols,
+            List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
+            BodyHandlerBuildItem bodyHandlerBuildItem)
             throws BuildException, IOException {
         Optional<DefaultRouteBuildItem> defaultRoute;
         if (defaultRoutes == null || defaultRoutes.isEmpty()) {
@@ -124,9 +134,14 @@ class VertxHttpProcessor {
                 .filter(f -> f.getHandler() != null)
                 .map(FilterBuildItem::toFilter).collect(Collectors.toList());
 
+        //if the body handler is required then we know it is installed for all routes, so we don't need to register it here
+        Handler<RoutingContext> bodyHandler = !requireBodyHandlerBuildItems.isEmpty() ? bodyHandlerBuildItem.getHandler()
+                : null;
+
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
-                listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath, launchMode.getLaunchMode());
+                listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath, launchMode.getLaunchMode(),
+                !requireBodyHandlerBuildItems.isEmpty(), bodyHandler);
 
         boolean startVirtual = requireVirtual.isPresent() || httpBuildTimeConfig.virtual;
         if (startVirtual) {

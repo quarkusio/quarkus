@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.runtime.standalone;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -7,7 +8,6 @@ import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.core.SecurityContext;
 
-import io.quarkus.vertx.http.runtime.VertxInputStream;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.ResteasyContext;
 import org.jboss.resteasy.core.SynchronousDispatcher;
@@ -20,6 +20,7 @@ import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.VertxInputStream;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -64,9 +65,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         // otherwise request handlers may not get set up before request ends
         InputStream is;
         try {
-            if (request.get("quarkus.request.inputstream") != null) {
-                is = request.get("quarkus.request.inputstream");
-                is.mark(0);
+            if (request.getBody() != null) {
+                is = new ByteArrayInputStream(request.getBody().getBytes());
             } else {
                 is = new VertxInputStream(request.request());
             }

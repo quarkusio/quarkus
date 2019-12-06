@@ -1,5 +1,7 @@
 package io.quarkus.keycloak.pep.deployment;
 
+import java.util.Map;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -13,12 +15,41 @@ import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerRecorder;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.runtime.OidcBuildTimeConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
+import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 
 public class KeycloakPolicyEnforcerBuildStep {
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem(FeatureBuildItem.KEYCLOAK_AUTHORIZATION);
+    }
+
+    @BuildStep
+    RequireBodyHandlerBuildItem requireBody(KeycloakPolicyEnforcerConfig config) {
+        if (config.policyEnforcer.enable) {
+            if (isBodyClaimInformationPointDefined(config.policyEnforcer.claimInformationPoint.simpleConfig)) {
+                return new RequireBodyHandlerBuildItem();
+            }
+            for (KeycloakPolicyEnforcerConfig.KeycloakConfigPolicyEnforcer.PathConfig path : config.policyEnforcer.paths
+                    .values()) {
+                if (isBodyClaimInformationPointDefined(path.claimInformationPoint.simpleConfig)) {
+                    return new RequireBodyHandlerBuildItem();
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean isBodyClaimInformationPointDefined(Map<String, Map<String, String>> claims) {
+        for (Map.Entry<String, Map<String, String>> entry : claims.entrySet()) {
+            Map<String, String> value = entry.getValue();
+
+            if (value.get(entry.getKey()).contains("request.body")) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @BuildStep

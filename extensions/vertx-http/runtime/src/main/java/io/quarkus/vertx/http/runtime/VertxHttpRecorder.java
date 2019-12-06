@@ -35,6 +35,7 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.Timing;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
+import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.runtime.filters.Filter;
@@ -61,6 +62,7 @@ import io.vertx.core.net.impl.VertxHandler;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 
 @Recorder
 public class VertxHttpRecorder {
@@ -169,7 +171,8 @@ public class VertxHttpRecorder {
 
     public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, RuntimeValue<Vertx> vertx,
-            RuntimeValue<Router> runtimeValue, String rootPath, LaunchMode launchMode) {
+            RuntimeValue<Router> runtimeValue, String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
+            Handler<RoutingContext> bodyHandler) {
         // install the default route at the end
         Router router = runtimeValue.getValue();
 
@@ -199,6 +202,18 @@ public class VertxHttpRecorder {
 
         container.instance(RouterProducer.class).initialize(resumingRouter);
         router.route().last().failureHandler(new QuarkusErrorHandler(launchMode.isDevOrTest()));
+
+        if (requireBodyHandler) {
+            //if this is set then everything needs the body handler installed
+            //TODO: config etc
+            router.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
+                @Override
+                public void handle(RoutingContext routingContext) {
+                    routingContext.request().resume();
+                    bodyHandler.handle(routingContext);
+                }
+            });
+        }
 
         if (rootPath.equals("/")) {
             if (hotReplacementHandler != null) {
@@ -626,4 +641,24 @@ public class VertxHttpRecorder {
         return ACTUAL_ROOT;
     }
 
+    public Handler<RoutingContext> createBodyHandler(HttpConfiguration httpConfiguration) {
+        BodyHandler bodyHandler = BodyHandler.create();
+        Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
+        if (maxBodySize.isPresent()) {
+            bodyHandler.setBodyLimit(maxBodySize.get().asLongValue());
+        }
+        final BodyConfig bodyConfig = httpConfiguration.body;
+        bodyHandler.setHandleFileUploads(bodyConfig.handleFileUploads);
+        bodyHandler.setUploadsDirectory(bodyConfig.uploadsDirectory);
+        bodyHandler.setDeleteUploadedFilesOnEnd(bodyConfig.deleteUploadedFilesOnEnd);
+        bodyHandler.setMergeFormAttributes(bodyConfig.mergeFormAttributes);
+        bodyHandler.setPreallocateBodyBuffer(bodyConfig.preallocateBodyBuffer);
+        return new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext event) {
+                event.request().resume();
+                bodyHandler.handle(event);
+            }
+        };
+    }
 }

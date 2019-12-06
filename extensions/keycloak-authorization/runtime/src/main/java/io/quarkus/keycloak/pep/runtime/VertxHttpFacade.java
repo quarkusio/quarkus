@@ -1,6 +1,5 @@
 package io.quarkus.keycloak.pep.runtime;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -11,8 +10,6 @@ import java.util.List;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.security.cert.X509Certificate;
 
-import io.quarkus.vertx.http.runtime.VertxInputStream;
-import io.vertx.core.http.HttpHeaders;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.OIDCHttpFacade;
 import org.keycloak.adapters.spi.AuthenticationError;
@@ -25,6 +22,7 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.VertxInputStream;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
@@ -109,15 +107,7 @@ public class VertxHttpFacade implements OIDCHttpFacade {
 
             @Override
             public String getHeader(String name) {
-                String value = request.getHeader(name);
-
-                if (name.equalsIgnoreCase(HttpHeaders.CONTENT_TYPE.toString())) {
-                    if (value.indexOf(';') != -1) {
-                        return value.substring(0, value.indexOf(';'));
-                    }
-                }
-
-                return value;
+                return request.getHeader(name);
             }
 
             @Override
@@ -133,15 +123,13 @@ public class VertxHttpFacade implements OIDCHttpFacade {
             @Override
             public InputStream getInputStream(boolean buffered) {
                 try {
-                    if (routingContext.get("quarkus.request.inputstream") != null) {
-                        return routingContext.get("quarkus.request.inputstream");
+                    if (routingContext.getBody() != null) {
+                        return new ByteArrayInputStream(routingContext.getBody().getBytes());
                     }
-
-                    BufferedInputStream stream = new BufferedInputStream(new VertxInputStream(request));
-
-                    routingContext.put("quarkus.request.inputstream", stream);
-
-                    return stream;
+                    if (routingContext.request().isEnded()) {
+                        return new ByteArrayInputStream(new byte[0]);
+                    }
+                    return new VertxInputStream(request);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

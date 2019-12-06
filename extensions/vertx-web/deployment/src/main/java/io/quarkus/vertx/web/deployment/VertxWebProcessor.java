@@ -48,9 +48,9 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
+import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RouteBase;
 import io.quarkus.vertx.web.RouteFilter;
@@ -149,9 +149,8 @@ class VertxWebProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    BodyHandlerBuildItem bodyHandler(VertxWebRecorder recorder, HttpConfiguration httpConfiguration) {
-        return new BodyHandlerBuildItem(recorder.createBodyHandler(httpConfiguration));
+    BodyHandlerBuildItem bodyHandler(io.quarkus.vertx.http.deployment.BodyHandlerBuildItem realOne) {
+        return new BodyHandlerBuildItem(realOne.getHandler());
     }
 
     @BuildStep
@@ -163,9 +162,10 @@ class VertxWebProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-            BodyHandlerBuildItem bodyHandler,
+            io.quarkus.vertx.http.deployment.BodyHandlerBuildItem bodyHandler,
             BuildProducer<RouteBuildItem> routeProducer,
-            BuildProducer<FilterBuildItem> filterProducer) throws IOException {
+            BuildProducer<FilterBuildItem> filterProducer,
+            List<RequireBodyHandlerBuildItem> bodyHandlerRequired) throws IOException {
 
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 

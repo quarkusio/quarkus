@@ -81,7 +81,7 @@ public class VertxInputStream extends InputStream {
         if (finished) {
             return -1;
         }
-        
+
         return exchange.readBytesAvailable();
     }
 
@@ -201,13 +201,13 @@ public class VertxInputStream extends InputStream {
             if (input1 != null) {
                 return input1.getByteBuf().readableBytes();
             }
-            
+
             String length = request.getHeader(HttpHeaders.CONTENT_LENGTH);
-            
+
             if (length == null) {
                 return 0;
             }
-            
+
             return Integer.parseInt(length);
         }
     }

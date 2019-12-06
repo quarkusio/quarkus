@@ -36,7 +36,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-scala-deployment</artifactId>
+            <artifactId>quarkus-scala</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

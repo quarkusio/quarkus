@@ -19,18 +19,19 @@ public final class PatternMapBuilder {
         for (RootDefinition rootDefinition : rootDefinitions) {
             final String rootName = rootDefinition.getRootName();
             ConfigPatternMap<Container> addTo = patternMap, child;
-            assert !rootName.isEmpty();
-            NameIterator ni = new NameIterator(rootName);
-            assert ni.hasNext();
-            do {
-                final String seg = ni.getNextSegment();
-                child = addTo.getChild(seg);
-                ni.next();
-                if (child == null) {
-                    addTo.addChild(seg, child = new ConfigPatternMap<>());
-                }
-                addTo = child;
-            } while (ni.hasNext());
+            if (!rootName.isEmpty()) {
+                NameIterator ni = new NameIterator(rootName);
+                assert ni.hasNext();
+                do {
+                    final String seg = ni.getNextSegment();
+                    child = addTo.getChild(seg);
+                    ni.next();
+                    if (child == null) {
+                        addTo.addChild(seg, child = new ConfigPatternMap<>());
+                    }
+                    addTo = child;
+                } while (ni.hasNext());
+            }
             addGroup(addTo, rootDefinition, null);
         }
         return patternMap;

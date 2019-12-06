@@ -267,7 +267,9 @@ public final class BuildTimeConfigurationReader {
                 }
                 objectsByRootClass.put(clazz, instance);
                 String rootName = root.getRootName();
-                nameBuilder.append('.').append(rootName);
+                if (!rootName.isEmpty()) {
+                    nameBuilder.append('.').append(rootName);
+                }
                 readConfigGroup(root, instance, nameBuilder);
                 nameBuilder.setLength(len);
             }

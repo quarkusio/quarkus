@@ -46,6 +46,7 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
      * return value of the intercepted method.
      *
      * @param ctx The context of the intercepted method invocation.
+     * @param customValidator Custom Validator
      *
      * @return The result of the method invocation.
      *
@@ -55,6 +56,7 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
      *         return value validation.
      */
     protected Object validateMethodInvocation(InvocationContext ctx) throws Exception {
+
         ExecutableValidator executableValidator = validator.forExecutables();
         Set<ConstraintViolation<Object>> violations = executableValidator.validateParameters(ctx.getTarget(),
                 ctx.getMethod(), ctx.getParameters());

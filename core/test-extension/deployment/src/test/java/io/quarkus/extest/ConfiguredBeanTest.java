@@ -268,4 +268,26 @@ public class ConfiguredBeanTest {
         List<Integer> actualMapValues = new ArrayList<>(configuredBean.getRunTimeConfig().mapOfNumbers.values());
         Assertions.assertEquals(mapValues, actualMapValues);
     }
+
+    @Test
+    public void testBtrtMapOfMap() {
+        Map<String, Map<String, String>> mapMap = configuredBean.getBuildTimeConfig().mapMap;
+        Assertions.assertFalse(mapMap.containsKey("inner-key"));
+        Assertions.assertTrue(mapMap.containsKey("outer-key"));
+        Map<String, String> map = mapMap.get("outer-key");
+        Assertions.assertTrue(map.containsKey("inner-key"));
+        Assertions.assertFalse(map.containsKey("outer-key"));
+        Assertions.assertEquals("1234", map.get("inner-key"));
+    }
+
+    @Test
+    public void testRtMapOfMap() {
+        Map<String, Map<String, String>> mapMap = configuredBean.getRunTimeConfig().mapMap;
+        Assertions.assertFalse(mapMap.containsKey("inner-key"));
+        Assertions.assertTrue(mapMap.containsKey("outer-key"));
+        Map<String, String> map = mapMap.get("outer-key");
+        Assertions.assertTrue(map.containsKey("inner-key"));
+        Assertions.assertFalse(map.containsKey("outer-key"));
+        Assertions.assertEquals("1234", map.get("inner-key"));
+    }
 }

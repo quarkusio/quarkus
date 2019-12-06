@@ -20,6 +20,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
@@ -456,6 +457,16 @@ public final class TestProcessor {
                 .finalFieldsWritable(true)
                 .build();
         classes.produce(finalField);
+    }
+
+    @BuildStep
+    void checkMapMap(TestBuildAndRunTimeConfig btrt, TestBuildTimeConfig bt, BuildProducer<ReflectiveClassBuildItem> unused) {
+        if (!Objects.equals("1234", btrt.mapMap.get("outer-key").get("inner-key"))) {
+            throw new AssertionError("BTRT map map failed");
+        }
+        if (!Objects.equals("1234", bt.mapMap.get("outer-key").get("inner-key"))) {
+            throw new AssertionError("BT map map failed");
+        }
     }
 
     @BuildStep(onlyIf = Never.class)

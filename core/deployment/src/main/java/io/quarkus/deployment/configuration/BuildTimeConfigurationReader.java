@@ -459,9 +459,9 @@ public final class BuildTimeConfigurationReader {
                 ni.previous();
                 // now the cursor is before our map key and after the enclosing map key
                 Map<String, Object> map = getMap((MapContainer) parent, ni);
+                String key = ni.getPreviousSegment();
                 ni.next();
                 // cursor restored
-                String key = ni.getPreviousSegment();
                 Map<String, Object> instance = getAsMap(map, key);
                 if (instance == null) {
                     instance = new HashMap<>();

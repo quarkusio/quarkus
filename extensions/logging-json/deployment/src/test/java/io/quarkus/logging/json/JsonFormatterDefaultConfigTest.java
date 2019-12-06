@@ -29,6 +29,17 @@ public class JsonFormatterDefaultConfigTest {
 
     @Test
     public void jsonFormatterDefaultConfigurationTest() {
+        JsonFormatter jsonFormatter = getJsonFormatter();
+        assertThat(jsonFormatter.isPrettyPrint()).isFalse();
+        assertThat(jsonFormatter.getDateTimeFormatter().toString())
+                .isEqualTo(DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault()).toString());
+        assertThat(jsonFormatter.getDateTimeFormatter().getZone()).isEqualTo(ZoneId.systemDefault());
+        assertThat(jsonFormatter.getExceptionOutputType()).isEqualTo(StructuredFormatter.ExceptionOutputType.DETAILED);
+        assertThat(jsonFormatter.getRecordDelimiter()).isEqualTo("\n");
+        assertThat(jsonFormatter.isPrintDetails()).isFalse();
+    }
+
+    public static JsonFormatter getJsonFormatter() {
         LogManager logManager = LogManager.getLogManager();
         assertThat(logManager).isInstanceOf(org.jboss.logmanager.LogManager.class);
 
@@ -44,13 +55,6 @@ public class JsonFormatterDefaultConfigTest {
 
         Formatter formatter = handler.getFormatter();
         assertThat(formatter).isInstanceOf(JsonFormatter.class);
-        JsonFormatter jsonFormatter = (JsonFormatter) formatter;
-        assertThat(jsonFormatter.isPrettyPrint()).isFalse();
-        assertThat(jsonFormatter.getDateTimeFormatter().toString())
-                .isEqualTo(DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault()).toString());
-        assertThat(jsonFormatter.getDateTimeFormatter().getZone()).isEqualTo(ZoneId.systemDefault());
-        assertThat(jsonFormatter.getExceptionOutputType()).isEqualTo(StructuredFormatter.ExceptionOutputType.DETAILED);
-        assertThat(jsonFormatter.getRecordDelimiter()).isEqualTo("\n");
-        assertThat(jsonFormatter.isPrintDetails()).isFalse();
+        return (JsonFormatter) formatter;
     }
 }

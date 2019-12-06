@@ -39,6 +39,8 @@ public class OAuth2Recorder {
 
         if (config.caCertFile.isPresent()) {
             validatorBuilder.useSslContext(createSSLContext(config));
+        } else {
+            validatorBuilder.useSslContext(SSLContext.getDefault());
         }
 
         OAuth2IntrospectValidator validator = validatorBuilder.build();

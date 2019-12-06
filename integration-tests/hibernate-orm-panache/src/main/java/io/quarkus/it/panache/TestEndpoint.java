@@ -25,6 +25,7 @@ import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
+import io.quarkus.panache.common.exception.PanacheQueryException;
 
 /**
  * Various tests covering Panache functionality. All tests should work in both standard JVM and in native mode.
@@ -203,6 +204,8 @@ public class TestEndpoint {
 
         Assertions.assertEquals(7, Person.deleteAll());
 
+        testUpdate();
+
         // persistAndFlush
         Person person1 = new Person();
         person1.name = "testFLush1";
@@ -219,6 +222,144 @@ public class TestEndpoint {
         }
 
         return "OK";
+    }
+
+    private void testUpdate() {
+        makeSavedPerson("p1");
+        makeSavedPerson("p2");
+
+        int updateByIndexParameter = Person.update("update from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1");
+        Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
+
+        int updateByNamedParameter = Person.update("update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+                Parameters.with("pName", "stefp2").map());
+        Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
+
+        Assertions.assertEquals(2, Person.deleteAll());
+
+        makeSavedPerson("p1");
+        makeSavedPerson("p2");
+
+        updateByIndexParameter = Person.update("from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1");
+        Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
+
+        updateByNamedParameter = Person.update("from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+                Parameters.with("pName", "stefp2").map());
+        Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
+
+        Assertions.assertEquals(2, Person.deleteAll());
+
+        makeSavedPerson("p1");
+        makeSavedPerson("p2");
+
+        updateByIndexParameter = Person.update("set name = 'stefNEW' where name = ?1", "stefp1");
+        Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
+
+        updateByNamedParameter = Person.update("set name = 'stefNEW' where name = :pName",
+                Parameters.with("pName", "stefp2").map());
+        Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
+
+        Assertions.assertEquals(2, Person.deleteAll());
+
+        makeSavedPerson("p1");
+        makeSavedPerson("p2");
+
+        updateByIndexParameter = Person.update("name = 'stefNEW' where name = ?1", "stefp1");
+        Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
+
+        updateByNamedParameter = Person.update("name = 'stefNEW' where name = :pName",
+                Parameters.with("pName", "stefp2").map());
+        Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
+
+        Assertions.assertEquals(2, Person.deleteAll());
+
+        makeSavedPerson("p1");
+        makeSavedPerson("p2");
+
+        updateByIndexParameter = Person.update("name = 'stefNEW' where name = ?1", "stefp1");
+        Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
+
+        updateByNamedParameter = Person.update("name = 'stefNEW' where name = :pName",
+                Parameters.with("pName", "stefp2"));
+        Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
+
+        Assertions.assertEquals(2, Person.deleteAll());
+
+        Assertions.assertThrows(PanacheQueryException.class, () -> Person.update(null),
+                "PanacheQueryException should have thrown");
+
+        Assertions.assertThrows(PanacheQueryException.class, () -> Person.update(" "),
+                "PanacheQueryException should have thrown");
+
+    }
+
+    private void testUpdateDAO() {
+        makeSavedPerson("p1");
+        makeSavedPerson("p2");
+
+        int updateByIndexParameter = personDao.update("update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
+                "stefp1");
+        Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
+
+        int updateByNamedParameter = personDao.update("update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+                Parameters.with("pName", "stefp2").map());
+        Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
+
+        Assertions.assertEquals(2, personDao.deleteAll());
+
+        makeSavedPerson("p1");
+        makeSavedPerson("p2");
+
+        updateByIndexParameter = personDao.update("from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1");
+        Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
+
+        updateByNamedParameter = personDao.update("from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+                Parameters.with("pName", "stefp2").map());
+        Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
+
+        Assertions.assertEquals(2, personDao.deleteAll());
+
+        makeSavedPerson("p1");
+        makeSavedPerson("p2");
+
+        updateByIndexParameter = personDao.update("set name = 'stefNEW' where name = ?1", "stefp1");
+        Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
+
+        updateByNamedParameter = personDao.update("set name = 'stefNEW' where name = :pName",
+                Parameters.with("pName", "stefp2").map());
+        Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
+
+        Assertions.assertEquals(2, personDao.deleteAll());
+
+        makeSavedPerson("p1");
+        makeSavedPerson("p2");
+
+        updateByIndexParameter = personDao.update("name = 'stefNEW' where name = ?1", "stefp1");
+        Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
+
+        updateByNamedParameter = personDao.update("name = 'stefNEW' where name = :pName",
+                Parameters.with("pName", "stefp2").map());
+        Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
+
+        Assertions.assertEquals(2, personDao.deleteAll());
+
+        makeSavedPerson("p1");
+        makeSavedPerson("p2");
+
+        updateByIndexParameter = personDao.update("name = 'stefNEW' where name = ?1", "stefp1");
+        Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated");
+
+        updateByNamedParameter = personDao.update("name = 'stefNEW' where name = :pName",
+                Parameters.with("pName", "stefp2"));
+        Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated");
+
+        Assertions.assertEquals(2, personDao.deleteAll());
+
+        Assertions.assertThrows(PanacheQueryException.class, () -> personDao.update(null),
+                "PanacheQueryException should have thrown");
+
+        Assertions.assertThrows(PanacheQueryException.class, () -> personDao.update(" "),
+                "PanacheQueryException should have thrown");
     }
 
     private void testSorting() {
@@ -492,6 +633,8 @@ public class TestEndpoint {
         Assertions.assertNotNull(personDao.findAll().firstResult());
 
         Assertions.assertEquals(7, personDao.deleteAll());
+
+        testUpdateDAO();
 
         //flush
         Person person1 = new Person();

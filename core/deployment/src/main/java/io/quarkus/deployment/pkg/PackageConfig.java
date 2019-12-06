@@ -49,4 +49,17 @@ public class PackageConfig {
      */
     @ConfigItem(defaultValue = "-runner")
     public String runnerSuffix;
+
+    /**
+     * The output folder in which to place the output, this is resolved relative to the build
+     * systems target directory.
+     */
+    @ConfigItem
+    public Optional<String> outputDirectory;
+
+    /**
+     * The name of the final artifact
+     */
+    @ConfigItem
+    public Optional<String> outputName;
 }

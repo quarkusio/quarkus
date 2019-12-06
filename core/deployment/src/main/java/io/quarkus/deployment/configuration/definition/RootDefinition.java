@@ -52,7 +52,7 @@ public final class RootDefinition extends ClassDefinition {
                     "Config");
         }
         if (rootName.equals(ConfigItem.PARENT)) {
-            throw reportError(configClass, "Root cannot inherit parent name because it has no parent");
+            rootName = "";
         } else if (rootName.equals(ConfigItem.ELEMENT_NAME)) {
             rootName = String.join("", (Iterable<String>) () -> lowerCaseFirst(trimmedSegments.iterator()));
         } else if (rootName.equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {

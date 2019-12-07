@@ -17,6 +17,7 @@ import java.util.Set;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Parent;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
@@ -24,6 +25,7 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.bootstrap.util.PropertyUtils;
 
 
 /**
@@ -139,27 +141,7 @@ public class ModelUtils {
                                 }
                                 final Path pomXml = artifactIdPath.resolve("pom.xml");
                                 if (Files.exists(pomXml)) {
-                                    final Model model = readModel(pomXml);
-                                    Properties props = null;
-                                    if(model.getGroupId() == null) {
-                                        props = loadPomProps(appJar, artifactIdPath);
-                                        final String groupId = props.getProperty("groupId");
-                                        if(groupId == null) {
-                                            throw new IOException("Failed to determine groupId for " + appJar);
-                                        }
-                                        model.setGroupId(groupId);
-                                    }
-                                    if(model.getVersion() == null) {
-                                        if(props == null) {
-                                            props = loadPomProps(appJar, artifactIdPath);
-                                        }
-                                        final String version = props.getProperty("version");
-                                        if(version == null) {
-                                            throw new IOException("Failed to determine the artifact version for " + appJar);
-                                        }
-                                        model.setVersion(version);
-                                    }
-                                    return model;
+                                    return readModel(pomXml);
                                 }
                             }
                         }
@@ -168,6 +150,51 @@ public class ModelUtils {
             }
             throw new IOException("Failed to located META-INF/maven/<groupId>/<artifactId>/pom.xml in " + appJar);
         }
+    }
+
+    public static String getGroupId(Model model) {
+        String groupId = model.getGroupId();
+        if(groupId != null) {
+            return groupId;
+        }
+        final Parent parent = model.getParent();
+        if (parent != null) {
+            groupId = parent.getGroupId();
+            if(groupId != null) {
+                return groupId;
+            }
+        }
+        throw new IllegalStateException("Failed to determine groupId for project model");
+    }
+
+    public static String getVersion(Model model) {
+        String version = model.getVersion();
+        if(version != null) {
+            return version;
+        }
+        final Parent parent = model.getParent();
+        if (parent != null) {
+            version = parent.getVersion();
+            if(version != null) {
+                return version;
+            }
+        }
+        throw new IllegalStateException("Failed to determine version for project model");
+    }
+
+    /**
+     * If the model contains properties, this method overrides those that appear to be
+     * defined as system properties.
+     */
+    public static Model applySystemProperties(Model model) {
+        final Properties props = model.getProperties();
+        for(Map.Entry<Object, Object> prop : model.getProperties().entrySet()) {
+            final String systemValue = PropertyUtils.getProperty(prop.getKey().toString());
+            if(systemValue != null) {
+                props.put(prop.getKey(), systemValue);
+            }
+        }
+        return model;
     }
 
     private static Properties loadPomProps(Path appJar, Path artifactIdPath) throws IOException {

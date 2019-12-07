@@ -190,14 +190,22 @@ class AgroalProcessor {
     void configureRuntimeProperties(AgroalRecorder recorder,
             BuildProducer<DataSourceInitializedBuildItem> dataSourceInitialized,
             AgroalRuntimeConfig agroalRuntimeConfig) {
-        if (!agroalBuildTimeConfig.defaultDataSource.driver.isPresent() && agroalBuildTimeConfig.namedDataSources.isEmpty()) {
+        Optional<String> defaultDataSourceDriver = agroalBuildTimeConfig.defaultDataSource.driver;
+        if (!defaultDataSourceDriver.isPresent() && agroalBuildTimeConfig.namedDataSources.isEmpty()) {
             // No datasource has been configured so bail out
             return;
         }
 
         recorder.configureRuntimeProperties(agroalRuntimeConfig);
 
-        dataSourceInitialized.produce(new DataSourceInitializedBuildItem());
+        Set<String> dataSourceNames = agroalBuildTimeConfig.namedDataSources.keySet();
+        DataSourceInitializedBuildItem buildItem;
+        if (defaultDataSourceDriver.isPresent()) {
+            buildItem = DataSourceInitializedBuildItem.ofDefaultDataSourceAnd(dataSourceNames);
+        } else {
+            buildItem = DataSourceInitializedBuildItem.ofDataSources(dataSourceNames);
+        }
+        dataSourceInitialized.produce(buildItem);
     }
 
     @BuildStep

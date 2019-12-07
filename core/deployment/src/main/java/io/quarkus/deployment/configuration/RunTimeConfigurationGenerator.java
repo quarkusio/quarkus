@@ -578,10 +578,9 @@ public final class RunTimeConfigurationGenerator {
             // generate run time default values config source class
             try (ClassCreator dvcc = ClassCreator.builder().classOutput(classOutput).className(RTDVCS_CLASS_NAME)
                     .superClass(AbstractRawDefaultConfigSource.class).setFinal(true).build()) {
+                // implements abstract method AbstractRawDefaultConfigSource#getValue(NameIterator)
                 try (MethodCreator mc = dvcc.getMethodCreator("getValue", String.class, NameIterator.class)) {
                     final ResultHandle keyIter = mc.getMethodParam(0);
-                    // implements abstract method AbstractRawDefaultConfigSource#getValue(NameIterator)
-                    mc.addAnnotation(Override.class);
                     final MethodDescriptor md = generateDefaultValueParse(dvcc, runTimePatternMap,
                             new StringBuilder("getDefaultFor"));
                     if (md != null) {
@@ -606,10 +605,9 @@ public final class RunTimeConfigurationGenerator {
             // generate build time run time visible default values config source class
             try (ClassCreator dvcc = ClassCreator.builder().classOutput(classOutput).className(BTRTDVCS_CLASS_NAME)
                     .superClass(AbstractRawDefaultConfigSource.class).setFinal(true).build()) {
+                // implements abstract method AbstractRawDefaultConfigSource#getValue(NameIterator)
                 try (MethodCreator mc = dvcc.getMethodCreator("getValue", String.class, NameIterator.class)) {
                     final ResultHandle keyIter = mc.getMethodParam(0);
-                    // implements abstract method AbstractRawDefaultConfigSource#getValue(NameIterator)
-                    mc.addAnnotation(Override.class);
                     final MethodDescriptor md = generateDefaultValueParse(dvcc, buildTimeRunTimePatternMap,
                             new StringBuilder("getDefaultFor"));
                     if (md != null) {

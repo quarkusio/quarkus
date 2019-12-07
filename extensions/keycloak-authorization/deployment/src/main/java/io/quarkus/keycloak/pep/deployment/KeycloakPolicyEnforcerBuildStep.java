@@ -44,8 +44,10 @@ public class KeycloakPolicyEnforcerBuildStep {
         for (Map.Entry<String, Map<String, String>> entry : claims.entrySet()) {
             Map<String, String> value = entry.getValue();
 
-            if (value.get(entry.getKey()).contains("request.body")) {
-                return true;
+            for (String nestedValue : value.values()) {
+                if (nestedValue.contains("request.body")) {
+                    return true;
+                }
             }
         }
 

@@ -3,7 +3,6 @@ package io.quarkus.it.jackson.model;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Model class with inheritance and builder.

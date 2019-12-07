@@ -90,6 +90,9 @@ final public class ConfigDocItemScanner {
 
                 if (name.isEmpty()) {
                     name = deriveConfigRootName(clazz.getSimpleName().toString(), configPhase);
+                } else if (name.endsWith(Constants.DOT + Constants.PARENT)) {
+                    // take into account the root case which would contain characters that can't be used to create the final file
+                    name = name.replace(Constants.DOT + Constants.PARENT, "");
                 }
 
                 ConfigRootInfo configRootInfo = new ConfigRootInfo(name, clazz, extensionName, configPhase);

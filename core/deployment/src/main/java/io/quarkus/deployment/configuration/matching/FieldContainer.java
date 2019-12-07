@@ -32,7 +32,11 @@ public final class FieldContainer extends Container {
         }
         final ClassDefinition enclosing = member.getEnclosingDefinition();
         if (enclosing instanceof RootDefinition) {
-            sb.append(((RootDefinition) enclosing).getRootName().replace('.', ':'));
+            RootDefinition rootDefinition = (RootDefinition) enclosing;
+            String rootName = rootDefinition.getRootName();
+            if (!rootName.isEmpty()) {
+                sb.append(rootName.replace('.', ':'));
+            }
         }
         if (sb.length() > 0) {
             sb.append(':');
@@ -48,7 +52,11 @@ public final class FieldContainer extends Container {
         }
         final ClassDefinition enclosing = member.getEnclosingDefinition();
         if (enclosing instanceof RootDefinition) {
-            sb.append(((RootDefinition) enclosing).getRootName());
+            RootDefinition rootDefinition = (RootDefinition) enclosing;
+            String rootName = rootDefinition.getRootName();
+            if (!rootName.isEmpty()) {
+                sb.append(rootName);
+            }
         }
         final String propertyName = member.getPropertyName();
         if (!propertyName.isEmpty()) {

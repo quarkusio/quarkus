@@ -42,6 +42,7 @@ import io.quarkus.flyway.runtime.FlywayProducer;
 import io.quarkus.flyway.runtime.FlywayRecorder;
 import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
 import io.quarkus.flyway.runtime.graal.QuarkusPathLocationScanner;
+import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 
 class FlywayProcessor {
 
@@ -93,9 +94,14 @@ class FlywayProcessor {
     void configureRuntimeProperties(FlywayRecorder recorder,
             FlywayRuntimeConfig flywayRuntimeConfig,
             BeanContainerBuildItem beanContainer,
-            DataSourceInitializedBuildItem dataSourceInitializedBuildItem) {
+            DataSourceInitializedBuildItem dataSourceInitializedBuildItem,
+            BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> hibernateOrmRuntimeStartLatch) {
         recorder.configureFlywayProperties(flywayRuntimeConfig, beanContainer.getValue());
         recorder.doStartActions(flywayRuntimeConfig, beanContainer.getValue());
+        // generate a HibernateOrmIntegrationRuntimeConfiguredBuildItem to order the startup of hibernate ORM
+        // to happen _after_ the flyway recorder has completed its startup actions (which can
+        // involve generating DB schemas, required by Hibernate entities, through Flyway).
+        hibernateOrmRuntimeStartLatch.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem("Flyway"));
     }
 
     private void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resource,

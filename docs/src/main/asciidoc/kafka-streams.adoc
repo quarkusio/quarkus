@@ -1112,6 +1112,107 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0", "-Xmx32m"]
 Now start Docker Compose as described above
 (don't forget to rebuild the container images).
 
+== Kafka Streams Health Checks
+
+If you are using the `quarkus-smallrye-health` extension, `quarkus-kafka-streams` will automatically add:
+
+* a readiness health check to validate that all topics declared in the `quarkus.kafka-streams.topics` property are created,
+* a liveness health check based on the Kafka Streams state.
+
+So when you access the `/health` endpoint of your application you will have information about the state of the Kafka Streams and the available and/or missing topics.
+
+This is an example of when the status is `DOWN`:
+[source, subs=attributes+]
+----
+curl -i http://aggregator:8080/health
+
+HTTP/1.1 503 Service Unavailable
+content-type: application/json; charset=UTF-8
+content-length: 454
+
+{
+    "status": "DOWN",
+    "checks": [
+        {
+            "name": "Kafka Streams state health check",  <1>
+            "status": "DOWN",
+            "data": {
+                "state": "CREATED"
+            }
+        },
+        {
+            "name": "Kafka Streams topics health check",  <2>
+            "status": "DOWN",
+            "data": {
+                "available_topics": "weather-stations,temperature-values",
+                "missing_topics": "hygrometry-values"
+            }
+        }
+    ]
+}
+----
+<1> Liveness health check. Also available at `/health/live` endpoint.
+<2> Readiness health check. Also available at `/health/ready` endpoint.
+
+So as you can see, the status is `DOWN` as soon as one of the `quarkus.kafka-streams.topics` is missing or the Kafka Streams `state` is not `RUNNING`.
+
+If no topics are available, the `available_topics` key will not be present in the `data` field of the `Kafka Streams topics health check`.
+As well as if no topics are missing, the `missing_topics` key will not be present in the `data` field of the `Kafka Streams topics health check`.
+
+You can of course disable the health check of the `quarkus-kafka-streams` extension by setting the `quarkus.kafka-streams.health.enabled` property to `false` in your `application.properties`.
+
+Obviously you can create your liveness and readiness probes based on the respective endpoints `/health/live` and `/health/ready`.
+
+=== Liveness health check
+
+Here is an example of the liveness check:
+```
+curl -i http://aggregator:8080/health/live
+
+HTTP/1.1 503 Service Unavailable
+content-type: application/json; charset=UTF-8
+content-length: 225
+
+{
+    "status": "DOWN",
+    "checks": [
+        {
+            "name": "Kafka Streams state health check",
+            "status": "DOWN",
+            "data": {
+                "state": "CREATED"
+            }
+        }
+    ]
+}
+```
+The `state` is coming from the `KafkaStreams.State` enum.
+
+=== Readiness health check
+
+Here is an example of the readiness check:
+```
+curl -i http://aggregator:8080/health/ready
+
+HTTP/1.1 503 Service Unavailable
+content-type: application/json; charset=UTF-8
+content-length: 265
+
+{
+    "status": "DOWN",
+    "checks": [
+        {
+            "name": "Kafka Streams topics health check",
+            "status": "DOWN",
+            "data": {
+                "missing_topics": "weather-stations,temperature-values"
+            }
+        }
+    ]
+}
+
+```
+
 == Going Further
 
 This guide has shown how you can build stream processing applications using Quarkus and the Kafka Streams APIs,

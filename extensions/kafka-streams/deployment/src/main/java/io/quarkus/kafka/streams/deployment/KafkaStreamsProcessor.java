@@ -33,6 +33,7 @@ import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class KafkaStreamsProcessor {
 
@@ -195,5 +196,17 @@ class KafkaStreamsProcessor {
     @BuildStep
     AdditionalBeanBuildItem registerBean() {
         return AdditionalBeanBuildItem.unremovableOf(KafkaStreamsTopologyManager.class);
+    }
+
+    @BuildStep
+    void addHealthChecks(KafkaStreamsBuildTimeConfig buildTimeConfig, BuildProducer<HealthBuildItem> healthChecks) {
+        healthChecks.produce(
+                new HealthBuildItem(
+                        "io.quarkus.kafka.streams.runtime.health.KafkaStreamsTopicsHealthCheck",
+                        buildTimeConfig.healthEnabled, "kafka-streams"));
+        healthChecks.produce(
+                new HealthBuildItem(
+                        "io.quarkus.kafka.streams.runtime.health.KafkaStreamsStateHealthCheck",
+                        buildTimeConfig.healthEnabled, "kafka-streams"));
     }
 }

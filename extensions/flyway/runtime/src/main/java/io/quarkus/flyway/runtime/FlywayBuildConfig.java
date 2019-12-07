@@ -1,7 +1,7 @@
 package io.quarkus.flyway.runtime;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.Collections;
+import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -9,13 +9,36 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(name = "flyway", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public final class FlywayBuildConfig {
-    /**
-     * Comma-separated list of locations to scan recursively for migrations. The location type is determined by its prefix.
-     * Unprefixed locations or locations starting with classpath: point to a package on the classpath and may contain both SQL
-     * and Java-based migrations.
-     * Locations starting with filesystem: point to a directory on the filesystem, may only contain SQL migrations and are only
-     * scanned recursively down non-hidden directories.
+    /*
+     * Creates a {@link FlywayMultiDatasourceBuildConfig} with default settings.
+     * 
+     * @return {@link FlywayMultiDatasourceBuildConfig}
      */
-    @ConfigItem
-    public Optional<List<String>> locations;
+    public static final FlywayBuildConfig defaultConfig() {
+        return new FlywayBuildConfig();
+    }
+
+    /**
+     * Gets the {@link FlywayDataSourceBuildConfig} for the given datasource name.<br>
+     * The name of the default datasource is an empty {@link String}.
+     * 
+     * @param dataSourceName {@link String}
+     * @return {@link FlywayDataSourceBuildConfig}
+     * @throws NullPointerException if dataSourceName is null.
+     */
+    public FlywayDataSourceBuildConfig getConfigForDataSourceName(String dataSourceName) {
+        return namedDataSources.getOrDefault(dataSourceName, FlywayDataSourceBuildConfig.defaultConfig());
+    }
+
+    /**
+     * Flyway configuration for the default datasource.
+     */
+    @ConfigItem(name = ConfigItem.PARENT)
+    public FlywayDataSourceBuildConfig defaultDataSource = FlywayDataSourceBuildConfig.defaultConfig();
+
+    /**
+     * Flyway configurations for named datasources.
+     */
+    @ConfigItem(name = ConfigItem.PARENT)
+    public Map<String, FlywayDataSourceBuildConfig> namedDataSources = Collections.emptyMap();
 }

@@ -13,9 +13,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +30,7 @@ import io.quarkus.agroal.deployment.DataSourceInitializedBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -38,7 +41,9 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.runtime.FlywayBuildConfig;
+import io.quarkus.flyway.runtime.FlywayDataSourceBuildConfig;
 import io.quarkus.flyway.runtime.FlywayProducer;
 import io.quarkus.flyway.runtime.FlywayRecorder;
 import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
@@ -69,14 +74,20 @@ class FlywayProcessor {
             BuildProducer<BeanContainerListenerBuildItem> containerListenerProducer,
             BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
             FlywayRecorder recorder,
-            DataSourceInitializedBuildItem dataSourceInitializedBuildItem) throws IOException, URISyntaxException {
+            DataSourceInitializedBuildItem dataSourceInitializedBuildItem,
+            BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItem,
+            RecorderContext recorderContext) throws IOException, URISyntaxException {
 
         featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.FLYWAY));
 
         AdditionalBeanBuildItem unremovableProducer = AdditionalBeanBuildItem.unremovableOf(FlywayProducer.class);
         additionalBeanProducer.produce(unremovableProducer);
 
-        registerNativeImageResources(resourceProducer, generatedResourceProducer, flywayBuildConfig);
+        Collection<String> dataSourceNames = DataSourceInitializedBuildItem.dataSourceNamesOf(dataSourceInitializedBuildItem);
+        new FlywayDatasourceBeanGenerator(dataSourceNames, generatedBeanBuildItem).createFlywayProducerBean();
+
+        registerNativeImageResources(resourceProducer, generatedResourceProducer,
+                discoverApplicationMigrations(getMigrationLocations(dataSourceInitializedBuildItem)));
 
         containerListenerProducer.produce(
                 new BeanContainerListenerBuildItem(recorder.setFlywayBuildConfig(flywayBuildConfig)));
@@ -102,10 +113,9 @@ class FlywayProcessor {
 
     private void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
-            FlywayBuildConfig flywayBuildConfig)
+            List<String> applicationMigrations)
             throws IOException, URISyntaxException {
         final List<String> nativeResources = new ArrayList<>();
-        List<String> applicationMigrations = discoverApplicationMigrations(flywayBuildConfig);
         nativeResources.addAll(applicationMigrations);
         // Store application migration in a generated resource that will be accessed later by the Quarkus-Flyway path scanner
         String resourcesList = applicationMigrations
@@ -119,14 +129,31 @@ class FlywayProcessor {
         resource.produce(new NativeImageResourceBuildItem(nativeResources.toArray(new String[0])));
     }
 
-    private List<String> discoverApplicationMigrations(FlywayBuildConfig flywayBuildConfig)
+    /**
+     * Collects the configured migration locations for the default and all named DataSources.
+     * <p>
+     * A {@link LinkedHashSet} is used to avoid duplications.
+     * 
+     * @param dataSourceInitializedBuildItem {@link DataSourceInitializedBuildItem}
+     * @return {@link Collection} of {@link String}s
+     */
+    private Collection<String> getMigrationLocations(DataSourceInitializedBuildItem dataSourceInitializedBuildItem) {
+        List<String> defaultLocations = FlywayDataSourceBuildConfig.defaultConfig().locations.orElse(Collections.emptyList());
+        Collection<String> dataSourceNames = DataSourceInitializedBuildItem.dataSourceNamesOf(dataSourceInitializedBuildItem);
+        Collection<String> migrationLocations = dataSourceNames.stream()
+                .map(flywayBuildConfig::getConfigForDataSourceName)
+                .flatMap(config -> config.locations.orElse(defaultLocations).stream())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (DataSourceInitializedBuildItem.isDefaultDataSourcePresent(dataSourceInitializedBuildItem)) {
+            migrationLocations.addAll(flywayBuildConfig.defaultDataSource.locations.orElse(defaultLocations));
+        }
+        return migrationLocations;
+    }
+
+    private List<String> discoverApplicationMigrations(Collection<String> locations)
             throws IOException, URISyntaxException {
         List<String> resources = new ArrayList<>();
         try {
-            List<String> locations = new ArrayList<>(flywayBuildConfig.locations.orElse(Collections.emptyList()));
-            if (locations.isEmpty()) {
-                locations.add("db/migration");
-            }
             // Locations can be a comma separated list
             for (String location : locations) {
                 // Strip any 'classpath:' protocol prefixes because they are assumed

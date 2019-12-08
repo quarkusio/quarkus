@@ -29,6 +29,7 @@
         <module>infinispan-embedded</module>
         <module>main</module>
         <module>kafka</module>
+        <module>kafka-streams</module>
         <module>jpa</module>
         <module>jpa-derby</module>
         <module>jpa-postgresql</module>

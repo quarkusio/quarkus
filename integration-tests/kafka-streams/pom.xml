@@ -10,9 +10,9 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-kafka</artifactId>
-    <name>Quarkus - Integration Tests - Kafka</name>
-    <description>The Apache Kafka integration tests module</description>
+    <artifactId>quarkus-integration-test-kafka-streams</artifactId>
+    <name>Quarkus - Integration Tests - Kafka Streams</name>
+    <description>The Kafka Streams integration tests module</description>
 
     <properties>
         <maven.compiler.parameters>true</maven.compiler.parameters>
@@ -44,13 +44,13 @@
             <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
 
-        <!-- Kafka -->
+        <!-- Kafka Streams -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kafka-client</artifactId>
+            <artifactId>quarkus-kafka-streams</artifactId>
         </dependency>
 
-        <!-- test dependencies -->
+        <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>

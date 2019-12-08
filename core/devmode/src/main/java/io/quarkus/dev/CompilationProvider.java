@@ -32,6 +32,8 @@ public interface CompilationProvider {
         private final List<String> compilerOptions;
         private final String sourceJavaVersion;
         private final String targetJvmVersion;
+        private final List<String> compilePluginArtifacts;
+        private final List<String> compilerPluginOptions;
 
         public Context(
                 String name,
@@ -42,7 +44,9 @@ public interface CompilationProvider {
                 String sourceEncoding,
                 List<String> compilerOptions,
                 String sourceJavaVersion,
-                String targetJvmVersion) {
+                String targetJvmVersion,
+                List<String> compilePluginArtifacts,
+                List<String> compilerPluginOptions) {
 
             this.name = name;
             this.classpath = classpath;
@@ -53,6 +57,8 @@ public interface CompilationProvider {
             this.compilerOptions = compilerOptions == null ? new ArrayList<String>() : compilerOptions;
             this.sourceJavaVersion = sourceJavaVersion;
             this.targetJvmVersion = targetJvmVersion;
+            this.compilePluginArtifacts = compilePluginArtifacts;
+            this.compilerPluginOptions = compilerPluginOptions;
         }
 
         public String getName() {
@@ -89,6 +95,14 @@ public interface CompilationProvider {
 
         public String getTargetJvmVersion() {
             return targetJvmVersion;
+        }
+
+        public List<String> getCompilePluginArtifacts() {
+            return compilePluginArtifacts;
+        }
+
+        public List<String> getCompilerPluginOptions() {
+            return compilerPluginOptions;
         }
     }
 }

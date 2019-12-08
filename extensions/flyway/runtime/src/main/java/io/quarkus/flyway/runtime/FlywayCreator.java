@@ -7,11 +7,12 @@ import org.flywaydb.core.api.configuration.FluentConfiguration;
 
 class FlywayCreator {
     private final FlywayDataSourceRuntimeConfig flywayRuntimeConfig;
-    private final FlywayDataSourceBuildConfig flywayBuildConfig;
+    private final FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig;
 
-    public FlywayCreator(FlywayDataSourceRuntimeConfig flywayRuntimeConfig, FlywayDataSourceBuildConfig flywayBuildConfig) {
+    public FlywayCreator(FlywayDataSourceRuntimeConfig flywayRuntimeConfig,
+            FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig) {
         this.flywayRuntimeConfig = flywayRuntimeConfig;
-        this.flywayBuildConfig = flywayBuildConfig;
+        this.flywayBuildTimeConfig = flywayBuildTimeConfig;
     }
 
     public Flyway createFlyway(DataSource dataSource) {
@@ -20,7 +21,7 @@ class FlywayCreator {
         flywayRuntimeConfig.connectRetries.ifPresent(configure::connectRetries);
         flywayRuntimeConfig.schemas.ifPresent(list -> configure.schemas(list.toArray(new String[0])));
         flywayRuntimeConfig.table.ifPresent(configure::table);
-        flywayBuildConfig.locations.ifPresent(list -> configure.locations(list.toArray(new String[0])));
+        configure.locations(flywayBuildTimeConfig.locations.toArray(new String[0]));
         flywayRuntimeConfig.sqlMigrationPrefix.ifPresent(configure::sqlMigrationPrefix);
         flywayRuntimeConfig.repeatableSqlMigrationPrefix.ifPresent(configure::repeatableSqlMigrationPrefix);
 

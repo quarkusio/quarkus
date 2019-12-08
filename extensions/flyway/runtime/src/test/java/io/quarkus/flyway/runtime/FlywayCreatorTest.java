@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 class FlywayCreatorTest {
 
     private FlywayDataSourceRuntimeConfig runtimeConfig = FlywayDataSourceRuntimeConfig.defaultConfig();
-    private FlywayDataSourceBuildConfig buildConfig = FlywayDataSourceBuildConfig.defaultConfig();
+    private FlywayDataSourceBuildTimeConfig buildConfig = FlywayDataSourceBuildTimeConfig.defaultConfig();
     private Configuration defaultConfig = Flyway.configure().load().getConfiguration();
 
     /**
@@ -37,15 +37,14 @@ class FlywayCreatorTest {
     @Test
     @DisplayName("locations carried over from configuration")
     void testLocationsOverridden() {
-        buildConfig.locations = Optional.of(Arrays.asList("db/migrations", "db/something"));
+        buildConfig.locations = Arrays.asList("db/migrations", "db/something");
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(buildConfig.locations.get(), pathList(createdFlywayConfig().getLocations()));
+        assertEquals(buildConfig.locations, pathList(createdFlywayConfig().getLocations()));
     }
 
     @Test
     @DisplayName("not configured locations replaced by default")
     void testNotPresentLocationsOverridden() {
-        buildConfig.locations = Optional.empty();
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertEquals(pathList(defaultConfig.getLocations()), pathList(createdFlywayConfig().getLocations()));
     }

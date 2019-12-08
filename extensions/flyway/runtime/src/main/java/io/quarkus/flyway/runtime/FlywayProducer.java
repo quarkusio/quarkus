@@ -19,7 +19,7 @@ public class FlywayProducer {
     Instance<DataSource> defaultDataSource;
 
     private FlywayRuntimeConfig flywayRuntimeConfig;
-    private FlywayBuildConfig flywayBuildConfig;
+    private FlywayBuildTimeConfig flywayBuildConfig;
 
     @Produces
     @Dependent
@@ -32,7 +32,7 @@ public class FlywayProducer {
         this.flywayRuntimeConfig = flywayRuntimeConfig;
     }
 
-    public void setFlywayBuildConfig(FlywayBuildConfig flywayBuildConfig) {
+    public void setFlywayBuildConfig(FlywayBuildTimeConfig flywayBuildConfig) {
         this.flywayBuildConfig = flywayBuildConfig;
     }
 
@@ -51,7 +51,7 @@ public class FlywayProducer {
         return failIfNotReady(flywayRuntimeConfig, "runtime");
     }
 
-    private FlywayBuildConfig getFlywayBuildConfig() {
+    private FlywayBuildTimeConfig getFlywayBuildConfig() {
         return failIfNotReady(flywayBuildConfig, "build");
     }
 

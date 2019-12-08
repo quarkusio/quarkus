@@ -41,7 +41,7 @@ public class DataSourceHealthCheck implements HealthCheck {
 
     @Override
     public HealthCheckResponse call() {
-        HealthCheckResponseBuilder builder = HealthCheckResponse.named("Database connection(s) health check").up();
+        HealthCheckResponseBuilder builder = HealthCheckResponse.named("Database connections health check").up();
         for (Map.Entry<String, DataSource> dataSource : dataSources.entrySet()) {
             boolean isDefault = DEFAULT_DS.equals(dataSource.getKey());
             try (Connection con = dataSource.getValue().getConnection()) {
@@ -49,13 +49,13 @@ public class DataSourceHealthCheck implements HealthCheck {
                 if (!valid) {
                     String data = isDefault ? "validation check failed for the default DataSource"
                             : "validation check failed for DataSource '" + dataSource.getKey() + "'";
-                    String dsName = isDefault ? "quarkus-default-ds" : dataSource.getKey();
+                    String dsName = isDefault ? "default" : dataSource.getKey();
                     builder.down().withData(dsName, data);
                 }
             } catch (SQLException e) {
                 String data = isDefault ? "Unable to execute the validation check for the default DataSource: "
                         : "Unable to execute the validation check for DataSource '" + dataSource.getKey() + "': ";
-                String dsName = isDefault ? "quarkus-default-ds" : dataSource.getKey();
+                String dsName = isDefault ? "default" : dataSource.getKey();
                 builder.down().withData(dsName, data + e.getMessage());
             }
         }

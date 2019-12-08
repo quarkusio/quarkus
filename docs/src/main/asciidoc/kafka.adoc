@@ -316,6 +316,7 @@ to validate the connection to the broker. This is disabled by default.
 If enabled, when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
 
 This behavior can be enabled by setting the `quarkus.kafka.health.enabled` property to `true` in your `application.properties`.
+You also need to point `quarkus.kafka.bootstrap-servers` to your Kafka cluster.
 
 == Going further
 

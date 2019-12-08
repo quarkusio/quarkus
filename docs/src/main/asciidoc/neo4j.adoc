@@ -407,7 +407,7 @@ to validate the connection to Neo4j.
 
 So when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
 
-This behavior can be disabled via the property `quarkus.neo4j.health.enabled`.
+This behavior can be disabled by setting the `quarkus.neo4j.health.enabled` property to `false` in your `application.properties`.
 
 === Explore Cypher and the Graph
 

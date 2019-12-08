@@ -481,7 +481,7 @@ to validate the connection to the cluster.
 
 So when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
 
-This behavior can be disabled via the property `quarkus.mongodb.health.enabled`.
+This behavior can be disabled by setting the `quarkus.mongodb.health.enabled` property to `false` in your `application.properties`.
 
 == Building a native executable
 

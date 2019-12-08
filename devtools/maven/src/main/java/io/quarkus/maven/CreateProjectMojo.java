@@ -182,7 +182,7 @@ public class CreateProjectMojo extends AbstractMojo {
             projectRoot = new File(outputDirectory, projectArtifactId);
             if (projectRoot.exists()) {
                 throw new MojoExecutionException("Unable to create the project, " +
-                        " the directory " + projectRoot.getAbsolutePath() + " already exists");
+                        "the directory " + projectRoot.getAbsolutePath() + " already exists");
             }
         }
 

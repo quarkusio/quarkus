@@ -20,6 +20,7 @@ import org.drools.compiler.commons.jci.compilers.JavaCompiler;
 import org.drools.compiler.commons.jci.compilers.JavaCompilerSettings;
 import org.drools.compiler.compiler.io.memory.MemoryFileSystem;
 import org.drools.compiler.kproject.models.KieModuleModelImpl;
+import org.drools.core.base.ClassFieldAccessorFactory;
 import org.drools.modelcompiler.builder.GeneratedFile;
 import org.drools.modelcompiler.builder.JavaParserCompiler;
 import org.jboss.jandex.ClassInfo;
@@ -53,6 +54,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.runtime.LaunchMode;
 
@@ -132,6 +134,11 @@ public class KogitoAssetsProcessor {
         result.add(
                 new ReflectiveHierarchyIgnoreWarningBuildItem(createDotName("org.kie.dmn.api.feel.runtime.events.FEELEvent")));
         return result;
+    }
+
+    @BuildStep
+    public RuntimeInitializedClassBuildItem init() {
+        return new RuntimeInitializedClassBuildItem(ClassFieldAccessorFactory.class.getName());
     }
 
     @BuildStep(loadsApplicationClasses = true)

@@ -36,7 +36,7 @@ public class FlywayExtensionConfigMultiDataSourcesTest {
     Flyway flywayInventory;
 
     @Inject
-    @Named("inventory_flyway")
+    @Named("flyway_inventory")
     Flyway flywayNamedInventory;
 
     @RegisterExtension

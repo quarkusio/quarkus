@@ -32,13 +32,14 @@ import io.quarkus.gizmo.ResultHandle;
  * Generates the CDI producer bean for {@link Flyway} at build time.<br>
  * Supports multiple {@link Named} {@link DataSource}s.
  * <p>
- * It produces {@link Flyway} instances for every {@link Named} {@link DataSource}.<br>
- * All {@link Flyway} instances get named the same way as the {@link DataSource}s,<br>
- * appended by the postfix {@value #FLYWAY_BEAN_NAME_POSTFIX}.
+ * It produces {@link Flyway} instances for every {@link Named} {@link DataSource}.
+ * <p>
+ * All {@link Flyway} instances get named the same way as the {@link DataSource}s,
+ * prepended by the prefix {@value #FLYWAY_BEAN_NAME_PREFIX}.
  */
 class FlywayDatasourceBeanGenerator {
 
-    public static final String FLYWAY_BEAN_NAME_POSTFIX = "_flyway";
+    public static final String FLYWAY_BEAN_NAME_PREFIX = "flyway_";
 
     private static final String FLYWAY_PRODUCER_BEAN_NAME = "FlywayDataSourceProducer";
     private static final String FLYWAY_PRODUCER_PACKAGE_NAME = FlywayProducer.class.getPackage().getName();
@@ -59,7 +60,7 @@ class FlywayDatasourceBeanGenerator {
      * Create a producer bean managing flyway.
      * <p>
      * Build time and runtime configuration are both injected into this bean.
-     * 
+     *
      * @return String name of the generated producer bean class.
      */
     public void createFlywayProducerBean() {
@@ -85,7 +86,7 @@ class FlywayDatasourceBeanGenerator {
             flywayProducerMethod.addAnnotation(Produces.class);
             flywayProducerMethod.addAnnotation(Dependent.class);
             flywayProducerMethod.addAnnotation(annotatedWithFlywayDatasource(dataSourceName));
-            flywayProducerMethod.addAnnotation(annotatedWithNamed(dataSourceName + FLYWAY_BEAN_NAME_POSTFIX));
+            flywayProducerMethod.addAnnotation(annotatedWithNamed(FLYWAY_BEAN_NAME_PREFIX + dataSourceName));
 
             flywayProducerMethod.returnValue(
                     flywayProducerMethod.invokeVirtualMethod(
@@ -120,8 +121,8 @@ class FlywayDatasourceBeanGenerator {
                 new AnnotationValue[] { AnnotationValue.createStringValue("value", dataSourceName) });
     }
 
-    //Since is does not seem to be possible to generate the annotation "@Typed", 
-    //because AnnotationValue.createArrayValue is not implemented yet (jandex, August 2019), 
+    //Since is does not seem to be possible to generate the annotation "@Typed",
+    //because AnnotationValue.createArrayValue is not implemented yet (jandex, August 2019),
     //the annotation "@FlywayDataSource" was introduced (in conformity with @DataSource).
     private AnnotationInstance annotatedWithFlywayDatasource(String dataSourceName) {
         return AnnotationInstance.create(DotName.createSimple(FlywayDataSource.class.getName()), null,

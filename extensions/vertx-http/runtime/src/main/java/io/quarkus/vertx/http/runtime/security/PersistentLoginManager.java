@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Date;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -20,9 +21,7 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * A class that manages persistent logins.
- *
  * This is done by encoding an expiry time, and the current username into an encrypted cookie
- *
  * TODO: make this pluggable
  */
 public class PersistentLoginManager {
@@ -35,31 +34,32 @@ public class PersistentLoginManager {
     private final String cookieName;
     private final long timeoutMillis;
     private final SecureRandom secureRandom = new SecureRandom();
-    private final long newCookieMillis;
+    private final long newCookieIntervalMillis;
 
-    public PersistentLoginManager(String encryptionKey, String cookieName, long timeoutMillis, long newCookieMillis) {
+    public PersistentLoginManager(String encryptionKey, String cookieName, long timeoutMillis, long newCookieIntervalMillis) {
         try {
             this.cookieName = cookieName;
-            this.newCookieMillis = newCookieMillis;
+            this.newCookieIntervalMillis = newCookieIntervalMillis;
             this.timeoutMillis = timeoutMillis;
             if (encryptionKey == null) {
-                secretKey = KeyGenerator.getInstance("AES").generateKey();
+                this.secretKey = KeyGenerator.getInstance("AES").generateKey();
             } else if (encryptionKey.length() < 16) {
                 throw new RuntimeException("Shared keys for persistent logins must be more than 16 characters long");
             } else {
                 MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
                 sha256.update(encryptionKey.getBytes(StandardCharsets.UTF_8));
-                secretKey = new SecretKeySpec(sha256.digest(), "AES");
+                this.secretKey = new SecretKeySpec(sha256.digest(), "AES");
             }
         } catch (Exception t) {
             throw new RuntimeException(t);
         }
-
     }
 
     public RestoreResult restore(RoutingContext context) {
         Cookie existing = context.getCookie(cookieName);
+        // If there is no credential cookie, we have nothing to restore.
         if (existing == null) {
+            // Enforce new login.
             return null;
         }
         String val = existing.getValue();
@@ -74,14 +74,25 @@ public class PersistentLoginManager {
             cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(ENC_TAG_LENGTH, iv));
             String result = new String(cipher.doFinal(encrypted), StandardCharsets.UTF_8);
             int sep = result.indexOf(":");
+            // If parsing fails, something is wrong and we need to enforce a new login.
             if (sep == -1) {
+                // Enforce new login.
+                log.debugf("%s cookie parsing failed. Is encryption-key set for all instances?", cookieName);
                 return null;
             }
-            long expire = Long.parseLong(result.substring(0, sep));
-            if (System.currentTimeMillis() > expire) {
+            long expireIdle = Long.parseLong(result.substring(0, sep));
+            long now = System.currentTimeMillis();
+            log.debugf("Current time: %s, Expire idle timeout: %s, expireIdle - now is: %d - %d = %d",
+                    new Date(now).toString(), new Date(expireIdle).toString(), expireIdle, now, expireIdle - now);
+            // We don't attempt renewal, idle timeout already expired.
+            if (now > expireIdle) {
+                // Enforce new login.
                 return null;
             }
-            return new RestoreResult(result.substring(sep + 1), (System.currentTimeMillis() - expire) > newCookieMillis);
+            boolean newCookieNeeded = (timeoutMillis - (expireIdle - now)) > newCookieIntervalMillis;
+            log.debugf("Is new cookie needed? ( %d - ( %d - %d)) > %d : %b", timeoutMillis, expireIdle, now,
+                    newCookieIntervalMillis, newCookieNeeded);
+            return new RestoreResult(result.substring(sep + 1), newCookieNeeded);
         } catch (Exception e) {
             log.debug("Failed to restore persistent user session", e);
             return null;
@@ -101,6 +112,7 @@ public class PersistentLoginManager {
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, new GCMParameterSpec(ENC_TAG_LENGTH, iv));
             StringBuilder contents = new StringBuilder();
             long timeout = System.currentTimeMillis() + timeoutMillis;
+            log.debugf("The new cookie will expire at %s", new Date(timeout).toString());
             contents.append(timeout);
             contents.append(":");
             contents.append(identity.getPrincipal().getName());

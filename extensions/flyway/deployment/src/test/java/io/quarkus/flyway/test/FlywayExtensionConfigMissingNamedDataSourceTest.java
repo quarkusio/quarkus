@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.inject.Inject;
-import javax.inject.Named;
 
 import org.flywaydb.core.Flyway;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.flyway.FlywayDataSource;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
@@ -22,9 +22,8 @@ import io.quarkus.test.QuarkusUnitTest;
  */
 public class FlywayExtensionConfigMissingNamedDataSourceTest {
 
-    // Quarkus built objects
     @Inject
-    @Named("users_flyway")
+    @FlywayDataSource("users")
     Instance<Flyway> flyway;
 
     @RegisterExtension

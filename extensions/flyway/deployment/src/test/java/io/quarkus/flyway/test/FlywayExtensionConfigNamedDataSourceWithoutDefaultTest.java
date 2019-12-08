@@ -3,7 +3,6 @@ package io.quarkus.flyway.test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 
 import org.flywaydb.core.Flyway;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -12,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.flyway.FlywayDataSource;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
@@ -22,9 +22,8 @@ public class FlywayExtensionConfigNamedDataSourceWithoutDefaultTest {
     @Inject
     FlywayExtensionConfigFixture fixture;
 
-    // Quarkus built objects
     @Inject
-    @Named("users_flyway")
+    @FlywayDataSource("users")
     Flyway flywayUsers;
 
     @RegisterExtension

@@ -36,10 +36,10 @@ public class FlywayRecorder {
         }
         for (Entry<String, FlywayDataSourceRuntimeConfig> configPerDataSource : config.namedDataSources.entrySet()) {
             if (configPerDataSource.getValue().cleanAtStart) {
-                clean(container, FlywayDataSource.Literal.of(configPerDataSource.getKey()));
+                clean(container, FlywayDataSource.FlywayDataSourceLiteral.of(configPerDataSource.getKey()));
             }
             if (configPerDataSource.getValue().migrateAtStart) {
-                migrate(container, FlywayDataSource.Literal.of(configPerDataSource.getKey()));
+                migrate(container, FlywayDataSource.FlywayDataSourceLiteral.of(configPerDataSource.getKey()));
             }
         }
     }

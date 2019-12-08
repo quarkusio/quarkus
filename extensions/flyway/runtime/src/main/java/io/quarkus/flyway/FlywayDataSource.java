@@ -15,10 +15,10 @@ import javax.inject.Named;
 import javax.inject.Qualifier;
 
 /**
- * Qualifier used to specify which datasource will be used and therefore which flyway instance will be injected.<p<
- * 
- * Flyway instance can also be qualified by name using @{@link Named}.
- * The name is the datasource name followed by "_flyway".
+ * Qualifier used to specify which datasource will be used and therefore which Flyway instance will be injected.
+ * <p>
+ * Flyway instances can also be qualified by name using @{@link Named}.
+ * The name is the datasource name prefixed by "flyway_".
  */
 @Target({ METHOD, FIELD, PARAMETER, TYPE })
 @Retention(RUNTIME)
@@ -31,16 +31,16 @@ public @interface FlywayDataSource {
     /**
      * Supports inline instantiation of the {@link FlywayDataSource} qualifier.
      */
-    public static final class Literal extends AnnotationLiteral<FlywayDataSource> implements FlywayDataSource {
+    public static final class FlywayDataSourceLiteral extends AnnotationLiteral<FlywayDataSource> implements FlywayDataSource {
 
-        public static final Literal INSTANCE = of("");
+        public static final FlywayDataSourceLiteral INSTANCE = of("");
 
         private static final long serialVersionUID = 1L;
 
         private final String value;
 
-        public static Literal of(String value) {
-            return new Literal(value);
+        public static FlywayDataSourceLiteral of(String value) {
+            return new FlywayDataSourceLiteral(value);
         }
 
         @Override
@@ -48,7 +48,7 @@ public @interface FlywayDataSource {
             return value;
         }
 
-        private Literal(String value) {
+        private FlywayDataSourceLiteral(String value) {
             this.value = value;
         }
 

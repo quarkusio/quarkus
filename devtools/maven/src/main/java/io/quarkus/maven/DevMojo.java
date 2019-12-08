@@ -31,7 +31,11 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
+import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -179,6 +183,9 @@ public class DevMojo extends AbstractMojo {
 
     @Component
     private RepositorySystem repoSystem;
+
+    @Component
+    protected org.apache.maven.repository.RepositorySystem system;
 
     @Component
     private Invoker invoker;
@@ -429,6 +436,7 @@ public class DevMojo extends AbstractMojo {
 
     class DevModeRunner {
 
+        private static final String KOTLIN_MAVEN_PLUGIN_GA = "org.jetbrains.kotlin:kotlin-maven-plugin";
         private final List<String> args;
         private Process process;
         private Set<Path> pomFiles = new HashSet<>();
@@ -511,6 +519,8 @@ public class DevMojo extends AbstractMojo {
                     break;
                 }
             }
+
+            setKotlinSpecificFlags(devModeContext);
 
             final AppModel appModel;
             try {
@@ -636,6 +646,50 @@ public class DevMojo extends AbstractMojo {
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
 
+        }
+
+        private void setKotlinSpecificFlags(DevModeContext devModeContext) {
+            Plugin kotlinMavenPlugin = null;
+            for (Plugin plugin : project.getBuildPlugins()) {
+                if (plugin.getKey().equals(KOTLIN_MAVEN_PLUGIN_GA)) {
+                    kotlinMavenPlugin = plugin;
+                    break;
+                }
+            }
+
+            if (kotlinMavenPlugin == null) {
+                return;
+            }
+
+            getLog().debug("Kotlin Maven plugin detected");
+
+            List<String> compilerPluginArtifacts = new ArrayList<>();
+            List<Dependency> dependencies = kotlinMavenPlugin.getDependencies();
+            for (Dependency dependency : dependencies) {
+                // TODO do we actually need this to resolve the artifact or can we use the repoSystem?
+                Artifact artifact = system.createDependencyArtifact(dependency);
+                ArtifactResolutionResult resolved = system
+                        .resolve(new ArtifactResolutionRequest().setArtifact(artifact));
+
+                if (resolved.getArtifacts().size() != 1) {
+                    getLog().debug(
+                            "Kotlin compiler plugin " + dependency.getArtifactId()
+                                    + " won't be configured for dev-mode because it wasn't configured properly in pom.xml");
+                }
+                Artifact resolvedArtifact = resolved.getArtifacts().iterator().next();
+                compilerPluginArtifacts.add(resolvedArtifact.getFile().toPath().toAbsolutePath().toString());
+            }
+            devModeContext.setCompilerPluginArtifacts(compilerPluginArtifacts);
+
+            List<String> options = new ArrayList<>();
+            Xpp3Dom compilerPluginConfiguration = (Xpp3Dom) kotlinMavenPlugin.getConfiguration();
+            if (compilerPluginConfiguration != null) {
+                Xpp3Dom compilerPluginArgsConfiguration = compilerPluginConfiguration.getChild("pluginOptions");
+                for (Xpp3Dom argConfiguration : compilerPluginArgsConfiguration.getChildren()) {
+                    options.add(argConfiguration.getValue());
+                }
+            }
+            devModeContext.setCompilerPluginsOptions(options);
         }
 
         public Set<Path> getPomFiles() {

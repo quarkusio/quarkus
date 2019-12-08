@@ -16,7 +16,7 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class FlywayRecorder {
 
-    public BeanContainerListener setFlywayBuildConfig(FlywayBuildConfig flywayBuildConfig) {
+    public BeanContainerListener setFlywayBuildConfig(FlywayBuildTimeConfig flywayBuildConfig) {
         return beanContainer -> {
             FlywayProducer producer = beanContainer.instance(FlywayProducer.class);
             producer.setFlywayBuildConfig(flywayBuildConfig);

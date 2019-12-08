@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class FlywayProducerTest {
 
     private static final String DEFAULT_DATASOURCE = "";
-    private FlywayBuildConfig buildDataSourceConfig = FlywayBuildConfig.defaultConfig();
+    private FlywayBuildTimeConfig buildDataSourceConfig = FlywayBuildTimeConfig.defaultConfig();
     private FlywayRuntimeConfig runtimeDataSourceConfig = FlywayRuntimeConfig.defaultConfig();
 
     /**

@@ -9,9 +9,10 @@ import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public final class FlywayDataSourceRuntimeConfig {
+
     /**
      * Creates a {@link FlywayDataSourceRuntimeConfig} with default settings.
-     * 
+     *
      * @return {@link FlywayDataSourceRuntimeConfig}
      */
     public static final FlywayDataSourceRuntimeConfig defaultConfig() {
@@ -24,6 +25,7 @@ public final class FlywayDataSourceRuntimeConfig {
      */
     @ConfigItem
     public OptionalInt connectRetries = OptionalInt.empty();
+
     /**
      * Comma-separated case-sensitive list of schemas managed by Flyway.
      * The first schema in the list will be automatically set as the default one during the migration.
@@ -31,6 +33,7 @@ public final class FlywayDataSourceRuntimeConfig {
      */
     @ConfigItem
     public Optional<List<String>> schemas = Optional.empty();
+
     /**
      * The name of Flyway's schema history table.
      * By default (single-schema mode) the schema history table is placed in the default schema for the connection provided by

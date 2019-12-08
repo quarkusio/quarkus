@@ -1,5 +1,8 @@
 package io.quarkus.it.kafka;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
+
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
@@ -38,6 +41,14 @@ public class KafkaProducerTest {
         ConsumerRecord<Integer, String> records = consumer.poll(Duration.ofMillis(10000)).iterator().next();
         Assertions.assertEquals(records.key(), (Integer) 0);
         Assertions.assertEquals(records.value(), "hello");
+    }
+
+    @Test
+    public void health() throws Exception {
+        RestAssured.when().get("/health/ready").then()
+                .body("status", is("UP"),
+                        "checks.status", containsInAnyOrder("UP"),
+                        "checks.name", containsInAnyOrder("Kafka connection health check"));
     }
 
 }

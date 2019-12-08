@@ -239,11 +239,12 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 20
+          timeoutInMinutes: 25
           modules:
             - artemis-core
             - artemis-jms
             - kafka
+            - kafka-streams
           name: messaging
 
       - template: native-build-steps.yaml

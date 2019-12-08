@@ -44,6 +44,12 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-jsonb</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+        </dependency>
+
         <!-- Project reactor makes it easier to deal with reactive streams -->
         <dependency>
             <groupId>io.projectreactor</groupId>

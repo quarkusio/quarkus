@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -42,8 +41,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.flyway.runtime.FlywayBuildConfig;
-import io.quarkus.flyway.runtime.FlywayDataSourceBuildConfig;
+import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayProducer;
 import io.quarkus.flyway.runtime.FlywayRecorder;
 import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
@@ -59,7 +57,7 @@ class FlywayProcessor {
     /**
      * Flyway build config
      */
-    FlywayBuildConfig flywayBuildConfig;
+    FlywayBuildTimeConfig flywayBuildConfig;
 
     @BuildStep
     CapabilityBuildItem capability() {
@@ -133,19 +131,18 @@ class FlywayProcessor {
      * Collects the configured migration locations for the default and all named DataSources.
      * <p>
      * A {@link LinkedHashSet} is used to avoid duplications.
-     * 
+     *
      * @param dataSourceInitializedBuildItem {@link DataSourceInitializedBuildItem}
      * @return {@link Collection} of {@link String}s
      */
     private Collection<String> getMigrationLocations(DataSourceInitializedBuildItem dataSourceInitializedBuildItem) {
-        List<String> defaultLocations = FlywayDataSourceBuildConfig.defaultConfig().locations.orElse(Collections.emptyList());
         Collection<String> dataSourceNames = DataSourceInitializedBuildItem.dataSourceNamesOf(dataSourceInitializedBuildItem);
         Collection<String> migrationLocations = dataSourceNames.stream()
                 .map(flywayBuildConfig::getConfigForDataSourceName)
-                .flatMap(config -> config.locations.orElse(defaultLocations).stream())
+                .flatMap(config -> config.locations.stream())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         if (DataSourceInitializedBuildItem.isDefaultDataSourcePresent(dataSourceInitializedBuildItem)) {
-            migrationLocations.addAll(flywayBuildConfig.defaultDataSource.locations.orElse(defaultLocations));
+            migrationLocations.addAll(flywayBuildConfig.defaultDataSource.locations);
         }
         return migrationLocations;
     }

@@ -19,15 +19,16 @@ import org.eclipse.microprofile.health.Readiness;
 @Readiness
 @ApplicationScoped
 public class KafkaHealthCheck implements HealthCheck {
-    @ConfigProperty(name = "kafka.bootstrap.servers", defaultValue = "localhost:9092")
-    private String bootstrapServer;
+
+    @ConfigProperty(name = "quarkus.kafka.bootstrap-servers", defaultValue = "localhost:9092")
+    private String bootstrapServers;
 
     private AdminClient client;
 
     @PostConstruct
     void init() {
         Map<String, Object> conf = new HashMap<>();
-        conf.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
+        conf.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         conf.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, "5000");
         client = AdminClient.create(conf);
     }

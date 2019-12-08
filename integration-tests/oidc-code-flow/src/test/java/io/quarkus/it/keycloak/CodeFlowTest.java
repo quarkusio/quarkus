@@ -135,6 +135,7 @@ public class CodeFlowTest {
     @Test
     public void testCodeFlowNoConsent() throws IOException {
         try (final WebClient webClient = new WebClient()) {
+            webClient.getCache().setMaxSize(0);
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
 
             assertEquals("Log in to quarkus", page.getTitleText());
@@ -158,6 +159,7 @@ public class CodeFlowTest {
     @Test
     public void testTokenTimeoutLogout() throws IOException, InterruptedException {
         try (final WebClient webClient = new WebClient()) {
+            webClient.getCache().setMaxSize(0);
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
 
             assertEquals("Log in to quarkus", page.getTitleText());
@@ -188,6 +190,7 @@ public class CodeFlowTest {
     @Test
     public void testIdTokenInjection() throws IOException, InterruptedException {
         try (final WebClient webClient = new WebClient()) {
+            webClient.getCache().setMaxSize(0);
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
 
             assertEquals("Log in to quarkus", page.getTitleText());
@@ -210,6 +213,7 @@ public class CodeFlowTest {
     @Test
     public void testAccessTokenInjection() throws IOException, InterruptedException {
         try (final WebClient webClient = new WebClient()) {
+            webClient.getCache().setMaxSize(0);
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
 
             assertEquals("Log in to quarkus", page.getTitleText());
@@ -232,6 +236,7 @@ public class CodeFlowTest {
     @Test
     public void testAccessAndRefreshTokenInjection() throws IOException, InterruptedException {
         try (final WebClient webClient = new WebClient()) {
+            webClient.getCache().setMaxSize(0);
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
 
             assertEquals("Log in to quarkus", page.getTitleText());
@@ -254,6 +259,7 @@ public class CodeFlowTest {
     @Test
     public void testAccessAndRefreshTokenInjectionWithoutIndexHtml() throws IOException, InterruptedException {
         try (final WebClient webClient = new WebClient()) {
+            webClient.getCache().setMaxSize(0);
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app/refresh");
 
             assertEquals("Log in to quarkus", page.getTitleText());

@@ -1,19 +1,21 @@
 package io.quarkus.agroal.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.sql.SQLException;
+import java.time.Duration;
+
+import javax.inject.Inject;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionFactoryConfiguration;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.agroal.narayana.NarayanaTransactionIntegration;
 import io.quarkus.test.QuarkusUnitTest;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
-import javax.inject.Inject;
-import java.sql.SQLException;
-import java.time.Duration;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GcpDataSourceConfigTest {
 
@@ -34,12 +36,14 @@ public class GcpDataSourceConfigTest {
     }
 
     private static void testDataSource(AgroalDataSource dataSource, String username, int minSize, int maxSize,
-                                       int initialSize, Duration backgroundValidationInterval, Duration acquisitionTimeout, Duration leakDetectionInterval,
-                                       Duration idleRemovalInterval, Duration maxLifetime, String newConnectionSql) throws SQLException {
+            int initialSize, Duration backgroundValidationInterval, Duration acquisitionTimeout, Duration leakDetectionInterval,
+            Duration idleRemovalInterval, Duration maxLifetime, String newConnectionSql) throws SQLException {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         AgroalConnectionFactoryConfiguration agroalConnectionFactoryConfiguration = configuration
                 .connectionFactoryConfiguration();
-        assertEquals("jdbc:postgresql:///database-name?socketFactory=com.google.cloud.sql.postgres.SocketFactory&cloudSqlInstance=project:zone:db-name", agroalConnectionFactoryConfiguration.jdbcUrl());
+        assertEquals(
+                "jdbc:h2:tcp://localhost/mem:default?socketFactory=com.google.cloud.sql.postgres.SocketFactory&cloudSqlInstance=project:zone:db-name",
+                agroalConnectionFactoryConfiguration.jdbcUrl());
         assertEquals(username, agroalConnectionFactoryConfiguration.principal().getName());
         assertEquals(minSize, configuration.minSize());
         assertEquals(maxSize, configuration.maxSize());

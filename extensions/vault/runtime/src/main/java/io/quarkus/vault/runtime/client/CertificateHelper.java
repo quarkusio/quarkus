@@ -31,7 +31,7 @@ public class CertificateHelper {
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         keyStore.load(null);
 
-        String certBundle = new String(Files.readAllBytes(Paths.get(cacert)));
+        String certBundle = new String(Files.readAllBytes(Paths.get(cacert)), StandardCharsets.UTF_8);
         int start = 0;
         int count = 0;
         Matcher matcher = certBundlePattern.matcher(certBundle);

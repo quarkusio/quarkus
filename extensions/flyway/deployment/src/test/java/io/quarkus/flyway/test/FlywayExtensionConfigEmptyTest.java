@@ -22,7 +22,6 @@ import io.quarkus.test.QuarkusUnitTest;
  */
 public class FlywayExtensionConfigEmptyTest {
 
-    // Quarkus built objects
     @Inject
     Instance<Flyway> flyway;
 

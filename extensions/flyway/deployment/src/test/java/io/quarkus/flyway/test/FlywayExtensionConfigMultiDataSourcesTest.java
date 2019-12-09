@@ -23,7 +23,6 @@ public class FlywayExtensionConfigMultiDataSourcesTest {
     @Inject
     FlywayExtensionConfigFixture fixture;
 
-    // Quarkus built objects
     @Inject
     Flyway flyway;
 

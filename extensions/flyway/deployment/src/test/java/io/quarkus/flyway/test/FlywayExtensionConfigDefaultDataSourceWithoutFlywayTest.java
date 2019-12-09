@@ -14,12 +14,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Assures, that flyway can also be used without any configuration,
+ * Assures, that Flyway can also be used without any configuration,
  * provided, that at least a datasource is configured.
  */
 public class FlywayExtensionConfigDefaultDataSourceWithoutFlywayTest {
 
-    // Quarkus built objects
     @Inject
     Flyway flyway;
 

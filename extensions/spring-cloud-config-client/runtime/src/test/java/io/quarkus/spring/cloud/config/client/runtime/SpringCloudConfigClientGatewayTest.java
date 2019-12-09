@@ -18,7 +18,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 
 class SpringCloudConfigClientGatewayTest {
 
-    private static final int MOCK_SERVER_PORT = 8089;
+    private static final int MOCK_SERVER_PORT = 9300;
     private static final WireMockServer wireMockServer = new WireMockServer(MOCK_SERVER_PORT);
 
     private final SpringCloudConfigClientGateway sut = new DefaultSpringCloudConfigClientGateway(

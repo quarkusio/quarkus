@@ -36,7 +36,7 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
     @Override
     public abstract ClassVisitor apply(String className, ClassVisitor outputClassVisitor);
 
-    protected static abstract class PanacheRepositoryClassVisitor extends ClassVisitor {
+    public static abstract class PanacheRepositoryClassVisitor extends ClassVisitor {
 
         protected Type entityType;
         protected String entitySignature;
@@ -76,7 +76,7 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
 
             final String repositoryClassName = name.replace('/', '.');
 
-            String[] foundTypeArguments = findEntityTypeArgumentsForPanacheRepository(repositoryClassName,
+            String[] foundTypeArguments = findEntityTypeArgumentsForPanacheRepository(indexView, repositoryClassName,
                     getPanacheRepositoryBaseDotName());
 
             entityBinaryType = foundTypeArguments[0];
@@ -96,17 +96,20 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
             return super.visitMethod(access, methodName, descriptor, signature, exceptions);
         }
 
-        private String[] findEntityTypeArgumentsForPanacheRepository(String repositoryClassName, DotName repositoryDotName) {
+        public static String[] findEntityTypeArgumentsForPanacheRepository(IndexView indexView,
+                String repositoryClassName,
+                DotName repositoryDotName) {
             for (ClassInfo classInfo : indexView.getAllKnownImplementors(repositoryDotName)) {
                 if (repositoryClassName.equals(classInfo.name().toString())) {
-                    return recursivelyFindEntityTypeArgumentsFromClass(classInfo.name(), repositoryDotName);
+                    return recursivelyFindEntityTypeArgumentsFromClass(indexView, classInfo.name(), repositoryDotName);
                 }
             }
 
             return null;
         }
 
-        private String[] recursivelyFindEntityTypeArgumentsFromClass(DotName clazz, DotName repositoryDotName) {
+        public static String[] recursivelyFindEntityTypeArgumentsFromClass(IndexView indexView, DotName clazz,
+                DotName repositoryDotName) {
             if (clazz.equals(OBJECT_DOT_NAME)) {
                 return null;
             }

@@ -4,6 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Qute Templating Engine
+:extension-status: experimental
 
 include::./attributes.adoc[]
 
@@ -14,12 +15,7 @@ In the development mode, all files located in `src/main/resources/templates` are
 Furthermore, we try to detect most of the template problems at build time.
 In this guide, you will learn how to easily render templates in your application.
 
-[NOTE]
-====
-This extension is considered `preview`.
-API or configuration properties might change as the extension matures.
-Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
-====
+include::./status-include.adoc[]
 
 == Hello World with JAX-RS
 

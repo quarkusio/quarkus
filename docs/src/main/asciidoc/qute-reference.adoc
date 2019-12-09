@@ -11,6 +11,9 @@ include::./attributes.adoc[]
 :sectnums:
 :sectnumlevels: 4
 :toc:
+:extension-status: experimental
+
+include::./status-include.adoc[]
 
 == Hello World Example
 

@@ -4,6 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Quarkus - Amazon Lambda
+:extension-status: preview
 
 include::./attributes.adoc[]
 
@@ -13,12 +14,7 @@ Your lambdas can use injection annotations from CDI or Spring and other Quarkus 
 Quarkus lambdas can be deployed using the Amazon Java Runtime, or you can build a native executable and use
 Amazon's Custom Runtime if you want a smaller memory footprint and faster cold boot startup time.
 
-[NOTE]
-====
-This extension is considered `preview`.
-API or configuration properties might change as the extension matures.
-Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
-====
+include::./status-include.adoc[]
 
 == Prerequisites
 

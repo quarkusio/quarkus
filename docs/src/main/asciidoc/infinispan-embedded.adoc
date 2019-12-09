@@ -4,6 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Quarkus - Infinispan Embedded
+:extension-status: preview
 
 include::./attributes.adoc[]
 
@@ -13,12 +14,7 @@ directly in your application.
 Check out the link:https://infinispan.org/documentation/[Infinispan
 documentation] to find out more about the Infinispan project.
 
-[NOTE]
-====
-This extension is considered `preview`.
-API or configuration properties might change as the extension matures.
-Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
-====
+include::./status-include.adoc[]
 
 == Adding the Infinispan Embedded Extension
 After you set up your Quarkus project, run the following command from the base directory:

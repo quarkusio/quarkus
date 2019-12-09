@@ -67,7 +67,7 @@ final class FixEnumAccess {
 final class RemoveJMXAccess {
 
     @Substitute
-    public static synchronized void registerAppInfo(String prefix, String id, Metrics metrics) {
+    public static synchronized void registerAppInfo(String prefix, String id, Metrics metrics, long nowMs) {
 
     }
 

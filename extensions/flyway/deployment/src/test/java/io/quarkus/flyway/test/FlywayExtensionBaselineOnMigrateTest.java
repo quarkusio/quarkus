@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class FlywayExtensionBaselineOnMigrateTest {
-    // Quarkus built object
+
     @Inject
     Flyway flyway;
 

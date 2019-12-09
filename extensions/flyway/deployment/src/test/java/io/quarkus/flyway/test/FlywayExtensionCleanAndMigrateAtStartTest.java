@@ -21,7 +21,7 @@ import io.agroal.api.AgroalDataSource;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class FlywayExtensionCleanAndMigrateAtStartTest {
-    // Quarkus built object
+
     @Inject
     Flyway flyway;
 

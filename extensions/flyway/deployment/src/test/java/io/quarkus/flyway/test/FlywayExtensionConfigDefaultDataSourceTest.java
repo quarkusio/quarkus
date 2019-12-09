@@ -15,7 +15,6 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class FlywayExtensionConfigDefaultDataSourceTest {
 
-    // Quarkus built object
     @Inject
     Flyway flyway;
 

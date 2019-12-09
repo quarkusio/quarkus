@@ -9,7 +9,7 @@ import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 
 @Path("/hello")
-class HelloResource {
+class HelloResource(val greetingService: GreetingService) {
 
     @Inject
     @ConfigProperty(name = "greeting")
@@ -27,4 +27,9 @@ class HelloResource {
     fun greeting(): String? {
         return greeting
     }
+
+    @GET
+    @Path("/bean")
+    @Produces(MediaType.TEXT_PLAIN)
+    fun greetingFromBean()  = greetingService.greet()
 }

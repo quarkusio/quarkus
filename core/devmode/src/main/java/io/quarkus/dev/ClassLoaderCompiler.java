@@ -166,7 +166,9 @@ public class ClassLoaderCompiler {
                                     context.getSourceEncoding(),
                                     context.getCompilerOptions(),
                                     context.getSourceJavaVersion(),
-                                    context.getTargetJvmVersion()));
+                                    context.getTargetJvmVersion(),
+                                    context.getCompilerPluginArtifacts(),
+                                    context.getCompilerPluginsOptions()));
                 });
             }
         }

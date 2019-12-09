@@ -22,9 +22,9 @@ public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
         runAndCheck();
 
         // Edit the "Hello" message.
-        File source = new File(testDir, "src/main/kotlin/org/acme/HelloResource.kt");
+        File jaxRsResource = new File(testDir, "src/main/kotlin/org/acme/HelloResource.kt");
         String uuid = UUID.randomUUID().toString();
-        filter(source, ImmutableMap.of("return \"hello\"", "return \"" + uuid + "\""));
+        filter(jaxRsResource, ImmutableMap.of("return \"hello\"", "return \"" + uuid + "\""));
 
         // Wait until we get "uuid"
         await()
@@ -34,13 +34,22 @@ public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
-                .until(source::isFile);
+                .until(jaxRsResource::isFile);
 
-        filter(source, ImmutableMap.of(uuid, "carambar"));
+        filter(jaxRsResource, ImmutableMap.of(uuid, "carambar"));
 
         // Wait until we get "carambar"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));
+
+        File greetingService = new File(testDir, "src/main/kotlin/org/acme/GreetingService.kt");
+        String newUuid = UUID.randomUUID().toString();
+        filter(greetingService, ImmutableMap.of("\"hello\"", "\"" + newUuid + "\""));
+
+        // Wait until we get "newUuid"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello/bean").contains(newUuid));
     }
 }

@@ -36,6 +36,9 @@ public class DevModeContext implements Serializable {
     private String sourceJavaVersion;
     private String targetJvmVersion;
 
+    private List<String> compilerPluginArtifacts;
+    private List<String> compilerPluginsOptions;
+
     public List<URL> getClassPath() {
         return classPath;
     }
@@ -120,6 +123,22 @@ public class DevModeContext implements Serializable {
         this.targetJvmVersion = targetJvmVersion;
     }
 
+    public List<String> getCompilerPluginArtifacts() {
+        return compilerPluginArtifacts;
+    }
+
+    public void setCompilerPluginArtifacts(List<String> compilerPluginArtifacts) {
+        this.compilerPluginArtifacts = compilerPluginArtifacts;
+    }
+
+    public List<String> getCompilerPluginsOptions() {
+        return compilerPluginsOptions;
+    }
+
+    public void setCompilerPluginsOptions(List<String> compilerPluginsOptions) {
+        this.compilerPluginsOptions = compilerPluginsOptions;
+    }
+
     public File getDevModeRunnerJarFile() {
         return devModeRunnerJarFile;
     }
@@ -173,5 +192,4 @@ public class DevModeContext implements Serializable {
             return resourcePath;
         }
     }
-
 }

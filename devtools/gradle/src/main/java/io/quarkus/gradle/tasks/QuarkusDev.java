@@ -1,5 +1,7 @@
 package io.quarkus.gradle.tasks;
 
+import static java.util.stream.Collectors.joining;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -80,8 +82,9 @@ public class QuarkusDev extends QuarkusTask {
     @InputDirectory
     @Optional
     public File getBuildDir() {
-        if (buildDir == null)
+        if (buildDir == null) {
             buildDir = getProject().getBuildDir();
+        }
         return buildDir;
     }
 
@@ -92,10 +95,11 @@ public class QuarkusDev extends QuarkusTask {
     @Optional
     @InputDirectory
     public File getSourceDir() {
-        if (sourceDir == null)
+        if (sourceDir == null) {
             return extension().sourceDir();
-        else
+        } else {
             return new File(sourceDir);
+        }
     }
 
     @Option(description = "Set source directory", option = "source-dir")
@@ -106,10 +110,11 @@ public class QuarkusDev extends QuarkusTask {
     @Optional
     @InputDirectory
     public File getWorkingDir() {
-        if (workingDir == null)
+        if (workingDir == null) {
             return extension().workingDir();
-        else
+        } else {
             return new File(workingDir);
+        }
     }
 
     @Option(description = "Set working directory", option = "working-dir")
@@ -259,8 +264,9 @@ public class QuarkusDev extends QuarkusTask {
             StringBuilder resources = new StringBuilder();
             String res = null;
             for (File file : extension.resourcesDir()) {
-                if (resources.length() > 0)
+                if (resources.length() > 0) {
                     resources.append(File.pathSeparator);
+                }
                 resources.append(file.getAbsolutePath());
                 res = file.getAbsolutePath();
             }
@@ -341,15 +347,11 @@ public class QuarkusDev extends QuarkusTask {
 
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
-            ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[0]));
-            pb.redirectErrorStream(true);
-            pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
-            pb.directory(getWorkingDir());
-            System.out.println("Starting process: ");
-            pb.command().forEach(System.out::println);
-            System.out.println("Args: ");
-            args.forEach(System.out::println);
-
+            ProcessBuilder pb = new ProcessBuilder(args)
+                    .redirectErrorStream(true)
+                    .redirectInput(ProcessBuilder.Redirect.INHERIT)
+                    .directory(getWorkingDir());
+            System.out.printf("Launching JVM with command line: %s%n", pb.command().stream().collect(joining(" ")));
             Process p = pb.start();
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override

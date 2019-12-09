@@ -117,20 +117,20 @@ public class VertxHttpRecorder {
         }
         VertxConfiguration vertxConfiguration = new VertxConfiguration();
         ConfigInstantiator.handleObject(vertxConfiguration);
-        VertxCoreRecorder.initializeWeb(vertxConfiguration);
+        Vertx vertx = VertxCoreRecorder.initialize(vertxConfiguration);
 
         try {
             HttpConfiguration config = new HttpConfiguration();
             ConfigInstantiator.handleObject(config);
 
-            Router router = Router.router(VertxCoreRecorder.getWebVertx());
+            Router router = Router.router(vertx);
             if (hotReplacementHandler != null) {
                 router.route().order(Integer.MIN_VALUE).blockingHandler(hotReplacementHandler);
             }
             rootHandler = router;
 
             //we can't really do
-            doServerStart(VertxCoreRecorder.getWebVertx(), config, LaunchMode.DEVELOPMENT, new Supplier<Integer>() {
+            doServerStart(vertx, config, LaunchMode.DEVELOPMENT, new Supplier<Integer>() {
                 @Override
                 public Integer get() {
                     return ProcessorInfo.availableProcessors() * 2; //this is dev mode, so the number of IO threads not always being 100% correct does not really matter in this case
@@ -142,10 +142,10 @@ public class VertxHttpRecorder {
         }
     }
 
-    public RuntimeValue<Router> initializeRouter(final RuntimeValue<Vertx> vertxRuntimeValue,
+    public RuntimeValue<Router> initializeRouter(final Supplier<Vertx> vertxRuntimeValue,
             final LaunchMode launchMode, final ShutdownContext shutdownContext) {
 
-        Vertx vertx = vertxRuntimeValue.getValue();
+        Vertx vertx = vertxRuntimeValue.get();
         Router router = Router.router(vertx);
         if (hotReplacementHandler != null) {
             router.route().order(Integer.MIN_VALUE).handler(hotReplacementHandler);
@@ -154,19 +154,18 @@ public class VertxHttpRecorder {
         return new RuntimeValue<>(router);
     }
 
-    public void startServer(RuntimeValue<Vertx> vertxRuntimeValue, ShutdownContext shutdown,
+    public void startServer(Supplier<Vertx> vertx, ShutdownContext shutdown,
             HttpConfiguration httpConfiguration, LaunchMode launchMode,
             boolean startVirtual, boolean startSocket, Supplier<Integer> ioThreads, String websocketSubProtocols)
             throws IOException {
 
-        Vertx vertx = vertxRuntimeValue.getValue();
         if (startVirtual) {
-            initializeVirtual(vertx);
+            initializeVirtual(vertx.get());
         }
         if (startSocket) {
             // Start the server
             if (closeTask == null) {
-                doServerStart(vertx, httpConfiguration, launchMode, ioThreads, websocketSubProtocols);
+                doServerStart(vertx.get(), httpConfiguration, launchMode, ioThreads, websocketSubProtocols);
                 if (launchMode != LaunchMode.DEVELOPMENT) {
                     shutdown.addShutdownTask(closeTask);
                 }
@@ -175,7 +174,7 @@ public class VertxHttpRecorder {
     }
 
     public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
-            List<Filter> filterList, RuntimeValue<Vertx> vertx,
+            List<Filter> filterList, Supplier<Vertx> vertx,
             RuntimeValue<Router> runtimeValue, String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
             Handler<RoutingContext> bodyHandler, HttpConfiguration httpConfiguration) {
         // install the default route at the end
@@ -256,7 +255,7 @@ public class VertxHttpRecorder {
             }
             root = router;
         } else {
-            Router mainRouter = Router.router(vertx.getValue());
+            Router mainRouter = Router.router(vertx.get());
             mainRouter.mountSubRouter(rootPath, router);
             if (hotReplacementHandler != null) {
                 mainRouter.route().order(-1).handler(hotReplacementHandler);

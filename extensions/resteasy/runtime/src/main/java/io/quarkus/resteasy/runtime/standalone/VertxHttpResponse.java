@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
@@ -159,6 +161,22 @@ public class VertxHttpResponse implements HttpResponse {
 
     public void writeBlocking(ByteBuf buffer, boolean finished) throws IOException {
         checkException();
+        prepareWrite(buffer, finished);
+        output.write(buffer, finished);
+    }
+
+    public CompletionStage<Void> writeNonBlocking(ByteBuf buffer, boolean finished) {
+        try {
+            prepareWrite(buffer, finished);
+        } catch (IOException e) {
+            CompletableFuture<Void> ret = new CompletableFuture<>();
+            ret.completeExceptionally(e);
+            return ret;
+        }
+        return output.writeNonBlocking(buffer, finished);
+    }
+
+    private void prepareWrite(ByteBuf buffer, boolean finished) throws IOException {
         if (!isCommitted()) {
             committed = true;
             response.setStatusCode(getStatus());
@@ -176,7 +194,6 @@ public class VertxHttpResponse implements HttpResponse {
         }
         if (finished)
             this.finished = true;
-        output.write(buffer, finished);
     }
 
 }

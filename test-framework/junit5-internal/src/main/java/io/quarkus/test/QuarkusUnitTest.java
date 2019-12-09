@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,6 +24,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -42,6 +44,8 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildException;
@@ -83,6 +87,7 @@ public class QuarkusUnitTest
     private CuratedApplication curatedApplication;
     private RunningQuarkusApplication runningQuarkusApplication;
     private ClassLoader originalClassLoader;
+    private List<AppArtifact> forcedDependencies = Collections.emptyList();
 
     private boolean useSecureConnection;
 
@@ -157,6 +162,15 @@ public class QuarkusUnitTest
     // set a Runnable that will run after EVERYTHING else is done
     public QuarkusUnitTest setAfterAllCustomizer(Runnable afterAllCustomizer) {
         this.afterAllCustomizer = afterAllCustomizer;
+        return this;
+    }
+
+    /**
+     * Provides a convenient way to either add additional dependencies to the application (if it doesn't already contain a
+     * dependency), or override a version (if the dependency already exists)
+     */
+    public QuarkusUnitTest setForcedDependencies(List<AppArtifact> forcedDependencies) {
+        this.forcedDependencies = forcedDependencies;
         return this;
     }
 
@@ -359,7 +373,9 @@ public class QuarkusUnitTest
                 QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder(deploymentDir)
                         .setMode(QuarkusBootstrap.Mode.TEST)
                         .addExcludedPath(testLocation)
-                        .setProjectRoot(testLocation);
+                        .setProjectRoot(testLocation)
+                        .setForcedDependencies(forcedDependencies.stream().map(d -> new AppDependency(d, "compile"))
+                                .collect(Collectors.toList()));
                 if (!allowTestClassOutsideDeployment) {
                     builder
                             .setBaseClassLoader(

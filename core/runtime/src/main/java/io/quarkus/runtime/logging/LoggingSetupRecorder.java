@@ -13,6 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -73,11 +74,12 @@ public class LoggingSetupRecorder {
         LogConfig config = new LogConfig();
         ConfigInstantiator.handleObject(config);
         new LoggingSetupRecorder().initializeLogging(config, Collections.emptyList(),
-                Collections.emptyList());
+                Collections.emptyList(), null);
     }
 
     public void initializeLogging(LogConfig config, final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
-            final List<RuntimeValue<Optional<Formatter>>> possibleFormatters) {
+            final List<RuntimeValue<Optional<Formatter>>> possibleFormatters,
+            final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier) {
 
         final Map<String, CategoryConfig> categories = config.categories;
         final LogContext logContext = LogContext.getLogContext();
@@ -96,7 +98,7 @@ public class LoggingSetupRecorder {
 
         if (config.console.enable) {
             final Handler consoleHandler = configureConsoleHandler(config.console, errorManager, filterElements,
-                    possibleFormatters);
+                    possibleFormatters, possibleBannerSupplier);
             errorManager = consoleHandler.getErrorManager();
             handlers.add(consoleHandler);
         }
@@ -147,7 +149,7 @@ public class LoggingSetupRecorder {
         Map<String, Handler> namedHandlers = new HashMap<>();
         for (Entry<String, ConsoleConfig> consoleConfigEntry : config.consoleHandlers.entrySet()) {
             final Handler consoleHandler = configureConsoleHandler(consoleConfigEntry.getValue(), errorManager, filterElements,
-                    possibleFormatters);
+                    possibleFormatters, null);
             addToNamedHandlers(namedHandlers, consoleHandler, consoleConfigEntry.getKey());
         }
         for (Entry<String, FileConfig> fileConfigEntry : config.fileHandlers.entrySet()) {
@@ -214,9 +216,11 @@ public class LoggingSetupRecorder {
 
     private static Handler configureConsoleHandler(final ConsoleConfig config, final ErrorManager defaultErrorManager,
             final List<LogCleanupFilterElement> filterElements,
-            final List<RuntimeValue<Optional<Formatter>>> possibleFormatters) {
+            final List<RuntimeValue<Optional<Formatter>>> possibleFormatters,
+            final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier) {
         Formatter formatter = null;
         boolean formatterWarning = false;
+
         for (RuntimeValue<Optional<Formatter>> value : possibleFormatters) {
             if (formatter != null) {
                 formatterWarning = true;
@@ -227,10 +231,25 @@ public class LoggingSetupRecorder {
             }
         }
         if (formatter == null) {
+            Supplier<String> bannerSupplier = null;
+            if (possibleBannerSupplier != null && possibleBannerSupplier.getValue().isPresent()) {
+                bannerSupplier = possibleBannerSupplier.getValue().get();
+            }
             if (config.color.orElse(hasColorSupport())) {
-                formatter = new ColorPatternFormatter(config.darken, config.format);
+                ColorPatternFormatter colorPatternFormatter = new ColorPatternFormatter(config.darken,
+                        config.format);
+                if (bannerSupplier != null) {
+                    formatter = new BannerFormatter(colorPatternFormatter, true, bannerSupplier);
+                } else {
+                    formatter = colorPatternFormatter;
+                }
             } else {
-                formatter = new PatternFormatter(config.format);
+                PatternFormatter patternFormatter = new PatternFormatter(config.format);
+                if (bannerSupplier != null) {
+                    formatter = new BannerFormatter(patternFormatter, false, bannerSupplier);
+                } else {
+                    formatter = patternFormatter;
+                }
             }
         }
         final ConsoleHandler consoleHandler = new ConsoleHandler(formatter);

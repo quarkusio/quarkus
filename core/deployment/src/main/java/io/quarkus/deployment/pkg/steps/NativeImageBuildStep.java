@@ -134,15 +134,15 @@ public class NativeImageBuildStep {
             nativeImage = Collections.singletonList(getNativeImageExecutable(graal, java, env).getAbsolutePath());
         }
 
-        Optional<String> graalVMVersion = Optional.empty();
+        final Optional<String> graalVMVersion;
 
         try {
             List<String> versionCommand = new ArrayList<>(nativeImage);
             versionCommand.add("--version");
 
             Process versionProcess = new ProcessBuilder(versionCommand.toArray(new String[0]))
+                    .redirectErrorStream(true)
                     .start();
-            versionProcess.waitFor();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(versionProcess.getInputStream()))) {
                 graalVMVersion = reader.lines().filter((l) -> l.startsWith("GraalVM Version")).findFirst();
             }

@@ -37,10 +37,10 @@ public class KotlinCompilationProvider implements CompilationProvider {
     @Override
     public void compile(Set<File> filesToCompile, Context context) {
         K2JVMCompilerArguments compilerArguments = new K2JVMCompilerArguments();
-        if (!context.getCompilePluginArtifacts().isEmpty()) {
+        if (context.getCompilePluginArtifacts() != null && !context.getCompilePluginArtifacts().isEmpty()) {
             compilerArguments.setPluginClasspaths(context.getCompilePluginArtifacts().toArray(new String[0]));
         }
-        if (!context.getCompilerPluginOptions().isEmpty()) {
+        if (context.getCompilerPluginOptions() != null && !context.getCompilerPluginOptions().isEmpty()) {
             List<String> sanitizedOptions = new ArrayList<>(context.getCompilerOptions().size());
             for (String rawOption : context.getCompilerPluginOptions()) {
                 Matcher matcher = OPTION_PATTERN.matcher(rawOption);

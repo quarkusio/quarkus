@@ -172,6 +172,7 @@
         <antlr.version>4.7.2</antlr.version>
         <quarkus-security.version>1.0.1.Final</quarkus-security.version>
         <keycloak.version>8.0.1</keycloak.version>
+        <logstash-gelf.version>1.13.0</logstash-gelf.version>
     </properties>
 
     <dependencyManagement>
@@ -726,6 +727,11 @@
                 <artifactId>quarkus-logging-sentry</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-logging-gelf</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Quarkus test dependencies -->
             <dependency>
@@ -828,6 +834,11 @@
             </dependency>
 
             <!-- Additional dependencies, keep in alphabetical order -->
+            <dependency>
+                <groupId>biz.paluch.logging</groupId>
+                <artifactId>logstash-gelf</artifactId>
+                <version>${logstash-gelf.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>

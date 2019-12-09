@@ -166,3 +166,6 @@ Applications and components may use any of the following APIs for logging, and t
 * https://www.slf4j.org/[SLF4J]
 * https://commons.apache.org/proper/commons-logging/[Apache Commons Logging]
 
+== Centralized log management
+
+If you want to send your logs to a centralized tool like Graylog, Logstash or Fluentd, you can follow the link:centralized-log-management[Centralized log management guide].

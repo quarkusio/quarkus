@@ -17,12 +17,7 @@ public final class FlywayBuildTimeConfig {
     }
 
     /**
-     * Gets the {@link FlywayDataSourceBuildTimeConfig} for the given datasource name.<br>
-     * The name of the default datasource is an empty {@link String}.
-     *
-     * @param dataSourceName {@link String}
-     * @return {@link FlywayDataSourceBuildTimeConfig}
-     * @throws NullPointerException if dataSourceName is null.
+     * Gets the {@link FlywayDataSourceBuildTimeConfig} for the given datasource name.
      */
     public FlywayDataSourceBuildTimeConfig getConfigForDataSourceName(String dataSourceName) {
         return namedDataSources.getOrDefault(dataSourceName, FlywayDataSourceBuildTimeConfig.defaultConfig());

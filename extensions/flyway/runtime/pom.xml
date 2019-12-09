@@ -33,7 +33,7 @@
             <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
         </dependency>
-        
+
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

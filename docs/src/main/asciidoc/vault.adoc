@@ -10,6 +10,7 @@ include::./attributes.adoc[]
 :vault-version: 1.2.2
 :root-token: s.5VUS8pte13RqekCB2fmMT3u2
 :client-token: s.s93BVzJPzBiIGuYJHBTkG8Uw
+:extension-status: preview
 
 https://www.vaultproject.io/[HashiCorp Vault] is a multi-purpose tool aiming at protecting sensitive data, such as
 credentials, certificates, access tokens, encryption keys, ... In the context of Quarkus,
@@ -23,12 +24,7 @@ https://www.vaultproject.io/docs/secrets/kv/index.html[Vault kv secret engine] a
 Under the hood, the Quarkus Vault extension takes care of authentication when negotiating a client Vault token plus
 any transparent token or lease renewals according to ttl and max-ttl.
 
-[NOTE]
-====
-This extension is considered `preview`.
-API or configuration properties might change as the extension matures.
-Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
-====
+include::./status-include.adoc[]
 
 == Prerequisites
 

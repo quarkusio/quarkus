@@ -12,17 +12,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.flyway.FlywayDataSource;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class FlywayExtensionBaselineOnMigrateTest {
+public class FlywayExtensionBaselineOnMigrateNamedDataSourceTest {
 
     @Inject
+    @FlywayDataSource("users")
     Flyway flyway;
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("baseline-on-migrate.properties", "application.properties"));
+                    .addAsResource("baseline-on-migrate-named-datasource.properties", "application.properties"));
 
     @Test
     @DisplayName("Create history table correctly")

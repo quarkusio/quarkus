@@ -5,9 +5,9 @@ include::./attributes.adoc[]
 This is a collection of preferred term in the documentation and website.
 Please stay within these terms for consistency.
 
-* Live reload:: for our `quarkus:dev` capability
-* GraalVM:: preferred term for the VM creating native executable. No space.
-* Substrate VM:: non-preferred. Only if you want to clarify which part of GraalVM we use.
+* Live coding:: for our `quarkus:dev` capability
+* GraalVM native image:: preferred term for the VM creating native executable. No space.
+* Substrate VM:: non-preferred. Exclude.
 * Native Executable:: the executable that is compiled to native 1s and 0s
 * Docker image:: for the actual `Dockerfile` definition and when the tool chain is involved
 * Container:: when we discuss Quarkus running in... containers

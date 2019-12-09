@@ -13,7 +13,6 @@ import org.jboss.resteasy.spi.ResteasyDeployment;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.ThreadLocalHandler;
@@ -89,7 +88,7 @@ public class ResteasyStandaloneRecorder {
         contextPath = path;
     }
 
-    public Consumer<Route> start(RuntimeValue<Vertx> vertx,
+    public Consumer<Route> start(Supplier<Vertx> vertx,
             ShutdownContext shutdown,
             BeanContainer beanContainer,
             boolean isVirtual, boolean isDefaultResourcesPath,
@@ -164,10 +163,10 @@ public class ResteasyStandaloneRecorder {
         };
     }
 
-    public Handler<RoutingContext> vertxRequestHandler(RuntimeValue<Vertx> vertx,
+    public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx,
             BeanContainer beanContainer, Executor executor) {
         if (deployment != null) {
-            return new VertxRequestHandler(vertx.getValue(), beanContainer, deployment, contextPath, ALLOCATOR, executor);
+            return new VertxRequestHandler(vertx.get(), beanContainer, deployment, contextPath, ALLOCATOR, executor);
         }
         return null;
     }

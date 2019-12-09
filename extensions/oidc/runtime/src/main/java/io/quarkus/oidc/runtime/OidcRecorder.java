@@ -5,12 +5,12 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.OIDCException;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -26,8 +26,8 @@ public class OidcRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcRecorder.class);
 
-    public void setup(OidcConfig config, RuntimeValue<Vertx> vertx, BeanContainer beanContainer) {
-        final Vertx vertxValue = vertx.getValue();
+    public void setup(OidcConfig config, Supplier<Vertx> vertx, BeanContainer beanContainer) {
+        final Vertx vertxValue = vertx.get();
         Map<String, TenantConfigContext> tenantsConfig = new HashMap<>();
 
         for (Map.Entry<String, OidcTenantConfig> tenant : config.namedTenants.entrySet()) {

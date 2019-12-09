@@ -117,7 +117,7 @@ public class TokenUtils {
         byte[] content = new byte[length];
         System.arraycopy(tmp, 0, content, 0, length);
 
-        JwtClaims claims = JwtClaims.parse(new String(content));
+        JwtClaims claims = JwtClaims.parse(new String(content, StandardCharsets.UTF_8));
 
         // Change the issuer to INVALID_ISSUER for failure testing if requested
         if (invalidClaims.contains(InvalidClaims.ISSUER)) {

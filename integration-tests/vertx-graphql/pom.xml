@@ -10,8 +10,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-vertx-graphql-integration-test</artifactId>
-    <name>Quarkus - Quarkus - Vert.x GraphQL - Integration Test</name>
+    <artifactId>quarkus-integration-test-vertx-graphql</artifactId>
+    <name>Quarkus - Integration Tests - Vert.x GraphQL</name>
 
     <dependencies>
         <dependency>

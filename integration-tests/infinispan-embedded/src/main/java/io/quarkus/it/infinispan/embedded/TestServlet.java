@@ -46,7 +46,7 @@ public class TestServlet {
         log.info("Retrieving " + id + " from " + cacheName);
         Cache<byte[], byte[]> cache = emc.getCache(cacheName);
         byte[] result = cache.get(id.getBytes(StandardCharsets.UTF_8));
-        return result == null ? "null" : new String(result);
+        return result == null ? "null" : new String(result, StandardCharsets.UTF_8);
     }
 
     @Transactional
@@ -61,7 +61,7 @@ public class TestServlet {
         if (Boolean.parseBoolean(shouldFail)) {
             throw new RuntimeException("Forced Exception!");
         }
-        return result == null ? "null" : new String(result);
+        return result == null ? "null" : new String(result, StandardCharsets.UTF_8);
     }
 
     @Path("REMOVE/{cacheName}/{id}")
@@ -71,7 +71,7 @@ public class TestServlet {
         log.info("Removing " + id + " from " + cacheName);
         Cache<byte[], byte[]> cache = emc.getCache(cacheName);
         byte[] result = cache.remove(id.getBytes(StandardCharsets.UTF_8));
-        return result == null ? "null" : new String(result);
+        return result == null ? "null" : new String(result, StandardCharsets.UTF_8);
     }
 
     @Path("CLUSTER")

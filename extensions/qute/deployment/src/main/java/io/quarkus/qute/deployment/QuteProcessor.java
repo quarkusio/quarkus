@@ -6,6 +6,7 @@ import static java.util.stream.Collectors.toMap;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -164,7 +165,8 @@ public class QuteProcessor {
 
         for (TemplatePathBuildItem path : templatePaths) {
             try {
-                Template template = dummyEngine.parse(new String(Files.readAllBytes(path.getFullPath())));
+                Template template = dummyEngine
+                        .parse(new String(Files.readAllBytes(path.getFullPath()), StandardCharsets.UTF_8));
                 analysis.add(new TemplateAnalysis(template.getGeneratedId(), template.getExpressions(), path));
             } catch (IOException e) {
                 LOGGER.warn("Unable to analyze the template from path: " + path.getFullPath(), e);

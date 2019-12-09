@@ -38,9 +38,7 @@ public class FlywayExtensionCleanAndMigrateAtStartTest {
     @DisplayName("Clean and migrate at start correctly")
     public void testFlywayConfigInjection() throws SQLException {
 
-        Connection connection = defaultDataSource.getConnection();
-
-        try (Statement stat = connection.createStatement()) {
+        try (Connection connection = defaultDataSource.getConnection(); Statement stat = connection.createStatement()) {
             try (ResultSet executeQuery = stat.executeQuery("select * from fake_existing_tbl")) {
                 assertFalse(executeQuery.next(), "Table exists but is not empty");
             }

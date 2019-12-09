@@ -4,13 +4,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.concurrent.CompletionStage;
 
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
+
+import org.jboss.resteasy.spi.AsyncMessageBodyWriter;
+import org.jboss.resteasy.spi.AsyncOutputStream;
 
 import io.vertx.core.json.JsonObject;
 
@@ -21,7 +24,7 @@ import io.vertx.core.json.JsonObject;
  */
 @Provider
 @Produces(MediaType.APPLICATION_JSON)
-public class JsonObjectWriter implements MessageBodyWriter<JsonObject> {
+public class JsonObjectWriter implements AsyncMessageBodyWriter<JsonObject> {
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -34,5 +37,14 @@ public class JsonObjectWriter implements MessageBodyWriter<JsonObject> {
         entityStream.write(jsonObject.toBuffer().getBytes());
         entityStream.flush();
         entityStream.close();
+    }
+
+    @Override
+    public CompletionStage<Void> asyncWriteTo(JsonObject jsonObject, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType,
+            MultivaluedMap<String, Object> httpHeaders, AsyncOutputStream entityStream) {
+        CompletionStage<Void> a = entityStream.asyncWrite(jsonObject.toBuffer().getBytes());
+        CompletionStage<Void> b = entityStream.asyncFlush();
+        return a.thenCompose(v -> b);
     }
 }

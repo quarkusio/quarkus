@@ -7,6 +7,8 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -18,6 +20,8 @@ import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.core.AbstractAsynchronousResponse;
 import org.jboss.resteasy.core.AbstractExecutionContext;
+import org.jboss.resteasy.core.ResteasyContext;
+import org.jboss.resteasy.core.ResteasyContext.CloseableContext;
 import org.jboss.resteasy.core.SynchronousDispatcher;
 import org.jboss.resteasy.plugins.server.BaseHttpRequest;
 import org.jboss.resteasy.specimpl.ResteasyHttpHeaders;
@@ -25,6 +29,7 @@ import org.jboss.resteasy.specimpl.ResteasyUriInfo;
 import org.jboss.resteasy.spi.NotImplementedYetException;
 import org.jboss.resteasy.spi.ResteasyAsynchronousContext;
 import org.jboss.resteasy.spi.ResteasyAsynchronousResponse;
+import org.jboss.resteasy.spi.RunnableWithException;
 
 import io.quarkus.arc.ManagedContext;
 import io.vertx.core.Context;
@@ -218,6 +223,60 @@ public final class VertxHttpRequest extends BaseHttpRequest {
         public void complete() {
             if (wasSuspended && asyncResponse != null)
                 asyncResponse.complete();
+        }
+
+        @Override
+        public CompletionStage<Void> executeAsyncIo(CompletionStage<Void> f) {
+            // check if this CF is already resolved
+            CompletableFuture<Void> ret = f.toCompletableFuture();
+            // if it's not resolved, we may need to suspend
+            if (!ret.isDone() && !isSuspended()) {
+                suspend();
+            }
+            return ret;
+        }
+
+        @Override
+        public CompletionStage<Void> executeBlockingIo(RunnableWithException f, boolean hasInterceptors) {
+            if (!Context.isOnEventLoopThread()) {
+                // we're blocking
+                try {
+                    f.run();
+                } catch (Exception e) {
+                    CompletableFuture<Void> ret = new CompletableFuture<>();
+                    ret.completeExceptionally(e);
+                    return ret;
+                }
+                return CompletableFuture.completedFuture(null);
+            } else if (!hasInterceptors) {
+                Map<Class<?>, Object> context = ResteasyContext.getContextDataMap();
+                // turn any sync request into async
+                if (!isSuspended()) {
+                    suspend();
+                }
+                CompletableFuture<Void> ret = new CompletableFuture<>();
+                this.request.context.executeBlocking(future -> {
+                    try (CloseableContext newContext = ResteasyContext.addCloseableContextDataLevel(context)) {
+                        f.run();
+                        future.complete();
+                    } catch (RuntimeException e) {
+                        throw e;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, res -> {
+                    if (res.succeeded())
+                        ret.complete(null);
+                    else
+                        ret.completeExceptionally(res.cause());
+                });
+                return ret;
+            } else {
+                CompletableFuture<Void> ret = new CompletableFuture<>();
+                ret.completeExceptionally(
+                        new RuntimeException("Cannot use blocking IO with interceptors when we're on the IO thread"));
+                return ret;
+            }
         }
 
         /**

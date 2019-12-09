@@ -36,6 +36,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.flyway.runtime.FlywayBuildConfig;
 import io.quarkus.flyway.runtime.FlywayProducer;
@@ -90,12 +91,13 @@ class FlywayProcessor {
      */
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configureRuntimeProperties(FlywayRecorder recorder,
+    ServiceStartBuildItem configureRuntimeProperties(FlywayRecorder recorder,
             FlywayRuntimeConfig flywayRuntimeConfig,
             BeanContainerBuildItem beanContainer,
             DataSourceInitializedBuildItem dataSourceInitializedBuildItem) {
         recorder.configureFlywayProperties(flywayRuntimeConfig, beanContainer.getValue());
         recorder.doStartActions(flywayRuntimeConfig, beanContainer.getValue());
+        return new ServiceStartBuildItem("flyway");
     }
 
     private void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resource,

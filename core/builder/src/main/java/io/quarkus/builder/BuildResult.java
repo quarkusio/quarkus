@@ -42,7 +42,7 @@ public final class BuildResult {
      * @throws ClassCastException if the cast failed
      */
     public <T extends SimpleBuildItem> T consume(Class<T> type) {
-        final ItemId itemId = new ItemId(type, null);
+        final ItemId itemId = new ItemId(type);
         final Object item = simpleItems.get(itemId);
         if (item == null) {
             throw Messages.msg.undeclaredItem(itemId);
@@ -58,7 +58,7 @@ public final class BuildResult {
      * @throws ClassCastException if the cast failed
      */
     public <T extends SimpleBuildItem> T consumeOptional(Class<T> type) {
-        final ItemId itemId = new ItemId(type, null);
+        final ItemId itemId = new ItemId(type);
         final Object item = simpleItems.get(itemId);
         if (item == null) {
             return null;
@@ -74,7 +74,7 @@ public final class BuildResult {
      * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}
      */
     public <T extends MultiBuildItem> List<T> consumeMulti(Class<T> type) {
-        final ItemId itemId = new ItemId(type, null);
+        final ItemId itemId = new ItemId(type);
         @SuppressWarnings("unchecked")
         final List<T> items = (List<T>) (List) multiItems.get(itemId);
         if (items == null) {

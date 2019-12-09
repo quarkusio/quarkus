@@ -10,8 +10,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-logging-gelf-integration-test</artifactId>
-    <name>Quarkus - Logging - GELF - Integration Test</name>
+    <artifactId>quarkus-integration-test-logging-gelf</artifactId>
+    <name>Quarkus - Integration Tests - Logging - GELF</name>
 
     <dependencies>
         <dependency>

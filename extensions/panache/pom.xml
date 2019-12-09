@@ -17,6 +17,7 @@
         <module>panache-common</module>
         <module>panache-mock</module>
         <module>hibernate-orm-panache</module>
+        <module>hibernate-orm-panache-kotlin</module>
         <module>mongodb-panache</module>
         <module>panacheql</module>
     </modules>

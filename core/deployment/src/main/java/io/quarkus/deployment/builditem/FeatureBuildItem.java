@@ -22,6 +22,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String LIQUIBASE = "liquibase";
     public static final String HIBERNATE_ORM = "hibernate-orm";
     public static final String HIBERNATE_ORM_PANACHE = "hibernate-orm-panache";
+    public static final String HIBERNATE_ORM_PANACHE_KOTLIN = "hibernate-orm-panache-kotlin";
     public static final String HIBERNATE_VALIDATOR = "hibernate-validator";
     public static final String HIBERNATE_SEARCH_ELASTICSEARCH = "hibernate-search-elasticsearch";
     public static final String INFINISPAN_CLIENT = "infinispan-client";

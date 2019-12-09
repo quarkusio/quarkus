@@ -3,12 +3,12 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Central log management (Graylog, Logstash, Fluentd)
+= Quarkus - Centralized log management (Graylog, Logstash, Fluentd)
 
 include::./attributes.adoc[]
 :es-version: 6.8.2
 
-This guide explains how you can send your logs to a central logging system like Graylog, Logstash (inside the Elastic Stack or ELK - Elasticsearch, Logstash, Kibana) or
+This guide explains how you can send your logs to a centralized log management system like Graylog, Logstash (inside the Elastic Stack or ELK - Elasticsearch, Logstash, Kibana) or
 Fluentd (inside EFK - Elasticsearch, Fluentd, Kibana).
 
 There are a lot of different ways to centralize your logs (if you are using Kubernetes, the simplest way is to log to the console and ask you cluster administrator to integrate a central log manager inside your cluster).
@@ -23,9 +23,9 @@ The following examples will all be based on the same example application that yo
 
 - Create an application with the `quarkus-logging-gelf` extension. You can use the following Maven command to create it:
 
-[source,shell]
+[source,shell,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:1.0.0.Final:create \
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=gelf-logging \
     -DclassName="org.acme.quickstart.GelfLoggingResource" \
@@ -33,7 +33,7 @@ mvn io.quarkus:quarkus-maven-plugin:1.0.0.Final:create \
     -Dextensions="logging-gelf"
 ----
 
-- For demonstration purpose, we create an endpoint that does nothing but log a sentence. You don't need to do this inside your application.
+- For demonstration purposes, we create an endpoint that does nothing but log a sentence. You don't need to do this inside your application.
 
 [source,java]
 ----
@@ -395,4 +395,4 @@ Configuration is done through the usual `application.properties` file.
 include::{generated-dir}/config/quarkus-logging-gelf.adoc[opts=optional, leveloffset=+1]
 
 This extension uses the `logstash-gelf` library that allow more configuration options via system properties,
-you can access its documentation here: https://logging.paluch.biz/
+you can access its documentation here: https://logging.paluch.biz/ .

@@ -106,8 +106,6 @@ The presence of this extension will, by default, replace the output format confi
 This means that the format string and the color settings (if any) will be ignored.  The other console configuration items
 (including those controlling asynchronous logging and the log level) will continue to be applied.
 
-
-
 ===== Configuration
 
 The JSON logging extension can be configured in various ways.  The following properties are supported:
@@ -168,6 +166,6 @@ Applications and components may use any of the following APIs for logging, and t
 * https://www.slf4j.org/[SLF4J]
 * https://commons.apache.org/proper/commons-logging/[Apache Commons Logging]
 
-== Central log management
+== Centralized log management
 
-If you want to send your logs to a central management tool like Graylog, Logstash or Fluentd; you can follow the link:central-logging.html[Central log management guide].
+If you want to send your logs to a centralized tool like Graylog, Logstash or Fluentd, you can follow the link:centralized-log-management[Centralized log management guide].

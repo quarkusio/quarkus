@@ -59,7 +59,7 @@ public class ProtectedResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public List<Permission> bodyClaim(Map<String, Object> body, @Context HttpServerRequest request) {
-        if (body == null && !body.containsKey("from-body")) {
+        if (body == null || !body.containsKey("from-body")) {
             return Collections.emptyList();
         }
         return identity.getAttribute("permissions");

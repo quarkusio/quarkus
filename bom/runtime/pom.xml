@@ -127,7 +127,7 @@
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <axle-client.version>0.0.10</axle-client.version>
         <kafka-clients.version>2.2.1</kafka-clients.version>
-        <kafka2.version>2.2.1</kafka2.version>
+        <kafka2.version>2.3.1</kafka2.version>
         <debezium.version>0.9.5.Final</debezium.version>
         <zookeeper.version>3.4.14</zookeeper.version>
         <scala.version>2.12.8</scala.version>

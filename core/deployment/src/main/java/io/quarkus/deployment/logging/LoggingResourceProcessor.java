@@ -3,6 +3,7 @@ package io.quarkus.deployment.logging;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Handler;
 import java.util.stream.Collectors;
 
@@ -12,6 +13,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.LogConsoleFormatBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
@@ -79,11 +81,22 @@ public final class LoggingResourceProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupLoggingRuntimeInit(LoggingSetupRecorder recorder, LogConfig log, List<LogHandlerBuildItem> handlers,
-            List<LogConsoleFormatBuildItem> consoleFormatItems) {
+            List<LogConsoleFormatBuildItem> consoleFormatItems,
+            Optional<ConsoleFormatterBannerBuildItem> possibleBannerBuildItem) {
         final List<RuntimeValue<Optional<Handler>>> list = handlers.stream().map(LogHandlerBuildItem::getHandlerValue)
                 .collect(Collectors.toList());
+
+        ConsoleFormatterBannerBuildItem bannerBuildItem = null;
+        RuntimeValue<Optional<Supplier<String>>> possibleSupplier = null;
+        if (possibleBannerBuildItem.isPresent()) {
+            bannerBuildItem = possibleBannerBuildItem.get();
+        }
+        if (bannerBuildItem != null) {
+            possibleSupplier = bannerBuildItem.getBannerSupplier();
+        }
         recorder.initializeLogging(log, list,
-                consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()));
+                consoleFormatItems.stream().map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList()),
+                possibleSupplier);
     }
 
     @BuildStep

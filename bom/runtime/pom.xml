@@ -2683,6 +2683,13 @@
                 <artifactId>qute-rxjava</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+            <!-- Quarkus Banner -->
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-banner</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

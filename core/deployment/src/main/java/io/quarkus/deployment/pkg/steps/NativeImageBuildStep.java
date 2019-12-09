@@ -203,6 +203,11 @@ public class NativeImageBuildStep {
             command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
             command.add("-jar");
             command.add(runnerJarName);
+            //dynamic proxy generation is not thread safe
+            //should be fixed in 19.3.1
+            //but we need to add this option back to prevent intermittent failures
+            //https://github.com/oracle/graal/issues/1927
+            command.add("-J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1");
             if (nativeConfig.enableFallbackImages) {
                 command.add("-H:FallbackThreshold=5");
             } else {

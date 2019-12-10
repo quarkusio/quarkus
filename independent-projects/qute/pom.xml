@@ -13,6 +13,8 @@
     <artifactId>qute-parent</artifactId>
     <packaging>pom</packaging>
     <version>999-SNAPSHOT</version>
+
+    <name>Qute - Parent</name>
     
     <licenses>
         <license>

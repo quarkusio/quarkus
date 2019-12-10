@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>qute-core</artifactId>
+    <name>Qute - Core</name>
 
     <dependencies>
         <dependency>

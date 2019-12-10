@@ -39,6 +39,7 @@
         <version.reactivestreams>1.0.2</version.reactivestreams>
         <version.rxjava2>2.2.10</version.rxjava2>
         <version.smallrye-reactive-streams-operators>1.0.6</version.smallrye-reactive-streams-operators>
+        <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
     </properties>
 
     <modules>
@@ -233,7 +234,7 @@
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>${nexus-staging-maven-plugin.version}</version>
+                        <version>${version.nexus-staging-maven-plugin}</version>
                         <extensions>true</extensions>
                         <configuration>
                             <nexusUrl>https://oss.sonatype.org/</nexusUrl>

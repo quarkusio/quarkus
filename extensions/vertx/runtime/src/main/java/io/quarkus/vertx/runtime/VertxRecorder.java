@@ -16,9 +16,12 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.ConsumeEvent;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.eventbus.MessageConsumer;
 
@@ -32,8 +35,8 @@ public class VertxRecorder {
 
     public void configureVertx(Supplier<Vertx> vertx, Map<String, ConsumeEvent> messageConsumerConfigurations,
             LaunchMode launchMode, ShutdownContext shutdown, Map<Class<?>, Class<?>> codecByClass) {
-        this.vertx = vertx.get();
-        this.messageConsumers = new ArrayList<>();
+        VertxRecorder.vertx = vertx.get();
+        VertxRecorder.messageConsumers = new ArrayList<>();
 
         registerMessageConsumers(messageConsumerConfigurations);
         registerCodecs(codecByClass);
@@ -85,16 +88,23 @@ public class VertxRecorder {
                 } else {
                     consumer = eventBus.consumer(address);
                 }
-                consumer.handler(m -> {
-                    try {
-                        invoker.invoke(m);
-                    } catch (Throwable e) {
-                        m.fail(ConsumeEvent.FAILURE_CODE, e.getMessage());
+                consumer.handler(new Handler<Message<Object>>() {
+                    @Override
+                    public void handle(Message<Object> m) {
+                        try {
+                            invoker.invoke(m);
+                        } catch (Throwable e) {
+                            m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                        }
                     }
                 });
-                consumer.completionHandler(ar -> {
-                    if (ar.succeeded()) {
-                        latch.countDown();
+                consumer.completionHandler(new Handler<AsyncResult<Void>>() {
+
+                    @Override
+                    public void handle(AsyncResult<Void> ar) {
+                        if (ar.succeeded()) {
+                            latch.countDown();
+                        }
                     }
                 });
                 messageConsumers.add(consumer);

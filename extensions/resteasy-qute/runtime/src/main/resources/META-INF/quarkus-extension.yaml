@@ -1,10 +1,11 @@
 ---
-name: "Qute Templating"
+name: "RESTEasy Qute"
 metadata:
   keywords:
   - "templating"
   - "templates"
+  - "resteasy"
   guide: "https://quarkus.io/guides/qute"
   categories:
-  - "miscellaneous"
+  - "web"
   status: "experimental"

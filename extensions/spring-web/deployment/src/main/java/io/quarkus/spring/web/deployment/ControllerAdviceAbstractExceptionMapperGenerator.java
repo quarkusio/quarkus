@@ -2,6 +2,7 @@ package io.quarkus.spring.web.deployment;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +10,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -27,12 +29,19 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.spring.web.runtime.ResponseContentTypeResolver;
 import io.quarkus.spring.web.runtime.ResponseEntityConverter;
 
 class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractExceptionMapperGenerator {
 
     private static final DotName RESPONSE_ENTITY = DotName.createSimple("org.springframework.http.ResponseEntity");
-    private static final DotName STRING = DotName.createSimple(String.class.getName());
+
+    // Preferred content types order for String or primitive type responses
+    private static final List<String> TEXT_MEDIA_TYPES = Arrays.asList(
+            MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_XML);
+    // Preferred content types order for object type responses
+    private static final List<String> OBJECT_MEDIA_TYPES = Arrays.asList(
+            MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_XML, MediaType.TEXT_PLAIN);
 
     private final MethodInfo controllerAdviceMethod;
     private final TypesUtil typesUtil;
@@ -41,6 +50,8 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
     private final String declaringClassName;
 
     private final Map<Type, FieldDescriptor> parameterTypeToField = new HashMap<>();
+
+    private FieldDescriptor httpHeadersField;
 
     ControllerAdviceAbstractExceptionMapperGenerator(MethodInfo controllerAdviceMethod, DotName exceptionDotName,
             ClassOutput classOutput, TypesUtil typesUtil) {
@@ -104,89 +115,87 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
                     "Parameter type " + parameterTypes.get(notAllowedParameterIndex).name() + " is not supported for method"
                             + controllerAdviceMethod.name() + " of class" + controllerAdviceMethod.declaringClass().name());
         }
+
+        createHttpHeadersField(cc);
+    }
+
+    private void createHttpHeadersField(ClassCreator classCreator) {
+        FieldCreator httpHeadersFieldCreator = classCreator
+                .getFieldCreator("httpHeaders", HttpHeaders.class)
+                .setModifiers(Modifier.PRIVATE);
+        httpHeadersFieldCreator.addAnnotation(Context.class);
+        httpHeadersField = httpHeadersFieldCreator.getFieldDescriptor();
     }
 
     @Override
     void generateMethodBody(MethodCreator toResponse) {
-        if (returnType.kind() == Type.Kind.VOID) {
-            AnnotationInstance responseStatusInstance = controllerAdviceMethod.annotation(RESPONSE_STATUS);
-
-            // invoke the @ExceptionHandler method
-            exceptionHandlerMethodResponse(toResponse);
-
-            // build a JAX-RS response
-            ResultHandle status = toResponse
-                    .load(responseStatusInstance != null ? getHttpStatusFromAnnotation(responseStatusInstance)
-                            : Response.Status.NO_CONTENT.getStatusCode());
-            ResultHandle responseBuilder = toResponse.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(Response.class, "status", Response.ResponseBuilder.class, int.class),
-                    status);
-
-            ResultHandle httpResponseType = toResponse.load("text/plain");
-            toResponse.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "type", Response.ResponseBuilder.class,
-                            String.class),
-                    responseBuilder, httpResponseType);
-
-            ResultHandle response = toResponse.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "build", Response.class),
-                    responseBuilder);
-            toResponse.returnValue(response);
+        if (isVoidType(returnType)) {
+            generateVoidExceptionHandler(toResponse);
+        } else if (isEntityType(returnType)) {
+            generateResponseEntityExceptionHandler(toResponse);
         } else {
-            ResultHandle exceptionHandlerMethodResponse = exceptionHandlerMethodResponse(toResponse);
-
-            ResultHandle response;
-            if (RESPONSE_ENTITY.equals(returnType.name())) {
-                /*
-                 * By default we will send JSON back unless the ResponseEntity has a String body
-                 */
-                boolean addDefaultJsonContentType = true;
-                if (returnType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-                    if (returnType.asParameterizedType().arguments().size() == 1) {
-                        Type responseEntityParameterType = returnType.asParameterizedType().arguments().get(0);
-                        if (STRING.equals(responseEntityParameterType.name())) {
-                            addDefaultJsonContentType = false;
-                        }
-                    }
-                }
-
-                // convert Spring's ResponseEntity to JAX-RS Response
-                response = toResponse.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(ResponseEntityConverter.class.getName(), "toResponse",
-                                Response.class.getName(), RESPONSE_ENTITY.toString(), boolean.class.getName()),
-                        exceptionHandlerMethodResponse, toResponse.load(addDefaultJsonContentType));
-            } else {
-                ResultHandle status = toResponse.load(getStatus(controllerAdviceMethod.annotation(RESPONSE_STATUS)));
-
-                ResultHandle responseBuilder = toResponse.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(Response.class, "status", Response.ResponseBuilder.class, int.class),
-                        status);
-                /*
-                 * By default we will send JSON back unless the ResponseEntity has a String body
-                 */
-                if (!STRING.equals(returnType.name())) {
-                    toResponse.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "type", Response.ResponseBuilder.class,
-                                    String.class),
-                            responseBuilder, toResponse.load(MediaType.APPLICATION_JSON));
-                }
-
-                toResponse.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "entity", Response.ResponseBuilder.class,
-                                Object.class),
-                        responseBuilder, exceptionHandlerMethodResponse);
-
-                response = toResponse.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "build", Response.class),
-                        responseBuilder);
-            }
-
-            toResponse.returnValue(response);
+            generateGenericResponseExceptionHandler(toResponse);
         }
     }
 
-    private ResultHandle exceptionHandlerMethodResponse(MethodCreator toResponse) {
-        String returnTypeClassName = returnType.kind() == Type.Kind.VOID ? void.class.getName() : returnType.name().toString();
+    private void generateVoidExceptionHandler(MethodCreator methodCreator) {
+        invokeExceptionHandlerMethod(methodCreator);
+        int status = getAnnotationStatusOrDefault(Response.Status.NO_CONTENT.getStatusCode());
+        ResultHandle result = new ResponseBuilder(methodCreator, status)
+                .withType(getResponseContentType(methodCreator, TEXT_MEDIA_TYPES))
+                .build();
+        methodCreator.returnValue(result);
+    }
+
+    private void generateResponseEntityExceptionHandler(MethodCreator methodCreator) {
+        ResultHandle result = methodCreator.invokeStaticMethod(
+                MethodDescriptor.ofMethod(ResponseEntityConverter.class.getName(), "toResponse",
+                        Response.class.getName(), RESPONSE_ENTITY.toString(), MediaType.class.getName()),
+                invokeExceptionHandlerMethod(methodCreator),
+                getResponseContentType(methodCreator, getSupportedMediaTypesForType(getResponseEntityType())));
+
+        methodCreator.returnValue(result);
+    }
+
+    private Type getResponseEntityType() {
+        if (isParameterizedType(returnType) && returnType.asParameterizedType().arguments().size() == 1) {
+            return returnType.asParameterizedType().arguments().get(0);
+        }
+        return returnType;
+    }
+
+    private void generateGenericResponseExceptionHandler(MethodCreator methodCreator) {
+        int status = getAnnotationStatusOrDefault(Response.Status.OK.getStatusCode());
+        ResultHandle result = new ResponseBuilder(methodCreator, status)
+                .withEntity(invokeExceptionHandlerMethod(methodCreator))
+                .withType(getResponseContentType(methodCreator, getSupportedMediaTypesForType(returnType)))
+                .build();
+
+        methodCreator.returnValue(result);
+    }
+
+    private List<String> getSupportedMediaTypesForType(Type type) {
+        if (isStringType(type) || isPrimitiveType(type)) {
+            return TEXT_MEDIA_TYPES;
+        }
+
+        return OBJECT_MEDIA_TYPES;
+    }
+
+    private ResultHandle getResponseContentType(MethodCreator methodCreator, List<String> supportedMediaTypeStrings) {
+        ResultHandle[] supportedMediaTypes = supportedMediaTypeStrings.stream()
+                .map(methodCreator::load)
+                .toArray(ResultHandle[]::new);
+
+        return methodCreator.invokeStaticMethod(
+                MethodDescriptor.ofMethod(ResponseContentTypeResolver.class, "resolve", MediaType.class,
+                        HttpHeaders.class, String[].class),
+                methodCreator.readInstanceField(httpHeadersField, methodCreator.getThis()),
+                methodCreator.marshalAsArray(String.class, supportedMediaTypes));
+    }
+
+    private ResultHandle invokeExceptionHandlerMethod(MethodCreator toResponse) {
+        String returnTypeClassName = isVoidType(returnType) ? void.class.getName() : returnType.name().toString();
 
         if (parameterTypes.isEmpty()) {
             return toResponse.invokeVirtualMethod(
@@ -228,10 +237,32 @@ class ControllerAdviceAbstractExceptionMapperGenerator extends AbstractException
         return toResponse.checkCast(bean, controllerAdviceMethod.declaringClass().name().toString());
     }
 
-    private int getStatus(AnnotationInstance instance) {
-        if (instance == null) {
-            return 200;
+    private int getAnnotationStatusOrDefault(int defaultValue) {
+        AnnotationInstance annotation = controllerAdviceMethod.annotation(RESPONSE_STATUS);
+        if (annotation == null) {
+            return defaultValue;
         }
-        return getHttpStatusFromAnnotation(instance);
+
+        return getHttpStatusFromAnnotation(annotation);
+    }
+
+    private boolean isVoidType(Type type) {
+        return Type.Kind.VOID.equals(type.kind());
+    }
+
+    private boolean isPrimitiveType(Type type) {
+        return Type.Kind.PRIMITIVE.equals(type.kind());
+    }
+
+    private boolean isStringType(Type type) {
+        return DotName.createSimple(String.class.getName()).equals(type.name());
+    }
+
+    private boolean isEntityType(Type type) {
+        return RESPONSE_ENTITY.equals(type.name());
+    }
+
+    private boolean isParameterizedType(Type type) {
+        return Type.Kind.PARAMETERIZED_TYPE.equals(type.kind());
     }
 }

@@ -168,4 +168,19 @@ public class MovieResourceTest {
                 .statusCode(200)
                 .body(containsString("false /"));
     }
+
+    @Test
+    void testCustomFind() {
+        when().get("/movie/customFind/page/1/0").then()
+                .statusCode(200)
+                .body(is("true / 1"));
+
+        when().get("/movie/customFind/page/1/1").then()
+                .statusCode(200)
+                .body(is("true / 1"));
+
+        when().get("/movie/customFind/page/10/0").then()
+                .statusCode(200)
+                .body(containsString("false /"));
+    }
 }

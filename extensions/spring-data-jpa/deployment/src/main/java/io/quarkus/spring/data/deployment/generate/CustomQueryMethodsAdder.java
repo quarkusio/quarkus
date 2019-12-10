@@ -12,6 +12,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
@@ -21,14 +22,23 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import io.quarkus.hibernate.orm.panache.runtime.AdditionalJpaOperations;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.spring.data.deployment.DotNames;
+import io.quarkus.spring.data.deployment.MethodNameParser;
 import io.quarkus.spring.data.runtime.TypesConverter;
 
 public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
     private static final String QUERY_VALUE_FIELD = "value";
+    private static final String QUERY_COUNT_FIELD = "countQuery";
+
+    private final IndexView index;
+
+    public CustomQueryMethodsAdder(IndexView index) {
+        this.index = index;
+    }
 
     public void add(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor, ClassInfo repositoryClassInfo,
             ClassInfo entityClassInfo) {
@@ -40,7 +50,8 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
             String methodName = method.name();
             String repositoryName = repositoryClassInfo.name().toString();
-            String queryString = ensureOnlyValue(queryInstance, methodName, repositoryName);
+            verifyQueryAnnotation(queryInstance, methodName, repositoryName);
+            String queryString = queryInstance.value(QUERY_VALUE_FIELD).asString().trim();
             if (queryString.contains("#{")) {
                 throw new IllegalArgumentException("spEL expressions are not currently supported. " +
                         "Offending method is " + methodName + " of Repository " + repositoryName);
@@ -190,25 +201,46 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                                         "a delete or update query");
                     }
                 } else {
+                    // by default just hope that adding select count(*) will do
+                    String countQueryString = "SELECT COUNT(*) " + queryString;
+                    if (queryInstance.value(QUERY_COUNT_FIELD) != null) { // if a countQuery is specified, use it
+                        countQueryString = queryInstance.value(QUERY_COUNT_FIELD).asString().trim();
+                    } else {
+                        // otherwise try and derive the select query from the method name and use that to construct the count query
+                        MethodNameParser methodNameParser = new MethodNameParser(repositoryClassInfo, index);
+                        try {
+                            MethodNameParser.Result parseResult = methodNameParser.parse(method);
+                            if (MethodNameParser.QueryType.SELECT == parseResult.getQueryType()) {
+                                countQueryString = "SELECT COUNT (*) " + parseResult.getQuery();
+                            }
+                        } catch (Exception ignored) {
+                            // we just ignore the exception if the method does not match one of the supported styles
+                        }
+                    }
+
                     ResultHandle panacheQuery;
                     if (useNamedParams) {
                         ResultHandle parameters = generateParametersObject(namedParameterToIndex, methodCreator);
 
                         // call JpaOperations.find()
                         panacheQuery = methodCreator.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(JpaOperations.class, "find", PanacheQuery.class,
-                                        Class.class, String.class, io.quarkus.panache.common.Sort.class, Parameters.class),
+                                MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "find", PanacheQuery.class,
+                                        Class.class, String.class, String.class, io.quarkus.panache.common.Sort.class,
+                                        Parameters.class),
                                 methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
-                                methodCreator.load(queryString), generateSort(sortParameterIndex, methodCreator), parameters);
+                                methodCreator.load(queryString), methodCreator.load(countQueryString),
+                                generateSort(sortParameterIndex, methodCreator), parameters);
                     } else {
                         ResultHandle paramsArray = generateParamsArray(queryParameterIndexes, methodCreator);
 
                         // call JpaOperations.find()
                         panacheQuery = methodCreator.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(JpaOperations.class, "find", PanacheQuery.class,
-                                        Class.class, String.class, io.quarkus.panache.common.Sort.class, Object[].class),
+                                MethodDescriptor.ofMethod(AdditionalJpaOperations.class, "find", PanacheQuery.class,
+                                        Class.class, String.class, String.class, io.quarkus.panache.common.Sort.class,
+                                        Object[].class),
                                 methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
-                                methodCreator.load(queryString), generateSort(sortParameterIndex, methodCreator), paramsArray);
+                                methodCreator.load(queryString), methodCreator.load(countQueryString),
+                                generateSort(sortParameterIndex, methodCreator), paramsArray);
                     }
 
                     generateFindQueryResultHandling(methodCreator, panacheQuery, pageableParameterIndex, repositoryClassInfo,
@@ -219,10 +251,10 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
     }
 
     // we currently only support the 'value' attribute of @Query
-    private String ensureOnlyValue(AnnotationInstance queryInstance, String methodName, String repositoryName) {
+    private void verifyQueryAnnotation(AnnotationInstance queryInstance, String methodName, String repositoryName) {
         List<AnnotationValue> values = queryInstance.values();
         for (AnnotationValue value : values) {
-            if (!QUERY_VALUE_FIELD.equals(value.name())) {
+            if (!QUERY_VALUE_FIELD.equals(value.name()) && !QUERY_COUNT_FIELD.equals(value.name())) {
                 throw new IllegalArgumentException("Attribute " + value.name() + " of @Query is currently not supported. " +
                         "Offending method is " + methodName + " of Repository " + repositoryName);
             }
@@ -231,8 +263,6 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
             throw new IllegalArgumentException("'value' attribute must be specified on @Query annotation of method. " +
                     "Offending method is " + methodName + " of Repository " + repositoryName);
         }
-
-        return queryInstance.value(QUERY_VALUE_FIELD).asString().trim();
     }
 
     private ResultHandle generateParamsArray(List<Integer> queryParameterIndexes, MethodCreator methodCreator) {

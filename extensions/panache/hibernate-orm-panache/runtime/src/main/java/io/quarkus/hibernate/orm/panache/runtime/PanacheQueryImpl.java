@@ -116,7 +116,7 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
             int orderByIndex = lcQuery.lastIndexOf(" order by ");
             if (orderByIndex != -1)
                 query = query.substring(0, orderByIndex);
-            Query countQuery = em.createQuery("SELECT COUNT(*) " + query);
+            Query countQuery = em.createQuery(countQuery());
             if (paramsArrayOrMap instanceof Map)
                 JpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
             else
@@ -124,6 +124,10 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
             count = (Long) countQuery.getSingleResult();
         }
         return count;
+    }
+
+    protected String countQuery() {
+        return "SELECT COUNT(*) " + query;
     }
 
     @Override

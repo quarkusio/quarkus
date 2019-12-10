@@ -3,6 +3,7 @@ package io.quarkus.it.spring.data.jpa;
 import java.util.Iterator;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
@@ -46,6 +47,9 @@ public interface MovieRepository extends CrudRepository<Movie, Long> {
     @Query("update Movie set rating = null where title =?1")
     void setRatingToNullForTitle(String title);
 
-    @Query("from Movie order by length(title)")
-    Slice<Movie> orderByTitleLength(Pageable pageable);
+    @Query("from Movie m where m.duration > ?1")
+    Slice<Movie> findByDurationGreaterThan(Integer duration, Pageable pageable);
+
+    @Query(value = "select m from Movie m", countQuery = "select count(m) from Movie m")
+    Page<Movie> customFind(Pageable pageable);
 }

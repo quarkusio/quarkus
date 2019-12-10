@@ -101,11 +101,11 @@ public class JpaOperations {
         return query;
     }
 
-    private static int paramCount(Object[] params) {
+    static int paramCount(Object[] params) {
         return params != null ? params.length : 0;
     }
 
-    private static int paramCount(Map<String, Object> params) {
+    static int paramCount(Map<String, Object> params) {
         return params != null ? params.size() : 0;
     }
 
@@ -114,7 +114,7 @@ public class JpaOperations {
         return entityClass.getName();
     }
 
-    private static String createFindQuery(Class<?> entityClass, String query, int paramCount) {
+    static String createFindQuery(Class<?> entityClass, String query, int paramCount) {
         if (query == null)
             return "FROM " + getEntityName(entityClass);
 

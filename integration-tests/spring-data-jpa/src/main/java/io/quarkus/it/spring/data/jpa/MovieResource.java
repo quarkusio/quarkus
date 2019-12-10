@@ -9,6 +9,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
@@ -46,8 +47,17 @@ public class MovieResource {
     @GET
     @Path("/title/titleLengthOrder/page/{size}/{num}")
     public String orderByTitleLengthSlice(@PathParam("size") int pageSize, @PathParam("num") int pageNum) {
-        Slice<Movie> slice = movieRepository.orderByTitleLength(PageRequest.of(pageNum, pageSize));
+        Slice<Movie> slice = movieRepository.findByDurationGreaterThan(1,
+                PageRequest.of(pageNum, pageSize, Sort.Direction.ASC, "title"));
         return slice.hasNext() + " / " + slice.getNumberOfElements();
+    }
+
+    @GET
+    @Path("/customFind/page/{size}/{num}")
+    public String customFind(@PathParam("size") int pageSize, @PathParam("num") int pageNum) {
+        Page<Movie> page = movieRepository.customFind(
+                PageRequest.of(pageNum, pageSize, Sort.Direction.ASC, "title"));
+        return page.hasNext() + " / " + page.getNumberOfElements();
     }
 
     @GET

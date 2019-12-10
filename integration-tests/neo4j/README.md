@@ -2,21 +2,20 @@
 
 ## Running the tests
 
-By default, the tests of this module are disabled.
-
 To run the tests in a standard JVM with Neo4j started as a Docker container, you can run the following command:
 
 ```
-mvn clean install -Dtest-neo4j -Ddocker
+mvn clean install
 ```
 
 To also test as a native image, add `-Dnative`:
 
 ```
-mvn clean install -Dtest-neo4j -Ddocker -Dnative
+mvn clean install -Dnative
 ```
 
 Alternatively you can connect to your own Neo4j instance or cluster.
+Disable Neo4j started as a Docker container with `-Dno-docker`.
 Reconfigure the connection URL with `-Dneo4j.uri=bolt+routing://yourcluster:7687`;
 you'll probably want to change the authentication password too: `-Dneo4j.password=NotS0Secret`.
 

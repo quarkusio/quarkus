@@ -362,7 +362,7 @@ public class QuarkusDev extends QuarkusTask {
             try {
                 ExecutorService es = Executors.newSingleThreadExecutor();
                 es.submit(() -> copyOutputToConsole(p.getInputStream()));
-
+                es.shutdown();
                 p.waitFor();
             } catch (Exception e) {
                 p.destroy();

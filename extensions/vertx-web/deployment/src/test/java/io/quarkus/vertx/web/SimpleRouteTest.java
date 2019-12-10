@@ -1,5 +1,7 @@
 package io.quarkus.vertx.web;
 
+import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.when;
 import static io.vertx.core.http.HttpMethod.DELETE;
 import static io.vertx.core.http.HttpMethod.GET;
 import static org.hamcrest.Matchers.is;
@@ -7,6 +9,7 @@ import static org.hamcrest.Matchers.is;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import javax.enterprise.context.RequestScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
@@ -18,7 +21,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.ConsumeEvent;
-import io.restassured.RestAssured;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
@@ -29,26 +31,30 @@ public class SimpleRouteTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(SimpleBean.class,
-                    SimpleEventBusBean.class, SimpleRoutesBean.class));
+                    SimpleEventBusBean.class, SimpleRoutesBean.class, Transformer.class));
 
     @Test
     public void testSimpleRoute() {
-        RestAssured.when().get("/hello").then().statusCode(200).body(is("Hello world!"));
-        RestAssured.when().get("/no-slash").then().statusCode(200).body(is("Hello world!"));
-        RestAssured.when().get("/rx-hello").then().statusCode(200).body(is("Hello world!"));
-        RestAssured.when().get("/bzuk").then().statusCode(200).body(is("Hello world!"));
-        RestAssured.when().get("/hello-event-bus?name=ping").then().statusCode(200).body(is("Hello PING!"));
-        RestAssured.when().get("/foo?name=foo").then().statusCode(200).body(is("Hello foo!"));
-        RestAssured.when().get("/bar").then().statusCode(200).body(is("Hello bar!"));
-        RestAssured.when().get("/delete").then().statusCode(405);
-        RestAssured.when().delete("/delete").then().statusCode(200).body(is("deleted"));
-        RestAssured.when().get("/routes").then().statusCode(200)
+        when().get("/hello").then().statusCode(200).body(is("Hello world!"));
+        when().get("/no-slash").then().statusCode(200).body(is("Hello world!"));
+        when().get("/rx-hello").then().statusCode(200).body(is("Hello world!"));
+        when().get("/bzuk").then().statusCode(200).body(is("Hello world!"));
+        when().get("/hello-event-bus?name=ping").then().statusCode(200).body(is("Hello PING!"));
+        when().get("/foo?name=foo").then().statusCode(200).body(is("Hello foo!"));
+        when().get("/bar").then().statusCode(200).body(is("Hello bar!"));
+        when().get("/delete").then().statusCode(405);
+        when().delete("/delete").then().statusCode(200).body(is("deleted"));
+        when().get("/routes").then().statusCode(200)
                 .body(Matchers.containsString("/hello-event-bus"));
-        RestAssured.given().contentType("text/plain").body("world")
+        given().contentType("text/plain").body("world")
                 .post("/body").then().body(is("Hello world!"));
+        when().get("/request").then().statusCode(200).body(is("HellO!"));
     }
 
     static class SimpleBean {
+
+        @Inject
+        Transformer transformer;
 
         @Route(path = "/hello")
         @Route(path = "/foo")
@@ -79,6 +85,11 @@ public class SimpleRouteTest {
             context.response().setStatusCode(200).end("Hello " + context.getBodyAsString() + "!");
         }
 
+        @Route
+        void request(RoutingContext context) {
+            context.response().setStatusCode(200).end(transformer.transform("Hello!"));
+        }
+
     }
 
     static class SimpleRoutesBean {
@@ -106,7 +117,7 @@ public class SimpleRouteTest {
 
         @Route(path = "/hello-event-bus", methods = GET)
         void helloEventBus(RoutingExchange exchange) {
-            eventBus.send("hello", exchange.getParam("name").orElse("missing"), ar -> {
+            eventBus.request("hello", exchange.getParam("name").orElse("missing"), ar -> {
                 if (ar.succeeded()) {
                     exchange.ok(ar.result().body().toString());
                 } else {
@@ -121,6 +132,15 @@ public class SimpleRouteTest {
         @ConsumeEvent("hello")
         String generate(String name) {
             return "Hello " + name.toUpperCase() + "!";
+        }
+
+    }
+
+    @RequestScoped
+    static class Transformer {
+
+        String transform(String message) {
+            return message.replace('o', 'O');
         }
 
     }

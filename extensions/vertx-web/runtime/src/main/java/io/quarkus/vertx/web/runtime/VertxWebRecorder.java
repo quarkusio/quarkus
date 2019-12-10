@@ -26,7 +26,7 @@ public class VertxWebRecorder {
             return handlerClazz.getDeclaredConstructor().newInstance();
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException
                 | InvocationTargetException e) {
-            throw new IllegalStateException("Unable to create invoker: " + handlerClassName, e);
+            throw new IllegalStateException("Unable to create route handler: " + handlerClassName, e);
         }
     }
 

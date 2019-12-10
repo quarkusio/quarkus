@@ -55,6 +55,7 @@ import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RouteBase;
 import io.quarkus.vertx.web.RouteFilter;
 import io.quarkus.vertx.web.RoutingExchange;
+import io.quarkus.vertx.web.runtime.RouteHandler;
 import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
 import io.quarkus.vertx.web.runtime.VertxWebRecorder;
 import io.vertx.core.Handler;
@@ -332,9 +333,10 @@ class VertxWebProcessor {
                 + HashUtil.sha1(sigBuilder.toString());
 
         ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(Handler.class).build();
+                .interfaces(RouteHandler.class).build();
 
-        MethodCreator invoke = invokerCreator.getMethodCreator("handle", void.class, Object.class);
+        // The descriptor is: void invokeBean(Object context)
+        MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", void.class, Object.class);
         // ArcContainer container = Arc.container();
         // InjectableBean<Foo: bean = container.bean("1");
         // InstanceHandle<Foo> handle = container().instance(bean);

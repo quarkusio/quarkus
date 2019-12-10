@@ -76,6 +76,6 @@ public class TikaProcessorTest {
     public void testAllSupportedParserNames() throws Exception {
         Optional<String> parserNames = Optional.ofNullable(null);
         List<String> names = TikaProcessor.getSupportedParserNames(parserNames);
-        assertEquals(68, names.size());
+        assertEquals(69, names.size());
     }
 }

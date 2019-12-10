@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>qute-rxjava</artifactId>
+    <name>Qute - RxJava</name>
 
     <dependencies>
         <dependency>

@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>qute-generator</artifactId>
+    <name>Qute - Generator</name>
 
     <dependencies>
         <dependency>

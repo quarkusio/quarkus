@@ -2,6 +2,7 @@ package io.quarkus.platform.descriptor.resolver.json.test;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
@@ -23,7 +24,7 @@ public class TestJsonPlatformDescriptorLoader implements QuarkusJsonPlatformDesc
     @Override
     public QuarkusPlatformDescriptor load(QuarkusJsonPlatformDescriptorLoaderContext context) {
         final JsonObject json = context.parseJson(s -> {
-            try (InputStreamReader reader = new InputStreamReader(s)) {
+            try (InputStreamReader reader = new InputStreamReader(s, StandardCharsets.UTF_8)) {
                 return Json.parse(reader).asObject();
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to parse JSON descriptor", e);

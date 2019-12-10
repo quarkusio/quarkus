@@ -54,15 +54,6 @@ update_configs:
       # Debezium
       - match:
           dependency_name: "io.debezium:debezium-core"
-      # Kotlin
-      - match:
-          dependency_name: "org.jetbrains.kotlin:kotlin-compiler"
-      - match:
-          dependency_name: "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-      - match:
-          dependency_name: "org.jetbrains.kotlin:kotlin-maven-plugin"
-      - match:
-          dependency_name: "org.jetbrains.kotlin:kotlin-maven-allopen"
       # Scala
       - match:
           dependency_name: "org.scala-lang:scala-reflect"

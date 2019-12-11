@@ -23,11 +23,14 @@ steps:
     docker run --rm --publish 3306:3306 --name build-mysql -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl 
   displayName: 'start mysql'
 
+- script: docker run --rm --publish 7687:7687 --name build-neo4j -d neo4j:3.5.13 -e NEO4J_AUTH=neo4j/secret -e NEO4J_dbms_memory_pagecache_size=10M -e NEO4J_dbms_memory_pagecache_size=10M
+  displayName: 'start neo4j'
+
 - task: Maven@3
   displayName: 'Maven Build'
   inputs:
     goals: 'install'
     mavenOptions: $(MAVEN_OPTS)
     jdkVersionOption: ${{ parameters.jdk }}
-    options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-dynamodb -Dtest-vault -Dno-format ${{ parameters.extraf }}'
+    options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-dynamodb -Dtest-vault -Dtest-neo4j -Dno-format ${{ parameters.extraf }}'
 

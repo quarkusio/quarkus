@@ -296,6 +296,7 @@ stages:
             - mongodb-panache
             - neo4j
           name: data_4
+          neo4j: true
 
       - template: native-build-steps.yaml
         parameters:

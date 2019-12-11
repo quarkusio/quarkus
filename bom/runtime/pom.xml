@@ -2318,6 +2318,20 @@
                 <groupId>com.amazonaws.serverless</groupId>
                 <artifactId>aws-serverless-java-container-core</artifactId>
                 <version>${aws-lambda-serverless-java-container.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.servlet</groupId>
+                        <artifactId>javax.servlet-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.ws.rs</groupId>
+                        <artifactId>javax.ws.rs-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>

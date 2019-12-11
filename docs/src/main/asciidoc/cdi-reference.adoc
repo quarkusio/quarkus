@@ -712,6 +712,8 @@ Here is a summary of which extensions can access which metadata:
 ** Has access to `ANNOTATION_STORE`
 * `InjectionPointsTransformer`
 ** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`
+* `ObserverTransformer`
+** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`
 * `BeanRegistrar`
 ** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`, `BEANS`
 * `BeanDeploymentValidator`

@@ -344,7 +344,7 @@ public class ObserverInfo implements InjectionTargetInfo {
             this.transactionPhase = transactionPhase;
             return this;
         }
-        
+
         @Override
         public ObserverTransformation async(boolean value) {
             this.async = value;

@@ -71,7 +71,7 @@ public interface ObserverTransformer extends BuildExtension {
          * @return true if the observer is asynchronous
          */
         boolean isAsync();
-        
+
         /**
          * Retrieves all annotations declared on the observer method. This method is preferred to manual inspection
          * of {@link #getMethod()} which may, in some corner cases, hold outdated information.
@@ -114,7 +114,7 @@ public interface ObserverTransformer extends BuildExtension {
          * @return self
          */
         ObserverTransformation reception(Reception reception);
-        
+
         /**
          * 
          * @param reception

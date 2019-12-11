@@ -72,7 +72,7 @@ public class ApplicationArchiveBuildStep {
     void addConfiguredIndexedDependencies(BuildProducer<IndexDependencyBuildItem> indexDependencyBuildItemBuildProducer) {
         for (IndexDependencyConfig indexDependencyConfig : config.indexDependency.values()) {
             indexDependencyBuildItemBuildProducer.produce(new IndexDependencyBuildItem(indexDependencyConfig.groupId,
-                    indexDependencyConfig.artifactId, indexDependencyConfig.classifier));
+                    indexDependencyConfig.artifactId, indexDependencyConfig.classifier.orElse(null)));
         }
     }
 

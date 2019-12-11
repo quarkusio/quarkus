@@ -25,6 +25,7 @@ import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -32,6 +33,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -52,9 +54,10 @@ class VertxProcessor {
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
-    @BuildStep(providesCapabilities = Capabilities.RESTEASY_JSON_EXTENSION)
-    FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.VERTX);
+    @BuildStep
+    void featureAndCapability(BuildProducer<FeatureBuildItem> feature, BuildProducer<CapabilityBuildItem> capability) {
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));
+        capability.produce(new CapabilityBuildItem(Capabilities.RESTEASY_JSON_EXTENSION));
     }
 
     @BuildStep
@@ -138,14 +141,13 @@ class VertxProcessor {
 
             @Override
             public void transform(TransformationContext context) {
-                if (context.getAnnotations().isEmpty()) {
-                    // Class with no annotations but with a method annotated with @ConsumeMessage
-                    if (context.getTarget().asClass().annotations().containsKey(CONSUME_EVENT)) {
-                        LOGGER.debugf(
-                                "Found event consumer business methods on a class %s with no scope annotation - adding @Singleton",
-                                context.getTarget());
-                        context.transform().add(Singleton.class).done();
-                    }
+                if (!BuiltinScope.isIn(context.getAnnotations())
+                        && context.getTarget().asClass().annotations().containsKey(CONSUME_EVENT)) {
+                    // Class with no built-in scope annotation but with a method annotated with @ConsumeMessage
+                    LOGGER.debugf(
+                            "Found event consumer business methods on a class %s with no scope annotation - adding @Singleton",
+                            context.getTarget());
+                    context.transform().add(Singleton.class).done();
                 }
             }
         });

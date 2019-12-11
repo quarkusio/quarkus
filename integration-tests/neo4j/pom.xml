@@ -25,7 +25,7 @@
             <dependency>
                 <groupId>io.projectreactor</groupId>
                 <artifactId>reactor-bom</artifactId>
-                <version>Californium-SR9</version>
+                <version>Dysprosium-RELEASE</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -203,7 +203,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>neo4j:3.5.6</name>
+                                    <name>neo4j/neo4j-experimental:4.0.0-rc01</name>
                                     <run>
                                         <ports>
                                             <port>60513:7687</port>

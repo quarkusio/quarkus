@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
-import java.util.Collection;
+import io.quarkus.arc.processor.BuildExtension.BuildContext;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.jboss.jandex.AnnotationInstance;
@@ -19,12 +20,10 @@ public class InjectionPointModifier {
 
     private List<InjectionPointsTransformer> transformers;
     private BuildExtension.BuildContext buildContext;
-    private AnnotationStore annotationStore;
 
     InjectionPointModifier(List<InjectionPointsTransformer> transformers, BuildExtension.BuildContext buildContext) {
         this.buildContext = buildContext;
         this.transformers = transformers;
-        this.annotationStore = buildContext != null ? buildContext.get(BuildExtension.Key.ANNOTATION_STORE) : null;
     }
 
     public Set<AnnotationInstance> applyTransformers(Type type, AnnotationTarget target, Set<AnnotationInstance> qualifiers) {
@@ -32,8 +31,7 @@ public class InjectionPointModifier {
         if (transformers.isEmpty()) {
             return qualifiers;
         }
-        TransformationContextImpl transformationContext = new TransformationContextImpl(target, qualifiers,
-                annotationStore);
+        TransformationContextImpl transformationContext = new TransformationContextImpl(buildContext, target, qualifiers);
         for (InjectionPointsTransformer transformer : transformers) {
             if (transformer.appliesTo(type)) {
                 transformer.transform(transformationContext);
@@ -42,55 +40,24 @@ public class InjectionPointModifier {
         return transformationContext.getQualifiers();
     }
 
-    class TransformationContextImpl implements InjectionPointsTransformer.TransformationContext {
+    class TransformationContextImpl extends AnnotationsTransformationContext<Set<AnnotationInstance>>
+            implements InjectionPointsTransformer.TransformationContext {
 
-        private AnnotationTarget target;
-        private Set<AnnotationInstance> qualifiers;
-        private AnnotationStore annotationStore;
-
-        TransformationContextImpl(AnnotationTarget target, Set<AnnotationInstance> qualifiers,
-                AnnotationStore annotationStore) {
-            this.target = target;
-            this.qualifiers = qualifiers;
-            this.annotationStore = annotationStore;
-        }
-
-        @Override
-        public AnnotationTarget getTarget() {
-            return target;
-        }
-
-        @Override
-        public Set<AnnotationInstance> getQualifiers() {
-            return qualifiers;
-        }
-
-        @Override
-        public Collection<AnnotationInstance> getAllAnnotations() {
-            if (annotationStore == null) {
-                throw new IllegalStateException(
-                        "Attempted to use TransformationContext#getAllAnnotations but AnnotationStore wasn't initialized.");
-            }
-            return annotationStore.getAnnotations(getTarget());
+        public TransformationContextImpl(BuildContext buildContext, AnnotationTarget target,
+                Set<AnnotationInstance> annotations) {
+            super(buildContext, target, annotations);
         }
 
         @Override
         public InjectionPointsTransformer.Transformation transform() {
-            return new InjectionPointsTransformer.Transformation(this);
+            return new InjectionPointsTransformer.Transformation(new HashSet<>(getAnnotations()), getTarget(),
+                    this::setAnnotations);
         }
 
         @Override
-        public <V> V get(BuildExtension.Key<V> key) {
-            return buildContext.get(key);
+        public Set<AnnotationInstance> getQualifiers() {
+            return getAnnotations();
         }
 
-        @Override
-        public <V> V put(BuildExtension.Key<V> key, V value) {
-            return buildContext.put(key, value);
-        }
-
-        public void setQualifiers(Set<AnnotationInstance> qualifiers) {
-            this.qualifiers = qualifiers;
-        }
     }
 }

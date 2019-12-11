@@ -37,6 +37,7 @@ public class TypesTest {
         Set<Type> bazTypes = Types.getTypeClosure(index.getClassByName(bazName), null,
                 Collections.emptyMap(),
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList(),
                         Collections.emptyList(), null,
                         false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false),
                 resolvedTypeVariables::put);
@@ -54,6 +55,7 @@ public class TypesTest {
         // Foo<T>, Object
         Set<Type> fooTypes = Types.getClassBeanTypeClosure(fooClass,
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList(),
                         Collections.emptyList(), null,
                         false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false));
         assertEquals(2, fooTypes.size());
@@ -70,6 +72,7 @@ public class TypesTest {
         // Object is the sole type
         Set<Type> producerMethodTypes = Types.getProducerMethodTypeClosure(producerMethod,
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList(),
                         Collections.emptyList(), null,
                         false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false));
         assertEquals(1, producerMethodTypes.size());
@@ -78,6 +81,7 @@ public class TypesTest {
         FieldInfo producerField = producerClass.field(producersName);
         Set<Type> producerFieldTypes = Types.getProducerFieldTypeClosure(producerField,
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList(),
                         Collections.emptyList(), null,
                         false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false));
         assertEquals(1, producerFieldTypes.size());

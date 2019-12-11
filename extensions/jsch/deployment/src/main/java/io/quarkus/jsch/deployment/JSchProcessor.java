@@ -1,26 +1,21 @@
-package io.quarkus.jgit.runtime.deployment;
-
-import java.util.Arrays;
-import java.util.List;
+package io.quarkus.jsch.deployment;
 
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.jgit.runtime.PortWatcherRunTime;
+import io.quarkus.jsch.runtime.PortWatcherRunTime;
 
-class JGitProcessor {
+class JSchProcessor {
 
     @BuildStep
-    FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.JGIT);
+    EnableAllSecurityServicesBuildItem enableAllSecurityServices() {
+        return new EnableAllSecurityServicesBuildItem();
     }
 
     @BuildStep
-    ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
-        return new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.JGIT);
+    RuntimeInitializedClassBuildItem runtimeInitialized() {
+        return new RuntimeInitializedClassBuildItem(PortWatcherRunTime.class.getName());
     }
 
     @BuildStep
@@ -75,28 +70,6 @@ class JGitProcessor {
                 "com.jcraft.jsch.UserAuthKeyboardInteractive",
                 "com.jcraft.jsch.UserAuthNone",
                 "com.jcraft.jsch.UserAuthPassword",
-                "com.jcraft.jsch.UserAuthPublicKey",
-                "org.eclipse.jgit.api.MergeCommand$FastForwardMode",
-                "org.eclipse.jgit.api.MergeCommand$FastForwardMode$Merge",
-                "org.eclipse.jgit.internal.JGitText",
-                "org.eclipse.jgit.lib.CoreConfig$AutoCRLF",
-                "org.eclipse.jgit.lib.CoreConfig$CheckStat",
-                "org.eclipse.jgit.lib.CoreConfig$EOL",
-                "org.eclipse.jgit.lib.CoreConfig$EolStreamType",
-                "org.eclipse.jgit.lib.CoreConfig$HideDotFiles",
-                "org.eclipse.jgit.lib.CoreConfig$SymLinks");
-    }
-
-    @BuildStep
-    List<RuntimeInitializedClassBuildItem> runtimeInitializedClasses() {
-        return Arrays.asList(
-                new RuntimeInitializedClassBuildItem("org.eclipse.jgit.transport.HttpAuthMethod$Digest"),
-                new RuntimeInitializedClassBuildItem("org.eclipse.jgit.lib.GpgSigner"),
-                new RuntimeInitializedClassBuildItem(PortWatcherRunTime.class.getName()));
-    }
-
-    @BuildStep
-    NativeImageResourceBundleBuildItem includeResourceBundle() {
-        return new NativeImageResourceBundleBuildItem("org.eclipse.jgit.internal.JGitText");
+                "com.jcraft.jsch.UserAuthPublicKey");
     }
 }

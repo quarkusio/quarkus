@@ -1,4 +1,4 @@
-package io.quarkus.jgit.runtime;
+package io.quarkus.jsch.runtime;
 
 import java.net.InetAddress;
 

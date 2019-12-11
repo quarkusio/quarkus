@@ -74,6 +74,7 @@
         <module>jsonb</module>
         <module>resteasy-jackson</module>
         <module>jgit</module>
+        <module>jsch</module>
         <module>virtual-http</module>
         <module>virtual-http-resteasy</module>
         <module>artemis-core</module>

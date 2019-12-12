@@ -50,7 +50,7 @@
                     <artifactId>javassist</artifactId>
                 </exclusion>
 
-                <!-- XML parsers only needed to parse configurations during the deployment phase -->
+                <!-- These XML parsers are banned in the project as we use the new package -->
                 <exclusion>
                     <groupId>javax.xml.bind</groupId>
                     <artifactId>jaxb-api</artifactId>
@@ -66,6 +66,21 @@
                     <artifactId>javax.activation-api</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <!-- We need XML mapping support to support Hibernate Envers -->
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>jakarta.xml.bind</groupId>
+                    <artifactId>jakarta.xml.bind-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.spec.javax.xml.bind</groupId>
+            <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.persistence</groupId>

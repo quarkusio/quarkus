@@ -3,6 +3,7 @@ trigger:
   branches:
     include:
       - master
+      - '1.1'
 
 pr:
   branches:

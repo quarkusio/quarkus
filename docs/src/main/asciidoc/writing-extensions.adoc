@@ -633,7 +633,7 @@ conceptual goal that does not have a concrete representation.
  * causing this step to be run.
  */
 @BuildStep
-@Produces(NativeImageBuildItem.class)
+@Produce(NativeImageBuildItem.class)
 void produceNativeImage() {
     // ...
     // (produce the native image)
@@ -649,7 +649,7 @@ void produceNativeImage() {
  * an instance of {@code SomeOtherBuildItem}.
  */
 @BuildStep
-@Consumes(NativeImageBuildItem.class)
+@Consume(NativeImageBuildItem.class)
 SomeOtherBuildItem secondBuildStep() {
     return new SomeOtherBuildItem("foobar");
 }
@@ -691,7 +691,7 @@ A build step may produce values for subsequent steps in several possible ways:
 - By returning a <<simple-build-items,simple build item>> or <<multi-build-items,multi build item>> instance
 - By returning a `List` of a multi build item class
 - By injecting a `BuildProducer` of a simple or multi build item class
-- By annotating the method with `@io.quarkus.deployment.annotations.Produces`, giving the class name of a
+- By annotating the method with `@io.quarkus.deployment.annotations.Produce`, giving the class name of a
 <<empty-build-items,empty build item>>
 
 If a simple build item is declared on a build step, it _must_ be produced during that build step, otherwise an error
@@ -711,7 +711,7 @@ A build step may consume values from previous steps in the following ways:
 - By injecting a <<simple-build-items,simple build item>>
 - By injecting an `Optional` of a simple build item class
 - By injecting a `List` of a <<multi-build-items,multi build item>> class
-- By annotating the method with `@io.quarkus.deployment.annotations.Consumes`, giving the class name of a
+- By annotating the method with `@io.quarkus.deployment.annotations.Consume`, giving the class name of a
 <<empty-build-items,empty build item>>
 
 Normally it is an error for a step which is included to consume a simple build item that is not produced by any other

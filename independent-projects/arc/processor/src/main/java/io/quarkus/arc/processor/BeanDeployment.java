@@ -78,6 +78,8 @@ public class BeanDeployment {
 
     private final InjectionPointModifier injectionPointTransformer;
 
+    private final List<ObserverTransformer> observerTransformers;
+
     private final Set<DotName> resourceAnnotations;
 
     private final List<InjectionPointInfo> injectionPoints;
@@ -94,12 +96,14 @@ public class BeanDeployment {
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             List<AnnotationsTransformer> annotationTransformers) {
         this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(),
+                Collections.emptyList(),
                 null, false, null, Collections.emptyMap(), Collections.emptyList(), false);
     }
 
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             List<AnnotationsTransformer> annotationTransformers,
             List<InjectionPointsTransformer> injectionPointsTransformers,
+            List<ObserverTransformer> observerTransformers,
             Collection<DotName> resourceAnnotations,
             BuildContextImpl buildContext, boolean removeUnusedBeans, List<Predicate<BeanInfo>> unusedExclusions,
             Map<DotName, Collection<AnnotationInstance>> additionalStereotypes,
@@ -117,6 +121,7 @@ public class BeanDeployment {
             buildContext.putInternal(Key.ANNOTATION_STORE.asString(), annotationStore);
         }
         this.injectionPointTransformer = new InjectionPointModifier(injectionPointsTransformers, buildContext);
+        this.observerTransformers = observerTransformers;
         this.removeUnusedBeans = removeUnusedBeans;
         this.unusedExclusions = removeUnusedBeans ? unusedExclusions : null;
         this.removedBeans = new CopyOnWriteArraySet<>();
@@ -737,14 +742,14 @@ public class BeanDeployment {
             }
         }
 
-        for (Map.Entry<MethodInfo, Set<ClassInfo>> syncObserverEntry : syncObserverMethods.entrySet()) {
-            registerObserverMethods(syncObserverEntry.getValue(), observers, injectionPoints,
-                    beanClassToBean, syncObserverEntry.getKey(), false);
+        for (Map.Entry<MethodInfo, Set<ClassInfo>> entry : syncObserverMethods.entrySet()) {
+            registerObserverMethods(entry.getValue(), observers, injectionPoints,
+                    beanClassToBean, entry.getKey(), false, observerTransformers);
         }
 
-        for (Map.Entry<MethodInfo, Set<ClassInfo>> syncObserverEntry : asyncObserverMethods.entrySet()) {
-            registerObserverMethods(syncObserverEntry.getValue(), observers, injectionPoints,
-                    beanClassToBean, syncObserverEntry.getKey(), true);
+        for (Map.Entry<MethodInfo, Set<ClassInfo>> entry : asyncObserverMethods.entrySet()) {
+            registerObserverMethods(entry.getValue(), observers, injectionPoints,
+                    beanClassToBean, entry.getKey(), true, observerTransformers);
         }
 
         if (LOGGER.isTraceEnabled()) {
@@ -755,19 +760,24 @@ public class BeanDeployment {
         return beans;
     }
 
-    private void registerObserverMethods(Collection<ClassInfo> classes,
+    private void registerObserverMethods(Collection<ClassInfo> beanClasses,
             List<ObserverInfo> observers,
             List<InjectionPointInfo> injectionPoints,
             Map<ClassInfo, BeanInfo> beanClassToBean,
             MethodInfo observerMethod,
-            boolean async) {
-        for (ClassInfo key : classes) {
-            BeanInfo declaringBean = beanClassToBean.get(key);
+            boolean async, List<ObserverTransformer> observerTransformers) {
+
+        for (ClassInfo beanClass : beanClasses) {
+            BeanInfo declaringBean = beanClassToBean.get(beanClass);
             if (declaringBean != null) {
                 Injection injection = Injection.forObserver(observerMethod, declaringBean.getImplClazz(), this,
                         injectionPointTransformer);
-                observers.add(new ObserverInfo(declaringBean, observerMethod, injection, async));
-                injectionPoints.addAll(injection.injectionPoints);
+                ObserverInfo observer = ObserverInfo.create(declaringBean, observerMethod, injection, async,
+                        observerTransformers, buildContext);
+                if (observer != null) {
+                    observers.add(observer);
+                    injectionPoints.addAll(injection.injectionPoints);
+                }
             }
         }
     }

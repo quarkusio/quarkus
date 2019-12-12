@@ -554,20 +554,50 @@ The following sample shows how to apply transformation to injection points with 
 [source,java]
 ----
 @BuildStep
-InjectionPointTransformerBuildItem transform() {
+InjectionPointTransformerBuildItem transformer() {
     return new InjectionPointTransformerBuildItem(new InjectionPointsTransformer() {
 
         public boolean appliesTo(Type requiredType) {
-            return requiredType.equals(Type.create(DotName.createSimple(Foo.class.getName()), Type.Kind.CLASS));
+            return requiredType.name().equals(DotName.createSimple(Foo.class.getName()));
         }
 
-        public void transform(TransformationContext transformationContext) {
-            if (transformationContext.getQualifiers().stream()
+        public void transform(TransformationContext context) {
+            if (context.getQualifiers().stream()
                     .anyMatch(a -> a.name().equals(DotName.createSimple(MyQualifier.class.getName())))) {
-                transformationContext.transform().removeAll()
+                context.transform()
+                        .removeAll()
                         .add(DotName.createSimple(MyOtherQualifier.class.getName()))
                         .done();
             }
+        }
+    });
+}
+----
+
+=== Observer Transformation
+
+Any https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#observer_methods[observer method] definition can be vetoed or transformed using an `ObserverTransformerBuildItem`.
+The attributes that can be transformed include:
+
+- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#getObservedQualifiers--[qualifiers] 
+- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#getReception--[reception] 
+- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#getPriority--[priority] 
+- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#getTransactionPhase--[transaction phase] 
+- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#isAsync--[asynchronous] 
+
+[source,java]
+----
+@BuildStep
+ObserverTransformerBuildItem transformer() {
+    return new ObserverTransformerBuildItem(new ObserverTransformer() {
+
+        public boolean appliesTo(Type observedType, Set<AnnotationInstance> qualifiers) {
+            return observedType.name.equals(DotName.createSimple(MyEvent.class.getName()));
+        }
+
+        public void transform(TransformationContext context) {
+            // Veto all observers of MyEvent
+            context.veto();
         }
     });
 }
@@ -681,6 +711,8 @@ Here is a summary of which extensions can access which metadata:
 * `ContextRegistrar`
 ** Has access to `ANNOTATION_STORE`
 * `InjectionPointsTransformer`
+** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`
+* `ObserverTransformer`
 ** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`
 * `BeanRegistrar`
 ** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`, `BEANS`

@@ -20,12 +20,14 @@ import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.faulttolerance.FallbackHandler;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.faulttolerance.Timeout;
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
 
@@ -34,10 +36,14 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.ObserverTransformerBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.ObserverTransformer;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -51,6 +57,7 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.smallrye.faulttolerance.runtime.HystrixInitializerStarter;
 import io.quarkus.smallrye.faulttolerance.runtime.NoopMetricRegistry;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
@@ -63,6 +70,8 @@ import io.smallrye.faulttolerance.HystrixInitializer;
 import io.smallrye.faulttolerance.metrics.MetricsCollectorFactory;
 
 public class SmallRyeFaultToleranceProcessor {
+
+    static final DotName HYSTRIX_INITIALIZER_NAME = DotName.createSimple(HystrixInitializer.class.getName());
 
     @Inject
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
@@ -148,7 +157,8 @@ public class SmallRyeFaultToleranceProcessor {
                 DefaultHystrixConcurrencyStrategy.class,
                 QuarkusFaultToleranceOperationProvider.class, QuarkusFallbackHandlerProvider.class,
                 DefaultCommandListenersProvider.class,
-                MetricsCollectorFactory.class);
+                MetricsCollectorFactory.class,
+                HystrixInitializerStarter.class);
         additionalBean.produce(builder.build());
 
         if (!capabilities.isCapabilityPresent(Capabilities.METRICS)) {
@@ -229,5 +239,27 @@ public class SmallRyeFaultToleranceProcessor {
         // impl note - we depend on BeanContainerBuildItem to make sure Arc registers before SR FT
         // this is needed so that shutdown context of FT is executed before Arc container shuts down
         recorder.resetCommandContextOnUndeploy(context);
+    }
+
+    @BuildStep
+    ObserverTransformerBuildItem vetoHystrixInitializerObserver() {
+        return new ObserverTransformerBuildItem(new ObserverTransformer() {
+
+            @Override
+            public boolean appliesTo(Type observedType, Set<AnnotationInstance> qualifiers) {
+                AnnotationInstance initialized = Annotations.find(Annotations.getParameterAnnotations(qualifiers),
+                        DotNames.INITIALIZED);
+                return initialized != null ? initialized.value().asClass().name().equals(BuiltinScope.APPLICATION.getName())
+                        : false;
+            }
+
+            @Override
+            public void transform(TransformationContext context) {
+                if (context.getMethod().declaringClass().name().equals(HYSTRIX_INITIALIZER_NAME)) {
+                    context.veto();
+                }
+            }
+
+        });
     }
 }

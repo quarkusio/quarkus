@@ -110,17 +110,7 @@ This means that the format string and the color settings (if any) will be ignore
 
 The JSON logging extension can be configured in various ways.  The following properties are supported:
 
-[cols="<m,<m,<2",options="header"]
-|===
-|Property Name|Default|Description
-|quarkus.log.json|true|Determine whether JSON logging is enabled; disabling this property will allow the normal console logging to function.
-|quarkus.log.json.pretty-print|false|Determine whether the JSON output is "pretty-printed".
-|quarkus.log.json.date-format|default|Specify the date format to use; `default` indicates that the default format is used.
-|quarkus.log.json.record-delimiter||Specify a record delimiter to add. By default, no delimiter is used.
-|quarkus.log.json.zone-id|default|Specify the time zone ID to use for logging dates; `default` indicates that the default is used.
-|quarkus.log.json.exception-output-type|detailed|Specify the exception output type; values of `detailed`, `formatted`, or `detailed-and-formatted` are allowed.
-|quarkus.log.json.print-details|false|Specify whether detailed caller information should be logged.
-|===
+include::{generated-dir}/config/quarkus-logging-json.adoc[opts=optional, leveloffset=+1]
 
 WARNING: Enabling pretty printing might cause certain processors and JSON parsers to fail.
 

@@ -37,7 +37,6 @@ table.configuration-reference.tableblock tbody tr td:nth-child(3) {
 table.configuration-reference.tableblock tbody tr th:nth-child(2) p,
 table.configuration-reference.tableblock tbody tr th:nth-child(3) p {
   font-weight: normal;
-  color: white;
 }
 
 table.configuration-reference.tableblock tbody tr th p {

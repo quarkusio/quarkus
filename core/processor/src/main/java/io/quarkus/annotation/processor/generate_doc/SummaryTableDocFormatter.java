@@ -33,7 +33,9 @@ final class SummaryTableDocFormatter implements DocFormatter {
         // make sure that section-less configs get a legend
         if (configDocItems.isEmpty() || configDocItems.get(0).isConfigKey()) {
             String anchor = anchorPrefix + getAnchor("configuration");
-            writer.append(String.format(TABLE_SECTION_ROW_FORMAT, anchor, anchor, "Configuration property"));
+            writer.append(String.format(TABLE_SECTION_ROW_FORMAT,
+                    String.format(SECTION_TITLE, anchor, anchor, "Configuration property"),
+                    Constants.EMPTY));
         }
 
         for (ConfigDocItem configDocItem : configDocItems) {

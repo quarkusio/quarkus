@@ -3,11 +3,13 @@ trigger:
   branches:
     include:
       - master
+      - '1.1'
 
 pr:
   branches:
     include:
       - master
+      - '1.1'
   paths:
     exclude:
       - docs/src/main/asciidoc/*

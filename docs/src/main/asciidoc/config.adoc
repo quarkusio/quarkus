@@ -573,6 +573,61 @@ priority of 100.
 
 NOTE: This new converter also needs to be listed in a service file, i.e. `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
 
+[[yaml]]
+== YAML for Configuration
+
+=== Add YAML Config Support
+
+You might want to use YAML over properties for configuration.
+Since link:https://github.com/smallrye/smallrye-config[SmallRye Config] brings support for YAML
+configuration, Quarkus supports this as well.
+
+First you will need to add the YAML extension to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-config-yaml</artifactId>
+</dependency>
+----
+// TODO: Add the command to install this extension with maven.
+
+Now Quarkus can read YAML configuration files.
+The config directories and priorities are the same as before.
+
+NOTE: Quarkus will choose an `application.properties` over an `application.yaml`.
+YAML files are just an alternative way to configure your application.
+You should decide and keep one configuration type to avoid errors.
+
+==== Configuration Example
+[source,yaml]
+----
+# YAML supports comments
+quarkus:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/some-database
+    driver: org.postgresql.Driver
+    username: quarkus
+    password: quarkus
+----
+
+=== Profile dependent configuration
+
+Providing profile depedent configuration with YAML is done like with properties.
+Just add the `%profile` wrapped in quotation marks before defining the key-value pairs:
+
+[source,yaml]
+----
+"%dev":
+    quarkus:
+    datasource:
+        url: jdbc:postgresql://localhost:5432/some-database
+        driver: org.postgresql.Driver
+        username: quarkus
+        password: quarkus
+----
+
 == More info on how to configure
 
 Quarkus relies on Eclipse MicroProfile and inherits its features.

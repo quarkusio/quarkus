@@ -13,4 +13,5 @@ If any organization would like get added or removed please make a pull request b
 | Organization  |  Reference |
 |---------------|------------|
 |GoWithFlow     | https://quarkus.io/blog/gowithflow-chooses-quarkus-to-deliver-fast-to-production/ |
+|Talkdesk       | https://quarkus.io/blog/talkdesk-chooses-quarkus-for-fast-innovation/ |
 |Vodafone Greece| https://quarkus.io/blog/vodafone-greece-replaces-spring-boot/|

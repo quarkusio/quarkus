@@ -14,14 +14,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.StatementResult;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.async.AsyncSession;
-import org.neo4j.driver.async.StatementResultCursor;
+import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.reactive.RxStatementResult;
 import org.reactivestreams.Publisher;
 
 import reactor.core.publisher.Flux;
@@ -75,9 +74,9 @@ public class Neo4jResource {
     public Publisher<Integer> doStuffWithNeo4jReactive() {
 
         return Flux.using(driver::rxSession, session -> session.readTransaction(tx -> {
-            RxStatementResult result = tx.run("UNWIND range(1, 3) AS x RETURN x", Collections.emptyMap());
+            RxResult result = tx.run("UNWIND range(1, 3) AS x RETURN x", Collections.emptyMap());
             return Flux.from(result.records()).map(record -> record.get("x").asInt());
-        }), RxSession::close);
+        }), RxSession::close).doOnNext(System.out::println);
     }
 
     private static void createNodes(Driver driver) {
@@ -92,7 +91,7 @@ public class Neo4jResource {
     private static void readNodes(Driver driver) {
         try (Session session = driver.session();
                 Transaction transaction = session.beginTransaction()) {
-            StatementResult result = transaction
+            Result result = transaction
                     .run("MATCH (f:Framework {name: $name}) - [:CAN_USE] -> (n) RETURN f, n",
                             Values.parameters("name", "Quarkus"));
             result.forEachRemaining(
@@ -100,25 +99,6 @@ public class Neo4jResource {
                             record.get("f").get("name").asString())));
             transaction.commit();
         }
-    }
-
-    private static void readNodesAsync(Driver driver) {
-        AsyncSession session = driver.asyncSession();
-        session
-                .runAsync("UNWIND range(1, 3) AS x RETURN x")
-                .thenCompose(StatementResultCursor::listAsync)
-                .whenComplete((records, error) -> {
-                    if (records != null) {
-                        System.out.println(records);
-                    } else {
-                        error.printStackTrace();
-                    }
-                })
-                .thenCompose(records -> {
-                    System.out.println("clsoing!!!");
-                    return session.closeAsync()
-                            .thenApply(ignore -> records);
-                });
     }
 
     private void reportException(String errorMessage, final Exception e, final PrintWriter writer) {

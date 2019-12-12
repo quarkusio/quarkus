@@ -15,8 +15,6 @@ import org.wildfly.common.Assert;
 import io.quarkus.builder.diag.Diagnostic;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.builder.item.NamedBuildItem;
-import io.quarkus.builder.item.NamedMultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.builder.location.Location;
 
@@ -57,10 +55,7 @@ public final class BuildContext {
      */
     public void produce(BuildItem item) {
         Assert.checkNotNullParam("item", item);
-        if (item instanceof NamedBuildItem) {
-            throw new IllegalArgumentException("Cannot produce a named build item without a name");
-        }
-        doProduce(new ItemId(item.getClass(), null), item);
+        doProduce(new ItemId(item.getClass()), item);
     }
 
     /**
@@ -72,7 +67,7 @@ public final class BuildContext {
     public void produce(List<? extends MultiBuildItem> items) {
         Assert.checkNotNullParam("items", items);
         for (MultiBuildItem item : items) {
-            doProduce(new ItemId(item.getClass(), null), item);
+            doProduce(new ItemId(item.getClass()), item);
         }
     }
 
@@ -88,42 +83,7 @@ public final class BuildContext {
      */
     public <T extends BuildItem> void produce(Class<T> type, T item) {
         Assert.checkNotNullParam("type", type);
-        if (NamedBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot produce a named build item without a name");
-        }
-        doProduce(new ItemId(type, null), type.cast(item));
-    }
-
-    /**
-     * Produce the given item. If the {@code type} refers to a item which is declared with multiplicity, then this
-     * method can be called more than once for the given {@code type}, otherwise it must be called no more than once.
-     *
-     * @param name the build item name (must not be {@code null})
-     * @param item the item value (must not be {@code null})
-     * @throws IllegalArgumentException if the item does not allow multiplicity but this method is called more than one time,
-     *         or if the type of item could not be determined
-     */
-    public <N> void produce(N name, NamedBuildItem<N> item) {
-        Assert.checkNotNullParam("name", name);
-        Assert.checkNotNullParam("item", item);
-        doProduce(new ItemId(item.getClass(), name), item);
-    }
-
-    /**
-     * Produce the given item. If the {@code type} refers to a item which is declared with multiplicity, then this
-     * method can be called more than once for the given {@code type}, otherwise it must be called no more than once.
-     *
-     * @param type the item type (must not be {@code null})
-     * @param name the build item name (must not be {@code null})
-     * @param item the item value (must not be {@code null})
-     * @throws IllegalArgumentException if the item does not allow multiplicity but this method is called more than one time,
-     *         or if the type of item could not be determined
-     */
-    public <N, T extends NamedBuildItem<N>> void produce(Class<T> type, N name, NamedBuildItem<N> item) {
-        Assert.checkNotNullParam("type", type);
-        Assert.checkNotNullParam("name", name);
-        Assert.checkNotNullParam("item", item);
-        doProduce(new ItemId(type, name), item);
+        doProduce(new ItemId(type), type.cast(item));
     }
 
     /**
@@ -140,33 +100,7 @@ public final class BuildContext {
         if (!running) {
             throw Messages.msg.buildStepNotRunning();
         }
-        final ItemId id = new ItemId(type, null);
-        if (id.isMulti()) {
-            throw Messages.msg.cannotMulti(id);
-        }
-        if (!stepInfo.getConsumes().contains(id)) {
-            throw Messages.msg.undeclaredItem(id);
-        }
-        return type.cast(execution.getSingles().get(id));
-    }
-
-    /**
-     * Consume the value produced for the named item.
-     *
-     * @param type the item type (must not be {@code null})
-     * @param name the build item name (must not be {@code null})
-     * @return the produced item (may be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is
-     *         {@code null}
-     * @throws ClassCastException if the cast failed
-     */
-    public <N, T extends NamedBuildItem<N>> T consume(Class<T> type, N name) {
-        Assert.checkNotNullParam("type", type);
-        Assert.checkNotNullParam("name", name);
-        if (!running) {
-            throw Messages.msg.buildStepNotRunning();
-        }
-        final ItemId id = new ItemId(type, name);
+        final ItemId id = new ItemId(type);
         if (id.isMulti()) {
             throw Messages.msg.cannotMulti(id);
         }
@@ -191,35 +125,7 @@ public final class BuildContext {
         if (!running) {
             throw Messages.msg.buildStepNotRunning();
         }
-        final ItemId id = new ItemId(type, null);
-        if (!id.isMulti()) {
-            // can happen if obj changes base class
-            throw Messages.msg.cannotMulti(id);
-        }
-        if (!stepInfo.getConsumes().contains(id)) {
-            throw Messages.msg.undeclaredItem(id);
-        }
-        return new ArrayList<>((List<T>) (List) execution.getMultis().getOrDefault(id, Collections.emptyList()));
-    }
-
-    /**
-     * Consume all of the values produced for the named item. If the
-     * item type implements {@link Comparable}, it will be sorted by natural order before return. The returned list
-     * is a mutable copy.
-     *
-     * @param type the item element type (must not be {@code null})
-     * @param name the build item name (must not be {@code null})
-     * @return the produced items (may be empty, will not be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is
-     *         {@code null}
-     */
-    public <N, T extends NamedMultiBuildItem<N>> List<T> consumeMulti(Class<T> type, N name) {
-        Assert.checkNotNullParam("type", type);
-        Assert.checkNotNullParam("name", name);
-        if (!running) {
-            throw Messages.msg.buildStepNotRunning();
-        }
-        final ItemId id = new ItemId(type, name);
+        final ItemId id = new ItemId(type);
         if (!id.isMulti()) {
             // can happen if obj changes base class
             throw Messages.msg.cannotMulti(id);
@@ -247,22 +153,6 @@ public final class BuildContext {
     }
 
     /**
-     * Consume all of the values produced for the named item, re-sorting it according
-     * to the given comparator. The returned list is a mutable copy.
-     *
-     * @param type the item element type (must not be {@code null})
-     * @param comparator the comparator to use (must not be {@code null})
-     * @return the produced items (may be empty, will not be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is
-     *         {@code null}
-     */
-    public <N, T extends NamedMultiBuildItem<N>> List<T> consumeMulti(Class<T> type, N name, Comparator<? super T> comparator) {
-        final List<T> result = consumeMulti(type, name);
-        result.sort(comparator);
-        return result;
-    }
-
-    /**
      * Determine if a item was produced and is therefore available to be {@linkplain #consume(Class) consumed}.
      *
      * @param type the item type (must not be {@code null})
@@ -270,21 +160,7 @@ public final class BuildContext {
      *         not consume the named item
      */
     public boolean isAvailableToConsume(Class<? extends BuildItem> type) {
-        final ItemId id = new ItemId(type, null);
-        return stepInfo.getConsumes().contains(id) && id.isMulti()
-                ? !execution.getMultis().getOrDefault(id, Collections.emptyList()).isEmpty()
-                : execution.getSingles().containsKey(id);
-    }
-
-    /**
-     * Determine if a item was produced and is therefore available to be {@linkplain #consume(Class) consumed}.
-     *
-     * @param type the item type (must not be {@code null})
-     * @return {@code true} if the item was produced and is available, {@code false} if it was not or if this deployer does
-     *         not consume the named item
-     */
-    public <N> boolean isAvailableToConsume(Class<? extends NamedBuildItem<N>> type, N name) {
-        final ItemId id = new ItemId(type, name);
+        final ItemId id = new ItemId(type);
         return stepInfo.getConsumes().contains(id) && id.isMulti()
                 ? !execution.getMultis().getOrDefault(id, Collections.emptyList()).isEmpty()
                 : execution.getSingles().containsKey(id);
@@ -299,19 +175,7 @@ public final class BuildContext {
      *         not produce the named item
      */
     public boolean isConsumed(Class<? extends BuildItem> type) {
-        return execution.getBuildChain().getConsumed().contains(new ItemId(type, null));
-    }
-
-    /**
-     * Determine if a item will be consumed in this build. If a item is not consumed, then build steps are not
-     * required to produce it.
-     *
-     * @param type the item type (must not be {@code null})
-     * @return {@code true} if the item will be consumed, {@code false} if it will not be or if this deployer does
-     *         not produce the named item
-     */
-    public <N> boolean isConsumed(Class<? extends NamedBuildItem<N>> type, N name) {
-        return execution.getBuildChain().getConsumed().contains(new ItemId(type, name));
+        return execution.getBuildChain().getConsumed().contains(new ItemId(type));
     }
 
     /**

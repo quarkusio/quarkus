@@ -140,10 +140,10 @@ stages:
               jdk: '1.11'
           - template: prepare-cache.yaml
 
-      - job: Build_JDK12_Linux
+      - job: Build_JDK13_Linux
         timeoutInMinutes: 75
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
-        displayName: 'Linux JDK12 Build'
+        displayName: 'Linux JDK13 Build'
         pool: ${{parameters.poolSettings}}
 
         workspace:
@@ -152,7 +152,7 @@ stages:
         steps:
           - template: jvm-build-steps.yaml
             parameters:
-              jdk: '1.12'
+              jdk: '1.13'
           - template: prepare-cache.yaml
 
       - job: Run_TCKs

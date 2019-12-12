@@ -35,6 +35,7 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
@@ -43,24 +44,22 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.shared.invoker.DefaultInvocationRequest;
-import org.apache.maven.shared.invoker.InvocationRequest;
-import org.apache.maven.shared.invoker.Invoker;
-import org.apache.maven.shared.invoker.MavenInvocationException;
-import org.apache.maven.toolchain.ToolchainManager;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.WorkspaceReader;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.twdata.maven.mojoexecutor.MojoExecutor;
 
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.MavenRepoInitializer;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
@@ -99,6 +98,9 @@ public class DevMojo extends AbstractMojo {
             "verify",
             "install",
             "deploy"));
+
+    private static final String ORG_APACHE_MAVEN_PLUGINS = "org.apache.maven.plugins";
+    private static final String MAVEN_COMPILER_PLUGIN = "maven-compiler-plugin";
 
     /**
      * The directory for compiled classes.
@@ -185,9 +187,6 @@ public class DevMojo extends AbstractMojo {
     @Component
     private RepositorySystem repoSystem;
 
-    @Component
-    private Invoker invoker;
-
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
     private RepositorySystemSession repoSession;
 
@@ -228,18 +227,14 @@ public class DevMojo extends AbstractMojo {
     private String target;
 
     @Component
-    private ToolchainManager toolchainManager;
+    private WorkspaceReader wsReader;
 
-    public ToolchainManager getToolchainManager() {
-        return toolchainManager;
-    }
-
-    public MavenSession getSession() {
-        return session;
-    }
+    @Component
+    private BuildPluginManager pluginManager;
 
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
+
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
         boolean found = MojoUtils.checkProjectForMavenBuildPlugin(project);
 
@@ -267,15 +262,23 @@ public class DevMojo extends AbstractMojo {
 
         //if the user did not compile we run it for them
         if (compileNeeded) {
-            try {
-                InvocationRequest request = new DefaultInvocationRequest();
-                request.setBatchMode(true);
-                request.setGoals(Collections.singletonList("compile"));
-
-                invoker.execute(request);
-            } catch (MavenInvocationException e) {
-                throw new MojoExecutionException(e.getMessage(), e);
+            // Compile the project
+            final String key = ORG_APACHE_MAVEN_PLUGINS + ":" + MAVEN_COMPILER_PLUGIN;
+            final Plugin plugin = project.getPlugin(key);
+            if (plugin == null) {
+                throw new MojoExecutionException("Failed to locate " + key + " among the project plugins");
             }
+            MojoExecutor.executeMojo(
+                    MojoExecutor.plugin(
+                            MojoExecutor.groupId(ORG_APACHE_MAVEN_PLUGINS),
+                            MojoExecutor.artifactId(MAVEN_COMPILER_PLUGIN),
+                            MojoExecutor.version(plugin.getVersion())),
+                    MojoExecutor.goal("compile"),
+                    MojoExecutor.configuration(),
+                    MojoExecutor.executionEnvironment(
+                            project,
+                            session,
+                            pluginManager));
         }
 
         try {
@@ -522,10 +525,12 @@ public class DevMojo extends AbstractMojo {
 
             final AppModel appModel;
             try {
+                RepositorySystem repoSystem = DevMojo.this.repoSystem;
                 final LocalProject localProject;
                 if (noDeps) {
                     localProject = LocalProject.load(outputDirectory.toPath());
                     addProject(devModeContext, localProject);
+                    pomFiles.add(localProject.getDir().resolve("pom.xml"));
                 } else {
                     localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
                     for (LocalProject project : localProject.getSelfWithLocalDeps()) {
@@ -539,20 +544,10 @@ public class DevMojo extends AbstractMojo {
                             }
                         }
                         addProject(devModeContext, project);
+                        pomFiles.add(project.getDir().resolve("pom.xml"));
                     }
+                    repoSystem = MavenRepoInitializer.getRepositorySystem(repoSession.isOffline(), localProject.getWorkspace());
                 }
-                for (LocalProject i : localProject.getSelfWithLocalDeps()) {
-                    pomFiles.add(i.getDir().resolve("pom.xml"));
-                }
-
-                /*
-                 * TODO: support multiple resources dirs for config hot deployment
-                 * String resources = null;
-                 * for (Resource i : project.getBuild().getResources()) {
-                 * resources = i.getDirectory();
-                 * break;
-                 * }
-                 */
 
                 appModel = new BootstrapAppModelResolver(MavenArtifactResolver.builder()
                         .setRepositorySystem(repoSystem)

@@ -38,6 +38,10 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -99,12 +103,6 @@
                         <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-platform-descriptor-json</artifactId>
                         <version>${project.version}</version>
-                        <exclusions>
-                            <exclusion>
-                                <groupId>org.apache.maven</groupId>
-                                <artifactId>*</artifactId>
-                            </exclusion>
-                        </exclusions>
                     </dependency>
                     <dependency>
                         <groupId>io.quarkus</groupId>

@@ -5,31 +5,36 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-jgit-parent</artifactId>
+        <artifactId>quarkus-jsch-parent</artifactId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-jgit-deployment</artifactId>
-    <name>Quarkus - JGit - Deployment</name>
+    <artifactId>quarkus-jsch</artifactId>
+    <name>Quarkus - JSch - Runtime</name>
+    <description>JSch is a pure Java implementation of SSH2 and allows you to connect to an sshd server and use port forwarding, X11 forwarding, file transfer, etc.</description>
 
     <dependencies>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
+            <groupId>org.graalvm.nativeimage</groupId>
+            <artifactId>svm</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jsch-deployment</artifactId>
+            <groupId>com.jcraft</groupId>
+            <artifactId>jsch</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jgit</artifactId>
+            <groupId>com.jcraft</groupId>
+            <artifactId>jzlib</artifactId>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -45,5 +50,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

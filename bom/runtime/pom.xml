@@ -173,6 +173,8 @@
         <quarkus-security.version>1.0.1.Final</quarkus-security.version>
         <keycloak.version>8.0.1</keycloak.version>
         <logstash-gelf.version>1.13.0</logstash-gelf.version>
+        <jsch.version>0.1.55</jsch.version>
+        <jzlib.version>1.1.1</jzlib.version>
     </properties>
 
     <dependencyManagement>
@@ -695,6 +697,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jgit</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jsch</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1487,6 +1494,16 @@
                 <groupId>org.codehaus.plexus</groupId>
                 <artifactId>plexus-component-annotations</artifactId>
                 <version>${plexus-component-annotations.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jcraft</groupId>
+                <artifactId>jsch</artifactId>
+                <version>${jsch.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jcraft</groupId>
+                <artifactId>jzlib</artifactId>
+                <version>${jzlib.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jgit</groupId>

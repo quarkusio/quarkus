@@ -328,6 +328,7 @@ stages:
           modules:
             - jackson
             - jsonb
+            - jsch
             - jgit
           name: misc_1
 

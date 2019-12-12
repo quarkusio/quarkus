@@ -45,6 +45,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesManifestBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
@@ -57,9 +58,13 @@ class KubernetesProcessor {
     private static final String KUBERNETES = "kubernetes";
     private static final String DOCKER_REGISTRY_PROPERTY = PROPERTY_PREFIX + "docker.registry";
     private static final String APP_GROUP_PROPERTY = "app.group";
+    private static final String TARGET_DIRECTORY = "kubernetes";
 
     @Inject
     BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer;
+
+    @Inject
+    BuildProducer<KubernetesManifestBuildItem> kubernetesManifestProducer;
 
     @Inject
     BuildProducer<FeatureBuildItem> featureProducer;
@@ -138,13 +143,14 @@ class KubernetesProcessor {
 
         for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
             String fileName = resourceEntry.getKey().replace(root.toAbsolutePath().toString(), "");
-            String relativePath = resourceEntry.getKey().replace(root.toAbsolutePath().toString(), "kubernetes");
+            String relativePath = resourceEntry.getKey().replace(root.toAbsolutePath().toString(), TARGET_DIRECTORY);
 
             if (fileName.endsWith(".yml") || fileName.endsWith(".json")) {
                 String target = fileName.substring(0, fileName.lastIndexOf("."));
                 if (target.startsWith(File.separator)) {
                     target = target.substring(1);
                 }
+                kubernetesManifestProducer.produce(new KubernetesManifestBuildItem(target, relativePath));
 
                 if (!deploymentTargets.contains(target)) {
                     continue;
@@ -198,20 +204,20 @@ class KubernetesProcessor {
     private Map<String, Integer> verifyPorts(List<KubernetesPortBuildItem> kubernetesPortBuildItems) {
         final Map<String, Integer> result = new HashMap<>();
         final Set<Integer> usedPorts = new HashSet<>();
-        for (KubernetesPortBuildItem entry : kubernetesPortBuildItems) {
+        kubernetesPortBuildItems.stream().filter(kp -> kp.getPort() > 0).forEach(entry -> {
             final String name = entry.getName();
             if (result.containsKey(name)) {
                 throw new IllegalArgumentException(
-                        "All Kubernetes ports must have unique names - " + name + "has been used multiple times");
+                        "All Kubernetes ports must have unique names - " + name + " has been used multiple times");
             }
             final Integer port = entry.getPort();
             if (usedPorts.contains(port)) {
                 throw new IllegalArgumentException(
-                        "All Kubernetes ports must be unique - " + port + "has been used multiple times");
+                        "All Kubernetes ports must be unique - " + port + " has been used multiple times");
             }
             result.put(name, port);
             usedPorts.add(port);
-        }
+        });
         return result;
     }
 
@@ -228,7 +234,7 @@ class KubernetesProcessor {
 
     /**
      * Returns the name of the generators that can handle the specified key.
-     * 
+     *
      * @param key The key.
      * @return The generator name or null if the key format is unexpected.
      */

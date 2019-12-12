@@ -25,6 +25,7 @@ public final class ApplicationYamlProvider implements ConfigSourceProvider {
 
     static final String APPLICATION_YAML = "application.yaml";
 
+    @Override
     public Iterable<ConfigSource> getConfigSources(final ClassLoader forClassLoader) {
         List<ConfigSource> sources = Collections.emptyList();
         // mirror the in-JAR application.properties

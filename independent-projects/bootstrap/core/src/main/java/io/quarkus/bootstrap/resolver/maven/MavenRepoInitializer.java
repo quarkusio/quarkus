@@ -11,9 +11,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.ParseException;
-import org.apache.maven.cli.CLIManager;
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelProblemCollector;
 import org.apache.maven.model.building.ModelProblemCollectorRequest;
@@ -63,6 +60,7 @@ import org.eclipse.aether.util.repository.DefaultMirrorSelector;
 import org.eclipse.aether.util.repository.DefaultProxySelector;
 import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.util.PropertyUtils;
 
 
@@ -87,24 +85,22 @@ public class MavenRepoInitializer {
     private static final File USER_SETTINGS_FILE;
     private static final File GLOBAL_SETTINGS_FILE;
 
-    private static final CommandLine mvnArgs;
+    private static final String ALTERNATE_USER_SETTINGS = "s";
+    private static final String ALTERNATE_GLOBAL_SETTINGS = "gs";
+    private static final String OFFLINE = "o";
+    private static final String SUPRESS_SNAPSHOT_UPDATES = "nsu";
+    private static final String UPDATE_SNAPSHOTS = "U";
+    private static final String CHECKSUM_FAILURE_POLICY = "C";
+    private static final String CHECKSUM_WARNING_POLICY = "c";
+    private static final String ACTIVATE_PROFILES = "P";
+
+    private static final BootstrapMavenOptions mvnArgs;
 
     static {
         final String mvnCmd = System.getenv(MAVEN_CMD_LINE_ARGS);
-        String userSettings = null;
-        String globalSettings = null;
-        if(mvnCmd != null) {
-            final CLIManager mvnCli = new CLIManager();
-            try {
-                mvnArgs = mvnCli.parse(mvnCmd.split("\\s+"));
-            } catch (ParseException e) {
-                throw new IllegalStateException("Failed to parse Maven command line arguments", e);
-            }
-            userSettings = mvnArgs.getOptionValue(CLIManager.ALTERNATE_USER_SETTINGS);
-            globalSettings = mvnArgs.getOptionValue(CLIManager.ALTERNATE_GLOBAL_SETTINGS);
-        } else {
-            mvnArgs = null;
-        }
+        mvnArgs = BootstrapMavenOptions.newInstance(mvnCmd);
+        final String userSettings = mvnArgs.getOptionValue(ALTERNATE_USER_SETTINGS);
+        final String globalSettings = mvnArgs.getOptionValue(ALTERNATE_GLOBAL_SETTINGS);
 
         File f = userSettings != null ? resolveUserSettings(userSettings) : new File(userMavenConfigurationHome, SETTINGS_XML);
         USER_SETTINGS_FILE = f != null && f.exists() ? f : null;
@@ -185,18 +181,18 @@ public class MavenRepoInitializer {
 
         session.setOffline(settings.isOffline());
 
-        if(mvnArgs != null) {
-            if(!session.isOffline() && mvnArgs.hasOption(CLIManager.OFFLINE)) {
+        if(!mvnArgs.isEmpty()) {
+            if(!session.isOffline() && mvnArgs.hasOption(OFFLINE)) {
                 session.setOffline(true);
             }
-            if(mvnArgs.hasOption(CLIManager.SUPRESS_SNAPSHOT_UPDATES)) {
+            if(mvnArgs.hasOption(SUPRESS_SNAPSHOT_UPDATES)) {
                 session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_NEVER);
-            } else if(mvnArgs.hasOption(CLIManager.UPDATE_SNAPSHOTS)) {
+            } else if(mvnArgs.hasOption(UPDATE_SNAPSHOTS)) {
                 session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_ALWAYS);
             }
-            if(mvnArgs.hasOption(CLIManager.CHECKSUM_FAILURE_POLICY)) {
+            if(mvnArgs.hasOption(CHECKSUM_FAILURE_POLICY)) {
                 session.setChecksumPolicy(RepositoryPolicy.CHECKSUM_POLICY_FAIL);
-            } else if(mvnArgs.hasOption(CLIManager.CHECKSUM_WARNING_POLICY)) {
+            } else if(mvnArgs.hasOption(CHECKSUM_WARNING_POLICY)) {
                 session.setChecksumPolicy(RepositoryPolicy.CHECKSUM_POLICY_WARN);
             }
         }
@@ -271,24 +267,22 @@ public class MavenRepoInitializer {
 
             final List<String> activeProfiles = new ArrayList<>(0);
             final List<String> inactiveProfiles = new ArrayList<>(0);
-            if(mvnArgs != null) {
-                final String[] profileOptionValues = mvnArgs.getOptionValues(CLIManager.ACTIVATE_PROFILES);
-                if (profileOptionValues != null && profileOptionValues.length > 0) {
-                    for (String profileOptionValue : profileOptionValues) {
-                        final StringTokenizer profileTokens = new StringTokenizer(profileOptionValue, ",");
-                        while (profileTokens.hasMoreTokens()) {
-                            final String profileAction = profileTokens.nextToken().trim();
-                            if(profileAction.isEmpty()) {
-                                continue;
-                            }
-                            final char c = profileAction.charAt(0);
-                            if (c == '-' || c == '!') {
-                                inactiveProfiles.add(profileAction.substring(1));
-                            } else if (c == '+') {
-                                activeProfiles.add(profileAction.substring(1));
-                            } else {
-                                activeProfiles.add(profileAction);
-                            }
+            final String[] profileOptionValues = mvnArgs.getOptionValues(ACTIVATE_PROFILES);
+            if (profileOptionValues != null && profileOptionValues.length > 0) {
+                for (String profileOptionValue : profileOptionValues) {
+                    final StringTokenizer profileTokens = new StringTokenizer(profileOptionValue, ",");
+                    while (profileTokens.hasMoreTokens()) {
+                        final String profileAction = profileTokens.nextToken().trim();
+                        if (profileAction.isEmpty()) {
+                            continue;
+                        }
+                        final char c = profileAction.charAt(0);
+                        if (c == '-' || c == '!') {
+                            inactiveProfiles.add(profileAction.substring(1));
+                        } else if (c == '+') {
+                            activeProfiles.add(profileAction.substring(1));
+                        } else {
+                            activeProfiles.add(profileAction);
                         }
                     }
                 }

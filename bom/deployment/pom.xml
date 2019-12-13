@@ -378,6 +378,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-elytron-security-common-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-elytron-security-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>

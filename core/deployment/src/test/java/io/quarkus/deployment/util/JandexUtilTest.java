@@ -167,6 +167,35 @@ public class JandexUtilTest {
                 abstractSingle, index)).extracting("name").containsOnly(INTEGER);
     }
 
+    @Test
+    public void testArrayGenerics() {
+        final Index index = index(Repo.class, ArrayRepo.class, GenericArrayRepo.class);
+        assertThat(JandexUtil.resolveTypeParameters(DotName.createSimple(ArrayRepo.class.getName()), DotName.createSimple(Repo.class.getName()),
+                index)).extracting("name").containsOnly(DotName.createSimple(Integer[].class.getName()));
+    }
+
+    @Test
+    public void testCompositeGenerics() {
+        final Index index = index(Repo.class, Repo2.class, CompositeRepo.class, CompositeRepo2.class, GenericCompositeRepo.class, GenericCompositeRepo2.class);
+        assertThat(JandexUtil.resolveTypeParameters(DotName.createSimple(CompositeRepo.class.getName()), DotName.createSimple(Repo.class.getName()),
+                index)).hasOnlyOneElementSatisfying(t -> {
+            assertThat(t.toString()).isEqualTo(Repo.class.getName() + "<java.lang.Integer>");
+        });
+        assertThat(JandexUtil.resolveTypeParameters(DotName.createSimple(CompositeRepo2.class.getName()), DotName.createSimple(Repo2.class.getName()),
+                index)).hasOnlyOneElementSatisfying(t -> {
+            assertThat(t.toString()).isEqualTo(Repo.class.getName() + "<java.lang.Integer>");
+        });
+    }
+
+    @Test
+    public void testErasedGenerics() {
+        final Index index = index(Repo.class, BoundedRepo.class, ErasedRepo1.class, MultiBoundedRepo.class, ErasedRepo2.class, A.class);
+        assertThat(JandexUtil.resolveTypeParameters(DotName.createSimple(ErasedRepo1.class.getName()), DotName.createSimple(Repo.class.getName()),
+                index)).extracting("name").containsOnly(DotName.createSimple(A.class.getName()));
+        assertThat(JandexUtil.resolveTypeParameters(DotName.createSimple(ErasedRepo2.class.getName()), DotName.createSimple(Repo.class.getName()),
+                index)).extracting("name").containsOnly(DotName.createSimple(A.class.getName()));
+    }
+
     public interface Single<T> {
     }
 
@@ -244,6 +273,60 @@ public class JandexUtilTest {
     }
 
     public static class SingleFromInterfaceAndSuperClass<W> extends SingleImpl implements Single<String> {
+    }
+
+    public interface Repo<T> {
+    }
+
+    public interface Repo2<T> {
+    }
+
+    public static class DirectRepo implements Repo<Integer> {
+    }
+
+    public static class IndirectRepo extends DirectRepo {
+    }
+
+    public static class GenericRepo<X> implements Repo<X> {
+    }
+
+    public static class IndirectGenericRepo extends GenericRepo<Integer> {
+    }
+
+    public static class GenericArrayRepo<X> implements Repo<X[]> {
+    }
+
+    public static class ArrayRepo extends GenericArrayRepo<Integer> {
+    }
+
+    public static class GenericCompositeRepo<X> implements Repo<Repo<X>> {
+    }
+
+    public static class GenericCompositeRepo2<X> implements Repo2<Repo<X>> {
+    }
+
+    public static class CompositeRepo extends GenericCompositeRepo<Integer> {
+    }
+
+    public static class CompositeRepo2 extends GenericCompositeRepo2<Integer> {
+    }
+
+    public static class BoundedRepo<X extends A> implements Repo<X> {
+    }
+
+    public static class ErasedRepo1 extends BoundedRepo {
+    }
+
+    public interface A {
+    }
+
+    public interface B {
+    }
+
+    public static class MultiBoundedRepo<X extends A & B> implements Repo<X> {
+    }
+
+    public static class ErasedRepo2 extends MultiBoundedRepo {
     }
 
     private static Index index(Class<?>... classes) {

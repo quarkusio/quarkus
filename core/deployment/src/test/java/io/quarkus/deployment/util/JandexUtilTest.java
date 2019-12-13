@@ -50,150 +50,113 @@ public class JandexUtilTest {
     @Test
     public void testSimplestImpl() {
         final Index index = index(Single.class, SingleImpl.class);
-        final DotName impl = DotName.createSimple(SingleImpl.class.getName());
-        final List<Type> result = JandexUtil.resolveTypeParameters(impl, SIMPLE, index);
-        assertThat(result).extracting("name").containsOnly(STRING);
+        checkRepoArg(index, SingleImpl.class, Single.class, String.class);
     }
 
     @Test
     public void testSimplestImplWithBound() {
         final Index index = index(SingleWithBound.class, SingleWithBoundImpl.class);
-        final DotName impl = DotName.createSimple(SingleWithBoundImpl.class.getName());
-        final List<Type> result = JandexUtil.resolveTypeParameters(impl,
-                DotName.createSimple(SingleWithBound.class.getName()), index);
-        assertThat(result).extracting("name").containsOnly(DotName.createSimple(List.class.getName()));
+        checkRepoArg(index, SingleWithBoundImpl.class, SingleWithBound.class, List.class);
     }
 
     @Test
     public void testSimpleImplMultipleParams() {
         final Index index = index(Multiple.class, MultipleImpl.class);
-        final DotName impl = DotName.createSimple(MultipleImpl.class.getName());
-        final List<Type> result = JandexUtil.resolveTypeParameters(impl, MULTIPLE, index);
-        assertThat(result).extracting("name").containsExactly(INTEGER, STRING);
+        checkRepoArg(index, MultipleImpl.class, Multiple.class, Integer.class, String.class);
     }
 
     @Test
     public void testInverseParameterNames() {
         final Index index = index(Multiple.class, InverseMultiple.class, InverseMultipleImpl.class);
-        final DotName impl = DotName.createSimple(InverseMultipleImpl.class.getName());
-        final List<Type> result = JandexUtil.resolveTypeParameters(impl, MULTIPLE, index);
-        assertThat(result).extracting("name").containsExactly(DOUBLE, INTEGER);
+        checkRepoArg(index, InverseMultipleImpl.class, Multiple.class, Double.class, Integer.class);
     }
 
     @Test
     public void testImplExtendsSimplestImplementation() {
         final Index index = index(Single.class, SingleImpl.class, SingleImplImpl.class);
-        final DotName impl = DotName.createSimple(SingleImplImpl.class.getName());
-        final List<Type> result = JandexUtil.resolveTypeParameters(impl, SIMPLE, index);
-        assertThat(result).extracting("name").containsOnly(STRING);
+        checkRepoArg(index, SingleImplImpl.class, Single.class, String.class);
     }
 
     @Test
     public void testImplementationOfInterfaceThatExtendsSimpleWithoutParam() {
         final Index index = index(Single.class, ExtendsSimpleNoParam.class, ExtendsSimpleNoParamImpl.class);
-        final DotName impl = DotName.createSimple(ExtendsSimpleNoParamImpl.class.getName());
-        final List<Type> result = JandexUtil.resolveTypeParameters(impl, SIMPLE, index);
-        assertThat(result).extracting("name").containsOnly(DOUBLE);
+        checkRepoArg(index, ExtendsSimpleNoParamImpl.class, Single.class, Double.class);
     }
 
     @Test
     public void testImplExtendsImplOfInterfaceThatExtendsSimpleWithoutParams() {
         final Index index = index(Single.class, ExtendsSimpleNoParam.class, ExtendsSimpleNoParamImpl.class,
                 ExtendsSimpleNoParamImplImpl.class);
-        final DotName impl = DotName.createSimple(ExtendsSimpleNoParamImplImpl.class.getName());
-        final List<Type> result = JandexUtil.resolveTypeParameters(impl, SIMPLE, index);
-        assertThat(result).extracting("name").containsOnly(DOUBLE);
+        checkRepoArg(index, ExtendsSimpleNoParamImplImpl.class, Single.class, Double.class);
     }
 
     @Test
     public void testImplOfInterfaceThatExtendsSimpleWithParam() {
         final Index index = index(Single.class, ExtendsSimpleWithParam.class, ExtendsSimpleWithParamImpl.class);
-        final DotName impl = DotName.createSimple(ExtendsSimpleWithParamImpl.class.getName());
-        final List<Type> result = JandexUtil.resolveTypeParameters(impl, SIMPLE, index);
-        assertThat(result).extracting("name").containsOnly(INTEGER);
+        checkRepoArg(index, ExtendsSimpleWithParamImpl.class, Single.class, Integer.class);
     }
 
     @Test
     public void testImplOfInterfaceThatExtendsSimpleWithParamInMultipleLevels() {
         final Index index = index(Single.class, ExtendsSimpleWithParam.class, ExtendsExtendsSimpleWithParam.class,
                 ExtendsExtendsSimpleWithParamImpl.class);
-        final DotName impl = DotName.createSimple(ExtendsExtendsSimpleWithParamImpl.class.getName());
-        final List<Type> result = JandexUtil.resolveTypeParameters(impl, SIMPLE, index);
-        assertThat(result).extracting("name").containsOnly(DOUBLE);
+        checkRepoArg(index, ExtendsExtendsSimpleWithParamImpl.class, Single.class, Double.class);
     }
 
     @Test
     public void testImplOfInterfaceThatExtendsSimpleWithGenericParamInMultipleLevels() {
         final Index index = index(Single.class, ExtendsSimpleWithParam.class, ExtendsExtendsSimpleWithParam.class,
                 ExtendsExtendsSimpleGenericParam.class);
-        final DotName impl = DotName.createSimple(ExtendsExtendsSimpleGenericParam.class.getName());
-        final List<Type> result = JandexUtil.resolveTypeParameters(impl, SIMPLE, index);
-        assertThat(result).extracting("name").containsOnly(DotName.createSimple(Map.class.getName()));
+        checkRepoArg(index, ExtendsExtendsSimpleGenericParam.class, Single.class, Map.class);
     }
 
     @Test
     public void testImplOfMultipleWithParamsInDifferentLevels() {
         final Index index = index(Multiple.class, MultipleT1.class, ExtendsMultipleT1Impl.class);
-        final DotName impl = DotName.createSimple(ExtendsMultipleT1Impl.class.getName());
-        final List<Type> result = JandexUtil.resolveTypeParameters(impl, MULTIPLE, index);
-        assertThat(result).extracting("name").containsOnly(INTEGER, STRING);
+        checkRepoArg(index, ExtendsMultipleT1Impl.class, Multiple.class, Integer.class, String.class);
     }
 
     @Test
     public void testImplOfAbstractMultipleWithParamsInDifferentLevels() {
         final Index index = index(Multiple.class, MultipleT1.class, AbstractMultipleT1Impl.class,
                 ExtendsAbstractMultipleT1Impl.class);
-        final DotName impl = DotName.createSimple(ExtendsAbstractMultipleT1Impl.class.getName());
-        final List<Type> result = JandexUtil.resolveTypeParameters(impl, MULTIPLE, index);
-        assertThat(result).extracting("name").containsOnly(INTEGER, STRING);
+        checkRepoArg(index, ExtendsAbstractMultipleT1Impl.class, Multiple.class, Integer.class, String.class);
     }
 
     @Test
     public void testMultiplePathsToSingle() {
         final Index index = index(Single.class, SingleImpl.class, SingleFromInterfaceAndSuperClass.class);
-        final DotName impl = DotName.createSimple(SingleFromInterfaceAndSuperClass.class.getName());
-        final List<Type> result = JandexUtil.resolveTypeParameters(impl, SIMPLE, index);
-        assertThat(result).extracting("name").containsOnly(STRING);
+        checkRepoArg(index, SingleFromInterfaceAndSuperClass.class, Single.class, String.class);
     }
 
     @Test
     public void testExtendsAbstractClass() {
-        final DotName abstractSingle = DotName.createSimple(AbstractSingle.class.getName());
         final Index index = index(Single.class, AbstractSingle.class, AbstractSingleImpl.class,
                 ExtendsAbstractSingleImpl.class);
-        assertThat(JandexUtil.resolveTypeParameters(DotName.createSimple(AbstractSingleImpl.class.getName()), abstractSingle,
-                index)).extracting("name").containsOnly(INTEGER);
-        assertThat(JandexUtil.resolveTypeParameters(DotName.createSimple(ExtendsAbstractSingleImpl.class.getName()),
-                abstractSingle, index)).extracting("name").containsOnly(INTEGER);
+        checkRepoArg(index, AbstractSingleImpl.class, AbstractSingle.class, Integer.class);
+        checkRepoArg(index, ExtendsAbstractSingleImpl.class, AbstractSingle.class, Integer.class);
     }
 
     @Test
     public void testArrayGenerics() {
         final Index index = index(Repo.class, ArrayRepo.class, GenericArrayRepo.class);
-        assertThat(JandexUtil.resolveTypeParameters(DotName.createSimple(ArrayRepo.class.getName()), DotName.createSimple(Repo.class.getName()),
-                index)).extracting("name").containsOnly(DotName.createSimple(Integer[].class.getName()));
+        checkRepoArg(index, ArrayRepo.class, Repo.class, Integer[].class);
     }
 
     @Test
     public void testCompositeGenerics() {
-        final Index index = index(Repo.class, Repo2.class, CompositeRepo.class, CompositeRepo2.class, GenericCompositeRepo.class, GenericCompositeRepo2.class);
-        assertThat(JandexUtil.resolveTypeParameters(DotName.createSimple(CompositeRepo.class.getName()), DotName.createSimple(Repo.class.getName()),
-                index)).hasOnlyOneElementSatisfying(t -> {
-            assertThat(t.toString()).isEqualTo(Repo.class.getName() + "<java.lang.Integer>");
-        });
-        assertThat(JandexUtil.resolveTypeParameters(DotName.createSimple(CompositeRepo2.class.getName()), DotName.createSimple(Repo2.class.getName()),
-                index)).hasOnlyOneElementSatisfying(t -> {
-            assertThat(t.toString()).isEqualTo(Repo.class.getName() + "<java.lang.Integer>");
-        });
+        final Index index = index(Repo.class, Repo2.class, CompositeRepo.class, CompositeRepo2.class,
+                GenericCompositeRepo.class, GenericCompositeRepo2.class);
+        checkRepoArg(index, CompositeRepo.class, Repo.class, Repo.class.getName() + "<java.lang.Integer>");
+        checkRepoArg(index, CompositeRepo2.class, Repo2.class, Repo.class.getName() + "<java.lang.Integer>");
     }
 
     @Test
     public void testErasedGenerics() {
-        final Index index = index(Repo.class, BoundedRepo.class, ErasedRepo1.class, MultiBoundedRepo.class, ErasedRepo2.class, A.class);
-        assertThat(JandexUtil.resolveTypeParameters(DotName.createSimple(ErasedRepo1.class.getName()), DotName.createSimple(Repo.class.getName()),
-                index)).extracting("name").containsOnly(DotName.createSimple(A.class.getName()));
-        assertThat(JandexUtil.resolveTypeParameters(DotName.createSimple(ErasedRepo2.class.getName()), DotName.createSimple(Repo.class.getName()),
-                index)).extracting("name").containsOnly(DotName.createSimple(A.class.getName()));
+        final Index index = index(Repo.class, BoundedRepo.class, ErasedRepo1.class, MultiBoundedRepo.class, ErasedRepo2.class,
+                A.class);
+        checkRepoArg(index, ErasedRepo1.class, Repo.class, A.class);
+        checkRepoArg(index, ErasedRepo2.class, Repo.class, A.class);
     }
 
     public interface Single<T> {
@@ -342,6 +305,34 @@ public class JandexUtilTest {
             }
         }
         return indexer.complete();
+    }
+
+    private void checkRepoArg(Index index, Class<?> baseClass, Class<?> soughtClass, Class<?> expectedArg) {
+        List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass),
+                index);
+        assertThat(args).extracting("name").containsOnly(name(expectedArg));
+    }
+
+    private void checkRepoArg(Index index, Class<?> baseClass, Class<?> soughtClass, Class<?>... expectedArgs) {
+        List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass),
+                index);
+        Object[] expectedArgNames = new Object[expectedArgs.length];
+        for (int i = 0; i < expectedArgs.length; i++) {
+            expectedArgNames[i] = name(expectedArgs[i]);
+        }
+        assertThat(args).extracting("name").containsOnly(expectedArgNames);
+    }
+
+    private void checkRepoArg(Index index, Class<?> baseClass, Class<?> soughtClass, String expectedArg) {
+        List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass),
+                index);
+        assertThat(args).hasOnlyOneElementSatisfying(t -> {
+            assertThat(t.toString()).isEqualTo(expectedArg);
+        });
+    }
+
+    private static DotName name(Class<?> klass) {
+        return DotName.createSimple(klass.getName());
     }
 
 }

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
@@ -127,7 +128,7 @@ public class VariantTemplateProducer {
         private final TemplateVariants variants;
 
         VariantTemplateInstanceImpl(TemplateVariants variants) {
-            this.variants = variants;
+            this.variants = Objects.requireNonNull(variants);
             setAttribute(VariantTemplate.VARIANTS, new ArrayList<>(variants.variantToTemplate.keySet()));
         }
 

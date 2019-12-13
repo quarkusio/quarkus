@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.amazonaws.serverless.proxy.internal.LambdaContainerHandler;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
@@ -144,8 +145,12 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                 }
                 if (msg instanceof LastHttpContent) {
                     if (baos != null) {
-                        responseBuilder.setBase64Encoded(true);
-                        responseBuilder.setBody(Base64.getMimeEncoder().encodeToString(baos.toByteArray()));
+                        if (isBinary(responseBuilder.getMultiValueHeaders().getFirst("Content-Type"))) {
+                            responseBuilder.setBase64Encoded(true);
+                            responseBuilder.setBody(Base64.getMimeEncoder().encodeToString(baos.toByteArray()));
+                        } else {
+                            responseBuilder.setBody(new String(baos.toByteArray(), "UTF-8"));
+                        }
                     }
                     return responseBuilder;
                 }
@@ -154,6 +159,18 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                     ReferenceCountUtil.release(msg);
             }
         }
+    }
+
+    private boolean isBinary(String contentType) {
+        if (contentType != null) {
+            int index = contentType.indexOf(';');
+            if (index >= 0) {
+                return LambdaContainerHandler.getContainerConfig().isBinaryContentType(contentType.substring(0, index));
+            } else {
+                return LambdaContainerHandler.getContainerConfig().isBinaryContentType(contentType);
+            }
+        }
+        return false;
     }
 
 }

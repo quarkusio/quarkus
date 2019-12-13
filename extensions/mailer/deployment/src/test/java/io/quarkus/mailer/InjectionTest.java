@@ -4,13 +4,16 @@ import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.test.QuarkusUnitTest;
 import io.vertx.ext.mail.MailClient;
 
@@ -23,7 +26,14 @@ public class InjectionTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(BeanUsingAxleMailClient.class, BeanUsingBareMailClient.class, BeanUsingRxClient.class)
                     .addClasses(BeanUsingBlockingMailer.class, BeanUsingReactiveMailer.class)
-                    .addAsResource("mock-config.properties", "application.properties"));
+                    .addClasses(MailTemplates.class)
+                    .addAsResource("mock-config.properties", "application.properties")
+                    .addAsResource(new StringAsset(""
+                            + "<html>{name}</html>"), "templates/test1.html")
+                    .addAsResource(new StringAsset(""
+                            + "{name}"), "templates/test1.txt")
+                    .addAsResource(new StringAsset(""
+                            + "<html>{name}</html>"), "templates/mails/test2.html"));
 
     @Inject
     BeanUsingAxleMailClient beanUsingBare;
@@ -40,13 +50,18 @@ public class InjectionTest {
     @Inject
     BeanUsingBlockingMailer beanUsingBlockingMailer;
 
+    @Inject
+    MailTemplates templates;
+
     @Test
     public void testInjection() {
         beanUsingAxle.verify();
         beanUsingBare.verify();
         beanUsingRx.verify();
         beanUsingBlockingMailer.verify();
-        beanUsingReactiveMailer.verify().toCompletableFuture().join();
+        beanUsingReactiveMailer.verify();
+        templates.send1();
+        templates.send2().toCompletableFuture().join();
     }
 
     @ApplicationScoped
@@ -102,5 +117,24 @@ public class InjectionTest {
         void verify() {
             mailer.send(Mail.withText("quarkus@quarkus.io", "test mailer", "blocking test!"));
         }
+    }
+
+    @Singleton
+    static class MailTemplates {
+
+        @Inject
+        MailTemplate test1;
+
+        @ResourcePath("mails/test2")
+        MailTemplate testMail;
+
+        CompletionStage<Void> send1() {
+            return test1.to("quarkus@quarkus.io").subject("Test").data("name", "John").send();
+        }
+
+        CompletionStage<Void> send2() {
+            return testMail.to("quarkus@quarkus.io").subject("Test").data("name", "Lu").send();
+        }
+
     }
 }

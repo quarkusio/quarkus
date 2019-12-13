@@ -1,8 +1,6 @@
 package io.quarkus.it.spring.web;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.emptyString;
-import static org.hamcrest.Matchers.is;
 
 import java.util.Optional;
 
@@ -126,83 +124,9 @@ public class SpringControllerTest {
     }
 
     @Test
-    public void testFirstResponseStatusHoldingException() {
-        RestAssured.when().get("/exception/first").then()
-                .contentType("text/plain")
-                .body(containsString("first"))
-                .statusCode(500);
-    }
-
-    @Test
-    public void testSecondResponseStatusHoldingException() {
-        RestAssured.when().get("/exception/second").then()
-                .contentType("text/plain")
-                .body(is(emptyString()))
-                .statusCode(503);
-    }
-
-    @Test
-    public void testExceptionHandlerVoidReturnType() {
-        RestAssured.when().get("/exception/void").then()
-                .contentType("text/plain")
-                .body(is(emptyString()))
-                .statusCode(400);
-    }
-
-    @Test
-    public void testExceptionHandlerWithoutResponseStatusOnExceptionOrMethod() {
-        RestAssured.when().get("/exception/unannotated").then()
-                .contentType("text/plain")
-                .body(is(emptyString()))
-                .statusCode(204);
-    }
-
-    @Test
-    public void testExceptionHandlerResponseEntityType() {
-        RestAssured.when().get("/exception/responseEntity").then()
-                .contentType("application/json")
-                .body(containsString("bad state"), containsString("responseEntity"))
-                .statusCode(402)
-                .header("custom-header", "custom-value");
-    }
-
-    @Test
-    public void testExceptionHandlerResponseEntityTypeFromVoidReturningMethod() {
-        RestAssured.when().get("/exception/responseEntityFromVoidReturningMethod").then()
-                .contentType("application/json")
-                .body(containsString("bad state"), containsString("responseEntity"))
-                .statusCode(402)
-                .header("custom-header", "custom-value");
-    }
-
-    @Test
-    public void testExceptionHandlerPojoEntityType() {
-        RestAssured.when().get("/exception/pojo").then()
-                .contentType("application/json")
-                .body(containsString("hello from error"))
-                .statusCode(417);
-    }
-
-    @Test
-    public void testControllerMethodWithVoidReturnTypeAndExceptionHandlerPojoEntityType() {
-        RestAssured.when().get("/exception/pojoWithVoidReturnType").then()
-                .contentType("application/json")
-                .body(containsString("hello from error"))
-                .statusCode(417);
-    }
-
-    @Test
     public void testRestControllerWithoutRequestMapping() {
         RestAssured.when().get("/hello").then()
                 .body(containsString("hello"));
-    }
-
-    @Test
-    public void testResponseEntityWithIllegalArgumentException() {
-        RestAssured.when().get("/exception/re").then()
-                .contentType("application/json")
-                .body(containsString("hello from error"))
-                .statusCode(402);
     }
 
     @Test

@@ -9,7 +9,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.jgit.runtime.PortWatcherRunTime;
 
 class JGitProcessor {
 
@@ -91,8 +90,7 @@ class JGitProcessor {
     List<RuntimeInitializedClassBuildItem> runtimeInitializedClasses() {
         return Arrays.asList(
                 new RuntimeInitializedClassBuildItem("org.eclipse.jgit.transport.HttpAuthMethod$Digest"),
-                new RuntimeInitializedClassBuildItem("org.eclipse.jgit.lib.GpgSigner"),
-                new RuntimeInitializedClassBuildItem(PortWatcherRunTime.class.getName()));
+                new RuntimeInitializedClassBuildItem("org.eclipse.jgit.lib.GpgSigner"));
     }
 
     @BuildStep

@@ -203,11 +203,13 @@ public class NativeImageBuildStep {
             command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
             command.add("-jar");
             command.add(runnerJarName);
+
             //dynamic proxy generation is not thread safe
             //should be fixed in 19.3.1
             //but we need to add this option back to prevent intermittent failures
             //https://github.com/oracle/graal/issues/1927
             command.add("-J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1");
+
             if (nativeConfig.enableFallbackImages) {
                 command.add("-H:FallbackThreshold=5");
             } else {
@@ -325,11 +327,17 @@ public class NativeImageBuildStep {
 
     private void checkGraalVMVersion(String version) {
         log.info("Running Quarkus native-image plugin on " + version);
-        final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.", "19.2.");
+        final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.", "19.2.0");
         final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(v -> version.contains(" " + v));
         if (vmVersionIsObsolete) {
             throw new IllegalStateException(
-                    "Out of date build of GraalVM detected: " + version + ". Please upgrade to GraalVM 19.3.0.");
+                    "Out of date version of GraalVM detected: " + version + ". Please upgrade to GraalVM 19.2.1.");
+        }
+        final List<String> unsupportedGraalVmVersions = Arrays.asList("19.3.");
+        final boolean vmVersionIsUnsupported = unsupportedGraalVmVersions.stream().anyMatch(v -> version.contains(" " + v));
+        if (vmVersionIsUnsupported) {
+            throw new IllegalStateException(
+                    "Unsupported version of GraalVM detected: " + version + ". Please use GraalVM 19.2.1.");
         }
     }
 

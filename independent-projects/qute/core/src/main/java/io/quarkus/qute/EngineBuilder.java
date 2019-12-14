@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -25,7 +24,7 @@ public final class EngineBuilder {
     private final Map<String, SectionHelperFactory<?>> sectionHelperFactories;
     private final List<ValueResolver> valueResolvers;
     private final List<NamespaceResolver> namespaceResolvers;
-    private final List<Function<String, Optional<Reader>>> locators;
+    private final List<TemplateLocator> locators;
     private final List<ResultMapper> resultMappers;
     private Function<String, SectionHelperFactory<?>> sectionHelperFunc;
 
@@ -105,7 +104,7 @@ public final class EngineBuilder {
      * @return self
      * @see Engine#getTemplate(String)
      */
-    public EngineBuilder addLocator(Function<String, Optional<Reader>> locator) {
+    public EngineBuilder addLocator(TemplateLocator locator) {
         this.locators.add(locator);
         return this;
     }

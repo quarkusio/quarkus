@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
@@ -24,13 +25,22 @@ public interface TemplateNode {
         return Collections.emptySet();
     }
 
+    /**
+     * 
+     * @return the origin of the node
+     */
     Origin getOrigin();
 
-    interface Origin {
+    /**
+     * Represents an origin of a template node.
+     */
+    public interface Origin {
 
         int getLine();
 
         String getTemplateId();
+
+        Optional<Variant> getVariant();
 
     }
 

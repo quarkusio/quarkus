@@ -14,6 +14,21 @@ public final class ValueResolvers {
 
     static final String THIS = "this";
 
+    public static ValueResolver rawResolver() {
+        return new ValueResolver() {
+
+            public boolean appliesTo(EvalContext context) {
+                return context.getBase() != null
+                        && (context.getName().equals("raw") || context.getName().equals("safe"));
+            }
+
+            @Override
+            public CompletionStage<Object> resolve(EvalContext context) {
+                return CompletableFuture.completedFuture(new RawString(context.getBase().toString()));
+            }
+        };
+    }
+
     public static ValueResolver collectionResolver() {
         return new ValueResolver() {
 

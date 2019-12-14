@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.api.Variant;
+import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.VariantTemplate;
 import io.quarkus.test.QuarkusUnitTest;
 

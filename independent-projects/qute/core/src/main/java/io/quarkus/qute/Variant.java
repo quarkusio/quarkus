@@ -1,4 +1,4 @@
-package io.quarkus.qute.api;
+package io.quarkus.qute;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -6,7 +6,12 @@ import java.util.Objects;
 /**
  * Media type, locale and encoding.
  */
-public class Variant {
+public final class Variant {
+
+    public final static String TEXT_HTML = "text/html";
+    public final static String TEXT_PLAIN = "text/plain";
+    public final static String TEXT_XML = "text/xml";
+    public final static String APPLICATION_JSON = "application/json";
 
     public final Locale locale;
     public final String mediaType;

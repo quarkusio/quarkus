@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -35,20 +36,20 @@ class EngineImpl implements Engine {
     private final List<NamespaceResolver> namespaceResolvers;
     private final Evaluator evaluator;
     private final Map<String, Template> templates;
-    private final List<Function<String, Optional<Reader>>> locators;
+    private final List<TemplateLocator> locators;
     private final List<ResultMapper> resultMappers;
     private final PublisherFactory publisherFactory;
     private final AtomicLong idGenerator = new AtomicLong(0);
 
     EngineImpl(Map<String, SectionHelperFactory<?>> sectionHelperFactories, List<ValueResolver> valueResolvers,
-            List<NamespaceResolver> namespaceResolvers, List<Function<String, Optional<Reader>>> locators,
+            List<NamespaceResolver> namespaceResolvers, List<TemplateLocator> locators,
             List<ResultMapper> resultMappers, Function<String, SectionHelperFactory<?>> sectionHelperFunc) {
         this.sectionHelperFactories = new HashMap<>(sectionHelperFactories);
         this.valueResolvers = sort(valueResolvers);
         this.namespaceResolvers = ImmutableList.copyOf(namespaceResolvers);
         this.evaluator = new EvaluatorImpl(this.valueResolvers);
         this.templates = new ConcurrentHashMap<>();
-        this.locators = ImmutableList.copyOf(locators);
+        this.locators = sort(locators);
         ServiceLoader<PublisherFactory> loader = ServiceLoader.load(PublisherFactory.class);
         Iterator<PublisherFactory> iterator = loader.iterator();
         if (iterator.hasNext()) {
@@ -65,8 +66,9 @@ class EngineImpl implements Engine {
         this.sectionHelperFunc = sectionHelperFunc;
     }
 
-    public Template parse(String content) {
-        return new Parser(this).parse(new StringReader(content));
+    @Override
+    public Template parse(String content, Variant variant) {
+        return new Parser(this).parse(new StringReader(content), Optional.ofNullable(variant));
     }
 
     @Override
@@ -125,11 +127,11 @@ class EngineImpl implements Engine {
     }
 
     private Template load(String id) {
-        for (Function<String, Optional<Reader>> locator : locators) {
-            Optional<Reader> reader = locator.apply(id);
-            if (reader.isPresent()) {
-                try (Reader r = reader.get()) {
-                    return new Parser(this).parse(ensureBufferedReader(reader.get()));
+        for (TemplateLocator locator : locators) {
+            Optional<TemplateLocation> location = locator.locate(id);
+            if (location.isPresent()) {
+                try (Reader r = location.get().read()) {
+                    return new Parser(this).parse(ensureBufferedReader(r), location.get().getVariant());
                 } catch (IOException e) {
                     LOGGER.warn("Unable to close the reader for " + id, e);
                 }

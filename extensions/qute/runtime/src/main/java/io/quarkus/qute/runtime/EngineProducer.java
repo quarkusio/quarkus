@@ -1,8 +1,9 @@
 package io.quarkus.qute.runtime;
 
-import java.io.InputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Optional;
@@ -19,12 +20,19 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.Escaper;
+import io.quarkus.qute.Expression;
 import io.quarkus.qute.NamespaceResolver;
+import io.quarkus.qute.RawString;
 import io.quarkus.qute.ReflectionValueResolver;
+import io.quarkus.qute.ResultMapper;
 import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.TemplateLocator.TemplateLocation;
+import io.quarkus.qute.TemplateNode.Origin;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.ValueResolvers;
+import io.quarkus.qute.Variant;
 
 @Singleton
 public class EngineProducer {
@@ -59,8 +67,31 @@ public class EngineProducer {
 
         // We don't register the map resolver because of param declaration validation
         // See DefaultTemplateExtensions
-        builder.addValueResolvers(ValueResolvers.thisResolver(), ValueResolvers.orResolver(), ValueResolvers.trueResolver(),
-                ValueResolvers.collectionResolver(), ValueResolvers.mapperResolver(), ValueResolvers.mapEntryResolver());
+        builder.addValueResolver(ValueResolvers.thisResolver());
+        builder.addValueResolver(ValueResolvers.orResolver());
+        builder.addValueResolver(ValueResolvers.trueResolver());
+        builder.addValueResolver(ValueResolvers.collectionResolver());
+        builder.addValueResolver(ValueResolvers.mapperResolver());
+        builder.addValueResolver(ValueResolvers.mapEntryResolver());
+        // foo.string.raw returns a RawString which is never escaped
+        builder.addValueResolver(ValueResolvers.rawResolver());
+
+        // Escape some characters for HTML templates
+        Escaper htmlEscaper = Escaper.builder().add('"', "&quot;").add('\'', "&#39;")
+                .add('&', "&amp;").add('<', "&lt;").add('>', "&gt;").build();
+        builder.addResultMapper(new ResultMapper() {
+
+            @Override
+            public boolean appliesTo(Origin origin, Object result) {
+                return !(result instanceof RawString)
+                        && origin.getVariant().filter(EngineProducer::requiresDefaultEscaping).isPresent();
+            }
+
+            @Override
+            public String map(Object result, Expression expression) {
+                return htmlEscaper.escape(result.toString());
+            }
+        });
 
         // Fallback reflection resolver
         builder.addValueResolver(new ReflectionValueResolver());
@@ -132,37 +163,79 @@ public class EngineProducer {
      * @param path
      * @return the optional reader
      */
-    private Optional<Reader> locate(String path) {
-        InputStream in = null;
+    private Optional<TemplateLocation> locate(String path) {
+        URL resource = null;
         // First try to locate a tag template
         if (tags.stream().anyMatch(tag -> tag.startsWith(path))) {
             LOGGER.debugf("Locate tag for %s", path);
-            in = locatePath(tagPath + path);
+            resource = locatePath(tagPath + path);
             // Try path with suffixes
             for (String suffix : suffixes) {
-                in = locatePath(tagPath + path + "." + suffix);
-                if (in != null) {
+                resource = locatePath(tagPath + path + "." + suffix);
+                if (resource != null) {
                     break;
                 }
             }
         }
-        if (in == null) {
+        if (resource == null) {
             String templatePath = basePath + path;
             LOGGER.debugf("Locate template for %s", templatePath);
-            in = locatePath(templatePath);
+            resource = locatePath(templatePath);
         }
-        if (in != null) {
-            return Optional.of(new InputStreamReader(in, Charset.forName("utf-8")));
+        if (resource != null) {
+            return Optional.of(new ResourceTemplateLocation(resource, guessVariant(path)));
         }
         return Optional.empty();
     }
 
-    private InputStream locatePath(String path) {
+    private URL locatePath(String path) {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
             cl = EngineProducer.class.getClassLoader();
         }
-        return cl.getResourceAsStream(path);
+        return cl.getResource(path);
+    }
+
+    static Variant guessVariant(String path) {
+        // TODO we need a proper way to detect the variant
+        int suffixIdx = path.lastIndexOf('.');
+        if (suffixIdx != -1) {
+            String suffix = path.substring(suffixIdx);
+            return new Variant(null, VariantTemplateProducer.parseMediaType(suffix), null);
+        }
+        return null;
+    }
+
+    static boolean requiresDefaultEscaping(Variant variant) {
+        return variant.mediaType != null
+                ? (Variant.TEXT_HTML.equals(variant.mediaType) || Variant.TEXT_XML.equals(variant.mediaType))
+                : false;
+    }
+
+    static class ResourceTemplateLocation implements TemplateLocation {
+
+        private final URL resource;
+        private final Optional<Variant> variant;
+
+        public ResourceTemplateLocation(URL resource, Variant variant) {
+            this.resource = resource;
+            this.variant = Optional.ofNullable(variant);
+        }
+
+        @Override
+        public Reader read() {
+            try {
+                return new InputStreamReader(resource.openStream(), Charset.forName("utf-8"));
+            } catch (IOException e) {
+                return null;
+            }
+        }
+
+        @Override
+        public Optional<Variant> getVariant() {
+            return variant;
+        }
+
     }
 
 }

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
@@ -27,8 +28,8 @@ import io.quarkus.qute.Expression;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateInstanceBase;
+import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.ResourcePath;
-import io.quarkus.qute.api.Variant;
 import io.quarkus.qute.api.VariantTemplate;
 
 @Singleton
@@ -114,6 +115,11 @@ public class VariantTemplateProducer {
             throw new UnsupportedOperationException();
         }
 
+        @Override
+        public Optional<Variant> getVariant() {
+            throw new UnsupportedOperationException();
+        }
+
     }
 
     class VariantTemplateInstanceImpl extends TemplateInstanceBase {
@@ -166,15 +172,15 @@ public class VariantTemplateProducer {
     }
 
     static String parseMediaType(String suffix) {
-        // TODO support more media types...
-        if (suffix.equalsIgnoreCase(".html")) {
-            return "text/html";
+        // TODO we need a proper way to parse the media type
+        if (suffix.equalsIgnoreCase(".html") || suffix.equalsIgnoreCase(".htm")) {
+            return Variant.TEXT_HTML;
         } else if (suffix.equalsIgnoreCase(".xml")) {
-            return "text/xml";
+            return Variant.TEXT_XML;
         } else if (suffix.equalsIgnoreCase(".txt")) {
-            return "text/plain";
+            return Variant.TEXT_PLAIN;
         } else if (suffix.equalsIgnoreCase(".json")) {
-            return "application/json";
+            return Variant.APPLICATION_JSON;
         }
         LOGGER.warn("Unknown media type for suffix: " + suffix);
         return "application/octet-stream";

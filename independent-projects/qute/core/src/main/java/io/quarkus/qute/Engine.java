@@ -13,7 +13,11 @@ public interface Engine {
         return new EngineBuilder();
     }
 
-    public Template parse(String content);
+    default Template parse(String content) {
+        return parse(content, null);
+    }
+
+    public Template parse(String content, Variant variant);
 
     public SectionHelperFactory<?> getSectionHelperFactory(String name);
 

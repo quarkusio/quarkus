@@ -2,6 +2,7 @@ package io.quarkus.qute.runtime;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -16,6 +17,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.ResourcePath;
 
 @Singleton
@@ -102,6 +104,11 @@ public class TemplateProducer {
         @Override
         public String getGeneratedId() {
             return template.get().getGeneratedId();
+        }
+
+        @Override
+        public Optional<Variant> getVariant() {
+            return template.get().getVariant();
         }
 
     }

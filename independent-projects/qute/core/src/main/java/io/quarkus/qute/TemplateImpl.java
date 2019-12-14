@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -14,12 +15,14 @@ class TemplateImpl implements Template {
 
     private final String generatedId;
     private final EngineImpl engine;
+    private final Optional<Variant> variant;
     final SectionNode root;
 
-    TemplateImpl(EngineImpl engine, SectionNode root, String generatedId) {
+    TemplateImpl(EngineImpl engine, SectionNode root, String generatedId, Optional<Variant> variant) {
         this.engine = engine;
         this.root = root;
         this.generatedId = generatedId;
+        this.variant = variant;
     }
 
     @Override
@@ -35,6 +38,11 @@ class TemplateImpl implements Template {
     @Override
     public String getGeneratedId() {
         return generatedId;
+    }
+
+    @Override
+    public Optional<Variant> getVariant() {
+        return variant;
     }
 
     private class TemplateInstanceImpl extends TemplateInstanceBase {

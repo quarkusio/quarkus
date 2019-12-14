@@ -25,7 +25,7 @@ public class SingleResultNode implements ResultNode {
             String result = null;
             if (mappers != null) {
                 for (ResultMapper mapper : mappers) {
-                    if (mapper.appliesTo(value)) {
+                    if (mapper.appliesTo(expression.origin, value)) {
                         result = mapper.map(value, expression);
                         break;
                     }

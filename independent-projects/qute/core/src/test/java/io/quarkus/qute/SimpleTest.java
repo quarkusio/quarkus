@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -146,7 +147,7 @@ public class SimpleTest {
                                 return 10;
                             }
 
-                            public boolean appliesTo(Object val) {
+                            public boolean appliesTo(Origin origin, Object val) {
                                 return val.equals(Result.NOT_FOUND);
                             }
 
@@ -160,7 +161,7 @@ public class SimpleTest {
                                 return 1;
                             }
 
-                            public boolean appliesTo(Object val) {
+                            public boolean appliesTo(Origin origin, Object val) {
                                 return val.equals(Result.NOT_FOUND);
                             }
 
@@ -174,7 +175,7 @@ public class SimpleTest {
                                 return 1;
                             }
 
-                            public boolean appliesTo(Object val) {
+                            public boolean appliesTo(Origin origin, Object val) {
                                 return val instanceof Collection;
                             }
 

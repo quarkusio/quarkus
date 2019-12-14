@@ -1,6 +1,7 @@
 package io.quarkus.qute.api;
 
 import io.quarkus.qute.Template;
+import io.quarkus.qute.Variant;
 
 /**
  * 

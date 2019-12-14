@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -47,6 +48,7 @@ class Parser implements Function<String, Expression> {
     private int sectionBlockIdx;
     private boolean ignoreContent;
     private String templateId;
+    private Optional<Variant> variant;
 
     public Parser(EngineImpl engine) {
         this.engine = engine;
@@ -54,7 +56,7 @@ class Parser implements Function<String, Expression> {
         this.buffer = new StringBuilder();
         this.sectionStack = new ArrayDeque<>();
         this.sectionStack
-                .addFirst(SectionNode.builder(ROOT_HELPER_NAME, new OriginImpl(line, templateId)).setEngine(engine)
+                .addFirst(SectionNode.builder(ROOT_HELPER_NAME, new OriginImpl(line, templateId, variant)).setEngine(engine)
                         .setHelperFactory(new SectionHelperFactory<SectionHelper>() {
                             @Override
                             public SectionHelper initialize(SectionInitContext context) {
@@ -78,9 +80,10 @@ class Parser implements Function<String, Expression> {
         this.line = 1;
     }
 
-    Template parse(Reader reader) {
+    Template parse(Reader reader, Optional<Variant> variant) {
         long start = System.currentTimeMillis();
-        templateId = engine.generateId();
+        this.templateId = engine.generateId();
+        this.variant = variant;
         try {
             int val;
             while ((val = reader.read()) != -1) {
@@ -110,7 +113,7 @@ class Parser implements Function<String, Expression> {
                 throw new IllegalStateException("No root section part found!");
             }
             root.addBlock(part.build());
-            Template template = new TemplateImpl(engine, root.build(), templateId);
+            Template template = new TemplateImpl(engine, root.build(), templateId, variant);
             LOGGER.tracef("Parsing finished in %s ms", System.currentTimeMillis() - start);
             return template;
 
@@ -194,7 +197,7 @@ class Parser implements Function<String, Expression> {
     private void flushText() {
         if (buffer.length() > 0 && !ignoreContent) {
             SectionBlock.Builder block = sectionBlockStack.peek();
-            block.addNode(new TextNode(buffer.toString(), new OriginImpl(line, templateId)));
+            block.addNode(new TextNode(buffer.toString(), new OriginImpl(line, templateId, variant)));
         }
         this.buffer = new StringBuilder();
     }
@@ -263,7 +266,7 @@ class Parser implements Function<String, Expression> {
                 // Init section block
                 Map<String, String> typeInfos = typeInfoStack.peek();
                 Map<String, String> result = factory.initializeBlock(typeInfos, mainBlock);
-                SectionNode.Builder sectionNode = SectionNode.builder(sectionName, new OriginImpl(-1, templateId))
+                SectionNode.Builder sectionNode = SectionNode.builder(sectionName, new OriginImpl(-1, templateId, variant))
                         .setEngine(engine)
                         .setHelperFactory(factory);
 
@@ -328,7 +331,8 @@ class Parser implements Function<String, Expression> {
             typeInfos.put(key, "[" + value + "]");
 
         } else {
-            sectionBlockStack.peek().addNode(new ExpressionNode(apply(content), engine, new OriginImpl(line, templateId)));
+            sectionBlockStack.peek()
+                    .addNode(new ExpressionNode(apply(content), engine, new OriginImpl(line, templateId, variant)));
         }
         this.buffer = new StringBuilder();
     }
@@ -564,17 +568,19 @@ class Parser implements Function<String, Expression> {
 
     @Override
     public Expression apply(String value) {
-        return parseExpression(value, typeInfoStack.peek(), new OriginImpl(line, templateId));
+        return parseExpression(value, typeInfoStack.peek(), new OriginImpl(line, templateId, variant));
     }
 
     static class OriginImpl implements Origin {
 
         private final int line;
         private final String templateId;
+        private final Optional<Variant> variant;
 
-        OriginImpl(int line, String templateId) {
+        OriginImpl(int line, String templateId, Optional<Variant> variant) {
             this.line = line;
             this.templateId = templateId;
+            this.variant = variant;
         }
 
         @Override
@@ -585,6 +591,10 @@ class Parser implements Function<String, Expression> {
         @Override
         public String getTemplateId() {
             return templateId;
+        }
+
+        public Optional<Variant> getVariant() {
+            return variant;
         }
 
         @Override

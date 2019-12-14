@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -43,7 +44,7 @@ public interface Template {
 
     /**
      * 
-     * @return an immutable set of expressions
+     * @return an immutable set of expressions used in the template
      */
     Set<Expression> getExpressions();
 
@@ -53,5 +54,11 @@ public interface Template {
      * @return the generated id
      */
     String getGeneratedId();
+
+    /**
+     * 
+     * @return the template variant
+     */
+    Optional<Variant> getVariant();
 
 }

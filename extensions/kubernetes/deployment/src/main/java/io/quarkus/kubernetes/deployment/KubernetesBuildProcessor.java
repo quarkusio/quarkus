@@ -42,7 +42,7 @@ public class KubernetesBuildProcessor extends AbstractJKubeProcessor {
         final Path dockerFile = projectDirectory.resolve("src/main/docker/Dockerfile.jvm");
         final String imageName = String.format("%s/%s:%s", kubernetesProjectBI.get().getGroup(),
                 kubernetesProjectBI.get().getName(), kubernetesProjectBI.get().getVersion());
-        copyFiles(projectDirectory, imageName);
+        copyFiles(projectDirectory, dockerFile, imageName);
         final BuildConfiguration buildConfig = new BuildConfiguration.Builder()
                 .dockerFile(dockerFile.toFile().getAbsolutePath())
                 .workdir(projectDirectory.toString())
@@ -62,16 +62,22 @@ public class KubernetesBuildProcessor extends AbstractJKubeProcessor {
         return null;
     }
 
-    private static void copyFiles(Path projectDir, String imageName) {
+    private static void copyFiles(Path projectDir, Path dockerFile, String imageName) {
         final String targetDirName = "target";
-        final File buildTargetDir = projectDir.resolve(targetDirName).resolve(imageName.replace(':', '/'))
-                .resolve("build").resolve(targetDirName).toFile();
+        final Path buildDir = projectDir.resolve(targetDirName).resolve(imageName.replace(':', '/'))
+                .resolve("build");
+        final File buildTargetDir = buildDir.resolve(targetDirName).toFile();
         if (buildTargetDir.mkdirs()) {
             final FileFilter jarFilter = ff -> ff.getName().endsWith(".jar");
             Stream.of(Objects.requireNonNull(projectDir.resolve(targetDirName).toFile().listFiles(jarFilter)))
                     .forEach(copyFileRelative(buildTargetDir.toPath()));
             Stream.of(Objects.requireNonNull(projectDir.resolve(targetDirName).resolve("lib").toFile().listFiles(jarFilter)))
                     .forEach(copyFileRelative(buildTargetDir.toPath().resolve("lib")));
+            try {
+                Files.copy(dockerFile, buildDir.resolve("Dockerfile"));
+            } catch (IOException e) {
+                log.error("Error copying source files", e);
+            }
         }
     }
 

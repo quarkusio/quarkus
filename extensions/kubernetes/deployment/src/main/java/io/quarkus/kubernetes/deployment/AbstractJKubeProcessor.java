@@ -12,12 +12,15 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.eclipse.jkube.kit.build.maven.MavenBuildContext;
 import org.eclipse.jkube.kit.build.service.docker.DockerAccessFactory;
+import org.eclipse.jkube.kit.build.service.docker.RegistryService;
 import org.eclipse.jkube.kit.build.service.docker.ServiceHub;
 import org.eclipse.jkube.kit.build.service.docker.ServiceHubFactory;
 import org.eclipse.jkube.kit.build.service.docker.access.DockerAccess;
 import org.eclipse.jkube.kit.build.service.docker.access.log.LogOutputSpecFactory;
 import org.eclipse.jkube.kit.config.access.ClusterAccess;
 import org.eclipse.jkube.kit.config.access.ClusterConfiguration;
+import org.eclipse.jkube.kit.config.image.build.OpenShiftBuildStrategy;
+import org.eclipse.jkube.kit.config.resource.BuildRecreateMode;
 import org.eclipse.jkube.kit.config.service.BuildService;
 import org.eclipse.jkube.kit.config.service.JkubeServiceHub;
 import org.eclipse.microprofile.config.Config;
@@ -33,8 +36,12 @@ class AbstractJKubeProcessor {
         return new BuildService.BuildServiceConfig.Builder()
                 .dockerBuildContext(new org.eclipse.jkube.kit.build.service.docker.BuildService.BuildContext.Builder()
                         .mojoParameters(fakeDockerMojoParameters)
+                        .registryConfig(new RegistryService.RegistryConfig.Builder().build())
                         .build())
                 .dockerMavenBuildContext(fakeDockerMojoParameters)
+                .openshiftBuildStrategy(OpenShiftBuildStrategy.docker)
+                .s2iBuildNameSuffix("")
+                .buildRecreateMode(BuildRecreateMode.all)
                 .buildDirectory(projectDirectory.resolve("target").toString())
                 .build();
     }

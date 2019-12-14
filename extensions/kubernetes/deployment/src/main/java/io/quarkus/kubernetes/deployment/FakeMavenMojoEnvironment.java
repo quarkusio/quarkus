@@ -36,11 +36,9 @@ class FakeMavenMojoEnvironment {
         final PlexusContainer pc;
         try {
             pc = new DefaultPlexusContainer(new DefaultContainerConfiguration());
-            for (Class clazz : new Class[] {
-                    PropertyConfigHandler.class, ImageConfigResolver.class, DockerAccessFactory.class
-            }) {
-                pc.addComponentDescriptor(initComponentDescriptor(clazz, pc.getContainerRealm()));
-            }
+            pc.addComponentDescriptor(initComponentDescriptor(PropertyConfigHandler.class, pc.getContainerRealm()));
+            pc.addComponentDescriptor(initComponentDescriptor(ImageConfigResolver.class, pc.getContainerRealm()));
+            pc.addComponentDescriptor(initComponentDescriptor(DockerAccessFactory.class, pc.getContainerRealm()));
             final ComponentDescriptor<DockerAssemblyManager> dam = initComponentDescriptor(DockerAssemblyManager.class,
                     pc.getContainerRealm());
             dam.addRequirement(initComponentRequirement(Archiver.class, "trackArchiver"));

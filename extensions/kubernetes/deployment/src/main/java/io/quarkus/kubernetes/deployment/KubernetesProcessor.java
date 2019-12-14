@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -124,6 +125,7 @@ class KubernetesProcessor {
         try {
             final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
             Project project = createProject(applicationInfo, archiveRootBuildItem);
+            project.getBuildInfo().setOutputFile(Paths.get("app.jar"));
             sessionWriter.setProject(project);
             final Session session = Session.getSession();
             session.setWriter(sessionWriter);

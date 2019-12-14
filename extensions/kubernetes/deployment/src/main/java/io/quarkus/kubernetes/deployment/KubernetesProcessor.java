@@ -22,6 +22,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.dekorate.Session;
 import io.dekorate.SessionWriter;
+import io.dekorate.kubernetes.config.ApplicationConfiguration;
 import io.dekorate.kubernetes.config.PortBuilder;
 import io.dekorate.kubernetes.config.ProbeBuilder;
 import io.dekorate.kubernetes.configurator.AddPort;
@@ -47,6 +48,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesManifestBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesProjectBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 class KubernetesProcessor {
@@ -68,6 +70,9 @@ class KubernetesProcessor {
 
     @Inject
     BuildProducer<FeatureBuildItem> featureProducer;
+
+    @Inject
+    BuildProducer<KubernetesProjectBuildItem> kubernetesProjectBuildItemBuildProducer;
 
     @BuildStep(onlyIf = IsNormal.class)
     public void build(ApplicationInfoBuildItem applicationInfo,
@@ -131,6 +136,10 @@ class KubernetesProcessor {
 
             // write the generated resources to the filesystem
             generatedResourcesMap = session.close();
+            kubernetesProjectBuildItemBuildProducer.produce(new KubernetesProjectBuildItem(
+                    project.getRoot(), session.configurators().get(ApplicationConfiguration.class).get().getGroup(),
+                    project.getBuildInfo().getName(), project.getBuildInfo().getVersion(),
+                    project.getBuildInfo().getOutputFile()));
         } finally {
             // clear the hacky properties if set
             if (kubernetesGroup.isPresent()) {

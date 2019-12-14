@@ -826,10 +826,6 @@
                         <artifactId>jaxb-api</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>org.apache.commons</groupId>
-                        <artifactId>commons-compress</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.apache.maven</groupId>
                         <artifactId>maven-artifact</artifactId>
                     </exclusion>
@@ -844,10 +840,6 @@
                     <exclusion>
                         <groupId>org.apache.maven.shared</groupId>
                         <artifactId>maven-shared-utils</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.bouncycastle</groupId>
-                        <artifactId>bcpkix-jdk15on</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.codehaus.plexus</groupId>

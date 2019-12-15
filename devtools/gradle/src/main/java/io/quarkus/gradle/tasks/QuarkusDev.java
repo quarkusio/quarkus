@@ -351,7 +351,9 @@ public class QuarkusDev extends QuarkusTask {
                     .redirectErrorStream(true)
                     .redirectInput(ProcessBuilder.Redirect.INHERIT)
                     .directory(getWorkingDir());
-            System.out.printf("Launching JVM with command line: %s%n", pb.command().stream().collect(joining(" ")));
+            if (getLogger().isDebugEnabled()) {
+                getLogger().debug("Launching JVM with command line: {}", pb.command().stream().collect(joining(" ")));
+            }
             Process p = pb.start();
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override

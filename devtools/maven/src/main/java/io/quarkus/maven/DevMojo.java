@@ -691,7 +691,9 @@ public class DevMojo extends AbstractMojo {
 
         public void run() throws Exception {
             // Display the launch command line in dev mode
-            getLog().info("Launching JVM with command line: " + args.stream().collect(joining(" ")));
+            if (getLog().isDebugEnabled()) {
+                getLog().debug("Launching JVM with command line: " + args.stream().collect(joining(" ")));
+            }
             process = new ProcessBuilder(args)
                     .inheritIO()
                     .directory(workingDir)

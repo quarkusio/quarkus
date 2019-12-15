@@ -5,6 +5,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 
 public class MsSQLProcessor {
 
@@ -20,4 +21,8 @@ public class MsSQLProcessor {
         nativeEnableAllCharsets.produce(new NativeImageEnableAllCharsetsBuildItem());
     }
 
+    @BuildStep
+    public RuntimeInitializedClassBuildItem runtimeInitializedClass() {
+        return new RuntimeInitializedClassBuildItem("com.microsoft.sqlserver.jdbc.KerbAuthentication");
+    }
 }

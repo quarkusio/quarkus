@@ -1,5 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.AbstractJKubeProcessor.TARGET_DIR;
+
 import java.nio.file.Path;
 
 import org.apache.maven.model.Build;
@@ -79,16 +81,16 @@ class FakeMavenMojoEnvironment {
 
     static MavenBuildContext fakeMavenBuildContext(Path projectDirectory) {
         final MavenProject mp = new MavenProject();
-        mp.getProperties().put("build_dir", projectDirectory.resolve("target").toString());
+        mp.getProperties().put("build_dir", projectDirectory.resolve(TARGET_DIR).toString());
         mp.setFile(projectDirectory.resolve("pom.xml").toFile());
         mp.setPackaging("jar");
         mp.setBuild(new Build());
         mp.getBuild().setOutputDirectory("target/classes");
         mp.getBuild().setSourceDirectory("src/main/java");
-        mp.getBuild().setDirectory("target");
+        mp.getBuild().setDirectory(TARGET_DIR);
         return new MavenBuildContext.Builder()
                 .sourceDirectory("src")
-                .outputDirectory("target")
+                .outputDirectory(TARGET_DIR)
                 .project(mp)
                 .build();
     }

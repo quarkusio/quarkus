@@ -18,4 +18,10 @@ public class KubernetesConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean skipApply;
+
+    /**
+     * Relative path for Dockerfile
+     */
+    @ConfigItem(defaultValue = "src/main/docker/Dockerfile.jvm")
+    public String dockerFile;
 }

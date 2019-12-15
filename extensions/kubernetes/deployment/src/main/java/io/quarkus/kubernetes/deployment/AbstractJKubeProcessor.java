@@ -28,6 +28,8 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 class AbstractJKubeProcessor {
 
+    static final String TARGET_DIR = "target";
+
     AbstractJKubeProcessor() {
     }
 

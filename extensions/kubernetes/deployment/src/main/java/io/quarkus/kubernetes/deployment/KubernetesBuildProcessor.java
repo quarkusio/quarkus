@@ -10,6 +10,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import javax.inject.Inject;
+
 import org.eclipse.jkube.kit.build.service.docker.ImageConfiguration;
 import org.eclipse.jkube.kit.config.image.build.BuildConfiguration;
 import org.eclipse.jkube.kit.config.service.JkubeServiceHub;
@@ -26,9 +28,11 @@ public class KubernetesBuildProcessor extends AbstractJKubeProcessor {
 
     private static final Logger log = Logger.getLogger(KubernetesBuildProcessor.class);
 
+    @Inject
+    KubernetesConfig kubernetesConfig;
+
     @BuildStep(onlyIf = IsNormal.class)
     public KubernetesImageBuildItem build(
-            KubernetesConfig kubernetesConfig,
             OutputTargetBuildItem outputTargetBuildItem,
             Optional<KubernetesProjectBuildItem> kubernetesProjectBI,
             Optional<JarBuildItem> jarBuildItem) {
@@ -38,13 +42,13 @@ public class KubernetesBuildProcessor extends AbstractJKubeProcessor {
             return null;
         }
         final JKubeLogger jKubeLogger = new JKubeLogger(log);
-        final Path projectDirectory = outputTargetBuildItem.getOutputDirectory().getParent();
-        final Path dockerFile = projectDirectory.resolve("src/main/docker/Dockerfile.jvm");
         final String imageName = String.format("%s/%s:%s", kubernetesProjectBI.get().getGroup(),
                 kubernetesProjectBI.get().getName(), kubernetesProjectBI.get().getVersion());
-        copyFiles(projectDirectory, dockerFile, imageName);
+        final Path projectDirectory = outputTargetBuildItem.getOutputDirectory().getParent();
+        final Path buildDirectory = initBuildDir(projectDirectory, imageName);
+        copyRequiredFiles(projectDirectory, buildDirectory);
         final BuildConfiguration buildConfig = new BuildConfiguration.Builder()
-                .dockerFile(dockerFile.toFile().getAbsolutePath())
+                .dockerFile(generateTargetDockerfile(projectDirectory, buildDirectory).toFile().getAbsolutePath())
                 .workdir(projectDirectory.toString())
                 .build();
         try {
@@ -62,22 +66,32 @@ public class KubernetesBuildProcessor extends AbstractJKubeProcessor {
         return null;
     }
 
-    private static void copyFiles(Path projectDir, Path dockerFile, String imageName) {
-        final String targetDirName = "target";
-        final Path buildDir = projectDir.resolve(targetDirName).resolve(imageName.replace(':', '/'))
+    private Path generateTargetDockerfile(Path projectDirectory, Path buildDir) {
+        final Path sourceDockerFile = projectDirectory.resolve(kubernetesConfig.dockerFile);
+        final Path targetDockerFile = buildDir.resolve("Dockerfile");
+        try {
+            Files.copy(sourceDockerFile, targetDockerFile);
+        } catch (IOException e) {
+            log.error("Error generating target Dockerfile", e);
+        }
+        return targetDockerFile;
+    }
+
+    private static Path initBuildDir(Path projectDir, String imageName) {
+        final Path buildDir = projectDir.resolve(TARGET_DIR).resolve(imageName.replace(':', '/'))
                 .resolve("build");
-        final File buildTargetDir = buildDir.resolve(targetDirName).toFile();
+        buildDir.toFile().mkdirs();
+        return buildDir;
+    }
+
+    private static void copyRequiredFiles(Path projectDir, Path buildDir) {
+        final File buildTargetDir = buildDir.resolve(TARGET_DIR).toFile();
         if (buildTargetDir.mkdirs()) {
             final FileFilter jarFilter = ff -> ff.getName().endsWith(".jar");
-            Stream.of(Objects.requireNonNull(projectDir.resolve(targetDirName).toFile().listFiles(jarFilter)))
+            Stream.of(Objects.requireNonNull(projectDir.resolve(TARGET_DIR).toFile().listFiles(jarFilter)))
                     .forEach(copyFileRelative(buildTargetDir.toPath()));
-            Stream.of(Objects.requireNonNull(projectDir.resolve(targetDirName).resolve("lib").toFile().listFiles(jarFilter)))
+            Stream.of(Objects.requireNonNull(projectDir.resolve(TARGET_DIR).resolve("lib").toFile().listFiles(jarFilter)))
                     .forEach(copyFileRelative(buildTargetDir.toPath().resolve("lib")));
-            try {
-                Files.copy(dockerFile, buildDir.resolve("Dockerfile"));
-            } catch (IOException e) {
-                log.error("Error copying source files", e);
-            }
         }
     }
 

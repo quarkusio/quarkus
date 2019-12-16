@@ -987,4 +987,15 @@ public class TestEndpoint {
         bug5274EntityRepository.count();
         return "OK";
     }
+
+    @Inject
+    Bug5885EntityRepository bug5885EntityRepository;
+
+    @GET
+    @Path("5885")
+    @Transactional
+    public String testBug5885() {
+        bug5885EntityRepository.findById(1L);
+        return "OK";
+    }
 }

@@ -67,7 +67,9 @@ public final class PatternMapBuilder {
             Container matched = patternMap.getMatched();
             if (matched != null) {
                 throw new IllegalArgumentException(
-                        "Multiple matching properties for name \"" + matched.getPropertyName() + "\"");
+                        "Multiple matching properties for name \"" + matched.getPropertyName()
+                                + "\" property was matched by both " + container.findField() + " and " + matched.findField()
+                                + ". This is likely because you have an incompatible combination of extensions that both define the same properties (e.g. including both reactive and blocking database extensions)");
             }
             patternMap.setMatched(container);
         } else if (member instanceof ClassDefinition.MapMember) {

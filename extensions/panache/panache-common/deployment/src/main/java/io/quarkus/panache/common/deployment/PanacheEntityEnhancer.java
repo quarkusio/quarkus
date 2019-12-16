@@ -84,17 +84,12 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                     descriptors.add(descriptor);
                     if (!descriptor.startsWith(JAXB_ANNOTATION_PREFIX)) {
                         return super.visitAnnotation(descriptor, visible);
+                    } else {
+                        // Save off JAX-B annotations on the field so they can be applied to the generated getter later
+                        EntityFieldAnnotation efAnno = new EntityFieldAnnotation(descriptor);
+                        ef.annotations.add(efAnno);
+                        return new PanacheMovingAnnotationVisitor(efAnno);
                     }
-                    // Save off JAX-B annotations on the field so they can be applied to the generated getter later
-                    EntityFieldAnnotation efAnno = new EntityFieldAnnotation(descriptor);
-                    ef.annotations.add(efAnno);
-                    return new AnnotationVisitor(Opcodes.ASM7) {
-                        @Override
-                        public void visit(String name, Object value) {
-                            efAnno.name = name;
-                            efAnno.value = value;
-                        }
-                    };
                 }
 
                 @Override
@@ -200,10 +195,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                     mv.visitMaxs(0, 0);
                     // Apply JAX-B annotations that are being transferred from the field
                     for (EntityFieldAnnotation anno : field.annotations) {
-                        AnnotationVisitor av = mv.visitAnnotation(anno.descriptor, true);
-                        if (anno.name != null)
-                            av.visit(anno.name, anno.value);
-                        av.visitEnd();
+                        anno.writeToVisitor(mv);
                     }
                     mv.visitEnd();
                 }

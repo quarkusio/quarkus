@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -91,7 +92,8 @@ public class ResteasyStandaloneRecorder {
     public Consumer<Route> start(RuntimeValue<Vertx> vertx,
             ShutdownContext shutdown,
             BeanContainer beanContainer,
-            boolean isVirtual, boolean isDefaultResourcesPath) {
+            boolean isVirtual, boolean isDefaultResourcesPath,
+            Executor executor) {
 
         shutdown.addShutdownTask(new Runnable() {
             @Override
@@ -147,7 +149,7 @@ public class ResteasyStandaloneRecorder {
         }
 
         if (deployment != null && isDefaultResourcesPath) {
-            handlers.add(vertxRequestHandler(vertx, beanContainer));
+            handlers.add(vertxRequestHandler(vertx, beanContainer, executor));
         }
         return new Consumer<Route>() {
 
@@ -161,9 +163,9 @@ public class ResteasyStandaloneRecorder {
     }
 
     public Handler<RoutingContext> vertxRequestHandler(RuntimeValue<Vertx> vertx,
-            BeanContainer beanContainer) {
+            BeanContainer beanContainer, Executor executor) {
         if (deployment != null) {
-            return new VertxRequestHandler(vertx.getValue(), beanContainer, deployment, contextPath, ALLOCATOR);
+            return new VertxRequestHandler(vertx.getValue(), beanContainer, deployment, contextPath, ALLOCATOR, executor);
         }
         return null;
     }

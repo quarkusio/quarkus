@@ -24,6 +24,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -210,7 +211,8 @@ public class ResteasyStandaloneBuildStep {
             BeanContainerBuildItem beanContainer,
             ResteasyStandaloneBuildItem standalone,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
-            HttpBuildTimeConfig httpConfig) throws Exception {
+            HttpBuildTimeConfig httpConfig,
+            ExecutorBuildItem executorBuildItem) throws Exception {
 
         if (standalone == null) {
             return;
@@ -221,7 +223,8 @@ public class ResteasyStandaloneBuildStep {
                 || standalone.deploymentRootPath.equals("/");
         if (!isDefaultOrNullDeploymentPath) {
             // We need to register a special handler for non-default deployment path (specified as application path or resteasyConfig.path)
-            Handler<RoutingContext> handler = recorder.vertxRequestHandler(vertx.getVertx(), beanContainer.getValue());
+            Handler<RoutingContext> handler = recorder.vertxRequestHandler(vertx.getVertx(), beanContainer.getValue(),
+                    executorBuildItem.getExecutorProxy());
             // Exact match for resources matched to the root path
             routes.produce(new RouteBuildItem(standalone.deploymentRootPath, handler, false));
             String matchPath = standalone.deploymentRootPath;
@@ -238,7 +241,7 @@ public class ResteasyStandaloneBuildStep {
         Consumer<Route> ut = recorder.start(vertx.getVertx(),
                 shutdown,
                 beanContainer.getValue(),
-                isVirtual, isDefaultOrNullDeploymentPath);
+                isVirtual, isDefaultOrNullDeploymentPath, executorBuildItem.getExecutorProxy());
 
         defaultRoutes.produce(new DefaultRouteBuildItem(ut));
     }

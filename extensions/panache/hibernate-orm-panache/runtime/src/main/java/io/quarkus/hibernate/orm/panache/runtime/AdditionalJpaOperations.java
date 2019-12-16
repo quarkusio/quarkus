@@ -9,6 +9,8 @@ import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
+//TODO this class is only needed by the Spring Data JPA module and would be placed there it it weren't for a dev-mode classloader issue
+// see https://github.com/quarkusio/quarkus/issues/6214
 public class AdditionalJpaOperations {
 
     @SuppressWarnings("rawtypes")
@@ -19,7 +21,6 @@ public class AdditionalJpaOperations {
         Query jpaQuery = em.createQuery(sort != null ? findQuery + JpaOperations.toOrderBy(sort) : findQuery);
         JpaOperations.bindParameters(jpaQuery, params);
         return new CustomCountPanacheQuery(em, jpaQuery, findQuery, countQuery, params);
-        //        return new PanacheQueryImpl(em, jpaQuery, findQuery, params);
     }
 
     @SuppressWarnings("rawtypes")
@@ -35,6 +36,5 @@ public class AdditionalJpaOperations {
         Query jpaQuery = em.createQuery(sort != null ? findQuery + JpaOperations.toOrderBy(sort) : findQuery);
         JpaOperations.bindParameters(jpaQuery, params);
         return new CustomCountPanacheQuery(em, jpaQuery, findQuery, countQuery, params);
-        //        return new PanacheQueryImpl(em, jpaQuery, findQuery, params);
     }
 }

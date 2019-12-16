@@ -30,6 +30,7 @@ import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
+import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
 public final class PanacheResourceProcessor {
 
@@ -82,9 +83,13 @@ public final class PanacheResourceProcessor {
             // Skip PanacheRepository
             if (classInfo.name().equals(DOTNAME_PANACHE_REPOSITORY))
                 continue;
+            if (PanacheRepositoryEnhancer.skipRepository(classInfo))
+                continue;
             daoClasses.add(classInfo.name().toString());
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY)) {
+            if (PanacheRepositoryEnhancer.skipRepository(classInfo))
+                continue;
             daoClasses.add(classInfo.name().toString());
         }
         for (String daoClass : daoClasses) {
@@ -95,6 +100,7 @@ public final class PanacheResourceProcessor {
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheEntity if we ask for subtypes of PanacheEntityBase
+        // NOTE: we don't skip abstract/generic entities because they still need accessors
         for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY_BASE)) {
             // FIXME: should we really skip PanacheEntity or all MappedSuperClass?
             if (classInfo.name().equals(DOTNAME_PANACHE_ENTITY))
@@ -121,5 +127,4 @@ public final class PanacheResourceProcessor {
             }
         }
     }
-
 }

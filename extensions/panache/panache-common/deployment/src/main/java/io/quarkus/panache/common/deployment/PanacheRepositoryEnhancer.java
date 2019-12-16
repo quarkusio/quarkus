@@ -1,5 +1,6 @@
 package io.quarkus.panache.common.deployment;
 
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -90,15 +91,13 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
                 return null;
             }
 
-            final ClassInfo classByName = indexView.getClassByName(clazz);
-            for (org.jboss.jandex.Type type : classByName.interfaceTypes()) {
-                if (type.name().equals(repositoryDotName)) {
-                    org.jboss.jandex.Type entityType = type.asParameterizedType().arguments().get(0);
-                    return entityType.name().toString().replace('.', '/');
-                }
-            }
-
-            return recursivelyFindEntityTypeFromClass(classByName.superName(), repositoryDotName);
+            List<org.jboss.jandex.Type> typeParameters = io.quarkus.deployment.util.JandexUtil
+                    .resolveTypeParameters(clazz, repositoryDotName, indexView);
+            if (typeParameters.isEmpty())
+                throw new IllegalStateException(
+                        "Failed to find supertype " + repositoryDotName + " from entity class " + clazz);
+            org.jboss.jandex.Type entityType = typeParameters.get(0);
+            return entityType.name().toString().replace('.', '/');
         }
 
         @Override
@@ -166,5 +165,12 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
             mv.visitMaxs(0, 0);
             mv.visitEnd();
         }
+    }
+
+    public static boolean skipRepository(ClassInfo classInfo) {
+        // we don't want to add methods to abstract/generic entities/repositories: they get added to bottom types
+        // which can't be either
+        return Modifier.isAbstract(classInfo.flags())
+                || !classInfo.typeParameters().isEmpty();
     }
 }

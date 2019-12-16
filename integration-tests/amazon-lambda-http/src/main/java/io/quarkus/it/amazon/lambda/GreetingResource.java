@@ -1,11 +1,16 @@
 package io.quarkus.it.amazon.lambda;
 
+import java.util.HashMap;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Path("/hello")
 public class GreetingResource {
@@ -14,6 +19,16 @@ public class GreetingResource {
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
         return "hello";
+    }
+
+    @GET
+    @Path("/json")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String json() throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        HashMap<Object, Object> map = new HashMap<>();
+        map.put("hello", "world");
+        return mapper.writeValueAsString(map);
     }
 
     @POST

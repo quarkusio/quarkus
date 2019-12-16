@@ -17,7 +17,7 @@ import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.core.interception.jaxrs.SuspendableContainerResponseContext;
 
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.api.Variant;
+import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.VariantTemplate;
 
 @Provider

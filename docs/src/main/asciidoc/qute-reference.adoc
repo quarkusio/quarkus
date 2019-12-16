@@ -182,6 +182,24 @@ This could be useful to access data for which the key is overriden:
 
 ====
 
+===== Character Escapes
+
+For HTML and XML templates the `'`, `"`, `<`, `>`, `&` characters are escaped by default.
+If you need to render the unescaped value:
+
+1. Use the `raw` or `safe` properties implemented as extension methods of the `java.lang.Object`,
+2. Wrap the `String` value in a `io.quarkus.qute.RawString`.
+
+[source,html]
+----
+<html>
+<h1>{title}</h1> <1>
+{paragraph.raw} <2>
+</html>
+----
+<1> `title` that resolves to `Expressions & Escapes` will be rendered as `Expressions &amp;amp; Escapes`
+<2> `paragraph` that resolves to `<p>My text!</p>` will be rendered as `<p>My text!</p>`
+
 ==== Sections
 
 A section:

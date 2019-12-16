@@ -59,6 +59,14 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/5885").then().body(is("OK"));
     }
 
+    @Test
+    public void testJaxbAnnotationTransfer() {
+        RestAssured.when()
+                .get("/test/testJaxbAnnotationTransfer")
+                .then()
+                .body(is("OK"));
+    }
+
     /**
      * This test is disabled in native mode as there is no interaction with the quarkus integration test endpoint.
      */

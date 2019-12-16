@@ -28,6 +28,7 @@ import io.quarkus.mongodb.panache.PanacheMongoEntityBase;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.mongodb.panache.PanacheMongoRepositoryBase;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
+import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
 public class PanacheResourceProcessor {
     static final DotName DOTNAME_PANACHE_REPOSITORY_BASE = DotName.createSimple(PanacheMongoRepositoryBase.class.getName());
@@ -88,9 +89,13 @@ public class PanacheResourceProcessor {
             // Skip PanacheRepository
             if (classInfo.name().equals(DOTNAME_PANACHE_REPOSITORY))
                 continue;
+            if (PanacheRepositoryEnhancer.skipRepository(classInfo))
+                continue;
             daoClasses.add(classInfo.name().toString());
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY)) {
+            if (PanacheRepositoryEnhancer.skipRepository(classInfo))
+                continue;
             daoClasses.add(classInfo.name().toString());
         }
         for (String daoClass : daoClasses) {

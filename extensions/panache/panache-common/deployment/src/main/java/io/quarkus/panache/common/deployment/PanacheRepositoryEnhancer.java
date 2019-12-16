@@ -1,5 +1,6 @@
 package io.quarkus.panache.common.deployment;
 
+import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -164,5 +165,12 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
             mv.visitMaxs(0, 0);
             mv.visitEnd();
         }
+    }
+
+    public static boolean skipRepository(ClassInfo classInfo) {
+        // we don't want to add methods to abstract/generic entities/repositories: they get added to bottom types
+        // which can't be either
+        return Modifier.isAbstract(classInfo.flags())
+                || !classInfo.typeParameters().isEmpty();
     }
 }

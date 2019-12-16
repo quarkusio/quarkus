@@ -22,6 +22,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlTransient;
 
 import org.hibernate.engine.spi.SelfDirtinessTracker;
@@ -1032,11 +1033,21 @@ public class TestEndpoint {
         assertNull(m.getAnnotation(XmlAttribute.class));
         assertNotNull(m.getAnnotation(XmlTransient.class));
 
+        m = JAXBEntity.class.getMethod("getArrayAnnotatedProp");
+        assertNull(m.getAnnotation(XmlTransient.class));
+        XmlElements elementsAnno = m.getAnnotation(XmlElements.class);
+        assertNotNull(elementsAnno);
+        assertNotNull(elementsAnno.value());
+        assertEquals(2, elementsAnno.value().length);
+        assertEquals("array1", elementsAnno.value()[0].name());
+        assertEquals("array2", elementsAnno.value()[1].name());
+
         // Ensure that all original fields were labeled @XmlTransient and had their original JAX-B annotations removed
         ensureFieldSanitized("namedAnnotatedProp");
         ensureFieldSanitized("transientProp");
         ensureFieldSanitized("defaultAnnotatedProp");
         ensureFieldSanitized("unAnnotatedProp");
+        ensureFieldSanitized("arrayAnnotatedProp");
 
         return "OK";
     }

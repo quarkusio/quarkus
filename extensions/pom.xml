@@ -96,6 +96,7 @@
 
         <!-- Security -->
         <module>security</module>
+        <module>elytron-security-common</module>
         <module>elytron-security</module>
         <module>elytron-security-jdbc</module>
         <module>elytron-security-properties-file</module>

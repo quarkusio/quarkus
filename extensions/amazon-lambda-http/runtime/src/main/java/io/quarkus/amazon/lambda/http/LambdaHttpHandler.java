@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.amazonaws.serverless.proxy.internal.LambdaContainerHandler;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
@@ -165,12 +164,15 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         if (contentType != null) {
             int index = contentType.indexOf(';');
             if (index >= 0) {
-                return LambdaContainerHandler.getContainerConfig().isBinaryContentType(contentType.substring(0, index));
+                return isBinaryContentType(contentType.substring(0, index));
             } else {
-                return LambdaContainerHandler.getContainerConfig().isBinaryContentType(contentType);
+                return isBinaryContentType(contentType);
             }
         }
         return false;
     }
 
+    private boolean isBinaryContentType(String contentType) {
+        return contentType != null && !contentType.startsWith("text/");
+    }
 }

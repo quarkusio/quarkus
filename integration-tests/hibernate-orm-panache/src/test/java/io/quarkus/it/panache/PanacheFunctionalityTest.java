@@ -54,6 +54,11 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/5274").then().body(is("OK"));
     }
 
+    @Test
+    public void testBug5885() {
+        RestAssured.when().get("/test/5885").then().body(is("OK"));
+    }
+
     /**
      * This test is disabled in native mode as there is no interaction with the quarkus integration test endpoint.
      */

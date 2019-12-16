@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.panache.deployment;
 
+import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -82,9 +83,13 @@ public final class PanacheResourceProcessor {
             // Skip PanacheRepository
             if (classInfo.name().equals(DOTNAME_PANACHE_REPOSITORY))
                 continue;
+            if (skipRepository(classInfo))
+                continue;
             daoClasses.add(classInfo.name().toString());
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY)) {
+            if (skipRepository(classInfo))
+                continue;
             daoClasses.add(classInfo.name().toString());
         }
         for (String daoClass : daoClasses) {
@@ -95,6 +100,7 @@ public final class PanacheResourceProcessor {
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheEntity if we ask for subtypes of PanacheEntityBase
+        // NOTE: we don't skip abstract/generic entities because they still need accessors
         for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY_BASE)) {
             // FIXME: should we really skip PanacheEntity or all MappedSuperClass?
             if (classInfo.name().equals(DOTNAME_PANACHE_ENTITY))
@@ -120,6 +126,13 @@ public final class PanacheResourceProcessor {
                 }
             }
         }
+    }
+
+    private boolean skipRepository(ClassInfo classInfo) {
+        // we don't want to add methods to abstract/generic entities/repositories: they get added to bottom types
+        // which can't be either
+        return Modifier.isAbstract(classInfo.flags())
+                || !classInfo.typeParameters().isEmpty();
     }
 
 }

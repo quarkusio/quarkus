@@ -3,6 +3,7 @@ package io.quarkus.resteasy.runtime.standalone;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.Executor;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
@@ -42,18 +43,20 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     protected final BeanContainer beanContainer;
     protected final CurrentIdentityAssociation association;
     protected final CurrentVertxRequest currentVertxRequest;
+    protected final Executor executor;
 
     public VertxRequestHandler(Vertx vertx,
             BeanContainer beanContainer,
             ResteasyDeployment deployment,
             String rootPath,
-            BufferAllocator allocator) {
+            BufferAllocator allocator, Executor executor) {
         this.vertx = vertx;
         this.beanContainer = beanContainer;
         this.dispatcher = new RequestDispatcher((SynchronousDispatcher) deployment.getDispatcher(),
                 deployment.getProviderFactory(), null, Thread.currentThread().getContextClassLoader());
         this.rootPath = rootPath;
         this.allocator = allocator;
+        this.executor = executor;
         Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);
         this.association = association.isResolvable() ? association.get() : null;
         currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
@@ -75,11 +78,14 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             return;
         }
 
-        vertx.executeBlocking(event -> {
-            dispatch(request, is, new VertxBlockingOutput(request.request()));
-        }, false, event -> {
-            if (event.failed()) {
-                request.fail(event.cause());
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    dispatch(request, is, new VertxBlockingOutput(request.request()));
+                } catch (Throwable e) {
+                    request.fail(e);
+                }
             }
         });
     }

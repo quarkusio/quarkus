@@ -25,42 +25,17 @@ import org.hibernate.search.backend.elasticsearch.document.model.esnative.impl.R
 import org.hibernate.search.backend.elasticsearch.document.model.esnative.impl.RoutingType;
 import org.hibernate.search.backend.elasticsearch.index.settings.esnative.impl.Analysis;
 import org.hibernate.search.backend.elasticsearch.index.settings.esnative.impl.IndexSettings;
-import org.hibernate.search.mapper.pojo.bridge.mapping.annotation.declaration.MarkerBinding;
-import org.hibernate.search.mapper.pojo.bridge.mapping.annotation.declaration.PropertyBinding;
-import org.hibernate.search.mapper.pojo.bridge.mapping.annotation.declaration.RoutingKeyBinding;
-import org.hibernate.search.mapper.pojo.bridge.mapping.annotation.declaration.TypeBinding;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.AssociationInverseSide;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.DocumentId;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ScaledNumberField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.processing.TypeMapping;
 import org.jboss.jandex.DotName;
 
 class HibernateSearchClasses {
 
     static final DotName INDEXED = DotName.createSimple(Indexed.class.getName());
 
-    static final List<DotName> FIELD_ANNOTATIONS = Arrays.asList(
-            DotName.createSimple(DocumentId.class.getName()),
-            DotName.createSimple(GenericField.class.getName()),
-            DotName.createSimple(FullTextField.class.getName()),
-            DotName.createSimple(KeywordField.class.getName()),
-            DotName.createSimple(ScaledNumberField.class.getName()),
-            DotName.createSimple(IndexedEmbedded.class.getName()),
-            DotName.createSimple(AssociationInverseSide.class.getName()),
-            DotName.createSimple(IndexingDependency.class.getName()));
-
-    static final List<DotName> BINDING_DECLARATION_ANNOTATIONS_ON_PROPERTIES = Arrays.asList(
-            DotName.createSimple(PropertyBinding.class.getName()),
-            DotName.createSimple(MarkerBinding.class.getName()));
-
-    static final List<DotName> BINDING_DECLARATION_ANNOTATIONS_ON_TYPES = Arrays.asList(
-            DotName.createSimple(TypeBinding.class.getName()),
-            DotName.createSimple(RoutingKeyBinding.class.getName()));
+    static final DotName PROPERTY_MAPPING_META_ANNOTATION = DotName.createSimple(
+            org.hibernate.search.mapper.pojo.mapping.definition.annotation.processing.PropertyMapping.class.getName());
+    static final DotName TYPE_MAPPING_META_ANNOTATION = DotName.createSimple(TypeMapping.class.getName());
 
     static final List<DotName> SCHEMA_MAPPING_CLASSES = Arrays.asList(
             DotName.createSimple(AbstractTypeMapping.class.getName()),

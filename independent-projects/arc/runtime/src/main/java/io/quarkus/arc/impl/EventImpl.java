@@ -1,7 +1,6 @@
 package io.quarkus.arc.impl;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ManagedContext;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
@@ -20,7 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
-import javax.enterprise.context.RequestScoped;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.NotificationOptions;
 import javax.enterprise.event.ObserverException;
@@ -86,28 +84,17 @@ class EventImpl<T> implements Event<T> {
             return AsyncEventDeliveryStage.completed(event, executor);
         }
 
-        Supplier<U> notifyLogic = () -> {
-            ObserverExceptionHandler exceptionHandler = new CollectingExceptionHandler();
-            notifier.notify(event, exceptionHandler, true);
-            handleExceptions(exceptionHandler);
-            return event;
-        };
-
-        Supplier<U> withinRequest = () -> {
-            ArcContainer container = Arc.container();
-            if (container.getActiveContext(RequestScoped.class) != null) {
-                return notifyLogic.get();
-            } else {
-                ManagedContext requestContext = container.requestContext();
-                try {
-                    requestContext.activate();
-                    return notifyLogic.get();
-                } finally {
-                    requestContext.terminate();
-                }
+        Supplier<U> notifyLogic = new Supplier<U>() {
+            @Override
+            public U get() {
+                ObserverExceptionHandler exceptionHandler = new CollectingExceptionHandler();
+                notifier.notify(event, exceptionHandler, true);
+                handleExceptions(exceptionHandler);
+                return event;
             }
         };
-        CompletableFuture<U> completableFuture = CompletableFuture.supplyAsync(withinRequest, executor);
+
+        CompletableFuture<U> completableFuture = CompletableFuture.supplyAsync(notifyLogic, executor);
         return new AsyncEventDeliveryStage<>(completableFuture, executor);
     }
 
@@ -214,17 +201,31 @@ class EventImpl<T> implements Event<T> {
             notify(event, ObserverExceptionHandler.IMMEDIATE_HANDLER, false);
         }
 
-        @SuppressWarnings({ "rawtypes", "unchecked" })
         void notify(T event, ObserverExceptionHandler exceptionHandler, boolean async) {
             if (!isEmpty()) {
-                EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
-                for (ObserverMethod<? super T> observerMethod : observerMethods) {
-                    if (observerMethod.isAsync() == async) {
-                        try {
-                            observerMethod.notify(eventContext);
-                        } catch (Throwable e) {
-                            exceptionHandler.handle(e);
-                        }
+                ManagedContext requestContext = Arc.container().requestContext();
+                if (requestContext.isActive()) {
+                    notifyObservers(event, exceptionHandler, async);
+                } else {
+                    try {
+                        requestContext.activate();
+                        notifyObservers(event, exceptionHandler, async);
+                    } finally {
+                        requestContext.terminate();
+                    }
+                }
+            }
+        }
+
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        private void notifyObservers(T event, ObserverExceptionHandler exceptionHandler, boolean async) {
+            EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
+            for (ObserverMethod<? super T> observerMethod : observerMethods) {
+                if (observerMethod.isAsync() == async) {
+                    try {
+                        observerMethod.notify(eventContext);
+                    } catch (Throwable e) {
+                        exceptionHandler.handle(e);
                     }
                 }
             }

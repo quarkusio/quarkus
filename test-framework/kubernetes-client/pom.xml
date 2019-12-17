@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>quarkus-test-kubernetes-client</artifactId>
-    <name>Quarkus - Test framework - Kubernetes Client Mock Server support</name>
+    <name>Quarkus - Test Framework - Kubernetes Client Mock Server support</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

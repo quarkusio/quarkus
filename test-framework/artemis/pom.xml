@@ -11,7 +11,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>quarkus-test-artemis</artifactId>
-    <name>Quarkus - Artemis - Test</name>
+    <name>Quarkus - Test Framework - Artemis</name>
     <description>Module that will hold all tests resources that can will be usable by Quarkus developers and users of the framework
     </description>
 

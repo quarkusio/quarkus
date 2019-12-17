@@ -35,7 +35,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <executable>prepare.sh</executable>
+                    <executable>${project.basedir}/prepare.sh</executable>
                     <workingDirectory>${project.basedir}</workingDirectory>
                 </configuration>
             </plugin>
@@ -60,13 +60,6 @@
                                 </fileSet>
                             </fileSets>
                         </configuration>
-                    </execution>
-                    <execution>
-                        <id>compile-report</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
                     </execution>
                 </executions>
             </plugin>

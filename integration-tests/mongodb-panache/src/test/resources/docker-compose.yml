@@ -1,0 +1,29 @@
+version: "3.6"
+
+services:
+  mongo1:
+    hostname: mongo1
+    image: mongo:4.2
+    expose:
+      - 27017
+    ports:
+      - 27017:27017
+    networks:
+      - mongo-rs
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0" ]
+
+  mongo2:
+    hostname: mongo2
+    image: mongo:4.2
+    expose:
+      - 27017
+    ports:
+      - 27018:27017
+    networks:
+      - mongo-rs
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0" ]
+
+networks:
+  mongo-rs:
+    driver: bridge
+    name: mongo-rs

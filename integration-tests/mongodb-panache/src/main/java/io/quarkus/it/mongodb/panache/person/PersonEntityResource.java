@@ -7,6 +7,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import io.quarkus.mongodb.panache.transaction.Transactional;
 import io.quarkus.panache.common.Sort;
 
 @Path("/persons/entity")
@@ -38,6 +39,15 @@ public class PersonEntityResource {
     @Path("/multiple")
     public void addPersons(List<PersonEntity> persons) {
         PersonEntity.persist(persons);
+    }
+
+    // This endpoint is not called inside the test because transaction needs a replica set
+    @POST
+    @Path("/transaction")
+    @Transactional
+    public void addPersonTwice(PersonEntity person) {
+        person.persist();
+        person.persist();//this should throw an exception, and the first person should not have been created
     }
 
     @PUT

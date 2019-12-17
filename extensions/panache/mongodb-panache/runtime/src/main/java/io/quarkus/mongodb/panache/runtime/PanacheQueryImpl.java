@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 
 import org.bson.Document;
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -140,7 +141,13 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @SuppressWarnings("unchecked")
     public long count() {
         if (count == null) {
-            count = collection.countDocuments(mongoQuery);
+            ClientSession session = MongoOperations.getSession();
+            Document query = getQuery();
+            if (session == null) {
+                count = collection.countDocuments(query);
+            } else {
+                count = collection.countDocuments(session, query);
+            }
         }
         return count;
     }
@@ -149,7 +156,9 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @SuppressWarnings("unchecked")
     public <T extends Entity> List<T> list() {
         List<T> list = new ArrayList<>();
-        FindIterable find = mongoQuery == null ? collection.find() : collection.find(mongoQuery);
+        ClientSession session = MongoOperations.getSession();
+        Document query = getQuery();
+        FindIterable find = session == null ? collection.find(query) : collection.find(session, query);
         if (this.projections != null) {
             find.projection(projections);
         }
@@ -187,7 +196,7 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @SuppressWarnings("unchecked")
     public <T extends Entity> T singleResult() {
         List<T> list = list();
-        if (list.isEmpty() || list.size() > 1) {
+        if (list.size() != 1) {
             throw new PanacheQueryException("There should be only one result");
         }
 
@@ -203,5 +212,9 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         }
 
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+    }
+
+    private Document getQuery() {
+        return mongoQuery == null ? new Document() : mongoQuery;
     }
 }

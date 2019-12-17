@@ -136,6 +136,10 @@ class HibernateSearchElasticsearchProcessor {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
         Set<DotName> reflectiveClassCollector = new HashSet<>();
 
+        // TODO remove this when upgrading to Beta4 (when https://hibernate.atlassian.net/browse/HSEARCH-3795 is solved)
+        reflectiveClass.produce(
+                new ReflectiveClassBuildItem(false, false, org.hibernate.search.engine.logging.impl.Log_$logger.class));
+
         if (buildTimeConfig.defaultBackend.analysis.configurer.isPresent()) {
             reflectiveClass.produce(
                     new ReflectiveClassBuildItem(true, false, buildTimeConfig.defaultBackend.analysis.configurer.get()));

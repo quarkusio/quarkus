@@ -251,6 +251,18 @@ class MyBeanStarter {
 
 NOTE: Quarkus users are encouraged to always prefer the `@Observes StartupEvent` to `@Initialized(ApplicationScoped.class)` as explained in the link:lifecycle[Application Initialization and Termination] guide. 
 
+=== Request Context Lifecycle 
+
+The request context is also active:
+
+* during notification of a synchronous observer method.
+
+The request context is destroyed:
+
+* after the observer notification completes for an event, if it was not already active when the notification started.
+
+NOTE: An event with qualifier `@Initialized(RequestScoped.class)` is fired when the request context is initialized for an observer notification. Moreover, the events with qualifiers `@BeforeDestroyed(RequestScoped.class)` and `@Destroyed(RequestScoped.class)` are fired when the request context is destroyed. 
+
 === Qualified Injected Fields
 
 In CDI, if you declare a field injection point you need to use `@Inject` and optionally a set of qualifiers:

@@ -1,6 +1,5 @@
 package io.quarkus.qute;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -10,15 +9,15 @@ import java.util.Objects;
  */
 public final class Escaper {
 
-    private final Map<Character, String> replacements;
+    private final CharObjectHashMap<String> replacements;
 
     /**
      *
      * @param replacements
      */
     private Escaper(Map<Character, String> replacements) {
-        this.replacements = replacements.isEmpty() ? Collections.emptyMap()
-                : new HashMap<>(replacements);
+        this.replacements = new CharObjectHashMap<>(replacements.size());
+        this.replacements.putAll(replacements);
     }
 
     /**
@@ -81,5 +80,4 @@ public final class Escaper {
         }
 
     }
-
 }

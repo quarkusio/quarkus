@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>quarkus-junit5-internal</artifactId>
-    <name>Quarkus - Test framework - JUnit 5 Internal Test Framework</name>
+    <name>Quarkus - Test Framework - JUnit 5 Internal Test Framework</name>
 
     <description>
         A runner for unit tests, intended for testing Quarkus rather than

@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>quarkus-test-amazon-lambda</artifactId>
-    <name>Quarkus - Amazon Lambda - Test Framework</name>
+    <name>Quarkus - Test Framework - Amazon Lambda</name>
 
     <dependencies>
         <dependency>

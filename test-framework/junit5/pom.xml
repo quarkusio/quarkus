@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>quarkus-junit5</artifactId>
-    <name>Quarkus - Test framework - JUnit 5</name>
+    <name>Quarkus - Test Framework - JUnit 5</name>
 
     <dependencies>
         <dependency>

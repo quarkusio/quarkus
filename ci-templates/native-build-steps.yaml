@@ -29,7 +29,7 @@ jobs:
       inputs:
         artifact: $(Build.SourceVersion)-BuiltMavenRepo
         targetPath: $(Pipeline.Workspace)/.m2/repository/
-    - bash: ls $(Pipeline.Workspace)/.m2/repository/
+    - bash: (cd $(Pipeline.Workspace)/.m2/repository/$(Build.SourceVersion)-BuiltMavenRepo/; mv * ..)
     - ${{ if eq(parameters.postgres, 'true') }}:
       - script: docker run --rm --publish 5432:5432 --name build-postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -d postgres:10.5
         displayName: 'start postgres'
@@ -50,4 +50,4 @@ jobs:
       inputs:
         goals: 'install'
         mavenOptions: $(MAVEN_OPTS)
-        options: '-Dmaven.repo.local=$(Pipeline.Workspace)/.m2/repository/ -pl integration-tests/${{ join('',integration-tests/'', parameters.modules) }} -B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dnative-image.xmx=6g -Dnative -Dno-format'
+        options: '-pl integration-tests/${{ join('',integration-tests/'', parameters.modules) }} -B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dnative-image.xmx=6g -Dnative -Dno-format'

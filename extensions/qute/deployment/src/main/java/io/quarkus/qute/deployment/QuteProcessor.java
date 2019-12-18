@@ -275,7 +275,7 @@ public class QuteProcessor {
     }
 
     @BuildStep
-    void validateInjectedBeans(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+    void validateBeansInjectedInTemplates(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             TemplatesAnalysisBuildItem analysis, BeanArchiveIndexBuildItem beanArchiveIndex,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
@@ -496,30 +496,20 @@ public class QuteProcessor {
     }
 
     @BuildStep
-    void processInjectionPoints(QuteConfig config, ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            List<TemplatePathBuildItem> templatePaths, ValidationPhaseBuildItem validationPhase,
-            BuildProducer<ValidationErrorBuildItem> validationErrors, BuildProducer<TemplateVariantsBuildItem> templateVariants)
-            throws IOException {
+    void validateTemplateInjectionPoints(List<TemplatePathBuildItem> templatePaths, ValidationPhaseBuildItem validationPhase,
+            BuildProducer<ValidationErrorBuildItem> validationErrors) {
 
-        ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
-        String basePath = "templates/";
-        Path templatesPath = applicationArchive.getChildPath(basePath);
-
-        // Remove suffix from the path; e.g. "items.html" becomes "items"
         Set<String> filePaths = new HashSet<String>();
         for (TemplatePathBuildItem templatePath : templatePaths) {
-            String filePath = templatePath.getPath();
-            if (File.separatorChar != '/') {
-                filePath = filePath.replace(File.separatorChar, '/');
-            }
-            filePaths.add(filePath);
-            int idx = filePath.lastIndexOf('.');
+            String path = templatePath.getPath();
+            filePaths.add(path);
+            int idx = path.lastIndexOf('.');
             if (idx != -1) {
-                filePaths.add(filePath.substring(0, idx));
+                // Also add version without suffix from the path
+                // For example for "items.html" also add "items"
+                filePaths.add(path.substring(0, idx));
             }
         }
-
-        Set<String> variantBases = new HashSet<>();
 
         for (InjectionPointInfo injectionPoint : validationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
 
@@ -558,19 +548,31 @@ public class QuteProcessor {
                     if (filePaths.stream().noneMatch(path -> path.endsWith(name))) {
                         validationErrors.produce(new ValidationErrorBuildItem(
                                 new IllegalStateException("No variant template found for " + injectionPoint.getTargetInfo())));
-                    } else {
-                        variantBases.add(name);
                     }
                 }
             }
         }
+    }
 
-        if (!variantBases.isEmpty()) {
-            Map<String, List<String>> variants = new HashMap<>();
-            scanVariants(basePath, templatesPath, templatesPath, variantBases, variants);
-            templateVariants.produce(new TemplateVariantsBuildItem(variants));
-            LOGGER.debugf("Variant templates found: %s", variants);
+    @BuildStep
+    TemplateVariantsBuildItem collectTemplateVariants(List<TemplatePathBuildItem> templatePaths) throws IOException {
+        Set<String> allPaths = templatePaths.stream().map(TemplatePathBuildItem::getPath).collect(Collectors.toSet());
+        // item -> [item.html, item.txt]
+        Map<String, List<String>> baseToVariants = new HashMap<>();
+        for (String path : allPaths) {
+            int idx = path.lastIndexOf('.');
+            if (idx != -1) {
+                String base = path.substring(0, idx);
+                List<String> variants = baseToVariants.get(base);
+                if (variants == null) {
+                    variants = new ArrayList<>();
+                    baseToVariants.put(base, variants);
+                }
+                variants.add(path);
+            }
         }
+        LOGGER.debugf("Variant templates found: %s", baseToVariants);
+        return new TemplateVariantsBuildItem(baseToVariants);
     }
 
     @BuildStep
@@ -781,7 +783,7 @@ public class QuteProcessor {
         return injectExpressions;
     }
 
-    private String getName(InjectionPointInfo injectionPoint) {
+    public static String getName(InjectionPointInfo injectionPoint) {
         if (injectionPoint.isField()) {
             return injectionPoint.getTarget().asField().name();
         } else if (injectionPoint.isParam()) {
@@ -813,36 +815,19 @@ public class QuteProcessor {
         try (Stream<Path> files = Files.list(directory)) {
             Iterator<Path> iter = files.iterator();
             while (iter.hasNext()) {
-                Path path = iter.next();
-                if (Files.isRegularFile(path)) {
-                    LOGGER.debugf("Found template: %s", path);
-                    String templatePath = root.relativize(path).toString();
-                    produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources, basePath, templatePath, path,
-                            false);
-                } else if (Files.isDirectory(path) && !path.getFileName().toString().equals("tags")) {
-                    LOGGER.debugf("Scan directory: %s", path);
-                    scan(root, path, basePath, watchedPaths, templatePaths, nativeImageResources);
-                }
-            }
-        }
-    }
-
-    void scanVariants(String basePath, Path root, Path directory, Set<String> variantBases, Map<String, List<String>> variants)
-            throws IOException {
-        try (Stream<Path> files = Files.list(directory)) {
-            Iterator<Path> iter = files.iterator();
-            while (iter.hasNext()) {
-                Path path = iter.next();
-                if (Files.isRegularFile(path)) {
-                    for (String base : variantBases) {
-                        if (path.toAbsolutePath().toString().contains(base)) {
-                            // Variants are relative paths to base, e.g. "detail/item2"
-                            variants.computeIfAbsent(base, i -> new ArrayList<>())
-                                    .add(root.relativize(path).toString());
-                        }
+                Path filePath = iter.next();
+                if (Files.isRegularFile(filePath)) {
+                    LOGGER.debugf("Found template: %s", filePath);
+                    String templatePath = root.relativize(filePath).toString();
+                    if (File.separatorChar != '/') {
+                        templatePath = templatePath.replace(File.separatorChar, '/');
                     }
-                } else if (Files.isDirectory(path)) {
-                    scanVariants(basePath, root, path, variantBases, variants);
+                    produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources, basePath, templatePath,
+                            filePath,
+                            false);
+                } else if (Files.isDirectory(filePath) && !filePath.getFileName().toString().equals("tags")) {
+                    LOGGER.debugf("Scan directory: %s", filePath);
+                    scan(root, filePath, basePath, watchedPaths, templatePaths, nativeImageResources);
                 }
             }
         }

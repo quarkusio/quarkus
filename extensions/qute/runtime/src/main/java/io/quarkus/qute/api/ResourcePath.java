@@ -8,6 +8,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import javax.enterprise.util.AnnotationLiteral;
 import javax.enterprise.util.Nonbinding;
 import javax.inject.Qualifier;
 
@@ -25,5 +26,25 @@ public @interface ResourcePath {
      */
     @Nonbinding
     String value();
+
+    /**
+     * Supports inline instantiation of this qualifier.
+     */
+    public static final class Literal extends AnnotationLiteral<ResourcePath> implements ResourcePath {
+
+        private static final long serialVersionUID = 1L;
+
+        private final String value;
+
+        public Literal(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String value() {
+            return value;
+        }
+
+    }
 
 }

@@ -363,6 +363,7 @@ stages:
             - spring-di
             - spring-web
             - spring-data-jpa
+            - spring-boot-properties
           name: spring
 
       - template: native-build-steps.yaml

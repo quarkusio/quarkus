@@ -271,7 +271,8 @@ public class QuarkusDev extends QuarkusTask {
                 res = file.getAbsolutePath();
             }
 
-            final Configuration compileCp = project.getConfigurations().getByName("compileClasspath");
+            final Configuration compileCp = project.getConfigurations()
+                    .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
             final DependencySet compileCpDependencies = compileCp.getAllDependencies();
 
             for (Dependency dependency : compileCpDependencies) {

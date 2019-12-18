@@ -12,7 +12,13 @@ import org.eclipse.microprofile.config.ConfigProvider;
 public class TestHTTPResourceManager {
 
     public static String getUri() {
-        return ConfigProvider.getConfig().getValue("test.url", String.class);
+        try {
+            return ConfigProvider.getConfig().getValue("test.url", String.class);
+        } catch (IllegalStateException e) {
+            //massive hack for dev mode tests, dev mode has not started yet
+            //so we don't have any way to load this correctly from config
+            return "http://localhost:8080";
+        }
     }
 
     public static String getSslUri() {

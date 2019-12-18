@@ -29,7 +29,7 @@ jobs:
       inputs:
         artifact: $(Build.SourceVersion)-BuiltMavenRepo
         targetPath: $(Pipeline.Workspace)/.m2/repository/
-    - bash: ls $(Pipeline.Workspace)/.m2/repository/
+    - bash: (cd $(Pipeline.Workspace)/.m2/repository/$(Build.SourceVersion)-BuiltMavenRepo/; mv * ..)
     - ${{ if eq(parameters.postgres, 'true') }}:
       - script: docker run --rm --publish 5432:5432 --name build-postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -d postgres:10.5
         displayName: 'start postgres'

@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>quarkus-arquillian</artifactId>
-     <name>Quarkus - Arquillian Adapter</name>
+     <name>Quarkus - Test Framework - Arquillian Adapter</name>
 
     <dependencyManagement>
         <dependencies>

@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>quarkus-test-h2</artifactId>
-    <name>Quarkus - Test framework - H2 Database Support</name>
+    <name>Quarkus - Test Framework - H2 Database Support</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

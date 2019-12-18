@@ -11,8 +11,8 @@
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>quarkus-vault-test</artifactId>
-    <name>Quarkus - Vault - Test</name>
+    <artifactId>quarkus-test-vault</artifactId>
+    <name>Quarkus - Test Framework - Vault</name>
 
     <dependencies>
 

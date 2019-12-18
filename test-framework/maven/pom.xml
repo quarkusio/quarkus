@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-test-maven</artifactId>
     <packaging>jar</packaging>
-    <name>Quarkus - Maven Integration Test Framework</name>
+    <name>Quarkus - Test Framework - Maven Integration</name>
 
     <dependencies>
         <dependency>

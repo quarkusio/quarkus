@@ -27,6 +27,7 @@ import org.gradle.api.file.RegularFile;
 import org.gradle.api.internal.artifacts.DefaultModuleIdentifier;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
 import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
 import org.gradle.jvm.tasks.Jar;
 
@@ -40,6 +41,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 public class AppModelGradleResolver implements AppModelResolver {
 
     private AppModel appModel;
+
     private final Project project;
 
     public AppModelGradleResolver(Project project) {
@@ -47,7 +49,8 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     @Override
-    public String getLatestVersion(AppArtifact arg0, String arg1, boolean arg2) throws AppModelResolverException {
+    public String getLatestVersion(AppArtifact appArtifact, String upToVersion, boolean inclusive)
+            throws AppModelResolverException {
         throw new UnsupportedOperationException();
     }
 
@@ -57,18 +60,20 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     @Override
-    public String getNextVersion(AppArtifact arg0, String fromVersion, boolean fromVersionIncluded, String arg1, boolean arg2)
+    public String getNextVersion(AppArtifact appArtifact, String fromVersion, boolean fromVersionIncluded, String upToVersion,
+            boolean upToVersionIncluded)
             throws AppModelResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<String> listLaterVersions(AppArtifact arg0, String arg1, boolean arg2) throws AppModelResolverException {
+    public List<String> listLaterVersions(AppArtifact appArtifact, String upToVersion, boolean inclusive)
+            throws AppModelResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void relink(AppArtifact arg0, Path arg1) throws AppModelResolverException {
+    public void relink(AppArtifact appArtifact, Path localPath) throws AppModelResolverException {
 
     }
 
@@ -105,8 +110,7 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     @Override
-    public List<AppDependency> resolveUserDependencies(AppArtifact appArtifact, List<AppDependency> directDeps)
-            throws AppModelResolverException {
+    public List<AppDependency> resolveUserDependencies(AppArtifact appArtifact, List<AppDependency> directDeps) {
         return Collections.emptyList();
     }
 
@@ -115,7 +119,7 @@ public class AppModelGradleResolver implements AppModelResolver {
         if (appModel != null && appModel.getAppArtifact().equals(appArtifact)) {
             return appModel;
         }
-        final Configuration compileCp = project.getConfigurations().getByName("compileClasspath");
+        final Configuration compileCp = project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
         final List<Dependency> extensionDeps = new ArrayList<>();
         final List<AppDependency> userDeps = new ArrayList<>();
         Map<ModuleIdentifier, ModuleVersionIdentifier> userModules = new HashMap<>();
@@ -160,7 +164,7 @@ public class AppModelGradleResolver implements AppModelResolver {
         // In the case of quarkusBuild (which is the primary user of this),
         // it's not necessary to actually resolve the original application JAR
         if (!appArtifact.isResolved()) {
-            final Jar jarTask = (Jar) project.getTasks().findByName("jar");
+            final Jar jarTask = (Jar) project.getTasks().findByName(JavaPlugin.JAR_TASK_NAME);
             if (jarTask == null) {
                 throw new AppModelResolverException("Failed to locate task 'jar' in the project.");
             }
@@ -176,7 +180,7 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     @Override
-    public AppModel resolveModel(AppArtifact arg0, List<AppDependency> arg1) throws AppModelResolverException {
+    public AppModel resolveModel(AppArtifact root, List<AppDependency> deps) throws AppModelResolverException {
         throw new UnsupportedOperationException();
     }
 

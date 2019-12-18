@@ -27,6 +27,7 @@ import io.quarkus.gradle.tasks.QuarkusTestNative;
 
 public class QuarkusPlugin implements Plugin<Project> {
 
+    public static final String EXTENSION_NAME = "quarkus";
     public static final String LIST_EXTENSIONS_TASK_NAME = "listExtensions";
     public static final String ADD_EXTENSION_TASK_NAME = "addExtension";
     public static final String QUARKUS_BUILD_TASK_NAME = "quarkusBuild";
@@ -46,7 +47,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     public void apply(Project project) {
         verifyGradleVersion();
         // register extension
-        project.getExtensions().create("quarkus", QuarkusPluginExtension.class, project);
+        project.getExtensions().create(EXTENSION_NAME, QuarkusPluginExtension.class, project);
 
         registerTasks(project);
     }

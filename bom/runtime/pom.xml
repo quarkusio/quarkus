@@ -167,6 +167,7 @@
         <spring.version>5.1.8.RELEASE</spring.version>
         <spring-data.version>2.1.9.RELEASE</spring-data.version>
         <spring-security.version>5.2.0.RELEASE</spring-security.version>
+        <spring-boot.version>2.1.10.RELEASE</spring-boot.version>
         <mvel2.version>2.4.4.Final</mvel2.version>
         <mockito.version>3.0.0</mockito.version>
         <jna.version>5.3.1</jna.version>
@@ -638,6 +639,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-spring-data-jpa</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-boot-properties</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2548,6 +2554,23 @@
                     <exclusion>
                         <groupId>org.springframework</groupId>
                         <artifactId>spring-aop</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-context</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <!-- Spring Boot -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot</artifactId>
+                <version>${spring-boot.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-core</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.springframework</groupId>

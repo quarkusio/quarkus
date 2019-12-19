@@ -21,6 +21,7 @@ import org.objectweb.asm.Type;
 
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
+import io.quarkus.panache.common.deployment.EntityField.EntityFieldAnnotation;
 
 public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<?>>
         implements BiFunction<String, ClassVisitor, ClassVisitor> {
@@ -33,6 +34,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
     public final static String PARAMETERS_BINARY_NAME = PARAMETERS_NAME.replace('.', '/');
     public final static String PARAMETERS_SIGNATURE = "L" + PARAMETERS_BINARY_NAME + ";";
 
+    private static final String JAXB_ANNOTATION_PREFIX = "Ljavax/xml/bind/annotation/";
     private static final String JAXB_TRANSIENT_BINARY_NAME = "javax/xml/bind/annotation/XmlTransient";
     private static final String JAXB_TRANSIENT_SIGNATURE = "L" + JAXB_TRANSIENT_BINARY_NAME + ";";
 
@@ -80,15 +82,21 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                 @Override
                 public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
                     descriptors.add(descriptor);
-                    return super.visitAnnotation(descriptor, visible);
+                    if (!descriptor.startsWith(JAXB_ANNOTATION_PREFIX)) {
+                        return super.visitAnnotation(descriptor, visible);
+                    } else {
+                        // Save off JAX-B annotations on the field so they can be applied to the generated getter later
+                        EntityFieldAnnotation efAnno = new EntityFieldAnnotation(descriptor);
+                        ef.annotations.add(efAnno);
+                        return new PanacheMovingAnnotationVisitor(efAnno);
+                    }
                 }
 
                 @Override
                 public void visitEnd() {
                     // add the @JaxbTransient property to the field so that Jackson prefers the generated getter
                     // jsonb will already use the getter so we're good
-                    if (!descriptors.contains(JAXB_TRANSIENT_SIGNATURE))
-                        super.visitAnnotation(JAXB_TRANSIENT_SIGNATURE, true);
+                    super.visitAnnotation(JAXB_TRANSIENT_SIGNATURE, true);
                     super.visitEnd();
                 }
             };
@@ -185,6 +193,10 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                     int returnCode = JandexUtil.getReturnInstruction(field.descriptor);
                     mv.visitInsn(returnCode);
                     mv.visitMaxs(0, 0);
+                    // Apply JAX-B annotations that are being transferred from the field
+                    for (EntityFieldAnnotation anno : field.annotations) {
+                        anno.writeToVisitor(mv);
+                    }
                     mv.visitEnd();
                 }
 

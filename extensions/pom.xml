@@ -108,6 +108,7 @@
         <module>artemis-core</module>
         <module>artemis-jms</module>
         <module>avro</module>
+        <module>jberet</module>
 
         <!-- Spring -->
         <module>spring-di</module>

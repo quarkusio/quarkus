@@ -1,0 +1,11 @@
+---
+name: "JBeret - Batch Processing"
+metadata:
+  keywords:
+  - "batch"
+  - "jberet"
+  - "jsr352"
+  guide: "https://quarkus.io/guides/jberet"
+  categories:
+  - "data"
+  status: "experimental"

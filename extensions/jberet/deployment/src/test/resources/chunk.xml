@@ -1,0 +1,10 @@
+<job id="chunk" xmlns="http://xmlns.jcp.org/xml/ns/javaee" version="1.0">
+    <step id="chunk-step">
+        <chunk>
+            <reader ref="peopleReader"/>
+            <!-- To make sure we can use the class name too -->
+            <processor ref="io.quarkus.jberet.deployment.people.PeopleProcessor"/>
+            <writer ref="peopleWriter"/>
+        </chunk>
+    </step> 
+</job>

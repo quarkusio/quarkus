@@ -1,9 +1,18 @@
 package io.quarkus.vertx.web.deployment;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
 import javax.inject.Singleton;
@@ -12,6 +21,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -21,6 +31,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
@@ -36,11 +47,9 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxyBuilder;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -56,9 +65,11 @@ import io.quarkus.vertx.web.RouteBase;
 import io.quarkus.vertx.web.RouteFilter;
 import io.quarkus.vertx.web.RoutingExchange;
 import io.quarkus.vertx.web.runtime.RouteHandler;
+import io.quarkus.vertx.web.runtime.RouteMatcher;
 import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
 import io.quarkus.vertx.web.runtime.VertxWebRecorder;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
@@ -82,7 +93,9 @@ class VertxWebProcessor {
     private static final String VALUE_REGEX = "regex";
     private static final String VALUE_PRODUCES = "produces";
     private static final String VALUE_CONSUMES = "consumes";
-    private static final String DASH = "/";
+    private static final String VALUE_METHODS = "methods";
+    private static final String VALUE_ORDER = "order";
+    private static final String SLASH = "/";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -161,14 +174,16 @@ class VertxWebProcessor {
             List<AnnotatedRouteHandlerBuildItem> routeHandlerBusinessMethods,
             List<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
-            AnnotationProxyBuildItem annotationProxy,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             io.quarkus.vertx.http.deployment.BodyHandlerBuildItem bodyHandler,
             BuildProducer<RouteBuildItem> routeProducer,
             BuildProducer<FilterBuildItem> filterProducer,
-            List<RequireBodyHandlerBuildItem> bodyHandlerRequired) throws IOException {
+            List<RequireBodyHandlerBuildItem> bodyHandlerRequired,
+            BeanArchiveIndexBuildItem beanArchive) throws IOException {
 
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
+        IndexView index = beanArchive.getIndex();
+        Map<RouteMatcher, MethodInfo> matchers = new HashMap<>();
 
         for (AnnotatedRouteHandlerBuildItem businessMethod : routeHandlerBusinessMethods) {
 
@@ -178,8 +193,8 @@ class VertxWebProcessor {
 
             AnnotationInstance routeBaseAnnotation = businessMethod.getRouteBase();
             String pathPrefix = null;
-            String[] produces = null;
-            String[] consumes = null;
+            String[] baseProduces = null;
+            String[] baseConsumes = null;
 
             if (routeBaseAnnotation != null) {
                 AnnotationValue pathPrefixValue = routeBaseAnnotation.value(VALUE_PATH);
@@ -188,52 +203,66 @@ class VertxWebProcessor {
                 }
                 AnnotationValue producesValue = routeBaseAnnotation.value(VALUE_PRODUCES);
                 if (producesValue != null) {
-                    produces = producesValue.asStringArray();
+                    baseProduces = producesValue.asStringArray();
                 }
                 AnnotationValue consumesValue = routeBaseAnnotation.value(VALUE_CONSUMES);
                 if (consumesValue != null) {
-                    consumes = consumesValue.asStringArray();
+                    baseConsumes = consumesValue.asStringArray();
                 }
             }
 
-            for (AnnotationInstance routeAnnotation : businessMethod.getRoutes()) {
-                AnnotationProxyBuilder<Route> builder = annotationProxy.builder(routeAnnotation, Route.class);
-                AnnotationValue regexValue = routeAnnotation.value(VALUE_REGEX);
-                AnnotationValue pathValue = routeAnnotation.value(VALUE_PATH);
+            for (AnnotationInstance route : businessMethod.getRoutes()) {
+                AnnotationValue regexValue = route.value(VALUE_REGEX);
+                AnnotationValue pathValue = route.value(VALUE_PATH);
+                AnnotationValue orderValue = route.valueWithDefault(index, VALUE_ORDER);
+                AnnotationValue producesValue = route.valueWithDefault(index, VALUE_PRODUCES);
+                AnnotationValue consumesValue = route.valueWithDefault(index, VALUE_CONSUMES);
+                AnnotationValue methodsValue = route.valueWithDefault(index, VALUE_METHODS);
+
+                String path = null;
+                String regex = null;
+                String[] produces = producesValue.asStringArray();
+                String[] consumes = consumesValue.asStringArray();
+                HttpMethod[] methods = Arrays.stream(methodsValue.asEnumArray()).map(HttpMethod::valueOf)
+                        .toArray(HttpMethod[]::new);
+                Integer order = orderValue.asInt();
 
                 if (regexValue == null) {
                     if (pathPrefix != null) {
-                        StringBuilder path = new StringBuilder();
-                        path.append(pathPrefix);
+                        StringBuilder prefixedPath = new StringBuilder();
+                        prefixedPath.append(pathPrefix);
                         if (pathValue == null) {
-                            path.append(DASH);
-                            path.append(dashify(businessMethod.getMethod().name()));
+                            prefixedPath.append(SLASH);
+                            prefixedPath.append(dashify(businessMethod.getMethod().name()));
                         } else {
-                            String pathValueStr = pathValue.asString();
-                            if (!pathValueStr.startsWith(DASH)) {
-                                path.append(DASH);
+                            if (!pathValue.asString().startsWith(SLASH)) {
+                                prefixedPath.append(SLASH);
                             }
-                            path.append(pathValue.asString());
+                            prefixedPath.append(pathValue.asString());
                         }
-                        builder.withValue(VALUE_PATH, path.toString());
+                        path = prefixedPath.toString();
                     } else {
-                        if (pathValue == null) {
-                            builder.withDefaultValue(VALUE_PATH, dashify(businessMethod.getMethod().name()));
-                        }
+                        path = pathValue != null ? pathValue.asString() : dashify(businessMethod.getMethod().name());
                     }
+                    if (!path.startsWith(SLASH)) {
+                        path = SLASH + path;
+                    }
+                } else {
+                    regex = regexValue.asString();
                 }
 
-                if (routeAnnotation.value(VALUE_PRODUCES) == null && produces != null) {
-                    builder.withValue(VALUE_PRODUCES, produces);
+                if (route.value(VALUE_PRODUCES) == null && baseProduces != null) {
+                    produces = baseProduces;
                 }
-                if (routeAnnotation.value(VALUE_CONSUMES) == null && consumes != null) {
-                    builder.withValue(VALUE_CONSUMES, consumes);
+                if (route.value(VALUE_CONSUMES) == null && baseConsumes != null) {
+                    consumes = baseConsumes;
                 }
 
-                Route route = builder.build(classOutput);
-                Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(route,
+                RouteMatcher matcher = new RouteMatcher(path, regex, produces, consumes, methods, order);
+                matchers.put(matcher, businessMethod.getMethod());
+                Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(matcher,
                         bodyHandler.getHandler());
-                AnnotationValue typeValue = routeAnnotation.value("type");
+                AnnotationValue typeValue = route.value("type");
                 HandlerType handlerType = HandlerType.NORMAL;
                 if (typeValue != null) {
                     String typeString = typeValue.asEnum();
@@ -263,6 +292,8 @@ class VertxWebProcessor {
             filterProducer.produce(new FilterBuildItem(routingHandler,
                     priorityValue != null ? priorityValue.asInt() : RouteFilter.DEFAULT_PRIORITY));
         }
+
+        detectConflictingRoutes(matchers);
     }
 
     @BuildStep
@@ -396,5 +427,85 @@ class VertxWebProcessor {
             ret.append(Character.toLowerCase(c));
         }
         return ret.toString();
+    }
+
+    private void detectConflictingRoutes(Map<RouteMatcher, MethodInfo> matchers) {
+        if (matchers.isEmpty()) {
+            return;
+        }
+        // First we need to group matchers that could potentially match the same request 
+        Set<LinkedHashSet<RouteMatcher>> groups = new HashSet<>();
+        for (Iterator<Entry<RouteMatcher, MethodInfo>> iterator = matchers.entrySet().iterator(); iterator.hasNext();) {
+            Entry<RouteMatcher, MethodInfo> entry = iterator.next();
+            LinkedHashSet<RouteMatcher> group = new LinkedHashSet<>();
+            group.add(entry.getKey());
+            matchers.entrySet().stream().filter(e -> {
+                if (e.getKey().equals(entry.getKey())) {
+                    // Skip - the same matcher
+                    return false;
+                }
+                if (e.getValue().equals(entry.getValue())) {
+                    // Skip - the same method
+                    return false;
+                }
+                if (e.getKey().getOrder() != entry.getKey().getOrder()) {
+                    // Skip - different order set
+                    return false;
+                }
+                return canMatchSameRequest(entry.getKey(), e.getKey());
+            }).map(Entry::getKey).forEach(group::add);
+            groups.add(group);
+        }
+        // Log a warning for any group that contains more than one member
+        boolean conflictExists = false;
+        for (Set<RouteMatcher> group : groups) {
+            if (group.size() > 1) {
+                Iterator<RouteMatcher> it = group.iterator();
+                RouteMatcher firstMatcher = it.next();
+                MethodInfo firstMethod = matchers.get(firstMatcher);
+                conflictExists = true;
+                StringBuilder conflictingRoutes = new StringBuilder();
+                while (it.hasNext()) {
+                    RouteMatcher rm = it.next();
+                    MethodInfo method = matchers.get(rm);
+                    conflictingRoutes.append("\n\t- ").append(method.declaringClass().name().toString()).append("#")
+                            .append(method.name()).append("()");
+                }
+                LOGGER.warnf(
+                        "Route %s#%s() can match the same request and has the same order [%s] as:%s",
+                        firstMethod.declaringClass().name(),
+                        firstMethod.name(), firstMatcher.getOrder(), conflictingRoutes);
+            }
+        }
+        if (conflictExists) {
+            LOGGER.warn("You can use @Route#order() to ensure the routes are not executed in random order");
+        }
+    }
+
+    static boolean canMatchSameRequest(RouteMatcher m1, RouteMatcher m2) {
+        // regex not null and other not equal
+        if (m1.getRegex() != null) {
+            if (!Objects.equals(m1.getRegex(), m2.getRegex())) {
+                return false;
+            }
+        } else {
+            // path not null and other not equal
+            if (m1.getPath() != null && !Objects.equals(m1.getPath(), m2.getPath())) {
+                return false;
+            }
+        }
+        // methods not matching
+        if (m1.getMethods().length > 0 && m2.getMethods().length > 0 && !Arrays.equals(m1.getMethods(), m2.getMethods())) {
+            return false;
+        }
+        // produces not matching
+        if (m1.getProduces().length > 0 && m2.getProduces().length > 0 && !Arrays.equals(m1.getProduces(), m2.getProduces())) {
+            return false;
+        }
+        // consumes not matching
+        if (m1.getConsumes().length > 0 && m2.getConsumes().length > 0 && !Arrays.equals(m1.getConsumes(), m2.getConsumes())) {
+            return false;
+        }
+        return true;
     }
 }

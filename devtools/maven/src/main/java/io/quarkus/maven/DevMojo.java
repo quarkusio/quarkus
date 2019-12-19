@@ -487,7 +487,13 @@ public class DevMojo extends AbstractMojo {
             for (Map.Entry<Object, Object> e : System.getProperties().entrySet()) {
                 devModeContext.getSystemProperties().put(e.getKey().toString(), (String) e.getValue());
             }
+
             devModeContext.getBuildSystemProperties().putAll((Map) project.getProperties());
+
+            //  this is a minor hack to allow ApplicationConfig to be populated with defaults
+            devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.application.name", project.getArtifactId());
+            devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.application.version", project.getVersion());
+
             devModeContext.setSourceEncoding(getSourceEncoding());
             devModeContext.setSourceJavaVersion(source);
             devModeContext.setTargetJvmVersion(target);

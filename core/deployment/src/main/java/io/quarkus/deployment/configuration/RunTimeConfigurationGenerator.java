@@ -615,7 +615,7 @@ public final class RunTimeConfigurationGenerator {
                 // implements abstract method AbstractRawDefaultConfigSource#getValue(NameIterator)
                 try (MethodCreator mc = dvcc.getMethodCreator("getValue", String.class, NameIterator.class)) {
                     final ResultHandle keyIter = mc.getMethodParam(0);
-                    final MethodDescriptor md = generateDefaultValueParse(dvcc, buildTimeRunTimePatternMap,
+                    final MethodDescriptor md = generateDefaultValueParse(dvcc, runTimeIgnored,
                             new StringBuilder("getDefaultFor"));
                     if (md != null) {
                         // there is at least one default value

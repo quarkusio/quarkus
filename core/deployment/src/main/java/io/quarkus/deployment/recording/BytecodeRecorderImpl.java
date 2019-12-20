@@ -1067,7 +1067,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         handledProperties.add(i.getName());
 
                         Collection propertyValue = (Collection) i.read(param);
-                        if (!propertyValue.isEmpty()) {
+                        if (propertyValue != null && !propertyValue.isEmpty()) {
 
                             List<DeferredParameter> params = new ArrayList<>();
                             for (Object c : propertyValue) {
@@ -1106,7 +1106,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
                         handledProperties.add(i.getName());
                         Map<Object, Object> propertyValue = (Map<Object, Object>) i.read(param);
-                        if (!propertyValue.isEmpty()) {
+                        if (propertyValue != null && !propertyValue.isEmpty()) {
                             Map<DeferredParameter, DeferredParameter> def = new LinkedHashMap<>();
                             for (Map.Entry<Object, Object> entry : propertyValue.entrySet()) {
                                 DeferredParameter key = loadObjectInstance(entry.getKey(), existing,

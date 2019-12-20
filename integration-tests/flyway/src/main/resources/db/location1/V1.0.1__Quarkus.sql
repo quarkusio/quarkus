@@ -4,4 +4,4 @@ CREATE TABLE TEST_SCHEMA.quarkus_table2
     name VARCHAR(20)
 );
 INSERT INTO TEST_SCHEMA.quarkus_table2(id, name)
-VALUES (1, 'QUARKED');
+VALUES (1, '1.0.1 QUARKED');

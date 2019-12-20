@@ -10,34 +10,11 @@ import javax.enterprise.inject.spi.DeploymentException;
 
 import org.eclipse.microprofile.faulttolerance.exceptions.FaultToleranceDefinitionException;
 
-import com.netflix.hystrix.Hystrix;
-import com.netflix.hystrix.metric.HystrixCollapserEventStream;
-import com.netflix.hystrix.metric.HystrixCommandCompletionStream;
-import com.netflix.hystrix.metric.HystrixCommandStartStream;
-import com.netflix.hystrix.metric.HystrixThreadEventStream;
-import com.netflix.hystrix.metric.HystrixThreadPoolCompletionStream;
-
-import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.faulttolerance.config.FaultToleranceOperation;
 
 @Recorder
 public class SmallryeFaultToleranceRecorder {
-
-    public void resetCommandContextOnUndeploy(ShutdownContext context) {
-        context.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                HystrixCommandCompletionStream.reset();
-                HystrixCollapserEventStream.reset();
-                HystrixCommandStartStream.reset();
-                HystrixThreadPoolCompletionStream.reset();
-                HystrixCommandStartStream.reset();
-                HystrixThreadEventStream.getInstance().shutdown();
-                Hystrix.reset();
-            }
-        });
-    }
 
     public void validate(List<String> beanNames) {
         List<Throwable> allExceptions = new ArrayList<>();

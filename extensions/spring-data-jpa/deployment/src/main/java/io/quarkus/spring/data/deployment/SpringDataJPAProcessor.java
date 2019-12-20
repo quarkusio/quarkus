@@ -1,18 +1,27 @@
 package io.quarkus.spring.data.deployment;
 
+import static java.util.stream.Collectors.toList;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.logging.Logger;
 import org.springframework.data.domain.Auditable;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -38,6 +47,8 @@ import io.quarkus.spring.data.deployment.generate.SpringDataRepositoryCreator;
 
 public class SpringDataJPAProcessor {
 
+    private static final Logger LOGGER = Logger.getLogger(SpringDataJPAProcessor.class.getName());
+
     @BuildStep
     FeatureBuildItem registerFeature() {
         return new FeatureBuildItem(FeatureBuildItem.SPRING_DATA_JPA);
@@ -57,6 +68,8 @@ public class SpringDataJPAProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
 
+        detectAndLogSpecificSpringPropertiesIfExist();
+
         IndexView indexIndex = index.getIndex();
         List<ClassInfo> interfacesExtendingCrudRepository = getAllInterfacesExtending(DotNames.SUPPORTED_REPOSITORIES,
                 indexIndex);
@@ -64,6 +77,35 @@ public class SpringDataJPAProcessor {
         removeNoRepositoryBeanClasses(interfacesExtendingCrudRepository);
         implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans, reflectiveClasses,
                 interfacesExtendingCrudRepository, indexIndex);
+    }
+
+    private void detectAndLogSpecificSpringPropertiesIfExist() {
+        Config config = ConfigProvider.getConfig();
+        Map<String, String> springJpaToQuarkusOrmPropertiesMap = new HashMap<>();
+        springJpaToQuarkusOrmPropertiesMap.put("spring.jpa.show-sql", "quarkus.hibernate-orm.log.sql");
+        springJpaToQuarkusOrmPropertiesMap.put("spring.jpa.properties.hibernate.dialect ", "quarkus.hibernate-orm.dialect");
+        springJpaToQuarkusOrmPropertiesMap.put("spring.jpa.properties.hibernate.dialect.storage_engine",
+                "quarkus.hibernate-orm.dialect.storage-engine");
+        springJpaToQuarkusOrmPropertiesMap.put("spring.jpa.generate-ddl", "quarkus.hibernate-orm.database.generation");
+
+        Iterable<String> iterablePropertyNames = config.getPropertyNames();
+        List<String> propertyNames = new ArrayList<String>();
+        iterablePropertyNames.forEach(propertyNames::add);
+        Pattern pattern = Pattern.compile("spring\\.jpa\\..*");
+        Matcher matcher = pattern.matcher("");
+        List<String> springProperties = propertyNames.stream().filter(s -> matcher.reset(s).matches()).collect(toList());
+        if (!springProperties.isEmpty()) {
+            String warningLog = "Quarkus does not support the ";
+            for (String springProperty : springProperties) {
+                String quarkusProperty = springJpaToQuarkusOrmPropertiesMap.get(springProperty);
+                if (quarkusProperty != null) {
+                    warningLog = warningLog + springProperty + " property " + "you may try to use the Quarkus equivalent one : "
+                            + quarkusProperty + ".";
+                }
+                LOGGER.warn(warningLog + springProperty + " property. ");
+            }
+
+        }
     }
 
     private void removeNoRepositoryBeanClasses(List<ClassInfo> interfacesExtendingCrudRepository) {

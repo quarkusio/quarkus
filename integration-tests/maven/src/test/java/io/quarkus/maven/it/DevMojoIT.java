@@ -30,6 +30,7 @@ import io.quarkus.maven.it.verifier.RunningInvoker;
  *
  *         mvn install -Dit.test=DevMojoIT#methodName
  */
+@DisableForNative
 public class DevMojoIT extends RunAndCheckMojoTestBase {
 
     @Test

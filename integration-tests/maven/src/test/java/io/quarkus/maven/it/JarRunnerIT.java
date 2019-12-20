@@ -22,6 +22,7 @@ import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.utilities.JavaBinFinder;
 
+@DisableForNative
 public class JarRunnerIT extends MojoTestBase {
 
     @Test

@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 
+@DisableForNative
 public class PackageIT extends MojoTestBase {
 
     private RunningInvoker running;

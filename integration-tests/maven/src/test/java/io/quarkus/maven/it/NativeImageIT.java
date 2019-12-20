@@ -20,9 +20,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 
-/**
- *
- */
+@EnableForNative
 public class NativeImageIT extends MojoTestBase {
 
     /**

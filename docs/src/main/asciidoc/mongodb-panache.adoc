@@ -391,27 +391,31 @@ will use the entity field name: `name`, and native query will use the MongoDB fi
 
 Query projection can be done with the `project(Class)` method on the `PanacheQuery` object that is returned by the `find()` methods.
 
-You can use it to restrict which fields will be returned by the database, the ID field will always be returned.
+You can use it to restrict which fields will be returned by the database,
+the ID field will always be returned but it's not mandatory to include it inside the projection class.
 
-For this, you need to create a class (a Pojo) that will only contains the projected fields.
-The field names, or the getters, of the projection class will be used to restrict which properties will be loaded from the database.
-If your entity uses `@BsonProperty` to map a property to a database column, the same mapping must be used inside the projection class.
+For this, you need to create a class (a Pojo) that will only contain the projected fields.
+This pojo needs to be annotated with `@ProjectionFor(Entity.class)` where `Entity` is the name of your entity class.
+The field names, or  getters, of the projection class will be used to restrict which properties will be loaded from the database.
 
 Projection can be done for both PanacheQL and native queries.
 
 [source,java]
 ----
+import io.quarkus.mongodb.panache.ProjectionFor;
+import org.bson.codecs.pojo.annotations.BsonProperty;
+
 // using public fields
+@ProjectionFor(Person.class)
 public class PersonName {
-    @BsonProperty("lastname")
     public String name;
 }
 
 // using getters
+@ProjectionFor(Person.class)
 public class PersonNameWithGetter {
     private String name;
 
-    @BsonProperty("lastname")
     public String getName(){
         return name;
     }
@@ -427,7 +431,9 @@ PanacheQuery<PersonName> query = Person.find("'status': ?1", Status.Alive).proje
 PanacheQuery<PersonName> nativeQuery = Person.find("{'status': 'ALIVE'}", Status.Alive).project(PersonName.class);
 ----
 
-TIP: Inherited fields and methods from a super type will also be used.
+TIP: Using @BsonProperty is not needed to define custom column mappings, as the mappings from the entity class will be used.
+
+TIP: You can have your projection class extends from another class. In this case, the parent class also needs to have use `@ProjectionFor` annotation.
 
 == The DAO/Repository option
 
@@ -561,4 +567,3 @@ If you define your entities in the same project where you build your Quarkus app
 If the entities come from external projects or jars, you can make sure that your jar is treated like a Quarkus application library
 by indexing it via Jandex, see link:cdi-reference#how-to-generate-a-jandex-index[How to Generate a Jandex Index] in the CDI guide.
 This will allow Quarkus to index and enhance your entities as if they were inside the current project.
-

@@ -4,11 +4,11 @@ import java.time.LocalDate;
 
 import javax.json.bind.annotation.JsonbDateFormat;
 
-import org.bson.codecs.pojo.annotations.BsonProperty;
+import io.quarkus.mongodb.panache.ProjectionFor;
 
+@ProjectionFor(Book.class)
 public class BookShortView {
-    @BsonProperty("bookTitle")
-    private String title; // use the field name title and not the column name bookTitle
+    private String title; // uses the field name title and not the column name bookTitle
     private String author;
     @JsonbDateFormat("yyyy-MM-dd")
     private LocalDate creationDate;

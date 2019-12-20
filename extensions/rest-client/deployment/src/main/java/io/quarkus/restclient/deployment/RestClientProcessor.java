@@ -64,7 +64,6 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.restclient.runtime.IncomingHeadersProvider;
 import io.quarkus.restclient.runtime.RestClientBase;
 import io.quarkus.restclient.runtime.RestClientRecorder;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
@@ -164,10 +163,6 @@ class RestClientProcessor {
         // Incoming headers
         // required for the non-arg constructor of DCHFImpl to be included in the native image
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, DefaultClientHeadersFactoryImpl.class.getName()));
-        serviceProvider
-                .produce(new ServiceProviderBuildItem(
-                        org.jboss.resteasy.microprofile.client.header.IncomingHeadersProvider.class.getName(),
-                        IncomingHeadersProvider.class.getName()));
 
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {

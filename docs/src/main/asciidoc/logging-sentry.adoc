@@ -78,3 +78,5 @@ quarkus.log.sentry.dsn=https://abcd@sentry.io/1234
 quarkus.log.sentry.level=ERROR
 quarkus.log.sentry.in-app-packages=org.example
 ----
+
+NOTE: Sentry has recently https://blog.sentry.io/2019/11/06/relicensing-sentry[re-licensed most of its code to BSL] - which is not an OSI-approved license. The Java SDK is still under the 3-Clause BSD license.

@@ -26,6 +26,7 @@ import io.quarkus.platform.tools.ToolsConstants;
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
  */
+@DisableForNative
 public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
     private Invoker invoker;

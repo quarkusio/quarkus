@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.deployment.DataSourceInitializedBuildItem;
+import io.quarkus.agroal.deployment.DataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -103,9 +104,15 @@ class FlywayProcessor {
     ServiceStartBuildItem configureRuntimeProperties(FlywayRecorder recorder,
             FlywayRuntimeConfig flywayRuntimeConfig,
             BeanContainerBuildItem beanContainer,
-            DataSourceInitializedBuildItem dataSourceInitializedBuildItem) {
+            DataSourceInitializedBuildItem dataSourceInitializedBuildItem,
+            BuildProducer<DataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
         recorder.configureFlywayProperties(flywayRuntimeConfig, beanContainer.getValue());
         recorder.doStartActions(flywayRuntimeConfig, beanContainer.getValue());
+        // once we are done running the migrations, we produce a build item indicating that the
+        // schema is "ready"
+        final Collection<String> dataSourceNames = DataSourceInitializedBuildItem
+                .dataSourceNamesOf(dataSourceInitializedBuildItem);
+        schemaReadyBuildItem.produce(new DataSourceSchemaReadyBuildItem(dataSourceNames));
         return new ServiceStartBuildItem("flyway");
     }
 

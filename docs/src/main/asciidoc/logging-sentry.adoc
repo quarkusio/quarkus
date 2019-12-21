@@ -24,7 +24,7 @@ It is a self-hosted and cloud-based error monitoring that helps software teams d
 
 They offer a free starter price for cloud-based or you can self host it for free.
 
-WARNING: Sentry's Java SDK is open source, but recently sentry.io https://blog.sentry.io/2019/11/06/relicensing-sentry[changed the license] for their backend to the non-open source BSL license. This might or might not be an issue for your project and product.
+WARNING: Sentry's Java SDK is open source, but recently sentry.io https://blog.sentry.io/2019/11/06/relicensing-sentry[changed the license] for their backend to the non-open source https://github.com/getsentry/sentry/blob/master/LICENSE[BSL license]. This might or might not be an issue for your project and product.
 
 == Configuration
 
@@ -82,4 +82,3 @@ quarkus.log.sentry.level=ERROR
 quarkus.log.sentry.in-app-packages=org.example
 ----
 
-NOTE: Sentry has recently https://blog.sentry.io/2019/11/06/relicensing-sentry[re-licensed most of its code to BSL] - which is not an OSI-approved license. The Java SDK is still under the 3-Clause BSD license.

@@ -46,6 +46,10 @@ public class QuarkusNative extends QuarkusTask {
 
     private boolean enableServer = false;
 
+    /**
+     * @deprecated JNI is always enabled starting from GraalVM 19.3.0.
+     */
+    @Deprecated
     private boolean enableJni = true;
 
     private boolean autoServiceLoaderRegistration = false;
@@ -201,11 +205,16 @@ public class QuarkusNative extends QuarkusTask {
     }
 
     @Input
+    @Deprecated
     public boolean isEnableJni() {
         return enableJni;
     }
 
-    @Option(description = "Enable jni", option = "enable-jni")
+    /**
+     * @deprecated JNI is always enabled starting from GraalVM 19.3.0.
+     */
+    @Option(description = "Enable jni (deprecated)", option = "enable-jni")
+    @Deprecated
     public void setEnableJni(boolean enableJni) {
         this.enableJni = enableJni;
     }
@@ -417,7 +426,6 @@ public class QuarkusNative extends QuarkusTask {
 
                 configs.add("quarkus.native.enable-http-url-handler", enableHttpUrlHandler);
                 configs.add("quarkus.native.enable-isolates", enableIsolates);
-                configs.add("quarkus.native.enable-jni", enableJni);
 
                 configs.add("quarkus.native.enable-server", enableServer);
 

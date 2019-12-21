@@ -36,8 +36,9 @@ public class NativeConfig {
     public boolean enableAllSecurityServices;
 
     /**
-     * If JNI should be enabled
+     * @deprecated JNI is always enabled starting from GraalVM 19.3.0.
      */
+    @Deprecated
     @ConfigItem(defaultValue = "true")
     public boolean enableJni;
 

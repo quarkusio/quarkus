@@ -176,8 +176,10 @@ public class NativeImageBuildStep {
                 //todo: this should be specific build items
                 if (prop.getKey().equals("quarkus.ssl.native") && prop.getValue() != null) {
                     enableSslNative = Boolean.parseBoolean(prop.getValue());
-                } else if (prop.getKey().equals("quarkus.jni.enable") && prop.getValue() != null) {
-                    nativeConfig.enableJni |= Boolean.parseBoolean(prop.getValue());
+                } else if (prop.getKey().equals("quarkus.jni.enable") && prop.getValue().equals("false")) {
+                    log.warn("Your application is setting the deprecated 'quarkus.jni.enable' configuration key to false."
+                            + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
+                            + " will be removed in a future Quarkus version.");
                 } else if (prop.getKey().equals("quarkus.native.enable-all-security-services") && prop.getValue() != null) {
                     nativeConfig.enableAllSecurityServices |= Boolean.parseBoolean(prop.getValue());
                 } else if (prop.getKey().equals("quarkus.native.enable-all-charsets") && prop.getValue() != null) {
@@ -195,13 +197,13 @@ public class NativeImageBuildStep {
             }
             if (enableSslNative) {
                 nativeConfig.enableHttpsUrlHandler = true;
-                nativeConfig.enableJni = true;
                 nativeConfig.enableAllSecurityServices = true;
             }
 
             nativeConfig.additionalBuildArgs.ifPresent(command::addAll);
             command.add("--initialize-at-build-time=");
             command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
+            command.add("-H:+JNI");
             command.add("-jar");
             command.add(runnerJarName);
             //dynamic proxy generation is not thread safe
@@ -270,10 +272,10 @@ public class NativeImageBuildStep {
             if (!nativeConfig.enableIsolates) {
                 command.add("-H:-SpawnIsolates");
             }
-            if (nativeConfig.enableJni) {
-                command.add("-H:+JNI");
-            } else {
-                command.add("-H:-JNI");
+            if (!nativeConfig.enableJni) {
+                log.warn("Your application is setting the deprecated 'quarkus.native.enable-jni' configuration key to false."
+                        + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
+                        + " will be removed in a future Quarkus version.");
             }
             if (!nativeConfig.enableServer && !IS_WINDOWS) {
                 command.add("--no-server");

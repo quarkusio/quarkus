@@ -114,6 +114,8 @@
                     <pluginOptions>
                         <!-- Each annotation is placed on its own line -->
                         <option>all-open:annotation=javax.ws.rs.Path</option>
+                        <option>all-open:annotation=javax.enterprise.context.ApplicationScoped</option>
+                        <option>all-open:annotation=io.quarkus.test.junit.QuarkusTest</option>
                     </pluginOptions>
                 </configuration>
 

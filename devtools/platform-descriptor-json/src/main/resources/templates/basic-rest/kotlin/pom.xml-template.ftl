@@ -106,6 +106,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <javaParameters>true</javaParameters>
                     <!-- Soon to be replaced by plugin that will pre-configure all necessary annotations -->
                     <compilerPlugins>
                         <plugin>all-open</plugin>

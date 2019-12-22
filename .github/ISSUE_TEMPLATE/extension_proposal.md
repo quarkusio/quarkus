@@ -2,7 +2,7 @@
 name: Extension Proposal
 about: Propose a new extension in Quarkus
 title: ''
-labels: extension-proposal
+labels: kind/extension-proposal
 assignees: ''
 
 ---

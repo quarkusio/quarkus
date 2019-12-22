@@ -2,7 +2,7 @@
 name: Housekeeping
 about: A generalized task or cleanup not associated with a bug report or enhancement
 title: ''
-labels: housekeeping
+labels: area/housekeeping
 assignees: ''
 
 ---

@@ -42,6 +42,7 @@ java {
 
 compileKotlin {
     kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8
+    kotlinOptions.javaParameters = true
 }
 
 compileTestKotlin {

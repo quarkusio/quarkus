@@ -37,6 +37,7 @@ public class KotlinCompilationProvider implements CompilationProvider {
     @Override
     public void compile(Set<File> filesToCompile, Context context) {
         K2JVMCompilerArguments compilerArguments = new K2JVMCompilerArguments();
+        compilerArguments.setJavaParameters(true);
         if (context.getCompilePluginArtifacts() != null && !context.getCompilePluginArtifacts().isEmpty()) {
             compilerArguments.setPluginClasspaths(context.getCompilePluginArtifacts().toArray(new String[0]));
         }

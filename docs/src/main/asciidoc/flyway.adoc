@@ -43,15 +43,19 @@ In your `pom.xml`, add the following dependencies:
 </dependencies>
 --
 
-Flyway support relies on the Quarkus datasource config. 
+Flyway support relies on the Quarkus datasource config.
 It can be customized for the default datasource as well as for every <<multiple-datasources,named datasource>>.
-First, you need to add the datasource config to the `{config-file}` file 
+First, you need to add the datasource config to the `{config-file}` file
 in order to allow Flyway to manage the schema.
 Also, you can customize the Flyway behaviour by using the following properties:
 
 `quarkus.flyway.migrate-at-start`::
 **true** to execute Flyway automatically when the application starts, **false** otherwise. +
 **default:** false
+
+`quarkus.flyway.validate-on-migrate`::
+**true** to validate the applied migrations against the available ones, **false** otherwise. +
+**default:** true
 
 `quarkus.flyway.clean-at-start`::
 **true** to execute Flyway clean command automatically when the application starts, **false** otherwise. +
@@ -174,7 +178,7 @@ public class MigrationService {
 
 == Multiple datasources
 
-Flyway can be configured for multiple datasources. 
+Flyway can be configured for multiple datasources.
 The Flyway properties are prefixed exactly the same way as the named datasources, for example:
 
 [source,properties]

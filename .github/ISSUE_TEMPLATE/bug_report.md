@@ -2,7 +2,7 @@
 name: Bug report
 about: Report a bug in Quarkus
 title: ''
-labels: bug
+labels: kind/bug
 assignees: ''
 
 ---

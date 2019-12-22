@@ -9,19 +9,30 @@ import java.util.List;
 import io.quarkus.cli.commands.CreateProject;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.generators.BuildTool;
+import io.quarkus.generators.SourceType;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class QuarkusPluginFunctionalTest {
 
+    private File projectRoot;
+
+    @BeforeEach
+    void setUp(@TempDir File projectRoot) {
+        this.projectRoot = projectRoot;
+    }
+
     @Test
-    public void canRunListExtensions(@TempDir File projectRoot) throws IOException {
-        createProject(projectRoot);
+    public void canRunListExtensions() throws IOException {
+        createProject(SourceType.JAVA);
 
         BuildResult build = GradleRunner.create()
                 .forwardOutput()
@@ -34,9 +45,10 @@ public class QuarkusPluginFunctionalTest {
         assertThat(build.getOutput()).contains("Quarkus - Core");
     }
 
-    @Test
-    public void canBuild(@TempDir File projectRoot) throws IOException {
-        createProject(projectRoot);
+    @ParameterizedTest(name = "Build {0} project")
+    @EnumSource(SourceType.class)
+    public void canBuild(SourceType sourceType) throws IOException {
+        createProject(sourceType);
 
         BuildResult build = GradleRunner.create()
                 .forwardOutput()
@@ -60,12 +72,13 @@ public class QuarkusPluginFunctionalTest {
         return arguments;
     }
 
-    private void createProject(@TempDir File projectRoot) throws IOException {
+    private void createProject(SourceType sourceType) throws IOException {
         assertThat(new CreateProject(new FileProjectWriter(projectRoot))
                            .groupId("com.acme.foo")
                            .artifactId("foo")
                            .version("1.0.0-SNAPSHOT")
                            .buildTool(BuildTool.GRADLE)
+                           .sourceType(sourceType)
                            .doCreateProject(new HashMap<>()))
                 .withFailMessage("Project was not created")
                 .isTrue();

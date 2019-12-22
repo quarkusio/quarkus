@@ -45,12 +45,10 @@ public class FlywayRecorder {
     }
 
     private void clean(BeanContainer container, AnnotationLiteral<? extends Annotation> qualifier) {
-        Flyway flyway = container.instance(Flyway.class, qualifier);
-        flyway.clean();
+        container.instance(Flyway.class, qualifier).clean();
     }
 
     private void migrate(BeanContainer container, AnnotationLiteral<? extends Annotation> qualifier) {
-        Flyway flyway = container.instance(Flyway.class, qualifier);
-        flyway.migrate();
+        container.instance(Flyway.class, qualifier).migrate();
     }
 }

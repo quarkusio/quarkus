@@ -202,6 +202,20 @@
                                     <requireMavenVersion>
                                         <version>${supported-maven-versions}</version>
                                     </requireMavenVersion>
+                                    <evaluateBeanshell>
+                                        <condition>
+                                        if("${project.artifactId}".equals("quarkus-build-parent"))
+                                           return true;
+                                        if(!new File("${project.basedir}/src/main/resources/META-INF/quarkus-extension.yaml").exists())
+                                            return true;
+                                        if("${project.description}".contains("Build parent")) 
+                                            return false;
+                                        return true;
+                                        </condition>
+                                        <message>
+                                            Description in this artifact's pom.xml seems to be the same as the one of build-parent. This description is used by default to describe the extension in code.quarkus.io, tools and in repository browsers. Please set a unique description in this pom.xml.
+                                        </message>
+                                    </evaluateBeanshell>
                                     <bannedDependencies>
                                         <excludes>
                                             <!-- Use Jakarta artifacts instead of JBoss specific ones -->

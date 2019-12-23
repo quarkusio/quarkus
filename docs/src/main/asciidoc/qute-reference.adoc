@@ -25,7 +25,7 @@ We will always need some *template contents*:
 [source,html]
 ----
 <html>
- <p>Hello {name}! <1>
+  <p>Hello {name}! <1>
 </html>
 ----
 <1> `{name}` is a value expression that is evaluated when the template is rendered.
@@ -144,7 +144,7 @@ A typical example is the for/each loop - during iteration the content of the sec
 [source]
 ----
 {#each items}
- {count}. {it.name} <1>
+  {count}. {it.name} <1>
 {/each}
 
 {! Another form of iteration... !}
@@ -238,7 +238,7 @@ The first one is using the `each` name alias.
 [source]
 ----
 {#each items}
- {it.name} <1>
+  {it.name} <1>
 {/each}
 ----
 <1> `it` is an implicit alias. `name` is resolved against the current iteration element.
@@ -257,7 +257,7 @@ It's also possible to access the iteration metadata inside the loop:
 [source]
 ----
 {#each items}
- {count}. {it.name} <1>
+  {count}. {it.name} <1>
 {/each}
 ----
 <1> `count` represents one-based index. Metadata also include zero-based `index`, `hasNext`, `odd`, `even`.
@@ -270,7 +270,7 @@ The simplest possible version accepts a single parameter and renders the content
 [source]
 ----
 {#if item.active}
- This item is active.
+  This item is active.
 {/if}
 ----
 
@@ -302,7 +302,7 @@ You can also use the following operators:
 [source]
 ----
 {#if item.age > 10}
- This item is very old.
+  This item is very old.
 {/if}
 ----
 
@@ -313,13 +313,13 @@ You can add any number of "else" blocks:
 [source]
 ----
 {#if item.age > 10}
- This item is very old.
+  This item is very old.
 {#else if item.age > 5}
- This item is quite old.
+  This item is quite old.
 {#else if item.age > 2}
- This item is old.
+  This item is old.
 {#else}
- This item is not old at all!
+  This item is not old at all!
 {/if}
 ----
 
@@ -331,7 +331,7 @@ This could be useful to simplify the template structure.
 [source]
 ----
 {#with item.parent}
- {name}  <1>
+  {name}  <1>
 {/with}
 ----
 <1> The name will be resolved against the `item.parent`.
@@ -341,7 +341,7 @@ It's also possible to specify an alias for the context object:
 [source]
 ----
 {#with item.parent as myParent}
- {myParent.name}
+  {myParent.name}
 {/with}
 ----
 
@@ -359,7 +359,7 @@ These sections can be used to include another template and possibly override som
 <title>{#insert title}Default Title{/}</title> <1>
 </head>
 <body>
-    {#insert body}No body!{/} <2>
+  {#insert body}No body!{/} <2>
 </body>
 </html>
 ----
@@ -370,10 +370,10 @@ These sections can be used to include another template and possibly override som
 [source,html]
 ----
 {#include base} <1>
-    {#title}My Title{/title} <2>
-    {#body}
+  {#title}My Title{/title} <2>
+  {#body}
     <div>
-        My body.
+      My body.
     </div>
 {/include}
 ----
@@ -414,9 +414,9 @@ We can include the tag like this:
 ----
 <ul>
 {#each items}
- <li>
- {#item this showImage=true /} <1>
- </li>
+  <li>
+  {#item this showImage=true /} <1>
+  </li>
 {/each}
 </ul>
 ----
@@ -439,8 +439,8 @@ If you want to use Qute in your Quarkus application add the following dependency
 [source,xml]
 ----
 <dependency>
-   <groupId>io.quarkus</groupId>
-   <artifactId>quarkus-qute</artifactId>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-qute</artifactId>
 </dependency>
 ----
 
@@ -455,15 +455,14 @@ import io.quarkus.qute.api.ResourcePath;
 
 class MyBean {
 
-  @Inject 
-  Template items; <1>
-  
-  @ResourcePath("detail/items2_v1.html") <2>
-  Template items2;
-  
-  @Inject
-  Engine engine; <3>
-  
+    @Inject 
+    Template items; <1>
+
+    @ResourcePath("detail/items2_v1.html") <2>
+    Template items2;
+
+    @Inject
+    Engine engine; <3>
 }
 ----
 <1> If there is no `ResourcePath` qualifier provided, the field name is used to locate the template. In this particular case, the container will attempt to locate a template with path `src/main/resources/templates/items.html`.
@@ -503,8 +502,8 @@ NOTE: Only properties are currently validated in expressions; virtual methods ar
 <title>Qute Hello</title>
 </head>
 <body>
-    <h1>{title}</h1> <2>
-    Hello {foo.message}! <3>
+  <h1>{title}</h1> <2>
+  Hello {foo.message}! <3>
 </body>
 </html>
 ----
@@ -526,10 +525,10 @@ NOTE: A value resolver is also generated for all types used in parameter declara
 <title>Qute Hello</title>
 </head>
 <body>
-    <h1>{foo.message}</h1> <1>
-    {#for foo in baz.foos}
-     <p>Hello {foo.message}!</p> <2>
-    {/for}
+  <h1>{foo.message}</h1> <1>
+  {#for foo in baz.foos}
+    <p>Hello {foo.message}!</p> <2>
+  {/for}
 </body>
 </html>
 ----
@@ -571,7 +570,7 @@ This template extension method makes it possible to render the following templat
 [source,html]
 ----
 {#each items} <1>
-   {it.discountedPrice}
+  {it.discountedPrice}
 {/each}
 ----
 <1> `items` is resolved to a list of `org.acme.Item` instances.
@@ -607,7 +606,7 @@ Any instance of `Item` can be used directly in the template:
 [source,html]
 ----
 {#each items} <1>
-   {it.price} / {it.discountedPrice}
+  {it.price} / {it.discountedPrice}
 {/each}
 ----
 <1> `items` is resolved to a list of `org.acme.Item` instances.
@@ -632,7 +631,7 @@ class Item {
 [source,html]
 ----
 {#each items} <1>
-   {it.price.setScale(2, rounding)} <1>
+  {it.price.setScale(2, rounding)} <1>
 {/each}
 ----
 <1> The generated value resolver knows how to invoke the `BigDecimal.setScale()` method.
@@ -692,15 +691,15 @@ Sometimes it could be useful to render a specific variant of the template based 
 ----
 @Path("/detail")
 class DetailResource {
-  
-  @Inject
-  VariantTemplate item; <1>
 
-  @GET
-  @Produces({ MediaType.TEXT_HTML, MediaType.TEXT_PLAIN })
-  public Rendering item() {
-      return item.data(new Item("Alpha", 1000)); <2>
-  }
+    @Inject
+    VariantTemplate item; <1>
+
+    @GET
+    @Produces({ MediaType.TEXT_HTML, MediaType.TEXT_PLAIN })
+    public Rendering item() {
+        return item.data(new Item("Alpha", 1000)); <2>
+    }
 }
 ----
 <1> Inject a variant template with base path derived from the injected field - `src/main/resources/templates/item`.

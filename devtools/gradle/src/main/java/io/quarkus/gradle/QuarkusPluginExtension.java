@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Set;
 
 import org.gradle.api.Project;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
@@ -14,66 +15,65 @@ public class QuarkusPluginExtension {
 
     private final Project project;
 
-    private String outputDirectory;
+    private File outputDirectory;
 
     private String finalName;
 
-    private String sourceDir;
+    private File sourceDir;
 
-    private String workingDir;
+    private File workingDir;
 
-    private String outputConfigDirectory;
+    private File outputConfigDirectory;
 
     public QuarkusPluginExtension(Project project) {
         this.project = project;
     }
 
     public File outputDirectory() {
-        if (outputDirectory == null)
-            outputDirectory = project.getConvention().getPlugin(JavaPluginConvention.class)
-                    .getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs().getAsPath();
-
-        return new File(outputDirectory);
+        if (outputDirectory == null) {
+            outputDirectory = getLastFile(project.getConvention().getPlugin(JavaPluginConvention.class)
+                    .getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs());
+        }
+        return outputDirectory;
     }
 
     public void setOutputDirectory(String outputDirectory) {
-        this.outputDirectory = outputDirectory;
+        this.outputDirectory = new File(outputDirectory);
     }
 
     public File outputConfigDirectory() {
         if (outputConfigDirectory == null) {
             outputConfigDirectory = project.getConvention().getPlugin(JavaPluginConvention.class)
-                    .getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getResourcesDir().getAbsolutePath();
+                    .getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getResourcesDir();
         }
-        return new File(outputConfigDirectory);
+        return outputConfigDirectory;
     }
 
     public void setOutputConfigDirectory(String outputConfigDirectory) {
-        this.outputConfigDirectory = outputConfigDirectory;
+        this.outputConfigDirectory = new File(outputConfigDirectory);
     }
 
     public File sourceDir() {
         if (sourceDir == null) {
-            sourceDir = project.getConvention().getPlugin(JavaPluginConvention.class)
-                    .getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getAllJava().getSourceDirectories().getAsPath();
+            sourceDir = getLastFile(project.getConvention().getPlugin(JavaPluginConvention.class)
+                    .getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getAllJava().getSourceDirectories());
         }
-        return new File(sourceDir);
+        return sourceDir;
     }
 
     public void setSourceDir(String sourceDir) {
-        this.sourceDir = sourceDir;
+        this.sourceDir = new File(sourceDir);
     }
 
     public File workingDir() {
         if (workingDir == null) {
-            workingDir = outputDirectory().getPath();
+            workingDir = outputDirectory();
         }
-
-        return new File(workingDir);
+        return workingDir;
     }
 
     public void setWorkingDir(String workingDir) {
-        this.workingDir = workingDir;
+        this.workingDir = new File(workingDir);
     }
 
     public String finalName() {
@@ -99,5 +99,17 @@ public class QuarkusPluginExtension {
 
     public AppModelResolver resolveAppModel() {
         return new AppModelGradleResolver(project);
+    }
+
+    /**
+     * Returns the last file from the specified {@link FileCollection}.
+     * Needed for the Scala plugin.
+     */
+    private File getLastFile(FileCollection fileCollection) {
+        File result = null;
+        for (File f : fileCollection) {
+            result = f;
+        }
+        return result;
     }
 }

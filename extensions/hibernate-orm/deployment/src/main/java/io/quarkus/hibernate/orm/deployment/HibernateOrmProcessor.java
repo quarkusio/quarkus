@@ -45,6 +45,7 @@ import org.jboss.jandex.Indexer;
 
 import io.quarkus.agroal.deployment.DataSourceDriverBuildItem;
 import io.quarkus.agroal.deployment.DataSourceInitializedBuildItem;
+import io.quarkus.agroal.deployment.DataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -335,7 +336,8 @@ public final class HibernateOrmProcessor {
     public void startPersistenceUnits(HibernateOrmRecorder recorder, BeanContainerBuildItem beanContainer,
             Optional<DataSourceInitializedBuildItem> dataSourceInitialized,
             JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels,
-            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationsRuntimeConfigured) throws Exception {
+            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationsRuntimeConfigured,
+            Optional<DataSourceSchemaReadyBuildItem> schemaReadyBuildItem) throws Exception {
         if (!hasEntities(jpaEntities, nonJpaModels)) {
             return;
         }

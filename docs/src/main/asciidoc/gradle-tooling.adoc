@@ -98,7 +98,7 @@ or, if you use the Gradle Kotlin DSL:
 ----
 tasks.test {
     systemProperty("quarkus.test.profile", "foo") <1>
- }
+}
 ----
 
 <1> The `foo` configuration profile will be used to run the tests.

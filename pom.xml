@@ -63,9 +63,6 @@
         <!-- relying on the fact that the extension descriptor, generated as part of an extension build, is available -->
         <module>devtools</module>
 
-        <!-- Integration Tests -->
-        <module>integration-tests</module>
-
         <!-- Misc. -->
         <module>docs</module>
     </modules>
@@ -289,6 +286,18 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>integration-tests</id>
+            <activation>
+                <property>
+                    <name>!skipITs</name>
+                </property>
+            </activation>
+            <modules>
+                <!-- Integration Tests -->
+                <module>integration-tests</module>
+            </modules>
         </profile>
         <profile>
             <id>tcks</id>

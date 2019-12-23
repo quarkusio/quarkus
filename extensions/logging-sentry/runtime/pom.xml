@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-logging-sentry</artifactId>
     <name>Quarkus - Logging - Sentry - Runtime</name>
-    <description>Self-hosted and cloud-based error monitoring that helps software teams discover, triage, and prioritize errors in real-time.</description>
+    <description>Use Sentry, a self-hosted or cloud-based error monitoring solution</description>
 
     <dependencies>
         <dependency>

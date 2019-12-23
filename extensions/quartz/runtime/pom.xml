@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-quartz</artifactId>
     <name>Quarkus - Quartz - Runtime</name>
+    <description>Schedule clustered tasks with Quartz</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-spring-security</artifactId>
     <name>Quarkus - Spring Security - Runtime</name>
+    <description>Secure your application with Spring Security annotations</description>
 
     <dependencies>
         <dependency>

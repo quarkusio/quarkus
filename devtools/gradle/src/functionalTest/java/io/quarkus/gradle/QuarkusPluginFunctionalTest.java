@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.quarkus.cli.commands.CreateProject;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
@@ -46,8 +47,7 @@ public class QuarkusPluginFunctionalTest {
     }
 
     @ParameterizedTest(name = "Build {0} project")
-    //TODO: Fix Scala build in Windows
-    @EnumSource(value = SourceType.class, names = {"JAVA","KOTLIN"})
+    @EnumSource(SourceType.class)
     public void canBuild(SourceType sourceType) throws IOException {
         createProject(sourceType);
 
@@ -74,13 +74,16 @@ public class QuarkusPluginFunctionalTest {
     }
 
     private void createProject(SourceType sourceType) throws IOException {
+        Map<String,Object> context = new HashMap<>();
+        context.put("path", "/greeting");
         assertThat(new CreateProject(new FileProjectWriter(projectRoot))
                            .groupId("com.acme.foo")
                            .artifactId("foo")
                            .version("1.0.0-SNAPSHOT")
                            .buildTool(BuildTool.GRADLE)
+                           .className("org.acme.GreetingResource")
                            .sourceType(sourceType)
-                           .doCreateProject(new HashMap<>()))
+                           .doCreateProject(context))
                 .withFailMessage("Project was not created")
                 .isTrue();
     }

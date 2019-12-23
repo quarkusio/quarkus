@@ -10,6 +10,7 @@ repositories {
 
 dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'org.scala-lang:scala-library:${scala_version}'
     implementation 'io.quarkus:quarkus-resteasy'
 
     testImplementation 'io.quarkus:quarkus-junit5'

@@ -46,8 +46,7 @@ public class QuarkusPluginFunctionalTest {
     }
 
     @ParameterizedTest(name = "Build {0} project")
-    //TODO: Fix Scala build in Windows
-    @EnumSource(value = SourceType.class, names = {"JAVA","KOTLIN"})
+    @EnumSource(SourceType.class)
     public void canBuild(SourceType sourceType) throws IOException {
         createProject(sourceType);
 

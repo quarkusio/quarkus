@@ -33,6 +33,7 @@ In your `pom.xml` file, add:
 We'll start with a very simple template:
 
 .hello.txt
+[source]
 ----
 Hello {name}! <1>
 ----

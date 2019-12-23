@@ -3,22 +3,15 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Configuring Sentry Logging
+= Quarkus - Logging to Sentry
 
 include::./attributes.adoc[]
 
-This guide explains sentry logging and how to configure it.
-
-== Run Time Configuration
-
-Run time configuration of logging is done through the normal `application.properties` file.
-
-include::{generated-dir}/config/quarkus-logging-sentry.adoc[opts=optional, leveloffset=+1]
+This guide explains how to configure Quarkus to log to Sentry.
 
 == Description
 
-
-Sentry is a really easy way to be notified of errors happening on you Quarkus application.
+Sentry is a really easy way to be notified of errors happening in your Quarkus application.
 
 It is a self-hosted and cloud-based error monitoring that helps software teams discover, triage, and prioritize errors in real-time.
 
@@ -28,12 +21,12 @@ WARNING: Sentry's Java SDK is open source, but recently sentry.io https://blog.s
 
 == Configuration
 
-To start of, you need to get a Sentry DSN either by https://sentry.io/signup/[creating a Sentry account] or https://docs.sentry.io/server/[installing your self-hosted Sentry].
+To start with, you need to get a Sentry DSN either by https://sentry.io/signup/[creating a Sentry account] or https://docs.sentry.io/server/[installing your own self-hosted Sentry].
 
-In order to configure Sentry logging, the `quarkus-logging-sentry` extension should be employed. Add this extension to your
-application POM as the following snippet illustrates.
+In order to configure Sentry logging, add the `quarkus-logging-sentry` extension to your
+application `pom.xml` as illustrated in the following snippet:
 
-.Modifications to POM file to add the Sentry logging extension
+.Add the Sentry logging extension to your pom.xml
 [source,xml]
 ----
 <build>
@@ -51,12 +44,14 @@ application POM as the following snippet illustrates.
 === “In Application” Stack Frames
 Sentry differentiates stack frames that are directly related to your application (“in application”) from stack frames that come from other packages such as the standard library, frameworks, or other dependencies. The difference is visible in the Sentry web interface where only the “in application” frames are displayed by default.
 
-You can configure which package prefixes your application uses with the stacktrace.app.packages option, which takes a comma separated list.
+You can configure which package prefixes your application uses with the `in-app-packages` option, which takes a comma separated list of packages:
+
 [source, properties]
 ----
 quarkus.log.sentry.in-app-packages=com.mycompany,com.other.name
 ----
-If you don’t want to use this feature but want to disable the warning, simply set it to "*":
+
+If you don’t want to use this feature but want to disable the warning, simply set it to `*`:
 
 [source, properties]
 ----
@@ -65,9 +60,9 @@ quarkus.log.sentry.in-app-packages=*
 
 == Example
 
-.All errors and warnings occuring in any the packages will be sent to Sentry with DSN `https://abcd@sentry.io/1234`
+.All errors and warnings occuring in any of the packages will be sent to Sentry with DSN `https://abcd@sentry.io/1234`
 [source, properties]
-`
+----
 quarkus.log.sentry=true
 quarkus.log.sentry.dsn=https://abcd@sentry.io/1234
 quarkus.log.sentry.in-app-packages=*
@@ -81,4 +76,10 @@ quarkus.log.sentry.dsn=https://abcd@sentry.io/1234
 quarkus.log.sentry.level=ERROR
 quarkus.log.sentry.in-app-packages=org.example
 ----
+
+== Configuration Reference
+
+This extension is configured through the standard `application.properties` file.
+
+include::{generated-dir}/config/quarkus-logging-sentry.adoc[opts=optional, leveloffset=+1]
 

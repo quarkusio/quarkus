@@ -620,12 +620,12 @@ Just add the `%profile` wrapped in quotation marks before defining the key-value
 [source,yaml]
 ----
 "%dev":
-    quarkus:
+  quarkus:
     datasource:
-        url: jdbc:postgresql://localhost:5432/some-database
-        driver: org.postgresql.Driver
-        username: quarkus
-        password: quarkus
+      url: jdbc:postgresql://localhost:5432/some-database
+      driver: org.postgresql.Driver
+      username: quarkus
+      password: quarkus
 ----
 
 === Configuration key conflicts
@@ -641,10 +641,10 @@ This is solved by using a null key (normally represented by `~`) for any YAML pr
 [source,yaml]
 ----
 quarkus:
-    http:
-        cors:
-            ~: true
-            methods: GET,PUT,POST
+  http:
+    cors:
+      ~: true
+      methods: GET,PUT,POST
 ----
 
 In general, null YAML keys are not included in assembly of the configuration property name, allowing them to be used to

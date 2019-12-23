@@ -621,7 +621,7 @@ Just add the `%profile` wrapped in quotation marks before defining the key-value
 ----
 "%dev":
     quarkus:
-    datasource:
+      datasource:
         url: jdbc:postgresql://localhost:5432/some-database
         driver: org.postgresql.Driver
         username: quarkus

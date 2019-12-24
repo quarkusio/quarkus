@@ -263,6 +263,7 @@
                     <version>1.2.0</version>
                     <configuration>
                         <removeUnused>true</removeUnused>
+                        <skip>${format.skip}</skip>
                     </configuration>
                 </plugin>
             </plugins>

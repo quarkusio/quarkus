@@ -79,6 +79,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SPRING_WEB = "spring-web";
     public static final String SPRING_DATA_JPA = "spring-data-jpa";
     public static final String SPRING_SECURITY = "spring-security";
+    public static final String SPRING_BOOT_PROPERTIES = "spring-boot-properties";
     public static final String SWAGGER_UI = "swagger-ui";
     public static final String TIKA = "tika";
     public static final String UNDERTOW_WEBSOCKETS = "undertow-websockets";

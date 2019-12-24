@@ -93,6 +93,7 @@
         <module>spring-web</module>
         <module>spring-data-jpa</module>
         <module>spring-security</module>
+        <module>spring-boot-properties</module>
 
         <!-- Security -->
         <module>security</module>

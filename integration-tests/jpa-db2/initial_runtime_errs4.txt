@@ -1,0 +1,269 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------< io.quarkus:quarkus-integration-test-jpa-db2 >-------------
+[INFO] Building Quarkus - Integration Tests - JPA - DB2 999-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-clean-plugin:3.1.0:clean (default-clean) @ quarkus-integration-test-jpa-db2 ---
+[INFO] Deleting /Users/aguibert/dev/git/quarkus/integration-tests/jpa-db2/target
+[INFO] 
+[INFO] --- maven-enforcer-plugin:3.0.0-M2:enforce (enforce) @ quarkus-integration-test-jpa-db2 ---
+[INFO] 
+[INFO] --- maven-enforcer-plugin:3.0.0-M2:enforce (enforce-java-version) @ quarkus-integration-test-jpa-db2 ---
+[INFO] 
+[INFO] --- maven-enforcer-plugin:3.0.0-M2:enforce (enforce-maven-version) @ quarkus-integration-test-jpa-db2 ---
+[INFO] 
+[INFO] --- buildnumber-maven-plugin:1.4:create (get-scm-revision) @ quarkus-integration-test-jpa-db2 ---
+[INFO] Executing: /bin/sh -c cd '/Users/aguibert/dev/git/quarkus/integration-tests/jpa-db2' && 'git' 'rev-parse' '--verify' 'HEAD'
+[INFO] Working directory: /Users/aguibert/dev/git/quarkus/integration-tests/jpa-db2
+[INFO] Storing buildNumber: f0e2d34fcaf311fc6f26c5f06bc47b3933f57677 at timestamp: 1571606612282
+[INFO] Storing buildScmBranch: jdbc-db2
+[INFO] 
+[INFO] --- formatter-maven-plugin:2.8.1:format (default) @ quarkus-integration-test-jpa-db2 ---
+[INFO] Using 'UTF-8' encoding to format source files.
+[INFO] Number of files to be formatted: 12
+[INFO] Successfully formatted:          0 file(s)
+[INFO] Fail to format:                  0 file(s)
+[INFO] Skipped:                         12 file(s)
+[INFO] Read only skipped:               0 file(s)
+[INFO] Approximate time taken:          1s
+[INFO] 
+[INFO] --- impsort-maven-plugin:1.2.0:sort (sort-imports) @ quarkus-integration-test-jpa-db2 ---
+[INFO]  Total Files Processed: 12 in 00:00.268
+[INFO]         Already Sorted: 12
+[INFO]         Needed Sorting:  0
+[INFO] 
+[INFO] --- maven-resources-plugin:3.1.0:resources (default-resources) @ quarkus-integration-test-jpa-db2 ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 2 resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.8.0-jboss-2:compile (default-compile) @ quarkus-integration-test-jpa-db2 ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 10 source files to /Users/aguibert/dev/git/quarkus/integration-tests/jpa-db2/target/classes
+[INFO] 
+[INFO] --- maven-resources-plugin:3.1.0:testResources (default-testResources) @ quarkus-integration-test-jpa-db2 ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /Users/aguibert/dev/git/quarkus/integration-tests/jpa-db2/src/test/resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.8.0-jboss-2:testCompile (default-testCompile) @ quarkus-integration-test-jpa-db2 ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 2 source files to /Users/aguibert/dev/git/quarkus/integration-tests/jpa-db2/target/test-classes
+[INFO] 
+[INFO] --- maven-surefire-plugin:2.22.0:test (default-test) @ quarkus-integration-test-jpa-db2 ---
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running io.quarkus.it.jpa.db2.JPAFunctionalityTest
+Oct 20, 2019 11:23:37 PM org.testcontainers.dockerclient.DockerClientProviderStrategy lambda$getFirstValidStrategy$1
+INFO: Loaded org.testcontainers.dockerclient.UnixSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+Oct 20, 2019 11:23:38 PM org.testcontainers.dockerclient.UnixSocketClientProviderStrategy test
+INFO: Accessing docker with local Unix socket
+Oct 20, 2019 11:23:38 PM org.testcontainers.dockerclient.DockerClientProviderStrategy lambda$getFirstValidStrategy$2
+INFO: Found Docker environment with local Unix socket (unix:///var/run/docker.sock)
+Oct 20, 2019 11:23:38 PM org.testcontainers.DockerClientFactory client
+INFO: Docker host IP address is localhost
+Oct 20, 2019 11:23:38 PM org.testcontainers.DockerClientFactory client
+INFO: Connected to docker: 
+  Server Version: 19.03.1
+  API Version: 1.40
+  Operating System: Docker Desktop
+  Total Memory: 1998 MB
+Oct 20, 2019 11:23:38 PM org.testcontainers.utility.RegistryAuthLocator runCredentialProvider
+INFO: Credential helper/store (docker-credential-desktop) does not have credentials for quay.io
+Oct 20, 2019 11:23:39 PM org.testcontainers.DockerClientFactory client
+INFO: Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+        ℹ︎ Checking the system...
+        ✔ Docker version should be at least 1.6.0
+        ✔ Docker environment should have more than 2GB free disk space
+DB2 url is: jdbc:db2://localhost:50000/test
+      user: db2inst1
+      pass: foobar1234
+Oct 20, 2019 11:23:42 PM io.quarkus.deployment.QuarkusAugmentor run
+INFO: Beginning quarkus augmentation
+Oct 20, 2019 11:23:42 PM org.jboss.threads.Version <clinit>
+INFO: JBoss Threads version 3.0.0.Final
+Oct 20, 2019 11:23:43 PM org.hibernate.Version logVersion
+INFO: HHH000412: Hibernate Core {5.4.6.Final}
+Oct 20, 2019 11:23:44 PM io.quarkus.deployment.QuarkusAugmentor run
+INFO: Quarkus augmentation completed in 2204ms
+Oct 20, 2019 11:23:44 PM org.hibernate.jpa.internal.util.LogHelper logPersistenceUnitInformation
+INFO: HHH000204: Processing PersistenceUnitInfo [name: templatePU]
+Oct 20, 2019 11:23:45 PM org.hibernate.annotations.common.reflection.java.JavaReflectionManager <clinit>
+INFO: HCANN000001: Hibernate Commons Annotations {5.1.0.Final}
+Oct 20, 2019 11:23:45 PM org.hibernate.dialect.Dialect <init>
+INFO: HHH000400: Using dialect: org.hibernate.dialect.DB2Dialect
+@AGG inside servlet url is: jdbc:db2://localhost:50000/test
+Oct 20, 2019 11:23:46 PM com.arjuna.ats.arjuna.recovery.TransactionStatusManager start
+INFO: ARJUNA012170: TransactionStatusManager started on port 59376 and host 127.0.0.1 with service com.arjuna.ats.arjuna.recovery.ActionStatusService
+Oct 20, 2019 11:23:46 PM org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator resolveBeanContainer
+INFO: HHH10005002: No explicit CDI BeanManager reference was passed to Hibernate, but CDI is available on the Hibernate ClassLoader.
+Oct 20, 2019 11:23:47 PM io.quarkus.runtime.Timing printStartupTime
+INFO: Quarkus 999-SNAPSHOT started in 2.421s. Listening on: http://0.0.0.0:8081
+Oct 20, 2019 11:23:47 PM io.quarkus.runtime.Timing printStartupTime
+INFO: Profile test activated. 
+Oct 20, 2019 11:23:47 PM io.quarkus.runtime.Timing printStartupTime
+INFO: Installed features: [agroal, cdi, hibernate-orm, jdbc-db2, narayana-jta, servlet]
+list of stored Person names:
+	Person with id=1, name='Gizmo', status='LIVING', address { Address with id=1, street='Street 2494f2f6-39c4-47f6-a8a5-2fd82e660b9e' }
+	Person with id=3, name='Hibernate ORM', status='LIVING', address { Address with id=3, street='Street db2bde83-8a32-4c13-9c41-3d3807ab6ca2' }
+	Person with id=2, name='Quarkus', status='LIVING', address { Address with id=2, street='Street 75404b4b-efdd-497d-b8e9-e82975472a4c' }
+	
+List complete.
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 11.209 s - in io.quarkus.it.jpa.db2.JPAFunctionalityTest
+Oct 20, 2019 11:23:48 PM io.quarkus.runtime.Timing printStopTime
+INFO: Quarkus stopped in 0.034s
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- maven-jar-plugin:3.1.0:jar (default-jar) @ quarkus-integration-test-jpa-db2 ---
+[INFO] Building jar: /Users/aguibert/dev/git/quarkus/integration-tests/jpa-db2/target/quarkus-integration-test-jpa-db2-999-SNAPSHOT.jar
+[INFO] 
+[INFO] --- maven-source-plugin:3.0.1:jar-no-fork (attach-sources) @ quarkus-integration-test-jpa-db2 ---
+[INFO] Building jar: /Users/aguibert/dev/git/quarkus/integration-tests/jpa-db2/target/quarkus-integration-test-jpa-db2-999-SNAPSHOT-sources.jar
+[INFO] 
+[INFO] --- quarkus-maven-plugin:999-SNAPSHOT:build (default) @ quarkus-integration-test-jpa-db2 ---
+[INFO] [io.quarkus.deployment.QuarkusAugmentor] Beginning quarkus augmentation
+[INFO] [org.jboss.threads] JBoss Threads version 3.0.0.Final
+[INFO] [org.hibernate.Version] HHH000412: Hibernate Core {5.4.6.Final}
+[INFO] [io.quarkus.deployment.QuarkusAugmentor] Quarkus augmentation completed in 1664ms
+[INFO] [io.quarkus.creator.phase.runnerjar.RunnerJarPhase] Building jar: /Users/aguibert/dev/git/quarkus/integration-tests/jpa-db2/target/quarkus-integration-test-jpa-db2-999-SNAPSHOT-runner.jar
+[INFO] 
+[INFO] --- quarkus-maven-plugin:999-SNAPSHOT:native-image (native-image) @ quarkus-integration-test-jpa-db2 ---
+[INFO] [io.quarkus.creator.phase.nativeimage.NativeImagePhase] Running Quarkus native-image plugin on Eclipse OpenJ9 VM
+[INFO] [io.quarkus.creator.phase.nativeimage.NativeImagePhase] /Users/aguibert/dev/java/graal-19.2.0.1/bin/native-image -J-Dsun.nio.ch.maxUpdateArraySize=100 -J-Djava.util.logging.manager=org.jboss.logmanager.LogManager -J-Dvertx.logger-delegate-factory-class-name=io.quarkus.vertx.core.runtime.VertxLogDelegateFactory -J-Dio.netty.leakDetection.level=DISABLED -J-Dvertx.disableDnsResolver=true -J-Dio.netty.allocator.maxOrder=1 --report-unsupported-elements-at-runtime --allow-incomplete-classpath --initialize-at-run-time=com.ibm.db2.jcc.am.cy,com.ibm.db2.jcc.am.lg --initialize-at-build-time= -H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime -jar quarkus-integration-test-jpa-db2-999-SNAPSHOT-runner.jar -J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1 -H:FallbackThreshold=0 -H:+ReportExceptionStackTraces -H:+PrintAnalysisCallTree -H:-AddAllCharsets -H:EnableURLProtocols=http,https --enable-all-security-services -H:+JNI --no-server -H:-UseServiceLoaderFeature -H:+StackTrace
+[quarkus-integration-test-jpa-db2-999-SNAPSHOT-runner:30060]    classlist:  15,116.49 ms
+[quarkus-integration-test-jpa-db2-999-SNAPSHOT-runner:30060]        (cap):   4,246.73 ms
+[quarkus-integration-test-jpa-db2-999-SNAPSHOT-runner:30060]        setup:   5,880.95 ms
+@AGG inside servlet url is: null
+23:24:14,900 INFO  [org.hib.Version] HHH000412: Hibernate Core {5.4.6.Final}
+23:24:14,919 INFO  [org.hib.ann.com.Version] HCANN000001: Hibernate Commons Annotations {5.1.0.Final}
+23:24:14,958 INFO  [org.hib.dia.Dialect] HHH000400: Using dialect: org.hibernate.dialect.DB2Dialect
+23:24:16,230 INFO  [org.jbo.threads] JBoss Threads version 3.0.0.Final
+23:24:17,036 INFO  [com.arj.ats.arjuna] ARJUNA012170: TransactionStatusManager started on port 59385 and host 127.0.0.1 with service com.arjuna.ats.arjuna.recovery.ActionStatusService
+com.ibm.db2.jcc.am.SqlException: [jcc][10389][12245][4.25.13] Failure in loading native library db2jcct2, java.lang.UnsatisfiedLinkError: no db2jcct2 in java.library.path:  ERRORCODE=-4472, SQLSTATE=null
+	at com.ibm.db2.jcc.am.b6.a(b6.java:794)
+	at com.ibm.db2.jcc.am.b6.a(b6.java:66)
+	at com.ibm.db2.jcc.am.b6.a(b6.java:107)
+	at com.ibm.db2.jcc.t2.a.a(a.java:37)
+	at com.ibm.db2.jcc.t2.T2Configuration.<clinit>(T2Configuration.java:95)
+	at sun.misc.Unsafe.ensureClassInitialized(Native Method)
+	at com.oracle.svm.hosted.classinitialization.ConfigurableClassInitialization.ensureClassInitialized(ConfigurableClassInitialization.java:153)
+	at com.oracle.svm.hosted.classinitialization.ConfigurableClassInitialization.computeInitKindAndMaybeInitializeClass(ConfigurableClassInitialization.java:557)
+	at com.oracle.svm.hosted.classinitialization.ConfigurableClassInitialization.computeInitKindAndMaybeInitializeClass(ConfigurableClassInitialization.java:116)
+	at com.oracle.svm.hosted.classinitialization.ConfigurableClassInitialization.maybeInitializeHosted(ConfigurableClassInitialization.java:144)
+	at com.oracle.svm.hosted.SVMHost.registerType(SVMHost.java:190)
+	at com.oracle.graal.pointsto.meta.AnalysisUniverse.createType(AnalysisUniverse.java:262)
+	at com.oracle.graal.pointsto.meta.AnalysisUniverse.lookupAllowUnresolved(AnalysisUniverse.java:203)
+	at com.oracle.graal.pointsto.meta.AnalysisUniverse.lookup(AnalysisUniverse.java:180)
+	at com.oracle.graal.pointsto.meta.AnalysisUniverse.lookupAllowUnresolved(AnalysisUniverse.java:350)
+	at com.oracle.graal.pointsto.infrastructure.WrappedConstantPool.lookupField(WrappedConstantPool.java:111)
+	at org.graalvm.compiler.java.BytecodeParser.lookupField(BytecodeParser.java:4130)
+	at org.graalvm.compiler.java.BytecodeParser.genGetStatic(BytecodeParser.java:4633)
+	at org.graalvm.compiler.java.BytecodeParser.processBytecode(BytecodeParser.java:5119)
+	at org.graalvm.compiler.java.BytecodeParser.iterateBytecodesForBlock(BytecodeParser.java:3267)
+	at org.graalvm.compiler.java.BytecodeParser.processBlock(BytecodeParser.java:3074)
+	at org.graalvm.compiler.java.BytecodeParser.build(BytecodeParser.java:976)
+	at org.graalvm.compiler.java.BytecodeParser.buildRootMethod(BytecodeParser.java:870)
+	at org.graalvm.compiler.java.GraphBuilderPhase$Instance.run(GraphBuilderPhase.java:84)
+	at org.graalvm.compiler.phases.Phase.run(Phase.java:49)
+	at org.graalvm.compiler.phases.BasePhase.apply(BasePhase.java:197)
+	at org.graalvm.compiler.phases.Phase.apply(Phase.java:42)
+	at org.graalvm.compiler.phases.Phase.apply(Phase.java:38)
+	at com.oracle.graal.pointsto.flow.MethodTypeFlowBuilder.parse(MethodTypeFlowBuilder.java:221)
+	at com.oracle.graal.pointsto.flow.MethodTypeFlowBuilder.apply(MethodTypeFlowBuilder.java:340)
+	at com.oracle.graal.pointsto.flow.MethodTypeFlow.doParse(MethodTypeFlow.java:310)
+	at com.oracle.graal.pointsto.flow.MethodTypeFlow.ensureParsed(MethodTypeFlow.java:300)
+	at com.oracle.graal.pointsto.flow.MethodTypeFlow.addContext(MethodTypeFlow.java:107)
+	at com.oracle.graal.pointsto.flow.SpecialInvokeTypeFlow.onObservedUpdate(InvokeTypeFlow.java:421)
+	at com.oracle.graal.pointsto.flow.TypeFlow.notifyObservers(TypeFlow.java:343)
+	at com.oracle.graal.pointsto.flow.TypeFlow.update(TypeFlow.java:385)
+	at com.oracle.graal.pointsto.BigBang$2.run(BigBang.java:510)
+	at com.oracle.graal.pointsto.util.CompletionExecutor.lambda$execute$0(CompletionExecutor.java:171)
+	at java.util.concurrent.ForkJoinTask$RunnableExecuteAction.exec(ForkJoinTask.java:1402)
+	at java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:289)
+	at java.util.concurrent.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1056)
+	at java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1692)
+	at java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:157)
+com.ibm.db2.jcc.am.SqlException: [jcc][10389][12245][4.25.13] Failure in loading native library db2jcct2, java.lang.UnsatisfiedLinkError: no db2jcct2 in java.library.path:  ERRORCODE=-4472, SQLSTATE=null
+	at com.ibm.db2.jcc.am.b6.a(b6.java:794)
+	at com.ibm.db2.jcc.am.b6.a(b6.java:66)
+	at com.ibm.db2.jcc.am.b6.a(b6.java:107)
+	at com.ibm.db2.jcc.t2.a.a(a.java:37)
+	at com.ibm.db2.jcc.t2.T2Configuration.<clinit>(T2Configuration.java:95)
+	at sun.misc.Unsafe.ensureClassInitialized(Native Method)
+	at com.oracle.svm.hosted.classinitialization.ConfigurableClassInitialization.ensureClassInitialized(ConfigurableClassInitialization.java:153)
+	at com.oracle.svm.hosted.classinitialization.ConfigurableClassInitialization.computeInitKindAndMaybeInitializeClass(ConfigurableClassInitialization.java:557)
+	at com.oracle.svm.hosted.classinitialization.ConfigurableClassInitialization.computeInitKindAndMaybeInitializeClass(ConfigurableClassInitialization.java:116)
+	at com.oracle.svm.hosted.classinitialization.ConfigurableClassInitialization.maybeInitializeHosted(ConfigurableClassInitialization.java:144)
+	at com.oracle.svm.hosted.SVMHost.registerType(SVMHost.java:190)
+	at com.oracle.graal.pointsto.meta.AnalysisUniverse.createType(AnalysisUniverse.java:262)
+	at com.oracle.graal.pointsto.meta.AnalysisUniverse.lookupAllowUnresolved(AnalysisUniverse.java:203)
+	at com.oracle.graal.pointsto.meta.AnalysisUniverse.lookup(AnalysisUniverse.java:180)
+	at com.oracle.graal.pointsto.meta.AnalysisUniverse.lookupAllowUnresolved(AnalysisUniverse.java:350)
+	at com.oracle.graal.pointsto.infrastructure.WrappedConstantPool.lookupField(WrappedConstantPool.java:111)
+	at org.graalvm.compiler.java.BytecodeParser.lookupField(BytecodeParser.java:4130)
+	at org.graalvm.compiler.java.BytecodeParser.genGetStatic(BytecodeParser.java:4633)
+	at org.graalvm.compiler.java.BytecodeParser.processBytecode(BytecodeParser.java:5119)
+	at org.graalvm.compiler.java.BytecodeParser.iterateBytecodesForBlock(BytecodeParser.java:3267)
+	at org.graalvm.compiler.java.BytecodeParser.processBlock(BytecodeParser.java:3074)
+	at org.graalvm.compiler.java.BytecodeParser.build(BytecodeParser.java:976)
+	at org.graalvm.compiler.java.BytecodeParser.buildRootMethod(BytecodeParser.java:870)
+	at org.graalvm.compiler.java.GraphBuilderPhase$Instance.run(GraphBuilderPhase.java:84)
+	at org.graalvm.compiler.phases.Phase.run(Phase.java:49)
+	at org.graalvm.compiler.phases.BasePhase.apply(BasePhase.java:197)
+	at org.graalvm.compiler.phases.Phase.apply(Phase.java:42)
+	at org.graalvm.compiler.phases.Phase.apply(Phase.java:38)
+	at com.oracle.graal.pointsto.flow.MethodTypeFlowBuilder.parse(MethodTypeFlowBuilder.java:221)
+	at com.oracle.graal.pointsto.flow.MethodTypeFlowBuilder.apply(MethodTypeFlowBuilder.java:340)
+	at com.oracle.graal.pointsto.flow.MethodTypeFlow.doParse(MethodTypeFlow.java:310)
+	at com.oracle.graal.pointsto.flow.MethodTypeFlow.ensureParsed(MethodTypeFlow.java:300)
+	at com.oracle.graal.pointsto.flow.MethodTypeFlow.addContext(MethodTypeFlow.java:107)
+	at com.oracle.graal.pointsto.flow.SpecialInvokeTypeFlow.onObservedUpdate(InvokeTypeFlow.java:421)
+	at com.oracle.graal.pointsto.flow.TypeFlow.notifyObservers(TypeFlow.java:343)
+	at com.oracle.graal.pointsto.flow.TypeFlow.update(TypeFlow.java:385)
+	at com.oracle.graal.pointsto.BigBang$2.run(BigBang.java:510)
+	at com.oracle.graal.pointsto.util.CompletionExecutor.lambda$execute$0(CompletionExecutor.java:171)
+	at java.util.concurrent.ForkJoinTask$RunnableExecuteAction.exec(ForkJoinTask.java:1402)
+	at java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:289)
+	at java.util.concurrent.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1056)
+	at java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1692)
+	at java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:157)
+[quarkus-integration-test-jpa-db2-999-SNAPSHOT-runner:30060]     analysis:  30,699.17 ms
+Printing call tree to /Users/aguibert/dev/git/quarkus/integration-tests/jpa-db2/target/reports/call_tree_quarkus-integration-test-jpa-db2-999-SNAPSHOT-runner_20191020_232451.txt
+Printing list of used classes to /Users/aguibert/dev/git/quarkus/integration-tests/jpa-db2/target/reports/used_classes_quarkus-integration-test-jpa-db2-999-SNAPSHOT-runner_20191020_232455.txt
+Printing list of used packages to /Users/aguibert/dev/git/quarkus/integration-tests/jpa-db2/target/reports/used_packages_quarkus-integration-test-jpa-db2-999-SNAPSHOT-runner_20191020_232455.txt
+Error: Classes that should be initialized at run time got initialized during image building:
+ com.ibm.db2.jcc.am.lg the class was requested to be initialized at build time (from the command line).  To see why com.ibm.db2.jcc.am.lg got initialized use -H:+TraceClassInitialization
+com.oracle.svm.core.util.UserError$UserException: Classes that should be initialized at run time got initialized during image building:
+ com.ibm.db2.jcc.am.lg the class was requested to be initialized at build time (from the command line).  To see why com.ibm.db2.jcc.am.lg got initialized use -H:+TraceClassInitialization
+	at com.oracle.svm.core.util.UserError.abort(UserError.java:65)
+	at com.oracle.svm.hosted.classinitialization.ConfigurableClassInitialization.checkDelayedInitialization(ConfigurableClassInitialization.java:494)
+	at com.oracle.svm.hosted.classinitialization.ClassInitializationFeature.duringAnalysis(ClassInitializationFeature.java:188)
+	at com.oracle.svm.hosted.NativeImageGenerator.lambda$runPointsToAnalysis$8(NativeImageGenerator.java:711)
+	at com.oracle.svm.hosted.FeatureHandler.forEachFeature(FeatureHandler.java:63)
+	at com.oracle.svm.hosted.NativeImageGenerator.runPointsToAnalysis(NativeImageGenerator.java:711)
+	at com.oracle.svm.hosted.NativeImageGenerator.doRun(NativeImageGenerator.java:526)
+	at com.oracle.svm.hosted.NativeImageGenerator.lambda$run$0(NativeImageGenerator.java:444)
+	at java.util.concurrent.ForkJoinTask$AdaptedRunnableAction.exec(ForkJoinTask.java:1386)
+	at java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:289)
+	at java.util.concurrent.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1056)
+	at java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1692)
+	at java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:157)
+Error: Image build request failed with exit status 1
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 01:38 min
+[INFO] Finished at: 2019-10-20T23:24:55+02:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal io.quarkus:quarkus-maven-plugin:999-SNAPSHOT:native-image (native-image) on project quarkus-integration-test-jpa-db2: Failed to generate a native image: Failed to build native image: Image generation failed -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

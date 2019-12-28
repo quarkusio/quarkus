@@ -313,7 +313,11 @@ public class SpringDIProcessor {
                     }
                 }
             }
-            final DotName declaredScope = getScope(classInfo);
+            DotName declaredScope = getScope(classInfo);
+            // @Named is a bean-defining annotation in Spring, but not in Arc.
+            if (declaredScope == null && classInfo.classAnnotation(CDI_NAMED_ANNOTATION) != null) {
+                declaredScope = CDI_SINGLETON_ANNOTATION; // implicit default scope in spring
+            }
             final boolean isAnnotation = isAnnotation(classInfo.flags());
             if (declaredScope != null) {
                 annotationsToAdd.add(create(

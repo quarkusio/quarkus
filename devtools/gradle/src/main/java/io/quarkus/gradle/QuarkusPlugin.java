@@ -27,6 +27,8 @@ import io.quarkus.gradle.tasks.QuarkusTestNative;
 
 public class QuarkusPlugin implements Plugin<Project> {
 
+    public static final String ID = "io.quarkus";
+
     public static final String EXTENSION_NAME = "quarkus";
     public static final String LIST_EXTENSIONS_TASK_NAME = "listExtensions";
     public static final String ADD_EXTENSION_TASK_NAME = "addExtension";
@@ -75,7 +77,7 @@ public class QuarkusPlugin implements Plugin<Project> {
 
                     buildNative.dependsOn(tasks.getByName(BasePlugin.ASSEMBLE_TASK_NAME));
 
-                    SourceSetContainer sourceSets = project.getConvention().findPlugin(JavaPluginConvention.class)
+                    SourceSetContainer sourceSets = project.getConvention().getPlugin(JavaPluginConvention.class)
                             .getSourceSets();
                     SourceSet nativeTestSourceSet = sourceSets.create(NATIVE_TEST_SOURCE_SET_NAME);
                     SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);

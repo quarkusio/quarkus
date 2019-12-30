@@ -1,5 +1,8 @@
 package io.quarkus.logging.gelf;
 
+import java.util.Optional;
+import java.util.logging.Level;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -61,4 +64,32 @@ public class GelfConfig {
      */
     @ConfigItem(defaultValue = "yyyy-MM-dd HH:mm:ss,SSS")
     public String timestampPattern;
+
+    /**
+     * The logging-gelf log level.
+     */
+    @ConfigItem(defaultValue = "ALL")
+    Level level;
+
+    /**
+     * Name of the Facility.
+     */
+    @ConfigItem(defaultValue = "jboss-logmanager")
+    String facility;
+
+    /**
+     * Post additional fields. E.g. `fieldName1=value1,fieldName2=value2`.
+     */
+    @ConfigItem
+    Optional<String> additionalFields;
+
+    /**
+     * Type specification for additional and MDC fields.
+     * Supported types: String, long, Long, double, Double and discover (default if not specified, discover field type on
+     * parseability).
+     * E.g. `field=String,field2=double`.
+     */
+    @ConfigItem
+    Optional<String> additionalFieldsTypes;
+
 }

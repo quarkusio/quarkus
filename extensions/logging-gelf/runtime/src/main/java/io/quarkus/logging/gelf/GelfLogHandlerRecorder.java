@@ -16,7 +16,7 @@ public class GelfLogHandlerRecorder {
 
         final JBoss7GelfLogHandler handler = new JBoss7GelfLogHandler();
         handler.setVersion(config.version);
-        handler.setFacility("jboss-logmanager");
+        handler.setFacility(config.facility);
         String extractStackTrace = String.valueOf(config.extractStackTrace);
         if (config.extractStackTrace && config.stackTraceThrowableReference != 0) {
             extractStackTrace = String.valueOf(config.stackTraceThrowableReference);
@@ -26,6 +26,13 @@ public class GelfLogHandlerRecorder {
         handler.setTimestampPattern(config.timestampPattern);
         handler.setHost(config.host);
         handler.setPort(config.port);
+        handler.setLevel(config.level);
+        if (config.additionalFields.isPresent()) {
+            handler.setAdditionalFields(config.additionalFields.get());
+        }
+        if (config.additionalFieldsTypes.isPresent()) {
+            handler.setAdditionalFieldTypes(config.additionalFieldsTypes.get());
+        }
         return new RuntimeValue<>(Optional.of(handler));
     }
 }

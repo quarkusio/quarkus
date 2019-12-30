@@ -86,6 +86,16 @@ public class HibernateOrmConfig {
     public int batchFetchSize;
 
     /**
+     * Pluggable strategy contract for applying physical naming rules for database object names.
+     *
+     * Class name of the Hibernate PhysicalNamingStrategy implementation
+     *
+     * @asciidoclet
+     */
+    @ConfigItem
+    Optional<String> physicalNamingStrategy;
+
+    /**
      * Query related configuration.
      */
     @ConfigItem

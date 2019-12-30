@@ -121,6 +121,10 @@
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
+                                    <additionalBuildArgs>
+                                        <additionalBuildArg>--allow-incomplete-classpath</additionalBuildArg>
+                                        <additionalBuildArg>-H:+ReportExceptionStackTraces</additionalBuildArg>
+                                    </additionalBuildArgs>
                                 </configuration>
                             </execution>
                         </executions>

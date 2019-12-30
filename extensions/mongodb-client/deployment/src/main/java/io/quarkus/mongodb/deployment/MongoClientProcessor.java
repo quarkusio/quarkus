@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.mongodb.ReactiveMongoClient;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.mongodb.runtime.MongoClientProducer;
@@ -49,6 +50,18 @@ public class MongoClientProcessor {
         return providers.getCodecProviderClassNames().stream()
                 .map(s -> new ReflectiveClassBuildItem(true, true, false, s))
                 .collect(Collectors.toList());
+    }
+
+    @BuildStep
+    void runtimeInit(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClass) {
+        runtimeInitializedClass.produce(new RuntimeInitializedClassBuildItem("com.mongodb.async.client.internal.Crypt"));
+        runtimeInitializedClass.produce(new RuntimeInitializedClassBuildItem("com.mongodb.client.internal.Crypt"));
+        runtimeInitializedClass
+                .produce(new RuntimeInitializedClassBuildItem("com.mongodb.async.client.internal.AsyncCryptConnection"));
+        runtimeInitializedClass.produce(new RuntimeInitializedClassBuildItem("com.mongodb.client.internal.CryptConnection"));
+        runtimeInitializedClass
+                .produce(new RuntimeInitializedClassBuildItem("com.mongodb.async.client.internal.AsyncCryptBinding"));
+        runtimeInitializedClass.produce(new RuntimeInitializedClassBuildItem("com.mongodb.client.internal.CryptBinding"));
     }
 
     @BuildStep

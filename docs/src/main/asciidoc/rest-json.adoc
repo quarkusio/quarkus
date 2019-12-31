@@ -365,6 +365,8 @@ Hopefully, this will change in the future and make the error more obvious.
 We can register `Legume` for reflection manually by adding the `@RegisterForReflection` annotation on our `Legume` class:
 [source,JAVA]
 ----
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
 @RegisterForReflection
 public class Legume {
     // ...

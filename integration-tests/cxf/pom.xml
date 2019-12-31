@@ -14,7 +14,10 @@
     <artifactId>quarkus-integration-test-cxf</artifactId>
 
     <name>Quarkus - Integration Tests - CXF</name>
-    
+
+    <properties>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -38,6 +41,11 @@
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.xml.fastinfoset</groupId>
+            <artifactId>FastInfoset</artifactId>
+            <version>1.2.17</version>
         </dependency>
     </dependencies>
 
@@ -96,6 +104,8 @@
                                     <goal>native-image</goal>
                                 </goals>
                                 <configuration>
+                                    <reportErrorsAtRuntime>true</reportErrorsAtRuntime>
+                                    <reportExceptionStackTraces>true</reportExceptionStackTraces>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                     <graalvmHome>${graalvmHome}</graalvmHome>

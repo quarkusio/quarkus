@@ -2,12 +2,14 @@ package io.quarkus.cxf.deployment.test;
 
 import javax.jws.WebMethod;
 import javax.jws.WebParam;
+import javax.jws.WebResult;
 import javax.jws.WebService;
 
 @WebService(targetNamespace = "http://test.deployment.cxf.quarkus.io/", name = "FruitWebServiceImplPortType")
 public interface FruitWebService {
 
     @WebMethod
+    @WebResult(name = "countFruitsResponse", targetNamespace = "http://test.deployment.cxf.quarkus.io/", partName = "parameters")
     int count();
 
     @WebMethod

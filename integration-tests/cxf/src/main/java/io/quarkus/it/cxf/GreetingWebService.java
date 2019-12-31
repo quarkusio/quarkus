@@ -7,6 +7,6 @@ import javax.jws.WebService;
 @WebService
 public interface GreetingWebService {
 
-    @WebMethod //(operationName = "reply", action="http://example.org/reply")
+    @WebMethod
     String reply(@WebParam(name = "text") String text);
 }

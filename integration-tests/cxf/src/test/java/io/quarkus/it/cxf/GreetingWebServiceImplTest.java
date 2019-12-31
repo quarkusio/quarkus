@@ -17,7 +17,7 @@ class GreetingWebServiceImplTest {
                 "   <x:Header/>\n" +
                 "   <x:Body>\n" +
                 "      <cxf:reply>\n" +
-                "          <cxf:arg0>foo</cxf:arg0>\n" +
+                "          <cxf:text>foo</cxf:text>\n" +
                 "      </cxf:reply>\n" +
                 "   </x:Body>\n" +
                 "</x:Envelope>";

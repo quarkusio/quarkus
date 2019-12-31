@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
@@ -133,6 +134,7 @@ class JaxbProcessor {
             BuildProducer<ServiceProviderBuildItem> providerItem,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinitions,
             CombinedIndexBuildItem combinedIndexBuildItem,
+            Optional<ForceJaxbBuildItem> forceJaxb,
             List<JaxbFileRootBuildItem> fileRoots) {
 
         IndexView index = combinedIndexBuildItem.getIndex();
@@ -151,7 +153,7 @@ class JaxbProcessor {
             }
         }
 
-        if (!jaxbRootAnnotationsDetected && fileRoots.isEmpty()) {
+        if (!jaxbRootAnnotationsDetected && fileRoots.isEmpty() && !forceJaxb.isPresent()) {
             return;
         }
 

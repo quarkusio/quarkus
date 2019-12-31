@@ -13,6 +13,10 @@
     <artifactId>quarkus-cxf-deployment</artifactId>
     <name>Quarkus - CXF - Deployment</name>
 
+    <properties>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -25,6 +29,18 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-undertow-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jaxb-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.xml.ws</groupId>

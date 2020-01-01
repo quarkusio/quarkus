@@ -263,6 +263,10 @@ public class ReportGenerator {
 <2> Use the `@Scheduled` annotation to instruct Quarkus to execute this method on the half hour. For more information see the link:scheduler[Scheduler] guide.
 <3> The `TemplateInstance.render()` method triggers rendering. Note that this method blocks the current thread.
 
+== Qute Reference Guide
+
+To learn more about Qute, please refer to the link:qute-reference[Qute reference guide].
+
 [[qute-configuration-reference]]
 == Qute Configuration Reference
 

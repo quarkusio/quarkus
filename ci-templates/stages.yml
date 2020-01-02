@@ -272,6 +272,7 @@ stages:
             - elytron-resteasy
             - oidc
             - oidc-code-flow
+            - oidc-tenancy
             - vault-app
             - keycloak-authorization
           name: security_2

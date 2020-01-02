@@ -14,6 +14,7 @@ import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.oidc.runtime.BearerAuthenticationMechanism;
 import io.quarkus.oidc.runtime.CodeAuthenticationMechanism;
+import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.OidcBuildTimeConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.oidc.runtime.OidcIdentityProvider;
@@ -59,7 +60,8 @@ public class OidcBuildStep {
         }
         return beans.addBeanClass(OidcJsonWebTokenProducer.class)
                 .addBeanClass(OidcTokenCredentialProducer.class)
-                .addBeanClass(OidcIdentityProvider.class).build();
+                .addBeanClass(OidcIdentityProvider.class)
+                .addBeanClass(DefaultTenantConfigResolver.class).build();
     }
 
     @BuildStep(onlyIf = IsEnabled.class)
@@ -71,7 +73,7 @@ public class OidcBuildStep {
     @BuildStep(onlyIf = IsEnabled.class)
     public void setup(OidcConfig config, OidcRecorder recorder, InternalWebVertxBuildItem vertxBuildItem,
             BeanContainerBuildItem bc) {
-        recorder.setup(config, buildTimeConfig, vertxBuildItem.getVertx(), bc.getValue());
+        recorder.setup(config, vertxBuildItem.getVertx(), bc.getValue());
     }
 
     static class IsEnabled implements BooleanSupplier {

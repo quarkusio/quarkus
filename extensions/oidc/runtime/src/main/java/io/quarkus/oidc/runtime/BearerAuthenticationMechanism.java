@@ -17,13 +17,14 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
 
+    @Override
     public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
         String token = extractBearerToken(context);
 
         // if a bearer token is provided try to authenticate
         if (token != null) {
-            return authenticate(identityProviderManager, new AccessTokenCredential(token));
+            return authenticate(identityProviderManager, new AccessTokenCredential(token, context));
         }
 
         return CompletableFuture.completedFuture(null);

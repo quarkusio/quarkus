@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-elytron-security-common</artifactId>
     <name>Quarkus - Elytron Security - Common - Runtime</name>
+    <description>Elytron common GraalVM substitutions</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

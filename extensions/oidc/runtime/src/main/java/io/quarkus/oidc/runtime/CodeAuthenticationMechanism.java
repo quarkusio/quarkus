@@ -42,12 +42,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private static QuarkusSecurityIdentity augmentIdentity(SecurityIdentity securityIdentity,
             String accessToken,
-            String refreshToken) {
+            String refreshToken,
+            RoutingContext context) {
         final RefreshToken refreshTokenCredential = new RefreshToken(refreshToken);
         return QuarkusSecurityIdentity.builder()
                 .setPrincipal(securityIdentity.getPrincipal())
                 .addCredentials(securityIdentity.getCredentials())
-                .addCredential(new AccessTokenCredential(accessToken, refreshTokenCredential))
+                .addCredential(new AccessTokenCredential(accessToken, refreshTokenCredential, context))
                 .addCredential(refreshTokenCredential)
                 .addRoles(securityIdentity.getRoles())
                 .addAttributes(securityIdentity.getAttributes())
@@ -68,11 +69,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         // if session already established, try to re-authenticate
         if (sessionCookie != null) {
             String[] tokens = sessionCookie.getValue().split(COOKIE_DELIM);
-            return authenticate(identityProviderManager, new IdTokenCredential(tokens[0]))
+            return authenticate(identityProviderManager, new IdTokenCredential(tokens[0], context))
                     .thenCompose(new Function<SecurityIdentity, CompletionStage<SecurityIdentity>>() {
                         @Override
                         public CompletionStage<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                            return CompletableFuture.completedFuture(augmentIdentity(securityIdentity, tokens[1], tokens[2]));
+                            return CompletableFuture
+                                    .completedFuture(augmentIdentity(securityIdentity, tokens[1], tokens[2], context));
                         }
                     });
         }
@@ -90,7 +92,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         List<Object> scopes = new ArrayList<>();
 
         scopes.add("openid");
-        config.authentication.scopes.ifPresent(scopes::addAll);
+        tenantConfigResolver.resolve(context).oidcConfig.getAuthentication().scopes.ifPresent(scopes::addAll);
 
         params.put("scopes", new JsonArray(scopes));
 
@@ -100,7 +102,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         params.put("state", generateState(context, dynamicPath));
 
-        challenge = new ChallengeData(HttpResponseStatus.FOUND.code(), HttpHeaders.LOCATION, auth.authorizeURL(params));
+        challenge = new ChallengeData(HttpResponseStatus.FOUND.code(), HttpHeaders.LOCATION,
+                tenantConfigResolver.resolve(context).auth.authorizeURL(params));
 
         return CompletableFuture.completedFuture(challenge);
     }
@@ -161,13 +164,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         params.put("code", code);
         params.put("redirect_uri", buildCodeRedirectUri(context, absoluteUri, getDynamicPath(context, absoluteUri)));
 
-        auth.authenticate(params, userAsyncResult -> {
+        tenantConfigResolver.resolve(context).auth.authenticate(params, userAsyncResult -> {
             if (userAsyncResult.failed()) {
                 cf.completeExceptionally(new AuthenticationFailedException());
             } else {
                 AccessToken result = AccessToken.class.cast(userAsyncResult.result());
 
-                authenticate(identityProviderManager, new IdTokenCredential(result.opaqueIdToken()))
+                authenticate(identityProviderManager, new IdTokenCredential(result.opaqueIdToken(), context))
                         .whenCompleteAsync((securityIdentity, throwable) -> {
                             if (throwable != null) {
                                 cf.completeExceptionally(throwable);
@@ -197,12 +200,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         context.response().addCookie(cookie);
 
         cf.complete(augmentIdentity(securityIdentity, result.opaqueAccessToken(),
-                result.opaqueRefreshToken()));
+                result.opaqueRefreshToken(), context));
     }
 
     private String getDynamicPath(RoutingContext context, URI absoluteUri) {
-        if (config.authentication.redirectPath.isPresent()) {
-            String redirectPath = config.authentication.redirectPath.get();
+        OidcTenantConfig config = tenantConfigResolver.resolve(context).oidcConfig;
+        if (config.getAuthentication().redirectPath.isPresent()) {
+            String redirectPath = config.getAuthentication().redirectPath.get();
             String requestPath = absoluteUri.getRawPath();
             if (requestPath.startsWith(redirectPath) && requestPath.length() > redirectPath.length()) {
                 return requestPath.substring(redirectPath.length());
@@ -234,7 +238,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .append(absoluteUri.getAuthority());
 
         String path = dynamicPath != null
-                ? config.authentication.redirectPath.get()
+                ? tenantConfigResolver.resolve(context).oidcConfig.getAuthentication().redirectPath.get()
                 : absoluteUri.getRawPath();
 
         return builder.append(path).toString();

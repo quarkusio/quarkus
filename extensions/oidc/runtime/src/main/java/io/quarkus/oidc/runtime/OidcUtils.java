@@ -18,7 +18,7 @@ public final class OidcUtils {
 
     }
 
-    public static boolean validateClaims(OidcConfig.Token tokenConfig, JsonObject json) {
+    public static boolean validateClaims(OidcTenantConfig.Token tokenConfig, JsonObject json) {
         if (tokenConfig.issuer.isPresent()) {
             String issuer = json.getString(Claims.iss.name());
             if (!tokenConfig.issuer.get().equals(issuer)) {
@@ -40,7 +40,7 @@ public final class OidcUtils {
         return true;
     }
 
-    public static List<String> findRoles(String clientId, OidcConfig.Roles rolesConfig, JsonObject json) {
+    public static List<String> findRoles(String clientId, OidcTenantConfig.Roles rolesConfig, JsonObject json) {
         // If the user configured a specific path - check and enforce a claim at this path exists
         if (rolesConfig.getRoleClaimPath().isPresent()) {
             return findClaimWithRoles(rolesConfig, rolesConfig.getRoleClaimPath().get(), json, true);
@@ -64,7 +64,7 @@ public final class OidcUtils {
 
     }
 
-    private static List<String> findClaimWithRoles(OidcConfig.Roles rolesConfig, String claimPath,
+    private static List<String> findClaimWithRoles(OidcTenantConfig.Roles rolesConfig, String claimPath,
             JsonObject json, boolean mustExist) {
         Object claimValue = findClaimValue(claimPath, json, claimPath.split("/"), 0, mustExist);
 

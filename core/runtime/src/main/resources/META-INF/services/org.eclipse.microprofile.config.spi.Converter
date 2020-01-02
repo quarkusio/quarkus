@@ -5,4 +5,5 @@ io.quarkus.runtime.configuration.RegexConverter
 io.quarkus.runtime.configuration.PathConverter
 io.quarkus.runtime.configuration.DurationConverter
 io.quarkus.runtime.configuration.MemorySizeConverter
+io.quarkus.runtime.configuration.LocaleConverter
 io.quarkus.runtime.logging.LevelConverter

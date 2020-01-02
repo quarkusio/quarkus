@@ -305,6 +305,42 @@ You can build the native executable with:
 ./mvnw package -Pnative
 ----
 
+== Imperative usage
+
+Sometimes you need to have an imperative way of sending messages.
+
+For example, if you need to send a message to a stream from inside a REST endpoint when receiving a POST request.
+In this case, you cannot use `@Output` because your method has parameters.
+
+For this, you can use an `Emitter`.
+
+[source, java]
+----
+import io.smallrye.reactive.messaging.annotations.Channel;
+import io.smallrye.reactive.messaging.annotations.Emitter;
+
+import javax.inject.Inject;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.core.MediaType;
+
+@Path("/prices")
+public class PriceResource {
+
+    @Inject @Channel("price-create") Emitter<Double> priceEmitter;
+
+    @POST
+    @Consumes(MediaType.TEXT_PLAIN)
+    public void addPrice(Double price) {
+        priceEmitter.send(price);
+    }
+}
+----
+
+NOTE: The `Emitter` configuration is done the same way as the other stream configuration used by `@Incoming` and `@Outgoing`.
+In addition, you can use `@OnOverflow` to configure a back-pressure strategy.
+
 == Going further
 
 This guide has shown how you can interact with AMQP using Quarkus.

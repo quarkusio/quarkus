@@ -1,27 +1,24 @@
 package io.quarkus.hibernate.validator.runtime;
 
-import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-/**
- * Configures Hibernate Validator properties.
- */
-
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class HibernateValidatorBuildTimeConfig {
 
     /**
-     * Configures validation error message locales.
+     * The locales supported by Hibernate Validator for message interpolation.
      */
     @ConfigItem(defaultValue = "${user.language}-${user.country}")
-    public List<String> locales;
+    public Set<Locale> locales;
 
     /**
-     * Configures validation default locale.
+     * The default locale used for message interpolation.
      */
     @ConfigItem(defaultValue = "${user.language}-${user.country}")
-    public String defaultLocale;
+    public Locale defaultLocale;
 }

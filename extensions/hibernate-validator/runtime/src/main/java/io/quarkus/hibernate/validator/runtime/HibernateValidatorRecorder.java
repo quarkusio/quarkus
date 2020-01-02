@@ -1,8 +1,6 @@
 package io.quarkus.hibernate.validator.runtime;
 
 import java.lang.reflect.Method;
-import java.util.HashSet;
-import java.util.Locale;
 import java.util.Set;
 
 import javax.validation.ClockProvider;
@@ -27,7 +25,6 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.runtime.configuration.ConfigurationException;
 
 @Recorder
 public class HibernateValidatorRecorder {
@@ -41,9 +38,6 @@ public class HibernateValidatorRecorder {
                 PredefinedScopeHibernateValidatorConfiguration configuration = Validation
                         .byProvider(PredefinedScopeHibernateValidator.class)
                         .configure();
-                Set<Locale> localesToInitialize = getLocalesToInitialize(config);
-                Locale defaultLocale = getDefaultLocale(config);
-
                 LocaleResolver localeResolver = null;
                 InstanceHandle<LocaleResolver> configuredLocaleResolver = Arc.container()
                         .instance(LocaleResolver.class);
@@ -60,17 +54,18 @@ public class HibernateValidatorRecorder {
                     //if EL is not on the class path we use the parameter message interpolator
                     if (localeResolver != null) {
                         configuration
-                                .messageInterpolator(new ParameterMessageInterpolator(localesToInitialize, defaultLocale,
+                                .messageInterpolator(new ParameterMessageInterpolator(config.locales, config.defaultLocale,
                                         localeResolver, true));
                     } else {
-                        configuration.messageInterpolator(new ParameterMessageInterpolator(localesToInitialize, defaultLocale, true));
+                        configuration.messageInterpolator(
+                                new ParameterMessageInterpolator(config.locales, config.defaultLocale, true));
                     }
                 }
 
                 configuration
                         .initializeBeanMetaData(classesToBeValidated)
-                        .locales(localesToInitialize)
-                        .defaultLocale(defaultLocale)
+                        .locales(config.locales)
+                        .defaultLocale(config.defaultLocale)
                         .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
 
                 InstanceHandle<ConstraintValidatorFactory> configuredConstraintValidatorFactory = Arc.container()
@@ -138,27 +133,5 @@ public class HibernateValidatorRecorder {
         };
 
         return beanContainerListener;
-    }
-
-    private Set<Locale> getLocalesToInitialize(HibernateValidatorBuildTimeConfig config) {
-        Set<Locale> locales = new HashSet<Locale>();
-        for (String localeValue : config.locales) {
-            Locale locale = Locale.forLanguageTag(localeValue.trim().replace("_", "-"));
-            if (locale.getLanguage() == null || locale.getLanguage().isEmpty()) {
-                throw new ConfigurationException("Invalid locale configuration value: " + localeValue);
-            }
-            locales.add(locale);
-        }
-
-        return locales;
-    }
-
-    private Locale getDefaultLocale(HibernateValidatorBuildTimeConfig config) {
-        Locale locale = Locale.forLanguageTag(config.defaultLocale.trim().replace("_", "-"));
-        if (locale.getLanguage() == null || locale.getLanguage().isEmpty()) {
-            throw new ConfigurationException(
-                    "Invalid locale configuration value: " + config.defaultLocale);
-        }
-        return locale;
     }
 }

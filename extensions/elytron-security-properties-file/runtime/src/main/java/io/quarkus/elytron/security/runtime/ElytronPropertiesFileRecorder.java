@@ -44,6 +44,8 @@ import io.quarkus.runtime.annotations.Recorder;
 public class ElytronPropertiesFileRecorder {
     static final Logger log = Logger.getLogger(ElytronPropertiesFileRecorder.class);
 
+    private static final Provider[] PROVIDERS = new Provider[] { new WildFlyElytronProvider() };
+
     /**
      * Load the user.properties and roles.properties files into the {@linkplain SecurityRealm}
      *
@@ -172,7 +174,7 @@ public class ElytronPropertiesFileRecorder {
                 .setProviders(new Supplier<Provider[]>() {
                     @Override
                     public Provider[] get() {
-                        return new Provider[] { new WildFlyElytronProvider() };
+                        return PROVIDERS;
                     }
                 })
                 .setPlainText(config.plainText)
@@ -193,7 +195,7 @@ public class ElytronPropertiesFileRecorder {
         Supplier<Provider[]> providers = new Supplier<Provider[]>() {
             @Override
             public Provider[] get() {
-                return new Provider[] { new WildFlyElytronProvider() };
+                return PROVIDERS;
             }
         };
         SecurityRealm realm = new SimpleMapBackedSecurityRealm(NameRewriter.IDENTITY_REWRITER, providers);

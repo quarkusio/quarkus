@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.validator.runtime;
 
-import java.lang.reflect.Method;
 import java.util.Set;
 
 import javax.validation.ClockProvider;
@@ -14,7 +13,6 @@ import javax.validation.valueextraction.ValueExtractor;
 
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
-import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolver;
 import org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy;
 import org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory;
@@ -23,6 +21,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -30,7 +29,7 @@ import io.quarkus.runtime.annotations.Recorder;
 public class HibernateValidatorRecorder {
 
     public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated,
-            ShutdownContext shutdownContext, HibernateValidatorBuildTimeConfig config) {
+            ShutdownContext shutdownContext, LocalesBuildTimeConfig localesBuildTimeConfig) {
         BeanContainerListener beanContainerListener = new BeanContainerListener() {
 
             @Override
@@ -48,8 +47,8 @@ public class HibernateValidatorRecorder {
 
                 configuration
                         .initializeBeanMetaData(classesToBeValidated)
-                        .locales(config.locales)
-                        .defaultLocale(config.defaultLocale)
+                        .locales(localesBuildTimeConfig.locales)
+                        .defaultLocale(localesBuildTimeConfig.defaultLocale)
                         .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
 
                 InstanceHandle<ConstraintValidatorFactory> configuredConstraintValidatorFactory = Arc.container()

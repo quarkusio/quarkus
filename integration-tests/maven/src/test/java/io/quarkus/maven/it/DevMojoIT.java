@@ -1,5 +1,6 @@
 package io.quarkus.maven.it;
 
+import static io.quarkus.maven.it.ApplicationNameAndVersionTestUtil.assertApplicationPropertiesSetCorrectly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -29,6 +30,7 @@ import io.quarkus.maven.it.verifier.RunningInvoker;
  *
  *         mvn install -Dit.test=DevMojoIT#methodName
  */
+@DisableForNative
 public class DevMojoIT extends RunAndCheckMojoTestBase {
 
     @Test
@@ -42,7 +44,10 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
         //make sure webjars work
         getHttpResponse("webjars/bootstrap/3.1.0/css/bootstrap.min.css");
+
         assertThatOutputWorksCorrectly(running.log());
+
+        assertApplicationPropertiesSetCorrectly();
     }
 
     @Test

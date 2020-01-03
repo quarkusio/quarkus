@@ -22,6 +22,7 @@ import org.apache.maven.shared.invoker.PrintStreamLogger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+@DisableForNative
 class GenerateConfigIT extends QuarkusPlatformAwareMojoTestBase {
 
     private static final String PROJECT_SOURCE_DIR = "projects/classic";

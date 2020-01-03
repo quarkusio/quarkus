@@ -24,6 +24,7 @@ import io.quarkus.maven.it.verifier.RunningInvoker;
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
  */
+@DisableForNative
 public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
 
     @Test

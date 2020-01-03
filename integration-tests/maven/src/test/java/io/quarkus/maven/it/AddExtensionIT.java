@@ -12,6 +12,7 @@ import org.apache.maven.model.Model;
 import org.apache.maven.shared.invoker.*;
 import org.junit.jupiter.api.Test;
 
+@DisableForNative
 class AddExtensionIT extends QuarkusPlatformAwareMojoTestBase {
 
     private static final String QUARKUS_GROUPID = "io.quarkus";

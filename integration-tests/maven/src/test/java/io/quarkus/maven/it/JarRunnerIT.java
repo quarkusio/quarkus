@@ -1,5 +1,6 @@
 package io.quarkus.maven.it;
 
+import static io.quarkus.maven.it.ApplicationNameAndVersionTestUtil.assertApplicationPropertiesSetCorrectly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -21,6 +22,7 @@ import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.utilities.JavaBinFinder;
 
+@DisableForNative
 public class JarRunnerIT extends MojoTestBase {
 
     @Test
@@ -55,6 +57,9 @@ public class JarRunnerIT extends MojoTestBase {
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
             assertThatOutputWorksCorrectly(logs);
+
+            // test that the application name and version are properly set
+            assertApplicationPropertiesSetCorrectly();
         } finally {
             process.destroy();
         }

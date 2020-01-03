@@ -93,4 +93,10 @@ public final class FlywayDataSourceRuntimeConfig {
      */
     @ConfigItem
     public Optional<String> baselineDescription = Optional.empty();
+
+    /**
+     * Whether to automatically call validate when performing a migration.
+     */
+    @ConfigItem
+    public boolean validateOnMigrate = true;
 }

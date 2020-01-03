@@ -6,6 +6,9 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 
 class FlywayCreator {
+
+    private static final String[] EMPTY_ARRAY = new String[0];
+
     private final FlywayDataSourceRuntimeConfig flywayRuntimeConfig;
     private final FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig;
 
@@ -19,16 +22,15 @@ class FlywayCreator {
         FluentConfiguration configure = Flyway.configure();
         configure.dataSource(dataSource);
         flywayRuntimeConfig.connectRetries.ifPresent(configure::connectRetries);
-        flywayRuntimeConfig.schemas.ifPresent(list -> configure.schemas(list.toArray(new String[0])));
+        flywayRuntimeConfig.schemas.ifPresent(list -> configure.schemas(list.toArray(EMPTY_ARRAY)));
         flywayRuntimeConfig.table.ifPresent(configure::table);
-        configure.locations(flywayBuildTimeConfig.locations.toArray(new String[0]));
+        configure.locations(flywayBuildTimeConfig.locations.toArray(EMPTY_ARRAY));
         flywayRuntimeConfig.sqlMigrationPrefix.ifPresent(configure::sqlMigrationPrefix);
         flywayRuntimeConfig.repeatableSqlMigrationPrefix.ifPresent(configure::repeatableSqlMigrationPrefix);
-
         configure.baselineOnMigrate(flywayRuntimeConfig.baselineOnMigrate);
+        configure.validateOnMigrate(flywayRuntimeConfig.validateOnMigrate);
         flywayRuntimeConfig.baselineVersion.ifPresent(configure::baselineVersion);
         flywayRuntimeConfig.baselineDescription.ifPresent(configure::baselineDescription);
-
         return configure.load();
     }
 }

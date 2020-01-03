@@ -15,6 +15,9 @@ import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class FlywayCreatorTest {
 
@@ -154,11 +157,36 @@ class FlywayCreatorTest {
         assertEquals(runtimeConfig.table.get(), createdFlywayConfig().getTable());
     }
 
+    @Test
+    @DisplayName("validate on migrate default matches to true")
+    void testValidateOnMigrate() {
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertEquals(runtimeConfig.validateOnMigrate, createdFlywayConfig().isValidateOnMigrate());
+        assertEquals(runtimeConfig.validateOnMigrate, true);
+    }
+
+    @ParameterizedTest
+    @MethodSource("validateOnMigrateOverwritten")
+    @DisplayName("validate on migrate overwritten in configuration")
+    void testValidateOnMigrateOverwritten(final boolean input, final boolean expected) {
+        runtimeConfig.validateOnMigrate = input;
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertEquals(createdFlywayConfig().isValidateOnMigrate(), expected);
+        assertEquals(runtimeConfig.validateOnMigrate, expected);
+    }
+
     private static List<String> pathList(Location[] locations) {
         return Stream.of(locations).map(Location::getPath).collect(Collectors.toList());
     }
 
     private Configuration createdFlywayConfig() {
         return creator.createFlyway(null).getConfiguration();
+    }
+
+    private static Stream<Arguments> validateOnMigrateOverwritten() {
+        return Stream.<Arguments> builder()
+                .add(Arguments.arguments(false, false))
+                .add(Arguments.arguments(true, true))
+                .build();
     }
 }

@@ -305,7 +305,8 @@ public final class RunTimeConfigurationGenerator {
             // the build time run time visible default values config source
             cc.getFieldCreator(C_BUILD_TIME_RUN_TIME_DEFAULTS_CONFIG_SOURCE)
                     .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
-            clinit.writeStaticField(C_BUILD_TIME_RUN_TIME_DEFAULTS_CONFIG_SOURCE, clinit.newInstance(BTRTDVCS_NEW));
+            final ResultHandle buildTimeRunTimeDefaultValuesConfigSource = clinit.newInstance(BTRTDVCS_NEW);
+            clinit.writeStaticField(C_BUILD_TIME_RUN_TIME_DEFAULTS_CONFIG_SOURCE, buildTimeRunTimeDefaultValuesConfigSource);
 
             // the run time default values config source
             cc.getFieldCreator(C_RUN_TIME_DEFAULTS_CONFIG_SOURCE)
@@ -318,7 +319,7 @@ public final class RunTimeConfigurationGenerator {
             // build time values
             clinit.writeArrayValue(array, 0, buildTimeConfigSource);
             // build time defaults
-            clinit.writeArrayValue(array, 1, clinit.newInstance(BTRTDVCS_NEW));
+            clinit.writeArrayValue(array, 1, buildTimeRunTimeDefaultValuesConfigSource);
             clinit.invokeVirtualMethod(SRCB_WITH_SOURCES, buildTimeBuilder, array);
             clinitConfig = clinit.checkCast(clinit.invokeVirtualMethod(SRCB_BUILD, buildTimeBuilder),
                     SmallRyeConfig.class);

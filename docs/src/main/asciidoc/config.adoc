@@ -434,6 +434,13 @@ quarkus.http.port=9090
 
 And then set the `QUARKUS_PROFILE` environment variable to `staging` to activate my profile.
 
+[NOTE]
+====
+The proper way to check the active profile programmatically is to use the `getActiveProfile` method of `io.quarkus.runtime.configuration.ProfileManager`.
+
+Using `@ConfigProperty("quarkus.profile")` will *not* work properly.
+====
+
 === Clearing properties
 
 Run time properties which are optional, and which have had values set at build time or which have a default value,

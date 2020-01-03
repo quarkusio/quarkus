@@ -46,22 +46,6 @@ public class HibernateValidatorRecorder {
                     configuration.localeResolver(localeResolver);
                 }
 
-                try {
-                    Class<?> cl = Class.forName("javax.el.ELManager");
-                    Method method = cl.getDeclaredMethod("getExpressionFactory");
-                    method.invoke(null);
-                } catch (Throwable t) {
-                    //if EL is not on the class path we use the parameter message interpolator
-                    if (localeResolver != null) {
-                        configuration
-                                .messageInterpolator(new ParameterMessageInterpolator(config.locales, config.defaultLocale,
-                                        localeResolver, true));
-                    } else {
-                        configuration.messageInterpolator(
-                                new ParameterMessageInterpolator(config.locales, config.defaultLocale, true));
-                    }
-                }
-
                 configuration
                         .initializeBeanMetaData(classesToBeValidated)
                         .locales(config.locales)

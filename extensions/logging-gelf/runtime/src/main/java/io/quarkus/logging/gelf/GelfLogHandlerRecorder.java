@@ -1,5 +1,6 @@
 package io.quarkus.logging.gelf;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Handler;
 
@@ -27,12 +28,27 @@ public class GelfLogHandlerRecorder {
         handler.setHost(config.host);
         handler.setPort(config.port);
         handler.setLevel(config.level);
-        if (config.additionalFields.isPresent()) {
-            handler.setAdditionalFields(config.additionalFields.get());
+
+        // handle additional fields
+        if (!config.additionalField.isEmpty()) {
+            StringBuilder additionalFieldsValue = new StringBuilder();
+            StringBuilder additionalFieldsType = new StringBuilder();
+            for (Map.Entry<String, AdditionalFieldConfig> additionalField : config.additionalField.entrySet()) {
+                if (additionalFieldsValue.length() > 0) {
+                    additionalFieldsValue.append(',');
+                }
+                additionalFieldsValue.append(additionalField.getKey()).append('=').append(additionalField.getValue().value);
+
+                if (additionalFieldsType.length() > 0) {
+                    additionalFieldsType.append(',');
+                }
+                additionalFieldsType.append(additionalField.getKey()).append('=').append(additionalField.getValue().type);
+            }
+
+            handler.setAdditionalFields(additionalFieldsValue.toString());
+            handler.setAdditionalFieldTypes(additionalFieldsType.toString());
         }
-        if (config.additionalFieldsTypes.isPresent()) {
-            handler.setAdditionalFieldTypes(config.additionalFieldsTypes.get());
-        }
+
         return new RuntimeValue<>(Optional.of(handler));
     }
 }

@@ -1,8 +1,10 @@
 package io.quarkus.logging.gelf;
 
-import java.util.Optional;
+import java.util.Map;
 import java.util.logging.Level;
 
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -13,7 +15,7 @@ public class GelfConfig {
      * Determine whether to enable the GELF logging handler
      */
     @ConfigItem
-    boolean enabled;
+    public boolean enabled;
 
     /**
      * Hostname/IP-Address of the Logstash/Graylog Host
@@ -69,27 +71,26 @@ public class GelfConfig {
      * The logging-gelf log level.
      */
     @ConfigItem(defaultValue = "ALL")
-    Level level;
+    public Level level;
 
     /**
-     * Name of the Facility.
+     * Name of the facility.
      */
     @ConfigItem(defaultValue = "jboss-logmanager")
-    String facility;
+    public String facility;
 
     /**
-     * Post additional fields. E.g. `fieldName1=value1,fieldName2=value2`.
+     * Post additional fields.
+     * You can add static fields to each log event in the following form:
+     * 
+     * <pre>
+     * quarkus.log.handler.gelf.additional-field.field1.value=value1
+     * quarkus.log.handler.gelf.additional-field.field1.type=String
+     * </pre>
      */
     @ConfigItem
-    Optional<String> additionalFields;
-
-    /**
-     * Type specification for additional and MDC fields.
-     * Supported types: String, long, Long, double, Double and discover (default if not specified, discover field type on
-     * parseability).
-     * E.g. `field=String,field2=double`.
-     */
-    @ConfigItem
-    Optional<String> additionalFieldsTypes;
+    @ConfigDocMapKey("field-name")
+    @ConfigDocSection
+    public Map<String, AdditionalFieldConfig> additionalField;
 
 }

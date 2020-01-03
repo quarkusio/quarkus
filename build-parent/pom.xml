@@ -206,7 +206,7 @@
                                         <condition>
                                         if("${project.artifactId}".equals("quarkus-build-parent"))
                                            return true;
-                                        if(!new File("${project.basedir}/src/main/resources/META-INF/quarkus-extension.yaml").exists())
+                                        if(!new File("${project.basedir}" + File.separator + "src" + File.separator + "main" + File.separator + "resources" + File.separator + "META-INF" + File.separator + "quarkus-extension.yaml").exists())
                                             return true;
                                         if("${project.description}".contains("Build parent")) 
                                             return false;

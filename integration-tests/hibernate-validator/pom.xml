@@ -31,12 +31,6 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
 
-        <!-- EL implementation -->
-        <dependency>
-           <groupId>org.glassfish</groupId>
-           <artifactId>jakarta.el</artifactId>
-        </dependency>
-
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -93,4 +93,9 @@ public class GelfConfig {
     @ConfigDocSection
     public Map<String, AdditionalFieldConfig> additionalField;
 
+    /**
+     * Whether to include all fields from the MDC.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean includeFullMdc;
 }

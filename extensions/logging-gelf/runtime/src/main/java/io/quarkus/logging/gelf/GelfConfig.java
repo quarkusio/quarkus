@@ -1,5 +1,10 @@
 package io.quarkus.logging.gelf;
 
+import java.util.Map;
+import java.util.logging.Level;
+
+import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -10,7 +15,7 @@ public class GelfConfig {
      * Determine whether to enable the GELF logging handler
      */
     @ConfigItem
-    boolean enabled;
+    public boolean enabled;
 
     /**
      * Hostname/IP-Address of the Logstash/Graylog Host
@@ -61,4 +66,31 @@ public class GelfConfig {
      */
     @ConfigItem(defaultValue = "yyyy-MM-dd HH:mm:ss,SSS")
     public String timestampPattern;
+
+    /**
+     * The logging-gelf log level.
+     */
+    @ConfigItem(defaultValue = "ALL")
+    public Level level;
+
+    /**
+     * Name of the facility.
+     */
+    @ConfigItem(defaultValue = "jboss-logmanager")
+    public String facility;
+
+    /**
+     * Post additional fields.
+     * You can add static fields to each log event in the following form:
+     * 
+     * <pre>
+     * quarkus.log.handler.gelf.additional-field.field1.value=value1
+     * quarkus.log.handler.gelf.additional-field.field1.type=String
+     * </pre>
+     */
+    @ConfigItem
+    @ConfigDocMapKey("field-name")
+    @ConfigDocSection
+    public Map<String, AdditionalFieldConfig> additionalField;
+
 }

@@ -27,5 +27,6 @@
         <module>gradle</module>
         <module>aesh</module>
         <module>reflection-agent</module>
+        <module>allopen</module>
     </modules>
 </project>

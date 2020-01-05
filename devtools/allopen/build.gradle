@@ -1,0 +1,48 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.3.61'
+    id "org.jetbrains.kotlin.kapt" version "1.3.61"
+    id 'com.gradle.plugin-publish' version "0.10.1"
+    id 'java-gradle-plugin'
+}
+
+group 'io.quarkus'
+version '999-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-model"
+    implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
+    implementation "org.jetbrains.kotlin:kotlin-compiler-embeddable"
+
+    implementation"com.google.auto.service:auto-service:1.0-rc5"
+    kapt "com.google.auto.service:auto-service:1.0-rc5"
+}
+
+
+pluginBundle {
+    website = 'https://quarkus.io/'
+    vcsUrl = 'https://github.com/quarkusio/quarkus'
+    tags = ['quarkus', 'quarkusio', 'graalvm']
+}
+
+gradlePlugin {
+    plugins {
+        quarkusAllOpenPlugin {
+            id = 'io.quarkus'
+            implementationClass = 'io.quarkus.allopen.AllOpenPlugin'
+            displayName = 'Quarkus All Open Plugin'
+            description = 'Custom Quarkus Community All Open plugin over kotlin-allopen'
+        }
+    }
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}

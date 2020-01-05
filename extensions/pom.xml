@@ -55,6 +55,7 @@
         <module>swagger-ui</module>
 
         <!-- Reactive -->
+        <module>mutiny</module>
         <module>vertx</module>
         <module>vertx-web</module>
         <module>netty</module>

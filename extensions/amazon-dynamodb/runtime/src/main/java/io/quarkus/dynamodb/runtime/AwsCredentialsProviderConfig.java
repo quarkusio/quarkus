@@ -22,7 +22,7 @@ public class AwsCredentialsProviderConfig {
      * ** Credential profiles file at the default location (`~/.aws/credentials`) shared by all AWS SDKs and the AWS CLI
      * ** Credentials delivered through the Amazon EC2 container service if `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` environment variable is set and security manager has permission to access the variable.
      * ** Instance profile credentials delivered through the Amazon EC2 metadata service
-     * * `static` - the provider that uses the access key and secret access key specified in the `tatic-provider` section of the config.
+     * * `static` - the provider that uses the access key and secret access key specified in the `static-provider` section of the config.
      * * `system-property` - it loads credentials from the `aws.accessKeyId`, `aws.secretAccessKey` and `aws.sessionToken` system properties.
      * * `env-variable` - it loads credentials from the `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_SESSION_TOKEN` environment variables.
      * * `profile` - credentials are based on AWS configuration profiles. This loads credentials from

@@ -31,7 +31,7 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Deprecated in favor of getArhiveLocation()
+     * Deprecated in favor of getArchiveLocation()
      */
     @Deprecated
     public Path getPath() {

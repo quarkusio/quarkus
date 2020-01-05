@@ -7,7 +7,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
 
 /**
- * A {@link SecurityCheck} where if any of the delagates passes the security check then
+ * A {@link SecurityCheck} where if any of the delegates passes the security check then
  * the delegate passes as well
  */
 public class AnyDelegatingSecurityCheck implements SecurityCheck {

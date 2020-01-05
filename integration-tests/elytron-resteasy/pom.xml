@@ -13,7 +13,7 @@
 
     <artifactId>quarkus-integration-test-elytron-resteasy</artifactId>
 
-    <name>Quarkus - Integration Tests - Elytron Resteasy </name>
+    <name>Quarkus - Integration Tests - Elytron RESTEasy </name>
     
 
     <dependencies>

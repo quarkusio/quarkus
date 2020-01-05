@@ -3,12 +3,12 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Amazon Lambda with Resteasy, Undertow, or Vert.x Web 
+= Quarkus - Amazon Lambda with RESTEasy, Undertow, or Vert.x Web 
 :extension-status: preview
 
 include::./attributes.adoc[]
 
-The `quarkus-amazon-lambda-http` extension allows you to write microservices with Resteasy (JAX-RS),
+The `quarkus-amazon-lambda-http` extension allows you to write microservices with RESTEasy (JAX-RS),
 Undertow (servlet), or Vert.x Web and make these microservices deployable as an Amazon Lambda
 using https://aws.amazon.com/api-gateway/[Amazon's API Gateway] and https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html[Amazon's SAM framework].
 
@@ -193,7 +193,7 @@ you may need to manually manage that encoding.
 
 == Examine the POM
 
-If you want to adapt an existing Resteasy, Undertow, or Vert.x Web project to Amazon Lambda, there's a couple
+If you want to adapt an existing RESTEasy, Undertow, or Vert.x Web project to Amazon Lambda, there's a couple
 of things you need to do.  Take a look at the generate example project to get an example of what you need to adapt.
 
 1. Include the `quarkus-amazon-lambda-http` extension as a pom dependency

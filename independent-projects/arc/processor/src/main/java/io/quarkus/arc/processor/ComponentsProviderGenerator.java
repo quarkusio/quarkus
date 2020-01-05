@@ -151,7 +151,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                         .collect(Collectors.joining("\n")));
             }
             stuck = true;
-            // First try to proces beans that are not dependencies
+            // First try to process beans that are not dependencies
             stuck = addBeans(beanAdder, beanToInjections, processed, beanIdToBeanHandle,
                     beanToGeneratedName, b -> !isDependency(b, beanToInjections));
             if (stuck) {
@@ -390,7 +390,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             if (bean.isProducerMethod() || bean.isProducerField()) {
                 if (!processedBeans.contains(bean.getDeclaringBean())) {
                     throw new IllegalStateException(
-                            "Declaring bean of a producer bean is not available - most probaly an unsupported circular dependency use case \n - declaring bean: "
+                            "Declaring bean of a producer bean is not available - most probably an unsupported circular dependency use case \n - declaring bean: "
                                     + bean.getDeclaringBean() + "\n - producer bean: " + bean);
                 }
                 params.add(addBeansMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,

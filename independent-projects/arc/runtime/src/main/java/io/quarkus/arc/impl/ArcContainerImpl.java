@@ -300,7 +300,7 @@ public class ArcContainerImpl implements ArcContainer {
             try {
                 EventImpl.createNotifier(Object.class, Object.class, beforeDestroyQualifiers, this).notify(toString());
             } catch (Exception e) {
-                LOGGER.warn("An error occured during delivery of the @BeforeDestroyed(ApplicationScoped.class) event", e);
+                LOGGER.warn("An error occurred during delivery of the @BeforeDestroyed(ApplicationScoped.class) event", e);
             }
             // Destroy contexts
             applicationContext.destroy();
@@ -311,7 +311,7 @@ public class ArcContainerImpl implements ArcContainer {
             try {
                 EventImpl.createNotifier(Object.class, Object.class, destroyQualifiers, this).notify(toString());
             } catch (Exception e) {
-                LOGGER.warn("An error occured during delivery of the @Destroyed(ApplicationScoped.class) event", e);
+                LOGGER.warn("An error occurred during delivery of the @Destroyed(ApplicationScoped.class) event", e);
             }
             singletonContext.destroy();
             // Clear caches

@@ -3,12 +3,12 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Azure Functions (Serverless) with Resteasy, Undertow, or Vert.x Web
+= Quarkus - Azure Functions (Serverless) with RESTEasy, Undertow, or Vert.x Web
 :extension-status: preview
 
 include::./attributes.adoc[]
 
-The `quarkus-azure-functions-http` extension allows you to write microservices with Resteasy (JAX-RS),
+The `quarkus-azure-functions-http` extension allows you to write microservices with RESTEasy (JAX-RS),
 Undertow (servlet), or Vert.x Web and make these microservices deployable to the Azure Functions runtime.
 
 One azure function deployment can represent any number of JAX-RS, servlet, or Vert.x Web endpoints.
@@ -96,7 +96,7 @@ https://{appName}.azurewebsites.net/api/vertx/hello
 
 == Extension maven dependencies
 
-The sample project includes the Resteasy, Undertow, and Vert.x Web extensions.  If you are only using one of those
+The sample project includes the RESTEasy, Undertow, and Vert.x Web extensions.  If you are only using one of those
 APIs (i.e. jax-rs only), respectively remove the maven dependency `quarkus-resteasy`, `quarkus-undertow`, and/or
 `quarkus-vertx-web`.
 

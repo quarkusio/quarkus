@@ -29,7 +29,7 @@ public interface HttpSecurityPolicy {
         public static CheckResult PERMIT = new CheckResult(true);
 
         /**
-         * If this check was sucessful
+         * If this check was successful
          */
         private final boolean permitted;
 

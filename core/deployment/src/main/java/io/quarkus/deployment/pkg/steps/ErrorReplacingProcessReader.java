@@ -110,9 +110,9 @@ public final class ErrorReplacingProcessReader implements Runnable {
         try {
             String fullName = m.group(1);
 
-            int idex = fullName.lastIndexOf('.');
-            String clazz = fullName.substring(0, idex);
-            String method = fullName.substring(idex + 1);
+            int index = fullName.lastIndexOf('.');
+            String clazz = fullName.substring(0, index);
+            String method = fullName.substring(index + 1);
             if (reportAnalyzer == null) {
                 reportAnalyzer = new ReportAnalyzer(report.getAbsolutePath());
             }

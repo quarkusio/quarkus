@@ -132,7 +132,7 @@ class RequestContext implements ManagedContext {
                 try {
                     fireIfNotEmpty(beforeDestroyedNotifier);
                 } catch (Exception e) {
-                    LOGGER.warn("An error occured during delivery of the @BeforeDestroyed(RequestScoped.class) event", e);
+                    LOGGER.warn("An error occurred during delivery of the @BeforeDestroyed(RequestScoped.class) event", e);
                 }
                 for (InstanceHandle<?> instance : ctx.values()) {
                     try {
@@ -145,7 +145,7 @@ class RequestContext implements ManagedContext {
                 try {
                     fireIfNotEmpty(destroyedNotifier);
                 } catch (Exception e) {
-                    LOGGER.warn("An error occured during delivery of the @Destroyed(RequestScoped.class) event", e);
+                    LOGGER.warn("An error occurred during delivery of the @Destroyed(RequestScoped.class) event", e);
                 }
                 ctx.clear();
             }

@@ -15,6 +15,8 @@ public class VertxConstants {
             .createSimple(io.vertx.reactivex.core.eventbus.Message.class.getName());
     static final DotName AXLE_MESSAGE = DotName
             .createSimple(io.vertx.axle.core.eventbus.Message.class.getName());
+    static final DotName MUTINY_MESSAGE = DotName
+            .createSimple(io.vertx.mutiny.core.eventbus.Message.class.getName());
     static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
     static final DotName LOCAL_EVENT_BUS_CODEC = DotName.createSimple(LocalEventBusCodec.class.getName());
     static final DotName CONSUME_EVENT = DotName.createSimple(ConsumeEvent.class.getName());

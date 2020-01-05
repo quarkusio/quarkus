@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.axle.core.Vertx;
-import io.vertx.axle.core.eventbus.Message;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.eventbus.Message;
 
 public class CodecTest {
 
@@ -32,16 +32,16 @@ public class CodecTest {
     @Test
     public void testWithGenericCodec() {
         Greeting hello = vertx.eventBus().<Greeting> request("person", new Person("bob", "morane"))
-                .thenApply(Message::body)
-                .toCompletableFuture().join();
+                .onItem().apply(Message::body)
+                .subscribeAsCompletionStage().join();
         assertThat(hello.getMessage()).isEqualTo("Hello bob morane");
     }
 
     @Test
     public void testWithUserCodec() {
         Greeting hello = vertx.eventBus().<Greeting> request("pet", new Pet("neo", "rabbit"))
-                .thenApply(Message::body)
-                .toCompletableFuture().join();
+                .onItem().apply(Message::body)
+                .subscribeAsCompletionStage().join();
         assertThat(hello.getMessage()).isEqualTo("Hello NEO");
     }
 

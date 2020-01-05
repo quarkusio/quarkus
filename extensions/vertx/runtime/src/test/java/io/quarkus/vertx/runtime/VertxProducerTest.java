@@ -15,13 +15,13 @@ public class VertxProducerTest {
     private VertxProducer producer;
 
     @BeforeEach
-    public void setUp() throws Exception {
+    public void setUp() {
         producer = new VertxProducer();
         recorder = new VertxRecorder();
     }
 
     @AfterEach
-    public void tearDown() throws Exception {
+    public void tearDown() {
         recorder.destroy();
     }
 
@@ -41,6 +41,9 @@ public class VertxProducerTest {
 
         assertThat(producer.rx()).isNotNull();
         assertFalse(producer.rx().isClustered());
-        assertThat(producer.rxRventbus()).isNotNull();
+        assertThat(producer.rxEventbus()).isNotNull();
+
+        assertThat(producer.mutiny()).isNotNull();
+        assertThat(producer.mutinyEventbus()).isNotNull();
     }
 }

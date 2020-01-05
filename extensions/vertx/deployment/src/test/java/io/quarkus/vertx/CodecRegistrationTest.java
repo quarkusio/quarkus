@@ -18,8 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.axle.core.Vertx;
-import io.vertx.axle.core.eventbus.Message;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.eventbus.Message;
 
 public class CodecRegistrationTest {
 
@@ -37,23 +37,23 @@ public class CodecRegistrationTest {
     @Test
     public void testReceptionOfString() {
         String address = "address-1";
-        vertx.eventBus().send(address, "a");
-        vertx.eventBus().send(address, "b");
-        vertx.eventBus().send(address, "c");
+        vertx.eventBus().sendAndForget(address, "a");
+        vertx.eventBus().sendAndForget(address, "b");
+        vertx.eventBus().sendAndForget(address, "c");
         await().until(() -> bean.getAddress1().size() == 3);
     }
 
     @Test
     public void testReceptionOfStringAndSendingNothing() {
         String address = "address-2";
-        vertx.eventBus().send(address, "a");
-        vertx.eventBus().send(address, "b");
-        vertx.eventBus().send(address, "c");
+        vertx.eventBus().sendAndForget(address, "a");
+        vertx.eventBus().sendAndForget(address, "b");
+        vertx.eventBus().sendAndForget(address, "c");
         await().until(() -> bean.getAddress2().size() == 3);
 
         List<Message> messages = new CopyOnWriteArrayList<>();
-        vertx.eventBus().request(address, "d").thenAccept(messages::add);
-        vertx.eventBus().request(address, "e").thenAccept(messages::add);
+        vertx.eventBus().request(address, "d").subscribeAsCompletionStage().thenAccept(messages::add);
+        vertx.eventBus().request(address, "e").subscribeAsCompletionStage().thenAccept(messages::add);
         await().until(() -> messages.size() == 2);
         assertThat(messages.get(0).body()).isNull();
         assertThat(messages.get(1).body()).isNull();
@@ -63,8 +63,8 @@ public class CodecRegistrationTest {
     public void testWithPrimitiveTypes() {
         String address = "address-3";
         List<Message<Long>> messages = new CopyOnWriteArrayList<>();
-        vertx.eventBus().<Long> request(address, 1).thenAccept(messages::add);
-        vertx.eventBus().<Long> request(address, 2).thenAccept(messages::add);
+        vertx.eventBus().<Long> request(address, 1).subscribeAsCompletionStage().thenAccept(messages::add);
+        vertx.eventBus().<Long> request(address, 2).subscribeAsCompletionStage().thenAccept(messages::add);
         await().until(() -> messages.size() == 2);
         assertThat(messages.get(0).body()).isBetween(1L, 4L);
         assertThat(messages.get(1).body()).isBetween(1L, 4L);
@@ -74,8 +74,8 @@ public class CodecRegistrationTest {
     public void testWithPrimitiveTypesAndCompletionStage() {
         String address = "address-4";
         List<Message<Long>> messages = new CopyOnWriteArrayList<>();
-        vertx.eventBus().<Long> request(address, 1).thenAccept(messages::add);
-        vertx.eventBus().<Long> request(address, 2).thenAccept(messages::add);
+        vertx.eventBus().<Long> request(address, 1).subscribeAsCompletionStage().thenAccept(messages::add);
+        vertx.eventBus().<Long> request(address, 2).subscribeAsCompletionStage().thenAccept(messages::add);
         await().until(() -> messages.size() == 2);
         assertThat(messages.get(0).body()).isBetween(1L, 4L);
         assertThat(messages.get(1).body()).isBetween(1L, 4L);
@@ -84,9 +84,9 @@ public class CodecRegistrationTest {
     @Test
     public void testCodecRegistrationBasedOnParameterType() {
         String address = "address-5";
-        vertx.eventBus().send(address, new CustomType1("foo"));
-        vertx.eventBus().send(address, new CustomType1("bar"));
-        vertx.eventBus().send(address, new CustomType1("baz"));
+        vertx.eventBus().sendAndForget(address, new CustomType1("foo"));
+        vertx.eventBus().sendAndForget(address, new CustomType1("bar"));
+        vertx.eventBus().sendAndForget(address, new CustomType1("baz"));
 
         await().until(() -> bean.getSink().size() == 3);
 
@@ -96,9 +96,9 @@ public class CodecRegistrationTest {
 
         bean.getSink().clear();
         address = "address-6";
-        vertx.eventBus().send(address, new CustomType1("foo-x"));
-        vertx.eventBus().send(address, new CustomType1("bar-x"));
-        vertx.eventBus().send(address, new CustomType1("baz-x"));
+        vertx.eventBus().sendAndForget(address, new CustomType1("foo-x"));
+        vertx.eventBus().sendAndForget(address, new CustomType1("bar-x"));
+        vertx.eventBus().sendAndForget(address, new CustomType1("baz-x"));
 
         await().until(() -> bean.getSink().size() == 3);
         set = bean.getSink().stream().map(x -> (CustomType1) x).map(CustomType1::getName)
@@ -110,9 +110,18 @@ public class CodecRegistrationTest {
     public void testCodecRegistrationBasedOnReturnType() {
         String address = "address-7";
         List<CustomType3> list = new CopyOnWriteArrayList<>();
-        vertx.eventBus().<CustomType3> request(address, "foo").thenApply(Message::body).thenAccept(list::add);
-        vertx.eventBus().<CustomType3> request(address, "bar").thenApply(Message::body).thenAccept(list::add);
-        vertx.eventBus().<CustomType3> request(address, "baz").thenApply(Message::body).thenAccept(list::add);
+        vertx.eventBus().<CustomType3> request(address, "foo")
+                .onItem().apply(Message::body)
+                .subscribeAsCompletionStage()
+                .thenAccept(list::add);
+        vertx.eventBus().<CustomType3> request(address, "bar")
+                .onItem().apply(Message::body)
+                .subscribeAsCompletionStage()
+                .thenAccept(list::add);
+        vertx.eventBus().<CustomType3> request(address, "baz")
+                .onItem().apply(Message::body)
+                .subscribeAsCompletionStage()
+                .thenAccept(list::add);
 
         await().until(() -> list.size() == 3);
 
@@ -125,9 +134,18 @@ public class CodecRegistrationTest {
     public void testCodecRegistrationBasedOnReturnTypeWithCompletionStage() {
         String address = "address-8";
         List<CustomType4> list = new CopyOnWriteArrayList<>();
-        vertx.eventBus().<CustomType4> request(address, "foo").thenApply(Message::body).thenAccept(list::add);
-        vertx.eventBus().<CustomType4> request(address, "bar").thenApply(Message::body).thenAccept(list::add);
-        vertx.eventBus().<CustomType4> request(address, "baz").thenApply(Message::body).thenAccept(list::add);
+        vertx.eventBus().<CustomType4> request(address, "foo")
+                .onItem().apply(Message::body)
+                .subscribeAsCompletionStage()
+                .thenAccept(list::add);
+        vertx.eventBus().<CustomType4> request(address, "bar")
+                .onItem().apply(Message::body)
+                .subscribeAsCompletionStage()
+                .thenAccept(list::add);
+        vertx.eventBus().<CustomType4> request(address, "baz")
+                .onItem().apply(Message::body)
+                .subscribeAsCompletionStage()
+                .thenAccept(list::add);
 
         await().until(() -> list.size() == 3);
 

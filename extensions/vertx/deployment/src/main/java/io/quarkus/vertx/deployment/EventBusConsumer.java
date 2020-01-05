@@ -54,6 +54,9 @@ class EventBusConsumer {
     private static final MethodDescriptor AXLE_MESSAGE_NEW_INSTANCE = MethodDescriptor.ofMethod(
             io.vertx.axle.core.eventbus.Message.class,
             "newInstance", io.vertx.axle.core.eventbus.Message.class, Message.class);
+    private static final MethodDescriptor MUTINY_MESSAGE_NEW_INSTANCE = MethodDescriptor.ofMethod(
+            io.vertx.mutiny.core.eventbus.Message.class,
+            "newInstance", io.vertx.mutiny.core.eventbus.Message.class, Message.class);
     private static final MethodDescriptor MESSAGE_REPLY = MethodDescriptor.ofMethod(Message.class, "reply", void.class,
             Object.class);
     private static final MethodDescriptor MESSAGE_BODY = MethodDescriptor.ofMethod(Message.class, "body", Object.class);
@@ -149,6 +152,13 @@ class EventBusConsumer {
                     MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class,
                             io.vertx.axle.core.eventbus.Message.class),
                     beanInstanceHandle, axleMessageHandle);
+        } else if (paramType.name().equals(MUTINY_MESSAGE)) {
+            // io.vertx.mutiny.core.eventbus.Message
+            ResultHandle mutinyMessageHandle = invoke.invokeStaticMethod(MUTINY_MESSAGE_NEW_INSTANCE, messageHandle);
+            invoke.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class,
+                            io.vertx.mutiny.core.eventbus.Message.class),
+                    beanInstanceHandle, mutinyMessageHandle);
         } else {
             // Parameter is payload
             ResultHandle bodyHandle = invoke.invokeInterfaceMethod(MESSAGE_BODY, messageHandle);

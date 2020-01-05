@@ -1,7 +1,8 @@
 package io.quarkus.cache.deployment;
 
-import static io.quarkus.cache.deployment.CacheDeploymentConstants.ALL_CACHE_ANNOTATIONS;
-import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_NAME_PARAMETER_NAME;
+import static io.quarkus.cache.deployment.CacheDeploymentConstants.API_METHODS_ANNOTATIONS;
+import static io.quarkus.cache.deployment.CacheDeploymentConstants.API_METHODS_ANNOTATIONS_LISTS;
+import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_NAME_PARAM;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
@@ -26,9 +27,9 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildIt
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension.Key;
-import io.quarkus.cache.runtime.augmented.AugmentedCacheInvalidateAllInterceptor;
-import io.quarkus.cache.runtime.augmented.AugmentedCacheInvalidateInterceptor;
-import io.quarkus.cache.runtime.augmented.AugmentedCacheResultInterceptor;
+import io.quarkus.cache.runtime.CacheInvalidateAllInterceptor;
+import io.quarkus.cache.runtime.CacheInvalidateInterceptor;
+import io.quarkus.cache.runtime.CacheResultInterceptor;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheBuildRecorder;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheInfo;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -51,9 +52,9 @@ class CacheProcessor {
     @BuildStep
     List<AdditionalBeanBuildItem> additionalBeans() {
         return Arrays.asList(
-                new AdditionalBeanBuildItem(AugmentedCacheInvalidateAllInterceptor.class),
-                new AdditionalBeanBuildItem(AugmentedCacheInvalidateInterceptor.class),
-                new AdditionalBeanBuildItem(AugmentedCacheResultInterceptor.class));
+                new AdditionalBeanBuildItem(CacheInvalidateAllInterceptor.class),
+                new AdditionalBeanBuildItem(CacheInvalidateInterceptor.class),
+                new AdditionalBeanBuildItem(CacheResultInterceptor.class));
     }
 
     @BuildStep
@@ -63,7 +64,7 @@ class CacheProcessor {
         for (BeanInfo bean : validationPhase.getContext().get(Key.BEANS)) {
             if (bean.isClassBean()) {
                 for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
-                    if (annotationStore.hasAnyAnnotation(method, ALL_CACHE_ANNOTATIONS)) {
+                    if (annotationStore.hasAnyAnnotation(method, API_METHODS_ANNOTATIONS)) {
                         CacheMethodValidator.validateAnnotations(annotationStore, bean, method, throwables);
                     }
                 }
@@ -89,10 +90,19 @@ class CacheProcessor {
 
     private Set<String> getCacheNames(IndexView index) {
         Set<String> cacheNames = new HashSet<>();
-        for (DotName cacheAnnotation : ALL_CACHE_ANNOTATIONS) {
+        for (DotName cacheAnnotation : API_METHODS_ANNOTATIONS) {
             for (AnnotationInstance annotation : index.getAnnotations(cacheAnnotation)) {
                 if (annotation.target().kind() == METHOD) {
-                    cacheNames.add(annotation.value(CACHE_NAME_PARAMETER_NAME).asString());
+                    cacheNames.add(annotation.value(CACHE_NAME_PARAM).asString());
+                }
+            }
+        }
+        for (DotName list : API_METHODS_ANNOTATIONS_LISTS) {
+            for (AnnotationInstance annotation : index.getAnnotations(list)) {
+                if (annotation.target().kind() == METHOD) {
+                    for (AnnotationInstance nestedAnnotation : annotation.value("value").asNestedArray()) {
+                        cacheNames.add(nestedAnnotation.value(CACHE_NAME_PARAM).asString());
+                    }
                 }
             }
         }

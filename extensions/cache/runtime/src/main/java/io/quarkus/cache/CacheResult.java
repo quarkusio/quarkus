@@ -23,14 +23,13 @@ import javax.enterprise.util.Nonbinding;
  * a given delay. The lock timeout is disabled by default, meaning the lock is never interrupted. See the parameter Javadoc for
  * more details.
  * <p>
- * This annotation cannot be used on a method returning {@code void}.
- * <p>
- * You can only use one of the cache operations (and this annotation) on a given method: {@link CacheResult},
- * {@link CacheInvalidate} or {@link CacheInvalidateAll}.
+ * This annotation cannot be used on a method returning {@code void}. It can be combined with multiple other caching
+ * annotations on a single method. Caching operations will always be executed in the same order: {@link CacheInvalidateAll}
+ * first, then {@link CacheInvalidate} and finally {@link CacheResult}.
  * <p>
  * The underlying caching provider can be chosen and configured in the Quarkus {@link application.properties} file.
  */
-@Retention(value = RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface CacheResult {
 

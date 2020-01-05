@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * <p>
  * This annotation is optional and should only be used when some of the method arguments are NOT part of the cache key.
  */
-@Retention(value = RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
 public @interface CacheKey {
 }

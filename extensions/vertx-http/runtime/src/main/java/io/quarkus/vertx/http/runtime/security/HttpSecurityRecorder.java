@@ -25,11 +25,15 @@ public class HttpSecurityRecorder {
         return new Handler<RoutingContext>() {
 
             volatile HttpAuthenticator authenticator;
+            volatile AuthenticationErrorResponseHandler responseHandler;
 
             @Override
             public void handle(RoutingContext event) {
                 if (authenticator == null) {
                     authenticator = CDI.current().select(HttpAuthenticator.class).get();
+                }
+                if (responseHandler == null) {
+                    responseHandler = CDI.current().select(AuthenticationErrorResponseHandler.class).get();
                 }
                 //we put the authenticator into the routing context so it can be used by other systems
                 event.put(HttpAuthenticator.class.getName(), authenticator);
@@ -42,17 +46,18 @@ public class HttpSecurityRecorder {
                             }
                             //auth failed
                             if (throwable instanceof AuthenticationFailedException) {
+                                final AuthenticationFailedException securityException = (AuthenticationFailedException) throwable;
                                 authenticator.sendChallenge(event, new Runnable() {
                                     @Override
                                     public void run() {
-                                        event.response().end();
+                                        event.response().end(responseHandler.body(securityException));
                                     }
                                 });
                             } else if (throwable instanceof AuthenticationRedirectException) {
                                 AuthenticationRedirectException redirectEx = (AuthenticationRedirectException) throwable;
                                 event.response().setStatusCode(redirectEx.getCode());
                                 event.response().headers().set(HttpHeaders.LOCATION, redirectEx.getRedirectUri());
-                                event.response().end();
+                                event.response().end(responseHandler.body(redirectEx));
                             } else {
                                 event.fail(throwable);
                             }

@@ -10,20 +10,17 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.sentry.jul.SentryHandler;
-import io.sentry.jvmti.FrameCache;
 
-public class SentryLoggerCustomTest {
+public class SentryLoggerDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("application-sentry-logger-custom.properties");
+            .withConfigurationResource("application-sentry-logger-disabled.properties");
 
     @Test
-    public void sentryLoggerCustomTest() {
+    public void sentryLoggerDisabledTest() {
         final SentryHandler sentryHandler = getSentryHandler();
-        assertThat(sentryHandler).isNotNull();
-        assertThat(sentryHandler.getLevel()).isEqualTo(org.jboss.logmanager.Level.TRACE);
-        assertThat(FrameCache.shouldCacheThrowable(new IllegalStateException("Test frame"), 1)).isTrue();
+        assertThat(sentryHandler).isNull();
     }
 
     @AfterAll

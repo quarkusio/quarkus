@@ -11,11 +11,13 @@ public class MySQLPoolProducer {
 
     private volatile MySQLPool mysqlPool;
     private volatile io.vertx.axle.mysqlclient.MySQLPool axleMySQLPool;
+    private volatile io.vertx.mutiny.mysqlclient.MySQLPool mutinyMySQLPool;
     private volatile io.vertx.reactivex.mysqlclient.MySQLPool rxMySQLPool;
 
     void initialize(MySQLPool mysqlPool) {
         this.mysqlPool = mysqlPool;
         this.axleMySQLPool = io.vertx.axle.mysqlclient.MySQLPool.newInstance(mysqlPool);
+        this.mutinyMySQLPool = io.vertx.mutiny.mysqlclient.MySQLPool.newInstance(mysqlPool);
         this.rxMySQLPool = io.vertx.reactivex.mysqlclient.MySQLPool.newInstance(mysqlPool);
     }
 
@@ -27,8 +29,15 @@ public class MySQLPoolProducer {
 
     @Singleton
     @Produces
+    @Deprecated
     public io.vertx.axle.mysqlclient.MySQLPool axleMySQLPool() {
         return axleMySQLPool;
+    }
+
+    @Singleton
+    @Produces
+    public io.vertx.mutiny.mysqlclient.MySQLPool mutinyMySQLPool() {
+        return mutinyMySQLPool;
     }
 
     @Singleton

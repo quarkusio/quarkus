@@ -77,13 +77,13 @@ import io.quarkus.qute.api.VariantTemplate;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
 import io.quarkus.qute.generator.ValueResolverGenerator;
+import io.quarkus.qute.mutiny.MutinyPublisherFactory;
 import io.quarkus.qute.runtime.DefaultTemplateExtensions;
 import io.quarkus.qute.runtime.EngineProducer;
 import io.quarkus.qute.runtime.QuteConfig;
 import io.quarkus.qute.runtime.QuteRecorder;
 import io.quarkus.qute.runtime.TemplateProducer;
 import io.quarkus.qute.runtime.VariantTemplateProducer;
-import io.quarkus.qute.rxjava.RxjavaPublisherFactory;
 
 public class QuteProcessor {
 
@@ -577,7 +577,7 @@ public class QuteProcessor {
 
     @BuildStep
     ServiceProviderBuildItem registerPublisherFactory() {
-        return new ServiceProviderBuildItem(PublisherFactory.class.getName(), RxjavaPublisherFactory.class.getName());
+        return new ServiceProviderBuildItem(PublisherFactory.class.getName(), MutinyPublisherFactory.class.getName());
     }
 
     @BuildStep

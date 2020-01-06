@@ -2127,7 +2127,7 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-sql-client</artifactId>
-                <version>${axle-client.version}</version>
+                <version>${mutiny-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
@@ -2137,7 +2137,7 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-mysql-client</artifactId>
-                <version>${axle-client.version}</version>
+                <version>${mutiny-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
@@ -2147,7 +2147,7 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-pg-client</artifactId>
-                <version>${axle-client.version}</version>
+                <version>${mutiny-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
@@ -2157,7 +2157,7 @@
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-mail-client</artifactId>
-                <version>${axle-client.version}</version>
+                <version>${mutiny-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.vertx</groupId>

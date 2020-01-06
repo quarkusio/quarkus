@@ -689,8 +689,10 @@ public class DevMojo extends AbstractMojo {
             Xpp3Dom compilerPluginConfiguration = (Xpp3Dom) kotlinMavenPlugin.getConfiguration();
             if (compilerPluginConfiguration != null) {
                 Xpp3Dom compilerPluginArgsConfiguration = compilerPluginConfiguration.getChild("pluginOptions");
-                for (Xpp3Dom argConfiguration : compilerPluginArgsConfiguration.getChildren()) {
-                    options.add(argConfiguration.getValue());
+                if (compilerPluginArgsConfiguration != null) {
+                    for (Xpp3Dom argConfiguration : compilerPluginArgsConfiguration.getChildren()) {
+                        options.add(argConfiguration.getValue());
+                    }
                 }
             }
             devModeContext.setCompilerPluginsOptions(options);

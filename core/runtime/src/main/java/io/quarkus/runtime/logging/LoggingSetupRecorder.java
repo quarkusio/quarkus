@@ -6,6 +6,7 @@ import static org.wildfly.common.os.Process.getProcessName;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -73,21 +74,15 @@ public class LoggingSetupRecorder {
         final Logger rootLogger = logContext.getLogger("");
 
         rootLogger.setLevel(config.level.orElse(Level.INFO));
-        for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
-            final String name = entry.getKey();
-            final Logger logger = logContext.getLogger(name);
-            final CategoryConfig categoryConfig = entry.getValue();
-            if (!"inherit".equals(categoryConfig.level)) {
-                logger.setLevelName(categoryConfig.level);
-            }
-        }
+
+        ErrorManager errorManager = new OnlyOnceErrorManager();
         final Map<String, CleanupFilterConfig> filters = config.filters;
         List<LogCleanupFilterElement> filterElements = new ArrayList<>(filters.size());
         for (Entry<String, CleanupFilterConfig> entry : filters.entrySet()) {
             filterElements.add(new LogCleanupFilterElement(entry.getKey(), entry.getValue().ifStartsWith));
         }
+
         final ArrayList<Handler> handlers = new ArrayList<>(3 + additionalHandlers.size());
-        ErrorManager errorManager = new OnlyOnceErrorManager();
 
         if (config.console.enable) {
             final Handler consoleHandler = configureConsoleHandler(config.console, errorManager, filterElements,
@@ -107,6 +102,21 @@ public class LoggingSetupRecorder {
             }
         }
 
+        Map<String, Handler> namedHandlers = createNamedHandlers(config, possibleFormatters, errorManager, filterElements);
+
+        for (Map.Entry<String, CategoryConfig> entry : categories.entrySet()) {
+            final String name = entry.getKey();
+            final Logger categoryLogger = logContext.getLogger(name);
+            final CategoryConfig categoryConfig = entry.getValue();
+            if (!"inherit".equals(categoryConfig.level)) {
+                categoryLogger.setLevelName(categoryConfig.level);
+            }
+            categoryLogger.setUseParentHandlers(categoryConfig.useParentHandlers);
+            if (categoryConfig.handlers.isPresent()) {
+                addNamedHandlersToCategory(categoryConfig, namedHandlers, categoryLogger, errorManager);
+            }
+        }
+
         for (RuntimeValue<Optional<Handler>> additionalHandler : additionalHandlers) {
             final Optional<Handler> optional = additionalHandler.getValue();
             if (optional.isPresent()) {
@@ -119,6 +129,49 @@ public class LoggingSetupRecorder {
 
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+    }
+
+    private static Map<String, Handler> createNamedHandlers(LogConfig config,
+            List<RuntimeValue<Optional<Formatter>>> possibleFormatters, ErrorManager errorManager,
+            List<LogCleanupFilterElement> filterElements) {
+        Map<String, Handler> namedHandlers = new HashMap<>();
+        for (Entry<String, ConsoleConfig> consoleConfigEntry : config.consoleHandlers.entrySet()) {
+            final Handler consoleHandler = configureConsoleHandler(consoleConfigEntry.getValue(), errorManager, filterElements,
+                    possibleFormatters);
+            addToNamedHandlers(namedHandlers, consoleHandler, consoleConfigEntry.getKey());
+        }
+        for (Entry<String, FileConfig> fileConfigEntry : config.fileHandlers.entrySet()) {
+            final Handler fileHandler = configureFileHandler(fileConfigEntry.getValue(), errorManager, filterElements);
+            addToNamedHandlers(namedHandlers, fileHandler, fileConfigEntry.getKey());
+        }
+        for (Entry<String, SyslogConfig> sysLogConfigEntry : config.syslogHandlers.entrySet()) {
+            final Handler syslogHandler = configureSyslogHandler(sysLogConfigEntry.getValue(), errorManager, filterElements);
+            if (syslogHandler != null) {
+                addToNamedHandlers(namedHandlers, syslogHandler, sysLogConfigEntry.getKey());
+            }
+        }
+        return namedHandlers;
+    }
+
+    private static void addToNamedHandlers(Map<String, Handler> namedHandlers, Handler handler, String handlerName) {
+        if (namedHandlers.containsKey(handlerName)) {
+            throw new RuntimeException(String.format("Only one handler can be configured with the same name '%s'",
+                    handlerName));
+        }
+        namedHandlers.put(handlerName, handler);
+    }
+
+    private void addNamedHandlersToCategory(CategoryConfig categoryConfig, Map<String, Handler> namedHandlers,
+            Logger categoryLogger,
+            ErrorManager errorManager) {
+        for (String categoryNamedHandler : categoryConfig.handlers.get()) {
+            if (namedHandlers.get(categoryNamedHandler) != null) {
+                categoryLogger.addHandler(namedHandlers.get(categoryNamedHandler));
+            } else {
+                errorManager.error(String.format("Handler with name '%s' is linked to a category but not configured.",
+                        categoryNamedHandler), null, ErrorManager.GENERIC_FAILURE);
+            }
+        }
     }
 
     public void initializeLoggingForImageBuild() {
@@ -259,4 +312,5 @@ public class LoggingSetupRecorder {
         asyncHandler.setLevel(level);
         return asyncHandler;
     }
+
 }

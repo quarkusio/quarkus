@@ -20,11 +20,15 @@ include::{generated-dir}/config/quarkus-log-logging-log-config.adoc[opts=optiona
 Logging is done on a per-category basis.  Each category can be independently configured.
 A configuration which applies to a category will also apply to all sub-categories of that category,
 unless there is a more specific matching sub-category configuration.
+For every category the same settings that are configured on ( console / file / syslog ) apply.
+These can also be overridden by attaching a one or more named handlers to a category. See example in <<category-named-handlers-example>>
 
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
 |quarkus.log.category."<category-name>".level|INFO footnote:[Some extensions may define customized default log levels for certain categories, in order to reduce log noise by default.  Setting the log level in configuration will override any extension-defined log levels.]|The level to use to configure the category named `<category-name>`.  The quotes are necessary.
+|quarkus.log.category."<category-name>".useParentHandlers|true|Specify whether or not this logger should send its output to its parent logger.
+|quarkus.log.category."<category-name>".handlers=[<handler>]|empty footnote:[By default the configured category gets the same handlers attached as the one on the root logger.]|The names of the handlers that you want to attach to a specific category.
 |===
 
 NOTE: The quotes shown in the property name are required as categories normally contain '.' which must
@@ -152,6 +156,23 @@ quarkus.log.file.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
 # Set 2 categories (io.quarkus.smallrye.jwt, io.undertow.request.security) to TRACE level
 quarkus.log.category."io.quarkus.smallrye.jwt".level=TRACE
 quarkus.log.category."io.undertow.request.security".level=TRACE
+----
+
+[#category-named-handlers-example]
+.Named handlers attached to a category
+[source, properties]
+----
+# Send output to the console
+quarkus.log.file.path=/tmp/trace.log
+quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
+# Configure a named handler that logs to console
+quarkus.log.handler.console."STRUCTURED_LOGGING".format=%e%n
+# Configure a named handler that logs to file
+quarkus.log.handler.file."STRUCTURED_LOGGING_FILE".enable=true
+quarkus.log.handler.file."STRUCTURED_LOGGING_FILE".format=%e%n
+# Configure the category and link the two named handlers to it
+quarkus.log.category."io.quarkus.category".level=INFO
+quarkus.log.category."io.quarkus.category".handlers=STRUCTURED_LOGGING,STRUCTURED_LOGGING_FILE
 ----
 
 == Supported Logging APIs

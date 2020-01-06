@@ -3,7 +3,11 @@ package io.quarkus.mailer.runtime;
 import static io.quarkus.qute.api.VariantTemplate.SELECTED_VARIANT;
 import static io.quarkus.qute.api.VariantTemplate.VARIANTS;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 

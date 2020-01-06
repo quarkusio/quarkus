@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -76,11 +75,9 @@ class VertxHttpProcessor {
     }
 
     @BuildStep(onlyIf = IsNormal.class)
-    @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
-    public KubernetesPortBuildItem kubernetes(HttpConfiguration config, VertxHttpRecorder recorder) {
-        int port = ConfigProvider.getConfig().getValue("quarkus.http.port", OptionalInt.class).orElse(8080);
-        recorder.warnIfPortChanged(config, port);
-        return new KubernetesPortBuildItem(config.port, "http");
+    public KubernetesPortBuildItem kubernetes() {
+        int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
+        return new KubernetesPortBuildItem(port, "http");
     }
 
     @BuildStep

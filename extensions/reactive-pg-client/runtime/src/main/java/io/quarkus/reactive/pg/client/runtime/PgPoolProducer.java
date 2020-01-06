@@ -11,12 +11,14 @@ public class PgPoolProducer {
 
     private volatile PgPool pgPool;
     private volatile io.vertx.axle.pgclient.PgPool axlePgPool;
+    private volatile io.vertx.mutiny.pgclient.PgPool mutinyPgPool;
     private volatile io.vertx.reactivex.pgclient.PgPool rxPgPool;
 
     void initialize(PgPool pgPool) {
         this.pgPool = pgPool;
         this.axlePgPool = io.vertx.axle.pgclient.PgPool.newInstance(pgPool);
         this.rxPgPool = io.vertx.reactivex.pgclient.PgPool.newInstance(pgPool);
+        this.mutinyPgPool = io.vertx.mutiny.pgclient.PgPool.newInstance(pgPool);
     }
 
     @Singleton
@@ -27,8 +29,15 @@ public class PgPoolProducer {
 
     @Singleton
     @Produces
+    @Deprecated
     public io.vertx.axle.pgclient.PgPool axlePgPool() {
         return axlePgPool;
+    }
+
+    @Singleton
+    @Produces
+    public io.vertx.mutiny.pgclient.PgPool mutinyPgPool() {
+        return mutinyPgPool;
     }
 
     @Singleton

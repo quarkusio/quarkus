@@ -21,10 +21,14 @@ public class PgPoolProducerTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(BeanUsingBarePgClient.class)
                     .addClasses(BeanUsingAxlePgClient.class)
+                    .addClasses(BeanUsingMutinyPgClient.class)
                     .addClasses(BeanUsingRXPgClient.class));
 
     @Inject
     BeanUsingBarePgClient beanUsingBare;
+
+    @Inject
+    BeanUsingBarePgClient beanUsingMutiny;
 
     @Inject
     BeanUsingAxlePgClient beanUsingAxle;
@@ -33,10 +37,11 @@ public class PgPoolProducerTest {
     BeanUsingRXPgClient beanUsingRx;
 
     @Test
-    public void testVertxInjection() throws Exception {
+    public void testVertxInjection() {
         beanUsingBare.verify()
                 .thenCompose(v -> beanUsingAxle.verify())
                 .thenCompose(v -> beanUsingRx.verify())
+                .thenCompose(v -> beanUsingMutiny.verify())
                 .toCompletableFuture()
                 .join();
     }
@@ -66,6 +71,20 @@ public class PgPoolProducerTest {
             return pgClient.query("SELECT 1")
                     .<Void> thenApply(rs -> null)
                     .exceptionally(t -> null);
+        }
+    }
+
+    @ApplicationScoped
+    static class BeanUsingMutinyPgClient {
+
+        @Inject
+        io.vertx.mutiny.pgclient.PgPool pgClient;
+
+        public CompletionStage<Void> verify() {
+            return pgClient.query("SELECT 1")
+                    .onItem().apply(rs -> (Void) null)
+                    .onFailure().recoverWithItem(f -> null)
+                    .subscribeAsCompletionStage();
         }
     }
 

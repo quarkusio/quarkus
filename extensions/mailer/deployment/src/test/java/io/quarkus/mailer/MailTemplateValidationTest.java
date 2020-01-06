@@ -1,7 +1,5 @@
 package io.quarkus.mailer;
 
-import java.util.concurrent.CompletionStage;
-
 import javax.enterprise.inject.spi.DeploymentException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -14,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.mutiny.Uni;
 
 public class MailTemplateValidationTest {
 
@@ -38,7 +37,7 @@ public class MailTemplateValidationTest {
         @Inject
         MailTemplate doesNotExist;
 
-        CompletionStage<Void> send() {
+        Uni<Void> send() {
             return doesNotExist.to("quarkus@quarkus.io").subject("Test").data("name", "Foo").send();
         }
 

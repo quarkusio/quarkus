@@ -26,10 +26,10 @@ public class MailConfigRecorder {
         return new RuntimeValue<>(client);
     }
 
-    public RuntimeValue<ReactiveMailerImpl> configureTheMailer(BeanContainer container, MailConfig config,
+    public RuntimeValue<MutinyMailerImpl> configureTheMailer(BeanContainer container, MailConfig config,
             LaunchMode launchMode) {
 
-        ReactiveMailerImpl mailer = container.instance(ReactiveMailerImpl.class);
+        MutinyMailerImpl mailer = container.instance(MutinyMailerImpl.class);
 
         // mock defaults to true on DEV and TEST
         mailer.configure(config.from, config.bounceAddress, config.mock.orElse(launchMode.isDevOrTest()));

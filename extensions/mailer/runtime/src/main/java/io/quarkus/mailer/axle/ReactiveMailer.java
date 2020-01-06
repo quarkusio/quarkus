@@ -1,14 +1,14 @@
-package io.quarkus.mailer;
+package io.quarkus.mailer.axle;
 
 import java.util.concurrent.CompletionStage;
 
+import io.quarkus.mailer.Mail;
+
 /**
  * A mailer to send email asynchronously.
- * 
- * @deprecated Use {@link io.quarkus.mailer.mutiny.ReactiveMailer}.
  */
 @Deprecated
-public interface ReactiveMailer extends io.quarkus.mailer.axle.ReactiveMailer {
+public interface ReactiveMailer {
 
     /**
      * Sends the passed emails.

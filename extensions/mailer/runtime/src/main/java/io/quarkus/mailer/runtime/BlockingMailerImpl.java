@@ -5,7 +5,7 @@ import javax.inject.Inject;
 
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;
-import io.quarkus.mailer.ReactiveMailer;
+import io.quarkus.mailer.mutiny.ReactiveMailer;
 
 /**
  * Implementation of {@link Mailer} relying on the {@link ReactiveMailer} and waiting for completion.
@@ -18,6 +18,6 @@ public class BlockingMailerImpl implements Mailer {
 
     @Override
     public void send(Mail... mails) {
-        mailer.send(mails).toCompletableFuture().join();
+        mailer.send(mails).await().indefinitely();
     }
 }

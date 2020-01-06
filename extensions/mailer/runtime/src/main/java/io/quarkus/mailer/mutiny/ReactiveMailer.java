@@ -1,14 +1,14 @@
-package io.quarkus.mailer;
+package io.quarkus.mailer.mutiny;
 
 import java.util.concurrent.CompletionStage;
 
+import io.quarkus.mailer.Mail;
+import io.smallrye.mutiny.Uni;
+
 /**
  * A mailer to send email asynchronously.
- * 
- * @deprecated Use {@link io.quarkus.mailer.mutiny.ReactiveMailer}.
  */
-@Deprecated
-public interface ReactiveMailer extends io.quarkus.mailer.axle.ReactiveMailer {
+public interface ReactiveMailer {
 
     /**
      * Sends the passed emails.
@@ -17,5 +17,5 @@ public interface ReactiveMailer extends io.quarkus.mailer.axle.ReactiveMailer {
      * @return a {@link CompletionStage} indicating when the mails have been sent. The {@link CompletionStage} may be
      *         completed with a failure if the emails cannot be sent.
      */
-    CompletionStage<Void> send(Mail... mails);
+    Uni<Void> send(Mail... mails);
 }

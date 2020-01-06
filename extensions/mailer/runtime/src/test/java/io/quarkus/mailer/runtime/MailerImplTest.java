@@ -22,9 +22,9 @@ import org.subethamail.wiser.WiserMessage;
 
 import io.quarkus.mailer.Mail;
 import io.reactivex.Flowable;
-import io.vertx.axle.core.Vertx;
-import io.vertx.axle.ext.mail.MailClient;
 import io.vertx.ext.mail.MailConfig;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.ext.mail.MailClient;
 
 class MailerImplTest {
 
@@ -34,7 +34,7 @@ class MailerImplTest {
 
     private static Wiser wiser;
     private static Vertx vertx;
-    private ReactiveMailerImpl mailer;
+    private MutinyMailerImpl mailer;
 
     @BeforeAll
     static void startWiser() {
@@ -48,12 +48,12 @@ class MailerImplTest {
     @AfterAll
     static void stopWiser() {
         wiser.stop();
-        vertx.close().toCompletableFuture().join();
+        vertx.close().await().indefinitely();
     }
 
     @BeforeEach
     void init() {
-        mailer = new ReactiveMailerImpl();
+        mailer = new MutinyMailerImpl();
         mailer.configure(Optional.of(FROM), Optional.empty(), false);
         mailer.vertx = vertx;
         mailer.client = MailClient.createShared(mailer.vertx,
@@ -65,7 +65,7 @@ class MailerImplTest {
     @Test
     void testTextMail() throws MessagingException, IOException {
         String content = UUID.randomUUID().toString();
-        mailer.send(Mail.withText(TO, "Test", content)).toCompletableFuture().join();
+        mailer.send(Mail.withText(TO, "Test", content)).await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains(content);
@@ -80,7 +80,7 @@ class MailerImplTest {
     @Test
     void testHTMLMail() throws MessagingException, IOException {
         String content = UUID.randomUUID().toString();
-        mailer.send(Mail.withHtml(TO, "Test", "<h1>" + content + "</h1>")).toCompletableFuture().join();
+        mailer.send(Mail.withHtml(TO, "Test", "<h1>" + content + "</h1>")).await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("<h1>" + content + "</h1>");
@@ -97,7 +97,7 @@ class MailerImplTest {
     void testWithSeveralMails() {
         Mail mail1 = Mail.withText(TO, "Mail 1", "Mail 1").addCc("cc@quarkus.io").addBcc("bcc@quarkus.io");
         Mail mail2 = Mail.withHtml(TO, "Mail 2", "<strong>Mail 2</strong>").addCc("cc2@quarkus.io").addBcc("bcc2@quarkus.io");
-        mailer.send(mail1, mail2).toCompletableFuture().join();
+        mailer.send(mail1, mail2).await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(6);
     }
 
@@ -106,7 +106,7 @@ class MailerImplTest {
         mailer.send(Mail.withText(TO, "Test", "testHeaders")
                 .addHeader("X-header", "value")
                 .addHeader("X-header-2", "value1", "value2"))
-                .toCompletableFuture().join();
+                .await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         MimeMessage msg = actual.getMimeMessage();
@@ -120,7 +120,8 @@ class MailerImplTest {
     void testAttachment() throws MessagingException, IOException {
         String payload = UUID.randomUUID().toString();
         mailer.send(Mail.withText(TO, "Test", "testAttachment")
-                .addAttachment("my-file.txt", payload.getBytes("UTF-8"), TEXT_CONTENT_TYPE)).toCompletableFuture().join();
+                .addAttachment("my-file.txt", payload.getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE)).await()
+                .indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("testAttachment");
@@ -150,7 +151,7 @@ class MailerImplTest {
         };
 
         mailer.send(Mail.withText(TO, "Test", "testAttachmentAsStream")
-                .addAttachment("my-file.txt", Flowable.fromIterable(iterable), TEXT_CONTENT_TYPE)).toCompletableFuture().join();
+                .addAttachment("my-file.txt", Flowable.fromIterable(iterable), TEXT_CONTENT_TYPE)).await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("testAttachment");
@@ -166,8 +167,7 @@ class MailerImplTest {
         String cid = UUID.randomUUID().toString() + "@acme";
         mailer.send(Mail.withHtml(TO, "Test", "testInlineAttachment")
                 .addInlineAttachment("inline.txt", "my inlined text".getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE, cid))
-                .toCompletableFuture()
-                .join();
+                .await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("testInlineAttachment");
@@ -184,7 +184,7 @@ class MailerImplTest {
         mailer.send(Mail.withText(TO, "Test", "Simple Test")
                 .addAttachment("some-data.txt", "Hello".getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE)
                 .addAttachment("some-data-2.txt", "Hello 2".getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE))
-                .toCompletableFuture().join();
+                .await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("Simple Test");
@@ -201,7 +201,7 @@ class MailerImplTest {
     void testReplyToHeaderIsSet() throws MessagingException {
         mailer.send(Mail.withText(TO, "Test", "testHeaders")
                 .setReplyTo("reply-to@quarkus.io"))
-                .toCompletableFuture().join();
+                .await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         MimeMessage msg = actual.getMimeMessage();
@@ -211,7 +211,8 @@ class MailerImplTest {
 
     private String getContent(WiserMessage msg) {
         try {
-            return getTextFromMimeMultipart((MimeMultipart) msg.getMimeMessage().getContent());
+            Object content = msg.getMimeMessage().getContent();
+            return getTextFromMimeMultipart((MimeMultipart) content);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }

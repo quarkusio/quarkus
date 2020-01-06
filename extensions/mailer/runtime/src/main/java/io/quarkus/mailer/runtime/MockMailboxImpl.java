@@ -4,13 +4,12 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.ApplicationScoped;
 
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.MockMailbox;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Mock mailbox bean, will be populated if mocking emails.
@@ -21,7 +20,7 @@ public class MockMailboxImpl implements MockMailbox {
     private Map<String, List<Mail>> sentMessages = new HashMap<>();
     private int sentMessagesCount;
 
-    CompletionStage<Void> send(Mail email) {
+    Uni<Void> send(Mail email) {
         if (email.getTo() != null) {
             for (String to : email.getTo()) {
                 send(email, to);
@@ -37,7 +36,7 @@ public class MockMailboxImpl implements MockMailbox {
                 send(email, to);
             }
         }
-        return CompletableFuture.completedFuture(null);
+        return Uni.createFrom().item((Void) null);
     }
 
     private void send(Mail sentMail, String to) {

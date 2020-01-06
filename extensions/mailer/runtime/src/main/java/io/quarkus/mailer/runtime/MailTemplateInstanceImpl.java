@@ -3,21 +3,18 @@ package io.quarkus.mailer.runtime;
 import static io.quarkus.qute.api.VariantTemplate.SELECTED_VARIANT;
 import static io.quarkus.qute.api.VariantTemplate.VARIANTS;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.MailTemplate.MailTemplateInstance;
-import io.quarkus.mailer.ReactiveMailer;
+import io.quarkus.mailer.mutiny.ReactiveMailer;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.VariantTemplate;
+import io.smallrye.mutiny.Uni;
 
 class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
 
@@ -88,72 +85,68 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
     }
 
     @Override
-    public CompletionStage<Void> send() {
-
-        CompletableFuture<Void> result = new CompletableFuture<>();
-
+    public Uni<Void> send() {
         if (templateInstance.getAttribute(VariantTemplate.VARIANTS) != null) {
 
-            List<Result> results = new ArrayList<>();
-
+            Map<Result, Uni<String>> collector = new LinkedHashMap<>();
             @SuppressWarnings("unchecked")
             List<Variant> variants = (List<Variant>) templateInstance.getAttribute(VARIANTS);
             for (Variant variant : variants) {
                 if (variant.mediaType.equals(Variant.TEXT_HTML) || variant.mediaType.equals(Variant.TEXT_PLAIN)) {
-                    results.add(new Result(variant,
-                            templateInstance.setAttribute(SELECTED_VARIANT, variant).data(data).renderAsync()
-                                    .toCompletableFuture()));
+                    Result res = new Result(variant,
+                            templateInstance.setAttribute(SELECTED_VARIANT, variant).data(data).renderAsync());
+                    collector.put(res, res.toUni());
                 }
             }
 
-            if (results.isEmpty()) {
+            if (collector.isEmpty()) {
                 throw new IllegalStateException("No suitable template variant found");
             }
 
-            CompletableFuture<Void> all = CompletableFuture
-                    .allOf(results.stream().map(Result::getValue).toArray(CompletableFuture[]::new));
-            all.whenComplete((r1, t1) -> {
-                if (t1 != null) {
-                    result.completeExceptionally(t1);
-                } else {
-                    try {
-                        for (Result res : results) {
-                            if (res.variant.mediaType.equals(Variant.TEXT_HTML)) {
-                                mail.setHtml(res.value.get());
-                            } else if (res.variant.mediaType.equals(Variant.TEXT_PLAIN)) {
-                                mail.setText(res.value.get());
-                            }
-                        }
-                    } catch (InterruptedException | ExecutionException e) {
-                        result.completeExceptionally(e);
-                    }
-                    mailer.send(mail).whenComplete((r, t) -> {
-                        if (t != null) {
-                            result.completeExceptionally(t);
-                        } else {
-                            result.complete(null);
-                        }
-                    });
+            Function<List<String>, Map<Result, String>> combinator = list -> {
+                Map<Result, String> results = new LinkedHashMap<>();
+                Iterator<Result> iteratorOverResult = collector.keySet().iterator();
+                Iterator<String> iteratorOverRenderedResult = list.iterator();
+
+                while (iteratorOverResult.hasNext()) {
+                    Result next = iteratorOverResult.next();
+                    results.put(next, iteratorOverRenderedResult.next());
                 }
-            });
+                return results;
+            };
+
+            Uni<Map<Result, String>> uni = Uni.combine().all()
+                    .unis(collector.values())
+                    .combinedWith(combinator);
+
+            return uni
+                    .onItem().produceUni(map -> {
+                        map.entrySet().forEach(entry -> {
+                            if (entry.getKey().variant.mediaType.equals(Variant.TEXT_HTML)) {
+                                mail.setHtml(entry.getValue());
+                            } else if (entry.getKey().variant.mediaType.equals(Variant.TEXT_PLAIN)) {
+                                mail.setText(entry.getValue());
+                            }
+                        });
+                        return mailer.send(mail);
+                    });
         } else {
             throw new IllegalStateException("No template variant found");
         }
-        return result;
     }
 
     static class Result {
 
         final Variant variant;
-        final CompletableFuture<String> value;
+        final CompletionStage<String> value;
 
-        public Result(Variant variant, CompletableFuture<String> result) {
+        public Result(Variant variant, CompletionStage<String> result) {
             this.variant = variant;
             this.value = result;
         }
 
-        CompletableFuture<String> getValue() {
-            return value;
+        Uni<String> toUni() {
+            return Uni.createFrom().completionStage(value);
         }
     }
 

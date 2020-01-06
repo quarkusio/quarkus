@@ -6,32 +6,33 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.jboss.logging.Logger;
 import org.reactivestreams.Publisher;
 
 import io.quarkus.mailer.Attachment;
 import io.quarkus.mailer.Mail;
-import io.quarkus.mailer.ReactiveMailer;
-import io.vertx.axle.core.Vertx;
-import io.vertx.axle.core.file.AsyncFile;
-import io.vertx.axle.ext.mail.MailClient;
+import io.quarkus.mailer.mutiny.ReactiveMailer;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.ext.mail.MailAttachment;
 import io.vertx.ext.mail.MailMessage;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.file.AsyncFile;
+import io.vertx.mutiny.ext.mail.MailClient;
 
 @ApplicationScoped
-public class ReactiveMailerImpl implements ReactiveMailer {
+public class MutinyMailerImpl implements ReactiveMailer {
 
     private static final Logger LOGGER = Logger.getLogger("quarkus-mailer");
 
@@ -60,18 +61,20 @@ public class ReactiveMailerImpl implements ReactiveMailer {
     private boolean mock;
 
     @Override
-    public CompletionStage<Void> send(Mail... mails) {
+    public Uni<Void> send(Mail... mails) {
         if (mails == null) {
             throw new IllegalArgumentException("The `mails` parameter must not be `null`");
         }
 
-        return allOf(
-                stream(mails)
-                        .map(mail -> toMailMessage(mail).thenCompose(mailMessage -> send(mail, mailMessage)))
-                        .collect(Collectors.toList()));
+        List<Uni<Void>> unis = stream(mails)
+                .map(mail -> toMailMessage(mail)
+                        .onItem().produceUni(mailMessage -> send(mail, mailMessage)))
+                .collect(Collectors.toList());
+
+        return Uni.combine().all().unis(unis).combinedWith(results -> null);
     }
 
-    private CompletionStage<Void> send(Mail mail, MailMessage message) {
+    private Uni<Void> send(Mail mail, MailMessage message) {
         if (mock) {
             LOGGER.infof("Sending email %s from %s to %s, text body: \n%s\nhtml body: \n%s",
                     message.getSubject(), message.getFrom(), message.getTo(),
@@ -79,12 +82,11 @@ public class ReactiveMailerImpl implements ReactiveMailer {
             return mockMailbox.send(mail);
         } else {
             return client.sendMail(message)
-                    .thenAccept(x -> {
-                    }); // Discard result.
+                    .onItem().ignore().andContinueWithNull();
         }
     }
 
-    private CompletionStage<MailMessage> toMailMessage(Mail mail) {
+    private Uni<MailMessage> toMailMessage(Mail mail) {
         MailMessage message = new MailMessage();
 
         if (mail.getBounceAddress() != null) {
@@ -109,22 +111,32 @@ public class ReactiveMailerImpl implements ReactiveMailer {
             message.addHeader("Reply-To", mail.getReplyTo());
         }
 
-        List<CompletionStage<?>> stages = new ArrayList<>();
+        List<Uni<MailAttachment>> stages = new ArrayList<>();
         List<MailAttachment> attachments = new CopyOnWriteArrayList<>();
         List<MailAttachment> inline = new CopyOnWriteArrayList<>();
         for (Attachment attachment : mail.getAttachments()) {
             if (attachment.isInlineAttachment()) {
-                stages.add(toMailAttachment(attachment).thenAccept(inline::add));
+                stages.add(toMailAttachment(attachment)
+                        .onItem().invoke(inline::add));
             } else {
-                stages.add(toMailAttachment(attachment).thenAccept(attachments::add));
+                stages.add(toMailAttachment(attachment)
+                        .onItem().invoke(attachments::add));
             }
         }
 
-        return allOf(stages).thenApply(x -> {
+        if (stages.isEmpty()) {
             message.setAttachment(attachments);
             message.setInlineAttachment(inline);
-            return message;
-        });
+            return Uni.createFrom().item(message);
+        }
+
+        Uni<List<MailAttachment>> uni = Uni.combine().all().unis(stages).combinedWith(Function.identity());
+        return uni
+                .onItem().apply(ignored -> {
+                    message.setAttachment(attachments);
+                    message.setInlineAttachment(inline);
+                    return message;
+                });
     }
 
     private MultiMap toMultimap(Map<String, List<String>> headers) {
@@ -133,7 +145,7 @@ public class ReactiveMailerImpl implements ReactiveMailer {
         return mm;
     }
 
-    private CompletionStage<MailAttachment> toMailAttachment(Attachment attachment) {
+    private Uni<MailAttachment> toMailAttachment(Attachment attachment) {
         MailAttachment attach = new MailAttachment();
         attach.setName(attachment.getName());
         attach.setContentId(attachment.getContentId());
@@ -144,40 +156,29 @@ public class ReactiveMailerImpl implements ReactiveMailer {
         if ((attachment.getFile() == null && attachment.getData() == null) // No content
                 || (attachment.getFile() != null && attachment.getData() != null)) // Too much content
         {
-
             throw new IllegalArgumentException("An attachment must contain either a file or a raw data");
         }
 
-        return getAttachmentStream(vertx, attachment).thenApply(attach::setData);
+        return getAttachmentStream(vertx, attachment)
+                .onItem().apply(attach::setData);
     }
 
-    public static CompletionStage<Buffer> getAttachmentStream(Vertx vertx, Attachment attachment) {
+    public static Uni<Buffer> getAttachmentStream(Vertx vertx, Attachment attachment) {
         if (attachment.getFile() != null) {
-            CompletionStage<AsyncFile> open = vertx.fileSystem().open(attachment.getFile().getAbsolutePath(),
+            Uni<AsyncFile> open = vertx.fileSystem().open(attachment.getFile().getAbsolutePath(),
                     new OpenOptions().setRead(true).setCreate(false));
-            return ReactiveStreams
-                    .fromCompletionStage(open)
-                    .flatMap(af -> af.toPublisherBuilder().map(io.vertx.axle.core.buffer.Buffer::getDelegate)
-                            .onTerminate(af::close))
-                    .collect(Buffer::buffer, Buffer::appendBuffer)
-                    .run();
+            return open
+                    .onItem().produceMulti(af -> af.toMulti()
+                            .onItem().apply(io.vertx.mutiny.core.buffer.Buffer::getDelegate)
+                            .on().termination((failure, cancellation) -> af.closeAndForget()))
+                    .collectItems().with(Collector.of(Buffer::buffer, Buffer::appendBuffer, (b1, b2) -> b1));
         } else if (attachment.getData() != null) {
             Publisher<Byte> data = attachment.getData();
-            return ReactiveStreams.fromPublisher(data)
-                    .collect(Buffer::buffer, Buffer::appendByte)
-                    .run();
+            return Multi.createFrom().publisher(data)
+                    .collectItems().with(Collector.of(Buffer::buffer, Buffer::appendByte, (b1, b2) -> b1));
         } else {
-            CompletableFuture<Buffer> future = new CompletableFuture<>();
-            future.completeExceptionally(new IllegalArgumentException("Attachment has no data"));
-            return future;
+            return Uni.createFrom().failure(new IllegalArgumentException("Attachment has no data"));
         }
-    }
-
-    private static CompletionStage<Void> allOf(List<CompletionStage<?>> stages) {
-        CompletableFuture<?>[] array = stages.stream()
-                .map(CompletionStage::toCompletableFuture)
-                .toArray(CompletableFuture[]::new);
-        return CompletableFuture.allOf(array);
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")

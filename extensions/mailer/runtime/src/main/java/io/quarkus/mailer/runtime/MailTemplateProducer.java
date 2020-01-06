@@ -14,7 +14,7 @@ import javax.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.quarkus.mailer.MailTemplate;
-import io.quarkus.mailer.ReactiveMailer;
+import io.quarkus.mailer.mutiny.ReactiveMailer;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.api.VariantTemplate;
 

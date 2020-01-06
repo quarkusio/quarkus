@@ -30,7 +30,7 @@ import io.quarkus.mailer.runtime.MailConfig;
 import io.quarkus.mailer.runtime.MailConfigRecorder;
 import io.quarkus.mailer.runtime.MailTemplateProducer;
 import io.quarkus.mailer.runtime.MockMailboxImpl;
-import io.quarkus.mailer.runtime.ReactiveMailerImpl;
+import io.quarkus.mailer.runtime.MutinyMailerImpl;
 import io.quarkus.qute.deployment.QuteProcessor;
 import io.quarkus.qute.deployment.TemplatePathBuildItem;
 import io.quarkus.runtime.RuntimeValue;
@@ -49,7 +49,7 @@ public class MailerProcessor {
     @BuildStep
     AdditionalBeanBuildItem registerMailers() {
         return AdditionalBeanBuildItem.builder()
-                .addBeanClasses(ReactiveMailerImpl.class, BlockingMailerImpl.class, MockMailboxImpl.class,
+                .addBeanClasses(MutinyMailerImpl.class, BlockingMailerImpl.class, MockMailboxImpl.class,
                         MailTemplateProducer.class)
                 .build();
     }

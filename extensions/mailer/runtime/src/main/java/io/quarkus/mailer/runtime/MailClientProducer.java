@@ -14,12 +14,14 @@ public class MailClientProducer {
 
     private volatile io.vertx.axle.ext.mail.MailClient axleMailClient;
     private volatile io.vertx.reactivex.ext.mail.MailClient rxMailClient;
+    private volatile io.vertx.mutiny.ext.mail.MailClient mutinyMailClient;
     private volatile MailClient client;
 
     void initialize(MailClient client) {
         this.client = client;
         this.axleMailClient = io.vertx.axle.ext.mail.MailClient.newInstance(client);
         this.rxMailClient = io.vertx.reactivex.ext.mail.MailClient.newInstance(client);
+        this.mutinyMailClient = io.vertx.mutiny.ext.mail.MailClient.newInstance(client);
     }
 
     @Singleton
@@ -32,6 +34,12 @@ public class MailClientProducer {
     @Produces
     public io.vertx.axle.ext.mail.MailClient axleMailClient() {
         return axleMailClient;
+    }
+
+    @Singleton
+    @Produces
+    public io.vertx.mutiny.ext.mail.MailClient mutinyMailClient() {
+        return mutinyMailClient;
     }
 
     @Singleton

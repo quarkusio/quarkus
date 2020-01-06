@@ -41,4 +41,13 @@ public class BugResource {
     public Response testNeedReflection() {
         return Response.ok(bug6324Repository.listAll()).build();
     }
+
+    @Inject
+    Bug6324ConcreteRepository bug6324ConcreteRepository;
+
+    @GET
+    @Path("6324/abstract")
+    public Response testNeedReflectionAndAbstract() {
+        return Response.ok(bug6324ConcreteRepository.listAll()).build();
+    }
 }

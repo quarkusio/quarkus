@@ -1,15 +1,12 @@
 package io.quarkus.mongodb.panache.deployment;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.bson.types.ObjectId;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 
@@ -24,6 +21,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
 import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
@@ -90,7 +88,7 @@ public class PanacheResourceProcessor {
 
         PanacheMongoRepositoryEnhancer daoEnhancer = new PanacheMongoRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
-        Set<String> daoTypeParameters = new HashSet<>();
+        Set<Type> daoTypeParameters = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
             if (classInfo.name().equals(DOTNAME_PANACHE_REPOSITORY))
@@ -98,21 +96,23 @@ public class PanacheResourceProcessor {
             if (PanacheRepositoryEnhancer.skipRepository(classInfo))
                 continue;
             daoClasses.add(classInfo.name().toString());
-            daoTypeParameters.addAll(extractEntities(index.getIndex(), classInfo));
+            daoTypeParameters.addAll(
+                    JandexUtil.resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex()));
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY)) {
             if (PanacheRepositoryEnhancer.skipRepository(classInfo))
                 continue;
             daoClasses.add(classInfo.name().toString());
-            daoTypeParameters.addAll(extractEntities(index.getIndex(), classInfo));
+            daoTypeParameters.addAll(
+                    JandexUtil.resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex()));
         }
         for (String daoClass : daoClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
         }
 
         // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
-        for (String parameterType : daoTypeParameters) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, parameterType));
+        for (Type parameterType : daoTypeParameters) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
         }
 
         PanacheMongoEntityEnhancer modelEnhancer = new PanacheMongoEntityEnhancer(index.getIndex());
@@ -143,31 +143,5 @@ public class PanacheResourceProcessor {
                 }
             }
         }
-    }
-
-    private List<String> extractEntities(IndexView index, ClassInfo classInfo) {
-        List<String> possibleEntityClasses = new ArrayList<>();
-        extractEntitiesFromSuper(index, classInfo.superClassType(), possibleEntityClasses);
-        classInfo.interfaceTypes().stream()
-                .filter(interfaceType -> interfaceType.kind() == Type.Kind.PARAMETERIZED_TYPE)
-                .forEach(interfaceType -> interfaceType.asParameterizedType().arguments()
-                        .forEach(type -> possibleEntityClasses.add(type.name().toString())));
-        return possibleEntityClasses;
-    }
-
-    private void extractEntitiesFromSuper(IndexView index, Type superCLassType, List<String> possibleEntityClasses) {
-        if (superCLassType.name().toString().equals("java.lang.Object")) {
-            return;
-        }
-
-        if (superCLassType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-            // we may have an entity class inside a parent (abstract repository case)
-            superCLassType.asParameterizedType().arguments()
-                    .forEach(type -> possibleEntityClasses.add(type.name().toString()));
-        }
-
-        // we climb up the hierarchy of classes
-        ClassInfo superClassInfo = index.getClassByName(superCLassType.name());
-        extractEntitiesFromSuper(index, superClassInfo.superClassType(), possibleEntityClasses);
     }
 }

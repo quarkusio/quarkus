@@ -1,0 +1,7 @@
+io.quarkus.resteasy.mutiny.runtime.UniProvider
+io.quarkus.resteasy.mutiny.runtime.UniRxInvokerImpl
+io.quarkus.resteasy.mutiny.runtime.UniInvokerProvider
+
+io.quarkus.resteasy.mutiny.runtime.MultiProvider
+io.quarkus.resteasy.mutiny.runtime.MultiRxInvokerImpl
+io.quarkus.resteasy.mutiny.runtime.MultiInvokerProvider

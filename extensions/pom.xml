@@ -49,6 +49,7 @@
         <module>resteasy-jackson</module>
         <module>resteasy-jaxb</module>
         <module>resteasy-qute</module>
+        <module>resteasy-mutiny</module>
         <module>rest-client</module>
         <module>smallrye-openapi-common</module>
         <module>smallrye-openapi</module>

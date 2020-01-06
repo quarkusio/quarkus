@@ -31,6 +31,10 @@
             <groupId>io.quarkus.qute</groupId>
             <artifactId>qute-rxjava</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus.qute</groupId>
+            <artifactId>qute-mutiny</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

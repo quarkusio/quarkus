@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-mutiny</artifactId>
     <name>Quarkus - Mutiny - Runtime</name>
+    <description>Mutiny is a Reactive Programming library</description>
     <dependencies>
 
         <dependency>

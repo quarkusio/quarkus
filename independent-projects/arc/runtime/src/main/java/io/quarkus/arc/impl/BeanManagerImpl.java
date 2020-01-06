@@ -77,7 +77,7 @@ public class BeanManagerImpl implements BeanManager {
             InjectableBean<?> bean = (InjectableBean<?>) resolve(beans);
             InjectionPoint prev = InjectionPointProvider.set(ij);
             try {
-                return ArcContainerImpl.instance().beanInstanceHandle(bean, (CreationalContextImpl) ctx, false).get();
+                return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl) ctx, false, null).get();
             } finally {
                 InjectionPointProvider.set(prev);
             }

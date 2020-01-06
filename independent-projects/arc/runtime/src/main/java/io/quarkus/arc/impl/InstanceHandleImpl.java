@@ -4,6 +4,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.spi.CreationalContext;
 
@@ -20,29 +21,27 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
         return (InstanceHandle<T>) UNAVAILABLE;
     }
 
-    static final InstanceHandleImpl<Object> UNAVAILABLE = new InstanceHandleImpl<Object>(null, null, null, null);
+    static final InstanceHandleImpl<Object> UNAVAILABLE = new InstanceHandleImpl<Object>(null, null, null, null, null);
 
     private final InjectableBean<T> bean;
-
     private final T instance;
-
     private final CreationalContext<T> creationalContext;
-
     private final CreationalContext<?> parentCreationalContext;
-
     private final AtomicBoolean destroyed;
+    private final Consumer<T> destroyLogic;
 
     InstanceHandleImpl(InjectableBean<T> bean, T instance, CreationalContext<T> creationalContext) {
-        this(bean, instance, creationalContext, null);
+        this(bean, instance, creationalContext, null, null);
     }
 
     InstanceHandleImpl(InjectableBean<T> bean, T instance, CreationalContext<T> creationalContext,
-            CreationalContext<?> parentCreationalContext) {
+            CreationalContext<?> parentCreationalContext, Consumer<T> destroyLogic) {
         this.bean = bean;
         this.instance = instance;
         this.creationalContext = creationalContext;
         this.parentCreationalContext = parentCreationalContext;
         this.destroyed = new AtomicBoolean(false);
+        this.destroyLogic = destroyLogic;
     }
 
     @Override
@@ -61,10 +60,14 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
     @Override
     public void destroy() {
         if (instance != null && destroyed.compareAndSet(false, true)) {
-            if (bean.getScope().equals(Dependent.class)) {
-                destroyInternal();
+            if (destroyLogic != null) {
+                destroyLogic.accept(instance);
             } else {
-                Arc.container().getActiveContext(bean.getScope()).destroy(bean);
+                if (bean.getScope().equals(Dependent.class)) {
+                    destroyInternal();
+                } else {
+                    Arc.container().getActiveContext(bean.getScope()).destroy(bean);
+                }
             }
         }
     }

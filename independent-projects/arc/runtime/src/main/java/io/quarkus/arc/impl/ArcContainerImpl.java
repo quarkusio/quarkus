@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
@@ -338,8 +339,8 @@ public class ArcContainerImpl implements ArcContainer {
         return beanInstanceHandle(getBean(type, qualifiers), null);
     }
 
-    <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext,
-            boolean resetCurrentInjectionPoint) {
+    static <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext,
+            boolean resetCurrentInjectionPoint, Consumer<T> destroyLogic) {
         if (bean != null) {
             if (parentContext == null && Dependent.class.equals(bean.getScope())) {
                 parentContext = new CreationalContextImpl<>(null);
@@ -352,7 +353,8 @@ public class ArcContainerImpl implements ArcContainer {
             }
 
             try {
-                return new InstanceHandleImpl<T>(bean, bean.get(creationalContext), creationalContext, parentContext);
+                return new InstanceHandleImpl<T>(bean, bean.get(creationalContext), creationalContext, parentContext,
+                        destroyLogic);
             } finally {
                 if (resetCurrentInjectionPoint) {
                     InjectionPointProvider.set(prev);
@@ -364,7 +366,7 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext) {
-        return beanInstanceHandle(bean, parentContext, true);
+        return beanInstanceHandle(bean, parentContext, true, null);
     }
 
     @SuppressWarnings("unchecked")

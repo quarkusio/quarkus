@@ -10,10 +10,8 @@ import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
 
-
-
 @AutoService(CommandLineProcessor::class)
-class AllOpenCommandLineProcessor:CommandLineProcessor {
+class AllOpenCommandLineProcessor : CommandLineProcessor {
 
     companion object {
         val SUPPORTED_PRESETS = mapOf(

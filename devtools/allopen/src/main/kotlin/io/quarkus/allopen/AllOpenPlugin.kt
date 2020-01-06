@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.javax.inject.Inject
 
-class AllOpenPlugin  : Plugin<Project> {
+class AllOpenPlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
         project.extensions.create(artifactId, AllOpenExtension::class.java)

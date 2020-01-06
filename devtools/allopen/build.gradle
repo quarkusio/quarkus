@@ -18,7 +18,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
     implementation "org.jetbrains.kotlin:kotlin-compiler-embeddable"
 
-    implementation"com.google.auto.service:auto-service:1.0-rc5"
+    implementation "com.google.auto.service:auto-service:1.0-rc5"
     kapt "com.google.auto.service:auto-service:1.0-rc5"
 }
 

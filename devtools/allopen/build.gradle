@@ -31,8 +31,8 @@ pluginBundle {
 
 gradlePlugin {
     plugins {
-        quarkusAllOpenPlugin {
-            id = 'io.quarkus'
+        allOpenPlugin {
+            id = 'quarkus.allopen'
             implementationClass = 'io.quarkus.allopen.AllOpenPlugin'
             displayName = 'Quarkus All Open Plugin'
             description = 'Custom Quarkus Community All Open plugin over kotlin-allopen'

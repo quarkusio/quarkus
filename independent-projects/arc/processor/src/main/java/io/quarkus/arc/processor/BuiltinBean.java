@@ -32,7 +32,7 @@ import org.jboss.jandex.DotName;
  */
 enum BuiltinBean {
 
-    INSTANCE(DotNames.INSTANCE, ctx -> {
+    INSTANCE(ctx -> {
         ResultHandle qualifiers = BeanGenerator.collectQualifiers(ctx.classOutput, ctx.clazzCreator, ctx.beanDeployment,
                 ctx.constructor,
                 ctx.injectionPoint,
@@ -53,8 +53,8 @@ enum BuiltinBean {
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
                         Supplier.class.getName()),
                 ctx.constructor.getThis(), instanceProviderSupplier);
-    }, BuiltinBean::isInstanceInjectionPoint),
-    INJECTION_POINT(DotNames.INJECTION_POINT, ctx -> {
+    }, DotNames.INSTANCE, DotNames.PROVIDER, DotNames.INJECTABLE_INSTANCE),
+    INJECTION_POINT(ctx -> {
         // this.injectionPointProvider1 = () -> new InjectionPointProvider();
         ResultHandle injectionPointProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(InjectionPointProvider.class));
@@ -65,8 +65,8 @@ enum BuiltinBean {
                         Supplier.class.getName()),
                 ctx.constructor.getThis(),
                 injectionPointProviderSupplier);
-    }),
-    BEAN(DotNames.BEAN, ctx -> {
+    }, DotNames.INJECTION_POINT),
+    BEAN(ctx -> {
         // this.beanProvider1 = () -> new BeanMetadataProvider<>();
         if (ctx.targetInfo.kind() != InjectionTargetInfo.TargetKind.BEAN) {
             throw new IllegalStateException("Invalid injection target info: " + ctx.targetInfo);
@@ -83,8 +83,8 @@ enum BuiltinBean {
                 beanProviderSupplier);
     }, ip -> {
         return isCdiAndRawTypeMatches(ip, DotNames.BEAN) && ip.hasDefaultedQualifier();
-    }),
-    INTERCEPTED_BEAN(DotNames.BEAN, ctx -> {
+    }, DotNames.BEAN),
+    INTERCEPTED_BEAN(ctx -> {
         if (!(ctx.targetInfo instanceof InterceptorInfo)) {
             throw new IllegalStateException("Invalid injection target info: " + ctx.targetInfo);
         }
@@ -102,8 +102,8 @@ enum BuiltinBean {
         return isCdiAndRawTypeMatches(ip, DotNames.BEAN) && !ip.hasDefaultedQualifier()
                 && ip.getRequiredQualifiers().size() == 1
                 && ip.getRequiredQualifiers().iterator().next().name().equals(DotNames.INTERCEPTED);
-    }),
-    BEAN_MANAGER(DotNames.BEAN_MANAGER, ctx -> {
+    }, DotNames.BEAN),
+    BEAN_MANAGER(ctx -> {
         ResultHandle beanManagerProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(BeanManagerProvider.class));
         ResultHandle injectionPointProviderSupplier = ctx.constructor.newInstance(
@@ -113,8 +113,8 @@ enum BuiltinBean {
                         Supplier.class.getName()),
                 ctx.constructor.getThis(),
                 injectionPointProviderSupplier);
-    }),
-    EVENT(DotNames.EVENT, ctx -> {
+    }, DotNames.BEAN_MANAGER),
+    EVENT(ctx -> {
 
         ResultHandle qualifiers = ctx.constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         if (!ctx.injectionPoint.getRequiredQualifiers().isEmpty()) {
@@ -147,8 +147,8 @@ enum BuiltinBean {
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
                         Supplier.class.getName()),
                 ctx.constructor.getThis(), eventProviderSupplier);
-    }),
-    RESOURCE(DotNames.OBJECT, ctx -> {
+    }, DotNames.EVENT),
+    RESOURCE(ctx -> {
 
         ResultHandle annotations = ctx.constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         // For a resource field the required qualifiers contain all annotations declared on the field
@@ -173,23 +173,23 @@ enum BuiltinBean {
                 FieldDescriptor.of(ctx.clazzCreator.getClassName(), ctx.providerName,
                         Supplier.class.getName()),
                 ctx.constructor.getThis(), resourceProviderSupplier);
-    }, ip -> ip.getKind() == InjectionPointKind.RESOURCE),
-    EVENT_METADATA(DotNames.EVENT_METADATA, ctx -> {
-    }),
+    }, ip -> ip.getKind() == InjectionPointKind.RESOURCE, DotNames.OBJECT),
+    EVENT_METADATA(ctx -> {
+    }, DotNames.EVENT_METADATA),
     ;
 
-    private final DotName rawTypeDotName;
+    private final DotName[] rawTypeDotNames;
 
     private final Generator generator;
 
     private final Predicate<InjectionPointInfo> matcher;
 
-    BuiltinBean(DotName rawTypeDotName, Generator generator) {
-        this(rawTypeDotName, generator, ip -> isCdiAndRawTypeMatches(ip, rawTypeDotName));
+    BuiltinBean(Generator generator, DotName... rawTypeDotNames) {
+        this(generator, ip -> isCdiAndRawTypeMatches(ip, rawTypeDotNames), rawTypeDotNames);
     }
 
-    BuiltinBean(DotName rawTypeDotName, Generator generator, Predicate<InjectionPointInfo> matcher) {
-        this.rawTypeDotName = rawTypeDotName;
+    BuiltinBean(Generator generator, Predicate<InjectionPointInfo> matcher, DotName... rawTypeDotNames) {
+        this.rawTypeDotNames = rawTypeDotNames;
         this.generator = generator;
         this.matcher = matcher;
     }
@@ -198,8 +198,17 @@ enum BuiltinBean {
         return matcher.test(injectionPoint);
     }
 
-    DotName getRawTypeDotName() {
-        return rawTypeDotName;
+    DotName[] getRawTypeDotNames() {
+        return rawTypeDotNames;
+    }
+
+    boolean hasRawTypeDotName(DotName name) {
+        for (DotName rawTypeDotName : rawTypeDotNames) {
+            if (rawTypeDotName.equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     Generator getGenerator() {
@@ -251,19 +260,16 @@ enum BuiltinBean {
 
     }
 
-    private static boolean isCdiAndRawTypeMatches(InjectionPointInfo injectionPoint, DotName rawTypeDotName) {
+    private static boolean isCdiAndRawTypeMatches(InjectionPointInfo injectionPoint, DotName... rawTypeDotNames) {
         if (injectionPoint.getKind() != InjectionPointKind.CDI) {
             return false;
         }
-        return rawTypeDotName.equals(injectionPoint.getRequiredType().name());
-    }
-
-    private static boolean isInstanceInjectionPoint(InjectionPointInfo injectionPoint) {
-        if (injectionPoint.getKind() != InjectionPointKind.CDI) {
-            return false;
+        for (DotName rawTypeDotName : rawTypeDotNames) {
+            if (rawTypeDotName.equals(injectionPoint.getRequiredType().name())) {
+                return true;
+            }
         }
-        return DotNames.INSTANCE.equals(injectionPoint.getRequiredType().name())
-                || DotNames.PROVIDER.equals(injectionPoint.getRequiredType().name());
+        return false;
     }
 
 }

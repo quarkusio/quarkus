@@ -186,6 +186,10 @@ final class MethodDescriptors {
             SubclassMethodMetadata.class,
             List.class, Method.class, Set.class);
 
+    static final MethodDescriptor CREATIONAL_CTX_HAS_DEPENDENT_INSTANCES = MethodDescriptor.ofMethod(
+            CreationalContextImpl.class,
+            "hasDependentInstances", boolean.class);
+
     private MethodDescriptors() {
     }
 

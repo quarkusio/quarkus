@@ -11,7 +11,7 @@ import io.quarkus.test.junit.QuarkusTest;
 public class AmazonLambdaSimpleTestCase {
 
     @Test
-    public void testSimpleLambdaSucess() throws Exception {
+    public void testSimpleLambdaSuccess() throws Exception {
         InputObject in = new InputObject();
         in.setGreeting("Hello");
         in.setName("Stu");

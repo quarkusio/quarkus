@@ -27,7 +27,7 @@ import sun.misc.Unsafe;
  *
  * This is only for development mode, it must not be used for production applications.
  *
- * TODO: should this just provide a facacde that simply starts a new thread pool instead?
+ * TODO: should this just provide a facade that simply starts a new thread pool instead?
  */
 public final class CleanableExecutor implements ExecutorService {
 

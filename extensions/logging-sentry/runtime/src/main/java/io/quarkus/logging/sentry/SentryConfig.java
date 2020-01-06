@@ -27,7 +27,7 @@ public class SentryConfig {
      * your project’s DSN in the “Client Keys” section of your “Project Settings” in Sentry.
      */
     @ConfigItem
-    public String dsn;
+    public Optional<String> dsn;
 
     /**
      * The sentry log level.

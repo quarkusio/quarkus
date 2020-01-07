@@ -7,6 +7,6 @@ public class MutinyProcessor {
 
     @BuildStep
     public FeatureBuildItem registerFeature() {
-        return new FeatureBuildItem("mutiny");
+        return new FeatureBuildItem(FeatureBuildItem.MUTINY);
     }
 }

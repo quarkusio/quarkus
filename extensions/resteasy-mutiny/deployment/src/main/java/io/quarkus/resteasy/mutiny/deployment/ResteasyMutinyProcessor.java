@@ -10,7 +10,7 @@ public class ResteasyMutinyProcessor {
 
     @BuildStep
     public FeatureBuildItem registerFeature() {
-        return new FeatureBuildItem("resteasy-mutiny");
+        return new FeatureBuildItem(FeatureBuildItem.RESTEASY_MUTINY);
     }
 
     @BuildStep

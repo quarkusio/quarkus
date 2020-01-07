@@ -42,6 +42,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String MAILER = "mailer";
     public static final String MONGODB_CLIENT = "mongodb-client";
     public static final String MONGODB_PANACHE = "mongodb-panache";
+    public static final String MUTINY = "mutiny";
     public static final String NARAYANA_JTA = "narayana-jta";
     public static final String NARAYANA_STM = "narayana-stm";
     public static final String REACTIVE_PG_CLIENT = "reactive-pg-client";
@@ -53,6 +54,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String RESTEASY_JACKSON = "resteasy-jackson";
     public static final String RESTEASY_JAXB = "resteasy-jaxb";
     public static final String RESTEASY_JSONB = "resteasy-jsonb";
+    public static final String RESTEASY_MUTINY = "resteasy-mutiny";
     public static final String RESTEASY_QUTE = "resteasy-qute";
     public static final String REST_CLIENT = "rest-client";
     public static final String SCALA = "scala";

@@ -296,9 +296,14 @@ public class VertxHttpRecorder {
             throw new RuntimeException("Unable to start HTTP server", e);
         }
 
-        // TODO log proper message
-        Timing.setHttpServer(String.format(
-                "Listening on: http://%s:%s", httpServerOptions.getHost(), httpServerOptions.getPort()));
+        String serverListeningMessage = String.format(
+                "Listening on: http://%s:%s", httpServerOptions.getHost(), httpServerOptions.getPort());
+
+        if (sslConfig != null) {
+            serverListeningMessage = serverListeningMessage
+                    + String.format(" and https://%s:%s", sslConfig.getHost(), sslConfig.getPort());
+        }
+        Timing.setHttpServer(serverListeningMessage);
     }
 
     /**

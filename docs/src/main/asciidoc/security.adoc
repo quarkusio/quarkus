@@ -29,7 +29,7 @@ in order for Quarkus to know how to find the authentication information to check
 |Provides support for OAuth2 flows using Elytron. This extension will likely be deprecated soon and replaced by a reactive Vert.x version.
 
 |link:security-jwt[quarkus-smallrye-jwt]
-|A Microprofile JWT implementation that provides support for authenticating using Json Web Tokens. This also allows you to inject the token and claims into the application as per the MP JWT spec.
+|A MicroProfile JWT implementation that provides support for authenticating using Json Web Tokens. This also allows you to inject the token and claims into the application as per the MP JWT spec.
 
 |link:security-openid-connect[quarkus-oidc]
 |Provides support for authenticating via an OpenID Connect provider such as Keycloak.

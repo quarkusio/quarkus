@@ -198,7 +198,7 @@ of things you need to do.  Take a look at the generate example project to get an
 
 1. Include the `quarkus-amazon-lambda-http` extension as a pom dependency
 2. Configure Quarkus build an `uber-jar`
-3. If you are doing a native GraalVM build, Amazon requires you to rename your executable to `bootstrap` and zip it up.  Notice that the `pom.xml` uses the `maven-assemby-plugin` to perform this requirement.
+3. If you are doing a native GraalVM build, Amazon requires you to rename your executable to `bootstrap` and zip it up.  Notice that the `pom.xml` uses the `maven-assembly-plugin` to perform this requirement.
 
 == Examine sam.yaml
 

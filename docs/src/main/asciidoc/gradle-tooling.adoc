@@ -233,9 +233,9 @@ In IntelliJ:
 
 In a separated terminal or in the embedded terminal, run `./gradlew quarkusDev`. Enjoy!
 
-**Apache Netbeans**
+**Apache NetBeans**
 
-In Netbeans:
+In NetBeans:
 
 1. Select `File -> Open Project`
 2. Select the project root

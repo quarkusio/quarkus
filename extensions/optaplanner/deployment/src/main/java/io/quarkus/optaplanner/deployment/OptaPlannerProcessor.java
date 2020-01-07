@@ -14,6 +14,9 @@ import org.jboss.jandex.IndexView;
 import org.optaplanner.core.api.domain.entity.PlanningEntity;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
 import org.optaplanner.core.api.score.stream.ConstraintProvider;
+import org.optaplanner.core.api.score.stream.ConstraintStreamImplType;
+import org.optaplanner.core.config.score.director.ScoreDirectorFactoryConfig;
+import org.optaplanner.core.config.solver.SolverConfig;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -23,11 +26,8 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.optaplanner.OptaPlannerRecorder;
 import io.quarkus.optaplanner.OptaPlannerBeanProvider;
-import org.optaplanner.core.api.score.stream.ConstraintStreamImplType;
-import org.optaplanner.core.config.score.director.ScoreDirectorFactoryConfig;
-import org.optaplanner.core.config.solver.SolverConfig;
+import io.quarkus.optaplanner.OptaPlannerRecorder;
 
 class OptaPlannerProcessor {
 
@@ -74,9 +74,9 @@ class OptaPlannerProcessor {
 
     private void applySolverProperties(OptaPlannerRecorder recorder, RecorderContext recorderContext,
             IndexView indexView, SolverConfig solverConfig) {
-//        if (solverProperties.getEnvironmentMode() != null) {
-//            solverConfig.setEnvironmentMode(solverProperties.getEnvironmentMode());
-//        }
+        //        if (solverProperties.getEnvironmentMode() != null) {
+        //            solverConfig.setEnvironmentMode(solverProperties.getEnvironmentMode());
+        //        }
         if (solverConfig.getSolutionClass() == null) {
             solverConfig.setSolutionClass(findSolutionClass(recorderContext, indexView));
         }
@@ -90,7 +90,7 @@ class OptaPlannerProcessor {
             scoreDirectorFactoryConfig.setConstraintProviderClass(findConstraintProviderClass(recorderContext, indexView));
             solverConfig.setScoreDirectorFactoryConfig(scoreDirectorFactoryConfig);
         }
-//        applyTerminationProperties(solverConfig);
+        //        applyTerminationProperties(solverConfig);
     }
 
     private Class<?> findSolutionClass(RecorderContext recorderContext, IndexView indexView) {

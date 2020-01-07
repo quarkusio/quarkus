@@ -161,7 +161,7 @@
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kogito.version>0.6.1</kogito.version>
         <kubernetes-client.version>4.7.1</kubernetes-client.version>
-        <optaplanner.version>7.32.0-SNAPSHOT</optaplanner.version>
+        <optaplanner.version>7.29.0.Final</optaplanner.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <wiremock.version>2.24.1</wiremock.version>

@@ -4,6 +4,8 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.impl.CurrentInjectionPointProvider.InjectionPointImpl;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
@@ -17,7 +19,6 @@ import java.util.Objects;
 import java.util.Set;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.inject.AmbiguousResolutionException;
-import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.util.TypeLiteral;
@@ -27,7 +28,7 @@ import javax.inject.Provider;
  *
  * @author Martin Kouba
  */
-class InstanceImpl<T> implements Instance<T> {
+public class InstanceImpl<T> implements InjectableInstance<T> {
 
     private static final Annotation[] EMPTY_ANNOTATION_ARRAY = new Annotation[] {};
 
@@ -75,35 +76,27 @@ class InstanceImpl<T> implements Instance<T> {
         return new InstanceIterator(beans());
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public T get() {
-        Set<InjectableBean<?>> beans = beans();
-        if (beans.isEmpty()) {
-            throw new UnsatisfiedResolutionException(
-                    "No bean found for required type [" + requiredType + "] and qualifiers [" + requiredQualifiers + "]");
-        } else if (beans.size() > 1) {
-            throw new AmbiguousResolutionException("Beans: " + beans.toString());
-        }
-        return getBeanInstance((InjectableBean<T>) beans.iterator().next());
+        return getBeanInstance(bean());
     }
 
     @Override
-    public Instance<T> select(Annotation... qualifiers) {
+    public InjectableInstance<T> select(Annotation... qualifiers) {
         Set<Annotation> newQualifiers = new HashSet<>(this.requiredQualifiers);
         Collections.addAll(newQualifiers, qualifiers);
         return new InstanceImpl<>(this, requiredType, newQualifiers);
     }
 
     @Override
-    public <U extends T> Instance<U> select(Class<U> subtype, Annotation... qualifiers) {
+    public <U extends T> InjectableInstance<U> select(Class<U> subtype, Annotation... qualifiers) {
         Set<Annotation> newQualifiers = new HashSet<>(this.requiredQualifiers);
         Collections.addAll(newQualifiers, qualifiers);
         return new InstanceImpl<>(this, subtype, newQualifiers);
     }
 
     @Override
-    public <U extends T> Instance<U> select(TypeLiteral<U> subtype, Annotation... qualifiers) {
+    public <U extends T> InjectableInstance<U> select(TypeLiteral<U> subtype, Annotation... qualifiers) {
         Set<Annotation> newQualifiers = new HashSet<>(this.requiredQualifiers);
         Collections.addAll(newQualifiers, qualifiers);
         return new InstanceImpl<>(this, subtype.getType(), newQualifiers);
@@ -120,7 +113,7 @@ class InstanceImpl<T> implements Instance<T> {
     }
 
     @Override
-    public void destroy(T instance) {
+    public void destroy(Object instance) {
         Objects.requireNonNull(instance);
         if (instance instanceof ClientProxy) {
             ClientProxy proxy = (ClientProxy) instance;
@@ -133,6 +126,38 @@ class InstanceImpl<T> implements Instance<T> {
             // Try to destroy a dependent instance
             creationalContext.destroyDependentInstance(instance);
         }
+    }
+
+    @Override
+    public InstanceHandle<T> getHandle() {
+        return getHandle(bean());
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Iterable<InstanceHandle<T>> handles() {
+        return (Iterable<InstanceHandle<T>>) beans().stream().map(this::getHandle).iterator();
+    }
+
+    @SuppressWarnings("unchecked")
+    private <H> InstanceHandle<H> getHandle(InjectableBean<H> bean) {
+        return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl<H>) creationalContext, true, this::destroy);
+    }
+
+    @SuppressWarnings("unchecked")
+    private InjectableBean<T> bean() {
+        Set<InjectableBean<?>> beans = beans();
+        if (beans.isEmpty()) {
+            throw new UnsatisfiedResolutionException(
+                    "No bean found for required type [" + requiredType + "] and qualifiers [" + requiredQualifiers + "]");
+        } else if (beans.size() > 1) {
+            throw new AmbiguousResolutionException("Beans: " + beans.toString());
+        }
+        return (InjectableBean<T>) beans.iterator().next();
+    }
+
+    public boolean hasDependentInstances() {
+        return creationalContext.hasDependentInstances();
     }
 
     void destroy() {

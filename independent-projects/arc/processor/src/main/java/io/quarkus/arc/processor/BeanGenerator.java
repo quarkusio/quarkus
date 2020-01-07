@@ -589,7 +589,7 @@ public class BeanGenerator extends AbstractGenerator {
 
                 if (BuiltinScope.DEPENDENT.is(injectionPoint.getResolvedBean().getScope()) && (injectionPoint.getResolvedBean()
                         .getAllInjectionPoints().stream()
-                        .anyMatch(ip -> BuiltinBean.INJECTION_POINT.getRawTypeDotName().equals(ip.getRequiredType().name()))
+                        .anyMatch(ip -> BuiltinBean.INJECTION_POINT.hasRawTypeDotName(ip.getRequiredType().name()))
                         || injectionPoint.getResolvedBean().isSynthetic())) {
                     // Injection point resolves to a dependent bean that injects InjectionPoint metadata and so we need to wrap the injectable
                     // reference provider
@@ -1417,6 +1417,28 @@ public class BeanGenerator extends AbstractGenerator {
                     MethodDescriptor.ofMethod(beanCreator.getClassName(), "create", providerTypeName, CreationalContext.class),
                     get.getThis(),
                     get.getMethodParam(0));
+
+            // We can optimize if:
+            // 1) class bean - has no @PreDestroy interceptor and there is no @PreDestroy callback
+            // 2) producer - there is no disposal method
+            boolean canBeOptimized = false;
+            if (bean.isClassBean()) {
+                canBeOptimized = bean.getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
+                        && Beans.getCallbacks(bean.getTarget().get().asClass(),
+                                DotNames.PRE_DESTROY,
+                                bean.getDeployment().getIndex()).isEmpty();
+            } else if (bean.isProducerMethod() || bean.isProducerField()) {
+                canBeOptimized = bean.getDisposer() == null;
+            }
+
+            if (canBeOptimized) {
+                // If there is no dependency in the creational context we don't have to store the instance in the CreationalContext
+                ResultHandle creationalContext = get.checkCast(get.getMethodParam(0), CreationalContextImpl.class);
+                get.ifNonZero(
+                        get.invokeVirtualMethod(MethodDescriptors.CREATIONAL_CTX_HAS_DEPENDENT_INSTANCES, creationalContext))
+                        .falseBranch().returnValue(instance);
+            }
+
             // CreationalContextImpl.addDependencyToParent(this,instance,ctx)
             get.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_ADD_DEP_TO_PARENT, get.getThis(), instance,
                     get.getMethodParam(0));

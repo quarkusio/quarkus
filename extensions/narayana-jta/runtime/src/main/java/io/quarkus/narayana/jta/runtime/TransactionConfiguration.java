@@ -6,6 +6,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import javax.interceptor.InterceptorBinding;
+
 /**
  * This annotation can be used to configure a different transaction timeout than the default one for a method or a class.
  * <p>
@@ -15,6 +17,7 @@ import java.lang.annotation.Target;
  * The configuration defined on a method takes precedence over the configuration defined on a class.
  */
 @Inherited
+@InterceptorBinding
 @Target({ ElementType.METHOD, ElementType.TYPE })
 @Retention(value = RetentionPolicy.RUNTIME)
 public @interface TransactionConfiguration {
@@ -31,4 +34,12 @@ public @interface TransactionConfiguration {
      * @return The transaction timeout in seconds.
      */
     int timeout() default UNSET_TIMEOUT;
+
+    /**
+     * Whether or not the transaction performs read only operations on the underlying transactional resource.
+     * Depending on the transactional resource, optimizations can be performed in case of read only transactions.
+     *
+     * @return true if read only.
+     */
+    boolean readOnly() default false;
 }

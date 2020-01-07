@@ -93,6 +93,7 @@ import io.quarkus.hibernate.orm.runtime.TransactionEntityManagers;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
+import io.quarkus.hibernate.orm.runtime.interceptors.ReadOnlyTransactionInterceptor;
 import io.quarkus.hibernate.orm.runtime.metrics.HibernateCounter;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.metrics.deployment.spi.MetricBuildItem;
@@ -309,6 +310,8 @@ public final class HibernateOrmProcessor {
                 .addBeanClasses(JPAConfig.class, TransactionEntityManagers.class,
                         RequestScopedEntityManagerHolder.class)
                 .build());
+
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ReadOnlyTransactionInterceptor.class));
 
         if (descriptors.size() == 1) {
             // There is only one persistence unit - register CDI beans for EM and EMF if no

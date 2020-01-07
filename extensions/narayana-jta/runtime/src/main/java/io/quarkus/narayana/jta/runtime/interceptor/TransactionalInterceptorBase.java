@@ -257,8 +257,8 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     private void checkConfiguration(InvocationContext ic) {
         TransactionConfiguration configAnnotation = getTransactionConfiguration(ic);
-        if (configAnnotation != null && configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT) {
-            throw new RuntimeException("Changing timeout via @TransactionConfiguration can only be done " +
+        if (configAnnotation != null) {
+            throw new RuntimeException("Changing timeout or readOnly via @TransactionConfiguration can only be done " +
                     "at the entry level of a transaction");
         }
     }

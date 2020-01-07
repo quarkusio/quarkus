@@ -185,13 +185,19 @@ public class QuteProcessor {
             BuildProducer<ImplicitValueResolverBuildItem> requiredClasses) {
 
         IndexView index = beanArchiveIndex.getIndex();
+        Function<String, String> templateIdToPathFun = new Function<String, String>() {
+            @Override
+            public String apply(String id) {
+                return findTemplatePath(templatesAnalysis, id);
+            }
+        };
 
         for (TemplateAnalysis analysis : templatesAnalysis.getAnalysis()) {
             for (Expression expression : analysis.expressions) {
                 if (expression.typeCheckInfo == null) {
                     continue;
                 }
-                TypeCheckInfo typeCheckInfo = new TypeCheckInfo(expression.typeCheckInfo, index);
+                TypeCheckInfo typeCheckInfo = TypeCheckInfo.create(expression, index, templateIdToPathFun);
                 if (typeCheckInfo.parts.isEmpty()) {
                     continue;
                 }
@@ -285,6 +291,12 @@ public class QuteProcessor {
             BuildProducer<ImplicitValueResolverBuildItem> requiredClasses) {
 
         IndexView index = beanArchiveIndex.getIndex();
+        Function<String, String> templateIdToPathFun = new Function<String, String>() {
+            @Override
+            public String apply(String id) {
+                return findTemplatePath(analysis, id);
+            }
+        };
         Set<Expression> injectExpressions = collectInjectExpressions(analysis);
 
         if (!injectExpressions.isEmpty()) {
@@ -302,7 +314,7 @@ public class QuteProcessor {
                     if (expression.parts.size() == 1) {
                         continue;
                     }
-                    TypeCheckInfo typeCheckInfo = new TypeCheckInfo(expression.typeCheckInfo, index);
+                    TypeCheckInfo typeCheckInfo = TypeCheckInfo.create(expression, index, templateIdToPathFun);
                     if (typeCheckInfo.parts.isEmpty()) {
                         continue;
                     }

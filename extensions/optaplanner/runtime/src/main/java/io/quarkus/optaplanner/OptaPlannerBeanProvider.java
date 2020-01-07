@@ -6,10 +6,19 @@ import javax.inject.Singleton;
 import org.optaplanner.core.api.solver.SolverFactory;
 
 import io.quarkus.arc.DefaultBean;
+import org.optaplanner.core.config.solver.SolverConfig;
 
-public class SolverFactoryProvider<Solution_> {
+public class OptaPlannerBeanProvider<Solution_> {
 
+    static SolverConfig solverConfig;
     static SolverFactory<?> solverFactory;
+
+    @DefaultBean
+    @Singleton
+    @Produces
+    SolverConfig solverConfig() {
+        return solverConfig;
+    }
 
     @DefaultBean
     @Singleton

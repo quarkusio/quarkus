@@ -12,18 +12,18 @@ import org.optaplanner.core.api.score.buildin.simple.SimpleScore;
 @PlanningSolution
 public class TestdataPlanningSolution {
 
-    private List<TestdataPlanningValue> valueList;
+    private List<String> valueList;
     private List<TestdataPlanningEntity> entityList;
 
     private SimpleScore score;
 
     @ValueRangeProvider(id = "valueRange")
     @ProblemFactCollectionProperty
-    public List<TestdataPlanningValue> getValueList() {
+    public List<String> getValueList() {
         return valueList;
     }
 
-    public void setValueList(List<TestdataPlanningValue> valueList) {
+    public void setValueList(List<String> valueList) {
         this.valueList = valueList;
     }
 

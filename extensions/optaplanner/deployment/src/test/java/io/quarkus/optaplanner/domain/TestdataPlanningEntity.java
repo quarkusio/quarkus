@@ -6,14 +6,14 @@ import org.optaplanner.core.api.domain.variable.PlanningVariable;
 @PlanningEntity
 public class TestdataPlanningEntity {
 
-    private TestdataPlanningValue value;
+    private String value;
 
     @PlanningVariable(valueRangeProviderRefs = "valueRange")
-    public TestdataPlanningValue getValue() {
+    public String getValue() {
         return value;
     }
 
-    public void setValue(TestdataPlanningValue value) {
+    public void setValue(String value) {
         this.value = value;
     }
 

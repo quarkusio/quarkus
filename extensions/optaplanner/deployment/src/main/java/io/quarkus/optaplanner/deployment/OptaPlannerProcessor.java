@@ -2,7 +2,6 @@ package io.quarkus.optaplanner.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,7 +24,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.optaplanner.OptaPlannerRecorder;
-import io.quarkus.optaplanner.SolverFactoryProvider;
+import io.quarkus.optaplanner.OptaPlannerBeanProvider;
 import org.optaplanner.core.api.score.stream.ConstraintStreamImplType;
 import org.optaplanner.core.config.score.director.ScoreDirectorFactoryConfig;
 import org.optaplanner.core.config.solver.SolverConfig;
@@ -40,7 +39,7 @@ class OptaPlannerProcessor {
     @BuildStep
     void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         // The bean encapsulating the SolverFactory
-        additionalBeans.produce(new AdditionalBeanBuildItem(SolverFactoryProvider.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(OptaPlannerBeanProvider.class));
     }
 
     @BuildStep
@@ -70,7 +69,7 @@ class OptaPlannerProcessor {
 
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
-                        recorder.initializeSolverFactory(solverConfig)));
+                        recorder.initialize(solverConfig)));
     }
 
     private void applySolverProperties(OptaPlannerRecorder recorder, RecorderContext recorderContext,

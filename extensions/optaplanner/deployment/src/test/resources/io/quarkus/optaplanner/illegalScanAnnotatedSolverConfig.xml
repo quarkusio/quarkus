@@ -1,0 +1,4 @@
+<solver>
+  <!-- The Spring Boot starter already scans, so this is illegal -->
+  <scanAnnotatedClasses/>
+</solver>

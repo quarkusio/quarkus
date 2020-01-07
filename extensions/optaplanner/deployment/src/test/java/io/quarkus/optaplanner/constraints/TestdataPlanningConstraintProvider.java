@@ -15,6 +15,7 @@ public class TestdataPlanningConstraintProvider implements ConstraintProvider {
         return new Constraint[] {
                 factory.from(TestdataPlanningEntity.class)
                         .join(TestdataPlanningEntity.class, Joiners.equal(TestdataPlanningEntity::getValue))
+                        .filter((a, b) -> a != b)
                         .penalize("Don't assign 2 entities the same value.", SimpleScore.ONE)
         };
     }

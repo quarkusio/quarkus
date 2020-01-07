@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -32,6 +33,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
 public class ExtensionMethodGenerator {
@@ -65,19 +67,21 @@ public class ExtensionMethodGenerator {
         }
     }
 
-    public void generate(MethodInfo method) {
+    public void generate(MethodInfo method, String matchName) {
 
         // Validate the method first
         validate(method);
 
-        String matchName = null;
-        AnnotationInstance extensionAnnotation = method.annotation(TEMPLATE_EXTENSION);
-        if (extensionAnnotation != null) {
-            AnnotationValue matchNameValue = extensionAnnotation.value("matchName");
-            if (matchNameValue != null) {
-                matchName = matchNameValue.asString();
+        if (matchName == null) {
+            AnnotationInstance extensionAnnotation = method.annotation(TEMPLATE_EXTENSION);
+            if (extensionAnnotation != null) {
+                AnnotationValue matchNameValue = extensionAnnotation.value("matchName");
+                if (matchNameValue != null) {
+                    matchName = matchNameValue.asString();
+                }
             }
         }
+
         if (matchName == null) {
             matchName = method.name();
         } else if (matchName.equals(TemplateExtension.ANY)) {
@@ -92,7 +96,8 @@ public class ExtensionMethodGenerator {
         ClassInfo declaringClass = method.declaringClass();
         String baseName;
         if (declaringClass.enclosingClass() != null) {
-            baseName = simpleName(declaringClass.enclosingClass()) + "_" + simpleName(declaringClass);
+            baseName = simpleName(declaringClass.enclosingClass()) + ValueResolverGenerator.NESTED_SEPARATOR
+                    + simpleName(declaringClass);
         } else {
             baseName = simpleName(declaringClass);
         }
@@ -105,10 +110,17 @@ public class ExtensionMethodGenerator {
         ClassCreator valueResolver = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .interfaces(ValueResolver.class).build();
 
+        implementGetPriority(valueResolver);
         implementAppliesTo(valueResolver, method, matchName);
         implementResolve(valueResolver, declaringClass, method, matchName);
 
         valueResolver.close();
+    }
+
+    private void implementGetPriority(ClassCreator valueResolver) {
+        MethodCreator getPriority = valueResolver.getMethodCreator("getPriority", int.class)
+                .setModifiers(ACC_PUBLIC);
+        getPriority.returnValue(getPriority.load(5));
     }
 
     private void implementResolve(ClassCreator valueResolver, ClassInfo declaringClass, MethodInfo method, String matchName) {
@@ -135,12 +147,14 @@ public class ExtensionMethodGenerator {
         } else {
             ret = resolve
                     .newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
+            int realParamSize = paramSize - (matchAny ? 2 : 1);
 
             // Evaluate params first
+            ResultHandle name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
             ResultHandle params = resolve.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
             ResultHandle resultsArray = resolve.newArray(CompletableFuture.class,
-                    resolve.load(paramSize - 1));
-            for (int i = 0; i < (paramSize - 1); i++) {
+                    resolve.load(realParamSize));
+            for (int i = 0; i < realParamSize; i++) {
                 ResultHandle evalResult = resolve.invokeInterfaceMethod(
                         Descriptors.EVALUATE, evalContext,
                         resolve.invokeInterfaceMethod(Descriptors.LIST_GET, params,
@@ -159,7 +173,7 @@ public class ExtensionMethodGenerator {
             AssignableResultHandle whenName = null;
             if (matchAny) {
                 whenName = whenComplete.createVariable(String.class);
-                whenComplete.assign(whenName, resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext));
+                whenComplete.assign(whenName, name);
             }
             AssignableResultHandle whenRet = whenComplete.createVariable(CompletableFuture.class);
             whenComplete.assign(whenRet, ret);
@@ -177,7 +191,7 @@ public class ExtensionMethodGenerator {
                 args[1] = whenName;
                 shift++;
             }
-            for (int i = 0; i < (paramSize - 1); i++) {
+            for (int i = 0; i < realParamSize; i++) {
                 ResultHandle paramResult = success.readArrayValue(whenResults, i);
                 args[i + shift] = success.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_GET, paramResult);
             }
@@ -202,6 +216,7 @@ public class ExtensionMethodGenerator {
         MethodCreator appliesTo = valueResolver.getMethodCreator("appliesTo", boolean.class, EvalContext.class)
                 .setModifiers(ACC_PUBLIC);
 
+        List<Type> parameters = method.parameters();
         boolean matchAny = matchName.equals(TemplateExtension.ANY);
         ResultHandle evalContext = appliesTo.getMethodParam(0);
         ResultHandle base = appliesTo.invokeInterfaceMethod(Descriptors.GET_BASE, evalContext);
@@ -211,7 +226,7 @@ public class ExtensionMethodGenerator {
 
         // Test base object class
         ResultHandle baseClass = appliesTo.invokeVirtualMethod(Descriptors.GET_CLASS, base);
-        ResultHandle testClass = appliesTo.loadClass(method.parameters().get(0).name().toString());
+        ResultHandle testClass = appliesTo.loadClass(parameters.get(0).name().toString());
         ResultHandle baseClassTest = appliesTo.invokeVirtualMethod(Descriptors.IS_ASSIGNABLE_FROM, testClass,
                 baseClass);
         BytecodeCreator baseNotAssignable = appliesTo.ifNonZero(baseClassTest).falseBranch();
@@ -225,17 +240,14 @@ public class ExtensionMethodGenerator {
             nameNotMatched.returnValue(nameNotMatched.load(false));
         }
 
-        int paramSize = method.parameters().size();
-        if (paramSize > 1) {
-            // Test number of parameters
-            ResultHandle params = appliesTo.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
-            ResultHandle paramsCount = appliesTo.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, params);
-            BranchResult paramsTest = appliesTo
-                    .ifNonZero(appliesTo.invokeStaticMethod(Descriptors.INTEGER_COMPARE,
-                            appliesTo.load(paramSize - (matchAny ? 2 : 1)), paramsCount));
-            BytecodeCreator paramsNotMatching = paramsTest.trueBranch();
-            paramsNotMatching.returnValue(paramsNotMatching.load(false));
-        }
+        // Test number of parameters
+        ResultHandle params = appliesTo.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
+        ResultHandle paramsCount = appliesTo.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, params);
+        BranchResult paramsTest = appliesTo
+                .ifNonZero(appliesTo.invokeStaticMethod(Descriptors.INTEGER_COMPARE,
+                        appliesTo.load(parameters.size() - (matchAny ? 2 : 1)), paramsCount));
+        BytecodeCreator paramsNotMatching = paramsTest.trueBranch();
+        paramsNotMatching.returnValue(paramsNotMatching.load(false));
         appliesTo.returnValue(appliesTo.load(true));
     }
 

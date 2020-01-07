@@ -85,6 +85,7 @@ class EvaluatorImpl implements Evaluator {
                         new EvalContextImpl(false, parent.getData(), evalContext.name, parent),
                         this.resolvers.iterator());
             }
+            LOGGER.tracef("Unable to resolve %s", evalContext);
             return Results.NOT_FOUND;
         }
         ValueResolver resolver = resolvers.next();
@@ -146,6 +147,14 @@ class EvaluatorImpl implements Evaluator {
         @Override
         public CompletionStage<Object> evaluate(Expression expression) {
             return resolutionContext.evaluate(expression);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("EvalContextImpl [tryParent=").append(tryParent).append(", base=").append(base).append(", name=")
+                    .append(name).append(", params=").append(params).append("]");
+            return builder.toString();
         }
 
     }

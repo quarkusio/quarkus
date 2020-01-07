@@ -621,7 +621,7 @@ quarkus:
 
 === Profile dependent configuration
 
-Providing profile depedent configuration with YAML is done like with properties.
+Providing profile dependent configuration with YAML is done like with properties.
 Just add the `%profile` wrapped in quotation marks before defining the key-value pairs:
 
 [source,yaml]
@@ -637,7 +637,7 @@ Just add the `%profile` wrapped in quotation marks before defining the key-value
 
 === Configuration key conflicts
 
-The Microprofile Configuration specification defines configuration keys as an arbitrary `.`-delimited string.
+The MicroProfile Configuration specification defines configuration keys as an arbitrary `.`-delimited string.
 However, structured formats like YAML naively only support a subset of the possible configuration namespace.
 For example, consider the two configuration properties `quarkus.http.cors` and `quarkus.http.cors.methods`.
 One property is the prefix of another, so it may not be immediately evident how to specify both keys in your YAML configuration.

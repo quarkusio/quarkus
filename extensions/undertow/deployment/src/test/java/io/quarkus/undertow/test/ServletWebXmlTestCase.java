@@ -3,6 +3,7 @@ package io.quarkus.undertow.test;
 import static org.hamcrest.Matchers.is;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -29,14 +30,20 @@ public class ServletWebXmlTestCase {
             "  <servlet-mapping>\n" +
             "    <servlet-name>mapped</servlet-name>\n" +
             "    <url-pattern>/mapped</url-pattern>\n" +
-            "  </servlet-mapping>" +
+            "  </servlet-mapping>\n" +
+            "\n" +
+            "  <mime-mapping>\n" +
+            "    <extension>wasm</extension>\n" +
+            "    <mime-type>application/wasm</mime-type>\n" +
+            "  </mime-mapping>" +
             "</web-app>";
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(WebXmlServlet.class)
-                    .addAsManifestResource(new StringAsset(WEB_XML), "web.xml"));
+                    .addAsManifestResource(new StringAsset(WEB_XML), "web.xml")
+                    .addAsManifestResource(EmptyAsset.INSTANCE, "resources/test.wasm"));
 
     @Test
     public void testWebXmlServlet() {
@@ -45,4 +52,10 @@ public class ServletWebXmlTestCase {
                 .body(is("web xml servlet"));
     }
 
+    @Test
+    public void testMimeMapping() {
+        RestAssured.when().get("/test.wasm").then()
+                .statusCode(200)
+                .contentType(is("application/wasm"));
+    }
 }

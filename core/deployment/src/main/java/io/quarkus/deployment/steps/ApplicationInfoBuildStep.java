@@ -1,8 +1,8 @@
 package io.quarkus.deployment.steps;
 
-import io.quarkus.deployment.ApplicationConfig;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
+import io.quarkus.runtime.ApplicationConfig;
 
 public class ApplicationInfoBuildStep {
 

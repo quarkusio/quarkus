@@ -3,6 +3,7 @@ package io.quarkus.kotlin.deployment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassFinalFieldsWritablePredicateBuildItem;
 import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
 
 public class KotlinProcessor {
@@ -26,5 +27,14 @@ public class KotlinProcessor {
             classPathJacksonModules.produce(new ClassPathJacksonModuleBuildItem(KOTLIN_JACKSON_MODULE));
         } catch (Exception ignored) {
         }
+    }
+
+    /**
+     * Kotlin data classes that have multiple constructors need to have their final fields writable,
+     * otherwise creating a instance of them with default values, fails in native mode
+     */
+    @BuildStep
+    ReflectiveClassFinalFieldsWritablePredicateBuildItem dataClassPredicate() {
+        return new ReflectiveClassFinalFieldsWritablePredicateBuildItem(new IsDataClassWithDefaultValuesPredicate());
     }
 }

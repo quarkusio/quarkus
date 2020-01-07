@@ -5,7 +5,9 @@ import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -163,7 +165,7 @@ public class DevModeContext implements Serializable {
                 String resourcePath) {
             this.name = name;
             this.projectDirectory = projectDirectory;
-            this.sourcePaths = sourcePaths;
+            this.sourcePaths = sourcePaths == null ? new HashSet<>() : new HashSet<>(sourcePaths);
             this.classesPath = classesPath;
             this.resourcePath = resourcePath;
         }
@@ -177,7 +179,7 @@ public class DevModeContext implements Serializable {
         }
 
         public Set<String> getSourcePaths() {
-            return sourcePaths;
+            return Collections.unmodifiableSet(sourcePaths);
         }
 
         public void addSourcePaths(Collection<String> additionalPaths) {

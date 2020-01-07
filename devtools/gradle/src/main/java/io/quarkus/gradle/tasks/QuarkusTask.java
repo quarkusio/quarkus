@@ -16,8 +16,9 @@ public abstract class QuarkusTask extends DefaultTask {
     }
 
     QuarkusPluginExtension extension() {
-        if (extension == null)
-            extension = (QuarkusPluginExtension) getProject().getExtensions().findByName("quarkus");
+        if (extension == null) {
+            extension = getProject().getExtensions().findByType(QuarkusPluginExtension.class);
+        }
         return extension;
     }
 }

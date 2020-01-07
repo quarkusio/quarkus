@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Quarkus - Neo4j
-:neo4j_version: 3.5.13
+:neo4j_version: 4.0.0
 
 include::./attributes.adoc[]
 :extension-status: preview
@@ -35,12 +35,6 @@ while Neo4j itself is available in a GPL3-licensed open-source "community editio
 with online backup and high availability extensions licensed under a closed-source commercial license.
 
 include::./status-include.adoc[]
-
-[WARNING]
-====
-It is based on an alpha version of the Neo4j driver.
-Hence the reason for it to be _preview_
-====
 
 == Programming model
 
@@ -279,14 +273,14 @@ It uses transaction functions of the driver:
 public CompletionStage<Response> create(Fruit fruit) {
     AsyncSession session = driver.asyncSession();
     return session
-        .writeTransactionAsync(tx ->
-            tx.runAsync("CREATE (f:Fruit {name: $name}) RETURN f", Values.parameters("name", fruit.name))
+        .writeTransactionAsync(tx -> tx
+            .runAsync("CREATE (f:Fruit {name: $name}) RETURN f", Values.parameters("name", fruit.name))
+            .thenCompose(fn -> fn.singleAsync())
         )
-        .thenCompose(fn -> fn.singleAsync())
         .thenApply(record -> Fruit.from(record.get("f").asNode()))
-        .thenCompose(persistedFruid -> session.closeAsync().thenApply(signal -> persistedFruid))
-        .thenApply(persistedFruid -> Response
-            .created(URI.create("/fruits/" + persistedFruid.id))
+        .thenCompose(persistedFruit -> session.closeAsync().thenApply(signal -> persistedFruit))
+        .thenApply(persistedFruit -> Response
+            .created(URI.create("/fruits/" + persistedFruit.id))
             .build()
         );
 }
@@ -321,10 +315,10 @@ We also add some exception handling, in case the resource is called with an inva
 public CompletionStage<Response> getSingle(@PathParam("id") Long id) {
     AsyncSession session = driver.asyncSession();
     return session
-        .readTransactionAsync(tx ->
-            tx.runAsync("MATCH (f:Fruit) WHERE id(f) = $id RETURN f", Values.parameters("id", id))
+        .readTransactionAsync(tx -> tx
+            .runAsync("MATCH (f:Fruit) WHERE id(f) = $id RETURN f", Values.parameters("id", id))
+            .thenCompose(fn -> fn.singleAsync())
     )
-    .thenCompose(fn -> fn.singleAsync())
     .handle((record, exception) -> {
         if(exception != null) {
             Throwable source = exception;
@@ -368,10 +362,10 @@ public CompletionStage<Response> delete(@PathParam("id") Long id) {
 
     AsyncSession session = driver.asyncSession();
     return session
-        .writeTransactionAsync(tx ->
-            tx.runAsync("MATCH (f:Fruit) WHERE id(f) = $id DELETE f", Values.parameters("id", id))
+        .writeTransactionAsync(tx -> tx
+            .runAsync("MATCH (f:Fruit) WHERE id(f) = $id DELETE f", Values.parameters("id", id))
+            .thenCompose(fn -> fn.consumeAsync()) // <1>
         )
-        .thenCompose(fn -> fn.consumeAsync()) // <1>
         .thenCompose(response -> session.closeAsync())
         .thenApply(signal -> Response.noContent().build());
 }

@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.sentry.jul.SentryHandler;
 import io.sentry.jvmti.FrameCache;
 
 public class SentryLoggerCustomTest {
@@ -19,7 +20,9 @@ public class SentryLoggerCustomTest {
 
     @Test
     public void sentryLoggerCustomTest() {
-        assertThat(getSentryHandler().getLevel()).isEqualTo(org.jboss.logmanager.Level.TRACE);
+        final SentryHandler sentryHandler = getSentryHandler();
+        assertThat(sentryHandler).isNotNull();
+        assertThat(sentryHandler.getLevel()).isEqualTo(org.jboss.logmanager.Level.TRACE);
         assertThat(FrameCache.shouldCacheThrowable(new IllegalStateException("Test frame"), 1)).isTrue();
     }
 

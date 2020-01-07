@@ -23,7 +23,7 @@ import io.smallrye.config.source.yaml.YamlConfigSource;
  */
 public final class ApplicationYamlProvider implements ConfigSourceProvider {
 
-    static final String APPLICATION_YAML = "application.yaml";
+    public static final String APPLICATION_YAML = "application.yaml";
 
     @Override
     public Iterable<ConfigSource> getConfigSources(final ClassLoader forClassLoader) {

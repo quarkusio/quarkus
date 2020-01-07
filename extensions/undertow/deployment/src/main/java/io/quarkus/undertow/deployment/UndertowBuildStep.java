@@ -66,6 +66,7 @@ import org.jboss.metadata.web.spec.FilterMetaData;
 import org.jboss.metadata.web.spec.FiltersMetaData;
 import org.jboss.metadata.web.spec.HttpMethodConstraintMetaData;
 import org.jboss.metadata.web.spec.ListenerMetaData;
+import org.jboss.metadata.web.spec.MimeMappingMetaData;
 import org.jboss.metadata.web.spec.MultipartConfigMetaData;
 import org.jboss.metadata.web.spec.SecurityConstraintMetaData;
 import org.jboss.metadata.web.spec.ServletMappingMetaData;
@@ -460,6 +461,13 @@ public class UndertowBuildStep {
             for (ListenerMetaData listener : webMetaData.getListeners()) {
                 reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, listener.getListenerClass()));
                 recorder.registerListener(deployment, context.classProxy(listener.getListenerClass()), bc.getValue());
+            }
+        }
+
+        // MIME mappings
+        if (webMetaData.getMimeMappings() != null) {
+            for (MimeMappingMetaData mimeMapping : webMetaData.getMimeMappings()) {
+                recorder.addMimeMapping(deployment, mimeMapping.getExtension(), mimeMapping.getMimeType());
             }
         }
 

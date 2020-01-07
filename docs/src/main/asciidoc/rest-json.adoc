@@ -60,7 +60,7 @@ Quarkus also supports https://github.com/FasterXML/jackson[Jackson] so, if you p
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=rest-json \
+    -DprojectArtifactId=rest-json-quickstart \
     -DclassName="org.acme.rest.json.FruitResource" \
     -Dpath="/fruits" \
     -Dextensions="resteasy-jackson"
@@ -339,7 +339,8 @@ public class LegumeResource {
 ----
 
 Now let's add a simple web page to display our list of legumes.
-In the `src/main/resources/META-INF/resources` directory, add a `legumes.html` file with the content from this https://raw.githubusercontent.com/quarkusio/quarkus-quickstarts/master/rest-json/src/main/resources/META-INF/resources/legumes.html[legumes.html] file in it.
+In the `src/main/resources/META-INF/resources` directory, add a `legumes.html` file with the content from this
+{quickstarts-blob-url}/rest-json-quickstart/src/main/resources/META-INF/resources/legumes.html[legumes.html] file in it.
 
 Open a browser to http://localhost:8080/legumes.html and you will see our list of legumes.
 
@@ -365,6 +366,8 @@ Hopefully, this will change in the future and make the error more obvious.
 We can register `Legume` for reflection manually by adding the `@RegisterForReflection` annotation on our `Legume` class:
 [source,JAVA]
 ----
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
 @RegisterForReflection
 public class Legume {
     // ...

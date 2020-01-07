@@ -264,14 +264,11 @@ For part A of step 1, create a `security-jwt-quickstart/src/main/resources/appli
 ----
 mp.jwt.verify.publickey.location=META-INF/resources/publicKey.pem #<1>
 mp.jwt.verify.issuer=https://quarkus.io/using-jwt-rbac #<2>
-
-quarkus.smallrye-jwt.auth-mechanism=MP-JWT # <3>
-quarkus.smallrye-jwt.enabled=true # <4>
+quarkus.smallrye-jwt.enabled=true #<3>
 ----
 <1> We are setting public key location to point to a classpath publicKey.pem resource location. We will add this key in part B, <<Adding a Public Key>>.
 <2> We are setting the issuer to the URL string `https://quarkus.io/using-jwt-rbac`.
-<3> We are setting the authentication mechanism name to MP-JWT. This is not strictly required to allow our quickstart to work, but it is the {mp-jwt} specification standard name for the token based authentication mechanism.
-<4> We are enabling the {extension-name}. Also not required since this is the default,
+<3> We are enabling the {extension-name}. Also not required since this is the default,
 but we are making it explicit.
  
 === Adding a Public Key

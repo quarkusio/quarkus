@@ -324,8 +324,9 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 25
+          timeoutInMinutes: 40
           modules:
+            - maven
             - jackson
             - jsonb
             - jgit

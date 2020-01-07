@@ -23,6 +23,7 @@ import org.quartz.simpl.SimpleInstanceIdGenerator;
 import org.quartz.simpl.SimpleThreadPool;
 
 import io.quarkus.agroal.deployment.DataSourceDriverBuildItem;
+import io.quarkus.agroal.deployment.DataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -167,7 +168,8 @@ public class QuartzProcessor {
     @Record(RUNTIME_INIT)
     public void build(QuartzRuntimeConfig runtimeConfig, QuartzBuildTimeConfig buildTimeConfig, QuartzRecorder recorder,
             BeanContainerBuildItem beanContainer,
-            BuildProducer<ServiceStartBuildItem> serviceStart, QuartzJDBCDriverDialectBuildItem driverDialect) {
+            BuildProducer<ServiceStartBuildItem> serviceStart, QuartzJDBCDriverDialectBuildItem driverDialect,
+            Optional<DataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
         recorder.initialize(runtimeConfig, buildTimeConfig, beanContainer.getValue(), driverDialect.getDriver());
         // Make sure that StartupEvent is fired after the init
         serviceStart.produce(new ServiceStartBuildItem("quartz"));

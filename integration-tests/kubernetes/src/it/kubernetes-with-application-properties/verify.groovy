@@ -29,3 +29,9 @@ assert env.value == "SOMEVALUE"
 
 //Check the image
 assert deployment.spec.template.spec.containers[0].image == "quay.io/grp/kubernetes-with-application-properties:0.1-SNAPSHOT"
+assert deployment.spec.template.spec.containers[0].ports[0].containerPort == 9090
+
+//Check the Service
+Service service = list.items.find{r -> r.kind == "Service"}
+assert service != null
+assert service.spec.ports[0].port == 9090

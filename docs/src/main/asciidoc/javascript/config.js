@@ -13,7 +13,7 @@ if(tables){
         if (table.classList.contains('searchable')) { // activate search engine only when needed
           var input = document.createElement("input");
           input.setAttribute("type", "search");
-          input.setAttribute("placeholder", "filter configuration");
+          input.setAttribute("placeholder", "FILTER CONFIGURATION");
           input.id = "config-search-"+(idx++);
           caption.children.item(0).appendChild(input);
           input.addEventListener("keyup", initiateSearch);

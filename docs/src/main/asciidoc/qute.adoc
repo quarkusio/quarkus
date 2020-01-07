@@ -33,6 +33,7 @@ In your `pom.xml` file, add:
 We'll start with a very simple template:
 
 .hello.txt
+[source]
 ----
 Hello {name}! <1>
 ----
@@ -261,6 +262,10 @@ public class ReportGenerator {
 <1> In this case, we use the `@ResourcePath` qualifier to specify the template path: `templates/reports/v1/report_01.html`.
 <2> Use the `@Scheduled` annotation to instruct Quarkus to execute this method on the half hour. For more information see the link:scheduler[Scheduler] guide.
 <3> The `TemplateInstance.render()` method triggers rendering. Note that this method blocks the current thread.
+
+== Qute Reference Guide
+
+To learn more about Qute, please refer to the link:qute-reference[Qute reference guide].
 
 [[qute-configuration-reference]]
 == Qute Configuration Reference

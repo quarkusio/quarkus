@@ -1,16 +1,24 @@
 package io.quarkus.qute;
 
 import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * A value resolver is automatically generated for a template extension method.
+ * A value resolver is automatically generated for a method annotated with this annotation. If declared on a class a value
+ * resolver is generated for every non-private static method declared on the class. Methods that do not meet the following
+ * requirements are ignored.
  * <p>
- * The method must be static, must not return {@code void} and must accept at least one parameter. The class of the first
- * parameter is used to match the base object.
+ * A template extension method:
+ * <ul>
+ * <li>must be static,</li>
+ * <li>must not return {@code void},</li>
+ * <li>must accept at least one parameter.</li>
+ * <p>
+ * The class of the first parameter is used to match the base object.
  * <p>
  * By default, the method name is used to match the property name. However, it is possible to specify the matching name with
  * {@link #matchName()}. A special constant - {@link #ANY} - may be used to specify that the extension method matches any name.
@@ -25,7 +33,7 @@ import java.lang.annotation.Target;
  * </pre>
  */
 @Retention(RUNTIME)
-@Target(METHOD)
+@Target({ METHOD, TYPE })
 public @interface TemplateExtension {
 
     static final String ANY = "*";

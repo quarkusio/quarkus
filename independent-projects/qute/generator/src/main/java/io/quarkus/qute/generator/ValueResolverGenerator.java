@@ -63,6 +63,7 @@ public class ValueResolverGenerator {
     private static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
     public static final String SUFFIX = "_ValueResolver";
+    public static final String NESTED_SEPARATOR = "$_";
 
     private static final Logger LOGGER = Logger.getLogger(ValueResolverGenerator.class);
 
@@ -112,7 +113,7 @@ public class ValueResolverGenerator {
 
         String baseName;
         if (clazz.enclosingClass() != null) {
-            baseName = simpleName(clazz.enclosingClass()) + "_" + simpleName(clazz);
+            baseName = simpleName(clazz.enclosingClass()) + NESTED_SEPARATOR + simpleName(clazz);
         } else {
             baseName = simpleName(clazz);
         }

@@ -538,10 +538,25 @@ NOTE: A value resolver is also generated for all types used in parameter declara
 [[template_extension_methods]]
 === Template Extension Methods
 
-A value resolver is automatically generated for a template extension method annotated with `@TemplateExtension`.
-The method must be static, must not return `void` and must accept at least one parameter. 
-The class of the first parameter is used to match the base object and the method name is used to match the property name.
+Extension methods can be used to extend the data classes with new functionality.
+For example, it is possible to add "computed properties" and "virtual methods".
+A value resolver is automatically generated for a method annotated with `@TemplateExtension`.
+If declared on a class a value resolver is generated for every non-private method declared on the class.
+Methods that do not meet the following requirements are ignored.
 
+A template extension method:
+
+* must be static, 
+* must not return `void`,
+* must accept at least one parameter.
+ 
+The class of the first parameter is always used to match the base object.
+The method name is used to match the property name by default. 
+However, it is possible to specify the matching name with `TemplateExtension#matchName()`.
+
+NOTE: A special constant - `ANY` - may be used to specify that the extension method matches any name. In that case, the method must declare at least two parameters and the second parameter must be a string. 
+
+.Extension Method Example
 [source,java]
 ----
 package org.acme;
@@ -555,25 +570,48 @@ class Item {
     }
 }
 
+@TemplateExtension
 class MyExtensions {
 
-    @TemplateExtension
     static BigDecimal discountedPrice(Item item) { <1>
         return item.getPrice().multiply(new BigDecimal("0.9"));
     }
 }
 ----
-<1> The method matches `Item.class` and `discountedPrice` property name.
+<1> This method matches an expression with base object of the type `Item.class` and the `discountedPrice` property name.
 
 This template extension method makes it possible to render the following template:
 
 [source,html]
 ----
-{#each items} <1>
-  {it.discountedPrice}
-{/each}
+{item.discountedPrice} <1>
 ----
-<1> `items` is resolved to a list of `org.acme.Item` instances.
+<1> `item` is resolved to an instance of `org.acme.Item`.
+
+==== Method Parameters
+
+An extension method may accept multiple parameters.
+The first parameter is always used to pass the base object, ie. `org.acme.Item` in the previous example.
+Other parameters are resolved when rendering the template and passed to the extension method.
+
+.Multiple Parameters Example
+[source,java]
+----
+@TemplateExtension
+class MyExtensions {
+
+    static BigDecimal scale(BigDecimal val, int scale, RoundingMode mode) { <1>
+        return val.setScale(scale, mode);
+    }
+}
+----
+<1> This method matches an expression with base object of the type `BigDecimal.class`, with the `scale` virtual method name and two virtual method parameters.
+
+[source,html]
+----
+{item.discountedPrice.scale(2,mode)} <1>
+----
+<1> `item.discountedPrice` is resolved to an instance of `BigDecimal`.
 
 === @TemplateData
 

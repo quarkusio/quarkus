@@ -98,6 +98,8 @@ public class QuteProcessor {
     static final DotName MAP = DotName.createSimple(Map.class.getName());
     static final DotName MAP_ENTRY = DotName.createSimple(Entry.class.getName());
 
+    private static final String MATCH_NAME = "matchName";
+
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.QUTE);
@@ -255,23 +257,51 @@ public class QuteProcessor {
             BuildProducer<TemplateExtensionMethodBuildItem> extensionMethods) {
 
         IndexView index = beanArchiveIndex.getIndex();
+        Map<MethodInfo, AnnotationInstance> methods = new HashMap<>();
+        Map<ClassInfo, AnnotationInstance> classes = new HashMap<>();
 
         for (AnnotationInstance templateExtension : index.getAnnotations(ExtensionMethodGenerator.TEMPLATE_EXTENSION)) {
             if (templateExtension.target().kind() == Kind.METHOD) {
-                MethodInfo method = templateExtension.target().asMethod();
-                ExtensionMethodGenerator.validate(method);
-                String matchName = null;
-                AnnotationValue matchNameValue = templateExtension.value("matchName");
-                if (matchNameValue != null) {
-                    matchName = matchNameValue.asString();
-                }
-                if (matchName == null) {
-                    matchName = method.name();
-                }
-                extensionMethods.produce(new TemplateExtensionMethodBuildItem(method, matchName,
-                        index.getClassByName(method.parameters().get(0).name())));
+                methods.put(templateExtension.target().asMethod(), templateExtension);
+            } else if (templateExtension.target().kind() == Kind.CLASS) {
+                classes.put(templateExtension.target().asClass(), templateExtension);
             }
         }
+
+        for (Entry<MethodInfo, AnnotationInstance> entry : methods.entrySet()) {
+            MethodInfo method = entry.getKey();
+            ExtensionMethodGenerator.validate(method);
+            produceExtensionMethod(index, extensionMethods, method, entry.getValue());
+            LOGGER.debugf("Found template extension method %s declared on %s", method,
+                    method.declaringClass().name());
+        }
+
+        for (Entry<ClassInfo, AnnotationInstance> entry : classes.entrySet()) {
+            ClassInfo clazz = entry.getKey();
+            for (MethodInfo method : clazz.methods()) {
+                if (!Modifier.isStatic(method.flags()) || method.returnType().kind() == org.jboss.jandex.Type.Kind.VOID
+                        || method.parameters().isEmpty() || Modifier.isPrivate(method.flags()) || methods.containsKey(method)) {
+                    continue;
+                }
+                produceExtensionMethod(index, extensionMethods, method, entry.getValue());
+                LOGGER.debugf("Found template extension method %s declared on %s", method,
+                        method.declaringClass().name());
+            }
+        }
+    }
+
+    private void produceExtensionMethod(IndexView index, BuildProducer<TemplateExtensionMethodBuildItem> extensionMethods,
+            MethodInfo method, AnnotationInstance extensionAnnotation) {
+        String matchName = null;
+        AnnotationValue matchNameValue = extensionAnnotation.value(MATCH_NAME);
+        if (matchNameValue != null) {
+            matchName = matchNameValue.asString();
+        }
+        if (matchName == null) {
+            matchName = method.name();
+        }
+        extensionMethods.produce(new TemplateExtensionMethodBuildItem(method, matchName,
+                index.getClassByName(method.parameters().get(0).name())));
     }
 
     @BuildStep
@@ -411,6 +441,9 @@ public class QuteProcessor {
                     idx = name.lastIndexOf(ValueResolverGenerator.SUFFIX);
                 }
                 String className = name.substring(0, idx).replace("/", ".");
+                if (className.contains(ValueResolverGenerator.NESTED_SEPARATOR)) {
+                    className = className.replace(ValueResolverGenerator.NESTED_SEPARATOR, "$");
+                }
                 boolean appClass = appClassPredicate.test(className);
                 LOGGER.debugf("Writing %s [appClass=%s]", name, appClass);
                 generatedClass.produce(new GeneratedClassBuildItem(appClass, name, data));
@@ -451,7 +484,7 @@ public class QuteProcessor {
 
         ExtensionMethodGenerator extensionMethodGenerator = new ExtensionMethodGenerator(classOutput);
         for (TemplateExtensionMethodBuildItem templateExtension : templateExtensionMethods) {
-            extensionMethodGenerator.generate(templateExtension.getMethod());
+            extensionMethodGenerator.generate(templateExtension.getMethod(), templateExtension.getMatchName());
         }
         generatedTypes.addAll(extensionMethodGenerator.getGeneratedTypes());
 

@@ -1,9 +1,7 @@
 package io.quarkus.vertx.core.runtime.graal;
 
-import java.io.FileDescriptor;
 import java.io.IOException;
 import java.net.URL;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 import com.oracle.svm.core.annotate.Alias;
@@ -74,23 +72,6 @@ final class Target_jdk_internal_loader_URLClassPath {
         }
     }
 
-}
-
-@TargetClass(className = "sun.nio.ch.DatagramChannelImpl", onlyWith = GraalVersion19_0.class)
-final class Target_sun_nio_ch_DatagramChannelImpl {
-
-    @Substitute
-    private static void disconnect0(FileDescriptor fd, boolean isIPv6)
-            throws IOException {
-        throw new RuntimeException("Unimplemented: sun.nio.ch.DatagramChannelImpl.disconnect0(FileDescriptor, boolean)");
-    }
-}
-
-final class GraalVersion19_0 implements BooleanSupplier {
-    public boolean getAsBoolean() {
-        final String version = System.getProperty("org.graalvm.version");
-        return version.startsWith("19.0.");
-    }
 }
 
 final class Package_jdk_internal_loader implements Function<TargetClass, String> {

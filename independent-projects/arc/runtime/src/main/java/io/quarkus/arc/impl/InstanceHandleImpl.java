@@ -2,9 +2,11 @@ package io.quarkus.arc.impl;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InstanceHandle;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.spi.CreationalContext;
 
@@ -66,7 +68,12 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
                 if (bean.getScope().equals(Dependent.class)) {
                     destroyInternal();
                 } else {
-                    Arc.container().getActiveContext(bean.getScope()).destroy(bean);
+                    InjectableContext context = Arc.container().getActiveContext(bean.getScope());
+                    if (context == null) {
+                        throw new ContextNotActiveException(
+                                "Cannot destroy instance of " + bean + " - no active context found for: " + bean.getScope());
+                    }
+                    context.destroy(bean);
                 }
             }
         }

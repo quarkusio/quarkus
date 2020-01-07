@@ -12,7 +12,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class ContextUnitTest {
+/**
+ * Tests simple context propagation of basic contexts (Arc, RestEasy, server, transaction) via either
+ * {@link org.eclipse.microprofile.context.ManagedExecutor} (ME) or
+ * {@link org.eclipse.microprofile.context.ThreadContext} (TC).
+ */
+public class SimpleContextPropagationTest {
     private static Class[] testClasses = {
             ContextEndpoint.class, RequestBean.class, ContextEntity.class, TestResources.class, CompletionExceptionMapper.class,
             TransactionalBean.class
@@ -25,37 +30,55 @@ public class ContextUnitTest {
                     .addAsResource("application.properties"));
 
     @Test()
-    public void testRESTEasyContextPropagation() {
+    public void testRESTEasyMEContextPropagation() {
         RestAssured.when().get("/context/resteasy").then()
                 .statusCode(Response.Status.OK.getStatusCode());
     }
 
     @Test()
-    public void testServletContextPropagation() {
+    public void testRESTEasyTCContextPropagation() {
+        RestAssured.when().get("/context/resteasy-tc").then()
+                .statusCode(Response.Status.OK.getStatusCode());
+    }
+
+    @Test()
+    public void testServletMEContextPropagation() {
         RestAssured.when().get("/context/servlet").then()
                 .statusCode(Response.Status.OK.getStatusCode());
     }
 
     @Test()
-    public void testThreadContextPropagation() {
-        RestAssured.when().get("/context/thread-context").then()
+    public void testServletTCContextPropagation() {
+        RestAssured.when().get("/context/servlet-tc").then()
                 .statusCode(Response.Status.OK.getStatusCode());
     }
 
     @Test()
-    public void testArcContextPropagation() {
+    public void testArcMEContextPropagation() {
         RestAssured.when().get("/context/arc").then()
                 .statusCode(Response.Status.OK.getStatusCode());
     }
 
     @Test()
-    public void testArcContextPropagationDisabled() {
+    public void testArcTCContextPropagation() {
+        RestAssured.when().get("/context/arc-tc").then()
+                .statusCode(Response.Status.OK.getStatusCode());
+    }
+
+    @Test()
+    public void testArcMEContextPropagationDisabled() {
         RestAssured.when().get("/context/noarc").then()
                 .statusCode(Response.Status.OK.getStatusCode());
     }
 
     @Test()
-    public void testTransactionContextPropagation() {
+    public void testArcTCContextPropagationDisabled() {
+        RestAssured.when().get("/context/noarc-tc").then()
+                .statusCode(Response.Status.OK.getStatusCode());
+    }
+
+    @Test()
+    public void testTransactionMEContextPropagation() {
         RestAssured.when().get("/context/transaction").then()
                 .statusCode(Response.Status.OK.getStatusCode());
         RestAssured.when().get("/context/transaction2").then()
@@ -63,6 +86,12 @@ public class ContextUnitTest {
         RestAssured.when().get("/context/transaction3").then()
                 .statusCode(Response.Status.CONFLICT.getStatusCode());
         RestAssured.when().get("/context/transaction4").then()
+                .statusCode(Response.Status.OK.getStatusCode());
+    }
+
+    @Test
+    public void testTransactionTCContextPropagation() {
+        RestAssured.when().get("/context/transaction-tc").then()
                 .statusCode(Response.Status.OK.getStatusCode());
     }
 

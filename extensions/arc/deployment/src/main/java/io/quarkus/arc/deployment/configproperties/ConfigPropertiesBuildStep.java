@@ -74,7 +74,7 @@ public class ConfigPropertiesBuildStep {
 
                 String generatedClassName = InterfaceConfigPropertiesUtil.generateImplementationForInterfaceConfigProperties(
                         classInfo, nonBeansClassOutput, combinedIndex.getIndex(), configPropertiesMetadata.getPrefix(),
-                        defaultConfigValues, configProperties);
+                        configPropertiesMetadata.getNamingStrategy(), defaultConfigValues, configProperties);
                 InterfaceConfigPropertiesUtil.addProducerMethodForInterfaceConfigProperties(producerClassCreator,
                         classInfo.name(), generatedClassName);
 
@@ -85,7 +85,8 @@ public class ConfigPropertiesBuildStep {
                  */
                 boolean needsValidation = ClassConfigPropertiesUtil.addProducerMethodForClassConfigProperties(
                         deploymentClassLoader.getClassLoader(), classInfo, producerClassCreator,
-                        configPropertiesMetadata.getPrefix(), applicationIndex.getIndex(), configProperties);
+                        configPropertiesMetadata.getPrefix(), configPropertiesMetadata.getNamingStrategy(),
+                        applicationIndex.getIndex(), configProperties);
                 if (needsValidation) {
                     configClassesThatNeedValidation.add(classInfo.name());
                 }

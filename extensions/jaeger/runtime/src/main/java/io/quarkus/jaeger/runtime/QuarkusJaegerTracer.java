@@ -6,9 +6,11 @@ import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
+import io.opentracing.util.ThreadLocalScopeManager;
 
 public class QuarkusJaegerTracer implements Tracer {
 
+    static final String LOG_TRACE_CONTEXT = "JAEGER_LOG_TRACE_CONTEXT";
     private static volatile Tracer tracer;
 
     @Override
@@ -21,11 +23,23 @@ public class QuarkusJaegerTracer implements Tracer {
             synchronized (QuarkusJaegerTracer.class) {
                 if (tracer == null) {
                     tracer = Configuration.fromEnv()
-                            .withMetricsFactory(new QuarkusJaegerMetricsFactory()).getTracer();
+                            .withMetricsFactory(new QuarkusJaegerMetricsFactory())
+                            .getTracerBuilder()
+                            .withScopeManager(getScopeManager())
+                            .build();
                 }
             }
         }
         return tracer;
+    }
+
+    private static ScopeManager getScopeManager() {
+        ScopeManager scopeManager = new ThreadLocalScopeManager();
+        String logTraceContext = System.getProperty(LOG_TRACE_CONTEXT);
+        if ("true".equals(logTraceContext)) {
+            scopeManager = new MDCScopeManager(scopeManager);
+        }
+        return scopeManager;
     }
 
     @Override

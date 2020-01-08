@@ -1,0 +1,11 @@
+name: "GCP - Stackdriver extension"
+metadata:
+  keywords:
+    - "gcp"
+    - "opencensus"
+    - "stackdriver"
+    - "observability"
+  guide: "https://quarkus.io/guides/datasource"
+  categories:
+    - "observability"
+  status: "draft"

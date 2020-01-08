@@ -36,6 +36,7 @@
         <module>smallrye-metrics</module>
         <module>smallrye-opentracing</module>
         <module>smallrye-fault-tolerance</module>
+        <module>stackdriver</module>
         <module>jaeger</module>
 
         <!-- REST services -->

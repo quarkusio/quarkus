@@ -39,7 +39,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-mysql-client</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>

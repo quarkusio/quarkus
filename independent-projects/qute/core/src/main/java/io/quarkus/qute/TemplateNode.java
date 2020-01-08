@@ -38,7 +38,11 @@ public interface TemplateNode {
 
         int getLine();
 
+        int getLineCharacter();
+
         String getTemplateId();
+
+        String getTemplateGeneratedId();
 
         Optional<Variant> getVariant();
 

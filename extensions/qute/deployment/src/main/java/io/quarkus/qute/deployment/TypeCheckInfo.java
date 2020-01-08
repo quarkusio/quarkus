@@ -17,6 +17,7 @@ import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expressions;
+import io.quarkus.qute.TemplateException;
 
 class TypeCheckInfo {
 

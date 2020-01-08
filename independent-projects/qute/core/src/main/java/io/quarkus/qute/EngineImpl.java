@@ -68,7 +68,8 @@ class EngineImpl implements Engine {
 
     @Override
     public Template parse(String content, Variant variant) {
-        return new Parser(this).parse(new StringReader(content), Optional.ofNullable(variant));
+        String generatedId = generateId();
+        return new Parser(this).parse(new StringReader(content), Optional.ofNullable(variant), generatedId, generatedId);
     }
 
     @Override
@@ -131,7 +132,7 @@ class EngineImpl implements Engine {
             Optional<TemplateLocation> location = locator.locate(id);
             if (location.isPresent()) {
                 try (Reader r = location.get().read()) {
-                    return new Parser(this).parse(ensureBufferedReader(r), location.get().getVariant());
+                    return new Parser(this).parse(ensureBufferedReader(r), location.get().getVariant(), id, generateId());
                 } catch (IOException e) {
                     LOGGER.warn("Unable to close the reader for " + id, e);
                 }

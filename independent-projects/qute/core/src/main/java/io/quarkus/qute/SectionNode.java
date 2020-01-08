@@ -20,6 +20,7 @@ class SectionNode implements TemplateNode {
     final List<SectionBlock> blocks;
 
     private final SectionHelper helper;
+
     private final Origin origin;
 
     SectionNode(List<SectionBlock> blocks, SectionHelper helper, Origin origin) {

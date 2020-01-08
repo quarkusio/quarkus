@@ -30,12 +30,16 @@ public class ReflectionValueResolver implements ValueResolver {
 
     @Override
     public boolean appliesTo(EvalContext context) {
-        return context.getBase() != null;
+        Object base = context.getBase();
+        if (base == null) {
+            return false;
+        }
+        return memberCache.computeIfAbsent(MemberKey.newInstance(base, context.getName()), ReflectionValueResolver::findWrapper)
+                .isPresent();
     }
 
     @Override
     public CompletionStage<Object> resolve(EvalContext context) {
-
         Object base = context.getBase();
         MemberKey key = MemberKey.newInstance(base, context.getName());
         MemberWrapper wrapper = memberCache.computeIfAbsent(key, ReflectionValueResolver::findWrapper).orElse(null);

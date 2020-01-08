@@ -19,8 +19,6 @@ public class ReflectionResolverTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(HelloReflect.class)
-                    // Make sure we do not detect the template data
-                    .addAsResource(new StringAsset("quarkus.qute.detect-template-data=false"), "application.properties")
                     .addAsResource(new StringAsset("{age}:{ping}:{noMatch}"), "templates/reflect.txt"));
 
     @Inject

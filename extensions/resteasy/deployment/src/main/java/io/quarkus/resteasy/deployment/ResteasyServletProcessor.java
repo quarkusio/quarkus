@@ -11,6 +11,7 @@ import javax.servlet.DispatcherType;
 import javax.ws.rs.core.Application;
 
 import org.jboss.logging.Logger;
+import org.jboss.metadata.web.spec.ServletMappingMetaData;
 import org.jboss.resteasy.microprofile.config.FilterConfigSourceImpl;
 import org.jboss.resteasy.microprofile.config.ServletConfigSourceImpl;
 import org.jboss.resteasy.microprofile.config.ServletContextConfigSourceImpl;
@@ -27,9 +28,12 @@ import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
 import io.quarkus.resteasy.runtime.ResteasyFilter;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServerConfigBuildItem;
+import io.quarkus.resteasy.server.common.deployment.ResteasyServletMappingBuildItem;
 import io.quarkus.undertow.deployment.FilterBuildItem;
 import io.quarkus.undertow.deployment.ServletBuildItem;
+import io.quarkus.undertow.deployment.ServletContextPathBuildItem;
 import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
+import io.quarkus.undertow.deployment.WebMetadataBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 
 /**
@@ -52,6 +56,23 @@ public class ResteasyServletProcessor {
     }
 
     @BuildStep
+    public ResteasyServletMappingBuildItem webXmlMapping(Optional<WebMetadataBuildItem> webMetadataBuildItem) {
+        if (webMetadataBuildItem.isPresent()) {
+            List<ServletMappingMetaData> servletMappings = webMetadataBuildItem.get().getWebMetaData().getServletMappings();
+            if (servletMappings != null) {
+                for (ServletMappingMetaData mapping : servletMappings) {
+                    if (JAVAX_WS_RS_APPLICATION.equals(mapping.getServletName())) {
+                        if (!mapping.getUrlPatterns().isEmpty()) {
+                            return new ResteasyServletMappingBuildItem(mapping.getUrlPatterns().iterator().next());
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    @BuildStep
     public void build(
             Capabilities capabilities,
             Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
@@ -60,6 +81,7 @@ public class ResteasyServletProcessor {
             BuildProducer<ServletBuildItem> servlet,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ServletInitParamBuildItem> servletInitParameters,
+            Optional<ServletContextPathBuildItem> servletContextPathBuildItem,
             ResteasyInjectionReadyBuildItem resteasyInjectionReady) throws Exception {
         if (!capabilities.isCapabilityPresent(Capabilities.SERVLET)) {
             return;
@@ -87,7 +109,8 @@ public class ResteasyServletProcessor {
             }
 
             for (Entry<String, String> initParameter : resteasyServerConfig.get().getInitParameters().entrySet()) {
-                servletInitParameters.produce(new ServletInitParamBuildItem(initParameter.getKey(), initParameter.getValue()));
+                servletInitParameters
+                        .produce(new ServletInitParamBuildItem(initParameter.getKey(), initParameter.getValue()));
             }
         }
     }
@@ -101,6 +124,9 @@ public class ResteasyServletProcessor {
 
     private String getMappingPath(String path) {
         String mappingPath;
+        if (path.endsWith("/*")) {
+            return path;
+        }
         if (path.endsWith("/")) {
             mappingPath = path + "*";
         } else {

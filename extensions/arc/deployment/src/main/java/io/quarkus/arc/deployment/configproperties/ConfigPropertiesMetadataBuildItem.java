@@ -18,8 +18,8 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
     private static final DotName CONFIG_PROPERTIES_ANNOTATION = DotName.createSimple(ConfigProperties.class.getName());
 
     private final ClassInfo classInfo;
-
     private final String prefix;
+    private final ConfigProperties.NamingStrategy namingStrategy;
 
     public ConfigPropertiesMetadataBuildItem(AnnotationInstance annotation) {
         if (!CONFIG_PROPERTIES_ANNOTATION.equals(annotation.name())) {
@@ -28,11 +28,16 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
 
         this.classInfo = annotation.target().asClass();
         this.prefix = extractPrefix(annotation);
+        AnnotationValue namingStrategyValue = annotation.value("namingStrategy");
+        this.namingStrategy = namingStrategyValue == null ? ConfigProperties.NamingStrategy.VERBATIM
+                : ConfigProperties.NamingStrategy.valueOf(namingStrategyValue.asEnum());
     }
 
-    public ConfigPropertiesMetadataBuildItem(ClassInfo classInfo, String prefix) {
+    public ConfigPropertiesMetadataBuildItem(ClassInfo classInfo, String prefix,
+            ConfigProperties.NamingStrategy namingStrategy) {
         this.classInfo = classInfo;
         this.prefix = sanitisePrefix(prefix);
+        this.namingStrategy = namingStrategy;
     }
 
     public ClassInfo getClassInfo() {
@@ -41,6 +46,10 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
 
     public String getPrefix() {
         return prefix;
+    }
+
+    public ConfigProperties.NamingStrategy getNamingStrategy() {
+        return namingStrategy;
     }
 
     private String extractPrefix(AnnotationInstance annotationInstance) {

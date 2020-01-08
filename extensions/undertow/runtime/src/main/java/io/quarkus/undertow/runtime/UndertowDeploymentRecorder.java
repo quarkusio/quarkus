@@ -245,7 +245,9 @@ public class UndertowDeploymentRecorder {
 
     public void addServletMapping(RuntimeValue<DeploymentInfo> info, String name, String mapping) throws Exception {
         ServletInfo sv = info.getValue().getServlets().get(name);
-        sv.addMapping(mapping);
+        if (sv != null) {
+            sv.addMapping(mapping);
+        }
     }
 
     public void setMultipartConfig(RuntimeValue<ServletInfo> sref, String location, long fileSize, long maxRequestSize,

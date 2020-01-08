@@ -267,35 +267,10 @@ public class UndertowBuildStep {
         return ret;
     }
 
-    @Record(STATIC_INIT)
     @BuildStep()
-    public ServletDeploymentManagerBuildItem build(List<ServletBuildItem> servlets,
-            List<FilterBuildItem> filters,
-            List<ListenerBuildItem> listeners,
-            List<ServletInitParamBuildItem> initParams,
-            List<ServletContextAttributeBuildItem> contextParams,
-            List<ServletContainerInitializerBuildItem> servletContainerInitializerBuildItems,
-            UndertowDeploymentRecorder recorder, RecorderContext context,
-            List<ServletExtensionBuildItem> extensions,
-            BeanContainerBuildItem bc,
-            BuildProducer<ServletContextPathBuildItem> servletContextPathBuildItemBuildProducer,
-            WebMetadataBuildItem webMetadataBuildItem,
-            BuildProducer<ObjectSubstitutionBuildItem> substitutions,
-            Consumer<ReflectiveClassBuildItem> reflectiveClasses,
-            LaunchModeBuildItem launchMode,
-            ShutdownContextBuildItem shutdownContext,
-            KnownPathsBuildItem knownPaths,
+    public ServletContextPathBuildItem contextPath(
             ServletConfig servletConfig,
-            HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
-
-        ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(ServletSecurityInfo.class,
-                ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
-        substitutions.produce(new ObjectSubstitutionBuildItem(holder));
-        reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName()));
-
-        WebMetaData webMetaData = webMetadataBuildItem.getWebMetaData();
-        final IndexView index = combinedIndexBuildItem.getIndex();
-        processAnnotations(index, webMetaData);
+            WebMetadataBuildItem webMetadataBuildItem) {
         String contextPath;
         if (servletConfig.contextPath.isPresent()) {
             if (!servletConfig.contextPath.get().startsWith("/")) {
@@ -308,8 +283,39 @@ public class UndertowBuildStep {
         } else {
             contextPath = "/";
         }
-        servletContextPathBuildItemBuildProducer.produce(new ServletContextPathBuildItem(contextPath));
+        return new ServletContextPathBuildItem(contextPath);
+    }
 
+    @Record(STATIC_INIT)
+    @BuildStep()
+    public ServletDeploymentManagerBuildItem build(List<ServletBuildItem> servlets,
+            List<FilterBuildItem> filters,
+            List<ListenerBuildItem> listeners,
+            List<ServletInitParamBuildItem> initParams,
+            List<ServletContextAttributeBuildItem> contextParams,
+            List<ServletContainerInitializerBuildItem> servletContainerInitializerBuildItems,
+            UndertowDeploymentRecorder recorder, RecorderContext context,
+            List<ServletExtensionBuildItem> extensions,
+            BeanContainerBuildItem bc,
+            ServletContextPathBuildItem servletContextPathBuildItem,
+            WebMetadataBuildItem webMetadataBuildItem,
+            BuildProducer<ObjectSubstitutionBuildItem> substitutions,
+            Consumer<ReflectiveClassBuildItem> reflectiveClasses,
+            LaunchModeBuildItem launchMode,
+            ShutdownContextBuildItem shutdownContext,
+            KnownPathsBuildItem knownPaths,
+            HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
+
+        ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(ServletSecurityInfo.class,
+                ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
+        substitutions.produce(new ObjectSubstitutionBuildItem(holder));
+        reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName()));
+
+        WebMetaData webMetaData = webMetadataBuildItem.getWebMetaData();
+        final IndexView index = combinedIndexBuildItem.getIndex();
+        processAnnotations(index, webMetaData);
+
+        String contextPath = servletContextPathBuildItem.getServletContextPath();
         RuntimeValue<DeploymentInfo> deployment = recorder.createDeployment("test", knownPaths.knownFiles,
                 knownPaths.knownDirectories,
                 launchMode.getLaunchMode(), shutdownContext, contextPath, httpBuildTimeConfig.rootPath);

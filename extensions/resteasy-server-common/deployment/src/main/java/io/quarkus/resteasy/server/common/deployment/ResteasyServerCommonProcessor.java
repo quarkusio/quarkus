@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -161,7 +162,8 @@ public class ResteasyServerCommonProcessor {
             List<ResteasyDeploymentCustomizerBuildItem> deploymentCustomizers,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
-            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) throws Exception {
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            Optional<ResteasyServletMappingBuildItem> resteasyServletMappingBuildItem) throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         resource.produce(new NativeImageResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
@@ -196,8 +198,18 @@ public class ResteasyServerCommonProcessor {
             path = applicationPath.value().asString();
             appClass = applicationPath.target().asClass().name().toString();
         } else {
-            path = resteasyConfig.path;
-            appClass = null;
+            if (resteasyServletMappingBuildItem.isPresent()) {
+                if (resteasyServletMappingBuildItem.get().getPath().endsWith("/*")) {
+                    path = resteasyServletMappingBuildItem.get().getPath().substring(0,
+                            resteasyServletMappingBuildItem.get().getPath().length() - 1);
+                } else {
+                    path = resteasyServletMappingBuildItem.get().getPath();
+                }
+                appClass = null;
+            } else {
+                path = resteasyConfig.path;
+                appClass = null;
+            }
         }
 
         Map<DotName, ClassInfo> scannedResources = new HashMap<>();

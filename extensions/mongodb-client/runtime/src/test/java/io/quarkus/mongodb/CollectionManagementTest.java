@@ -12,18 +12,33 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.bson.Document;
-import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.mongodb.MongoNamespace;
 import com.mongodb.bulk.BulkWriteResult;
-import com.mongodb.client.model.*;
+import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.model.BulkWriteOptions;
+import com.mongodb.client.model.CreateCollectionOptions;
+import com.mongodb.client.model.DeleteOneModel;
+import com.mongodb.client.model.FindOneAndDeleteOptions;
+import com.mongodb.client.model.FindOneAndReplaceOptions;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.InsertOneModel;
+import com.mongodb.client.model.ReplaceOneModel;
+import com.mongodb.client.model.ReplaceOptions;
+import com.mongodb.client.model.ReturnDocument;
+import com.mongodb.client.model.UpdateOneModel;
+import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.UpdateResult;
 import com.mongodb.reactivestreams.client.MongoClients;
 
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
+import io.quarkus.mongodb.mutiny.ReactiveMongoClient;
+import io.quarkus.mongodb.mutiny.ReactiveMongoCollection;
+import io.quarkus.mongodb.mutiny.ReactiveMongoDatabase;
 
 class CollectionManagementTest extends MongoTestBase {
 
@@ -36,7 +51,7 @@ class CollectionManagementTest extends MongoTestBase {
 
     @AfterEach
     void cleanup() {
-        client.getDatabase(DATABASE).drop().toCompletableFuture().join();
+        client.getDatabase(DATABASE).drop().await().indefinitely();
         client.close();
     }
 
@@ -44,13 +59,13 @@ class CollectionManagementTest extends MongoTestBase {
     void testCollectionCreation() {
         ReactiveMongoDatabase database = client.getDatabase(DATABASE);
         database.createCollection("cappedCollection",
-                new CreateCollectionOptions().capped(true).sizeInBytes(0x100000)).toCompletableFuture().join();
+                new CreateCollectionOptions().capped(true).sizeInBytes(0x100000)).await().indefinitely();
         assertThat(database.listCollectionNames()
-                .toList().run().toCompletableFuture().join()).hasSize(1).containsExactly("cappedCollection");
+                .collectItems().asList().await().indefinitely()).hasSize(1).containsExactly("cappedCollection");
         assertThat(database.listCollections().map(doc -> doc.getString("name"))
-                .toList().run().toCompletableFuture().join()).hasSize(1).containsExactly("cappedCollection");
+                .collectItems().asList().await().indefinitely()).hasSize(1).containsExactly("cappedCollection");
         assertThat(database.listCollections(Document.class).map(doc -> doc.getString("name"))
-                .toList().run().toCompletableFuture().join()).hasSize(1).containsExactly("cappedCollection");
+                .collectItems().asList().await().indefinitely()).hasSize(1).containsExactly("cappedCollection");
 
         assertThat(database.getCollection("cappedCollection").getNamespace().getDatabaseName()).isEqualTo(DATABASE);
         assertThat(database.getCollection("cappedCollection").getDocumentClass()).isEqualTo(Document.class);
@@ -60,47 +75,48 @@ class CollectionManagementTest extends MongoTestBase {
     void testCollectionCreationWithOptions() {
         ReactiveMongoDatabase database = client.getDatabase(DATABASE);
         database.createCollection("cappedCollection",
-                new CreateCollectionOptions().capped(true).sizeInBytes(0x100000)).toCompletableFuture().join();
+                new CreateCollectionOptions().capped(true).sizeInBytes(0x100000)).await().indefinitely();
         assertThat(database.listCollections().map(doc -> doc.getString("name"))
-                .toList().run().toCompletableFuture().join()).hasSize(1).containsExactly("cappedCollection");
+                .collectItems().asList().await().indefinitely()).hasSize(1).containsExactly("cappedCollection");
     }
 
     @Test
     void testCollectionDrop() {
         ReactiveMongoDatabase database = client.getDatabase(DATABASE);
-        database.createCollection("to-be-dropped").toCompletableFuture().join();
+        database.createCollection("to-be-dropped").await().indefinitely();
         assertThat(database.listCollectionNames()
-                .toList().run().toCompletableFuture().join()).hasSize(1).containsExactly("to-be-dropped");
+                .collectItems().asList().await().indefinitely()).hasSize(1).containsExactly("to-be-dropped");
 
-        database.getCollection("to-be-dropped").drop().toCompletableFuture().join();
+        database.getCollection("to-be-dropped").drop().await().indefinitely();
         assertThat(database.listCollectionNames()
-                .toList().run().toCompletableFuture().join()).hasSize(0);
+                .collectItems().asList().await().indefinitely()).hasSize(0);
     }
 
     @Test
     void testCollectionList() {
         ReactiveMongoDatabase database = client.getDatabase(DATABASE);
-        database.createCollection("test").toCompletableFuture().join();
+        database.createCollection("test").await().indefinitely();
 
-        assertThat(database.listCollectionNames().toList().run().toCompletableFuture().join()).contains("test");
-        assertThat(ReactiveStreams.fromPublisher(database.listCollectionNamesAsPublisher())
-                .toList().run().toCompletableFuture().join()).contains("test");
+        assertThat(database.listCollectionNames().collectItems().asList().await().indefinitely()).contains("test");
+        assertThat(database.listCollectionNames()
+                .collectItems().asList().await().indefinitely()).contains("test");
 
         assertThat(database.listCollections().map(col -> col.getString("name"))
-                .toList().run().toCompletableFuture().join()).contains("test");
+                .collectItems().asList().await().indefinitely()).contains("test");
         assertThat(database.listCollections(new CollectionListOptions().filter(new Document("name", "test")))
                 .map(col -> col.getString("name"))
-                .toList().run().toCompletableFuture().join()).containsExactly("test");
-        assertThat(database.listCollections(Document.class, new CollectionListOptions().filter(new Document("name", "test")))
+                .collectItems().asList().await().indefinitely()).containsExactly("test");
+        assertThat(database.listCollections(Document.class,
+                new CollectionListOptions().filter(new Document("name", "test")))
                 .map(col -> col.getString("name"))
-                .toList().run().toCompletableFuture().join()).containsExactly("test");
+                .collectItems().asList().await().indefinitely()).containsExactly("test");
 
-        assertThat(ReactiveStreams.fromPublisher(database.listCollectionsAsPublisher())
+        assertThat(database.listCollections()
                 .map(doc -> doc.getString("name"))
-                .toList().run().toCompletableFuture().join()).contains("test");
-        assertThat(ReactiveStreams.fromPublisher(database.listCollectionsAsPublisher(Document.class))
+                .collectItems().asList().await().indefinitely()).contains("test");
+        assertThat(database.listCollections(Document.class)
                 .map(doc -> doc.getString("name"))
-                .toList().run().toCompletableFuture().join()).contains("test");
+                .collectItems().asList().await().indefinitely()).contains("test");
     }
 
     @Test
@@ -108,11 +124,11 @@ class CollectionManagementTest extends MongoTestBase {
         String original = randomAlphaString(8);
         String newName = randomAlphaString(8);
         ReactiveMongoDatabase database = client.getDatabase(DATABASE);
-        database.createCollection(original).toCompletableFuture().join();
-        assertThat(database.listCollectionNames().toList().run().toCompletableFuture().join()).contains(original);
+        database.createCollection(original).await().indefinitely();
+        assertThat(database.listCollectionNames().collectItems().asList().await().indefinitely()).contains(original);
         ReactiveMongoCollection<Document> collection = database.getCollection(original);
-        collection.renameCollection(new MongoNamespace(DATABASE, newName)).toCompletableFuture().join();
-        assertThat(database.listCollectionNames().toList().run().toCompletableFuture().join()).contains(newName)
+        collection.renameCollection(new MongoNamespace(DATABASE, newName)).await().indefinitely();
+        assertThat(database.listCollectionNames().collectItems().asList().await().indefinitely()).contains(newName)
                 .doesNotContain(original);
     }
 
@@ -123,25 +139,30 @@ class CollectionManagementTest extends MongoTestBase {
 
         CompletableFuture.allOf(
                 collection
-                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes").append("stars", 5))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
-                        .toCompletableFuture(),
+                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes")
+                                .append("stars", 5))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
+                        .subscribeAsCompletionStage(),
                 collection
-                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain").append("stars", 1))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
-                        .toCompletableFuture())
+                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain")
+                                .append("stars", 1))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
+                        .subscribeAsCompletionStage())
                 .join();
 
         List<Document> join = collection.aggregate(Arrays.asList(
                 Aggregates.match(eq("type", "heroes")),
-                Aggregates.group("$stars", sum("count", 1)))).toList().run().toCompletableFuture().join();
+                Aggregates.group("$stars", sum("count", 1)))).collectItems().asList().await().indefinitely();
         assertThat(join).hasSize(2);
 
-        join = ReactiveStreams.fromPublisher(collection.aggregateAsPublisher(Arrays.asList(
+        join = collection.aggregate(Arrays.asList(
                 Aggregates.match(eq("type", "heroes")),
-                Aggregates.group("$stars", sum("count", 1))))).toList().run().toCompletableFuture().join();
+                Aggregates.group("$stars", sum("count", 1))))
+                .collectItems().asList().await().indefinitely();
         assertThat(join).hasSize(2);
     }
 
@@ -154,27 +175,29 @@ class CollectionManagementTest extends MongoTestBase {
         for (int i = 0; i < 100; i++) {
             documents.add(new Document("i", i).append("foo", "bar" + i));
         }
-        collection.insertMany(documents).toCompletableFuture().join();
+        collection.insertMany(documents).await().indefinitely();
 
         // It contains the default index on _id.
-        assertThat(collection.listIndexes().toList().run().toCompletableFuture().join()).hasSize(1);
+        assertThat(collection.listIndexes().collectItems().asList().await().indefinitely()).hasSize(1);
 
-        String i = collection.createIndex(new Document("i", 1), new IndexOptions().name("my-index")).toCompletableFuture()
+        String i = collection.createIndex(new Document("i", 1), new IndexOptions().name("my-index"))
+                .subscribeAsCompletionStage()
                 .join();
-        String j = collection.createIndex(new Document("foo", 1)).toCompletableFuture().join();
+        String j = collection.createIndex(new Document("foo", 1)).await().indefinitely();
         assertThat(i).isEqualTo("my-index");
         assertThat(j).isNotBlank();
-        assertThat(collection.listIndexes().toList().run().toCompletableFuture().join()).hasSize(3);
+        assertThat(collection.listIndexes().collectItems().asList().await().indefinitely()).hasSize(3);
         assertThat(
-                ReactiveStreams.fromPublisher(collection.listIndexesAsPublisher()).toList().run().toCompletableFuture().join())
+                collection.listIndexes().collectItems().asList().await().indefinitely())
                         .hasSize(3);
 
-        collection.dropIndex(i).toCompletableFuture().join();
-        assertThat(collection.listIndexes().toList().run().toCompletableFuture().join()).hasSize(2);
-        collection.dropIndexes().toCompletableFuture().join();
-        assertThat(collection.listIndexes().toList().run().toCompletableFuture().join()).hasSize(1);
-        assertThat(ReactiveStreams.fromPublisher(collection.listIndexesAsPublisher(Document.class)).toList().run()
-                .toCompletableFuture().join()).hasSize(1);
+        collection.dropIndex(i).await().indefinitely();
+        assertThat(collection.listIndexes().collectItems().asList().await().indefinitely()).hasSize(2);
+        collection.dropIndexes().await().indefinitely();
+        assertThat(collection.listIndexes().collectItems().asList().await().indefinitely()).hasSize(1);
+        assertThat(collection.listIndexes(Document.class)
+                .collectItems().asList()
+                .await().indefinitely()).hasSize(1);
     }
 
     @Test
@@ -184,20 +207,24 @@ class CollectionManagementTest extends MongoTestBase {
 
         CompletableFuture.allOf(
                 collection
-                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes").append("stars", 5))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
-                        .toCompletableFuture(),
+                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes")
+                                .append("stars", 5))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
+                        .subscribeAsCompletionStage(),
                 collection
-                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain").append("stars", 1))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
-                        .toCompletableFuture())
+                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain")
+                                .append("stars", 1))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
+                        .subscribeAsCompletionStage())
                 .join();
 
         Document frogman = collection.findOneAndUpdate(new Document("id", 3), inc("stars", 3),
-                new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)).toCompletableFuture().join();
-        Document batman = collection.findOneAndUpdate(new Document("id", 2), inc("stars", -1)).toCompletableFuture().join();
+                new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER)).await().indefinitely();
+        Document batman = collection.findOneAndUpdate(new Document("id", 2), inc("stars", -1)).await().indefinitely();
 
         assertThat(frogman).contains(entry("stars", 4), entry("name", "frogman")); // Returned after update
         assertThat(batman).contains(entry("stars", 4), entry("name", "batman")); // Returned the before update
@@ -211,23 +238,29 @@ class CollectionManagementTest extends MongoTestBase {
 
         CompletableFuture.allOf(
                 collection
-                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes").append("stars", 5))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
-                        .toCompletableFuture(),
+                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes")
+                                .append("stars", 5))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
+                        .subscribeAsCompletionStage(),
                 collection
-                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain").append("stars", 1))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
-                        .toCompletableFuture())
+                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain")
+                                .append("stars", 1))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
+                        .subscribeAsCompletionStage())
                 .join();
 
-        Document newVillain = new Document("id", 5).append("name", "lex lutor").append("type", "villain").append("stars", 3);
-        Document newHeroes = new Document("id", 6).append("name", "supergirl").append("type", "heroes").append("stars", 2);
+        Document newVillain = new Document("id", 5).append("name", "lex lutor").append("type", "villain")
+                .append("stars", 3);
+        Document newHeroes = new Document("id", 6).append("name", "supergirl").append("type", "heroes")
+                .append("stars", 2);
 
-        Document frogman = collection.findOneAndReplace(new Document("id", 3), newVillain).toCompletableFuture().join();
+        Document frogman = collection.findOneAndReplace(new Document("id", 3), newVillain).await().indefinitely();
         Document supergirl = collection.findOneAndReplace(new Document("id", 2), newHeroes,
-                new FindOneAndReplaceOptions().returnDocument(ReturnDocument.AFTER)).toCompletableFuture().join();
+                new FindOneAndReplaceOptions().returnDocument(ReturnDocument.AFTER)).await().indefinitely();
 
         assertThat(frogman).contains(entry("stars", 1), entry("name", "frogman"));
         assertThat(supergirl).contains(entry("stars", 2), entry("name", "supergirl"));
@@ -241,21 +274,25 @@ class CollectionManagementTest extends MongoTestBase {
 
         CompletableFuture.allOf(
                 collection
-                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes").append("stars", 5))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
-                        .toCompletableFuture(),
+                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes")
+                                .append("stars", 5))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
+                        .subscribeAsCompletionStage(),
                 collection
-                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain").append("stars", 1))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
-                        .toCompletableFuture())
+                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain")
+                                .append("stars", 1))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
+                        .subscribeAsCompletionStage())
                 .join();
 
-        Document frogman = collection.findOneAndDelete(new Document("id", 3)).toCompletableFuture().join();
+        Document frogman = collection.findOneAndDelete(new Document("id", 3)).await().indefinitely();
         Document superman = collection
                 .findOneAndDelete(new Document("id", 1), new FindOneAndDeleteOptions().sort(new Document("id", 1)))
-                .toCompletableFuture().join();
+                .await().indefinitely();
 
         assertThat(frogman).contains(entry("stars", 1), entry("name", "frogman"));
         assertThat(superman).contains(entry("stars", 5), entry("name", "superman"));
@@ -269,22 +306,26 @@ class CollectionManagementTest extends MongoTestBase {
 
         CompletableFuture.allOf(
                 collection
-                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes").append("stars", 5))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
-                        .toCompletableFuture(),
+                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes")
+                                .append("stars", 5))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
+                        .subscribeAsCompletionStage(),
                 collection
-                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain").append("stars", 1))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
-                        .toCompletableFuture())
+                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain")
+                                .append("stars", 1))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
+                        .subscribeAsCompletionStage())
                 .join();
 
         UpdateResult result = collection
                 .updateOne(new Document("id", 3), inc("stars", 3), new UpdateOptions().bypassDocumentValidation(true))
-                .toCompletableFuture().join();
-        UpdateResult result2 = collection.updateOne(new Document("id", 2), inc("stars", -1)).toCompletableFuture().join();
-        UpdateResult result3 = collection.updateOne(new Document("id", 50), inc("stars", -1)).toCompletableFuture().join();
+                .await().indefinitely();
+        UpdateResult result2 = collection.updateOne(new Document("id", 2), inc("stars", -1)).await().indefinitely();
+        UpdateResult result3 = collection.updateOne(new Document("id", 50), inc("stars", -1)).await().indefinitely();
 
         assertThat(result.getMatchedCount()).isEqualTo(1);
         assertThat(result.getModifiedCount()).isEqualTo(1);
@@ -302,25 +343,31 @@ class CollectionManagementTest extends MongoTestBase {
 
         CompletableFuture.allOf(
                 collection
-                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes").append("stars", 5))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
-                        .toCompletableFuture(),
+                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes")
+                                .append("stars", 5))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
+                        .subscribeAsCompletionStage(),
                 collection
-                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain").append("stars", 1))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
-                        .toCompletableFuture())
+                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain")
+                                .append("stars", 1))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
+                        .subscribeAsCompletionStage())
                 .join();
 
-        Document newVillain = new Document("id", 5).append("name", "lex lutor").append("type", "villain").append("stars", 3);
-        Document newHeroes = new Document("id", 6).append("name", "supergirl").append("type", "heroes").append("stars", 2);
+        Document newVillain = new Document("id", 5).append("name", "lex lutor").append("type", "villain")
+                .append("stars", 3);
+        Document newHeroes = new Document("id", 6).append("name", "supergirl").append("type", "heroes")
+                .append("stars", 2);
 
         UpdateResult result = collection
                 .replaceOne(new Document("id", 3), newVillain, new ReplaceOptions().bypassDocumentValidation(true))
-                .toCompletableFuture().join();
-        UpdateResult result2 = collection.replaceOne(new Document("id", 2), newHeroes).toCompletableFuture().join();
-        UpdateResult result3 = collection.replaceOne(new Document("id", 50), newHeroes).toCompletableFuture().join();
+                .await().indefinitely();
+        UpdateResult result2 = collection.replaceOne(new Document("id", 2), newHeroes).await().indefinitely();
+        UpdateResult result3 = collection.replaceOne(new Document("id", 50), newHeroes).await().indefinitely();
 
         assertThat(result.getMatchedCount()).isEqualTo(1);
         assertThat(result.getModifiedCount()).isEqualTo(1);
@@ -344,7 +391,7 @@ class CollectionManagementTest extends MongoTestBase {
                 new DeleteOneModel<>(new Document("_id", 2)),
                 new ReplaceOneModel<>(new Document("_id", 3),
                         new Document("_id", 3).append("x", 4))))
-                .toCompletableFuture().join();
+                .await().indefinitely();
 
         assertThat(result.getDeletedCount()).isEqualTo(0);
         assertThat(result.getInsertedCount()).isEqualTo(3);
@@ -365,7 +412,7 @@ class CollectionManagementTest extends MongoTestBase {
                 new DeleteOneModel<>(new Document("_id", 2)),
                 new ReplaceOneModel<>(new Document("_id", 3),
                         new Document("_id", 3).append("x", 4))),
-                new BulkWriteOptions().ordered(true)).toCompletableFuture().join();
+                new BulkWriteOptions().ordered(true)).await().indefinitely();
 
         assertThat(result.getDeletedCount()).isEqualTo(0);
         assertThat(result.getInsertedCount()).isEqualTo(3);
@@ -379,31 +426,37 @@ class CollectionManagementTest extends MongoTestBase {
 
         CompletableFuture.allOf(
                 collection
-                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes").append("stars", 5))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
-                        .toCompletableFuture(),
+                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes")
+                                .append("stars", 5))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
+                        .subscribeAsCompletionStage(),
                 collection
-                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain").append("stars", 1))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
-                        .toCompletableFuture())
+                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain")
+                                .append("stars", 1))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
+                        .subscribeAsCompletionStage())
                 .join();
 
-        List<String> list = collection.distinct("type", String.class).toList().run().toCompletableFuture().join();
+        List<String> list = collection.distinct("type", String.class).collectItems().asList().await().indefinitely();
         assertThat(list).containsExactlyInAnyOrder("heroes", "villain");
-        list = ReactiveStreams.fromPublisher(collection.distinctAsPublisher("type", String.class)).toList().run()
-                .toCompletableFuture().join();
+        list = collection.distinct("type", String.class).collectItems().asList()
+                .await().indefinitely();
         assertThat(list).containsExactlyInAnyOrder("heroes", "villain");
 
-        list = collection.distinct("name", String.class, new DistinctOptions().filter(eq("name", "superman"))).toList().run()
-                .toCompletableFuture().join();
+        list = collection.distinct("name", String.class, new DistinctOptions().filter(eq("name", "superman")))
+                .collectItems().asList()
+                .await().indefinitely();
         assertThat(list).hasSize(1);
-        list = ReactiveStreams.fromPublisher(collection.distinctAsPublisher("name", String.class)).toList().run()
-                .toCompletableFuture().join();
+        list = collection.distinct("name", String.class).collectItems().asList()
+                .await().indefinitely();
         assertThat(list).hasSize(4);
 
-        list = collection.distinct("name", eq("type", "villain"), String.class).toList().run().toCompletableFuture().join();
+        list = collection.distinct("name", eq("type", "villain"), String.class).collectItems().asList().await()
+                .indefinitely();
         assertThat(list).hasSize(2);
     }
 
@@ -414,41 +467,48 @@ class CollectionManagementTest extends MongoTestBase {
 
         CompletableFuture.allOf(
                 collection
-                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes").append("stars", 5))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
-                        .toCompletableFuture(),
+                        .insertOne(new Document("id", 1).append("name", "superman").append("type", "heroes")
+                                .append("stars", 5))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 2).append("name", "batman").append("type", "heroes").append("stars", 4))
+                        .subscribeAsCompletionStage(),
                 collection
-                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain").append("stars", 1))
-                        .toCompletableFuture(),
-                collection.insertOne(new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
-                        .toCompletableFuture())
+                        .insertOne(new Document("id", 3).append("name", "frogman").append("type", "villain")
+                                .append("stars", 1))
+                        .subscribeAsCompletionStage(),
+                collection.insertOne(
+                        new Document("id", 4).append("name", "joker").append("type", "villain").append("stars", 5))
+                        .subscribeAsCompletionStage())
                 .join();
 
-        assertThat(collection.find().toList().run().toCompletableFuture().join()).hasSize(4);
-        assertThat(collection.find(new FindOptions().comment("hello")).toList().run().toCompletableFuture().join()).hasSize(4);
-        assertThat(ReactiveStreams.fromPublisher(collection.findAsPublisher()).toList().run().toCompletableFuture().join())
+        assertThat(collection.find().collectItems().asList().await().indefinitely()).hasSize(4);
+        assertThat(collection.find(new FindOptions().comment("hello")).collectItems().asList().await().indefinitely())
+                .hasSize(4);
+        assertThat(collection.find().collectItems().asList().await().indefinitely())
                 .hasSize(4);
 
-        assertThat(collection.find(Document.class).toList().run().toCompletableFuture().join()).hasSize(4);
-        assertThat(collection.find(Document.class, new FindOptions().skip(1)).toList().run().toCompletableFuture().join())
-                .hasSize(3);
-        assertThat(ReactiveStreams.fromPublisher(collection.findAsPublisher(Document.class)).toList().run()
-                .toCompletableFuture().join()).hasSize(4);
+        assertThat(collection.find(Document.class).collectItems().asList().await().indefinitely()).hasSize(4);
+        assertThat(collection.find(Document.class, new FindOptions().skip(1)).collectItems().asList().await()
+                .indefinitely())
+                        .hasSize(3);
+        assertThat(collection.find(Document.class).collectItems().asList()
+                .await().indefinitely()).hasSize(4);
 
-        assertThat(collection.find(eq("type", "heroes")).toList().run().toCompletableFuture().join()).hasSize(2);
-        assertThat(collection.find(eq("type", "heroes"), new FindOptions()).toList().run().toCompletableFuture().join())
+        assertThat(collection.find(eq("type", "heroes")).collectItems().asList().await().indefinitely()).hasSize(2);
+        assertThat(
+                collection.find(eq("type", "heroes"), new FindOptions()).collectItems().asList().await().indefinitely())
+                        .hasSize(2);
+        assertThat(collection.find(eq("type", "heroes")).collectItems().asList()
+                .await().indefinitely()).hasSize(2);
+
+        assertThat(collection.find(eq("type", "heroes"), Document.class).collectItems().asList().await().indefinitely())
                 .hasSize(2);
-        assertThat(ReactiveStreams.fromPublisher(collection.findAsPublisher(eq("type", "heroes"))).toList().run()
-                .toCompletableFuture().join()).hasSize(2);
-
-        assertThat(collection.find(eq("type", "heroes"), Document.class).toList().run().toCompletableFuture().join())
-                .hasSize(2);
-        assertThat(collection.find(eq("type", "heroes"), Document.class, new FindOptions().partial(true)).toList().run()
-                .toCompletableFuture().join()).hasSize(2);
-        assertThat(ReactiveStreams.fromPublisher(collection.findAsPublisher(eq("type", "heroes"), Document.class)).toList()
-                .run().toCompletableFuture().join()).hasSize(2);
-
+        assertThat(collection.find(eq("type", "heroes"), Document.class, new FindOptions().partial(true)).collectItems()
+                .asList()
+                .await().indefinitely()).hasSize(2);
+        assertThat(collection.find(eq("type", "heroes"), Document.class).collectItems().asList()
+                .await().indefinitely()).hasSize(2);
     }
 
 }

@@ -8,7 +8,8 @@ import javax.inject.Singleton;
 
 import com.mongodb.client.MongoClient;
 
-import io.quarkus.mongodb.ReactiveMongoClient;
+import io.quarkus.mongodb.impl.AxleReactiveMongoClientImpl;
+import io.quarkus.mongodb.mutiny.ReactiveMongoClient;
 
 @ApplicationScoped
 public class MongoClientProducer {
@@ -29,8 +30,15 @@ public class MongoClientProducer {
 
     @Singleton
     @Produces
-    public ReactiveMongoClient axle() {
+    public ReactiveMongoClient mutiny() {
         return this.reactiveMongoClient;
+    }
+
+    @Singleton
+    @Produces
+    @Deprecated
+    public io.quarkus.mongodb.ReactiveMongoClient axle() {
+        return new AxleReactiveMongoClientImpl(this.reactiveMongoClient);
     }
 
     public void initialize(MongoClient client, ReactiveMongoClient reactiveMongoClient) {

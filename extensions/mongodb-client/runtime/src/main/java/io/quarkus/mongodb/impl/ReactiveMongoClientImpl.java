@@ -1,12 +1,9 @@
 package io.quarkus.mongodb.impl;
 
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
-import org.reactivestreams.Publisher;
 
 import com.mongodb.ClientSessionOptions;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
@@ -17,8 +14,10 @@ import com.mongodb.reactivestreams.client.MongoClient;
 
 import io.quarkus.mongodb.ChangeStreamOptions;
 import io.quarkus.mongodb.DatabaseListOptions;
-import io.quarkus.mongodb.ReactiveMongoClient;
-import io.quarkus.mongodb.ReactiveMongoDatabase;
+import io.quarkus.mongodb.mutiny.ReactiveMongoClient;
+import io.quarkus.mongodb.mutiny.ReactiveMongoDatabase;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 public class ReactiveMongoClientImpl implements ReactiveMongoClient {
 
@@ -39,40 +38,25 @@ public class ReactiveMongoClientImpl implements ReactiveMongoClient {
     }
 
     @Override
-    public PublisherBuilder<String> listDatabaseNames() {
-        return Wrappers.toPublisherBuilder(client.listDatabaseNames());
+    public Multi<String> listDatabaseNames() {
+        return Wrappers.toMulti(client.listDatabaseNames());
     }
 
     @Override
-    public Publisher<String> listDatabaseNamesAsPublisher() {
-        return client.listDatabaseNames();
+    public Multi<String> listDatabaseNames(ClientSession clientSession) {
+        return Wrappers.toMulti(client.listDatabaseNames(clientSession));
     }
 
     @Override
-    public PublisherBuilder<String> listDatabaseNames(ClientSession clientSession) {
-        return Wrappers.toPublisherBuilder(client.listDatabaseNames(clientSession));
+    public Multi<Document> listDatabases() {
+        return Wrappers.toMulti(client.listDatabases());
     }
 
     @Override
-    public Publisher<String> listDatabaseNamesAsPublisher(ClientSession clientSession) {
-        return client.listDatabaseNames(clientSession);
-    }
-
-    @Override
-    public ListDatabasesPublisher<Document> listDatabasesAsPublisher() {
-        return client.listDatabases();
-    }
-
-    @Override
-    public PublisherBuilder<Document> listDatabases() {
-        return Wrappers.toPublisherBuilder(client.listDatabases());
-    }
-
-    @Override
-    public PublisherBuilder<Document> listDatabases(DatabaseListOptions options) {
+    public Multi<Document> listDatabases(DatabaseListOptions options) {
         if (options != null) {
             ListDatabasesPublisher<Document> publisher = apply(options, client.listDatabases());
-            return Wrappers.toPublisherBuilder(publisher);
+            return Wrappers.toMulti(publisher);
         } else {
             return listDatabases();
         }
@@ -93,198 +77,147 @@ public class ReactiveMongoClientImpl implements ReactiveMongoClient {
     }
 
     @Override
-    public <T> ListDatabasesPublisher<T> listDatabasesAsPublisher(Class<T> clazz) {
-        return client.listDatabases(clazz);
+    public <T> Multi<T> listDatabases(Class<T> clazz) {
+        return Wrappers.toMulti(client.listDatabases(clazz));
     }
 
     @Override
-    public <T> PublisherBuilder<T> listDatabases(Class<T> clazz) {
-        return Wrappers.toPublisherBuilder(client.listDatabases(clazz));
-    }
-
-    @Override
-    public <T> PublisherBuilder<T> listDatabases(Class<T> clazz, DatabaseListOptions options) {
+    public <T> Multi<T> listDatabases(Class<T> clazz, DatabaseListOptions options) {
         if (options != null) {
             ListDatabasesPublisher<T> publisher = apply(options, client.listDatabases(clazz));
-            return Wrappers.toPublisherBuilder(publisher);
+            return Wrappers.toMulti(publisher);
         } else {
             return listDatabases(clazz);
         }
     }
 
     @Override
-    public ListDatabasesPublisher<Document> listDatabasesAsPublisher(ClientSession clientSession) {
-        return client.listDatabases(clientSession);
+    public Multi<Document> listDatabases(ClientSession clientSession) {
+        return Wrappers.toMulti(client.listDatabases(clientSession));
     }
 
     @Override
-    public PublisherBuilder<Document> listDatabases(ClientSession clientSession) {
-        return Wrappers.toPublisherBuilder(client.listDatabases(clientSession));
-    }
-
-    @Override
-    public PublisherBuilder<Document> listDatabases(ClientSession clientSession, DatabaseListOptions options) {
+    public Multi<Document> listDatabases(ClientSession clientSession, DatabaseListOptions options) {
         ListDatabasesPublisher<Document> publisher = apply(options, client.listDatabases(clientSession));
-        return Wrappers.toPublisherBuilder(publisher);
+        return Wrappers.toMulti(publisher);
     }
 
     @Override
-    public <T> ListDatabasesPublisher<T> listDatabasesAsPublisher(ClientSession clientSession, Class<T> clazz) {
-        return client.listDatabases(clientSession, clazz);
+    public <T> Multi<T> listDatabases(ClientSession clientSession, Class<T> clazz) {
+        return Wrappers.toMulti(client.listDatabases(clientSession, clazz));
     }
 
     @Override
-    public <T> PublisherBuilder<T> listDatabases(ClientSession clientSession, Class<T> clazz) {
-        return Wrappers.toPublisherBuilder(client.listDatabases(clientSession, clazz));
+    public <T> Multi<T> listDatabases(ClientSession clientSession, Class<T> clazz, DatabaseListOptions options) {
+        return Wrappers.toMulti(apply(options, client.listDatabases(clientSession, clazz)));
     }
 
     @Override
-    public <T> PublisherBuilder<T> listDatabases(ClientSession clientSession, Class<T> clazz, DatabaseListOptions options) {
-        return Wrappers.toPublisherBuilder(apply(options, client.listDatabases(clientSession, clazz)));
+    public Multi<ChangeStreamDocument<Document>> watch() {
+        return Wrappers.toMulti(client.watch());
     }
 
     @Override
-    public ChangeStreamPublisher<Document> watchAsPublisher() {
-        return client.watch();
-    }
-
-    @Override
-    public PublisherBuilder<ChangeStreamDocument<Document>> watch() {
-        return Wrappers.toPublisherBuilder(client.watch());
-    }
-
-    @Override
-    public PublisherBuilder<ChangeStreamDocument<Document>> watch(ChangeStreamOptions options) {
+    public Multi<ChangeStreamDocument<Document>> watch(ChangeStreamOptions options) {
         ChangeStreamPublisher<Document> publisher = apply(options, client.watch());
-        return Wrappers.toPublisherBuilder(publisher);
+        return Wrappers.toMulti(publisher);
     }
 
     @Override
-    public <T> ChangeStreamPublisher<T> watchAsPublisher(Class<T> clazz) {
-        return client.watch(clazz);
+    public <T> Multi<ChangeStreamDocument<T>> watch(Class<T> clazz) {
+        return Wrappers.toMulti(client.watch(clazz));
     }
 
     @Override
-    public <T> PublisherBuilder<ChangeStreamDocument<T>> watch(Class<T> clazz) {
-        return Wrappers.toPublisherBuilder(client.watch(clazz));
-    }
-
-    @Override
-    public <T> PublisherBuilder<ChangeStreamDocument<T>> watch(Class<T> clazz, ChangeStreamOptions options) {
+    public <T> Multi<ChangeStreamDocument<T>> watch(Class<T> clazz, ChangeStreamOptions options) {
         ChangeStreamPublisher<T> publisher = apply(options, client.watch(clazz));
-        return Wrappers.toPublisherBuilder(publisher);
+        return Wrappers.toMulti(publisher);
     }
 
     @Override
-    public ChangeStreamPublisher<Document> watchAsPublisher(List<? extends Bson> pipeline) {
-        return client.watch(pipeline);
+    public Multi<ChangeStreamDocument<Document>> watch(List<? extends Bson> pipeline) {
+        return Wrappers.toMulti(client.watch(pipeline));
     }
 
     @Override
-    public PublisherBuilder<ChangeStreamDocument<Document>> watch(List<? extends Bson> pipeline) {
-        return Wrappers.toPublisherBuilder(client.watch(pipeline));
-    }
-
-    @Override
-    public PublisherBuilder<ChangeStreamDocument<Document>> watch(List<? extends Bson> pipeline, ChangeStreamOptions options) {
+    public Multi<ChangeStreamDocument<Document>> watch(List<? extends Bson> pipeline, ChangeStreamOptions options) {
         ChangeStreamPublisher<Document> publisher = apply(options, client.watch(pipeline));
-        return Wrappers.toPublisherBuilder(publisher);
+        return Wrappers.toMulti(publisher);
     }
 
     @Override
-    public <T> ChangeStreamPublisher<T> watchAsPublisher(List<? extends Bson> pipeline, Class<T> clazz) {
-        return client.watch(pipeline, clazz);
+    public <T> Multi<ChangeStreamDocument<T>> watch(List<? extends Bson> pipeline, Class<T> clazz) {
+        return Wrappers.toMulti(client.watch(pipeline, clazz));
     }
 
     @Override
-    public <T> PublisherBuilder<ChangeStreamDocument<T>> watch(List<? extends Bson> pipeline, Class<T> clazz) {
-        return Wrappers.toPublisherBuilder(client.watch(pipeline, clazz));
-    }
-
-    @Override
-    public <T> PublisherBuilder<ChangeStreamDocument<T>> watch(List<? extends Bson> pipeline, Class<T> clazz,
+    public <T> Multi<ChangeStreamDocument<T>> watch(List<? extends Bson> pipeline, Class<T> clazz,
             ChangeStreamOptions options) {
         ChangeStreamPublisher<T> publisher = apply(options, client.watch(pipeline, clazz));
-        return Wrappers.toPublisherBuilder(publisher);
+        return Wrappers.toMulti(publisher);
     }
 
     @Override
-    public ChangeStreamPublisher<Document> watchAsPublisher(ClientSession clientSession) {
-        return client.watch(clientSession);
+    public Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession) {
+        return Wrappers.toMulti(client.watch(clientSession));
     }
 
     @Override
-    public PublisherBuilder<ChangeStreamDocument<Document>> watch(ClientSession clientSession) {
-        return Wrappers.toPublisherBuilder(client.watch(clientSession));
-    }
-
-    @Override
-    public PublisherBuilder<ChangeStreamDocument<Document>> watch(ClientSession clientSession, ChangeStreamOptions options) {
+    public Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, ChangeStreamOptions options) {
         ChangeStreamPublisher<Document> publisher = apply(options, client.watch(clientSession));
-        return Wrappers.toPublisherBuilder(publisher);
+        return Wrappers.toMulti(publisher);
     }
 
     @Override
-    public <T> ChangeStreamPublisher<T> watchAsPublisher(ClientSession clientSession, Class<T> clazz) {
-        return client.watch(clientSession, clazz);
+    public <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, Class<T> clazz) {
+        return Wrappers.toMulti(client.watch(clientSession, clazz));
     }
 
     @Override
-    public <T> PublisherBuilder<ChangeStreamDocument<T>> watch(ClientSession clientSession, Class<T> clazz) {
-        return Wrappers.toPublisherBuilder(client.watch(clientSession, clazz));
-    }
-
-    @Override
-    public <T> PublisherBuilder<ChangeStreamDocument<T>> watch(ClientSession clientSession, Class<T> clazz,
+    public <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, Class<T> clazz,
             ChangeStreamOptions options) {
         ChangeStreamPublisher<T> publisher = apply(options, client.watch(clientSession, clazz));
-        return Wrappers.toPublisherBuilder(publisher);
+        return Wrappers.toMulti(publisher);
     }
 
     @Override
-    public ChangeStreamPublisher<Document> watchAsPublisher(ClientSession clientSession, List<? extends Bson> pipeline) {
-        return client.watch(clientSession, pipeline);
-    }
-
-    @Override
-    public PublisherBuilder<ChangeStreamDocument<Document>> watch(ClientSession clientSession,
+    public Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession,
             List<? extends Bson> pipeline) {
-        return Wrappers.toPublisherBuilder(client.watch(clientSession, pipeline));
+        return Wrappers.toMulti(client.watch(clientSession, pipeline));
     }
 
     @Override
-    public PublisherBuilder<ChangeStreamDocument<Document>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
+    public Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
             ChangeStreamOptions options) {
         ChangeStreamPublisher<Document> publisher = apply(options, client.watch(clientSession, pipeline));
-        return Wrappers.toPublisherBuilder(publisher);
+        return Wrappers.toMulti(publisher);
     }
 
     @Override
-    public <T> ChangeStreamPublisher<T> watchAsPublisher(ClientSession clientSession, List<? extends Bson> pipeline,
+    public <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
             Class<T> clazz) {
-        return client.watch(clientSession, pipeline, clazz);
+        return Wrappers.toMulti(client.watch(clientSession, pipeline, clazz));
     }
 
     @Override
-    public <T> PublisherBuilder<ChangeStreamDocument<T>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
-            Class<T> clazz) {
-        return Wrappers.toPublisherBuilder(client.watch(clientSession, pipeline, clazz));
-    }
-
-    @Override
-    public <T> PublisherBuilder<ChangeStreamDocument<T>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
+    public <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
             Class<T> clazz, ChangeStreamOptions options) {
         ChangeStreamPublisher<T> publisher = apply(options, client.watch(clientSession, pipeline, clazz));
-        return Wrappers.toPublisherBuilder(publisher);
+        return Wrappers.toMulti(publisher);
     }
 
     @Override
-    public CompletionStage<ClientSession> startSession() {
-        return Wrappers.toCompletionStage(client.startSession());
+    public Uni<ClientSession> startSession() {
+        return Wrappers.toUni(client.startSession());
     }
 
     @Override
-    public CompletionStage<ClientSession> startSession(ClientSessionOptions options) {
-        return Wrappers.toCompletionStage(client.startSession(options));
+    public Uni<ClientSession> startSession(ClientSessionOptions options) {
+        return Wrappers.toUni(client.startSession(options));
+    }
+
+    @Override
+    public MongoClient unwrap() {
+        return client;
     }
 }

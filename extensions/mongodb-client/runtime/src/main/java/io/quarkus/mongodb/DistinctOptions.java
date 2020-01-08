@@ -20,7 +20,7 @@ public class DistinctOptions {
      * @param filter the filter, which may be null.
      * @return this
      */
-    DistinctOptions filter(Bson filter) {
+    public DistinctOptions filter(Bson filter) {
         this.filter = filter;
         return this;
     }
@@ -32,7 +32,7 @@ public class DistinctOptions {
      * @param timeUnit the time unit, which may not be null
      * @return this
      */
-    DistinctOptions maxTime(long maxTime, TimeUnit timeUnit) {
+    public DistinctOptions maxTime(long maxTime, TimeUnit timeUnit) {
         this.maxTime = maxTime;
         this.maxTimeUnit = timeUnit;
         return this;
@@ -48,7 +48,7 @@ public class DistinctOptions {
      * @param collation the collation options to use
      * @return this
      */
-    DistinctOptions collation(Collation collation) {
+    public DistinctOptions collation(Collation collation) {
         this.collation = collation;
         return this;
     }

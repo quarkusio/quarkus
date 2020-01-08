@@ -8,7 +8,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import org.bson.Document;
-import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -16,6 +15,7 @@ import com.mongodb.client.model.changestream.FullDocument;
 import com.mongodb.reactivestreams.client.MongoClients;
 
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
+import io.quarkus.mongodb.mutiny.ReactiveMongoClient;
 
 class ConnectionToReplicaSetTest extends MongoWithReplicasTestBase {
 
@@ -30,14 +30,14 @@ class ConnectionToReplicaSetTest extends MongoWithReplicasTestBase {
     void testConnection() {
         String cs = "mongodb://localhost:27018,localhost:27019";
         client = new ReactiveMongoClientImpl(MongoClients.create(cs));
-        assertThat(client.listDatabases().findFirst().run().toCompletableFuture().join()).isNotEmpty();
+        assertThat(client.listDatabases().collectItems().first().await().asOptional().indefinitely()).isNotEmpty();
     }
 
     @Test
     void testConnectionWithReplicaSet() {
         String cs = "mongodb://localhost:27018,localhost:27019/?replicaSet=test001";
         client = new ReactiveMongoClientImpl(MongoClients.create(cs));
-        assertThat(client.listDatabases().findFirst().run().toCompletableFuture().join()).isNotEmpty();
+        assertThat(client.listDatabases().collectItems().first().await().asOptional().indefinitely()).isNotEmpty();
     }
 
     @Test
@@ -45,24 +45,36 @@ class ConnectionToReplicaSetTest extends MongoWithReplicasTestBase {
         String cs = "mongodb://localhost:27018,localhost:27019";
         client = new ReactiveMongoClientImpl(MongoClients.create(cs));
         List<Throwable> failures = new CopyOnWriteArrayList<>();
-        client.watch().onError(failures::add).ignore().run();
-        client.watch(Document.class).onError(failures::add).ignore().run();
-        client.watch(Collections.emptyList()).onError(failures::add).ignore().run();
-        client.watch(Collections.emptyList(), Document.class).onError(failures::add).ignore().run();
-        client.watch(Collections.emptyList(), Document.class, null).onError(failures::add).ignore().run();
+        client.watch().onFailure().invoke(failures::add)
+                .onItem().ignoreAsUni()
+                .subscribeAsCompletionStage();
+        client.watch(Document.class).onFailure().invoke(failures::add)
+                .onItem().ignoreAsUni()
+                .subscribeAsCompletionStage();
+        client.watch(Collections.emptyList()).onFailure().invoke(failures::add)
+                .onItem().ignoreAsUni()
+                .subscribeAsCompletionStage();
+        client.watch(Collections.emptyList(), Document.class).onFailure().invoke(failures::add)
+                .onItem().ignoreAsUni()
+                .subscribeAsCompletionStage();
+        client.watch(Collections.emptyList(), Document.class, null).onFailure().invoke(failures::add)
+                .onItem().ignoreAsUni()
+                .subscribeAsCompletionStage();
         client.watch(Collections.emptyList(), Document.class,
-                new ChangeStreamOptions().maxAwaitTime(1, TimeUnit.SECONDS)).onError(failures::add).ignore().run();
+                new ChangeStreamOptions().maxAwaitTime(1, TimeUnit.SECONDS)).onFailure().invoke(failures::add)
+                .onItem().ignoreAsUni()
+                .subscribeAsCompletionStage();
         client.watch(new ChangeStreamOptions().fullDocument(FullDocument.DEFAULT))
-                .onError(failures::add).ignore().run();
-        client.watch((ChangeStreamOptions) null).onError(failures::add).ignore().run();
+                .onFailure().invoke(failures::add)
+                .onItem().ignoreAsUni()
+                .subscribeAsCompletionStage();
+        client.watch((ChangeStreamOptions) null).onFailure().invoke(failures::add)
+                .onItem().ignoreAsUni()
+                .subscribeAsCompletionStage();
         client.watch(Document.class)
-                .onError(failures::add).ignore().run();
-
-        ReactiveStreams.fromPublisher(client.watchAsPublisher()).onError(failures::add).ignore().run();
-        ReactiveStreams.fromPublisher(client.watchAsPublisher(Document.class)).onError(failures::add).ignore().run();
-        ReactiveStreams.fromPublisher(client.watchAsPublisher(Collections.emptyList())).onError(failures::add).ignore().run();
-
-        System.out.println("Failures are: " + failures);
+                .onFailure().invoke(failures::add)
+                .onItem().ignoreAsUni()
+                .subscribeAsCompletionStage();
         assertThat(failures).isEmpty();
     }
 

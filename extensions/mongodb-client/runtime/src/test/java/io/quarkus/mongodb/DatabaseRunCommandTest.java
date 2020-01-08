@@ -11,6 +11,7 @@ import com.mongodb.ReadPreference;
 import com.mongodb.reactivestreams.client.MongoClients;
 
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
+import io.quarkus.mongodb.mutiny.ReactiveMongoClient;
 
 class DatabaseRunCommandTest extends MongoTestBase {
 
@@ -23,25 +24,25 @@ class DatabaseRunCommandTest extends MongoTestBase {
 
     @AfterEach
     void cleanup() {
-        client.getDatabase(DATABASE).drop().toCompletableFuture().join();
+        client.getDatabase(DATABASE).drop().await().indefinitely();
         client.close();
     }
 
     @Test
     void run() {
-        Document info = client.getDatabase(DATABASE).runCommand(new Document("buildInfo", 1)).toCompletableFuture().join();
+        Document info = client.getDatabase(DATABASE).runCommand(new Document("buildInfo", 1)).await().indefinitely();
         assertThat(info.getDouble("ok")).isEqualTo(1.0);
 
-        info = client.getDatabase(DATABASE).runCommand(new Document("buildInfo", 1), Document.class).toCompletableFuture()
-                .join();
+        info = client.getDatabase(DATABASE).runCommand(new Document("buildInfo", 1), Document.class)
+                .await().indefinitely();
         assertThat(info.getDouble("ok")).isEqualTo(1.0);
 
         info = client.getDatabase(DATABASE).runCommand(new Document("buildInfo", 1), ReadPreference.nearest())
-                .toCompletableFuture().join();
+                .await().indefinitely();
         assertThat(info.getDouble("ok")).isEqualTo(1.0);
 
         info = client.getDatabase(DATABASE).runCommand(new Document("buildInfo", 1), ReadPreference.nearest(), Document.class)
-                .toCompletableFuture().join();
+                .await().indefinitely();
         assertThat(info.getDouble("ok")).isEqualTo(1.0);
     }
 }

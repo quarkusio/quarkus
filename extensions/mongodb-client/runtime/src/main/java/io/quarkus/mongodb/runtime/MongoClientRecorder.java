@@ -33,8 +33,8 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.connection.ClusterConnectionMode;
 
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.mongodb.ReactiveMongoClient;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
+import io.quarkus.mongodb.mutiny.ReactiveMongoClient;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;

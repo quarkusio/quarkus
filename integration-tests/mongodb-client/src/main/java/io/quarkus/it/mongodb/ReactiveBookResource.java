@@ -3,16 +3,21 @@ package io.quarkus.it.mongodb;
 import static com.mongodb.client.model.Filters.eq;
 
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import io.quarkus.mongodb.ReactiveMongoClient;
-import io.quarkus.mongodb.ReactiveMongoCollection;
+import io.quarkus.mongodb.mutiny.ReactiveMongoClient;
+import io.quarkus.mongodb.mutiny.ReactiveMongoCollection;
+import io.smallrye.mutiny.Uni;
 
 @Path("/reactive-books")
 @Produces(MediaType.APPLICATION_JSON)
@@ -30,20 +35,21 @@ public class ReactiveBookResource {
     }
 
     @GET
-    public CompletionStage<List<Book>> getBooks() {
-        return collection.find().toList().run();
+    public Uni<List<Book>> getBooks() {
+        return collection.find().collectItems().asList();
     }
 
     @POST
-    public CompletionStage<Response> addBook(Book book) {
-        return collection.insertOne(book).thenApply(x -> Response.accepted().build());
+    public Uni<Response> addBook(Book book) {
+        return collection.insertOne(book)
+                .onItem().apply(x -> Response.accepted().build());
     }
 
     @GET
     @Path("/{author}")
-    public CompletionStage<List<Book>> getBooksByAuthor(@PathParam("author") String author) {
+    public Uni<List<Book>> getBooksByAuthor(@PathParam("author") String author) {
         return collection.find(eq("author", author))
-                .toList().run();
+                .collectItems().asList();
     }
 
 }

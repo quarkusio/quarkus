@@ -3,7 +3,7 @@ package io.quarkus.mongodb.deployment;
 import com.mongodb.client.MongoClient;
 
 import io.quarkus.builder.item.SimpleBuildItem;
-import io.quarkus.mongodb.ReactiveMongoClient;
+import io.quarkus.mongodb.mutiny.ReactiveMongoClient;
 import io.quarkus.runtime.RuntimeValue;
 
 public final class MongoClientBuildItem extends SimpleBuildItem {

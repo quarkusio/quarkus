@@ -22,6 +22,10 @@ import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
 import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.runtime.Network;
+import io.quarkus.mongodb.mutiny.ReactiveMongoClient;
+import io.quarkus.mongodb.mutiny.ReactiveMongoCollection;
+import io.quarkus.mongodb.mutiny.ReactiveMongoDatabase;
+import io.smallrye.mutiny.Uni;
 
 public class MongoTestBase {
 
@@ -95,8 +99,34 @@ public class MongoTestBase {
         return builder.toString();
     }
 
-    protected List<ReactiveMongoCollection<Document>> getOurCollections(ReactiveMongoClient client) {
+    protected List<io.quarkus.mongodb.mutiny.ReactiveMongoCollection<Document>> getOurCollections(
+            io.quarkus.mongodb.mutiny.ReactiveMongoClient client) {
         ReactiveMongoDatabase database = client.getDatabase(DATABASE);
+        List<String> names = database.listCollectionNames().collectItems().asList().await().indefinitely();
+        return names
+                .stream()
+                .filter(c -> c.startsWith(COLLECTION_PREFIX))
+                .map(database::getCollection)
+                .collect(Collectors.toList());
+    }
+
+    protected void dropOurCollection(io.quarkus.mongodb.mutiny.ReactiveMongoClient client) {
+        List<io.quarkus.mongodb.mutiny.ReactiveMongoCollection<Document>> collections = getOurCollections(client);
+        for (ReactiveMongoCollection col : collections) {
+            col.drop().await().indefinitely();
+        }
+    }
+
+    protected void dropOurCollection(io.quarkus.mongodb.axle.ReactiveMongoClient client) {
+        List<io.quarkus.mongodb.axle.ReactiveMongoCollection<Document>> collections = getOurCollections(client);
+        for (io.quarkus.mongodb.axle.ReactiveMongoCollection col : collections) {
+            col.drop().toCompletableFuture().join();
+        }
+    }
+
+    protected List<io.quarkus.mongodb.axle.ReactiveMongoCollection<Document>> getOurCollections(
+            io.quarkus.mongodb.axle.ReactiveMongoClient client) {
+        io.quarkus.mongodb.axle.ReactiveMongoDatabase database = client.getDatabase(DATABASE);
         List<String> names = database.listCollectionNames().toList().run().toCompletableFuture().join();
         return names
                 .stream()
@@ -105,20 +135,28 @@ public class MongoTestBase {
                 .collect(Collectors.toList());
     }
 
-    protected void dropOurCollection(ReactiveMongoClient client) {
-        List<ReactiveMongoCollection<Document>> collections = getOurCollections(client);
-        for (ReactiveMongoCollection col : collections) {
-            col.drop().toCompletableFuture().join();
-        }
-    }
-
     protected String randomCollection() {
         return COLLECTION_PREFIX + randomAlphaString(20);
     }
 
-    protected CompletionStage<Void> insertDocs(ReactiveMongoClient mongoClient, String collection, int num) {
-        ReactiveMongoDatabase database = mongoClient.getDatabase(DATABASE);
-        ReactiveMongoCollection<Document> mongoCollection = database.getCollection(collection);
+    protected Uni<Void> insertDocs(ReactiveMongoClient mongoClient, String collection, int num) {
+        io.quarkus.mongodb.mutiny.ReactiveMongoDatabase database = mongoClient.getDatabase(DATABASE);
+        io.quarkus.mongodb.mutiny.ReactiveMongoCollection<Document> mongoCollection = database
+                .getCollection(collection);
+        List<CompletableFuture<Void>> list = new ArrayList<>();
+        for (int i = 0; i < num; i++) {
+            Document doc = createDoc(i);
+            list.add(mongoCollection.insertOne(doc).subscribeAsCompletionStage());
+        }
+        CompletableFuture[] array = list.toArray(new CompletableFuture[0]);
+        return Uni.createFrom().completionStage(CompletableFuture.allOf(array));
+    }
+
+    protected CompletionStage<Void> insertDocs(io.quarkus.mongodb.axle.ReactiveMongoClient mongoClient, String collection,
+            int num) {
+        io.quarkus.mongodb.axle.ReactiveMongoDatabase database = mongoClient.getDatabase(DATABASE);
+        io.quarkus.mongodb.axle.ReactiveMongoCollection<Document> mongoCollection = database
+                .getCollection(collection);
         List<CompletableFuture<Void>> list = new ArrayList<>();
         for (int i = 0; i < num; i++) {
             Document doc = createDoc(i);

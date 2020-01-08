@@ -4,8 +4,8 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -264,13 +264,13 @@ public final class HibernateOrmProcessor {
     @BuildStep
     void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceAnnotations,
             BuildProducer<GeneratedResourceBuildItem> resources,
-            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) throws UnsupportedEncodingException {
+            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) {
         if (!hasEntities(jpaEntities, nonJpaModels)) {
             return;
         }
 
         resources.produce(new GeneratedResourceBuildItem("META-INF/services/io.quarkus.arc.ResourceReferenceProvider",
-                JPAResourceReferenceProvider.class.getName().getBytes("UTF-8")));
+                JPAResourceReferenceProvider.class.getName().getBytes(StandardCharsets.UTF_8)));
         resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_CONTEXT));
         resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_UNIT));
     }
@@ -407,6 +407,10 @@ public final class HibernateOrmProcessor {
                     systemProperty.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE,
                             hibernateConfig.dialectStorageEngine.get()));
                 }
+                // Physical Naming Strategy
+                hibernateConfig.physicalNamingStrategy.ifPresent(
+                        namingStrategy -> desc.getProperties()
+                                .setProperty(AvailableSettings.PHYSICAL_NAMING_STRATEGY, namingStrategy));
 
                 // Database
                 desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION,

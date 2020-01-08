@@ -3,7 +3,7 @@ package io.quarkus.mailer;
 /**
  * A mailer to send email.
  *
- * @see ReactiveMailer
+ * @see io.quarkus.mailer.mutiny.ReactiveMailer
  */
 public interface Mailer {
 

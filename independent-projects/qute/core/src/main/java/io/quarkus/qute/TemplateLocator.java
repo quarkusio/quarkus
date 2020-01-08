@@ -22,7 +22,7 @@ public interface TemplateLocator extends WithPriority {
         /**
          * A {@link Reader} instance produced by a locator is immediately closed right after the template content is parsed.
          * 
-         * @return
+         * @return the reader
          */
         Reader read();
 

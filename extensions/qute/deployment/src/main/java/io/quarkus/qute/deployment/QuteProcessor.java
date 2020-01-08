@@ -5,6 +5,8 @@ import static java.util.stream.Collectors.toMap;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -71,7 +73,10 @@ import io.quarkus.qute.ResultNode;
 import io.quarkus.qute.SectionHelper;
 import io.quarkus.qute.SectionHelperFactory;
 import io.quarkus.qute.Template;
+import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.TemplateLocator;
+import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.api.VariantTemplate;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
@@ -163,15 +168,37 @@ public class QuteProcessor {
                     };
                 }
             };
+        }).addLocator(new TemplateLocator() {
+            @Override
+            public Optional<TemplateLocation> locate(String id) {
+                TemplatePathBuildItem found = templatePaths.stream().filter(p -> p.getPath().equals(id)).findAny().orElse(null);
+                if (found != null) {
+                    try {
+                        byte[] content = Files.readAllBytes(found.getFullPath());
+                        return Optional.of(new TemplateLocation() {
+                            @Override
+                            public Reader read() {
+                                return new StringReader(new String(content, StandardCharsets.UTF_8));
+                            }
+
+                            @Override
+                            public Optional<Variant> getVariant() {
+                                return Optional.empty();
+                            }
+                        });
+                    } catch (IOException e) {
+                        LOGGER.warn("Unable to read the template from path: " + found.getFullPath(), e);
+                    }
+                }
+                ;
+                return Optional.empty();
+            }
         }).build();
 
         for (TemplatePathBuildItem path : templatePaths) {
-            try {
-                Template template = dummyEngine
-                        .parse(new String(Files.readAllBytes(path.getFullPath()), StandardCharsets.UTF_8));
+            Template template = dummyEngine.getTemplate(path.getPath());
+            if (template != null) {
                 analysis.add(new TemplateAnalysis(template.getGeneratedId(), template.getExpressions(), path));
-            } catch (IOException e) {
-                LOGGER.warn("Unable to analyze the template from path: " + path.getFullPath(), e);
             }
         }
         LOGGER.debugf("Finished analysis of %s templates  in %s ms",

@@ -41,13 +41,15 @@ class Parser implements Function<String, Expression> {
     private StringBuilder buffer;
     private State state;
     private int line;
+    private int lineCharacter;
     private final Deque<SectionNode.Builder> sectionStack;
     private final Deque<SectionBlock.Builder> sectionBlockStack;
     private final Deque<ParametersInfo> paramsStack;
     private final Deque<Map<String, String>> typeInfoStack;
     private int sectionBlockIdx;
     private boolean ignoreContent;
-    private String templateId;
+    private String id;
+    private String generatedId;
     private Optional<Variant> variant;
 
     public Parser(EngineImpl engine) {
@@ -56,7 +58,8 @@ class Parser implements Function<String, Expression> {
         this.buffer = new StringBuilder();
         this.sectionStack = new ArrayDeque<>();
         this.sectionStack
-                .addFirst(SectionNode.builder(ROOT_HELPER_NAME, new OriginImpl(line, templateId, variant)).setEngine(engine)
+                .addFirst(SectionNode.builder(ROOT_HELPER_NAME, origin())
+                        .setEngine(engine)
                         .setHelperFactory(new SectionHelperFactory<SectionHelper>() {
                             @Override
                             public SectionHelper initialize(SectionInitContext context) {
@@ -78,11 +81,13 @@ class Parser implements Function<String, Expression> {
         this.typeInfoStack = new ArrayDeque<>();
         this.typeInfoStack.addFirst(new HashMap<>());
         this.line = 1;
+        this.lineCharacter = 1;
     }
 
-    Template parse(Reader reader, Optional<Variant> variant) {
+    Template parse(Reader reader, Optional<Variant> variant, String id, String generatedId) {
         long start = System.currentTimeMillis();
-        this.templateId = engine.generateId();
+        this.id = id;
+        this.generatedId = generatedId;
         this.variant = variant;
         try {
             int val;
@@ -95,30 +100,29 @@ class Parser implements Function<String, Expression> {
                     // Flush the last text segment
                     flushText();
                 } else {
-                    throw new IllegalStateException(
-                            "Unexpected non-text buffer at the end of the document (probably unterminated tag):" +
-                                    buffer);
+                    throw parserError(
+                            "unexpected non-text buffer at the end of the template - probably an unterminated tag: " + buffer);
                 }
             }
 
             SectionNode.Builder root = sectionStack.peek();
             if (root == null) {
-                throw new IllegalStateException("No root section found!");
+                throw parserError("no root section found");
             }
             if (!root.helperName.equals(ROOT_HELPER_NAME)) {
-                throw new IllegalStateException("The last section on the stack is not a root but: " + root.helperName);
+                throw parserError("unterminated section [" + root.helperName + "] detected");
             }
             SectionBlock.Builder part = sectionBlockStack.peek();
             if (part == null) {
-                throw new IllegalStateException("No root section part found!");
+                throw parserError("no root section part found");
             }
             root.addBlock(part.build());
-            Template template = new TemplateImpl(engine, root.build(), templateId, variant);
+            Template template = new TemplateImpl(engine, root.build(), generatedId, variant);
             LOGGER.tracef("Parsing finished in %s ms", System.currentTimeMillis() - start);
             return template;
 
         } catch (IOException e) {
-            throw new IllegalStateException(e);
+            throw new TemplateException(e);
         }
     }
 
@@ -137,8 +141,9 @@ class Parser implements Function<String, Expression> {
                 tagCandidate(character);
                 break;
             default:
-                throw new IllegalStateException("Unknown parsing state");
+                throw parserError("unknown parsing state: " + state);
         }
+        lineCharacter++;
     }
 
     private void text(char character) {
@@ -147,6 +152,7 @@ class Parser implements Function<String, Expression> {
         } else {
             if (isLineSeparator(character)) {
                 line++;
+                lineCharacter = 1;
             }
             buffer.append(character);
         }
@@ -175,6 +181,7 @@ class Parser implements Function<String, Expression> {
             buffer.append(START_DELIMITER).append(character);
             if (isLineSeparator(character)) {
                 line++;
+                lineCharacter = 1;
             }
             state = State.TEXT;
         } else if (character == START_DELIMITER) {
@@ -197,7 +204,7 @@ class Parser implements Function<String, Expression> {
     private void flushText() {
         if (buffer.length() > 0 && !ignoreContent) {
             SectionBlock.Builder block = sectionBlockStack.peek();
-            block.addNode(new TextNode(buffer.toString(), new OriginImpl(line, templateId, variant)));
+            block.addNode(new TextNode(buffer.toString(), origin()));
         }
         this.buffer = new StringBuilder();
     }
@@ -205,6 +212,7 @@ class Parser implements Function<String, Expression> {
     private void flushTag() {
         state = State.TEXT;
         String content = buffer.toString();
+        String tag = START_DELIMITER + content + END_DELIMITER;
 
         if (content.charAt(0) == Tag.SECTION.getCommand()) {
 
@@ -216,7 +224,7 @@ class Parser implements Function<String, Expression> {
 
             Iterator<String> iter = splitSectionParams(content);
             if (!iter.hasNext()) {
-                throw new IllegalStateException("No helper name");
+                throw parserError("no helper name declared");
             }
             String sectionName = iter.next();
             sectionName = sectionName.substring(1, sectionName.length());
@@ -236,7 +244,7 @@ class Parser implements Function<String, Expression> {
                 // Add the new block
                 SectionBlock.Builder block = SectionBlock.builder("" + sectionBlockIdx++, this);
                 sectionBlockStack.addFirst(block.setLabel(sectionName));
-                processParams(sectionName, iter);
+                processParams(tag, sectionName, iter);
 
                 // Initialize the block
                 Map<String, String> typeInfos = typeInfoStack.peek();
@@ -256,17 +264,18 @@ class Parser implements Function<String, Expression> {
                 // New section
                 SectionHelperFactory<?> factory = engine.getSectionHelperFactory(sectionName);
                 if (factory == null) {
-                    throw new IllegalStateException("No section helper for: " + sectionName);
+                    throw parserError("no section helper found for " + tag);
                 }
                 paramsStack.addFirst(factory.getParameters());
                 SectionBlock.Builder mainBlock = SectionBlock.builder(SectionHelperFactory.MAIN_BLOCK_NAME, this);
                 sectionBlockStack.addFirst(mainBlock);
-                processParams(SectionHelperFactory.MAIN_BLOCK_NAME, iter);
+                processParams(tag, SectionHelperFactory.MAIN_BLOCK_NAME, iter);
 
                 // Init section block
                 Map<String, String> typeInfos = typeInfoStack.peek();
                 Map<String, String> result = factory.initializeBlock(typeInfos, mainBlock);
-                SectionNode.Builder sectionNode = SectionNode.builder(sectionName, new OriginImpl(-1, templateId, variant))
+                SectionNode.Builder sectionNode = SectionNode
+                        .builder(sectionName, origin())
                         .setEngine(engine)
                         .setHelperFactory(factory);
 
@@ -299,17 +308,16 @@ class Parser implements Function<String, Expression> {
                     && !section.helperName.equals(name)) {
                 // Block end
                 if (!name.isEmpty() && !block.getLabel().equals(name)) {
-                    throw new IllegalStateException(
-                            "Section block end tag does not match the start tag. Start: " + block.getLabel() + ", end: "
-                                    + name);
+                    throw parserError(
+                            "section block end tag [" + name + "] does not match the start tag [" + block.getLabel() + "]");
                 }
                 section.addBlock(sectionBlockStack.pop().build());
                 ignoreContent = true;
             } else {
                 // Section end
                 if (!name.isEmpty() && !section.helperName.equals(name)) {
-                    throw new IllegalStateException(
-                            "Section end tag does not match the start tag. Start: " + section.helperName + ", end: " + name);
+                    throw parserError(
+                            "section end tag [" + name + "] does not match the start tag [" + section.helperName + "]");
                 }
                 section = sectionStack.pop();
                 if (!ignoreContent) {
@@ -331,13 +339,23 @@ class Parser implements Function<String, Expression> {
             typeInfos.put(key, "[" + value + "]");
 
         } else {
-            sectionBlockStack.peek()
-                    .addNode(new ExpressionNode(apply(content), engine, new OriginImpl(line, templateId, variant)));
+            sectionBlockStack.peek().addNode(new ExpressionNode(apply(content), engine, origin()));
         }
         this.buffer = new StringBuilder();
     }
 
-    private void processParams(String label, Iterator<String> iter) {
+    private TemplateException parserError(String message) {
+        StringBuilder builder = new StringBuilder("Parser error");
+        if (!id.equals(generatedId)) {
+            builder.append(" in template [").append(id).append("]");
+        }
+        builder.append(" on line ").append(line).append(": ")
+                .append(message);
+        return new TemplateException(origin(),
+                builder.toString());
+    }
+
+    private void processParams(String tag, String label, Iterator<String> iter) {
         Map<String, String> params = new HashMap<>();
         List<Parameter> factoryParams = paramsStack.peek().get(label);
         List<String> paramValues = new ArrayList<>();
@@ -390,7 +408,7 @@ class Parser implements Function<String, Expression> {
         List<Parameter> undeclaredParams = factoryParams.stream().filter(p -> !p.optional && !params.containsKey(p.name))
                 .collect(Collectors.toList());
         if (!undeclaredParams.isEmpty()) {
-            throw new IllegalStateException("Undeclared section params: " + undeclaredParams);
+            throw parserError("mandatory section parameters not declared for " + tag + ": " + undeclaredParams);
         }
 
         params.forEach(sectionBlockStack.peek()::addParameter);
@@ -420,7 +438,7 @@ class Parser implements Function<String, Expression> {
         return -1;
     }
 
-    static Iterator<String> splitSectionParams(String content) {
+    Iterator<String> splitSectionParams(String content) {
 
         boolean stringLiteral = false;
         boolean listLiteral = false;
@@ -459,8 +477,7 @@ class Parser implements Function<String, Expression> {
 
         if (buffer.length() > 0) {
             if (stringLiteral || listLiteral) {
-                throw new IllegalStateException(
-                        "Unterminated string or array literal detected");
+                throw parserError("unterminated string or array literal detected");
             }
             parts.add(buffer.toString());
         }
@@ -568,18 +585,26 @@ class Parser implements Function<String, Expression> {
 
     @Override
     public Expression apply(String value) {
-        return parseExpression(value, typeInfoStack.peek(), new OriginImpl(line, templateId, variant));
+        return parseExpression(value, typeInfoStack.peek(), origin());
+    }
+
+    Origin origin() {
+        return new OriginImpl(line, lineCharacter, id, generatedId, variant);
     }
 
     static class OriginImpl implements Origin {
 
         private final int line;
+        private final int lineCharacter;
         private final String templateId;
+        private final String templateGeneratedId;
         private final Optional<Variant> variant;
 
-        OriginImpl(int line, String templateId, Optional<Variant> variant) {
+        OriginImpl(int line, int lineCharacter, String templateId, String templateGeneratedId, Optional<Variant> variant) {
             this.line = line;
+            this.lineCharacter = lineCharacter;
             this.templateId = templateId;
+            this.templateGeneratedId = templateGeneratedId;
             this.variant = variant;
         }
 
@@ -589,8 +614,18 @@ class Parser implements Function<String, Expression> {
         }
 
         @Override
+        public int getLineCharacter() {
+            return lineCharacter;
+        }
+
+        @Override
         public String getTemplateId() {
             return templateId;
+        }
+
+        @Override
+        public String getTemplateGeneratedId() {
+            return templateGeneratedId;
         }
 
         public Optional<Variant> getVariant() {
@@ -599,7 +634,7 @@ class Parser implements Function<String, Expression> {
 
         @Override
         public int hashCode() {
-            return Objects.hash(line, templateId);
+            return Objects.hash(line, templateGeneratedId, templateId, variant);
         }
 
         @Override
@@ -614,13 +649,15 @@ class Parser implements Function<String, Expression> {
                 return false;
             }
             OriginImpl other = (OriginImpl) obj;
-            return line == other.line && Objects.equals(templateId, other.templateId);
+            return line == other.line
+                    && Objects.equals(templateGeneratedId, other.templateGeneratedId)
+                    && Objects.equals(templateId, other.templateId) && Objects.equals(variant, other.variant);
         }
 
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
-            builder.append("OriginImpl [line=").append(line).append(", templateId=").append(templateId).append("]");
+            builder.append(templateId).append(" at line ").append(line);
             return builder.toString();
         }
 

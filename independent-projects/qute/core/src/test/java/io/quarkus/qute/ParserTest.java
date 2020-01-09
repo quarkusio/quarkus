@@ -1,9 +1,14 @@
 package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import io.quarkus.qute.TemplateLocator.TemplateLocation;
+import io.quarkus.qute.TemplateNode.Origin;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -11,29 +16,20 @@ public class ParserTest {
 
     @Test
     public void testSectionEndValidation() {
-        Engine engine = Engine.builder().addDefaultSectionHelpers()
-                .build();
-        try {
-            engine.parse("{#if test}Hello {name}!{/for}");
-            fail();
-        } catch (IllegalStateException expected) {
-            String message = expected.getMessage();
-            assertTrue(message.contains("if"));
-            assertTrue(message.contains("for"));
-        }
+        assertParserError("{#if test}Hello {name}!{/for}",
+                "Parser error on line 1: section end tag [for] does not match the start tag [if]", 1);
     }
 
     @Test
     public void testUnterminatedTag() {
-        Engine engine = Engine.builder().addDefaultSectionHelpers()
-                .build();
-        try {
-            engine.parse("{#if test}Hello {name}");
-            fail();
-        } catch (IllegalStateException expected) {
-            String message = expected.getMessage();
-            assertTrue(message.contains("if"));
-        }
+        assertParserError("{#if test}Hello {name}",
+                "Parser error on line 1: unterminated section [if] detected", 1);
+    }
+
+    @Test
+    public void testNonexistentHelper() {
+        assertParserError("Hello!\n {#foo test/}",
+                "Parser error on line 2: no section helper found for {#foo test/}", 2);
     }
 
     @Test
@@ -95,6 +91,54 @@ public class ParserTest {
                 + "{/}");
         assertEquals(6, find(template.getExpressions(), "foo.items").origin.getLine());
         assertEquals(8, find(template.getExpressions(), "item.name").origin.getLine());
+    }
+
+    @Test
+    public void testNodeOrigin() {
+        Engine engine = Engine.builder().addDefaultSectionHelpers()
+                .build();
+        Template template = engine.parse("12{foo}");
+        Origin origin = find(template.getExpressions(), "foo").origin;
+        assertEquals(1, origin.getLine());
+    }
+
+    @Test
+    public void testWithTemplateLocator() {
+        Engine engine = Engine.builder().addDefaultSectionHelpers().addLocator(id -> Optional.of(new TemplateLocation() {
+
+            @Override
+            public Reader read() {
+                return new StringReader("{#if}");
+            }
+
+            @Override
+            public Optional<Variant> getVariant() {
+                return Optional.empty();
+            }
+
+        })).build();
+        try {
+            engine.getTemplate("foo.html");
+            fail("No parser error found");
+        } catch (TemplateException expected) {
+            assertNotNull(expected.getOrigin());
+            assertEquals(
+                    "Parser error in template [foo.html] on line 1: mandatory section parameters not declared for {#if}: [Parameter [name=condition, defaultValue=null, optional=false]]",
+                    expected.getMessage());
+        }
+    }
+
+    private void assertParserError(String template, String message, int line) {
+        Engine engine = Engine.builder().addDefaultSectionHelpers().build();
+        try {
+            engine.parse(template);
+            fail("No parser error found");
+        } catch (TemplateException expected) {
+            assertNotNull(expected.getOrigin());
+            assertEquals(line, expected.getOrigin().getLine(), "Wrong line");
+            assertEquals(message,
+                    expected.getMessage());
+        }
     }
 
     private void assertExpr(Set<Expression> expressions, String value, int parts, String typeCheckInfo) {

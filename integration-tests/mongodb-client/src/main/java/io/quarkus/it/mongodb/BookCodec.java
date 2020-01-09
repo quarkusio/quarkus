@@ -9,14 +9,14 @@ import org.bson.codecs.CollectibleCodec;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.EncoderContext;
 
-import com.mongodb.MongoClient;
+import com.mongodb.MongoClientSettings;
 
 public class BookCodec implements CollectibleCodec<Book> {
 
     private final Codec<Document> documentCodec;
 
     public BookCodec() {
-        this.documentCodec = MongoClient.getDefaultCodecRegistry().get(Document.class);
+        this.documentCodec = MongoClientSettings.getDefaultCodecRegistry().get(Document.class);
     }
 
     @Override

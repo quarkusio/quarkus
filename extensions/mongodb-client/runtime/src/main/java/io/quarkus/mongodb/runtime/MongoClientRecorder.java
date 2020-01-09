@@ -79,7 +79,7 @@ public class MongoClientRecorder {
     }
 
     void initialize(MongoClientConfig config, List<String> codecProviders) {
-        CodecRegistry defaultCodecRegistry = com.mongodb.MongoClient.getDefaultCodecRegistry();
+        CodecRegistry defaultCodecRegistry = MongoClientSettings.getDefaultCodecRegistry();
 
         MongoClientSettings.Builder settings = MongoClientSettings.builder();
 

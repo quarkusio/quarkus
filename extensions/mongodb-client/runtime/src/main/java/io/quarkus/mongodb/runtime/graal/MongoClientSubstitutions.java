@@ -114,25 +114,6 @@ final class InternalStreamConnectionSubtitution {
     }
 }
 
-@TargetClass(MongoClientOptions.class)
-final class MongoClientOptionsSubstitution {
-
-    @Alias
-    private SocketFactory socketFactory;
-
-    @Alias
-    private static SocketFactory DEFAULT_SOCKET_FACTORY;
-
-    @Substitute
-    public SocketFactory getSocketFactory() {
-        if (this.socketFactory != null) {
-            return this.socketFactory;
-        } else {
-            return DEFAULT_SOCKET_FACTORY;
-        }
-    }
-}
-
 @TargetClass(UnixSocketChannelStream.class)
 @Delete
 final class UnixSocketChannelStreamSubstitution {

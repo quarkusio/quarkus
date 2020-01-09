@@ -331,7 +331,7 @@ More information in the codec documentation: https://mongodb.github.io/mongo-jav
 ----
 package org.acme.rest.json.codec;
 
-import com.mongodb.MongoClient;
+import com.mongodb.MongoClientSettings;
 import org.acme.rest.json.Fruit;
 import org.bson.*;
 import org.bson.codecs.Codec;
@@ -346,7 +346,7 @@ public class FruitCodec implements CollectibleCodec<Fruit> {
     private final Codec<Document> documentCodec;
 
     public FruitCodec() {
-        this.documentCodec = MongoClient.getDefaultCodecRegistry().get(Document.class);
+        this.documentCodec = MongoClientSettings.getDefaultCodecRegistry().get(Document.class);
     }
 
     @Override
@@ -478,6 +478,21 @@ to validate the connection to the cluster.
 So when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
 
 This behavior can be disabled by setting the `quarkus.mongodb.health.enabled` property to `false` in your `application.properties`.
+
+== The legacy client
+
+We don't include the legacy MongoDB client by default. It contains the now retired MongoDB Java API (DB, DBCollection,... )
+and the `com.mongodb.MongoClient` that is now superseded by `com.mongodb.client.MongoClient`.
+
+If you want to use the legacy API, you need to add the following dependency to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.mongodb</groupId>
+    <artifactId>mongodb-driver-legacy</artifactId>
+</dependency>
+----
 
 == Building a native executable
 

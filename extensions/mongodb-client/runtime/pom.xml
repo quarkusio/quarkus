@@ -13,6 +13,7 @@
     <artifactId>quarkus-mongodb-client</artifactId>
     <name>Quarkus - MongoDB Client - Runtime</name>
     <description>An imperative and reactive client for MongoDB</description>
+
     <dependencies>
 
         <dependency>
@@ -29,7 +30,7 @@
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
-            <artifactId>mongo-java-driver</artifactId>
+            <artifactId>mongodb-driver-sync</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>

@@ -52,6 +52,7 @@ import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
@@ -241,22 +242,13 @@ public class QuarkusDev extends QuarkusTask {
                 throw new GradleException("Failed to resolve application model " + extension.getAppArtifact() + " dependencies",
                         e);
             }
-            for (AppDependency appDep : appModel.getAllDependencies()) {
-                addToClassPaths(classPathManifest, context, appDep.getArtifact().getPath().toFile());
-            }
 
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
             File wiringClassesDirectory = new File(getBuildDir(), "wiring-classes");
             wiringClassesDirectory.mkdirs();
             addToClassPaths(classPathManifest, context, wiringClassesDirectory);
 
-            //we also want to add the maven plugin jar to the class path
-            //this allows us to just directly use classes, without messing around copying them
-            //to the runner jar
-            addGradlePluginDeps(classPathManifest, context);
-
             //now we need to build a temporary jar to actually run
-
             File tempFile = new File(getBuildDir(), extension.finalName() + "-dev.jar");
             tempFile.delete();
             tempFile.deleteOnExit();
@@ -271,6 +263,7 @@ public class QuarkusDev extends QuarkusTask {
                 res = file.getAbsolutePath();
             }
 
+            final Set<AppArtifactKey> projectDependencies = new HashSet<>();
             final Configuration compileCp = project.getConfigurations()
                     .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
             final DependencySet compileCpDependencies = compileCp.getAllDependencies();
@@ -279,6 +272,11 @@ public class QuarkusDev extends QuarkusTask {
                 if (!(dependency instanceof ProjectDependency)) {
                     continue;
                 }
+
+                // Create the key via AppArtifact to make sure we use same defaults for type and classifier
+                AppArtifactKey key = new AppArtifact(dependency.getGroup(), dependency.getName(), dependency.getVersion())
+                        .getKey();
+                projectDependencies.add(key);
 
                 Project dependencyProject = ((ProjectDependency) dependency).getDependencyProject();
                 Convention convention = dependencyProject.getConvention();
@@ -307,6 +305,17 @@ public class QuarkusDev extends QuarkusTask {
 
                 context.getModules().add(wsModuleInfo);
             }
+
+            for (AppDependency appDependency : appModel.getAllDependencies()) {
+                if (!projectDependencies.contains(appDependency.getArtifact().getKey())) {
+                    addToClassPaths(classPathManifest, context, appDependency.getArtifact().getPath().toFile());
+                }
+            }
+
+            //we also want to add the maven plugin jar to the class path
+            //this allows us to just directly use classes, without messing around copying them
+            //to the runner jar
+            addGradlePluginDeps(classPathManifest, context);
 
             DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(
                     project.getName(),

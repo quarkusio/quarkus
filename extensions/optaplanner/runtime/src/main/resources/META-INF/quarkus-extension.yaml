@@ -1,5 +1,5 @@
 ---
-name: "Kogito OptaPlanner constraint solver AI"
+name: "OptaPlanner constraint solver AI"
 metadata:
   keywords:
   - "optaplanner"

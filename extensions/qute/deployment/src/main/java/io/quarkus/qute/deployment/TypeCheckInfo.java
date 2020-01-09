@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Objects;
+import java.util.function.Function;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -15,31 +15,27 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
+import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expressions;
 
 class TypeCheckInfo {
 
-    static final String LEFT_ANGLE = "<";
-    static final String RIGHT_ANGLE = ">";
-    static final String RIGHT_BRACKET = "]";
-    static final String ROOT_HINT = "$$root$$";
-
-    final Type resolvedType;
-    final ClassInfo rawClass;
-    final List<String> parts;
-    final Map<String, String> helperHints;
-
-    public TypeCheckInfo(String value, IndexView index) {
+    static TypeCheckInfo create(Expression expression, IndexView index, Function<String, String> templateIdToPathFun) {
+        String value = expression.typeCheckInfo;
+        List<String> parts;
+        Map<String, String> helperHints;
+        Type resolvedType;
+        ClassInfo rawClass;
         int partsIdx = value.indexOf(RIGHT_BRACKET);
         if (partsIdx + 1 < value.length()) {
             String partsStr = value
                     .substring(partsIdx + 1, value.length());
-            this.parts = new ArrayList<>(Expressions.splitParts(partsStr));
-            this.helperHints = new HashMap<>();
+            parts = new ArrayList<>(Expressions.splitParts(partsStr));
+            helperHints = new HashMap<>();
             // [java.util.List<org.acme.Item>]<for>.name
             String firstPart = parts.get(0);
             if (firstPart.equals(helperHint(firstPart))) {
-                this.parts.remove(0);
+                parts.remove(0);
                 helperHints.put(ROOT_HINT, firstPart);
             }
             for (ListIterator<String> iterator = parts.listIterator(); iterator.hasNext();) {
@@ -52,19 +48,44 @@ class TypeCheckInfo {
                 }
             }
         } else {
-            this.parts = Collections.emptyList();
-            this.helperHints = Collections.emptyMap();
+            parts = Collections.emptyList();
+            helperHints = Collections.emptyMap();
         }
         String classStr = value.substring(1, value.indexOf("]"));
         if (classStr.equals(Expressions.TYPECHECK_NAMESPACE_PLACEHOLDER)) {
-            this.rawClass = null;
-            this.resolvedType = null;
+            rawClass = null;
+            resolvedType = null;
         } else {
             // "java.util.List<org.acme.Item>" from [java.util.List<org.acme.Item>].name
             DotName rawClassName = rawClassName(classStr);
-            this.rawClass = Objects.requireNonNull(index.getClassByName(rawClassName));
-            this.resolvedType = resolveType(classStr);
+            rawClass = index.getClassByName(rawClassName);
+            if (rawClass == null) {
+                throw new TemplateException(
+                        "Class [" + rawClassName + "] used in the parameter declaration in template ["
+                                + templateIdToPathFun.apply(expression.origin.getTemplateId()) + "] on line "
+                                + expression.origin.getLine()
+                                + " was not found in the application index. Make sure it is spelled correctly.");
+            }
+            resolvedType = resolveType(classStr);
         }
+        return new TypeCheckInfo(resolvedType, rawClass, parts, helperHints);
+    }
+
+    static final String LEFT_ANGLE = "<";
+    static final String RIGHT_ANGLE = ">";
+    static final String RIGHT_BRACKET = "]";
+    static final String ROOT_HINT = "$$root$$";
+
+    final Type resolvedType;
+    final ClassInfo rawClass;
+    final List<String> parts;
+    final Map<String, String> helperHints;
+
+    TypeCheckInfo(Type resolvedType, ClassInfo rawClass, List<String> parts, Map<String, String> helperHints) {
+        this.resolvedType = resolvedType;
+        this.rawClass = rawClass;
+        this.parts = parts;
+        this.helperHints = helperHints;
     }
 
     String getHelperHint(String part) {

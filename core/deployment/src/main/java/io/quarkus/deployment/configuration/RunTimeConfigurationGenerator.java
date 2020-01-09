@@ -574,9 +574,27 @@ public final class RunTimeConfigurationGenerator {
 
             // wrap it up
             final BytecodeCreator isError = readConfig.ifNonZero(readConfig.invokeStaticMethod(CD_IS_ERROR)).trueBranch();
+            ResultHandle niceErrorMessage = isError
+                    .invokeStaticMethod(
+                            MethodDescriptor.ofMethod(ConfigDiagnostic.class, "getNiceErrorMessage", String.class));
             readConfig.invokeStaticMethod(CD_RESET_ERROR);
-            isError.throwException(ConfigurationException.class,
-                    "One or more configuration errors has prevented the application from starting");
+
+            // throw the proper exception
+            final ResultHandle finalErrorMessageBuilder = isError.newInstance(SB_NEW);
+            isError.invokeVirtualMethod(SB_APPEND_STRING, finalErrorMessageBuilder, isError
+                    .load("One or more configuration errors has prevented the application from starting. The errors are:\n"));
+            isError.invokeVirtualMethod(SB_APPEND_STRING, finalErrorMessageBuilder, niceErrorMessage);
+            final ResultHandle finalErrorMessage = isError.invokeVirtualMethod(OBJ_TO_STRING, finalErrorMessageBuilder);
+            final ResultHandle configurationException = isError
+                    .newInstance(MethodDescriptor.ofConstructor(ConfigurationException.class, String.class), finalErrorMessage);
+            final ResultHandle emptyStackTraceElement = isError.newArray(StackTraceElement.class, isError.load(0));
+            // empty out the stack trace in order to not make the configuration errors more visible (the stack trace contains generated classes anyway that don't provide any value)
+            isError.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(ConfigurationException.class, "setStackTrace", void.class,
+                            StackTraceElement[].class),
+                    configurationException, emptyStackTraceElement);
+            isError.throwException(configurationException);
+
             readConfig.returnValue(null);
             readConfig.close();
             clinit.returnValue(null);

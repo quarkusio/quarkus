@@ -198,7 +198,7 @@ Get a CDI portable extension running::
 The CDI portable extension model is very flexible.
 Too flexible to benefit from the build time boot promoted by Quarkus.
 Most extension we have seen do not make use of these extreme flexibilities capabilities.
-The way to port a CDI extension to Quarkus is to rewrite it as a Quarkus extension which will define the various beans at build time (deployment time in extension parley).
+The way to port a CDI extension to Quarkus is to rewrite it as a Quarkus extension which will define the various beans at build time (deployment time in extension parlance).
 
 == Technical aspect
 

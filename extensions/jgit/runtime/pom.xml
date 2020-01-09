@@ -15,7 +15,7 @@
     <description>Access your Git repositories</description>
     <dependencies>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
+            <groupId>com.oracle.substratevm</groupId>
             <artifactId>svm</artifactId>
         </dependency>
         <dependency>

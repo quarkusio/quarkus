@@ -66,6 +66,7 @@ public class NativeImageAutoFeatureStep {
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
+    static final String LOCALIZATION_SUPPORT = "com.oracle.svm.core.jdk.LocalizationSupport";
 
     @BuildStep
     List<NativeImageResourceBuildItem> registerPackageResources(
@@ -205,26 +206,74 @@ public class NativeImageAutoFeatureStep {
         }
 
         if (!resourceBundles.isEmpty()) {
-            ResultHandle locClass = overallCatch.loadClass(LOCALIZATION_FEATURE);
+            /*
+             * Start of a quick and dirty fix to support both GraalVM 19.2.1 and 19.3.0.2 at the same time.
+             * This is only a first version that will be improved if the double GraalVM support works.
+             */
 
-            ResultHandle params = overallCatch.marshalAsArray(Class.class, overallCatch.loadClass(String.class));
-            ResultHandle registerMethod = overallCatch.invokeVirtualMethod(
-                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), locClass,
-                    overallCatch.load("addBundleToCache"), params);
-            overallCatch.invokeVirtualMethod(ofMethod(AccessibleObject.class, "setAccessible", void.class, boolean.class),
-                    registerMethod, overallCatch.load(true));
+            // This try block should be removed with the fix.
+            TryBlock tempTryBlock = overallCatch.tryBlock();
 
-            ResultHandle locSupport = overallCatch.invokeStaticMethod(
+            /*
+             * Start of GraalVM 19.3.0.2 compatibility code.
+             */
+            ResultHandle locFeatureClass = tempTryBlock.loadClass(LOCALIZATION_FEATURE);
+
+            ResultHandle locFeatureParams = tempTryBlock.marshalAsArray(Class.class, tempTryBlock.loadClass(String.class));
+            ResultHandle locFeatureRegisterMethod = tempTryBlock.invokeVirtualMethod(
+                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), locFeatureClass,
+                    tempTryBlock.load("addBundleToCache"), locFeatureParams);
+            tempTryBlock.invokeVirtualMethod(ofMethod(AccessibleObject.class, "setAccessible", void.class, boolean.class),
+                    locFeatureRegisterMethod, tempTryBlock.load(true));
+
+            ResultHandle locFeature = tempTryBlock.invokeStaticMethod(
                     IMAGE_SINGLETONS_LOOKUP,
-                    locClass);
+                    locFeatureClass);
             for (NativeImageResourceBundleBuildItem i : resourceBundles) {
-                TryBlock et = overallCatch.tryBlock();
+                TryBlock et = tempTryBlock.tryBlock();
 
                 et.invokeVirtualMethod(ofMethod(Method.class, "invoke", Object.class, Object.class, Object[].class),
-                        registerMethod, locSupport, et.marshalAsArray(Object.class, et.load(i.getBundleName())));
+                        locFeatureRegisterMethod, locFeature, et.marshalAsArray(Object.class, et.load(i.getBundleName())));
                 CatchBlockCreator c = et.addCatch(Throwable.class);
                 //c.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), c.getCaughtException());
             }
+            /*
+             * End of GraalVM 19.3.0.2 compatibility code.
+             */
+
+            // This catch block should be removed with the fix.
+            CatchBlockCreator tempCatchBlock = tempTryBlock.addCatch(Throwable.class);
+
+            /*
+             * Start of GraalVM 19.2.1 compatibility code.
+             */
+            ResultHandle locSupportClass = tempCatchBlock.loadClass(LOCALIZATION_SUPPORT);
+
+            ResultHandle locSupportParams = tempCatchBlock.marshalAsArray(Class.class, tempCatchBlock.loadClass(String.class));
+            ResultHandle locSupportRegisterMethod = tempCatchBlock.invokeVirtualMethod(
+                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), locSupportClass,
+                    tempCatchBlock.load("addBundleToCache"), locSupportParams);
+            tempCatchBlock.invokeVirtualMethod(ofMethod(AccessibleObject.class, "setAccessible", void.class, boolean.class),
+                    locSupportRegisterMethod, tempCatchBlock.load(true));
+
+            ResultHandle locSupport = tempCatchBlock.invokeStaticMethod(
+                    IMAGE_SINGLETONS_LOOKUP,
+                    locSupportClass);
+            for (NativeImageResourceBundleBuildItem i : resourceBundles) {
+                TryBlock et = tempCatchBlock.tryBlock();
+
+                et.invokeVirtualMethod(ofMethod(Method.class, "invoke", Object.class, Object.class, Object[].class),
+                        locSupportRegisterMethod, locSupport, et.marshalAsArray(Object.class, et.load(i.getBundleName())));
+                CatchBlockCreator c = et.addCatch(Throwable.class);
+                //c.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), c.getCaughtException());
+            }
+            /*
+             * End of GraalVM 19.2.1 compatibility code.
+             */
+
+            /*
+             * End of the quick and dirty fix.
+             */
         }
         int count = 0;
 

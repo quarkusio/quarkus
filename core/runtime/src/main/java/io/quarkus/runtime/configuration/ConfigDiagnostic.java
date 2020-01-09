@@ -1,6 +1,8 @@
 package io.quarkus.runtime.configuration;
 
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
@@ -14,28 +16,31 @@ public final class ConfigDiagnostic {
     private static final Logger log = Logger.getLogger("io.quarkus.config");
 
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-    private static volatile boolean error = false;
+    private static List<String> errorsMessages = new CopyOnWriteArrayList<>();
 
     private ConfigDiagnostic() {
     }
 
     public static void invalidValue(String name, IllegalArgumentException ex) {
         final String message = ex.getMessage();
-        log.errorf("An invalid value was given for configuration key \"%s\": %s", name,
+        final String loggedMessage = String.format("An invalid value was given for configuration key \"%s\": %s", name,
                 message == null ? ex.toString() : message);
-        error = true;
+        log.error(loggedMessage);
+        errorsMessages.add(loggedMessage);
     }
 
     public static void missingValue(String name, NoSuchElementException ex) {
         final String message = ex.getMessage();
-        log.errorf("Configuration key \"%s\" is required, but its value is empty/missing: %s", name,
+        final String loggedMessage = String.format("Configuration key \"%s\" is required, but its value is empty/missing: %s",
+                name,
                 message == null ? ex.toString() : message);
-        error = true;
+        log.error(loggedMessage);
+        errorsMessages.add(loggedMessage);
     }
 
     public static void duplicate(String name) {
-        log.errorf("Configuration key \"%s\" was specified more than once", name);
-        error = true;
+        final String loggedMessage = String.format("Configuration key \"%s\" was specified more than once", name);
+        errorsMessages.add(loggedMessage);
     }
 
     public static void deprecated(String name) {
@@ -67,13 +72,17 @@ public final class ConfigDiagnostic {
      * @return {@code true} if a fatal configuration error has occurred
      */
     public static boolean isError() {
-        return error;
+        return !errorsMessages.isEmpty();
     }
 
     /**
      * Reset the config error status (for e.g. testing).
      */
     public static void resetError() {
-        error = false;
+        errorsMessages.clear();
+    }
+
+    public static String getNiceErrorMessage() {
+        return String.join("\n", errorsMessages);
     }
 }

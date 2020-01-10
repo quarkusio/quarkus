@@ -46,6 +46,8 @@ public final class Capabilities extends SimpleBuildItem {
     @Deprecated
     public static final String SECURITY = Capability.SECURITY.getName();
     @Deprecated
+    public static final String SECURITY_ELYTRON_FILESYSTEM = "io.quarkus.elytron.security.filesystem";
+    @Deprecated
     public static final String SECURITY_ELYTRON_OAUTH2 = Capability.SECURITY_ELYTRON_OAUTH2.getName();
     @Deprecated
     public static final String SECURITY_ELYTRON_JDBC = Capability.SECURITY_ELYTRON_JDBC.getName();

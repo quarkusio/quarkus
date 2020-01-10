@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<identity xmlns="urn:elytron:1.0">
+    <credentials>
+        <password algorithm="clear" format="base64">AWpiMHNz</password>
+    </credentials>
+    <attributes>
+        <attribute name="groups" value="Admin"></attribute>
+        <attribute name="groups" value="admin"></attribute>
+        <attribute name="groups" value="Tester"></attribute>
+        <attribute name="groups" value="user"></attribute>
+    </attributes></identity>

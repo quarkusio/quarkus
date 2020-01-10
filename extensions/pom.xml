@@ -114,6 +114,7 @@
         <module>security-jpa</module>
         <module>elytron-security-common</module>
         <module>elytron-security</module>
+        <module>elytron-security-filesystem</module>
         <module>elytron-security-jdbc</module>
         <module>elytron-security-ldap</module>
         <module>elytron-security-properties-file</module>

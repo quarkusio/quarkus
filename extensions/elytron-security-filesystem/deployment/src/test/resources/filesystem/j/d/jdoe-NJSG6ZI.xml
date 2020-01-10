@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<identity xmlns="urn:elytron:1.0">
+    <credentials>
+        <password algorithm="clear" format="base64">AXA0c3N3MHJk</password>
+    </credentials>
+    <attributes>
+        <attribute name="groups" value="NoRolesUser"></attribute>
+    </attributes></identity>

@@ -1,0 +1,10 @@
+---
+name: "Elytron Security Filesystem"
+metadata:
+  keywords:
+  - "security"
+  - "file"
+  - "filesystem"
+  categories:
+  - "security"
+  status: "preview"

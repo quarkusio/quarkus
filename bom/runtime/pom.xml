@@ -1687,6 +1687,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-elytron-security-filesystem</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-elytron-security-filesystem-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-security-jpa</artifactId>
                 <version>${project.version}</version>
             </dependency>

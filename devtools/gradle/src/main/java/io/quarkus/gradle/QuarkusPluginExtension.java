@@ -108,7 +108,9 @@ public class QuarkusPluginExtension {
     private File getLastFile(FileCollection fileCollection) {
         File result = null;
         for (File f : fileCollection) {
-            result = f;
+            if (result == null || f.exists()) {
+                result = f;
+            }
         }
         return result;
     }

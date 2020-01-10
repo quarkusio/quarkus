@@ -11,6 +11,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
+import io.quarkus.arc.deployment.ArcConfig;
 import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
@@ -28,10 +29,12 @@ import io.quarkus.gizmo.ClassOutput;
 public class ConfigPropertiesBuildStep {
 
     @BuildStep
-    void produceConfigPropertiesMetadata(CombinedIndexBuildItem combinedIndex,
+    void produceConfigPropertiesMetadata(CombinedIndexBuildItem combinedIndex, ArcConfig arcConfig,
             BuildProducer<ConfigPropertiesMetadataBuildItem> configPropertiesMetadataProducer) {
         for (AnnotationInstance annotation : combinedIndex.getIndex().getAnnotations(DotNames.CONFIG_PROPERTIES)) {
-            configPropertiesMetadataProducer.produce(new ConfigPropertiesMetadataBuildItem(annotation));
+            configPropertiesMetadataProducer
+                    .produce(
+                            new ConfigPropertiesMetadataBuildItem(annotation, arcConfig.configPropertiesDefaultNamingStrategy));
         }
     }
 

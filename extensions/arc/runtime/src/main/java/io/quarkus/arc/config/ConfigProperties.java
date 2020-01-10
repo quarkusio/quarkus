@@ -43,10 +43,19 @@ public @interface ConfigProperties {
      * Then to set the {@code fooBar} field, the corresponding property would be {@code whatever.fooBar}.
      * If {@code namingStrategy=NamingStrategy.KEBAB_CASE} were being used, then the corresponding property would be
      * {@code whatever.foo-bar}
+     *
+     * When this field is not set, then the default strategy will be determined by the value of
+     * quarkus.arc.config-properties-default-naming-strategy
      */
-    NamingStrategy namingStrategy() default NamingStrategy.VERBATIM;
+    NamingStrategy namingStrategy() default NamingStrategy.FROM_CONFIG;
 
     enum NamingStrategy {
+        FROM_CONFIG {
+            @Override
+            public String getName(String name) {
+                throw new IllegalStateException("The naming strategy needs to substituted with the configured naming strategy");
+            }
+        },
         VERBATIM {
             @Override
             public String getName(String name) {

@@ -73,7 +73,7 @@ public class NativeImageBuildStep {
         Path outputDir = nativeImageSourceJarBuildItem.getPath().getParent();
 
         final String runnerJarName = runnerJar.getFileName().toString();
-
+        System.out.println("CI, please, could you build my PR?");
         HashMap<String, String> env = new HashMap<>(System.getenv());
         List<String> nativeImage;
 

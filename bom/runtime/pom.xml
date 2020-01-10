@@ -829,7 +829,7 @@
                 <groupId>org.jboss.logmanager</groupId>
                 <artifactId>jboss-logmanager-embedded</artifactId>
                 <version>${jboss-logmanager.version}</version>
-                <exclusions>
+                <exclusions> 
                     <exclusion>
                         <groupId>com.oracle.substratevm</groupId>
                         <artifactId>svm</artifactId>

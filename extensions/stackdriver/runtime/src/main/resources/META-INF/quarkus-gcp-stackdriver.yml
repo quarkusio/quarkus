@@ -5,7 +5,7 @@ metadata:
     - "opencensus"
     - "stackdriver"
     - "observability"
-  guide: "https://quarkus.io/guides/datasource"
+  guide: "https://quarkus.io/guides/stackdrvier"
   categories:
     - "observability"
   status: "draft"

@@ -21,6 +21,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.bean.JavaBeanUtil;
@@ -61,7 +62,8 @@ final class InterfaceConfigPropertiesUtil {
     }
 
     static String generateImplementationForInterfaceConfigProperties(ClassInfo originalInterface, ClassOutput classOutput,
-            IndexView index, String prefixStr, BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
+            IndexView index, String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
             BuildProducer<ConfigPropertyBuildItem> configProperties) {
         Set<DotName> allInterfaces = new HashSet<>();
         allInterfaces.add(originalInterface.name());
@@ -109,7 +111,7 @@ final class InterfaceConfigPropertiesUtil {
                      * and instead just rely on what MP Config gives us back
                      */
 
-                    NameAndDefaultValue nameAndDefaultValue = determinePropertyNameAndDefaultValue(method);
+                    NameAndDefaultValue nameAndDefaultValue = determinePropertyNameAndDefaultValue(method, namingStrategy);
                     String fullConfigName = prefixStr + "." + nameAndDefaultValue.getName();
                     try (MethodCreator methodCreator = interfaceImplClassCreator.getMethodCreator(method.name(),
                             method.returnType().name().toString())) {
@@ -196,27 +198,29 @@ final class InterfaceConfigPropertiesUtil {
         return ((flags & (Modifier.ABSTRACT | Modifier.PUBLIC | Modifier.STATIC)) == Modifier.PUBLIC);
     }
 
-    private static NameAndDefaultValue determinePropertyNameAndDefaultValue(MethodInfo method) {
+    private static NameAndDefaultValue determinePropertyNameAndDefaultValue(MethodInfo method,
+            ConfigProperties.NamingStrategy namingStrategy) {
         AnnotationInstance configPropertyAnnotation = method.annotation(DotNames.CONFIG_PROPERTY);
         if (configPropertyAnnotation != null) {
             AnnotationValue nameValue = configPropertyAnnotation.value("name");
-            String name = (nameValue == null) || nameValue.asString().isEmpty() ? getPropertyNameFromMethodName(method)
+            String name = (nameValue == null) || nameValue.asString().isEmpty() ? getPropertyName(method, namingStrategy)
                     : nameValue.asString();
             AnnotationValue defaultValue = configPropertyAnnotation.value("defaultValue");
 
             return new NameAndDefaultValue(name, defaultValue != null ? defaultValue.asString() : null);
         }
 
-        return new NameAndDefaultValue(getPropertyNameFromMethodName(method));
+        return new NameAndDefaultValue(getPropertyName(method, namingStrategy));
     }
 
-    private static String getPropertyNameFromMethodName(MethodInfo method) {
+    private static String getPropertyName(MethodInfo method, ConfigProperties.NamingStrategy namingStrategy) {
+        String effectiveName = method.name();
         try {
-            return JavaBeanUtil.getPropertyNameFromGetter(method.name());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Method " + method.name() + " of interface " + method.declaringClass()
-                    + " is not a getter method. Either rename the method to follow getter name conventions or annotate the method with @ConfigProperty");
+            effectiveName = JavaBeanUtil.getPropertyNameFromGetter(method.name());
+        } catch (IllegalArgumentException ignored) {
+
         }
+        return namingStrategy.getName(effectiveName);
     }
 
     private static class NameAndDefaultValue {

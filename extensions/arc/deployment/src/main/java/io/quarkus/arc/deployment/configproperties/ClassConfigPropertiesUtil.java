@@ -25,6 +25,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
 import io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.ReadOptionalResponse;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -115,7 +116,8 @@ final class ClassConfigPropertiesUtil {
      * @return true if the configuration class needs validation
      */
     static boolean addProducerMethodForClassConfigProperties(ClassLoader classLoader, ClassInfo configPropertiesClassInfo,
-            ClassCreator producerClassCreator, String prefixStr, IndexView applicationIndex,
+            ClassCreator producerClassCreator, String prefixStr, ConfigProperties.NamingStrategy namingStrategy,
+            IndexView applicationIndex,
             BuildProducer<ConfigPropertyBuildItem> configProperties) {
 
         if (!DotNames.OBJECT.equals(configPropertiesClassInfo.superName())) {
@@ -167,8 +169,8 @@ final class ClassConfigPropertiesUtil {
                 configObjectClassStr, produceMethodParameterTypes)) {
             methodCreator.addAnnotation(Produces.class);
 
-            ResultHandle configObject = populateConfigObject(classLoader, configPropertiesClassInfo, prefixStr, methodCreator,
-                    applicationIndex, configProperties);
+            ResultHandle configObject = populateConfigObject(classLoader, configPropertiesClassInfo, prefixStr, namingStrategy,
+                    methodCreator, applicationIndex, configProperties);
 
             if (needsValidation) {
                 createValidationCodePath(methodCreator, configObject, prefixStr);
@@ -198,7 +200,8 @@ final class ClassConfigPropertiesUtil {
     }
 
     private static ResultHandle populateConfigObject(ClassLoader classLoader, ClassInfo configClassInfo, String prefixStr,
-            MethodCreator methodCreator, IndexView applicationIndex, BuildProducer<ConfigPropertyBuildItem> configProperties) {
+            ConfigProperties.NamingStrategy namingStrategy, MethodCreator methodCreator, IndexView applicationIndex,
+            BuildProducer<ConfigPropertyBuildItem> configProperties) {
         String configObjectClassStr = configClassInfo.name().toString();
         ResultHandle configObject = methodCreator.newInstance(MethodDescriptor.ofConstructor(configObjectClassStr));
 
@@ -245,11 +248,12 @@ final class ClassConfigPropertiesUtil {
                 }
 
                 ResultHandle nestedConfigObject = populateConfigObject(classLoader, fieldTypeClassInfo,
-                        prefixStr + "." + field.name(), methodCreator, applicationIndex, configProperties);
+                        prefixStr + "." + namingStrategy.getName(field.name()), namingStrategy, methodCreator,
+                        applicationIndex, configProperties);
                 createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, nestedConfigObject);
 
             } else {
-                String fullConfigName = prefixStr + "." + field.name();
+                String fullConfigName = prefixStr + "." + namingStrategy.getName(field.name());
                 ResultHandle config = methodCreator.getMethodParam(0);
                 if (DotNames.OPTIONAL.equals(fieldTypeDotName)) {
                     Type genericType = determineSingleGenericType(field.type(),

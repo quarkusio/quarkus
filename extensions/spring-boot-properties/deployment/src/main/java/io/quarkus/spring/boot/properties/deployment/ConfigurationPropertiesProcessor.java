@@ -5,6 +5,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.arc.deployment.configproperties.ConfigPropertiesMetadataBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -43,13 +44,14 @@ public class ConfigurationPropertiesProcessor {
     }
 
     private ConfigPropertiesMetadataBuildItem createConfigPropertiesMetadataFromClass(AnnotationInstance annotation) {
-        return new ConfigPropertiesMetadataBuildItem(annotation.target().asClass(), getPrefix(annotation));
+        return new ConfigPropertiesMetadataBuildItem(annotation.target().asClass(), getPrefix(annotation),
+                ConfigProperties.NamingStrategy.VERBATIM);
     }
 
     private ConfigPropertiesMetadataBuildItem createConfigPropertiesMetadataFromMethod(AnnotationInstance annotation,
             IndexView index) {
         return new ConfigPropertiesMetadataBuildItem(index.getClassByName(annotation.target().asMethod().returnType().name()),
-                getPrefix(annotation));
+                getPrefix(annotation), ConfigProperties.NamingStrategy.VERBATIM);
     }
 
     private String getPrefix(AnnotationInstance annotation) {

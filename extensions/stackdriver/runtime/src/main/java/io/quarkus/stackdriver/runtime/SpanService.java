@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import javax.interceptor.InvocationContext;
 
 import org.apache.http.HttpStatus;
@@ -25,7 +26,6 @@ import io.opencensus.trace.Status;
 import io.opencensus.trace.TraceId;
 import io.opencensus.trace.Tracer;
 import io.opencensus.trace.Tracestate;
-import io.opencensus.trace.Tracing;
 import io.opencensus.trace.samplers.Samplers;
 import io.opentracing.tag.Tags;
 import io.quarkus.stackdriver.Span;
@@ -36,15 +36,16 @@ public class SpanService {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpanService.class);
     private final Tracer tracer;
 
-    public SpanService() {
-        this.tracer = Tracing.getTracer();
+    @Inject
+    public SpanService(Tracer tracer) {
+        this.tracer = tracer;
     }
 
     public Object computeTrace(InvocationContext invocationCtx) throws Exception {
-        Scope scope = Tracing.getTracer()
-                .spanBuilderWithExplicitParent(getSpanLabel(invocationCtx), Tracing.getTracer().getCurrentSpan())
+        Scope scope = tracer
+                .spanBuilderWithExplicitParent(getSpanLabel(invocationCtx), tracer.getCurrentSpan())
                 .startScopedSpan();
-        io.opencensus.trace.Span currentSpan = Tracing.getTracer().getCurrentSpan();
+        io.opencensus.trace.Span currentSpan = tracer.getCurrentSpan();
         try {
             //execute the intercepted method and store the return value
             Object result = invocationCtx.proceed();

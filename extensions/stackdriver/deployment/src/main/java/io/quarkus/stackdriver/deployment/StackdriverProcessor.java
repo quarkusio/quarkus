@@ -21,8 +21,6 @@ import io.quarkus.stackdriver.runtime.configuration.StackdriverConfiguration;
 
 public class StackdriverProcessor {
 
-    private static final String FEATURE = "gcp.stackdriver";
-
     private static Logger LOGGER = LoggerFactory.getLogger(StackdriverProcessor.class);
 
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -40,7 +38,7 @@ public class StackdriverProcessor {
     public void setupFilter(BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<FeatureBuildItem> feature) {
-        feature.produce(new FeatureBuildItem(FEATURE));
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.GCP_STACKDRIVER));
         providers.produce(new ResteasyJaxrsProviderBuildItem(StackdriverTracingStandaloneVertxDynamicFeature.class.getName()));
         providers.produce(new ResteasyJaxrsProviderBuildItem(SpanPropagationClientRequestFilter.class.getName()));
         additionalBeans.produce(AdditionalBeanBuildItem.builder()

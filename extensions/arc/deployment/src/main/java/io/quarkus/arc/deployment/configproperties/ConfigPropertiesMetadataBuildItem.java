@@ -21,7 +21,7 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
     private final String prefix;
     private final ConfigProperties.NamingStrategy namingStrategy;
 
-    public ConfigPropertiesMetadataBuildItem(AnnotationInstance annotation) {
+    public ConfigPropertiesMetadataBuildItem(AnnotationInstance annotation, ConfigProperties.NamingStrategy defaultStrategy) {
         if (!CONFIG_PROPERTIES_ANNOTATION.equals(annotation.name())) {
             throw new IllegalArgumentException(annotation + " is not an instance of " + ConfigProperties.class.getSimpleName());
         }
@@ -29,7 +29,7 @@ public final class ConfigPropertiesMetadataBuildItem extends MultiBuildItem {
         this.classInfo = annotation.target().asClass();
         this.prefix = extractPrefix(annotation);
         AnnotationValue namingStrategyValue = annotation.value("namingStrategy");
-        this.namingStrategy = namingStrategyValue == null ? ConfigProperties.NamingStrategy.VERBATIM
+        this.namingStrategy = namingStrategyValue == null ? defaultStrategy
                 : ConfigProperties.NamingStrategy.valueOf(namingStrategyValue.asEnum());
     }
 

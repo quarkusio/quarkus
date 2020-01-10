@@ -1,10 +1,16 @@
 package io.quarkus.arc.test.configproperties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Optional;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -14,14 +20,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class KebabCaseConfigPropertiesTest {
+public class VerbatimInterfaceConfigPropertiesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, DummyProperties.class)
                     .addAsResource(new StringAsset(
-                            "dummy.foo-bar=quarkus1\ndummy.foo=quarkus2\ndummy.unused=whatever"),
+                            "dummy.name=quarkus\ndummy.bool-with-default=true\ndummy.optional-int=100\ndummy.numbers=1,2,3,4"),
                             "application.properties"));
 
     @Inject
@@ -29,44 +35,40 @@ public class KebabCaseConfigPropertiesTest {
 
     @Test
     public void testConfiguredValues() {
-        assertEquals("quarkus1", dummyBean.getFooBar());
-        assertEquals("quarkus2", dummyBean.getFoo());
+        assertEquals(Arrays.asList(1, 2, 3, 4), dummyBean.numbers());
+        assertTrue(dummyBean.boolWithDefault());
+        assertTrue(dummyBean.getOptionalInt().isPresent());
+        assertEquals(100, dummyBean.getOptionalInt().get());
     }
 
     @Singleton
     public static class DummyBean {
+
         @Inject
         DummyProperties dummyProperties;
 
-        String getFoo() {
-            return dummyProperties.getFoo();
+        Collection<Integer> numbers() {
+            return dummyProperties.numbersWithoutDefault();
         }
 
-        String getFooBar() {
-            return dummyProperties.getFooBar();
+        boolean boolWithDefault() {
+            return dummyProperties.boolWithDefault();
+        }
+
+        Optional<Integer> getOptionalInt() {
+            return dummyProperties.optionalInt();
         }
     }
 
     @ConfigProperties(prefix = "dummy", namingStrategy = ConfigProperties.NamingStrategy.KEBAB_CASE)
-    public static class DummyProperties {
+    public interface DummyProperties {
 
-        public String foo;
-        public String fooBar;
+        @ConfigProperty(defaultValue = "false")
+        boolean boolWithDefault();
 
-        public String getFoo() {
-            return foo;
-        }
+        @ConfigProperty(name = "numbers")
+        Collection<Integer> numbersWithoutDefault();
 
-        public void setFoo(String foo) {
-            this.foo = foo;
-        }
-
-        public String getFooBar() {
-            return fooBar;
-        }
-
-        public void setFooBar(String fooBar) {
-            this.fooBar = fooBar;
-        }
+        Optional<Integer> optionalInt();
     }
 }

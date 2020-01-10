@@ -28,7 +28,7 @@ public class TypicalInterfaceConfigPropertiesTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, DummyProperties.class)
                     .addAsResource(new StringAsset(
-                            "dummy.name=quarkus\ndummy.numbers=1,2,3,4\ndummy.boolWithDefault=true\ndummy.optionalInt=100"),
+                            "dummy.name=quarkus\ndummy.numbers=1,2,3,4\ndummy.boolWD=true\ndummy.optional-int=100"),
                             "application.properties"));
 
     @Inject
@@ -87,7 +87,7 @@ public class TypicalInterfaceConfigPropertiesTest {
         @ConfigProperty(name = "name")
         String getFirstName();
 
-        @ConfigProperty(name = "boolWithDefault", defaultValue = "false")
+        @ConfigProperty(name = "boolWD", defaultValue = "false")
         boolean isBoolWithDef();
 
         @ConfigProperty(name = "doubleWithDefault", defaultValue = "1.0")

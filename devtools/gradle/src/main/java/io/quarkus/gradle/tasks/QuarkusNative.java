@@ -180,6 +180,7 @@ public class QuarkusNative extends QuarkusTask {
         this.enableIsolates = enableIsolates;
     }
 
+    @Optional
     @Input
     public String getGraalvmHome() {
         return graalvmHome;

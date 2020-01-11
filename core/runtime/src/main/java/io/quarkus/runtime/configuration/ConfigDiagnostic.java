@@ -16,7 +16,7 @@ public final class ConfigDiagnostic {
     private static final Logger log = Logger.getLogger("io.quarkus.config");
 
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-    private static List<String> errorsMessages = new CopyOnWriteArrayList<>();
+    private static final List<String> errorsMessages = new CopyOnWriteArrayList<>();
 
     private ConfigDiagnostic() {
     }

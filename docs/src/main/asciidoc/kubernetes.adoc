@@ -7,7 +7,8 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide covers generating Kubernetes resources based on sane defaults and user supplied configuration.
+This guide covers generating and deploying Kubernetes resources based on sane defaults and user supplied configuration.
+In detail, it supports generating resources for <<Kubernetes>>, <<Openshift>> and <<Knative>>. Also it supports automatically <<deploying, Deployment>> these resources to the target platform.
 
 == Prerequisites
 
@@ -34,7 +35,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 cd kubernetes-quickstart
 ----
 
-== Enable Kubernetes support
+=== Kubernetes
 
 Quarkus offers the ability to automatically generate Kubernetes resources based on sane defaults and user supplied configuration. The implementation that takes care
 of generating the actual Kubernetes resources is provided by https://github.com/dekorateio/dekorate/[dekorate]. Currently it supports the generation of resources for
@@ -410,7 +411,7 @@ Below you will find tables describing all available types.
 | docker.auto-build-enabled | boolean |             | false
 |====
 
-=== OpenShift support
+=== OpenShift
 
 To enable the generation of OpenShift resources, you need to include OpenShift in the target platforms:
 
@@ -560,3 +561,28 @@ The generated service can be customized using the following properties:
 | knative.sidecars                        | Container[]                   |             |
 | knative.expose                          | boolean                       |             | false
 |====
+
+== Deployment
+
+To trigger building and deploying a container image you need to enable `quarkus.container.build` and `quarkus.container.deploy` flags respectively.
+This can be easily done from the command line:
+
+[source, subs=attributes+]
+----
+mvn clean package -Dquarkus.container.build=true -Dquarkus.container.deploy=true
+----
+
+=== Building
+
+At the moment this is only possible, using `docker`.
+The dockerfiles used are internal (Dockerfiles found under `src/main/docker` are NOT used).
+
+if the `docker` binary is not present in the `PATH` or a docker daemon is not available, this step will be skipped.
+
+=== Deploying
+
+When deployment is enabled, the kubernetes extension will selected the resources specified by `kubernetes.deployment.target` and deploy them.
+This assumes that a `.kube/config` is available in your user directory that points to a real kubernetes cluster.
+In other words the extension will use whatever cluster `kubectl` uses. The same applies to credentials.
+
+At the moment no additonal options are provided for further customization.

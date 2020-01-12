@@ -81,3 +81,5 @@ update_configs:
           dependency_name: "org.testcontainers:testcontainers"
       - match:
           dependency_name: "org.testcontainers:junit-jupiter"
+      - match:
+          dependency_name: "org.mockito:mockito-core"

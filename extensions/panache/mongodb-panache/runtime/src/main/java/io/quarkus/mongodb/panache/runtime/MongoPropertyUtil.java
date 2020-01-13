@@ -4,17 +4,24 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bson.codecs.pojo.annotations.BsonProperty;
 
 final class MongoPropertyUtil {
+
+    private static final Map<Class<?>, Map<String, String>> REPLACEMENT_CACHE = new ConcurrentHashMap<>();
 
     private MongoPropertyUtil() {
         //prevent initialization
     }
 
     static Map<String, String> extractReplacementMap(Class<?> clazz) {
-        //TODO cache the replacement map or pre-compute it during build (using reflection or jandex)
+        return REPLACEMENT_CACHE.computeIfAbsent(clazz, theClass -> computeReplacement(theClass));
+
+    }
+
+    private static Map<String, String> computeReplacement(Class<?> clazz) {
         Map<String, String> replacementMap = new HashMap<>();
         for (Field field : clazz.getDeclaredFields()) {
             BsonProperty bsonProperty = field.getAnnotation(BsonProperty.class);

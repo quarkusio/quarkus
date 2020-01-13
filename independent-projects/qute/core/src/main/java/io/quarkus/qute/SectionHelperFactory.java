@@ -56,15 +56,19 @@ public interface SectionHelperFactory<T extends SectionHelper> {
      * Initialize a section block.
      * 
      * @return a map of name to type infos
+     * @see BlockInfo#addExpression(String, String)
      */
     default Map<String, String> initializeBlock(Map<String, String> outerNameTypeInfos, BlockInfo block) {
         return Collections.emptyMap();
     }
 
-    /**
-     * 
-     */
-    interface BlockInfo {
+    interface ParserDelegate {
+
+        TemplateException createParserError(String message);
+
+    }
+
+    interface BlockInfo extends ParserDelegate {
 
         String getLabel();
 
@@ -85,7 +89,7 @@ public interface SectionHelperFactory<T extends SectionHelper> {
     /**
      * Section initialization context.
      */
-    public interface SectionInitContext {
+    public interface SectionInitContext extends ParserDelegate {
 
         default Map<String, String> getParameters() {
             return getBlocks().get(0).parameters;

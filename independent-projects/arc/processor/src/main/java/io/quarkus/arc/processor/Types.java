@@ -10,6 +10,7 @@ import io.quarkus.arc.impl.WildcardTypeImpl;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,6 +45,14 @@ final class Types {
     static final Logger LOGGER = Logger.getLogger(Types.class);
 
     private static final Type OBJECT_TYPE = Type.create(DotNames.OBJECT, Kind.CLASS);
+
+    // we ban these interfaces because they are new to Java 12 and are used by java.lang.String which
+    // means that they cannot be included in bytecode if we want to have application built with Java 12+ but targeting Java 8 - 11
+    // actually run on those older versions
+    // TODO:  add a extensible banning mechanism based on predicates if we find that this set needs to grow...
+    private static final Set<DotName> BANNED_INTERFACE_TYPES = new HashSet<>(
+            Arrays.asList(DotName.createSimple("java.lang.constant.ConstantDesc"),
+                    DotName.createSimple("java.lang.constant.Constable")));
 
     private Types() {
     }
@@ -256,6 +265,9 @@ final class Types {
         }
         // Interfaces
         for (Type interfaceType : classInfo.interfaceTypes()) {
+            if (BANNED_INTERFACE_TYPES.contains(interfaceType.name())) {
+                continue;
+            }
             ClassInfo interfaceClassInfo = getClassByName(beanDeployment.getIndex(), interfaceType.name());
             if (interfaceClassInfo != null) {
                 Map<TypeVariable, Type> resolved = Collections.emptyMap();

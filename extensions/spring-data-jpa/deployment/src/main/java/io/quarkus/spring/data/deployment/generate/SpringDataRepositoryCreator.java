@@ -38,14 +38,16 @@ public class SpringDataRepositoryCreator {
     private final DerivedMethodsAdder derivedMethodsAdder;
     private final CustomQueryMethodsAdder customQueryMethodsAdder;
 
-    public SpringDataRepositoryCreator(ClassOutput classOutput, IndexView index,
+    public SpringDataRepositoryCreator(ClassOutput classOutput, ClassOutput otherClassOutput, IndexView index,
             Consumer<String> fragmentImplClassResolvedCallback) {
         this.classOutput = classOutput;
         this.index = index;
         this.fragmentMethodsAdder = new FragmentMethodsAdder(fragmentImplClassResolvedCallback, index);
         this.stockMethodsAdder = new StockMethodsAdder(index);
         this.derivedMethodsAdder = new DerivedMethodsAdder(index);
-        this.customQueryMethodsAdder = new CustomQueryMethodsAdder(index);
+
+        // custom queries may generate non-bean classes
+        this.customQueryMethodsAdder = new CustomQueryMethodsAdder(index, otherClassOutput);
     }
 
     public void implementCrudRepository(ClassInfo repositoryToImplement) {

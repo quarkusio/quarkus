@@ -24,10 +24,12 @@ import org.springframework.data.repository.query.QueryByExampleExecutor;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.IgnorableNonIndexedClasses;
@@ -50,6 +52,7 @@ public class SpringDataJPAProcessor {
 
     @BuildStep
     void build(CombinedIndexBuildItem index,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
@@ -58,7 +61,8 @@ public class SpringDataJPAProcessor {
                 indexIndex);
 
         removeNoRepositoryBeanClasses(interfacesExtendingCrudRepository);
-        implementCrudRepositories(generatedBeans, additionalBeans, interfacesExtendingCrudRepository, indexIndex);
+        implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans,
+                interfacesExtendingCrudRepository, indexIndex);
     }
 
     private void removeNoRepositoryBeanClasses(List<ClassInfo> interfacesExtendingCrudRepository) {
@@ -96,10 +100,12 @@ public class SpringDataJPAProcessor {
 
     // generate a concrete class that will be used by Arc to resolve injection points
     private void implementCrudRepositories(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             List<ClassInfo> crudRepositoriesToImplement, IndexView index) {
 
-        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
+        ClassOutput beansClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
+        ClassOutput otherClassOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
 
         // index the Spring Data repository interfaces that extend Repository because we need to pull the generic types from it
         Indexer indexer = new Indexer();
@@ -111,10 +117,11 @@ public class SpringDataJPAProcessor {
         indexRepositoryInterface(index, indexer, additionalIndex, QueryByExampleExecutor.class);
         CompositeIndex compositeIndex = CompositeIndex.create(index, indexer.complete());
 
-        SpringDataRepositoryCreator repositoryCreator = new SpringDataRepositoryCreator(classOutput, compositeIndex, (n) -> {
-            // the implementation of fragments don't need to be beans themselves
-            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(n));
-        });
+        SpringDataRepositoryCreator repositoryCreator = new SpringDataRepositoryCreator(beansClassOutput, otherClassOutput,
+                compositeIndex, (n) -> {
+                    // the implementation of fragments don't need to be beans themselves
+                    additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(n));
+                });
 
         for (ClassInfo crudRepositoryToImplement : crudRepositoriesToImplement) {
             repositoryCreator.implementCrudRepository(crudRepositoryToImplement);

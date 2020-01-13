@@ -183,4 +183,11 @@ public class MovieResourceTest {
                 .statusCode(200)
                 .body(containsString("false /"));
     }
+
+    @Test
+    void testCountByRating() {
+        when().get("/movie/count/rating").then()
+                .statusCode(200)
+                .body(containsString("rating"));
+    }
 }

@@ -53,4 +53,5 @@ public final class GenerationUtil {
         return MethodDescriptor.ofMethod(generatedClassName, methodInfo.name(), methodInfo.returnType().name().toString(),
                 parameterTypesStr.toArray(new String[0]));
     }
+
 }

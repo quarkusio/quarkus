@@ -351,6 +351,11 @@
                     <artifactId>antlr4-maven-plugin</artifactId>
                     <version>${antlr.version}</version><!-- keep it aligned with the runtime bom-->
                 </plugin>
+                <plugin>
+                    <groupId>uk.co.automatictester</groupId>
+                    <artifactId>wiremock-maven-plugin</artifactId>
+                    <version>5.0.1</version>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>

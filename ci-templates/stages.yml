@@ -419,12 +419,13 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 25
+          timeoutInMinutes: 30
           modules:
             - spring-di
             - spring-web
             - spring-data-jpa
             - spring-boot-properties
+            - spring-cloud-config-client
           name: spring
 
       - template: native-build-steps.yaml

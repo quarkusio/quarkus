@@ -1,0 +1,17 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPattern": "/a-bootiful-client/prod",
+    "basicAuth" : {
+      "username" : "user",
+      "password" : "pass"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "bodyFileName": "a-bootiful-client-prod.json"
+  }
+}

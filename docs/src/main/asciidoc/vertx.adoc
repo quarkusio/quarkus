@@ -158,7 +158,7 @@ Now let's use the Vert.x API to implement the artificially delayed reply with th
 // Delay reply by 10ms
 vertx.setTimer(10, l -> {
     // Compute elapsed time in milliseconds
-    long duration = MILLISECONDS.convert(System.nanoTime() - start, NANOSECONDS);
+    long duration = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
 
     // Format message
     String message = String.format("Hello %s! (%d ms)%n", name, duration);

@@ -26,6 +26,12 @@ public class PersonRepositoryResource {
         return personRepository.listAll();
     }
 
+    @GET
+    @Path("/search/{name}")
+    public List<PersonName> searchPersons(@PathParam("name") String name) {
+        return personRepository.find("lastname", name).project(PersonName.class).list();
+    }
+
     @POST
     public Response addPerson(Person person) {
         personRepository.persist(person);

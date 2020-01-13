@@ -41,7 +41,8 @@ class SectionNode implements TemplateNode {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append("SectionNode [helper=").append(helper.getClass().getSimpleName()).append("]");
+        builder.append("SectionNode [helper=").append(helper.getClass().getSimpleName()).append(", origin= ").append(origin)
+                .append("]");
         return builder.toString();
     }
 
@@ -83,7 +84,19 @@ class SectionNode implements TemplateNode {
         }
 
         SectionNode build() {
-            return new SectionNode(blocks, factory.initialize(new SectionInitContextImpl(engine, blocks)), origin);
+            return new SectionNode(blocks,
+                    factory.initialize(new SectionInitContextImpl(engine, blocks, this::createParserError)), origin);
+        }
+
+        TemplateException createParserError(String message) {
+            StringBuilder builder = new StringBuilder("Parser error");
+            if (!origin.getTemplateId().equals(origin.getTemplateGeneratedId())) {
+                builder.append(" in template [").append(origin.getTemplateId()).append("]");
+            }
+            builder.append(" on line ").append(origin.getLine()).append(": ")
+                    .append(message);
+            return new TemplateException(origin,
+                    builder.toString());
         }
 
     }

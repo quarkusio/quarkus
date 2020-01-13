@@ -2,12 +2,17 @@ package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import io.quarkus.qute.TemplateNode.Origin;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -128,6 +133,20 @@ public class ParserTest {
         }
     }
 
+    @Test
+    public void testSectionParameters() {
+        assertParams("item.active || item.sold", "item.active", "||", "item.sold");
+        assertParams("!(item.active || item.sold) || true", "!(item.active || item.sold)", "||", "true");
+        assertParams("(item.active && (item.sold || false)) || user.loggedIn", "(item.active && (item.sold || false))", "||",
+                "user.loggedIn");
+        assertParams("this.get('name') is null", "this.get('name')", "is", "null");
+        assertParserError("{#if 'foo is null}{/}",
+                "Parser error on line 1: unterminated string literal or composite parameter detected for [#if 'foo is null]",
+                1);
+        assertParserError("{#if (foo || bar}{/}",
+                "Parser error on line 1: unterminated string literal or composite parameter detected for [#if (foo || bar]", 1);
+    }
+
     private void assertParserError(String template, String message, int line) {
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         try {
@@ -150,6 +169,16 @@ public class ParserTest {
 
     private Expression find(Set<Expression> expressions, String val) {
         return expressions.stream().filter(e -> e.toOriginalString().equals(val)).findAny().get();
+    }
+
+    private void assertParams(String content, String... expectedParams) {
+        Iterator<String> iter = Parser.splitSectionParams(content, s -> new RuntimeException(s));
+        List<String> params = new ArrayList<>();
+        while (iter.hasNext()) {
+            params.add(iter.next());
+        }
+        assertTrue(params.containsAll(Arrays.asList(expectedParams)),
+                params + " should contain " + Arrays.toString(expectedParams));
     }
 
 }

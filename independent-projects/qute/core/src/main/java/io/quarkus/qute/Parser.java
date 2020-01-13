@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -37,6 +38,9 @@ class Parser implements Function<String, Expression> {
     // Mac OS 9, ZX Spectrum :-), etc.
     private static final char LINE_SEPARATOR_CR = '\r';
     // DOS, OS/2, Microsoft Windows, etc. use CRLF
+
+    static final char START_COMPOSITE_PARAM = '(';
+    static final char END_COMPOSITE_PARAM = ')';
 
     private StringBuilder buffer;
     private State state;
@@ -74,7 +78,7 @@ class Parser implements Function<String, Expression> {
 
                         }));
         this.sectionBlockStack = new ArrayDeque<>();
-        this.sectionBlockStack.addFirst(SectionBlock.builder(SectionHelperFactory.MAIN_BLOCK_NAME, this));
+        this.sectionBlockStack.addFirst(SectionBlock.builder(SectionHelperFactory.MAIN_BLOCK_NAME, this, this::parserError));
         this.sectionBlockIdx = 0;
         this.paramsStack = new ArrayDeque<>();
         this.paramsStack.addFirst(ParametersInfo.EMPTY);
@@ -222,7 +226,7 @@ class Parser implements Function<String, Expression> {
                 isEmptySection = true;
             }
 
-            Iterator<String> iter = splitSectionParams(content);
+            Iterator<String> iter = splitSectionParams(content, this::parserError);
             if (!iter.hasNext()) {
                 throw parserError("no helper name declared");
             }
@@ -242,7 +246,8 @@ class Parser implements Function<String, Expression> {
                     sectionStack.peek().addBlock(sectionBlockStack.pop().build());
                 }
                 // Add the new block
-                SectionBlock.Builder block = SectionBlock.builder("" + sectionBlockIdx++, this);
+                SectionBlock.Builder block = SectionBlock.builder("" + sectionBlockIdx++, this, this::parserError)
+                        .setOrigin(origin());
                 sectionBlockStack.addFirst(block.setLabel(sectionName));
                 processParams(tag, sectionName, iter);
 
@@ -267,7 +272,9 @@ class Parser implements Function<String, Expression> {
                     throw parserError("no section helper found for " + tag);
                 }
                 paramsStack.addFirst(factory.getParameters());
-                SectionBlock.Builder mainBlock = SectionBlock.builder(SectionHelperFactory.MAIN_BLOCK_NAME, this);
+                SectionBlock.Builder mainBlock = SectionBlock
+                        .builder(SectionHelperFactory.MAIN_BLOCK_NAME, this, this::parserError)
+                        .setOrigin(origin());
                 sectionBlockStack.addFirst(mainBlock);
                 processParams(tag, SectionHelperFactory.MAIN_BLOCK_NAME, iter);
 
@@ -356,7 +363,7 @@ class Parser implements Function<String, Expression> {
     }
 
     private void processParams(String tag, String label, Iterator<String> iter) {
-        Map<String, String> params = new HashMap<>();
+        Map<String, String> params = new LinkedHashMap<>();
         List<Parameter> factoryParams = paramsStack.peek().get(label);
         List<String> paramValues = new ArrayList<>();
 
@@ -384,6 +391,7 @@ class Parser implements Function<String, Expression> {
                 }
             }
         } else {
+            int generatedIdx = 0;
             for (String param : paramValues) {
                 int equalsPosition = getFirstDeterminingEqualsCharPosition(param);
                 if (equalsPosition != -1) {
@@ -392,11 +400,16 @@ class Parser implements Function<String, Expression> {
                             param.length()));
                 } else {
                     // Positional param - first non-default section param
+                    Parameter found = null;
                     for (Parameter factoryParam : factoryParams) {
                         if (!params.containsKey(factoryParam.name)) {
+                            found = factoryParam;
                             params.put(factoryParam.name, param);
                             break;
                         }
+                    }
+                    if (found == null) {
+                        params.put("" + generatedIdx++, param);
                     }
                 }
             }
@@ -438,58 +451,60 @@ class Parser implements Function<String, Expression> {
         return -1;
     }
 
-    Iterator<String> splitSectionParams(String content) {
+    static Iterator<String> splitSectionParams(String content, Function<String, RuntimeException> errorFun) {
 
         boolean stringLiteral = false;
-        boolean listLiteral = false;
+        short composite = 0;
         boolean space = false;
         List<String> parts = new ArrayList<>();
         StringBuilder buffer = new StringBuilder();
 
         for (int i = 0; i < content.length(); i++) {
-            if (content.charAt(i) == ' ') {
+            char c = content.charAt(i);
+            if (c == ' ') {
                 if (!space) {
-                    if (!stringLiteral && !listLiteral) {
+                    if (!stringLiteral && composite == 0) {
                         if (buffer.length() > 0) {
                             parts.add(buffer.toString());
                             buffer = new StringBuilder();
                         }
                         space = true;
                     } else {
-                        buffer.append(content.charAt(i));
+                        buffer.append(c);
                     }
                 }
             } else {
-                if (!listLiteral
-                        && isStringLiteralSeparator(content.charAt(i))) {
+                if (composite == 0
+                        && isStringLiteralSeparator(c)) {
                     stringLiteral = !stringLiteral;
                 } else if (!stringLiteral
-                        && isListLiteralStart(content.charAt(i))) {
-                    listLiteral = true;
+                        && isCompositeStart(c) && (i == 0 || space || composite > 0
+                                || (buffer.length() > 0 && buffer.charAt(buffer.length() - 1) == '!'))) {
+                    composite++;
                 } else if (!stringLiteral
-                        && isListLiteralEnd(content.charAt(i))) {
-                    listLiteral = false;
+                        && isCompositeEnd(c) && composite > 0) {
+                    composite--;
                 }
                 space = false;
-                buffer.append(content.charAt(i));
+                buffer.append(c);
             }
         }
 
         if (buffer.length() > 0) {
-            if (stringLiteral || listLiteral) {
-                throw parserError("unterminated string or array literal detected");
+            if (stringLiteral || composite > 0) {
+                throw errorFun.apply("unterminated string literal or composite parameter detected for [" + content + "]");
             }
             parts.add(buffer.toString());
         }
         return parts.iterator();
     }
 
-    static boolean isListLiteralStart(char character) {
-        return character == '[';
+    static boolean isCompositeStart(char character) {
+        return character == START_COMPOSITE_PARAM;
     }
 
-    static boolean isListLiteralEnd(char character) {
-        return character == ']';
+    static boolean isCompositeEnd(char character) {
+        return character == END_COMPOSITE_PARAM;
     }
 
     enum Tag {
@@ -657,7 +672,7 @@ class Parser implements Function<String, Expression> {
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
-            builder.append(templateId).append(" at line ").append(line);
+            builder.append("Template ").append(templateId).append(" at line ").append(line);
             return builder.toString();
         }
 

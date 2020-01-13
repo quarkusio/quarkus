@@ -41,15 +41,23 @@ public final class MySQLJDBCReflections {
     void registerDriverForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, com.mysql.cj.jdbc.Driver.class.getName()));
         reflectiveClass.produce(
+                new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.FailoverDnsSrvConnectionUrl.class.getName()));
+        reflectiveClass.produce(
                 new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.FailoverConnectionUrl.class.getName()));
         reflectiveClass
                 .produce(new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.SingleConnectionUrl.class.getName()));
         reflectiveClass.produce(
-                new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.LoadbalanceConnectionUrl.class.getName()));
+                new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.LoadBalanceConnectionUrl.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
+                com.mysql.cj.conf.url.LoadBalanceDnsSrvConnectionUrl.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
+                com.mysql.cj.conf.url.ReplicationDnsSrvConnectionUrl.class.getName()));
         reflectiveClass.produce(
                 new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.ReplicationConnectionUrl.class.getName()));
         reflectiveClass.produce(
-                new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.XDevAPIConnectionUrl.class.getName()));
+                new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.XDevApiConnectionUrl.class.getName()));
+        reflectiveClass.produce(
+                new ReflectiveClassBuildItem(false, false, com.mysql.cj.conf.url.XDevApiDnsSrvConnectionUrl.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 com.mysql.cj.jdbc.ha.LoadBalancedAutoCommitInterceptor.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, com.mysql.cj.log.StandardLogger.class.getName()));

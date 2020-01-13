@@ -22,11 +22,6 @@ class JSchProcessor {
     }
 
     @BuildStep
-    NativeImageSystemPropertyBuildItem javaLibPath() {
-        return new NativeImageSystemPropertyBuildItem("java.library.path", "/opt/graalvm/jre/lib/amd64");
-    }
-
-    @BuildStep
     ReflectiveClassBuildItem reflection() {
         //Classes that use reflection
         return new ReflectiveClassBuildItem(true, true,
@@ -79,11 +74,6 @@ class JSchProcessor {
                 "com.jcraft.jsch.UserAuthNone",
                 "com.jcraft.jsch.UserAuthPassword",
                 "com.jcraft.jsch.UserAuthPublicKey");
-    }
-
-    @BuildStep
-    FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.JSCH);
     }
 
     @BuildStep

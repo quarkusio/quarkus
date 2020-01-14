@@ -109,6 +109,7 @@ public class ArcProcessor {
             List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
             List<UnremovableBeanBuildItem> removalExclusions,
             Optional<TestClassPredicateBuildItem> testClassPredicate,
+            Capabilities capabilities,
             BuildProducer<FeatureBuildItem> feature) {
 
         if (!arcConfig.isRemoveUnusedBeansFieldValid()) {
@@ -232,6 +233,7 @@ public class ArcProcessor {
             });
         }
         builder.setRemoveFinalFromProxyableMethods(arcConfig.removeFinalForProxyableMethods);
+        builder.setJtaCapabilities(capabilities.isCapabilityPresent(Capabilities.TRANSACTIONS));
 
         BeanProcessor beanProcessor = builder.build();
         ContextRegistrar.RegistrationContext context = beanProcessor.registerCustomContexts();

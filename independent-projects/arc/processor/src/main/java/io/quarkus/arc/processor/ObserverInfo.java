@@ -32,7 +32,7 @@ public class ObserverInfo implements InjectionTargetInfo {
     private static final Logger LOGGER = Logger.getLogger(ObserverInfo.class.getName());
 
     static ObserverInfo create(BeanInfo declaringBean, MethodInfo observerMethod, Injection injection, boolean isAsync,
-            List<ObserverTransformer> transformers, BuildContext buildContext) {
+            List<ObserverTransformer> transformers, BuildContext buildContext, boolean jtaCapabilities) {
         // Initialize attributes
         MethodParameterInfo eventParameter = initEventParam(observerMethod, declaringBean.getDeployment());
         Type observedType = observerMethod.parameters().get(eventParameter.position());
@@ -73,9 +73,10 @@ public class ObserverInfo implements InjectionTargetInfo {
             isAsync = context.isAsync();
         }
 
-        if (!TransactionPhase.IN_PROGRESS.equals(transactionPhase)) {
+        if (!transactionPhase.equals(TransactionPhase.IN_PROGRESS) && !jtaCapabilities) {
             final ClassInfo clazz = observerMethod.declaringClass();
-            LOGGER.warnf("The method %s#%s makes use of '%s' transactional observers which are not implemented yet.", clazz,
+            LOGGER.warnf("The method %s#%s makes use of '%s' transactional observers but no " +
+                    "JTA capabilities were detected.", clazz,
                     observerMethod.name(), transactionPhase);
         }
 

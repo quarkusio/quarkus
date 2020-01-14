@@ -80,7 +80,8 @@ public class BeanProcessor {
             List<Predicate<BeanInfo>> unusedExclusions,
             Map<DotName, Collection<AnnotationInstance>> additionalStereotypes,
             List<InterceptorBindingRegistrar> interceptorBindingRegistrars,
-            boolean removeFinalForProxyableMethods) {
+            boolean removeFinalForProxyableMethods,
+            boolean jtaCapabilities) {
         this.reflectionRegistration = reflectionRegistration;
         this.applicationClassPredicate = applicationClassPredicate;
         this.name = name;
@@ -100,7 +101,8 @@ public class BeanProcessor {
                 initAndSort(observerTransformers, buildContext),
                 resourceAnnotations, buildContext,
                 unusedBeansRemovalEnabled, unusedExclusions,
-                additionalStereotypes, interceptorBindingRegistrars, removeFinalForProxyableMethods);
+                additionalStereotypes, interceptorBindingRegistrars, removeFinalForProxyableMethods,
+                jtaCapabilities);
     }
 
     public ContextRegistrar.RegistrationContext registerCustomContexts() {
@@ -248,6 +250,7 @@ public class BeanProcessor {
         private final List<BeanDeploymentValidator> beanDeploymentValidators = new ArrayList<>();
 
         private boolean removeUnusedBeans = false;
+        private boolean jtaCapabilities = false;
         private final List<Predicate<BeanInfo>> removalExclusions = new ArrayList<>();
 
         private Predicate<DotName> applicationClassPredicate = new Predicate<DotName>() {
@@ -342,6 +345,11 @@ public class BeanProcessor {
             return this;
         }
 
+        public Builder setJtaCapabilities(boolean jtaCapabilities) {
+            this.jtaCapabilities = jtaCapabilities;
+            return this;
+        }
+
         /**
          * If set to true the container will attempt to remove all unused beans.
          * <p>
@@ -385,7 +393,7 @@ public class BeanProcessor {
                     reflectionRegistration, annotationTransformers, injectionPointTransformers, observerTransformers,
                     resourceAnnotations, beanRegistrars, contextRegistrars, beanDeploymentValidators,
                     applicationClassPredicate, removeUnusedBeans, removalExclusions, additionalStereotypes,
-                    additionalInterceptorBindingRegistrars, removeFinalForProxyableMethods);
+                    additionalInterceptorBindingRegistrars, removeFinalForProxyableMethods, jtaCapabilities);
         }
 
     }

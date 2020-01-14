@@ -412,6 +412,11 @@ public final class HibernateOrmProcessor {
                         namingStrategy -> desc.getProperties()
                                 .setProperty(AvailableSettings.PHYSICAL_NAMING_STRATEGY, namingStrategy));
 
+                // Implicit Naming Strategy
+                hibernateConfig.implicitNamingStrategy.ifPresent(
+                        namingStrategy -> desc.getProperties()
+                                .setProperty(AvailableSettings.IMPLICIT_NAMING_STRATEGY, namingStrategy));
+
                 // Database
                 desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION,
                         hibernateConfig.database.generation);

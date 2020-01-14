@@ -94,6 +94,14 @@ public class HibernateOrmConfig {
     Optional<String> physicalNamingStrategy;
 
     /**
+     * Pluggable strategy for applying implicit naming rules when an explicit name is not given.
+     *
+     * Class name of the Hibernate ImplicitNamingStrategy implementation
+     */
+    @ConfigItem
+    Optional<String> implicitNamingStrategy;
+
+    /**
      * Query related configuration.
      */
     @ConfigItem

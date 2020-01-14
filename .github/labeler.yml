@@ -5,7 +5,7 @@
 ### committed updates would be done manually.
 
 ### you can test this script by running the following in quarkus folder:
-### jbang bang https://git.io/JvJR5 .github/labeler.yml <optional path>
+### jbang https://git.io/JvJR5 .github/labeler.yml <optional path>
 
 ### Non-covered dirs....
 ### - extensions

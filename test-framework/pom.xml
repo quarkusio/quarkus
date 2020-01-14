@@ -25,6 +25,7 @@
         <module>arquillian</module>
         <module>maven</module>
         <module>vault</module>
+        <module>ldap</module>
     </modules>
 
 </project>

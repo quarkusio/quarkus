@@ -31,17 +31,27 @@ public class WebsocketHotReloadSetup implements HotReplacementSetup {
 
     @Override
     public void setupHotDeployment(HotReplacementContext hotReplacementContext) {
-        List<Path> resources = hotReplacementContext.getResourcesDir();
-        if (!resources.isEmpty()) {
-            //TODO: fix this
-            File appConfig = resources.get(0).resolve("application.properties").toFile();
-            if (appConfig.isFile()) {
-                try (InputStream pw = new FileInputStream(appConfig)) {
-                    Properties p = new Properties();
-                    p.load(pw);
-                    replacementPassword = p.getProperty(HotReplacementWebsocketEndpoint.QUARKUS_HOT_RELOAD_PASSWORD);
-                } catch (IOException e) {
-                    logger.error("Failed to read application.properties", e);
+        // we can't use the typical ConfigProvider.getConfig() because the config infrastructure isn't setup at this point
+        String password = System.getProperty(HotReplacementWebsocketEndpoint.QUARKUS_LIVE_RELOAD_PASSWORD);
+        if (password == null || password.isEmpty()) {
+            password = System.getenv(HotReplacementWebsocketEndpoint.QUARKUS_LIVE_RELOAD_PASSWORD_ENV);
+        }
+
+        if (password != null && !password.isEmpty()) {
+            replacementPassword = password;
+        } else {
+            List<Path> resources = hotReplacementContext.getResourcesDir();
+            if (!resources.isEmpty()) {
+                //TODO: fix this
+                File appConfig = resources.get(0).resolve("application.properties").toFile();
+                if (appConfig.isFile()) {
+                    try (InputStream pw = new FileInputStream(appConfig)) {
+                        Properties p = new Properties();
+                        p.load(pw);
+                        replacementPassword = p.getProperty(HotReplacementWebsocketEndpoint.QUARKUS_LIVE_RELOAD_PASSWORD);
+                    } catch (IOException e) {
+                        logger.error("Failed to read application.properties", e);
+                    }
                 }
             }
         }

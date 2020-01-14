@@ -60,6 +60,7 @@ quarkus.mailer.port=465
 quarkus.mailer.ssl=true
 quarkus.mailer.username=....
 quarkus.mailer.password=....
+quarkus.mailer.mock=false
 ----
 
 [NOTE]

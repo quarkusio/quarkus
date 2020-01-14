@@ -48,11 +48,8 @@ class EventImpl<T> implements Event<T> {
     private transient volatile Notifier<? super T> lastNotifier;
 
     EventImpl(Type eventType, Set<Annotation> qualifiers) {
-        if (eventType instanceof ParameterizedType) {
-            eventType = ((ParameterizedType) eventType).getActualTypeArguments()[0];
-        }
-        this.eventType = eventType;
-        this.injectionPointTypeHierarchy = new HierarchyDiscovery(eventType);
+        this.eventType = initEventType(eventType);
+        this.injectionPointTypeHierarchy = new HierarchyDiscovery(this.eventType);
         this.qualifiers = qualifiers;
         this.qualifiers.add(Any.Literal.INSTANCE);
         this.notifiers = new ConcurrentHashMap<>(DEFAULT_CACHE_CAPACITY);
@@ -140,6 +137,16 @@ class EventImpl<T> implements Event<T> {
             notifierObserverMethods.add(observerMethod);
         }
         return new Notifier<>(runtimeType, notifierObserverMethods, metadata);
+    }
+
+    private Type initEventType(Type type) {
+        if (type instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) type;
+            if (Event.class.isAssignableFrom(Types.getRawType(parameterizedType.getRawType()))) {
+                return parameterizedType.getActualTypeArguments()[0];
+            }
+        }
+        return type;
     }
 
     private Type getEventType(Class<?> runtimeType) {

@@ -80,6 +80,8 @@
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update native-build-steps.yaml to match the version -->
         <keycloak.docker.image>quay.io/keycloak/keycloak:8.0.1</keycloak.docker.image>
+
+        <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
     </properties>
 
     <dependencyManagement>
@@ -152,6 +154,11 @@
                 <groupId>org.apache.maven.wagon</groupId>
                 <artifactId>wagon-provider-api</artifactId>
                 <version>${wagon-provider-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.unboundid</groupId>
+                <artifactId>unboundid-ldapsdk</artifactId>
+                <version>${unboundid-ldap.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

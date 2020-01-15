@@ -33,6 +33,8 @@ update_configs:
           dependency_name: "org.quartz-scheduler:quartz"
       - match:
           dependency_name: "com.cronutils:cron-utils"
+      - match:
+          dependency_name: "org.eclipse:yasson"
       # JDBC Drivers
       - match:
           dependency_name: "org.postgresql:postgresql"

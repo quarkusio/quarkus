@@ -1,6 +1,9 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
@@ -21,38 +24,63 @@ public class OidcRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcRecorder.class);
 
-    public void setup(OidcConfig config, OidcBuildTimeConfig btConfig, RuntimeValue<Vertx> vertx, BeanContainer beanContainer) {
+    public void setup(OidcConfig config, RuntimeValue<Vertx> vertx, BeanContainer beanContainer) {
+        final Vertx vertxValue = vertx.getValue();
+        Map<String, TenantConfigContext> tenantsConfig = new HashMap<>();
+
+        for (Map.Entry<String, OidcTenantConfig> tenant : config.namedTenants.entrySet()) {
+            tenantsConfig.put(tenant.getKey(), createTenantContext(vertxValue, tenant.getValue()));
+        }
+
+        DefaultTenantConfigResolver resolver = beanContainer.instance(DefaultTenantConfigResolver.class);
+
+        resolver.setDefaultTenant(createTenantContext(vertxValue, config.defaultTenant));
+        resolver.setTenantsConfig(tenantsConfig);
+        resolver.setTenantConfigContextFactory(new Function<OidcTenantConfig, TenantConfigContext>() {
+            @Override
+            public TenantConfigContext apply(OidcTenantConfig config) {
+                return createTenantContext(vertxValue, config);
+            }
+        });
+    }
+
+    private TenantConfigContext createTenantContext(Vertx vertx, OidcTenantConfig oidcConfig) {
         OAuth2ClientOptions options = new OAuth2ClientOptions();
 
+        if (!oidcConfig.getAuthServerUrl().isPresent()) {
+            return null;
+        }
+
         // Base IDP server URL
-        options.setSite(config.authServerUrl);
+        options.setSite(oidcConfig.getAuthServerUrl().get());
         // RFC7662 introspection service address
-        if (config.introspectionPath.isPresent()) {
-            options.setIntrospectionPath(config.introspectionPath.get());
+        if (oidcConfig.getIntrospectionPath().isPresent()) {
+            options.setIntrospectionPath(oidcConfig.getIntrospectionPath().get());
         }
 
         // RFC7662 JWKS service address
-        if (config.jwksPath.isPresent()) {
-            options.setJwkPath(config.jwksPath.get());
+        if (oidcConfig.getJwksPath().isPresent()) {
+            options.setJwkPath(oidcConfig.getJwksPath().get());
         }
 
-        if (config.clientId.isPresent()) {
-            options.setClientID(config.clientId.get());
+        if (oidcConfig.getClientId().isPresent()) {
+            options.setClientID(oidcConfig.getClientId().get());
         }
 
-        if (config.credentials.secret.isPresent()) {
-            options.setClientSecret(config.credentials.secret.get());
+        if (oidcConfig.getCredentials().secret.isPresent()) {
+            options.setClientSecret(oidcConfig.getCredentials().secret.get());
         }
-        if (config.publicKey.isPresent()) {
+        if (oidcConfig.getPublicKey().isPresent()) {
             options.addPubSecKey(new PubSecKeyOptions()
                     .setAlgorithm("RS256")
-                    .setPublicKey(config.publicKey.get()));
+                    .setPublicKey(oidcConfig.getPublicKey().get()));
         }
-        if (config.token.issuer.isPresent()) {
+        if (oidcConfig.getToken().issuer.isPresent()) {
             options.setValidateIssuer(false);
         }
 
-        final long connectionDelayInSecs = config.connectionDelay.isPresent() ? config.connectionDelay.get().toMillis() / 1000
+        final long connectionDelayInSecs = oidcConfig.getConnectionDelay().isPresent()
+                ? oidcConfig.getConnectionDelay().get().toMillis() / 1000
                 : 0;
         final long connectionRetryCount = connectionDelayInSecs > 1 ? connectionDelayInSecs / 2 : 1;
         if (connectionRetryCount > 1) {
@@ -63,7 +91,7 @@ public class OidcRecorder {
         for (long i = 0; i < connectionRetryCount; i++) {
             try {
                 CompletableFuture<OAuth2Auth> cf = new CompletableFuture<>();
-                KeycloakAuth.discover(vertx.getValue(), options, new Handler<AsyncResult<OAuth2Auth>>() {
+                KeycloakAuth.discover(vertx, options, new Handler<AsyncResult<OAuth2Auth>>() {
                     @Override
                     public void handle(AsyncResult<OAuth2Auth> event) {
                         if (event.failed()) {
@@ -90,18 +118,7 @@ public class OidcRecorder {
             }
         }
 
-        OidcIdentityProvider identityProvider = beanContainer.instance(OidcIdentityProvider.class);
-        identityProvider.setAuth(auth);
-        identityProvider.setConfig(config);
-        AbstractOidcAuthenticationMechanism mechanism = null;
-
-        if (OidcBuildTimeConfig.ApplicationType.SERVICE.equals(btConfig.applicationType)) {
-            mechanism = beanContainer.instance(BearerAuthenticationMechanism.class);
-        } else if (OidcBuildTimeConfig.ApplicationType.WEB_APP.equals(btConfig.applicationType)) {
-            mechanism = beanContainer.instance(CodeAuthenticationMechanism.class);
-        }
-
-        mechanism.setAuth(auth, config);
+        return new TenantConfigContext(auth, oidcConfig);
     }
 
     protected static OIDCException toOidcException(Throwable cause) {

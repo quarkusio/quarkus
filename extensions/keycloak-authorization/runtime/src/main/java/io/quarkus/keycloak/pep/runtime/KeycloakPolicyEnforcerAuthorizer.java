@@ -20,6 +20,7 @@ import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 
 import io.quarkus.oidc.runtime.OidcConfig;
+import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
@@ -87,7 +88,7 @@ public class KeycloakPolicyEnforcerAuthorizer
 
     public void init(OidcConfig oidcConfig, KeycloakPolicyEnforcerConfig config) {
         AdapterConfig adapterConfig = new AdapterConfig();
-        String authServerUrl = oidcConfig.getAuthServerUrl();
+        String authServerUrl = oidcConfig.defaultTenant.getAuthServerUrl().get();
 
         try {
             adapterConfig.setRealm(authServerUrl.substring(authServerUrl.lastIndexOf('/') + 1));
@@ -96,8 +97,8 @@ public class KeycloakPolicyEnforcerAuthorizer
             throw new RuntimeException("Failed to parse the realm name.", cause);
         }
 
-        adapterConfig.setResource(oidcConfig.getClientId().get());
-        adapterConfig.setCredentials(getCredentials(oidcConfig));
+        adapterConfig.setResource(oidcConfig.defaultTenant.getClientId().get());
+        adapterConfig.setCredentials(getCredentials(oidcConfig.defaultTenant));
 
         PolicyEnforcerConfig enforcerConfig = getPolicyEnforcerConfig(config, adapterConfig);
 
@@ -111,7 +112,7 @@ public class KeycloakPolicyEnforcerAuthorizer
                 new PolicyEnforcer(KeycloakDeploymentBuilder.build(adapterConfig), adapterConfig));
     }
 
-    private Map<String, Object> getCredentials(OidcConfig oidcConfig) {
+    private Map<String, Object> getCredentials(OidcTenantConfig oidcConfig) {
         Map<String, Object> credentials = new HashMap<>();
         Optional<String> clientSecret = oidcConfig.getCredentials().getSecret();
 

@@ -144,5 +144,5 @@ curl -v -H 'Host: getting-started-knative.example.com' $IP_ADDRESS/hello/greetin
 
 This guide covered the deployment of a Quarkus application as Knative application on Kubernetes
 However, there is much more, and the integration with these environments has been tailored to make Quarkus applications execution very smooth.
-For instance, the health extension can be used for health check; the configuration support allows mounting the application configuration using config map, the metric extension produces data _scrappable_ by Prometheus and so on.
+For instance, the health extension can be used for health check; the configuration support allows mounting the application configuration using config map, the metric extension produces data _scrapable_ by Prometheus and so on.
 

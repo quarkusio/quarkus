@@ -277,28 +277,47 @@ The simplest possible version accepts a single parameter and renders the content
 You can also use the following operators:
 
 |===
-|Operator |Aliases 
+|Operator |Aliases |Precedence (higher wins)
 
-|equals 
-|`eq`, `==`, `is` 
-
-|not equals 
-|`ne`, `!=`
+|logical complement 
+|`!` 
+| 4
 
 |greater than 
 |`gt`, `>`
+| 3
 
 |greater than or equal to
 |`ge`, `>=`
+| 3
 
 |less than 
 |`lt`, `<`
+| 3
 
 |less than or equal to
 |`le`, `\<=`
+| 3
+
+|equals 
+|`eq`, `==`, `is` 
+| 2
+
+|not equals 
+|`ne`, `!=`
+| 2
+
+|logical AND (short-circuiting)
+|`&&`, `and`
+| 1
+
+|logical OR (short-circuiting)
+|`\|\|`, `or`
+| 1
 
 |===
 
+.A simple operator example
 [source]
 ----
 {#if item.age > 10}
@@ -306,9 +325,28 @@ You can also use the following operators:
 {/if}
 ----
 
-NOTE: Multiple conditions are not supported.
+Multiple conditions are also supported.
 
-You can add any number of "else" blocks:
+.Multiple conditions example
+[source]
+----
+{#if item.age > 10 && item.price > 500}
+  This item is very old and expensive.
+{/if}
+----
+
+Precedence rules can be overridden by parentheses.
+ 
+.Parentheses example
+[source]
+----
+{#if (item.age > 10 || item.price > 500) && user.loggedIn}
+  User must be logged in and item age must be > 10 or price must be > 500.
+{/if}
+----
+
+
+You can add any number of `else` blocks:
 
 [source]
 ----

@@ -9,7 +9,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 /**
  * @author wburns
  */
-@ConfigRoot(name = "infinispan-embedded", phase = ConfigPhase.RUN_TIME)
+@ConfigRoot(name = "infinispan-embedded", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class InfinispanEmbeddedRuntimeConfig {
 
     /**

@@ -44,6 +44,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -202,6 +203,11 @@ class InfinispanEmbeddedProcessor {
             reflectiveClass.produce(new ReflectiveClassBuildItem(methods, fields,
                     classInfos.stream().map(ClassInfo::toString).toArray(String[]::new)));
         }
+    }
+
+    @BuildStep
+    HotDeploymentWatchedFileBuildItem watchXmlConfigFile(InfinispanEmbeddedRuntimeConfig runtimeConfig) {
+        return runtimeConfig.xmlConfig.map(HotDeploymentWatchedFileBuildItem::new).orElse(null);
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

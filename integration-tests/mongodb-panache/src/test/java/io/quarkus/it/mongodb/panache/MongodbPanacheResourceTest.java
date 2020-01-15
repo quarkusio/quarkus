@@ -348,4 +348,11 @@ class MongodbPanacheResourceTest {
     public void testBug5885() {
         get("/bugs/5885").then().body(is("OK"));
     }
+
+    @Test
+    public void testNeedReflection() {
+        get("/bugs/6324").then().statusCode(200);
+
+        get("/bugs/6324/abstract").then().statusCode(200);
+    }
 }

@@ -24,8 +24,10 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.spi.JacksonModuleBuildItem;
 import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
 import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
@@ -93,10 +95,12 @@ public class PanacheResourceProcessor {
     @BuildStep
     void build(CombinedIndexBuildItem index,
             ApplicationIndexBuildItem applicationIndex,
-            BuildProducer<BytecodeTransformerBuildItem> transformers) throws Exception {
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
 
         PanacheMongoRepositoryEnhancer daoEnhancer = new PanacheMongoRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
+        Set<Type> daoTypeParameters = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
             if (classInfo.name().equals(DOTNAME_PANACHE_REPOSITORY))
@@ -104,14 +108,23 @@ public class PanacheResourceProcessor {
             if (PanacheRepositoryEnhancer.skipRepository(classInfo))
                 continue;
             daoClasses.add(classInfo.name().toString());
+            daoTypeParameters.addAll(
+                    JandexUtil.resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex()));
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY)) {
             if (PanacheRepositoryEnhancer.skipRepository(classInfo))
                 continue;
             daoClasses.add(classInfo.name().toString());
+            daoTypeParameters.addAll(
+                    JandexUtil.resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex()));
         }
         for (String daoClass : daoClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
+        }
+
+        // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
+        for (Type parameterType : daoTypeParameters) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
         }
 
         PanacheMongoEntityEnhancer modelEnhancer = new PanacheMongoEntityEnhancer(index.getIndex());

@@ -1,6 +1,5 @@
 package io.quarkus.it.hibernate.validator;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
@@ -48,7 +47,7 @@ public class HibernateValidatorFunctionalityTest {
     public void testCDIBeanMethodValidation() {
         StringBuilder expected = new StringBuilder();
         expected.append("passed").append("\n");
-        expected.append("failed: greeting.arg0 (must not be null)");
+        expected.append("failed: greeting.name (must not be null)");
 
         RestAssured.when()
                 .get("/hibernate-validator/test/cdi-bean-method-validation")
@@ -109,7 +108,7 @@ public class HibernateValidatorFunctionalityTest {
     public void testInheritedImplementsConstraints() {
         StringBuilder expected = new StringBuilder();
         expected.append("passed").append("\n")
-                .append("failed: echoZipCode.arg0 (size must be between 5 and 5)");
+                .append("failed: echoZipCode.zipCode (size must be between 5 and 5)");
 
         RestAssured.when()
                 .get("/hibernate-validator/test/test-inherited-implements-constraints")
@@ -121,7 +120,7 @@ public class HibernateValidatorFunctionalityTest {
     public void testInheritedExtendsConstraints() {
         StringBuilder expected = new StringBuilder();
         expected.append("passed").append("\n");
-        expected.append("failed: greeting.arg0 (must not be null)");
+        expected.append("failed: greeting.name (must not be null)");
 
         RestAssured.when()
                 .get("/hibernate-validator/test/test-inherited-extends-constraints")

@@ -60,7 +60,7 @@ quarkus.log.sentry.in-app-packages=*
 
 == Example
 
-.All errors and warnings occuring in any of the packages will be sent to Sentry with DSN `https://abcd@sentry.io/1234`
+.All errors and warnings occurring in any of the packages will be sent to Sentry with DSN `https://abcd@sentry.io/1234`
 [source, properties]
 ----
 quarkus.log.sentry=true
@@ -68,7 +68,7 @@ quarkus.log.sentry.dsn=https://abcd@sentry.io/1234
 quarkus.log.sentry.in-app-packages=*
 ----
 
-.All errors occuring in the package `org.example` will be sent to Sentry with DSN `https://abcd@sentry.io/1234`
+.All errors occurring in the package `org.example` will be sent to Sentry with DSN `https://abcd@sentry.io/1234`
 [source, properties]
 ----
 quarkus.log.sentry=true

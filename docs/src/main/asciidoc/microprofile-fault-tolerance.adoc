@@ -297,7 +297,7 @@ Requests that do not time out should show two recommended coffee samples in JSON
 Let's make our recommendations feature even better by providing a fallback (and presumably faster) way of getting related
 coffees.
 
-Add a fallback method to `CaffeeResource` and a `@Fallback` annotation to `CoffeeResource#recommendations()` method
+Add a fallback method to `CoffeeResource` and a `@Fallback` annotation to `CoffeeResource#recommendations()` method
 as follows:
 
 [source,java]

@@ -533,7 +533,7 @@ NOTE: A value resolver is also generated for all types used in parameter declara
 </html>
 ----
 <1> Validated against `org.acme.Foo`.
-<2> Not validated - `foo` is overriden in the loop section.
+<2> Not validated - `foo` is overridden in the loop section.
 
 [[template_extension_methods]]
 === Template Extension Methods

@@ -79,7 +79,7 @@ public class GreetingService {
 [IMPORTANT]
 ====
 By default, the code consuming the event must be _non-blocking_, as it's called on the Vert.x event loop.
-If your processing is blocking, use the `blocking` arttribute:
+If your processing is blocking, use the `blocking` attribute:
 
 [source, java]
 ----
@@ -202,7 +202,7 @@ bus.send("address", "hello");
 bus.publish("address", "hello");
 // Case 3
 bus.send("address", "hello, how are you?").thenAccept(message -> {
-    // reponse
+    // response
 });
 ----
 

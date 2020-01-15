@@ -37,7 +37,7 @@
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
+            <groupId>com.oracle.substratevm</groupId>
             <artifactId>svm</artifactId>
         </dependency>
         <dependency>

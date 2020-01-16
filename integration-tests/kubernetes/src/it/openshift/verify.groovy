@@ -15,3 +15,9 @@ assert list != null
 DeploymentConfig deployment = list.items.find{r -> r.kind == "DeploymentConfig"}
 assert deployment != null
 
+Container container = deployment.spec.template.spec.containers[0]
+assert container != null
+
+EnvVar envVar = container.env.find{e -> e.name == "JAVA_APP_JAR"}
+assert envVar != null
+assert envVar.value.endsWith("-runner.jar")

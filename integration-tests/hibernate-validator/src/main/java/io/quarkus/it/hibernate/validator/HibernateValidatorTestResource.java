@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -30,6 +31,7 @@ import org.hibernate.validator.constraints.Length;
 import io.quarkus.it.hibernate.validator.custom.MyOtherBean;
 import io.quarkus.it.hibernate.validator.injection.InjectedConstraintValidatorConstraint;
 import io.quarkus.it.hibernate.validator.injection.MyService;
+import io.quarkus.runtime.StartupEvent;
 
 @Path("/hibernate-validator/test")
 public class HibernateValidatorTestResource
@@ -46,6 +48,10 @@ public class HibernateValidatorTestResource
 
     @Inject
     ZipCodeService zipCodeResource;
+
+    public void testValidationOutsideOfResteasyContext(@Observes StartupEvent startupEvent) {
+        validator.validate(new MyOtherBean(null));
+    }
 
     @GET
     @Path("/basic-features")

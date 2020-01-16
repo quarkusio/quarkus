@@ -5,7 +5,7 @@ metadata:
   - "logging"
   - "gelf"
   - "handler"
-  guide: "https://quarkus.io/guides/central-logging"
+  guide: "https://quarkus.io/guides/centralized-log-management"
   categories:
   - "core"
   status: "preview"

@@ -6,9 +6,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.bson.codecs.pojo.annotations.BsonProperty;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.panache.common.Parameters;
@@ -20,6 +24,16 @@ class MongoOperationsTest {
         public boolean isOk;
         @BsonProperty("value")
         public String property;
+    }
+
+    @BeforeAll
+    static void setupFieldReplacement() {
+        Map<String, Map<String, String>> replacementCache = new HashMap<>();
+        Map<String, String> replacementMap = new HashMap<>();
+        replacementMap.put("property", "value");
+        replacementCache.put(DemoObj.class.getName(), replacementMap);
+        replacementCache.put(Object.class.getName(), Collections.emptyMap());//because the test use Object ...
+        MongoPropertyUtil.setReplacementCache(replacementCache);
     }
 
     @Test

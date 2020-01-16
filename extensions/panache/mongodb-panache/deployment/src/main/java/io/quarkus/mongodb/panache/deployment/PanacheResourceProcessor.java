@@ -1,9 +1,12 @@
 package io.quarkus.mongodb.panache.deployment;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
@@ -19,6 +22,9 @@ import org.jboss.jandex.Type;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
@@ -33,6 +39,7 @@ import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
 import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 import io.quarkus.mongodb.panache.PanacheMongoEntityBase;
+import io.quarkus.mongodb.panache.PanacheMongoRecorder;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.mongodb.panache.PanacheMongoRepositoryBase;
 import io.quarkus.mongodb.panache.ProjectionFor;
@@ -96,7 +103,8 @@ public class PanacheResourceProcessor {
     void build(CombinedIndexBuildItem index,
             ApplicationIndexBuildItem applicationIndex,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass) throws Exception {
 
         PanacheMongoRepositoryEnhancer daoEnhancer = new PanacheMongoRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
@@ -122,9 +130,12 @@ public class PanacheResourceProcessor {
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
         }
 
-        // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
         for (Type parameterType : daoTypeParameters) {
+            // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
+
+            // Register for building the property mapping cache
+            propertyMappingClass.produce(new PropertyMappingClassBuildStep(parameterType.name().toString()));
         }
 
         PanacheMongoEntityEnhancer modelEnhancer = new PanacheMongoEntityEnhancer(index.getIndex());
@@ -141,8 +152,16 @@ public class PanacheResourceProcessor {
             if (modelClasses.add(classInfo.name().toString()))
                 modelEnhancer.collectFields(classInfo);
         }
+
+        // iterate over all the entity classes
         for (String modelClass : modelClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(modelClass, modelEnhancer));
+
+            //register for reflection entity classes
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, modelClass));
+
+            // Register for building the property mapping cache
+            propertyMappingClass.produce(new PropertyMappingClassBuildStep(modelClass));
         }
 
         if (!modelEnhancer.entities.isEmpty()) {
@@ -174,7 +193,55 @@ public class PanacheResourceProcessor {
                 ProjectionForEnhancer fieldEnhancer = new ProjectionForEnhancer(targetPropertyMapping);
                 transformers.produce(new BytecodeTransformerBuildItem(info.name().toString(), fieldEnhancer));
             }
+
+            // Register for building the property mapping cache
+            propertyMappingClass
+                    .produce(new PropertyMappingClassBuildStep(target.name().toString(),
+                            annotationInstance.target().asClass().name().toString()));
         }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void buildReplacementMap(List<PropertyMappingClassBuildStep> propertyMappingClasses, CombinedIndexBuildItem index,
+            PanacheMongoRecorder recorder) {
+        Map<String, Map<String, String>> replacementMap = new ConcurrentHashMap<>();
+        for (PropertyMappingClassBuildStep classToMap : propertyMappingClasses) {
+            DotName dotName = DotName.createSimple(classToMap.getClassName());
+            ClassInfo classInfo = index.getIndex().getClassByName(dotName);
+            if (classInfo != null) {
+                // only compute field replacement for types inside the index
+                Map<String, String> classReplacementMap = replacementMap.computeIfAbsent(classToMap.getClassName(),
+                        className -> computeReplacement(classInfo));
+                if (classToMap.getAliasClassName() != null) {
+                    // also register the replacement map for the projection classes
+                    replacementMap.put(classToMap.getAliasClassName(), classReplacementMap);
+                }
+            }
+        }
+
+        recorder.setReplacementCache(replacementMap);
+    }
+
+    private Map<String, String> computeReplacement(ClassInfo classInfo) {
+        Map<String, String> replacementMap = new HashMap<>();
+        for (FieldInfo field : classInfo.fields()) {
+            AnnotationInstance bsonProperty = field.annotation(DOTNAME_BSON_PROPERTY);
+            if (bsonProperty != null) {
+                replacementMap.put(field.name(), bsonProperty.value().asString());
+            }
+        }
+        for (MethodInfo method : classInfo.methods()) {
+            if (method.name().startsWith("get")) {
+                // we try to replace also for getter
+                AnnotationInstance bsonProperty = method.annotation(DOTNAME_BSON_PROPERTY);
+                if (bsonProperty != null) {
+                    String fieldName = JavaBeanUtil.decapitalize(method.name().substring(3));
+                    replacementMap.put(fieldName, bsonProperty.value().asString());
+                }
+            }
+        }
+        return replacementMap.isEmpty() ? Collections.emptyMap() : replacementMap;
     }
 
     private void extractMappings(Map<String, String> classPropertyMapping, ClassInfo target, CombinedIndexBuildItem index) {

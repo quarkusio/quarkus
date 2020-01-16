@@ -138,7 +138,7 @@ class VertxHttpProcessor {
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath, launchMode.getLaunchMode(),
-                !requireBodyHandlerBuildItems.isEmpty(), bodyHandler);
+                !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, httpConfiguration);
 
         boolean startVirtual = requireVirtual.isPresent() || httpBuildTimeConfig.virtual;
         if (startVirtual) {

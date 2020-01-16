@@ -24,6 +24,8 @@ import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.netty.runtime.virtual.VirtualAddress;
@@ -66,6 +68,8 @@ import io.vertx.ext.web.handler.BodyHandler;
 
 @Recorder
 public class VertxHttpRecorder {
+
+    public static final String MAX_REQUEST_SIZE_KEY = "io.quarkus.max-request-size";
 
     private static final Logger LOGGER = Logger.getLogger(VertxHttpRecorder.class.getName());
 
@@ -172,7 +176,7 @@ public class VertxHttpRecorder {
     public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, RuntimeValue<Vertx> vertx,
             RuntimeValue<Router> runtimeValue, String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
-            Handler<RoutingContext> bodyHandler) {
+            Handler<RoutingContext> bodyHandler, HttpConfiguration httpConfiguration) {
         // install the default route at the end
         Router router = runtimeValue.getValue();
 
@@ -211,6 +215,36 @@ public class VertxHttpRecorder {
                 public void handle(RoutingContext routingContext) {
                     routingContext.request().resume();
                     bodyHandler.handle(routingContext);
+                }
+            });
+        }
+
+        if (httpConfiguration.limits.maxBodySize.isPresent()) {
+            long limit = httpConfiguration.limits.maxBodySize.get().asLongValue();
+            Long limitObj = limit;
+            router.route().order(-2).handler(new Handler<RoutingContext>() {
+                @Override
+                public void handle(RoutingContext event) {
+                    String lengthString = event.request().headers().get(HttpHeaderNames.CONTENT_LENGTH);
+
+                    if (lengthString != null) {
+                        long length = Long.parseLong(lengthString);
+                        if (length > limit) {
+                            event.response().headers().add(HttpHeaderNames.CONNECTION, "close");
+                            event.response().setStatusCode(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE.code());
+                            event.response().endHandler(new Handler<Void>() {
+                                @Override
+                                public void handle(Void e) {
+                                    event.request().connection().close();
+                                }
+                            });
+                            event.response().end();
+                            return;
+                        }
+                    } else {
+                        event.put(MAX_REQUEST_SIZE_KEY, limitObj);
+                    }
+                    event.next();
                 }
             });
         }

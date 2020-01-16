@@ -139,7 +139,7 @@ public class VertxHttpFacade implements OIDCHttpFacade {
                     if (routingContext.request().isEnded()) {
                         return new ByteArrayInputStream(new byte[0]);
                     }
-                    return new VertxInputStream(request);
+                    return new VertxInputStream(routingContext);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

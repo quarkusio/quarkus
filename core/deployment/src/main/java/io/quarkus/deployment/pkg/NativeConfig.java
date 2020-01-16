@@ -38,7 +38,7 @@ public class NativeConfig {
     /**
      * If JNI should be enabled
      */
-    @ConfigItem(defaultValue = "true")
+    @ConfigItem(defaultValue = "false")
     public boolean enableJni;
 
     /**

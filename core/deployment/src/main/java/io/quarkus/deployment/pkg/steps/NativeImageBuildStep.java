@@ -266,7 +266,7 @@ public class NativeImageBuildStep {
             if (!nativeConfig.enableIsolates) {
                 command.add("-H:-SpawnIsolates");
             }
-            if (nativeConfig.enableJni) {
+            if (nativeConfig.enableJni || (graalVMVersion.isPresent() && !graalVMVersion.get().contains(" 19.2."))) {
                 command.add("-H:+JNI");
             } else {
                 command.add("-H:-JNI");

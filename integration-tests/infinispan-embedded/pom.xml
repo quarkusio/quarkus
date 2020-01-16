@@ -141,7 +141,7 @@
                                     <dumpProxies>false</dumpProxies>
                                     <!-- We have some example stack files we want to use -->
                                     <additionalBuildArgs>
-                                        <additionalBuildArg>-H:ResourceConfigurationFiles=${project.basedir}/src/main/resources/resources-config.json</additionalBuildArg>
+                                        <additionalBuildArg>-H:ResourceConfigurationFiles=resources-config.json</additionalBuildArg>
                                     </additionalBuildArgs>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
                                 </configuration>

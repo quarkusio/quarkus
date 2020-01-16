@@ -34,6 +34,15 @@
                     </dependenciesToScan>
                 </configuration>
             </plugin>
+
+            <!-- Temporarily disable enforcer because of comment about test dependencies (see later) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -186,6 +195,26 @@
                     <artifactId>commons-logging</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <!--
+            Dependencies added to pom.xml to make sure that Maven resolves them instead of relying on Shrinkwrap in
+            org.eclipse.microprofile.opentracing.tck.OpenTracingBaseTests.
+            This is done in order to get past the fact that http://repo1.maven.org no longer works (it requires https)
+            but should only be considered a temporary solution - the proper solution to make the test use
+            https for Maven Central
+        -->
+        <dependency>
+            <groupId>io.opentracing</groupId>
+            <artifactId>opentracing-api</artifactId>
+            <version>0.31.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+            <artifactId>jackson-jaxrs-json-provider</artifactId>
+            <version>2.9.0</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

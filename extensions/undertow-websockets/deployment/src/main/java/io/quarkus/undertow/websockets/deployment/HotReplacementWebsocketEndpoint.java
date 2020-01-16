@@ -35,7 +35,8 @@ public class HotReplacementWebsocketEndpoint {
 
     static final String QUARKUS_HOT_RELOAD = "/quarkus/live-reload";
     static final String QUARKUS_SECURITY_KEY = "quarkus-security-key";
-    static final String QUARKUS_HOT_RELOAD_PASSWORD = "quarkus.live-reload.password";
+    static final String QUARKUS_LIVE_RELOAD_PASSWORD = "quarkus.live-reload.password";
+    static final String QUARKUS_LIVE_RELOAD_PASSWORD_ENV = "QUARKUS_LIVE_RELOAD_PASSWORD";
     private static Logger logger = Logger.getLogger(HotReplacementWebsocketEndpoint.class);
 
     private static final long MAX_WAIT_TIME = 15000;

@@ -51,7 +51,9 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 class KubernetesProcessor {
 
     private static final String PROPERTY_PREFIX = "dekorate.";
-    private static final String ALLOWED_GENERATOR = "kubernetes";
+    private static final Set<String> ALLOWED_GENERATORS = new HashSet(
+            Arrays.asList("kubernetes", "openshift", "knative", "docker", "s2i"));
+    private static final Set<String> IMAGE_GENERATORS = new HashSet(Arrays.asList("docker", "s2i"));
 
     private static final String DEPLOYMENT_TARGET = "kubernetes.deployment.target";
     private static final String KUBERNETES = "kubernetes";
@@ -97,18 +99,25 @@ class KubernetesProcessor {
                 .collect(Collectors.toList());
 
         Map<String, Object> configAsMap = StreamSupport.stream(config.getPropertyNames().spliterator(), false)
-                .filter(k -> ALLOWED_GENERATOR.equals(generatorName(k)))
+                .filter(k -> ALLOWED_GENERATORS.contains(generatorName(k)))
                 .collect(Collectors.toMap(k -> PROPERTY_PREFIX + k, k -> config.getValue(k, String.class)));
+
         // this is a hack to get kubernetes.registry working because currently it's not supported as is in Dekorate
-        Optional<String> kubernetesRegistry = config.getOptionalValue(ALLOWED_GENERATOR + ".registry", String.class);
-        if (kubernetesRegistry.isPresent()) {
-            System.setProperty(DOCKER_REGISTRY_PROPERTY, kubernetesRegistry.get());
-        }
+        Optional<String> dockerRegistry = IMAGE_GENERATORS.stream()
+                .map(g -> config.getOptionalValue(g + ".registry", String.class))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
+
+        dockerRegistry.ifPresent(v -> System.setProperty(DOCKER_REGISTRY_PROPERTY, v));
+
         // this is a hack to work around Dekorate using the default group for some of the properties
-        Optional<String> kubernetesGroup = config.getOptionalValue(ALLOWED_GENERATOR + ".group", String.class);
-        if (kubernetesGroup.isPresent()) {
-            System.setProperty(APP_GROUP_PROPERTY, kubernetesGroup.get());
-        }
+        Optional<String> kubernetesGroup = ALLOWED_GENERATORS.stream()
+                .map(g -> config.getOptionalValue(g + ".group", String.class))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
+        kubernetesGroup.ifPresent(v -> System.setProperty(APP_GROUP_PROPERTY, v));
 
         final Map<String, String> generatedResourcesMap;
         try {
@@ -131,7 +140,7 @@ class KubernetesProcessor {
             if (kubernetesGroup.isPresent()) {
                 System.clearProperty(APP_GROUP_PROPERTY);
             }
-            if (kubernetesRegistry.isPresent()) {
+            if (dockerRegistry.isPresent()) {
                 System.clearProperty(DOCKER_REGISTRY_PROPERTY);
             }
         }

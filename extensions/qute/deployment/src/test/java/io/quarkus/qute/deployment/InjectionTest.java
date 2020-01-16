@@ -25,7 +25,7 @@ public class InjectionTest {
                     .addClasses(SimpleBean.class)
                     .addAsResource(new StringAsset("quarkus.qute.suffixes=txt"), "application.properties")
                     .addAsResource(new StringAsset("{this}"), "templates/foo.txt")
-                    .addAsResource(new StringAsset("<strong>{this}</strong>"), "templates/foo.html")
+                    .addAsResource(new StringAsset("<strong>{this}</strong>"), "templates/foo.qute.html")
                     .addAsResource(new StringAsset("{this}"), "templates/bars/bar.txt"));
 
     @Inject
@@ -48,7 +48,7 @@ public class InjectionTest {
         @Inject
         Template foo;
 
-        @ResourcePath("foo.html")
+        @ResourcePath("foo.qute.html")
         Template foo2;
 
         @ResourcePath("bars/bar")

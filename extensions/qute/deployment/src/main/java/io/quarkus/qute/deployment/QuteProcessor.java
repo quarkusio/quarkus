@@ -536,7 +536,7 @@ public class QuteProcessor {
     }
 
     @BuildStep
-    void collectTemplates(QuteConfig config, ApplicationArchivesBuildItem applicationArchivesBuildItem,
+    void collectTemplates(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources)
@@ -568,18 +568,20 @@ public class QuteProcessor {
     }
 
     @BuildStep
-    void validateTemplateInjectionPoints(List<TemplatePathBuildItem> templatePaths, ValidationPhaseBuildItem validationPhase,
+    void validateTemplateInjectionPoints(QuteConfig config, List<TemplatePathBuildItem> templatePaths,
+            ValidationPhaseBuildItem validationPhase,
             BuildProducer<ValidationErrorBuildItem> validationErrors) {
 
         Set<String> filePaths = new HashSet<String>();
         for (TemplatePathBuildItem templatePath : templatePaths) {
             String path = templatePath.getPath();
             filePaths.add(path);
-            int idx = path.lastIndexOf('.');
-            if (idx != -1) {
-                // Also add version without suffix from the path
-                // For example for "items.html" also add "items"
-                filePaths.add(path.substring(0, idx));
+            // Also add version without suffix from the path
+            // For example for "items.html" also add "items"
+            for (String suffix : config.suffixes) {
+                if (path.endsWith(suffix)) {
+                    filePaths.add(path.substring(0, path.length() - (suffix.length() + 1)));
+                }
             }
         }
 

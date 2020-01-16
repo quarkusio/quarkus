@@ -16,7 +16,7 @@ public class QuteConfig {
      * 
      * @asciidoclet
      */
-    @ConfigItem(defaultValue = "html,txt")
+    @ConfigItem(defaultValue = "qute.html,qute.txt,html,txt")
     public List<String> suffixes;
 
 }

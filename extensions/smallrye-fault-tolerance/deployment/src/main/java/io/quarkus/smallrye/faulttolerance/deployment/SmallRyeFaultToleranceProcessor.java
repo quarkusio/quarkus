@@ -45,15 +45,18 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.smallrye.faulttolerance.runtime.NoopMetricRegistry;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
 import io.quarkus.smallrye.faulttolerance.runtime.SmallryeFaultToleranceRecorder;
+import io.smallrye.faulttolerance.ExecutorFactory;
 import io.smallrye.faulttolerance.ExecutorProvider;
 import io.smallrye.faulttolerance.FaultToleranceBinding;
 import io.smallrye.faulttolerance.FaultToleranceInterceptor;
 import io.smallrye.faulttolerance.internal.StrategyCache;
 import io.smallrye.faulttolerance.metrics.MetricsCollectorFactory;
+import io.smallrye.faulttolerance.propagation.ContextPropagationExecutorFactory;
 
 public class SmallRyeFaultToleranceProcessor {
 
@@ -69,11 +72,15 @@ public class SmallRyeFaultToleranceProcessor {
     @BuildStep
     public void build(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
             BuildProducer<FeatureBuildItem> feature, BuildProducer<AdditionalBeanBuildItem> additionalBean,
+            BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<BeanDefiningAnnotationBuildItem> additionalBda,
             Capabilities capabilities,
             BuildProducer<SystemPropertyBuildItem> systemProperty) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_FAULT_TOLERANCE));
+
+        serviceProvider.produce(new ServiceProviderBuildItem(ExecutorFactory.class.getName(),
+                ContextPropagationExecutorFactory.class.getName()));
 
         Set<DotName> ftAnnotations = new HashSet<>();
         ftAnnotations.add(DotName.createSimple(Asynchronous.class.getName()));

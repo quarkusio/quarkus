@@ -25,7 +25,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-narayana-stm</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

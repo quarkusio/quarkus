@@ -54,6 +54,10 @@ public class OidcJsonWebTokenProducer {
         if (identity.isAnonymous()) {
             return new NullJsonWebToken();
         }
+        if (identity.getPrincipal() instanceof OidcJwtCallerPrincipal
+                && ((OidcJwtCallerPrincipal) identity.getPrincipal()).getCredential().getClass() == type) {
+            return (JsonWebToken) identity.getPrincipal();
+        }
         TokenCredential credential = identity.getCredential(type);
         if (credential != null) {
             JwtClaims jwtClaims;
@@ -66,7 +70,7 @@ public class OidcJsonWebTokenProducer {
                 throw new RuntimeException(e);
             }
             jwtClaims.setClaim(Claims.raw_token.name(), credential.getToken());
-            return new OidcJwtCallerPrincipal(jwtClaims);
+            return new OidcJwtCallerPrincipal(jwtClaims, credential);
         }
         throw new IllegalStateException("Current identity not associated with an access token");
     }

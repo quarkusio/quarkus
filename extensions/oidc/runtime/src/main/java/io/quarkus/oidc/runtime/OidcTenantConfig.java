@@ -271,11 +271,19 @@ public class OidcTenantConfig {
          */
         @ConfigItem
         public Optional<String> issuer = Optional.empty();
+
         /**
          * Expected audience `aud` claim value which may be a string or an array of strings
          */
         @ConfigItem
         public Optional<List<String>> audience = Optional.empty();
+
+        /**
+         * Name of the claim which contains a principal name. By default, the 'upn', 'preferred_username' and `sub` claims are
+         * checked.
+         */
+        @ConfigItem
+        public Optional<String> principalClaim = Optional.empty();
 
         public Optional<String> getIssuer() {
             return issuer;
@@ -291,6 +299,14 @@ public class OidcTenantConfig {
 
         public void setAudience(List<String> audience) {
             this.audience = Optional.of(audience);
+        }
+
+        public Optional<String> getPrincipalClaim() {
+            return principalClaim;
+        }
+
+        public void setPrincipalClaim(String principalClaim) {
+            this.principalClaim = Optional.of(principalClaim);
         }
     }
 }

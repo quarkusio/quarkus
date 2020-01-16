@@ -112,6 +112,7 @@ public class BearerTokenAuthorizationTest {
         user.setEnabled(true);
         user.setCredentials(new ArrayList<>());
         user.setRealmRoles(Arrays.asList(realmRoles));
+        user.setEmail(username + "@gmail.com");
 
         CredentialRepresentation credential = new CredentialRepresentation();
 
@@ -141,7 +142,7 @@ public class BearerTokenAuthorizationTest {
 
         for (String username : Arrays.asList("alice", "jdoe", "admin")) {
             RestAssured.given().auth().oauth2(getAccessToken(username))
-                    .when().get("/api/users/me")
+                    .when().get("/api/users/preferredUserName")
                     .then()
                     .statusCode(200)
                     .body("userName", equalTo(username));
@@ -149,10 +150,21 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    public void testSecureAccessSuccess() {
+    public void testSecureAccessSuccessCustomPrincipal() {
         for (String username : Arrays.asList("alice", "jdoe", "admin")) {
             RestAssured.given().auth().oauth2(getAccessToken(username))
                     .when().get("/api/users/me")
+                    .then()
+                    .statusCode(200)
+                    .body("userName", equalTo(username + "@gmail.com"));
+        }
+    }
+
+    @Test
+    public void testSecureAccessSuccessPreferredUsername() {
+        for (String username : Arrays.asList("alice", "jdoe", "admin")) {
+            RestAssured.given().auth().oauth2(getAccessToken(username))
+                    .when().get("/api/users/preferredUserName")
                     .then()
                     .statusCode(200)
                     .body("userName", equalTo(username));

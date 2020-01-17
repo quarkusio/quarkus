@@ -1,7 +1,7 @@
 package io.quarkus.smallrye.metrics.deployment;
 
 import static io.restassured.RestAssured.when;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;

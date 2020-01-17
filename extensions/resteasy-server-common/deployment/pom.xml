@@ -34,6 +34,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-server-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-undertow-spi</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

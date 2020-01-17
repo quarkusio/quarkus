@@ -329,6 +329,7 @@ jobs:
               flyway
               hibernate-orm-panache
               reactive-pg-client 
+              liquibase
           - category: Data4
             neo4j: "true"
             timeout: 30

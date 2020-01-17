@@ -21,4 +21,10 @@ public class HttpBuildTimeConfig {
      */
     @ConfigItem
     public boolean virtual;
+
+    /**
+     * Http static configuration
+     */
+    @ConfigItem(name = "static")
+    public StaticResourceConfig staticConfig;
 }

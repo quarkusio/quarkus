@@ -3,7 +3,11 @@ package io.quarkus.vertx.http.deployment;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -26,13 +30,17 @@ import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.RouterProducer;
+import io.quarkus.vertx.http.runtime.StaticResourceConfig;
+import io.quarkus.vertx.http.runtime.StaticResourceRecorder;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
@@ -42,6 +50,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 class VertxHttpProcessor {
+    private static Pattern MULTIPLE_TRAILING_SLASHES = Pattern.compile("(/+)$");
 
     @BuildStep
     HttpRootPathBuildItem httpRoot(HttpBuildTimeConfig httpBuildTimeConfig) {
@@ -106,6 +115,38 @@ class VertxHttpProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
+    void initializeAdditionalStaticResource(StaticResourceRecorder recorder, BuildProducer<RouteBuildItem> routes,
+            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
+            HttpBuildTimeConfig httpBuildTimeConfig,
+            LaunchModeBuildItem launchModeBuildItem) {
+
+        Map<String, StaticResourceConfig.StaticResourceGeneralConfig> config = new TreeMap<>(
+                httpBuildTimeConfig.staticConfig.config);
+        for (Map.Entry<String, StaticResourceConfig.StaticResourceGeneralConfig> entry : config.entrySet()) {
+            StaticResourceConfig.StaticResourceGeneralConfig value = entry.getValue();
+            final String sanitizedEndpoint = sanitizeStaticResourceEndpoint(value.endpoint);
+            if (sanitizedEndpoint.isEmpty()) {
+                throw new ConfigurationException(
+                        String.format("The given static resource endpoint '%s' is invalid", value.endpoint));
+            }
+
+            Handler<RoutingContext> handler = recorder.handler(httpBuildTimeConfig, entry.getKey(), sanitizedEndpoint);
+            routes.produce(new RouteBuildItem(sanitizedEndpoint, handler));
+            routes.produce(new RouteBuildItem(sanitizedEndpoint + "/*", handler));
+            if (launchModeBuildItem.getLaunchMode().isDevOrTest()) {
+                displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(sanitizedEndpoint + "/"));
+            }
+        }
+    }
+
+    private String sanitizeStaticResourceEndpoint(String endpoint) {
+        final String staticResourceEndpoint = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
+        Matcher matcher = MULTIPLE_TRAILING_SLASHES.matcher(staticResourceEndpoint);
+        return matcher.replaceAll("");
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem finalizeRouter(
             VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer,
             Optional<RequireVirtualHttpBuildItem> requireVirtual, InternalWebVertxBuildItem vertx,
@@ -117,9 +158,8 @@ class VertxHttpProcessor {
             List<WebsocketSubProtocolsBuildItem> websocketSubProtocols,
             List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
             BodyHandlerBuildItem bodyHandlerBuildItem,
-            CoreVertxBuildItem core // Injected to be sure that Vert.x has been produced before calling this method.
-    )
-            throws BuildException, IOException {
+            CoreVertxBuildItem core, // Injected to be sure that Vert.x has been produced before calling this method.
+            EventLoopCountBuildItem eventLoopCountBuildItem) throws BuildException, IOException {
         Optional<DefaultRouteBuildItem> defaultRoute;
         if (defaultRoutes == null || defaultRoutes.isEmpty()) {
             defaultRoute = Optional.empty();

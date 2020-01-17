@@ -24,10 +24,25 @@ Servlet filter, otherwise it will run directly on top of Vert.x with no Servlet 
 
 == Serving Static Resources
 
-To serve static resources you must place them in the `META-INF/resources` directory of your application. This location
+By default Quarkus will serve static files in the `META-INF/resources` directory of your application. This location
 was chosen as it is the standard location for resources in `jar` files as defined by the Servlet spec. Even though
 Quarkus can be used without Servlet following this convention allows existing code that places its resources in this
 location to function correctly.
+
+Additionally, Quarkus supports deployment of static files defined in a directory other than `META-INF/resources`.
+This is particularly useful when you want to leverage the power of a Quarkus backend alongside a frontend application (outside your Quarkus backend repository).
+In this workflow, you can configure your Quarkus backend using the configuration properties below to serve static files from the directory that contains your web application contents or the result of a frontend framework build process.
+
+[source,properties]
+----
+quarkus.http.static.web-content.endpoint=/web <1>
+quarkus.http.static.web-content.index=index.html <2>
+quarkus.http.static.web-content.path=/path/to/directory <3>
+----
+
+1. Configure a `/web` endpoint named `web-content` that will serve static web resources.
+2. Initialise the directory path containing static content for the `/web` endpoint.
+3. Set `index.html` as the default landing page for the `/web` endpoint.
 
 == Configuring the Context path
 

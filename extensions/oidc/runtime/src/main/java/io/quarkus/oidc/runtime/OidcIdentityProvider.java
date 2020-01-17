@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
@@ -45,6 +46,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 CompletableFuture<SecurityIdentity> result = new CompletableFuture<>();
                 ContextAwareTokenCredential credential = (ContextAwareTokenCredential) request.getToken();
                 RoutingContext vertxContext = credential.getContext();
+                OidcTenantConfig config = tenantResolver.resolve(vertxContext).oidcConfig;
 
                 tenantResolver.resolve(vertxContext).auth.decodeToken(request.getToken().getToken(),
                         new Handler<AsyncResult<AccessToken>>() {
@@ -56,29 +58,29 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                 }
                                 AccessToken token = event.result();
                                 try {
-                                    OidcUtils.validateClaims(tenantResolver.resolve(vertxContext).oidcConfig.getToken(),
-                                            token.accessToken());
+                                    OidcUtils.validateClaims(config.getToken(), token.accessToken());
                                 } catch (OIDCException e) {
                                     result.completeExceptionally(new AuthenticationFailedException(e));
                                     return;
                                 }
 
                                 QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
+                                builder.addCredential(request.getToken());
 
                                 JsonWebToken jwtPrincipal;
                                 try {
-                                    jwtPrincipal = new OidcJwtCallerPrincipal(JwtClaims.parse(token.accessToken().encode()));
+                                    JwtClaims jwtClaims = JwtClaims.parse(token.accessToken().encode());
+                                    jwtClaims.setClaim(Claims.raw_token.name(), credential.getToken());
+                                    jwtPrincipal = new OidcJwtCallerPrincipal(jwtClaims, request.getToken(),
+                                            config.token.principalClaim.isPresent() ? config.token.principalClaim.get() : null);
                                 } catch (InvalidJwtException e) {
                                     result.completeExceptionally(new AuthenticationFailedException(e));
                                     return;
                                 }
                                 builder.setPrincipal(jwtPrincipal);
                                 try {
-                                    String clientId = tenantResolver.resolve(vertxContext).oidcConfig.getClientId().isPresent()
-                                            ? tenantResolver.resolve(vertxContext).oidcConfig.getClientId().get()
-                                            : null;
-                                    for (String role : OidcUtils.findRoles(clientId,
-                                            tenantResolver.resolve(vertxContext).oidcConfig.getRoles(), token.accessToken())) {
+                                    String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
+                                    for (String role : OidcUtils.findRoles(clientId, config.getRoles(), token.accessToken())) {
                                         builder.addRole(role);
                                     }
                                 } catch (Exception e) {
@@ -86,7 +88,6 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                     return;
                                 }
 
-                                builder.addCredential(request.getToken());
                                 result.complete(builder.build());
                             }
                         });

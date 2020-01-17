@@ -20,12 +20,14 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jws.AlgorithmIdentifiers;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.NumericDate;
+
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.build.JwtClaimsBuilder;
+import io.smallrye.jwt.build.JwtSignatureBuilder;
 
 /**
  * Utilities for generating a JWT for testing
@@ -108,20 +110,12 @@ public class TokenUtils {
         if (invalidClaims == null) {
             invalidClaims = Collections.emptySet();
         }
-        InputStream contentIS = TokenUtils.class.getResourceAsStream(jsonResName);
-        if (contentIS == null) {
-            throw new IllegalStateException("Failed to find resource: " + jsonResName);
-        }
-        byte[] tmp = new byte[4096];
-        int length = contentIS.read(tmp);
-        byte[] content = new byte[length];
-        System.arraycopy(tmp, 0, content, 0, length);
 
-        JwtClaims claims = JwtClaims.parse(new String(content, StandardCharsets.UTF_8));
+        JwtClaimsBuilder claims = Jwt.claims(jsonResName);
 
         // Change the issuer to INVALID_ISSUER for failure testing if requested
         if (invalidClaims.contains(InvalidClaims.ISSUER)) {
-            claims.setIssuer("INVALID_ISSUER");
+            claims.issuer("INVALID_ISSUER");
         }
         long currentTimeInSecs = currentTimeInSecs();
         long exp = currentTimeInSecs + 300;
@@ -138,11 +132,11 @@ public class TokenUtils {
             iat = exp - 5;
             authTime = exp - 5;
         }
-        claims.setIssuedAt(NumericDate.fromSeconds(iat));
-        claims.setClaim(Claims.auth_time.name(), NumericDate.fromSeconds(authTime));
+        claims.issuedAt(iat);
+        claims.claim(Claims.auth_time.name(), authTime);
         // If the exp claim is not updated, it will be an old value that should be seen as expired
         if (!invalidClaims.contains(InvalidClaims.EXP)) {
-            claims.setExpirationTime(NumericDate.fromSeconds(exp));
+            claims.expiresAt(exp);
         }
         // Return the token time values if requested
         if (timeClaims != null) {
@@ -153,23 +147,18 @@ public class TokenUtils {
 
         if (invalidClaims.contains(InvalidClaims.SIGNER)) {
             // Generate a new random private key to sign with to test invalid signatures
-            KeyPair keyPair = generateKeyPair(2048);
-            pk = keyPair.getPrivate();
+            pk = generateKeyPair(2048).getPrivate();
         }
 
-        JsonWebSignature jws = new JsonWebSignature();
-        jws.setPayload(claims.toJson());
-        jws.setKeyIdHeaderValue(kid);
-        jws.setHeader("typ", "JWT");
+        JwtSignatureBuilder jws = claims.jws().signatureKeyId(kid);
+
         if (invalidClaims.contains(InvalidClaims.ALG)) {
-            jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.HMAC_SHA256);
-            KeyGenerator kgen = KeyGenerator.getInstance("HMACSHA256");
-            jws.setKey(kgen.generateKey());
+            jws.signatureAlgorithm(SignatureAlgorithm.HS256);
+            SecretKey sk = KeyGenerator.getInstance("HMACSHA256").generateKey();
+            return jws.sign(sk);
         } else {
-            jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
-            jws.setKey(pk);
+            return jws.sign(pk);
         }
-        return jws.getCompactSerialization();
     }
 
     /**

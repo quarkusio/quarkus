@@ -67,6 +67,9 @@ update_configs:
           dependency_name: "org.scala-lang:scala-compiler"
       - match:
           dependency_name: "net.alchim31.maven:scala-maven-plugin"
+      # Smallrye
+      - match:
+          dependency_name: "io.smallrye:smallrye-jwt"
       # Tika
       - match:
           dependency_name: "org.apache.tika:tika-parsers"

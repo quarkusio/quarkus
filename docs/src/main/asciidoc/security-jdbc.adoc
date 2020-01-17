@@ -271,10 +271,10 @@ quarkus.datasource.driver=org.postgresql.Driver
 quarkus.datasource.username=quarkus
 quarkus.datasource.password=quarkus
 
-quarkus.datasource.url=jdbc:postgresql:multiple-data-sources-permissions
-quarkus.datasource.driver=org.postgresql.Driver
-quarkus.datasource.username=quarkus
-quarkus.datasource.password=quarkus
+quarkus.datasource.permissions.url=jdbc:postgresql:multiple-data-sources-permissions
+quarkus.datasource.permissions.driver=org.postgresql.Driver
+quarkus.datasource.permissions.username=quarkus
+quarkus.datasource.permissions.password=quarkus
 
 quarkus.security.jdbc.enabled=true
 quarkus.security.jdbc.principal-query.sql=SELECT u.password FROM test_user u WHERE u.username=?

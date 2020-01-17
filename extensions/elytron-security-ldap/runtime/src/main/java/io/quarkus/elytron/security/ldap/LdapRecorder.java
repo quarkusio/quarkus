@@ -13,7 +13,6 @@ import org.wildfly.security.WildFlyElytronProvider;
 import org.wildfly.security.auth.realm.ldap.AttributeMapping;
 import org.wildfly.security.auth.realm.ldap.DirContextFactory;
 import org.wildfly.security.auth.realm.ldap.LdapSecurityRealmBuilder;
-import org.wildfly.security.auth.realm.ldap.SimpleDirContextFactoryBuilder;
 import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.elytron.security.ldap.config.AttributeMappingConfig;
@@ -58,12 +57,10 @@ public class LdapRecorder {
     }
 
     private ExceptionSupplier<DirContext, NamingException> createDirContextSupplier(DirContextConfig dirContext) {
-        DirContextFactory dirContextFactory = SimpleDirContextFactoryBuilder.builder()
-                .setProviderUrl(dirContext.url)
-                .setSecurityPrincipal(dirContext.principal)
-                .setSecurityCredential(dirContext.password)
-                .build();
-
+        DirContextFactory dirContextFactory = new QuarkusDirContextFactory(
+                dirContext.url,
+                dirContext.principal,
+                dirContext.password);
         return () -> dirContextFactory.obtainDirContext(DirContextFactory.ReferralMode.IGNORE);
     }
 

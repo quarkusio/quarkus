@@ -11,9 +11,11 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.ldap.LdapRecorder;
+import io.quarkus.elytron.security.ldap.QuarkusDirContextFactory;
 import io.quarkus.elytron.security.ldap.config.LdapSecurityRealmConfig;
 import io.quarkus.runtime.RuntimeValue;
 
@@ -64,4 +66,8 @@ class ElytronSecurityLdapProcessor {
         return new JniBuildItem();
     }
 
+    @BuildStep
+    ReflectiveClassBuildItem enableReflection() {
+        return new ReflectiveClassBuildItem(true, true, QuarkusDirContextFactory.INITIAL_CONTEXT_FACTORY);
+    }
 }

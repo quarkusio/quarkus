@@ -151,7 +151,7 @@ public class CounterBean {
 * Interceptors
 ** Business method interceptors: `@AroundInvoke`
 ** Interceptors for lifecycle event callbacks: `@PostConstruct`, `@PreDestroy`, `@AroundConstruct`
-* Events and observers, including asynchronous events
+* Events and observer methods, including asynchronous events and transactional observer methods
 
 [[limitations]]
 == Limitations
@@ -164,7 +164,6 @@ public class CounterBean {
 * `beans.xml` descriptor content is ignored
 * Passivation and passivating scopes are not supported
 * Interceptor methods on superclasses are not implemented yet
-* `BEFORE_COMPLETION`, `AFTER_COMPLETION`, `AFTER_FAILURE` and `AFTER_SUCCESS` transactional observers are not implemented yet
 
 == Non-standard Features
 

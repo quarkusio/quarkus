@@ -8,18 +8,22 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -40,6 +44,7 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
@@ -381,6 +386,20 @@ public class QuarkusUnitTest
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
+        if (!started) {
+            Optional<Class<?>> testClass = context.getTestClass();
+            if (testClass.isPresent()) {
+                Field extensionField = Arrays.stream(testClass.get().getDeclaredFields()).filter(
+                        f -> f.isAnnotationPresent(RegisterExtension.class) && QuarkusUnitTest.class.equals(f.getType()))
+                        .findAny().orElse(null);
+                if (extensionField != null && !Modifier.isStatic(extensionField.getModifiers())) {
+                    throw new IllegalStateException(
+                            "Test application not started - QuarkusUnitTest must be used with a static field: "
+                                    + extensionField);
+                }
+            }
+            throw new IllegalStateException("Test application not started for an unknown reason");
+        }
         restAssuredURLManager.setURL();
     }
 

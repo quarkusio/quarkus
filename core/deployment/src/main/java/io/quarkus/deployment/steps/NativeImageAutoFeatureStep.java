@@ -43,6 +43,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
+import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -66,6 +67,8 @@ public class NativeImageAutoFeatureStep {
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
+    // TODO: Delete the following line when Quarkus no longer supports GraalVM 19.2.1.
+    static final String LOCALIZATION_SUPPORT = "com.oracle.svm.core.jdk.LocalizationSupport";
 
     @BuildStep
     List<NativeImageResourceBuildItem> registerPackageResources(
@@ -205,7 +208,26 @@ public class NativeImageAutoFeatureStep {
         }
 
         if (!resourceBundles.isEmpty()) {
-            ResultHandle locClass = overallCatch.loadClass(LOCALIZATION_FEATURE);
+            /*
+             * Start of a temporary workaround to support both GraalVM 19.2.1 and 19.3.1 at the same time.
+             * TODO: Delete this workaround when Quarkus no longer supports GraalVM 19.2.1.
+             */
+            AssignableResultHandle locClass = overallCatch.createVariable(Class.class);
+            TryBlock workaroundTryBlock = overallCatch.tryBlock();
+            workaroundTryBlock.assign(locClass, workaroundTryBlock.loadClass(LOCALIZATION_FEATURE));
+            // The following line is required to throw an exception and make sure we load the 19.2.1 class when needed.
+            workaroundTryBlock.invokeVirtualMethod(
+                    ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), locClass,
+                    workaroundTryBlock.load("addBundleToCache"),
+                    workaroundTryBlock.marshalAsArray(Class.class, workaroundTryBlock.loadClass(String.class)));
+            CatchBlockCreator workaroundCatchBlock = workaroundTryBlock.addCatch(Throwable.class);
+            workaroundCatchBlock.assign(locClass, workaroundCatchBlock.loadClass(LOCALIZATION_SUPPORT));
+            /*
+             * End of the temporary workaround.
+             */
+
+            // TODO: Uncomment the following line when the temporary workaround above is deleted.
+            //ResultHandle locClass = overallCatch.loadClass(LOCALIZATION_FEATURE);
 
             ResultHandle params = overallCatch.marshalAsArray(Class.class, overallCatch.loadClass(String.class));
             ResultHandle registerMethod = overallCatch.invokeVirtualMethod(

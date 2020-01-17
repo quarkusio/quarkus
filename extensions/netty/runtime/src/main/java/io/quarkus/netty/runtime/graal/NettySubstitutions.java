@@ -377,6 +377,18 @@ final class Target_io_netty_channel_ChannelHandlerMask {
     }
 }
 
+@TargetClass(className = "io.netty.util.internal.NativeLibraryLoader")
+final class Target_io_netty_util_internal_NativeLibraryLoader {
+
+    // This method can trick GraalVM into thinking that Classloader#defineClass is getting classed
+    @Substitute
+    static Class<?> tryToLoadClass(final ClassLoader loader, final Class<?> helper)
+            throws ClassNotFoundException {
+        return Class.forName(helper.getName(), false, loader);
+    }
+
+}
+
 class NettySubstitutions {
 
 }

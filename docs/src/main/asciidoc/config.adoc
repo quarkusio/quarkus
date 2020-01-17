@@ -603,7 +603,7 @@ First you will need to add the YAML extension to your `pom.xml`:
 Now Quarkus can read YAML configuration files.
 The config directories and priorities are the same as before.
 
-NOTE: Quarkus will choose an `application.properties` over an `application.yaml`.
+NOTE: Quarkus will choose an `application.yaml` over an `application.properties`.
 YAML files are just an alternative way to configure your application.
 You should decide and keep one configuration type to avoid errors.
 

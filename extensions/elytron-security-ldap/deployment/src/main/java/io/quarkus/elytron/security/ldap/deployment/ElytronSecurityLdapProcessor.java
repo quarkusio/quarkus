@@ -10,6 +10,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.ldap.LdapRecorder;
@@ -56,6 +57,11 @@ class ElytronSecurityLdapProcessor {
             return new ElytronPasswordMarkerBuildItem();
         }
         return null;
+    }
+
+    @BuildStep
+    JniBuildItem enableJni() {
+        return new JniBuildItem();
     }
 
 }

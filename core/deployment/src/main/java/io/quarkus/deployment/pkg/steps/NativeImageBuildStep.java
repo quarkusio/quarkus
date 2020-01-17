@@ -199,7 +199,7 @@ public class NativeImageBuildStep {
                 nativeConfig.enableAllSecurityServices = true;
             }
 
-            nativeConfig.additionalBuildArgs.ifPresent(command::addAll);
+            nativeConfig.additionalBuildArgs.ifPresent(l -> l.stream().map(String::trim).forEach(command::add));
             command.add("--initialize-at-build-time=");
             command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
             command.add("-jar");

@@ -42,6 +42,7 @@ public class SimpleScheduler implements Scheduler {
 
     private static final Logger LOGGER = Logger.getLogger(SimpleScheduler.class);
 
+    // milliseconds
     private static final long CHECK_PERIOD = 1000L;
 
     private final ScheduledExecutorService scheduledExecutor;
@@ -111,19 +112,23 @@ public class SimpleScheduler implements Scheduler {
         ZonedDateTime now = ZonedDateTime.now();
 
         for (ScheduledTask task : scheduledTasks) {
-            LOGGER.tracef("Evaluate trigger %s", task.trigger.id);
+            LOGGER.tracef("Evaluate trigger %s", task.trigger);
             ZonedDateTime scheduledFireTime = task.trigger.evaluate(now);
             if (scheduledFireTime != null) {
                 try {
                     executor.execute(new Runnable() {
                         @Override
                         public void run() {
-                            task.invoker.invoke(new SimpleScheduledExecution(now, scheduledFireTime, task.trigger));
+                            try {
+                                task.invoker.invoke(new SimpleScheduledExecution(now, scheduledFireTime, task.trigger));
+                            } catch (Throwable t) {
+                                LOGGER.errorf(t, "Error occured while executing task for trigger %s", task.trigger);
+                            }
                         }
                     });
-                    LOGGER.debugf("Executing scheduled task for trigger %s", task.trigger.id);
+                    LOGGER.debugf("Executing scheduled task for trigger %s", task.trigger);
                 } catch (RejectedExecutionException e) {
-                    LOGGER.warnf("Rejected execution of a scheduled task for trigger %s", task.trigger.id);
+                    LOGGER.warnf("Rejected execution of a scheduled task for trigger %s", task.trigger);
                 }
             }
         }
@@ -231,12 +236,12 @@ public class SimpleScheduler implements Scheduler {
             }
             if (lastFireTime == null) {
                 // First execution
-                lastFireTime = now;
+                lastFireTime = now.truncatedTo(ChronoUnit.SECONDS);
                 return now;
             }
             if (ChronoUnit.MILLIS.between(lastFireTime, now) >= interval) {
                 ZonedDateTime scheduledFireTime = lastFireTime.plus(Duration.ofMillis(interval));
-                lastFireTime = now;
+                lastFireTime = now.truncatedTo(ChronoUnit.SECONDS);
                 return scheduledFireTime;
             }
             return null;
@@ -252,14 +257,26 @@ public class SimpleScheduler implements Scheduler {
             return lastFireTime.toInstant();
         }
 
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("IntervalTrigger [id=").append(getId()).append(", interval=").append(interval).append("]");
+            return builder.toString();
+        }
+
     }
 
     static class CronTrigger extends SimpleTrigger {
 
+        // microseconds
+        private static final long DIFF_THRESHOLD = CHECK_PERIOD * 1000;
+
+        private final Cron cron;
         private final ExecutionTime executionTime;
 
         public CronTrigger(String id, ZonedDateTime start, Cron cron) {
             super(id, start);
+            this.cron = cron;
             this.executionTime = ExecutionTime.forCron(cron);
         }
 
@@ -285,12 +302,21 @@ public class SimpleScheduler implements Scheduler {
                 if (now.isBefore(trunc)) {
                     return null;
                 }
-                long diff = ChronoUnit.MILLIS.between(trunc, now);
-                if (diff <= CHECK_PERIOD) {
+                // Use microseconds precision to workaround incompatibility between jdk8 and jdk9+
+                long diff = ChronoUnit.MICROS.between(trunc, now);
+                if (diff <= DIFF_THRESHOLD) {
+                    LOGGER.debugf("%s fired, diff=%s μs", this, diff);
                     return trunc;
                 }
             }
             return null;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("CronTrigger [id=").append(getId()).append(", cron=").append(cron.asString()).append("]");
+            return builder.toString();
         }
 
     }

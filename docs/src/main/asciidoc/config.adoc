@@ -598,7 +598,13 @@ First you will need to add the YAML extension to your `pom.xml`:
     <artifactId>quarkus-config-yaml</artifactId>
 </dependency>
 ----
-// TODO: Add the command to install this extension with maven.
+
+Or you can alternatively run this command in the directory containing your Quarkus project:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="config-yaml"
+----
 
 Now Quarkus can read YAML configuration files.
 The config directories and priorities are the same as before.

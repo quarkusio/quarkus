@@ -138,6 +138,7 @@
 
         <!-- Database migrations -->
         <module>flyway</module>
+        <module>liquibase</module>
 
         <!-- Business automation -->
         <module>kogito</module>

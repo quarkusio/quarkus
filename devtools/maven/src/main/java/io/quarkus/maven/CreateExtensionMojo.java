@@ -513,6 +513,22 @@ public class CreateExtensionMojo extends AbstractMojo {
     @Parameter(defaultValue = COMPILER_PLUGIN_DEFAULT_VERSION, required = true, property = "quarkus.mavenCompilerPluginVersion")
     String compilerPluginVersion;
 
+    /**
+     * Indicates whether to generate a unit test class for the extension
+     *
+     * @since 1.10.0
+     */
+    @Parameter(property = "quarkus.generateUnitTest", defaultValue = "true")
+    boolean generateUnitTest;
+
+    /**
+     * Indicates whether to generate a dev mode unit test class for the extension
+     *
+     * @since 1.10.0
+     */
+    @Parameter(property = "quarkus.generateDevModeTest", defaultValue = "true")
+    boolean generateDevModeTest;
+
     boolean currentProjectIsBaseDir;
 
     Charset charset;
@@ -825,6 +841,14 @@ public class CreateExtensionMojo extends AbstractMojo {
                 .resolve("deployment")
                 .resolve(templateParams.artifactIdBaseCamelCase + "Processor.java");
         evalTemplate(cfg, "Processor.java", processorPath, templateParams);
+
+        if (generateUnitTest) {
+            generateUnitTestClass(cfg, templateParams);
+        }
+
+        if (generateDevModeTest) {
+            generateDevModeTestClass(cfg, templateParams);
+        }
     }
 
     private PomTransformer pomTransformer(Path basePomXml) {
@@ -903,6 +927,24 @@ public class CreateExtensionMojo extends AbstractMojo {
         templateCfg.setInterpolationSyntax(Configuration.SQUARE_BRACKET_INTERPOLATION_SYNTAX);
         templateCfg.setTagSyntax(Configuration.SQUARE_BRACKET_TAG_SYNTAX);
         return templateCfg;
+    }
+
+    private void generateUnitTestClass(Configuration cfg, TemplateParams model) throws IOException, TemplateException {
+        final Path unitTest = basedir.toPath()
+                .resolve(model.artifactIdBase + "/deployment/src/test/java/" + model.javaPackageBase.replace('.', '/')
+                        + "/test/" + model.artifactIdBaseCamelCase + "Test.java");
+
+        evalTemplate(cfg, "UnitTest.java", unitTest, model);
+    }
+
+    private void generateDevModeTestClass(Configuration cfg, TemplateParams model) throws IOException, TemplateException {
+        final Path devModeTest = basedir
+                .toPath()
+                .resolve(model.artifactIdBase + "/deployment/src/test/java/" + model.javaPackageBase.replace('.', '/')
+                        + "/test/" + model.artifactIdBaseCamelCase + "DevModeTest.java");
+
+        evalTemplate(cfg, "DevModeTest.java", devModeTest, model);
+
     }
 
     void generateItest(Configuration cfg, TemplateParams model)

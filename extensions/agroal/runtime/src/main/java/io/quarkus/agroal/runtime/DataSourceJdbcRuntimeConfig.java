@@ -1,6 +1,7 @@
 package io.quarkus.agroal.runtime;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -103,4 +104,11 @@ public class DataSourceJdbcRuntimeConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean poolingEnabled = true;
+
+    /**
+     * Other unspecified properties to be passed to the JDBC driver when creating new connections.
+     */
+    @ConfigItem
+    public Map<String, String> additionalJdbcProperties;
+
 }

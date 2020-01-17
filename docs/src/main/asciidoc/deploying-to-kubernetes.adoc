@@ -731,6 +731,26 @@ Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
 [#openshift]
 === OpenShift
 
+One way to deploy an application to OpenShift is to use s2i (source to image) to create an image stream from the source and then deploy the image stream:
+
+[source]
+----
+./mvnw quarkus:remove-extension -Dextensions="kubernetes, jib"
+./mvnw quarkus:add-extension -Dextensions="openshift"
+
+oc new-project quarkus-project
+./mvnw clean package -Dquarkus.container-image.build=true 
+
+oc new-app --name=greeting  quarkus-project/kubernetes-quickstart:1.0-SNAPSHOT
+oc expose svc/greeting
+oc get route
+curl <route>/greeting
+----
+
+See further information in link:deploying-to-openshift[Deploying to OpenShift].
+
+A description of OpenShift resources and customisable properties is given below alongside Kubernetes resources to show similarities where applicable.   This includes an alternative to  `oc new-app ...` above, i.e. `oc apply -f target/kubernetes/openshift.json` .
+
 To enable the generation of OpenShift resources, you need to include OpenShift in the target platforms:
 
 [source]
@@ -745,7 +765,7 @@ If you need to generate resources for both platforms (vanilla Kubernetes and Ope
 quarkus.kubernetes.deployment-target=kubernetes,openshift
 ----
 
-Following the execution of `./mvnw package` you will notice amongst the other files that are created, two files named
+Following the execution of `./mvnw package -Dquarkus.container-image.build=true ` you will notice amongst the other files that are created, two files named
 `openshift.json` and `openshift.yml` in the `target/kubernetes/` directory.
 
 These manifests can be deployed as is to a running cluster, using `kubectl`:

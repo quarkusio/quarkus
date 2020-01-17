@@ -1,6 +1,5 @@
 package io.quarkus.devtools.codestarts;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CodestartProjectInputBuilder {
-    Collection<AppArtifactKey> dependencies = new ArrayList<>();
+    Collection<String> dependencies = new ArrayList<>();
     CodestartsSelection selection = new CodestartsSelection();
     Map<String, Object> data = new HashMap<>();
     MessageWriter messageWriter = MessageWriter.info();
@@ -18,12 +17,12 @@ public class CodestartProjectInputBuilder {
 
     }
 
-    public CodestartProjectInputBuilder addDependencies(Collection<AppArtifactKey> dependencies) {
+    public CodestartProjectInputBuilder addDependencies(Collection<String> dependencies) {
         this.dependencies.addAll(dependencies);
         return this;
     }
 
-    public CodestartProjectInputBuilder addDependency(AppArtifactKey dependency) {
+    public CodestartProjectInputBuilder addDependency(String dependency) {
         return this.addDependencies(Collections.singletonList(dependency));
     }
 

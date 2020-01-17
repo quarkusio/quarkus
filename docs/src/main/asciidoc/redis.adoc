@@ -48,7 +48,8 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=redis-quickstart \
-    -Dextensions="redis-client, resteasy-jsonb, resteasy-mutiny"
+    -Dextensions="redis-client,resteasy-jsonb,resteasy-mutiny" \
+    -DnoExamples
 cd redis-quickstart
 ----
 
@@ -200,19 +201,14 @@ import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.PUT;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
 import javax.ws.rs.Path;
 import javax.ws.rs.POST;
 import javax.ws.rs.DELETE;
-import javax.ws.rs.core.MediaType;
 import java.util.List;
 
 import io.smallrye.mutiny.Uni;
 
 @Path("/increments")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class IncrementResource {
 
     @Inject

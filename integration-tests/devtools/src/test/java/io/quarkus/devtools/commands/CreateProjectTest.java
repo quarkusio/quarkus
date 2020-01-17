@@ -3,7 +3,6 @@ package io.quarkus.devtools.commands;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.contentOf;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -19,7 +18,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.maven.model.Model;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -42,7 +40,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         final File gitignore = new File(file, ".gitignore");
         assertTrue(gitignore.exists());
         final String gitignoreContent = new String(Files.readAllBytes(gitignore.toPath()), StandardCharsets.UTF_8);
-        assertTrue(gitignoreContent.contains("\ntarget/\n"));
+        assertThat(gitignoreContent).matches("(?s).*target/\\R.*");
     }
 
     @Test
@@ -54,9 +52,9 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         final File gitignore = new File(file, ".gitignore");
         assertTrue(gitignore.exists());
         final String gitignoreContent = new String(Files.readAllBytes(gitignore.toPath()), StandardCharsets.UTF_8);
-        Assertions.assertFalse(gitignoreContent.contains("\ntarget/\n"));
-        assertTrue(gitignoreContent.contains("\nbuild/"));
-        assertTrue(gitignoreContent.contains("\n.gradle/\n"));
+        assertThat(gitignoreContent).doesNotMatch("(?s).*target/\\R.*");
+        assertThat(gitignoreContent).matches("(?s).*build/\\R.*");
+        assertThat(gitignoreContent).matches("(?s).*\\.gradle/\\R.*");
 
         assertThat(new File(file, "README.md")).exists();
         assertThat(contentOf(new File(file, "README.md"), "UTF-8")).contains("./gradlew");

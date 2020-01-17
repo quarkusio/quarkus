@@ -52,6 +52,11 @@ public final class WrapperRunner {
         List<String> command = new LinkedList<>();
         command.add(projectDir.resolve(wrapper.getExec()).toAbsolutePath().toString());
         command.addAll(Arrays.asList(wrapper.getCmdArgs()));
+
+        if (System.getProperties().containsKey("maven.repo.local")) {
+            command.add("-Dmaven.repo.local=" + System.getProperty("maven.repo.local"));
+        }
+
         try {
             System.out.println("Running command: " + command);
             final Process p = new ProcessBuilder()

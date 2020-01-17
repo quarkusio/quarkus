@@ -1,0 +1,15 @@
+name: funqy-knative-events-example
+ref: funqy-knative-events
+type: code
+tags:
+  - example
+  - singleton-example
+language:
+  base:
+    data:
+      k8s-service-name: funqy-knative-events-codestart
+      docker-io-account: yourAccountName
+    dependencies:
+      - io.quarkus:quarkus-funqy-knative-events
+    test-dependencies:
+      - io.rest-assured:rest-assured

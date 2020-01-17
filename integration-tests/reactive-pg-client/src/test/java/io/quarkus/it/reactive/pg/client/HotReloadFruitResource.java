@@ -6,8 +6,6 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -31,7 +29,6 @@ public class HotReloadFruitResource {
     }
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<JsonArray> listFruits() {
         return client.query("SELECT * FROM fruits").execute()
                 .map(pgRowSet -> {

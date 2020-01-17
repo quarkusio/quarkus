@@ -153,11 +153,6 @@
                                 <configuration>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                    <!-- Include the server certificate -->
-                                    <additionalBuildArgs>
-                                        <additionalBuildArg>-H:IncludeResources=.*\.jks</additionalBuildArg>
-                                        <additionalBuildArg>-H:EnableURLProtocols=http,https</additionalBuildArg>
-                                    </additionalBuildArgs>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
                                     <enableAllSecurityServices>true</enableAllSecurityServices>
                                 </configuration>

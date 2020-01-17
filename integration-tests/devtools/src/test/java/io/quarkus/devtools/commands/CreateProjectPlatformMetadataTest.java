@@ -31,11 +31,11 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     @ParameterizedTest
-    @ValueSource(booleans = { true, false })
-    public void create(boolean codestartsEnabled) throws Exception {
+    @ValueSource(booleans = { false, true })
+    public void create(boolean legacyCodegen) throws Exception {
         final File file = new File("target/meta-rest");
         ProjectTestUtil.delete(file);
-        createProject(BuildTool.MAVEN, file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT", codestartsEnabled);
+        createProject(BuildTool.MAVEN, file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT", legacyCodegen);
         assertThat(file.toPath().resolve("pom.xml"))
                 .exists()
                 .satisfies(checkContains("<id>redhat</id>"))
@@ -47,11 +47,11 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = { true, false })
-    public void createGradle(boolean codestartsEnabled) throws Exception {
+    @ValueSource(booleans = { false, true })
+    public void createGradle(boolean legacyCodegen) throws Exception {
         final File file = new File("target/meta-rest-gradle");
         ProjectTestUtil.delete(file);
-        createProject(BuildTool.GRADLE, file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT", codestartsEnabled);
+        createProject(BuildTool.GRADLE, file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT", legacyCodegen);
         assertThat(file.toPath().resolve("build.gradle"))
                 .exists()
                 .satisfies(checkContains("maven { url \"https://maven.repository.redhat.com\" }"));
@@ -61,7 +61,7 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
     public void createGradleKotlin() throws Exception {
         final File file = new File("target/meta-rest-gradle-kts");
         ProjectTestUtil.delete(file);
-        createProject(BuildTool.GRADLE_KOTLIN_DSL, file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT", true);
+        createProject(BuildTool.GRADLE_KOTLIN_DSL, file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT", false);
         assertThat(file.toPath().resolve("build.gradle.kts"))
                 .exists()
                 .satisfies(checkContains("maven { url = uri(\"https://maven.repository.redhat.com\") }"));
@@ -77,7 +77,7 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
     }
 
     private void createProject(BuildTool buildTool, File file, String groupId, String artifactId, String version,
-            boolean codestartsEnabled)
+            boolean legacyCodegen)
             throws QuarkusCommandException, IOException {
         final QuarkusPlatformDescriptor platformDescriptor = getPlatformDescriptor();
         final QuarkusPlatformDescriptor spy = spy(platformDescriptor);
@@ -86,7 +86,7 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
                 .buildTool(buildTool)
                 .groupId(groupId)
                 .artifactId(artifactId)
-                .codestartsEnabled(codestartsEnabled)
+                .legacyCodegen(legacyCodegen)
                 .version(version)
                 .quarkusMavenPluginVersion("2.3.5")
                 .quarkusGradlePluginVersion("2.3.5-gradle")

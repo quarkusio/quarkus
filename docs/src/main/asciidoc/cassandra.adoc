@@ -212,8 +212,6 @@ The last missing piece is the REST API that will expose GET and POST methods:
 [source,java]
 ----
 @Path("/fruits")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class FruitResource {
 
   private static final String STORE_NAME = "acme";

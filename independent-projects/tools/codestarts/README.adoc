@@ -8,6 +8,8 @@ This guide explains how to create and configure a Quarkus Codestart for an exten
 Codestarts provide a personalized Quarkus getting started experience and really show the Quarkus breadth.
 A Quarkus extension are able to provide one or more well defined codestarts which will contain the necessary resources and code examples required to get started using that particular extension.
 
+See here to get an understanding what new quickstarts are: https://code.quarkus.io/[https://code.quarkus.io/].
+
 == How it works
 
 There are two kinds of codestarts contributing to the generation of a project, the kind where we want to have only one for a project (called Base) and the rest (called Extra).
@@ -213,6 +215,19 @@ This will be appended to all different selected examples.
 The Foo Example shows...
 ----
 
+4. Run the generator you've created
+
+Use the QuarkusCodestartRunSingleIT
+(`integration-tests/devtools/src/test/java/io/quarkus/devtools/codestarts/QuarkusCodestartRunSingleIT.java`)
+integration test to generate a fresh project from your codestart.
+
+Customize the `Set<String> INCLUDED` to add your codestart, and any other you might want to bundle.
+
+This will give you the experience similar to the code.quarkus.io - and you will be able to build and run the examples
+you added. After running the test, see `integration-tests/devtools/target/codestarts-run-test/your-codestart-name` to
+inspect the results.
+
+
 === Tips for writing extension example code
 
 - Your example must/should be independent from buildtool and dockerfiles
@@ -223,3 +238,5 @@ The Foo Example shows...
 - Write the config in `src/main/resources/application.yml`.
 It is going to be merged with the other codestarts config and automatically converted to the selected config type (yaml or properties).
 - you can add languages independently
+- It is much easier to create a new Quarkus project in a separate directory: write code and tests,
+make sure the build passes, then copy needed files to `codestarts/` directory.

@@ -75,4 +75,8 @@ public final class ContainerImageInfoBuildItem extends SimpleBuildItem {
     public String getRepository() {
         return repository;
     }
+
+    public String getGroup() {
+        return repository == null ? null : repository.split("/")[0];
+    }
 }

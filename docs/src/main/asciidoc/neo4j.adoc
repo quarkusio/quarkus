@@ -127,6 +127,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=neo4j-quickstart \
+    -DclassName="org.acme.datasource.GreetingResource" \
     -Dextensions="neo4j,resteasy-jsonb"
 cd neo4j-quickstart
 ----
@@ -200,16 +201,11 @@ Add a `FruitResource` skeleton like this and `@Inject` a `org.neo4j.driver.Drive
 package org.acme.neo4j;
 
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.neo4j.driver.Driver;
 
 @Path("fruits")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class FruitResource {
 
     @Inject

@@ -30,7 +30,8 @@ If you are creating a new project, set the `extensions` parameter are follows:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vertx-quickstart \
-    -Dextensions="vertx,resteasy-mutiny"
+    -Dextensions="vertx,resteasy-mutiny" \
+    -DnoExamples
 cd vertx-quickstart
 ----
 
@@ -267,7 +268,8 @@ First create a new project using:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=vertx-http-quickstart \
-    -Dextensions="vertx"
+    -Dextensions="vertx" \
+    -DnoExamples
 cd vertx-http-quickstart
 ----
 

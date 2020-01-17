@@ -105,6 +105,9 @@
 
         <boring-ssl.version>2.0.30.Final</boring-ssl.version>
 
+        <!-- Used for integration tests, to make sure webjars work-->
+        <bootstrap.version>3.1.0</bootstrap.version>
+
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.12.1</revapi-maven-plugin.version>
         <revapi-java-plugin.version>0.22.0</revapi-java-plugin.version>
@@ -235,6 +238,11 @@
                 <artifactId>netty-tcnative-boringssl-static</artifactId>
                 <scope>test</scope>
                 <version>${boring-ssl.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars</groupId>
+                <artifactId>bootstrap</artifactId>
+                <version>${bootstrap.version}</version>
             </dependency>
 
             <dependency>

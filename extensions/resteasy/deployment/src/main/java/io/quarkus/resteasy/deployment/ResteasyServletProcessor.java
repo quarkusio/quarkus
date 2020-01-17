@@ -31,6 +31,7 @@ import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
 import io.quarkus.resteasy.runtime.ResteasyFilter;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServerConfigBuildItem;
 import io.quarkus.resteasy.server.common.deployment.ResteasyServletMappingBuildItem;
+import io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem;
 import io.quarkus.undertow.deployment.FilterBuildItem;
 import io.quarkus.undertow.deployment.ServletBuildItem;
 import io.quarkus.undertow.deployment.ServletContextPathBuildItem;
@@ -58,9 +59,8 @@ public class ResteasyServletProcessor {
             String rootPath = httpRootPathBuildItem.adjustPath(resteasyServerConfig.get().getRootPath());
             String defaultPath = httpRootPathBuildItem.adjustPath(resteasyServerConfig.get().getPath());
 
-            deprecatedResteasyJaxrsConfig.produce(new ResteasyJaxrsConfigBuildItem(defaultPath));
-            resteasyJaxrsConfig
-                    .produce(new io.quarkus.resteasy.server.common.spi.ResteasyJaxrsConfigBuildItem(rootPath, defaultPath));
+            deprecatedResteasyJaxrsConfig.produce(new ResteasyJaxrsConfigBuildItem(rootPath, defaultPath));
+            resteasyJaxrsConfig.produce(new ResteasyJaxrsConfigBuildItem(rootPath, defaultPath));
         }
     }
 

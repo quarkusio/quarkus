@@ -482,10 +482,11 @@ NOTE: If you are interested in tiny Docker images, check the {quarkus-images-url
 
 The previous section showed you how to build a native executable using Maven, but implicitly required that the proper GraalVM version be installed on the building machine (be it your local machine or your CI/CD infrastructure).
 
-In cases where the GraalVM requirement cannot be met, you can use Docker to perform the Maven build by using a multi-stage Docker build. A multi-stage Docker build is like two Dockerfile files combined in one, the first is used to build the artifact used by the second.
+In cases where the GraalVM requirement cannot be met, you can use Docker to perform the Maven or Gradle build by using a multi-stage Docker build. A multi-stage Docker build is like two Dockerfile files combined in one, the first is used to build the artifact used by the second.
 
-In this guide we will use the first stage to generate the native executable using Maven and the second stage to create our runtime image.
+In this guide we will use the first stage to generate the native executable and the second stage to create our runtime image.
 
+Sample Dockerfile for building with Maven:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
@@ -515,8 +516,32 @@ USER 1001
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----
 
-
 Save this file in `src/main/docker/Dockerfile.multistage` as it is not included in the getting started quickstart.
+
+Sample Dockerfile for building with Gradle:
+[source,dockerfile,subs=attributes+]
+----
+## Stage 1 : build with maven builder image with native capabilities
+FROM quay.io/quarkus/centos-quarkus-maven:{graalvm-version}-java8 AS build
+COPY src /usr/src/app/src
+COPY build.gradle /usr/src/app
+COPY settings.gradle /usr/src/app
+COPY gradle.properties /usr/src/app
+USER root
+RUN chown -R quarkus /usr/src/app
+USER quarkus
+RUN gradle -b /usr/src/app/build.gradle clean buildNative
+
+## Stage 2 : create the docker final image
+FROM registry.access.redhat.com/ubi8/ubi-minimal
+WORKDIR /work/
+COPY --from=build /usr/src/app/build/*-runner /work/application
+RUN chmod 775 /work
+EXPOSE 8080
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+----
+
+If you are using Gradle in your project, you can use this sample Dockerfile.  Save it in `src/main/docker/Dockerfile.multistage`.
 
 [WARNING]
 ====

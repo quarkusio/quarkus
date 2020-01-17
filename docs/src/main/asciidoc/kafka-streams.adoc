@@ -88,6 +88,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-streams-quickstart-producer \
     -Dextensions="kafka" \
+    -DnoExamples \
     && mv kafka-streams-quickstart-producer producer
 ----
 
@@ -241,6 +242,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=kafka-streams-quickstart-aggregator \
     -Dextensions="kafka-streams,resteasy-jsonb" \
+    -DnoExamples \
     && mv kafka-streams-quickstart-aggregator aggregator
 ----
 
@@ -725,11 +727,9 @@ import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -746,8 +746,6 @@ public class WeatherStationEndpoint {
 
     @GET
     @Path("/data/{id}")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
     public Response getWeatherStationData(@PathParam("id") int id) {
         GetWeatherStationDataResult result = interactiveQueries.getWeatherStationData(id);
 

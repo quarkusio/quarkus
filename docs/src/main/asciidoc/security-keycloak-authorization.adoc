@@ -73,7 +73,8 @@ Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=security-keycloak-authorization-quickstart \
-    -Dextensions="oidc, keycloak-authorization, resteasy-jsonb"
+    -Dextensions="oidc,keycloak-authorization,resteasy-jsonb" \
+    -DnoExamples
 cd security-keycloak-authorization-quickstart
 ----
 
@@ -111,8 +112,6 @@ package org.acme.security.keycloak.authorization;;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.annotations.cache.NoCache;
 
@@ -126,7 +125,6 @@ public class UsersResource {
 
     @GET
     @Path("/me")
-    @Produces(MediaType.APPLICATION_JSON)
     @NoCache
     public User me() {
         return new User(identity);
@@ -318,7 +316,6 @@ public class ProtectedResource {
     
     
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<List<Permission>> get() {
         return identity.checkPermission(new AuthPermission("{resource_name}"))
                 .thenCompose(granted -> {

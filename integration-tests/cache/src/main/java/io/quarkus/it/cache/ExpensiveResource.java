@@ -4,9 +4,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
 
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheResult;
@@ -19,7 +17,6 @@ public class ExpensiveResource {
 
     @GET
     @Path("/{keyElement1}/{keyElement2}/{keyElement3}")
-    @Produces(MediaType.APPLICATION_JSON)
     @CacheResult(cacheName = "expensiveResourceCache", lockTimeout = 5000)
     public ExpensiveResponse getExpensiveResponse(@PathParam("keyElement1") @CacheKey String keyElement1,
             @PathParam("keyElement2") @CacheKey String keyElement2, @PathParam("keyElement3") @CacheKey String keyElement3,

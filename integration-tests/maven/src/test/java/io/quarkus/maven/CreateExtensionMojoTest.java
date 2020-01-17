@@ -34,6 +34,8 @@ public class CreateExtensionMojoTest {
         final CreateExtensionMojo mojo = new CreateExtensionMojo();
         mojo.project = new MavenProject();
         mojo.basedir = projectDir.toFile();
+        mojo.generateDevModeTest = true;
+        mojo.generateUnitTest = true;
 
         final File pom = new File(projectDir.toFile(), "pom.xml");
         if (pom.exists()) {
@@ -125,7 +127,7 @@ public class CreateExtensionMojoTest {
 
     @Test
     void createExtensionUnderExistingPomMinimal() throws MojoExecutionException, MojoFailureException,
-            IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, IOException {
+            IllegalArgumentException, SecurityException, IOException {
         final CreateExtensionMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
         mojo.artifactId = "my-project-(minimal-extension)";
         mojo.assumeManaged = false;
@@ -137,7 +139,7 @@ public class CreateExtensionMojoTest {
 
     @Test
     void createExtensionUnderExistingPomWithAdditionalRuntimeDependencies() throws MojoExecutionException, MojoFailureException,
-            IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, IOException {
+            IllegalArgumentException, SecurityException, IOException {
         final CreateExtensionMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
         mojo.artifactId = "my-project-(add-to-bom)";
         mojo.assumeManaged = false;
@@ -152,7 +154,7 @@ public class CreateExtensionMojoTest {
 
     @Test
     void createExtensionUnderExistingPomWithItest() throws MojoExecutionException, MojoFailureException,
-            IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, IOException {
+            IllegalArgumentException, SecurityException, IOException {
         final CreateExtensionMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
         mojo.artifactId = "my-project-(itest)";
         mojo.assumeManaged = false;
@@ -165,7 +167,7 @@ public class CreateExtensionMojoTest {
 
     @Test
     void createExtensionUnderExistingPomCustomGrandParent() throws MojoExecutionException, MojoFailureException,
-            IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, IOException {
+            IllegalArgumentException, SecurityException, IOException {
         final CreateExtensionMojo mojo = initMojo(createProjectFromTemplate("create-extension-pom"));
         mojo.artifactId = "myproject-(with-grand-parent)";
         mojo.parentArtifactId = "grand-parent";
@@ -241,7 +243,7 @@ public class CreateExtensionMojoTest {
     }
 
     @Test
-    void getPackage() throws IOException {
+    void getPackage() {
         assertEquals("org.apache.camel.quarkus.aws.sns.deployment", CreateExtensionMojo
                 .getJavaPackage("org.apache.camel.quarkus", null, "camel-quarkus-aws-sns-deployment"));
         assertEquals("org.apache.camel.quarkus.component.aws.sns.deployment", CreateExtensionMojo
@@ -249,7 +251,7 @@ public class CreateExtensionMojoTest {
     }
 
     @Test
-    void toCapCamelCase() throws IOException {
+    void toCapCamelCase() {
         assertEquals("FooBarBaz", CreateExtensionMojo.toCapCamelCase("foo-bar-baz"));
     }
 

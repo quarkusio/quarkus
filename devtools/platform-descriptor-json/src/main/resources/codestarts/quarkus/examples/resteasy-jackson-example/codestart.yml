@@ -1,0 +1,12 @@
+name: resteasy-jackson-example
+ref: resteasy-jackson
+type: code
+tags: example
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-resteasy
+      - io.quarkus:quarkus-resteasy-jackson
+    test-dependencies:
+      - io.rest-assured:rest-assured
+

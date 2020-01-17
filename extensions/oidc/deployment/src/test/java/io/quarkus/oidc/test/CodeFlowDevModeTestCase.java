@@ -26,7 +26,8 @@ public class CodeFlowDevModeTestCase {
     private static Class<?>[] testClasses = {
             ProtectedResource.class,
             UnprotectedResource.class,
-            CustomTenantConfigResolver.class
+            CustomTenantConfigResolver.class,
+            CustomTokenStateManager.class
     };
 
     @RegisterExtension
@@ -81,6 +82,9 @@ public class CodeFlowDevModeTestCase {
             page = loginForm.getInputByName("login").click();
 
             assertEquals("alice-dev-mode", page.getBody().asText());
+
+            assertEquals("custom", page.getWebClient().getCookieManager().getCookie("q_session").getValue().split("\\|")[3]);
+
             webClient.getCookieManager().clearCookies();
         }
     }

@@ -740,7 +740,7 @@ $mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
      -DprojectGroupId=org.acme \
      -DprojectArtifactId=greeting-app \
      -DprojectVersion=1.0-SNAPSHOT \
-     -DclassName=HelloResource
+     -DnoExamples
 ----
 
 `cd` into `greeting-app` and add the dependency on `quarkus-greeting` extension we created above.

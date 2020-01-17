@@ -28,8 +28,8 @@ public class OidcTokenCredentialProducer {
     @RequestScoped
     IdTokenCredential currentIdToken() {
         IdTokenCredential cred = identity.getCredential(IdTokenCredential.class);
-        if (cred == null) {
-            LOG.trace("IdTokenCredential is null");
+        if (cred == null || cred.getToken() == null) {
+            LOG.trace("IdToken is null");
             cred = new IdTokenCredential();
         }
         return cred;
@@ -39,8 +39,8 @@ public class OidcTokenCredentialProducer {
     @RequestScoped
     AccessTokenCredential currentAccessToken() {
         AccessTokenCredential cred = identity.getCredential(AccessTokenCredential.class);
-        if (cred == null) {
-            LOG.trace("AccessTokenCredential is null");
+        if (cred == null || cred.getToken() == null) {
+            LOG.trace("AccessToken is null");
             cred = new AccessTokenCredential();
         }
         return cred;

@@ -99,6 +99,13 @@ public class ClientResource {
     }
 
     @GET
+    @Path("encoding")
+    public String testEmojis() {
+        return restClientInterface.echo(
+                "\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00\uD83D\uDE00");
+    }
+
+    @GET
     @Path("async/cdi/jackson")
     @Produces("application/json")
     public CompletionStage<TestResource.MyData> getDataAsync() {
@@ -156,7 +163,6 @@ public class ClientResource {
 
     @GET
     @Path("/jaxrs-client")
-    @Produces(MediaType.APPLICATION_JSON)
     public Greeting testJaxrsClient() throws ClassNotFoundException {
         Greeting greeting = client.target(loopbackEndpoint.get())
                 .request()

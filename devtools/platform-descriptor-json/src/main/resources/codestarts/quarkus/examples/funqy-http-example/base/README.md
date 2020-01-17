@@ -1,3 +1,3 @@
-== Funqy HTTP Binding
+# Funqy HTTP Binding
 
 Guide: https://quarkus.io/guides/funqy-http

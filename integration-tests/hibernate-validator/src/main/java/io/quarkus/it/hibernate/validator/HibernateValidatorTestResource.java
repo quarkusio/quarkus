@@ -24,7 +24,6 @@ import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Digits;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Pattern;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -220,7 +219,6 @@ public class HibernateValidatorTestResource
     @POST
     @Path("/test-manual-validation-message-locale")
     @Produces(MediaType.TEXT_PLAIN)
-    @Consumes(MediaType.APPLICATION_JSON)
     public String testManualValidationMessageLocale(MyLocaleTestBean test) {
         Set<ConstraintViolation<MyLocaleTestBean>> violations = validator.validate(test);
 

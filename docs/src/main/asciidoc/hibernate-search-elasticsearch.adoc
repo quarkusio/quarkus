@@ -222,6 +222,9 @@ public class LibraryResource {
         book.title = title;
         book.author = author;
         book.persist();
+
+        author.books.add(book);
+        author.persist();
     }
 
     @DELETE

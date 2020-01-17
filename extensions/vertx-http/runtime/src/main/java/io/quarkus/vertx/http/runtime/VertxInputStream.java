@@ -7,11 +7,15 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.RoutingContext;
 
 public class VertxInputStream extends InputStream {
 
@@ -20,10 +24,17 @@ public class VertxInputStream extends InputStream {
     private boolean closed;
     private boolean finished;
     private ByteBuf pooled;
+    private final long limit;
 
-    public VertxInputStream(HttpServerRequest request) throws IOException {
+    public VertxInputStream(RoutingContext request) throws IOException {
 
-        this.exchange = new VertxBlockingInput(request);
+        this.exchange = new VertxBlockingInput(request.request());
+        Long limitObj = request.get(VertxHttpRecorder.MAX_REQUEST_SIZE_KEY);
+        if (limitObj == null) {
+            limit = -1;
+        } else {
+            limit = limitObj;
+        }
     }
 
     @Override
@@ -47,6 +58,25 @@ public class VertxInputStream extends InputStream {
             throw new IOException("Stream is closed");
         }
         readIntoBuffer();
+        if (limit > 0 && exchange.request.bytesRead() > limit) {
+            HttpServerResponse response = exchange.request.response();
+            if (response.headWritten()) {
+                //the response has been written, not much we can do
+                exchange.request.connection().close();
+                throw new IOException("Request too large");
+            } else {
+                response.setStatusCode(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE.code());
+                response.headers().add(HttpHeaderNames.CONNECTION, "close");
+                response.endHandler(new Handler<Void>() {
+                    @Override
+                    public void handle(Void event) {
+                        exchange.request.connection().close();
+                    }
+                });
+                response.end();
+                throw new IOException("Request too large");
+            }
+        }
         if (finished) {
             return -1;
         }

@@ -71,7 +71,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             if (request.getBody() != null) {
                 is = new ByteArrayInputStream(request.getBody().getBytes());
             } else {
-                is = new VertxInputStream(request.request());
+                is = new VertxInputStream(request);
             }
         } catch (IOException e) {
             request.fail(e);

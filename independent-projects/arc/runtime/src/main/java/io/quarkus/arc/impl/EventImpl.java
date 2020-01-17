@@ -3,7 +3,6 @@ package io.quarkus.arc.impl;
 import static javax.transaction.Status.STATUS_COMMITTED;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableObserverMethod;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
 import java.lang.annotation.Annotation;
@@ -142,8 +141,8 @@ class EventImpl<T> implements Event<T> {
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
             ArcContainerImpl container) {
         EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType);
-        List<InjectableObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>();
-        for (InjectableObserverMethod<? super T> observerMethod : container.resolveObservers(eventType, qualifiers)) {
+        List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>();
+        for (ObserverMethod<? super T> observerMethod : container.resolveObservers(eventType, qualifiers)) {
             notifierObserverMethods.add(observerMethod);
         }
         return new Notifier<>(runtimeType, notifierObserverMethods, metadata);
@@ -203,60 +202,69 @@ class EventImpl<T> implements Event<T> {
     static class Notifier<T> {
 
         private final Class<?> runtimeType;
-
-        private final List<InjectableObserverMethod<? super T>> observerMethods;
-
+        private final List<ObserverMethod<? super T>> observerMethods;
         private final EventMetadata eventMetadata;
+        private final boolean hasTxObservers;
 
-        Notifier(Class<?> runtimeType, List<InjectableObserverMethod<? super T>> observerMethods, EventMetadata eventMetadata) {
+        Notifier(Class<?> runtimeType, List<ObserverMethod<? super T>> observerMethods, EventMetadata eventMetadata) {
             this.runtimeType = runtimeType;
             this.observerMethods = observerMethods;
             this.eventMetadata = eventMetadata;
+            this.hasTxObservers = observerMethods.stream().anyMatch(this::isTxObserver);
         }
 
         void notify(T event) {
             notify(event, ObserverExceptionHandler.IMMEDIATE_HANDLER, false);
         }
 
+        @SuppressWarnings("rawtypes")
         void notify(T event, ObserverExceptionHandler exceptionHandler, boolean async) {
             if (!isEmpty()) {
-                // start with transactional OM notifications
-                Predicate<InjectableObserverMethod<? super T>> predicate = null;
-                InstanceHandle<TransactionSynchronizationRegistry> registryInstance = Arc.container()
-                        .instance(TransactionSynchronizationRegistry.class);
-                if (registryInstance.isAvailable() &&
-                        registryInstance.get().getTransactionStatus() == javax.transaction.Status.STATUS_ACTIVE) {
-                    // we have one or more transactional OM, and TransactionSynchronizationRegistry is available
-                    // we attempt to register JTA synchronization
-                    List<DeferredEventNotification<?>> deferredEvents = new ArrayList<>();
-                    EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
-                    observerMethods.stream().filter(om -> !om.getTransactionPhase().equals(TransactionPhase.IN_PROGRESS))
-                            .forEach(om -> deferredEvents.add(new DeferredEventNotification<>(om, eventContext,
-                                    Status.valueOf(om.getTransactionPhase()))));
-                    Synchronization sync = new ArcSynchronization(deferredEvents);
-                    TransactionSynchronizationRegistry registry = registryInstance.get();
-                    try {
-                        registry.registerInterposedSynchronization(sync);
-                        predicate = om -> om.getTransactionPhase().equals(TransactionPhase.IN_PROGRESS);
-                    } catch (Exception e) {
-                        if (e.getCause() instanceof RollbackException || e.getCause() instanceof IllegalStateException) {
-                            // registration failed, AFTER_SUCCESS OMs are accordingly to CDI spec left out
-                            predicate = om -> !om.getTransactionPhase().equals(TransactionPhase.AFTER_SUCCESS);
+
+                Predicate<ObserverMethod<? super T>> predicate = async ? ObserverMethod::isAsync : this::isSyncObserver;
+
+                if (!async && hasTxObservers) {
+                    // Note that tx observers are never async
+                    InstanceHandle<TransactionSynchronizationRegistry> registryInstance = Arc.container()
+                            .instance(TransactionSynchronizationRegistry.class);
+
+                    if (registryInstance.isAvailable() &&
+                            registryInstance.get().getTransactionStatus() == javax.transaction.Status.STATUS_ACTIVE) {
+                        // we have one or more transactional OM, and TransactionSynchronizationRegistry is available
+                        // we attempt to register a JTA synchronization
+                        List<DeferredEventNotification<?>> deferredEvents = new ArrayList<>();
+                        EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
+
+                        for (ObserverMethod<? super T> om : observerMethods) {
+                            if (isTxObserver(om)) {
+                                deferredEvents.add(new DeferredEventNotification<>(om, eventContext,
+                                        Status.valueOf(om.getTransactionPhase())));
+                            }
+                        }
+
+                        Synchronization sync = new ArcSynchronization(deferredEvents);
+                        TransactionSynchronizationRegistry registry = registryInstance.get();
+                        try {
+                            registry.registerInterposedSynchronization(sync);
+                            // registration succeeded, notify all non-tx observers synchronously
+                            predicate = predicate.and(this::isNotTxObserver);
+                        } catch (Exception e) {
+                            if (e.getCause() instanceof RollbackException || e.getCause() instanceof IllegalStateException) {
+                                // registration failed, AFTER_SUCCESS OMs are accordingly to CDI spec left out
+                                predicate = predicate.and(this::isNotAfterSuccess);
+                            }
                         }
                     }
-                } else {
-                    // no JTA available, we will have to notify all transactional OM along with all other OM
-                    predicate = injectableObserverMethod -> true;
                 }
 
-                // proceed with standard OM notifications
+                // Sync notifications
                 ManagedContext requestContext = Arc.container().requestContext();
                 if (requestContext.isActive()) {
-                    notifyObservers(event, exceptionHandler, async, predicate);
+                    notifyObservers(event, exceptionHandler, predicate);
                 } else {
                     try {
                         requestContext.activate();
-                        notifyObservers(event, exceptionHandler, async, predicate);
+                        notifyObservers(event, exceptionHandler, predicate);
                     } finally {
                         requestContext.terminate();
                     }
@@ -265,11 +273,11 @@ class EventImpl<T> implements Event<T> {
         }
 
         @SuppressWarnings({ "rawtypes", "unchecked" })
-        private void notifyObservers(T event, ObserverExceptionHandler exceptionHandler, boolean async,
-                Predicate<InjectableObserverMethod<? super T>> predicate) {
+        private void notifyObservers(T event, ObserverExceptionHandler exceptionHandler,
+                Predicate<ObserverMethod<? super T>> predicate) {
             EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
-            for (InjectableObserverMethod<? super T> observerMethod : observerMethods) {
-                if (observerMethod.isAsync() == async && predicate.test(observerMethod)) {
+            for (ObserverMethod<? super T> observerMethod : observerMethods) {
+                if (predicate.test(observerMethod)) {
                     try {
                         observerMethod.notify(eventContext);
                     } catch (Throwable e) {
@@ -281,6 +289,22 @@ class EventImpl<T> implements Event<T> {
 
         boolean isEmpty() {
             return observerMethods.isEmpty();
+        }
+
+        private boolean isTxObserver(ObserverMethod<?> observer) {
+            return !observer.getTransactionPhase().equals(TransactionPhase.IN_PROGRESS);
+        }
+
+        private boolean isNotAfterSuccess(ObserverMethod<?> observer) {
+            return !observer.getTransactionPhase().equals(TransactionPhase.AFTER_SUCCESS);
+        }
+
+        private boolean isNotTxObserver(ObserverMethod<?> observer) {
+            return !isTxObserver(observer);
+        }
+
+        private boolean isSyncObserver(ObserverMethod<?> observer) {
+            return !observer.isAsync();
         }
 
     }
@@ -347,7 +371,7 @@ class EventImpl<T> implements Event<T> {
 
         @Override
         public void beforeCompletion() {
-            for (DeferredEventNotification event : deferredEvents) {
+            for (DeferredEventNotification<?> event : deferredEvents) {
                 if (event.isBeforeCompletion()) {
                     event.run();
                 }
@@ -356,7 +380,7 @@ class EventImpl<T> implements Event<T> {
 
         @Override
         public void afterCompletion(int i) {
-            for (DeferredEventNotification event : deferredEvents) {
+            for (DeferredEventNotification<?> event : deferredEvents) {
                 if (!event.isBeforeCompletion() && event.getStatus().matches(i)) {
                     event.run();
                 }
@@ -364,12 +388,13 @@ class EventImpl<T> implements Event<T> {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     static class DeferredEventNotification<T> implements Runnable {
 
         private ObserverMethod<? super T> observerMethod;
         private boolean isBeforeCompletion;
         private EventContext eventContext;
-        Status status;
+        private Status status;
 
         private static final Logger LOGGER = Logger.getLogger(DeferredEventNotification.class);
 
@@ -388,6 +413,7 @@ class EventImpl<T> implements Event<T> {
             return status;
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public void run() {
             try {

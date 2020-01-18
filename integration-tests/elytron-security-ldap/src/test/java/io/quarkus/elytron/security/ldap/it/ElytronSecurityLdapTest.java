@@ -4,10 +4,12 @@ import static org.hamcrest.Matchers.containsString;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
+@DisabledOnNativeImage("Native test throws 'Fatal error: Failed to leave the current IsolateThread context and to detach the current thread. (code 12)'")
 class ElytronSecurityLdapTest {
 
     @Test

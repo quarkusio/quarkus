@@ -185,7 +185,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                 String getterName = field.getGetterName();
                 String getterDescriptor = "()" + field.descriptor;
                 if (!methods.contains(getterName + "/" + getterDescriptor)) {
-                    MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
+                    MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC,
                             getterName, getterDescriptor, field.signature == null ? null : "()" + field.signature, null);
                     mv.visitCode();
                     mv.visitIntInsn(Opcodes.ALOAD, 0);
@@ -204,7 +204,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                 String setterName = field.getSetterName();
                 String setterDescriptor = "(" + field.descriptor + ")V";
                 if (!methods.contains(setterName + "/" + setterDescriptor)) {
-                    MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
+                    MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC,
                             setterName, setterDescriptor, field.signature == null ? null : "(" + field.signature + ")V", null);
                     mv.visitCode();
                     mv.visitIntInsn(Opcodes.ALOAD, 0);

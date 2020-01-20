@@ -132,7 +132,7 @@ public class DataSourceRuntimeConfig {
     public boolean useGcp;
 
     /**
-     * Query executed to validate a connection.
+     * The name of the cloud sql instance
      */
     @ConfigItem
     public Optional<String> cloudSqlInstance;

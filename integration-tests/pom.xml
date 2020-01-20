@@ -88,7 +88,6 @@
         <module>narayana-stm</module>
         <module>narayana-jta</module>
         <module>elytron-security-jdbc</module>
-        <module>elytron-security-ldap</module>
         <module>vertx-graphql</module>
         <module>jpa-without-entity</module>
         <module>quartz</module>

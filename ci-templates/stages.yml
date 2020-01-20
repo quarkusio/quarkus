@@ -259,7 +259,6 @@ stages:
             - elytron-security-oauth2
             - elytron-security
             - elytron-security-jdbc
-            - elytron-security-ldap
             - elytron-undertow
           name: security_1
           keycloak: true

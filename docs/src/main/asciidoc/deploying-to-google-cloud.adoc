@@ -88,7 +88,7 @@ quarkus.datasource.driver=org.postgresql.Driver
 quarkus.datasource.username = ${DB_USER}
 quarkus.datasource.password = ${DB_PASSWORD}
 quarkus.datasource.socket-factory=com.google.cloud.sql.postgres.SocketFactory
-quarkus.datasource.additional-jdbc-url-properties=cloud-sql-instance=project:zone:db-name
+quarkus.datasource.additional-jdbc-properties=cloud-sql-instance=project:zone:db-name
 --
 
 Prefere the use of environment variables that will allow you to connect to all your env depending on your runtime values

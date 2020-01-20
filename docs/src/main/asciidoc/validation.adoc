@@ -128,7 +128,7 @@ Let's now create the `Result` class as an inner class:
 
 [source, java]
 ----
-public class Result {
+public static class Result {
         
     Result(String message) {
         this.success = true;

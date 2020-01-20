@@ -1,6 +1,9 @@
 package io.quarkus.arc.impl;
 
+import static javax.transaction.Status.STATUS_COMMITTED;
+
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
@@ -18,16 +21,22 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.NotificationOptions;
 import javax.enterprise.event.ObserverException;
+import javax.enterprise.event.TransactionPhase;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.EventContext;
 import javax.enterprise.inject.spi.EventMetadata;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.ObserverMethod;
 import javax.enterprise.util.TypeLiteral;
+import javax.transaction.RollbackException;
+import javax.transaction.Synchronization;
+import javax.transaction.TransactionSynchronizationRegistry;
+import org.jboss.logging.Logger;
 
 /**
  *
@@ -193,30 +202,69 @@ class EventImpl<T> implements Event<T> {
     static class Notifier<T> {
 
         private final Class<?> runtimeType;
-
         private final List<ObserverMethod<? super T>> observerMethods;
-
         private final EventMetadata eventMetadata;
+        private final boolean hasTxObservers;
 
         Notifier(Class<?> runtimeType, List<ObserverMethod<? super T>> observerMethods, EventMetadata eventMetadata) {
             this.runtimeType = runtimeType;
             this.observerMethods = observerMethods;
             this.eventMetadata = eventMetadata;
+            this.hasTxObservers = observerMethods.stream().anyMatch(this::isTxObserver);
         }
 
         void notify(T event) {
             notify(event, ObserverExceptionHandler.IMMEDIATE_HANDLER, false);
         }
 
+        @SuppressWarnings("rawtypes")
         void notify(T event, ObserverExceptionHandler exceptionHandler, boolean async) {
             if (!isEmpty()) {
+
+                Predicate<ObserverMethod<? super T>> predicate = async ? ObserverMethod::isAsync : this::isSyncObserver;
+
+                if (!async && hasTxObservers) {
+                    // Note that tx observers are never async
+                    InstanceHandle<TransactionSynchronizationRegistry> registryInstance = Arc.container()
+                            .instance(TransactionSynchronizationRegistry.class);
+
+                    if (registryInstance.isAvailable() &&
+                            registryInstance.get().getTransactionStatus() == javax.transaction.Status.STATUS_ACTIVE) {
+                        // we have one or more transactional OM, and TransactionSynchronizationRegistry is available
+                        // we attempt to register a JTA synchronization
+                        List<DeferredEventNotification<?>> deferredEvents = new ArrayList<>();
+                        EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
+
+                        for (ObserverMethod<? super T> om : observerMethods) {
+                            if (isTxObserver(om)) {
+                                deferredEvents.add(new DeferredEventNotification<>(om, eventContext,
+                                        Status.valueOf(om.getTransactionPhase())));
+                            }
+                        }
+
+                        Synchronization sync = new ArcSynchronization(deferredEvents);
+                        TransactionSynchronizationRegistry registry = registryInstance.get();
+                        try {
+                            registry.registerInterposedSynchronization(sync);
+                            // registration succeeded, notify all non-tx observers synchronously
+                            predicate = predicate.and(this::isNotTxObserver);
+                        } catch (Exception e) {
+                            if (e.getCause() instanceof RollbackException || e.getCause() instanceof IllegalStateException) {
+                                // registration failed, AFTER_SUCCESS OMs are accordingly to CDI spec left out
+                                predicate = predicate.and(this::isNotAfterSuccess);
+                            }
+                        }
+                    }
+                }
+
+                // Sync notifications
                 ManagedContext requestContext = Arc.container().requestContext();
                 if (requestContext.isActive()) {
-                    notifyObservers(event, exceptionHandler, async);
+                    notifyObservers(event, exceptionHandler, predicate);
                 } else {
                     try {
                         requestContext.activate();
-                        notifyObservers(event, exceptionHandler, async);
+                        notifyObservers(event, exceptionHandler, predicate);
                     } finally {
                         requestContext.terminate();
                     }
@@ -225,10 +273,11 @@ class EventImpl<T> implements Event<T> {
         }
 
         @SuppressWarnings({ "rawtypes", "unchecked" })
-        private void notifyObservers(T event, ObserverExceptionHandler exceptionHandler, boolean async) {
+        private void notifyObservers(T event, ObserverExceptionHandler exceptionHandler,
+                Predicate<ObserverMethod<? super T>> predicate) {
             EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
             for (ObserverMethod<? super T> observerMethod : observerMethods) {
-                if (observerMethod.isAsync() == async) {
+                if (predicate.test(observerMethod)) {
                     try {
                         observerMethod.notify(eventContext);
                     } catch (Throwable e) {
@@ -240,6 +289,22 @@ class EventImpl<T> implements Event<T> {
 
         boolean isEmpty() {
             return observerMethods.isEmpty();
+        }
+
+        private boolean isTxObserver(ObserverMethod<?> observer) {
+            return !observer.getTransactionPhase().equals(TransactionPhase.IN_PROGRESS);
+        }
+
+        private boolean isNotAfterSuccess(ObserverMethod<?> observer) {
+            return !observer.getTransactionPhase().equals(TransactionPhase.AFTER_SUCCESS);
+        }
+
+        private boolean isNotTxObserver(ObserverMethod<?> observer) {
+            return !isTxObserver(observer);
+        }
+
+        private boolean isSyncObserver(ObserverMethod<?> observer) {
+            return !observer.isAsync();
         }
 
     }
@@ -292,6 +357,129 @@ class EventImpl<T> implements Event<T> {
         @Override
         public Type getType() {
             return eventType;
+        }
+
+    }
+
+    static class ArcSynchronization implements Synchronization {
+
+        private List<DeferredEventNotification<?>> deferredEvents;
+
+        ArcSynchronization(List<DeferredEventNotification<?>> deferredEvents) {
+            this.deferredEvents = deferredEvents;
+        }
+
+        @Override
+        public void beforeCompletion() {
+            for (DeferredEventNotification<?> event : deferredEvents) {
+                if (event.isBeforeCompletion()) {
+                    event.run();
+                }
+            }
+        }
+
+        @Override
+        public void afterCompletion(int i) {
+            for (DeferredEventNotification<?> event : deferredEvents) {
+                if (!event.isBeforeCompletion() && event.getStatus().matches(i)) {
+                    event.run();
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    static class DeferredEventNotification<T> implements Runnable {
+
+        private ObserverMethod<? super T> observerMethod;
+        private boolean isBeforeCompletion;
+        private EventContext eventContext;
+        private Status status;
+
+        private static final Logger LOGGER = Logger.getLogger(DeferredEventNotification.class);
+
+        DeferredEventNotification(ObserverMethod<? super T> observerMethod, EventContext eventContext, Status status) {
+            this.observerMethod = observerMethod;
+            this.isBeforeCompletion = observerMethod.getTransactionPhase().equals(TransactionPhase.BEFORE_COMPLETION);
+            this.eventContext = eventContext;
+            this.status = status;
+        }
+
+        public boolean isBeforeCompletion() {
+            return isBeforeCompletion;
+        }
+
+        public Status getStatus() {
+            return status;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public void run() {
+            try {
+                ManagedContext reqContext = Arc.container().requestContext();
+                if (reqContext.isActive()) {
+                    observerMethod.notify(eventContext);
+                } else {
+                    try {
+                        reqContext.activate();
+                        observerMethod.notify(eventContext);
+                    } finally {
+                        reqContext.terminate();
+                    }
+                }
+            } catch (Exception e) {
+                // swallow exception and log errors for every problematic OM
+                LOGGER.errorf("Failure while notifying an observer %s for event %s. Stack trace - %s",
+                        observerMethod, eventContext.getMetadata().getType().getTypeName(),
+                        e.getCause() != null ? e.getCause() : e);
+            }
+        }
+    }
+
+    enum Status {
+
+        ALL {
+            @Override
+            public boolean matches(int status) {
+                return true;
+            }
+        },
+        SUCCESS {
+            @Override
+            public boolean matches(int status) {
+                return status == STATUS_COMMITTED;
+            }
+        },
+        FAILURE {
+            @Override
+            public boolean matches(int status) {
+                return status != STATUS_COMMITTED;
+            }
+        };
+
+        /**
+         * Indicates whether the given status code passed in during {@link Synchronization#beforeCompletion()} or
+         * {@link Synchronization#afterCompletion(int)}
+         * matches this status.
+         * 
+         * @param status the given status code
+         * @return true if the status code matches
+         */
+        public abstract boolean matches(int status);
+
+        public static Status valueOf(TransactionPhase transactionPhase) {
+            if (transactionPhase == TransactionPhase.BEFORE_COMPLETION
+                    || transactionPhase == TransactionPhase.AFTER_COMPLETION) {
+                return Status.ALL;
+            }
+            if (transactionPhase == TransactionPhase.AFTER_SUCCESS) {
+                return Status.SUCCESS;
+            }
+            if (transactionPhase == TransactionPhase.AFTER_FAILURE) {
+                return Status.FAILURE;
+            }
+            throw new IllegalArgumentException("Unknown transaction phase " + transactionPhase);
         }
 
     }

@@ -92,12 +92,13 @@ public class BeanDeployment {
 
     private final Collection<BeanDefiningAnnotation> beanDefiningAnnotations;
     private final boolean removeFinalForProxyableMethods;
+    private final boolean jtaCapabilities;
 
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             List<AnnotationsTransformer> annotationTransformers) {
         this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(),
                 Collections.emptyList(),
-                null, false, null, Collections.emptyMap(), Collections.emptyList(), false);
+                null, false, null, Collections.emptyMap(), Collections.emptyList(), false, false);
     }
 
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
@@ -107,7 +108,8 @@ public class BeanDeployment {
             Collection<DotName> resourceAnnotations,
             BuildContextImpl buildContext, boolean removeUnusedBeans, List<Predicate<BeanInfo>> unusedExclusions,
             Map<DotName, Collection<AnnotationInstance>> additionalStereotypes,
-            List<InterceptorBindingRegistrar> bindingRegistrars, boolean removeFinalForProxyableMethods) {
+            List<InterceptorBindingRegistrar> bindingRegistrars, boolean removeFinalForProxyableMethods,
+            boolean jtaCapabilities) {
         this.buildContext = buildContext;
         Set<BeanDefiningAnnotation> beanDefiningAnnotations = new HashSet<>();
         if (additionalBeanDefiningAnnotations != null) {
@@ -162,6 +164,7 @@ public class BeanDeployment {
         this.beanResolver = new BeanResolver(this);
         this.interceptorResolver = new InterceptorResolver(this);
         this.removeFinalForProxyableMethods = removeFinalForProxyableMethods;
+        this.jtaCapabilities = jtaCapabilities;
     }
 
     ContextRegistrar.RegistrationContext registerCustomContexts(List<ContextRegistrar> contextRegistrars) {
@@ -200,7 +203,7 @@ public class BeanDeployment {
     BeanRegistrar.RegistrationContext registerBeans(List<BeanRegistrar> beanRegistrars) {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         this.beans.addAll(findBeans(initBeanDefiningAnnotations(beanDefiningAnnotations, stereotypes.keySet()), observers,
-                injectionPoints));
+                injectionPoints, jtaCapabilities));
         buildContextPut(Key.BEANS.asString(), Collections.unmodifiableList(beans));
         buildContextPut(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
 
@@ -556,7 +559,7 @@ public class BeanDeployment {
     }
 
     private List<BeanInfo> findBeans(Collection<DotName> beanDefiningAnnotations, List<ObserverInfo> observers,
-            List<InjectionPointInfo> injectionPoints) {
+            List<InjectionPointInfo> injectionPoints, boolean jtaCapabilities) {
 
         Set<ClassInfo> beanClasses = new HashSet<>();
         Set<MethodInfo> producerMethods = new HashSet<>();
@@ -744,12 +747,12 @@ public class BeanDeployment {
 
         for (Map.Entry<MethodInfo, Set<ClassInfo>> entry : syncObserverMethods.entrySet()) {
             registerObserverMethods(entry.getValue(), observers, injectionPoints,
-                    beanClassToBean, entry.getKey(), false, observerTransformers);
+                    beanClassToBean, entry.getKey(), false, observerTransformers, jtaCapabilities);
         }
 
         for (Map.Entry<MethodInfo, Set<ClassInfo>> entry : asyncObserverMethods.entrySet()) {
             registerObserverMethods(entry.getValue(), observers, injectionPoints,
-                    beanClassToBean, entry.getKey(), true, observerTransformers);
+                    beanClassToBean, entry.getKey(), true, observerTransformers, jtaCapabilities);
         }
 
         if (LOGGER.isTraceEnabled()) {
@@ -765,7 +768,8 @@ public class BeanDeployment {
             List<InjectionPointInfo> injectionPoints,
             Map<ClassInfo, BeanInfo> beanClassToBean,
             MethodInfo observerMethod,
-            boolean async, List<ObserverTransformer> observerTransformers) {
+            boolean async, List<ObserverTransformer> observerTransformers,
+            boolean jtaCapabilities) {
 
         for (ClassInfo beanClass : beanClasses) {
             BeanInfo declaringBean = beanClassToBean.get(beanClass);
@@ -773,7 +777,7 @@ public class BeanDeployment {
                 Injection injection = Injection.forObserver(observerMethod, declaringBean.getImplClazz(), this,
                         injectionPointTransformer);
                 ObserverInfo observer = ObserverInfo.create(declaringBean, observerMethod, injection, async,
-                        observerTransformers, buildContext);
+                        observerTransformers, buildContext, jtaCapabilities);
                 if (observer != null) {
                     observers.add(observer);
                     injectionPoints.addAll(injection.injectionPoints);

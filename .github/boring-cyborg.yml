@@ -58,7 +58,8 @@
 ### area/platform
 ### area/reactive-messaging
 ### area/security-consolidation
-### area/user experiencearea/amazon-lambda:
+### area/user experience
+### area/amazon-lambda:
 labelPRBasedOnFilePath:
     area/amazon-lambda:
         - extensions/amazon-lambda/**/*
@@ -81,6 +82,7 @@ labelPRBasedOnFilePath:
     area/core:
         - core/**/*
     area/dependencies:
+        - .dependabot/config.yml
         - bom/**/*
         - build-parent/**/*
     area/documentation:

@@ -124,4 +124,18 @@ public class DataSourceRuntimeConfig {
      */
     @ConfigItem
     public Optional<String> validationQuerySql;
+
+    /**
+     * The socket factory driver that should be appended as a datasource url property
+     */
+    @ConfigItem
+    public Optional<String> socketFactory;
+
+    /**
+     * General JDBC properties that can configured for a specific JDBC connection
+     *
+     * Should be comma separated, example: <property_name1>=<property_value1>,<property_name2>=<property_value2>
+     */
+    @ConfigItem
+    public Optional<String> additionalJdbcProperties;
 }

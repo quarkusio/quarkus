@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -199,6 +200,24 @@ public abstract class AbstractDataSourceProducer {
         }
         if (dataSourceRuntimeConfig.maxLifetime.isPresent()) {
             poolConfiguration.maxLifetime(dataSourceRuntimeConfig.maxLifetime.get());
+        }
+
+        if (dataSourceRuntimeConfig.socketFactory.isPresent()) {
+            agroalConnectionFactoryConfigurationSupplier.jdbcProperty("socketFactory",
+                    dataSourceRuntimeConfig.socketFactory.get());
+        }
+
+        if (dataSourceRuntimeConfig.additionalJdbcProperties.isPresent()) {
+            String generalProperties = dataSourceRuntimeConfig.additionalJdbcProperties.get();
+            List<String> properties = Arrays.asList(generalProperties.split(","));
+            for (String property : properties) {
+                String[] propertyData = property.split("=");
+                if (propertyData.length == 2) {
+                    agroalConnectionFactoryConfigurationSupplier.jdbcProperty(propertyData[0], propertyData[1]);
+                } else {
+                    log.warnv("Property {0} is not correctly formatted", property);
+                }
+            }
         }
 
         // SSL support: we should push the driver specific code to the driver extensions but it will have to do for now

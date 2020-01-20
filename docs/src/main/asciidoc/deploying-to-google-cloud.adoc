@@ -1,0 +1,110 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Deploying on Google cloud platform
+
+include::./attributes.adoc[]
+
+This guide covers:
+
+* Connecting to a CloudSQL postgresql instance with quarkus-agroal and service account using CloudRun
+== Prerequisites
+
+For this guide you need:
+
+* roughly 1 hour
+* having access to an Google cloud platform project with owner rights.
+
+This guide will take as input an application developed in the link:datasource.adoc[datasource guide].
+
+Make sure you have the application at hand working locally.
+
+
+== Solution
+
+We recommend to follow the instructions in the next sections and build the application step by step.
+
+== Connecting to CloudSQL
+
+Google CloudSQL managed service allows 4 kinds of connection :
+
+. Using public IP
+. Using private IP
+. Using Cloud SQL Proxy
+. Using service account
+
+The first two don't need anymore details, simply connect to you database following the link:datasource.adoc[datasource guide].
+The third allows you to connect as if locally, but is not available for AppEngine or CloudRun where you only deploy one artefact.
+Please check link:https://cloud.google.com/sql/docs/postgres/external-connection-methods?hl=en[Connection options for external applications].
+
+This guide will help you through the fourth possibility : connecting using service account.
+
+== Adding necessary dependencies to your application.
+
+You will need to add the _Cloud SQL Postgres Socket Factory_ and postgresql driver dependencies.
+
+With maven :
+[source,xml, subs="attributes"]
+----
+<!-- https://mvnrepository.com/artifact/com.google.cloud.sql/postgres-socket-factory -->
+<dependency>
+    <groupId>com.google.cloud.sql</groupId>
+    <artifactId>postgres-socket-factory</artifactId>
+    <version>1.0.15</version>
+</dependency>
+<!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
+<dependency>
+    <groupId>org.postgresql</groupId>
+    <artifactId>postgresql</artifactId>
+    <version>42.2.8</version>
+</dependency>
+----
+
+With Gradle :
+[source,groovy, subs="attributes"]
+----
+// https://mvnrepository.com/artifact/com.google.cloud.sql/postgres-socket-factory
+compile group: 'com.google.cloud.sql', name: 'postgres-socket-factory', version: '1.0.15'
+// https://mvnrepository.com/artifact/org.postgresql/postgresql
+compile group: 'org.postgresql', name: 'postgresql', version: '42.2.8'
+----
+
+== Configuring the CloudSQL instance
+
+If you haven't already please follow the link:https://cloud.google.com/sql/docs/postgres/create-instance[Creating instances guide].
+
+Ensure you have a service account with _Cloud SQL Client_ role (minimum necessary role), and get your instance connection name (`PROJECT_ID:REGION:INSTANCE_ID`).
+
+== Configuring the application
+
+Configure your quarkus application as follows :
+
+[source,properties]
+--
+quarkus.datasource.url=jdbc:postgresql:///${DB_NAME}
+quarkus.datasource.driver=org.postgresql.Driver
+quarkus.datasource.username = ${DB_USER}
+quarkus.datasource.password = ${DB_PASSWORD}
+quarkus.datasource.socket-factory=com.google.cloud.sql.postgres.SocketFactory
+quarkus.datasource.additional-jdbc-url-properties=cloud-sql-instance=project:zone:db-name
+--
+
+Prefere the use of environment variables that will allow you to connect to all your env depending on your runtime values
+
+WARNING: Don't forget to add your service account key to the deployed image, and to accept requests on the expected port
+
+[source,docker]
+--
+FROM gcr.io/distroless/java:11
+COPY target/*.jar /app/application-runner.jar
+COPY <your_service_account_key>.json /app
+WORKDIR /app
+CMD ["application-runner.jar","-Dquarkus.http.host=0.0.0.0", "-Dquarkus.http.port=$PORT"]
+--
+
+NOTE: `$PORT` value will be injected automatically by CloudRun and is to be used for HealthCheck
+
+
+You should now be able to connect to your instance.

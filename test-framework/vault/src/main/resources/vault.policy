@@ -27,3 +27,17 @@ path "secret-v2/data/config" {
 path "database/creds/mydbrole" {
   capabilities = [ "read" ]
 }
+
+# transit
+path "transit/*" {
+  capabilities = [ "create", "read", "update" ]
+}
+#path "transit/encrypt/my-key" {
+#  capabilities = [ "read", "update" ]
+#}
+#path "transit/decrypt/my-key" {
+#  capabilities = [ "read", "update" ]
+#}
+#path "transit/sign/my-sign-key" {
+#  capabilities = [ "read", "update" ]
+#}

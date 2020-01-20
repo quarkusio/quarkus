@@ -63,6 +63,12 @@ public class VaultTestExtension {
     static final String POSTGRESQL_HOST = "mypostgresdb";
     static final String VAULT_URL = (useTls() ? "https" : "http") + "://localhost:" + VAULT_PORT;
     public static final String SECRET_KEY = "secret";
+    public static final String ENCRYPTION_KEY_NAME = "my-encryption-key";
+    public static final String ENCRYPTION_KEY2_NAME = "my-encryption-key2";
+    public static final String ENCRYPTION_DERIVED_KEY_NAME = "my-derivation-encryption-key";
+    public static final String SIGN_KEY_NAME = "my-sign-key";
+    public static final String SIGN_KEY2_NAME = "my-sign-key2";
+    public static final String SIGN_DERIVATION_KEY_NAME = "my-derivation-sign-key";
 
     public static final String TMP_VAULT_POSTGRES_CREATION_SQL_FILE = "/tmp/vault-postgres-creation.sql";
     public static final String TMP_VAULT_CONFIG_JSON_FILE = "/tmp/vault-config.json";
@@ -240,6 +246,17 @@ public class VaultTestExtension {
                 VAULT_DBROLE, DB_NAME, TMP_VAULT_POSTGRES_CREATION_SQL_FILE, db_default_ttl, db_max_ttl);
         execVault(vault_write_database_roles_mydbrole);
 
+        // transit
+
+        execVault("vault secrets enable transit");
+        execVault(format("vault write -f transit/keys/%s", ENCRYPTION_KEY_NAME));
+        execVault(format("vault write -f transit/keys/%s", ENCRYPTION_KEY2_NAME));
+        execVault(format("vault write transit/keys/%s derived=true", ENCRYPTION_DERIVED_KEY_NAME));
+        execVault(format("vault write transit/keys/%s type=ecdsa-p256", SIGN_KEY_NAME));
+        execVault(format("vault write transit/keys/%s type=ecdsa-p256", SIGN_KEY2_NAME));
+        execVault(format("vault write transit/keys/%s type=ed25519 derived=true", SIGN_DERIVATION_KEY_NAME));
+
+        execVault("vault write transit/keys/jws type=ecdsa-p256");
     }
 
     public static boolean useTls() {

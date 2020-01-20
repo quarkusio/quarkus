@@ -13,6 +13,7 @@ public class VaultManager {
     private VaultAuthManager vaultAuthManager;
     private VaultKvManager vaultKvManager;
     private VaultDbManager vaultDbManager;
+    private VaultTransitManager vaultTransitManager;
     private VaultCredentialsProvider vaultCredentialsProvider;
 
     public static VaultManager getInstance() {
@@ -39,11 +40,16 @@ public class VaultManager {
         this.vaultAuthManager = new VaultAuthManager(this.vaultClient, serverConfig);
         this.vaultKvManager = new VaultKvManager(this.vaultAuthManager, this.vaultClient, serverConfig);
         this.vaultDbManager = new VaultDbManager(this.vaultAuthManager, this.vaultClient, serverConfig);
+        this.vaultTransitManager = new VaultTransitManager(this.vaultAuthManager, this.vaultClient, serverConfig);
         this.vaultCredentialsProvider = new VaultCredentialsProvider(serverConfig, this.vaultKvManager, this.vaultDbManager);
     }
 
     public VaultClient getVaultClient() {
         return vaultClient;
+    }
+
+    public VaultAuthManager getVaultAuthManager() {
+        return vaultAuthManager;
     }
 
     public VaultDbManager getVaultDbManager() {
@@ -54,7 +60,15 @@ public class VaultManager {
         return vaultKvManager;
     }
 
+    public VaultTransitManager getVaultTransitManager() {
+        return vaultTransitManager;
+    }
+
     public VaultCredentialsProvider getVaultCredentialsProvider() {
         return vaultCredentialsProvider;
+    }
+
+    public VaultRuntimeConfig getServerConfig() {
+        return serverConfig;
     }
 }

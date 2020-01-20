@@ -10,8 +10,8 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
-import io.quarkus.vault.runtime.client.dto.VaultDatabaseCredentials;
-import io.quarkus.vault.runtime.client.dto.VaultRenewLease;
+import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
+import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 
 public class VaultDbManager {

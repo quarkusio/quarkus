@@ -12,28 +12,34 @@ public class CredentialsProviderConfig {
 
     /**
      * Database credentials role, as defined by https://www.vaultproject.io/docs/secrets/databases/index.html
-     * <p>
-     * One of database-credentials-role or kv-path needs to be defined. not both.
+     *
+     * One of `database-credentials-role` or `kv-path` needs to be defined. not both.
+     *
+     * @asciidoclet
      */
     @ConfigItem
     public Optional<String> databaseCredentialsRole;
 
     /**
      * A path in vault kv store, where we will find the kv-key.
-     * <p>
-     * One of database-credentials-role or kv-path needs to be defined. not both.
-     * <p>
+     *
+     * One of `database-credentials-role` or `kv-path` needs to be defined. not both.
+     *
      * see https://www.vaultproject.io/docs/secrets/kv/index.html
+     *
+     * @asciidoclet
      */
     @ConfigItem
     public Optional<String> kvPath;
 
     /**
-     * Key name to search in vault path kv-path. The value for that key is the credential.
-     * <p>
-     * kv-key should not be defined if kv-path is not.
-     * <p>
+     * Key name to search in vault path `kv-path`. The value for that key is the credential.
+     *
+     * `kv-key` should not be defined if `kv-path` is not.
+     *
      * see https://www.vaultproject.io/docs/secrets/kv/index.html
+     *
+     * @asciidoclet
      */
     @ConfigItem(defaultValue = PASSWORD_PROPERTY_NAME)
     public String kvKey;

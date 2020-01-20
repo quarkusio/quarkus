@@ -51,7 +51,8 @@ public class VaultConfigSource implements ConfigSource {
     private static final Logger log = Logger.getLogger(VaultConfigSource.class);
 
     private static final String PROPERTY_PREFIX = "quarkus.vault.";
-    public static final Pattern CREDENTIAL_PATTERN = Pattern.compile("^quarkus\\.vault\\.credentials-provider\\.([^.]+)\\.");
+    public static final Pattern CREDENTIALS_PATTERN = Pattern.compile("^quarkus\\.vault\\.credentials-provider\\.([^.]+)\\.");
+    public static final Pattern TRANSIT_KEY_PATTERN = Pattern.compile("^quarkus\\.vault\\.transit.key\\.([^.]+)\\.");
     public static final Pattern SECRET_CONFIG_KV_PATH_PATTERN = Pattern
             .compile("^quarkus\\.vault\\.secret-config-kv-path\\.([^.]+)$");
 
@@ -174,6 +175,7 @@ public class VaultConfigSource implements ConfigSource {
 
         VaultRuntimeConfig serverConfig = new VaultRuntimeConfig();
         serverConfig.tls = new VaultTlsConfig();
+        serverConfig.transit = new VaultTransitConfig();
         serverConfig.authentication = new VaultAuthenticationConfig();
         serverConfig.authentication.userpass = new VaultUserpassAuthenticationConfig();
         serverConfig.authentication.appRole = new VaultAppRoleAuthenticationConfig();
@@ -204,10 +206,41 @@ public class VaultConfigSource implements ConfigSource {
         serverConfig.connectTimeout = getVaultDuration("connect-timeout", DEFAULT_CONNECT_TIMEOUT);
         serverConfig.readTimeout = getVaultDuration("read-timeout", DEFAULT_READ_TIMEOUT);
 
-        serverConfig.credentialsProvider = getCredentialsProviders();
+        serverConfig.credentialsProvider = createCredentialProviderConfigParser().getConfig();
+        serverConfig.transit.key = createTransitKeyConfigParser().getConfig();
         serverConfig.secretConfigKvPrefixPath = getSecretConfigKvPrefixPaths();
 
         return serverConfig;
+    }
+
+    private VaultMapConfigParser<CredentialsProviderConfig> createCredentialProviderConfigParser() {
+        return new VaultMapConfigParser<>(CREDENTIALS_PATTERN, this::getCredentialsProviderConfig, getConfigSourceStream());
+    }
+
+    private CredentialsProviderConfig getCredentialsProviderConfig(String name) {
+        String prefix = "credentials-provider." + name;
+        CredentialsProviderConfig config = new CredentialsProviderConfig();
+        config.databaseCredentialsRole = getOptionalVaultProperty(prefix + ".database-credentials-role");
+        config.kvPath = getOptionalVaultProperty(prefix + ".kv-path");
+        config.kvKey = getVaultProperty(prefix + ".kv-key", PASSWORD_PROPERTY_NAME);
+        return config;
+    }
+
+    private VaultMapConfigParser<TransitKeyConfig> createTransitKeyConfigParser() {
+        return new VaultMapConfigParser<>(TRANSIT_KEY_PATTERN, this::getTransitKeyConfig, getConfigSourceStream());
+    }
+
+    private TransitKeyConfig getTransitKeyConfig(String name) {
+        String prefix = "transit.key." + name;
+        TransitKeyConfig config = new TransitKeyConfig();
+        config.name = getOptionalVaultProperty(prefix + ".name");
+        config.hashAlgorithm = getOptionalVaultProperty(prefix + ".hash-algorithm");
+        config.signatureAlgorithm = getOptionalVaultProperty(prefix + ".signature-algorithm");
+        config.type = getOptionalVaultProperty(prefix + ".type");
+        config.convergentEncryption = getOptionalVaultProperty(prefix + ".convergent-encryption");
+        Optional<String> prehashed = getOptionalVaultProperty(prefix + ".prehashed");
+        config.prehashed = Optional.ofNullable(prehashed.isPresent() ? Boolean.parseBoolean(prehashed.get()) : null);
+        return config;
     }
 
     private Optional<List<String>> getOptionalListProperty(String name) {
@@ -251,22 +284,6 @@ public class VaultConfigSource implements ConfigSource {
                 .orElse(defaultValue);
     }
 
-    /**
-     * returns a map of all credentials providers
-     *
-     * @return credential poviders by name
-     */
-    private Map<String, CredentialsProviderConfig> getCredentialsProviders() {
-
-        return getConfigSourceStream()
-                .flatMap(configSource -> configSource.getPropertyNames().stream())
-                .map(this::getCredentialsProviderName)
-                .filter(Objects::nonNull)
-                .distinct()
-                .map(this::createNameCredentialsProviderPair)
-                .collect(toMap(SimpleEntry::getKey, SimpleEntry::getValue));
-    }
-
     private Map<String, List<String>> getSecretConfigKvPrefixPaths() {
 
         return getConfigSourceStream()
@@ -294,31 +311,13 @@ public class VaultConfigSource implements ConfigSource {
         return !getName().equals(other);
     }
 
-    private SimpleEntry<String, CredentialsProviderConfig> createNameCredentialsProviderPair(String name) {
-        return new SimpleEntry<>(name, getCredentialsProviderConfig(name));
-    }
-
     private SimpleEntry<String, List<String>> createNameSecretConfigKvPrefixPathPair(String name) {
         return new SimpleEntry<>(name, getSecretConfigKvPrefixPath(name));
-    }
-
-    private String getCredentialsProviderName(String propertyName) {
-        Matcher matcher = CREDENTIAL_PATTERN.matcher(propertyName);
-        return matcher.find() ? matcher.group(1) : null;
     }
 
     private String getSecretConfigKvPrefixPathName(String propertyName) {
         Matcher matcher = SECRET_CONFIG_KV_PATH_PATTERN.matcher(propertyName);
         return matcher.find() ? matcher.group(1) : null;
-    }
-
-    private CredentialsProviderConfig getCredentialsProviderConfig(String name) {
-        String prefix = "credentials-provider." + name;
-        CredentialsProviderConfig config = new CredentialsProviderConfig();
-        config.databaseCredentialsRole = getOptionalVaultProperty(prefix + ".database-credentials-role");
-        config.kvPath = getOptionalVaultProperty(prefix + ".kv-path");
-        config.kvKey = getVaultProperty(prefix + ".kv-key", PASSWORD_PROPERTY_NAME);
-        return config;
     }
 
     private List<String> getSecretConfigKvPrefixPath(String prefixName) {

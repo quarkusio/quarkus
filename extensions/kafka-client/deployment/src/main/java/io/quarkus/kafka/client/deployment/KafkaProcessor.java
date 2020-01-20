@@ -1,7 +1,7 @@
 package io.quarkus.kafka.client.deployment;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.clients.consumer.RoundRobinAssignor;
@@ -73,30 +73,40 @@ public class KafkaProcessor {
     @BuildStep
     public void build(CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<JniBuildItem> jni, Capabilities capabilities) {
-        Collection<ClassInfo> serializers = indexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple(Serializer.class.getName()));
-        Collection<ClassInfo> deserializers = indexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple(Deserializer.class.getName()));
-        Collection<ClassInfo> partitioners = indexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple(Partitioner.class.getName()));
-        Collection<ClassInfo> partitionAssignors = indexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple(PartitionAssignor.class.getName()));
+        Set<ClassInfo> toRegister = new HashSet<>();
+
+        toRegister.addAll(indexBuildItem.getIndex()
+                .getAllKnownImplementors(DotName.createSimple(Serializer.class.getName())));
+        toRegister.addAll(indexBuildItem.getIndex()
+                .getAllKnownImplementors(DotName.createSimple(Deserializer.class.getName())));
+        toRegister.addAll(indexBuildItem.getIndex()
+                .getAllKnownImplementors(DotName.createSimple(Partitioner.class.getName())));
+        toRegister.addAll(indexBuildItem.getIndex()
+                .getAllKnownImplementors(DotName.createSimple(PartitionAssignor.class.getName())));
 
         for (Class i : BUILT_INS) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, i.getName()));
+            toRegister.addAll(indexBuildItem.getIndex()
+                    .getAllKnownSubclasses(DotName.createSimple(i.getName())));
         }
         if (capabilities.isCapabilityPresent(Capabilities.JSONB)) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JsonbSerializer.class, JsonbDeserializer.class));
+            toRegister.addAll(indexBuildItem.getIndex()
+                    .getAllKnownSubclasses(DotName.createSimple(JsonbSerializer.class.getName())));
+            toRegister.addAll(indexBuildItem.getIndex()
+                    .getAllKnownSubclasses(DotName.createSimple(JsonbDeserializer.class.getName())));
         }
         if (capabilities.isCapabilityPresent(Capabilities.JACKSON)) {
             reflectiveClass.produce(
                     new ReflectiveClassBuildItem(false, false, ObjectMapperSerializer.class, ObjectMapperDeserializer.class));
+            toRegister.addAll(indexBuildItem.getIndex()
+                    .getAllKnownSubclasses(DotName.createSimple(ObjectMapperSerializer.class.getName())));
+            toRegister.addAll(indexBuildItem.getIndex()
+                    .getAllKnownSubclasses(DotName.createSimple(ObjectMapperDeserializer.class.getName())));
         }
 
-        for (Collection<ClassInfo> list : Arrays.asList(serializers, deserializers, partitioners, partitionAssignors)) {
-            for (ClassInfo s : list) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, s.toString()));
-            }
+        for (ClassInfo s : toRegister) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, s.toString()));
         }
 
         // built in partitioner and partition assignors

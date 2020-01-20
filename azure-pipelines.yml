@@ -20,6 +20,7 @@ pr:
       - dco.txt
       - .github/ISSUE_TEMPLATE/*.md
       - .github/labeler.yml
+      - .github/boring-cyborg.yml
       - .github/workflows/*
       - .dependabot/config.yml
 

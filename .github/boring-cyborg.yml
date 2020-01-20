@@ -81,6 +81,9 @@ labelPRBasedOnFilePath:
         - core/runtime/src/main/java/io/quarkus/runtime/configuration/**/*
     area/core:
         - core/**/*
+    area/dependencies:
+        - bom/**/*
+        - build-parent/**/*
     area/documentation:
         - docs/**/*
     area/gradle:

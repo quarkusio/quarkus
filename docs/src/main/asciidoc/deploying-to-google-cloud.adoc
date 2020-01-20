@@ -54,11 +54,10 @@ With maven :
     <artifactId>postgres-socket-factory</artifactId>
     <version>1.0.15</version>
 </dependency>
-<!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
+<!-- https://mvnrepository.com/artifact/io.quarkus/quarkus-jdbc-postgresql -->
 <dependency>
-    <groupId>org.postgresql</groupId>
-    <artifactId>postgresql</artifactId>
-    <version>42.2.8</version>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jdbc-postgresql</artifactId>
 </dependency>
 ----
 
@@ -67,8 +66,8 @@ With Gradle :
 ----
 // https://mvnrepository.com/artifact/com.google.cloud.sql/postgres-socket-factory
 compile group: 'com.google.cloud.sql', name: 'postgres-socket-factory', version: '1.0.15'
-// https://mvnrepository.com/artifact/org.postgresql/postgresql
-compile group: 'org.postgresql', name: 'postgresql', version: '42.2.8'
+// https://mvnrepository.com/artifact/io.quarkus/quarkus-jdbc-postgresql
+compile group: 'io.quarkus', name: 'quarkus-jdbc-postgresql', version: '1.1.1.Final'
 ----
 
 == Configuring the CloudSQL instance

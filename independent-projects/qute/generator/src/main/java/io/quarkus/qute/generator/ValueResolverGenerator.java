@@ -70,6 +70,10 @@ public class ValueResolverGenerator {
     private static final String GET_PREFIX = "get";
     private static final String IS_PREFIX = "is";
 
+    private static final String IGNORE_SUBCLASSES = "ignoreSubclasses";
+    private static final String IGNORE = "ignore";
+    private static final String PROPERTIES = "properties";
+
     private final Set<String> analyzedTypes;
     private final Set<String> generatedTypes;
     private final IndexView index;
@@ -99,12 +103,18 @@ public class ValueResolverGenerator {
             return;
         }
         analyzedTypes.add(clazzName);
+        boolean ignoreSubclasses = false;
 
         // @TemplateData declared on class has precedence
         AnnotationInstance templateData = clazz.classAnnotation(TEMPLATE_DATA);
         if (templateData == null) {
             // Try to find @TemplateData declared on other classes
             templateData = uncontrolled.get(clazz);
+        } else {
+            AnnotationValue ignoreSubclassesValue = templateData.value(IGNORE_SUBCLASSES);
+            if (ignoreSubclassesValue != null) {
+                ignoreSubclasses = ignoreSubclassesValue.asBoolean();
+            }
         }
 
         Predicate<AnnotationTarget> filters = initFilters(templateData);
@@ -130,7 +140,7 @@ public class ValueResolverGenerator {
 
         valueResolver.close();
 
-        if (!clazz.superName().equals(OBJECT)) {
+        if (!ignoreSubclasses && !clazz.superName().equals(OBJECT)) {
             ClassInfo superClass = index.getClassByName(clazz.superClassType().name());
             if (superClass != null) {
                 generate(superClass);
@@ -577,7 +587,7 @@ public class ValueResolverGenerator {
         Predicate<AnnotationTarget> filter = ValueResolverGenerator::defaultFilter;
         if (templateData != null) {
             // @TemplateData is present
-            AnnotationValue ignoreValue = templateData.value("ignore");
+            AnnotationValue ignoreValue = templateData.value(IGNORE);
             if (ignoreValue != null) {
                 List<Pattern> ignore = Arrays.asList(ignoreValue.asStringArray()).stream().map(Pattern::compile)
                         .collect(Collectors.toList());
@@ -589,7 +599,7 @@ public class ValueResolverGenerator {
                     }
                 });
             }
-            AnnotationValue propertiesValue = templateData.value("properties");
+            AnnotationValue propertiesValue = templateData.value(PROPERTIES);
             if (propertiesValue != null && propertiesValue.asBoolean()) {
                 filter = filter.and(ValueResolverGenerator::propertiesFilter);
             }
@@ -612,16 +622,12 @@ public class ValueResolverGenerator {
         switch (target.kind()) {
             case METHOD:
                 MethodInfo method = target.asMethod();
-                if (method.name().equals("<init>")
-                        || method.name().equals("<clinit>") || isSynthetic(method.flags())
-                        || !Modifier.isPublic(method.flags())
-                        || method.returnType().kind() == org.jboss.jandex.Type.Kind.VOID) {
-                    return false;
-                } else {
-                    return true;
-                }
+                return Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags()) && !isSynthetic(method.flags())
+                        && method.returnType().kind() != org.jboss.jandex.Type.Kind.VOID && !method.name().equals("<init>")
+                        && !method.name().equals("<clinit>");
             case FIELD:
-                return Modifier.isPublic(target.asField().flags()) && !Modifier.isStatic(target.asField().flags());
+                FieldInfo field = target.asField();
+                return Modifier.isPublic(field.flags()) && !Modifier.isStatic(field.flags());
             default:
                 throw new IllegalArgumentException("Unsupported annotation target");
         }

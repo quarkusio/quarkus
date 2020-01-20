@@ -2,8 +2,8 @@ package io.quarkus.qute.generator;
 
 import io.quarkus.qute.TemplateData;
 
-@TemplateData
-public class PublicMyService {
+@TemplateData(ignoreSubclasses = true)
+public class PublicMyService extends BaseService {
 
     public String getName() {
         return "Martin";
@@ -11,6 +11,10 @@ public class PublicMyService {
 
     String getSurname() {
         return "Kouba";
+    }
+
+    public static boolean isStatic() {
+        return true;
     }
 
 }

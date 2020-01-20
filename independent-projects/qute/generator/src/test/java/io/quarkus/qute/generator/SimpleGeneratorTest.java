@@ -1,14 +1,13 @@
 package io.quarkus.qute.generator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Expression;
-import io.quarkus.qute.IfSectionHelper;
 import io.quarkus.qute.ImmutableList;
 import io.quarkus.qute.ValueResolver;
-import io.quarkus.qute.ValueResolvers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -28,7 +27,8 @@ public class SimpleGeneratorTest {
     @BeforeAll
     public static void init() throws IOException {
         TestClassOutput classOutput = new TestClassOutput();
-        Index index = index(MyService.class, PublicMyService.class, MyItem.class, String.class, CompletionStage.class,
+        Index index = index(MyService.class, PublicMyService.class, BaseService.class, MyItem.class, String.class,
+                CompletionStage.class,
                 List.class);
         ValueResolverGenerator generator = new ValueResolverGenerator(index, classOutput, Collections.emptyMap());
         generator.generate(index.getClassByName(DotName.createSimple(MyService.class.getName())));
@@ -65,8 +65,13 @@ public class SimpleGeneratorTest {
 
     @Test
     public void testWithEngine() throws Exception {
-        Engine engine = Engine.builder().addSectionHelper(new IfSectionHelper.Factory())
-                .addValueResolver(ValueResolvers.thisResolver())
+        try {
+            newResolver("io.quarkus.qute.generator.BaseService_ValueResolver");
+            fail();
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException expected) {
+        }
+
+        Engine engine = Engine.builder().addDefaults()
                 .addValueResolver(newResolver("io.quarkus.qute.generator.MyService_ValueResolver"))
                 .addValueResolver(newResolver("io.quarkus.qute.generator.PublicMyService_ValueResolver"))
                 .addValueResolver(newResolver("io.quarkus.qute.generator.MyItem_ValueResolver"))
@@ -75,7 +80,8 @@ public class SimpleGeneratorTest {
                 .build();
         assertEquals(" FOO ", engine.parse("{#if isActive} {name.toUpperCase} {/if}").render(new MyService()));
         assertEquals("OK", engine.parse("{#if this.getList(5).size == 5}OK{/if}").render(new MyService()));
-        assertEquals("Martin NOT_FOUND", engine.parse("{name} {surname}").render(new PublicMyService()));
+        assertEquals("Martin NOT_FOUND OK NOT_FOUND",
+                engine.parse("{name} {surname} {isStatic ?: 'OK'} {base}").render(new PublicMyService()));
         assertEquals("foo NOT_FOUND", engine.parse("{id} {bar}").render(new MyItem()));
     }
 

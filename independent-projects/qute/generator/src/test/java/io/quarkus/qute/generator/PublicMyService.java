@@ -2,7 +2,7 @@ package io.quarkus.qute.generator;
 
 import io.quarkus.qute.TemplateData;
 
-@TemplateData(ignoreSubclasses = true)
+@TemplateData(ignoreSuperclasses = true)
 public class PublicMyService extends BaseService {
 
     public String getName() {

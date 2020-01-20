@@ -70,7 +70,7 @@ public class ValueResolverGenerator {
     private static final String GET_PREFIX = "get";
     private static final String IS_PREFIX = "is";
 
-    private static final String IGNORE_SUBCLASSES = "ignoreSubclasses";
+    private static final String IGNORE_SUPERCLASSES = "ignoreSuperclasses";
     private static final String IGNORE = "ignore";
     private static final String PROPERTIES = "properties";
 
@@ -103,7 +103,7 @@ public class ValueResolverGenerator {
             return;
         }
         analyzedTypes.add(clazzName);
-        boolean ignoreSubclasses = false;
+        boolean ignoreSuperclasses = false;
 
         // @TemplateData declared on class has precedence
         AnnotationInstance templateData = clazz.classAnnotation(TEMPLATE_DATA);
@@ -111,9 +111,9 @@ public class ValueResolverGenerator {
             // Try to find @TemplateData declared on other classes
             templateData = uncontrolled.get(clazz);
         } else {
-            AnnotationValue ignoreSubclassesValue = templateData.value(IGNORE_SUBCLASSES);
-            if (ignoreSubclassesValue != null) {
-                ignoreSubclasses = ignoreSubclassesValue.asBoolean();
+            AnnotationValue ignoreSuperclassesValue = templateData.value(IGNORE_SUPERCLASSES);
+            if (ignoreSuperclassesValue != null) {
+                ignoreSuperclasses = ignoreSuperclassesValue.asBoolean();
             }
         }
 
@@ -140,7 +140,7 @@ public class ValueResolverGenerator {
 
         valueResolver.close();
 
-        if (!ignoreSubclasses && !clazz.superName().equals(OBJECT)) {
+        if (!ignoreSuperclasses && !clazz.superName().equals(OBJECT)) {
             ClassInfo superClass = index.getClassByName(clazz.superClassType().name());
             if (superClass != null) {
                 generate(superClass);

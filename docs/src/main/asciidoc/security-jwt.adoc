@@ -105,7 +105,7 @@ public class TokenSecuredResource {
     public String hello(@Context SecurityContext ctx) { // <4>
         Principal caller =  ctx.getUserPrincipal(); <5>
         String name = caller == null ? "anonymous" : caller.getName();
-        boolean hasJWT = jwt.getClaims() != null;
+        boolean hasJWT = jwt.getClaimNames() != null;
         String helloReply = String.format("hello + %s, isSecure: %s, authScheme: %s, hasJWT: %s", name, ctx.isSecure(), ctx.getAuthenticationScheme(), hasJWT);
         return helloReply; // <6>
     }

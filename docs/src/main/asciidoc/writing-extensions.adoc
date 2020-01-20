@@ -1554,10 +1554,10 @@ More info about customizing Jackson can be found on the JSON guide link:rest-jso
 
 === Testing Extensions
 
-Testing of extensions should be done with the `io.quarkus.test.QuarkusUnitTest` runner. This runner allows
-for Arquillian-style tests that test specific functionalities. It is not intended for testing user applications, as this
-should be done via `io.quarkus.test.junit.QuarkusTest`. The main difference between these test runners is that
-`QuarkusTest` simply boots the application once at the start of the run, while `QuarkusUnitTest` deploys a custom
+Testing of Quarkus extensions should be done with the `io.quarkus.test.QuarkusUnitTest` JUnit 5 extension. 
+This extension allows for Arquillian-style tests that test specific functionalities. 
+It is not intended for testing user applications, as this should be done via `io.quarkus.test.junit.QuarkusTest`. 
+The main difference is that `QuarkusTest` simply boots the application once at the start of the run, while `QuarkusUnitTest` deploys a custom
 Quarkus application for each test class.
 
 These tests should be placed in the deployment module, if additional Quarkus modules are required for testing
@@ -1593,7 +1593,6 @@ import io.restassured.RestAssured;
 
 public class FailingUnitTest {
 
-
     @RegisterExtension                                                                  // <1>
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() ->
@@ -1601,6 +1600,7 @@ public class FailingUnitTest {
                             .addClasses(FailingHealthCheck.class)
                             .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
             );
+
     @Inject                                                                             // <3>
     @Health
     Instance<HealthCheck> checks;
@@ -1622,8 +1622,7 @@ public class FailingUnitTest {
 }
 ----
 
-
-<1> This tells JUnit to use the Quarkus unit test runner
+<1> The `QuarkusUnitTest` extension must be used with a static field. If used with a non-static field, the test application is not started.
 <2> This producer is used to build the application to be tested. It uses Shrinkwrap to create a JavaArchive to test
 <3> It is possible to inject beans from our test deployment directly into the test case
 <4> This method directly invokes the health check Servlet and verifies the response

@@ -32,9 +32,9 @@ public @interface TemplateData {
     String[] ignore() default {};
 
     /**
-     * If set to true do not automatically analyze subclasses.
+     * If set to true do not automatically analyze superclasses.
      */
-    boolean ignoreSubclasses() default false;
+    boolean ignoreSuperclasses() default false;
 
     /**
      * If set to true include only properties: instance fields and methods without params.

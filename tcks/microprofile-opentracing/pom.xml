@@ -14,13 +14,8 @@
     <name>Quarkus - TCK - MicroProfile OpenTracing Parent</name>
 
     <modules>
-        <!--
-        Disable the base for now because of  https://github.com/eclipse/microprofile-opentracing/issues/165
-        In that module all tests extend the base test which doesn't work so we might as well just disable
-        the whole module
-        -->
-<!--        <module>base</module>-->
-<!--        <module>rest-client</module>-->
+        <module>base</module>
+        <module>rest-client</module>
     </modules>
 
 </project>

@@ -381,11 +381,19 @@ public class QuarkusUnitTest
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
+        if (assertException != null) {
+            // Build failed as expected - test methods are not invoked
+            return;
+        }
         restAssuredURLManager.clearURL();
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
+        if (assertException != null) {
+            // Build failed as expected - test methods are not invoked
+            return;
+        }
         if (!started) {
             Optional<Class<?>> testClass = context.getTestClass();
             if (testClass.isPresent()) {

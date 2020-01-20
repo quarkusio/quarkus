@@ -50,7 +50,7 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         Set<String> fieldNames = new HashSet<>();
         // gather field names from getters
         for (Method method : type.getMethods()) {
-            if (method.getName().startsWith("get")) {
+            if (method.getName().startsWith("get") && !method.getName().equals("getClass")) {
                 String fieldName = MongoPropertyUtil.decapitalize(method.getName().substring(3));
                 fieldNames.add(fieldName);
             }

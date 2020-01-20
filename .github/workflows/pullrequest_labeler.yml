@@ -6,8 +6,8 @@ jobs:
   triage:
     runs-on: ubuntu-latest
     steps:
-    - continue-on-error: true
     - uses: actions/labeler@v2
+      continue-on-error: true
       with:
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
 

@@ -2,17 +2,29 @@ package io.quarkus.resteasy.runtime;
 
 import static org.jboss.resteasy.util.HttpHeaderNames.ACCEPT;
 
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Proxy;
+import java.net.JarURLConnection;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.Priority;
 import javax.ws.rs.NotFoundException;
@@ -27,6 +39,7 @@ import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.ResourceMethodInvoker;
 import org.jboss.resteasy.core.ResourceMethodRegistry;
 import org.jboss.resteasy.core.request.ServerDrivenNegotiation;
@@ -39,15 +52,20 @@ import io.quarkus.runtime.TemplateHtmlBuilder;
 @Priority(Priorities.USER + 1)
 public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundException> {
 
+    protected static final String META_INF_RESOURCES_SLASH = "META-INF/resources/";
+    protected static final String META_INF_RESOURCES = "META-INF/resources";
+
     private final static Variant JSON_VARIANT = new Variant(MediaType.APPLICATION_JSON_TYPE, (String) null, null);
     private final static Variant HTML_VARIANT = new Variant(MediaType.TEXT_HTML_TYPE, (String) null, null);
     private final static List<Variant> VARIANTS = Arrays.asList(JSON_VARIANT, HTML_VARIANT);
 
     private volatile static String httpRoot = "";
     private volatile static List<String> servletMappings = Collections.EMPTY_LIST;
-    private volatile static List<String> staticResources = Collections.EMPTY_LIST;
+    private volatile static Set<java.nio.file.Path> staticResouceRoots = Collections.EMPTY_SET;
     private volatile static List<String> additionalEndpoints = Collections.EMPTY_LIST;
     private volatile static Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths = Collections.EMPTY_MAP;
+
+    private static final Logger LOG = Logger.getLogger(NotFoundExceptionMapper.class);
 
     @Context
     private Registry registry = null;
@@ -239,12 +257,15 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                 sb.resourcesEnd();
             }
 
-            if (!staticResources.isEmpty()) {
-                sb.resourcesStart("Static resources");
-                for (String staticResource : staticResources) {
-                    sb.staticResourcePath(adjustRoot(staticResource));
+            if (!staticResouceRoots.isEmpty()) {
+                List<String> resources = findRealResources();
+                if (!resources.isEmpty()) {
+                    sb.resourcesStart("Static resources");
+                    for (String staticResource : resources) {
+                        sb.staticResourcePath(adjustRoot(staticResource));
+                    }
+                    sb.resourcesEnd();
                 }
-                sb.resourcesEnd();
             }
 
             if (!additionalEndpoints.isEmpty()) {
@@ -258,6 +279,68 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             return Response.status(Status.NOT_FOUND).entity(sb.toString()).type(MediaType.TEXT_HTML_TYPE).build();
         }
         return Response.status(Status.NOT_FOUND).build();
+    }
+
+    private List<String> findRealResources() {
+
+        //we need to check for web resources in order to get welcome files to work
+        //this kinda sucks
+        Set<String> knownFiles = new HashSet<>();
+        for (java.nio.file.Path resource : staticResouceRoots) {
+            if (resource != null && Files.exists(resource)) {
+                try (Stream<java.nio.file.Path> fileTreeElements = Files.walk(resource)) {
+                    fileTreeElements.forEach(new Consumer<java.nio.file.Path>() {
+                        @Override
+                        public void accept(java.nio.file.Path path) {
+                            // Skip META-INF/resources entry
+                            if (resource.equals(path)) {
+                                return;
+                            }
+                            java.nio.file.Path rel = resource.relativize(path);
+                            if (!Files.isDirectory(path)) {
+                                knownFiles.add(rel.toString());
+                            }
+                        }
+                    });
+                } catch (IOException e) {
+                    LOG.error("Failed to read static resources", e);
+                }
+            }
+        }
+        try {
+            Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(META_INF_RESOURCES);
+            while (resources.hasMoreElements()) {
+                URL url = resources.nextElement();
+                if (url.getProtocol().equals("jar")) {
+                    JarURLConnection jar = (JarURLConnection) url.openConnection();
+                    jar.setUseCaches(false);
+                    try (JarFile jarFile = jar.getJarFile()) {
+                        Enumeration<JarEntry> entries = jarFile.entries();
+                        while (entries.hasMoreElements()) {
+                            JarEntry entry = entries.nextElement();
+                            if (entry.getName().startsWith(META_INF_RESOURCES_SLASH)) {
+                                String sub = entry.getName().substring(META_INF_RESOURCES_SLASH.length());
+                                if (!sub.isEmpty()) {
+                                    if (!entry.getName().endsWith("/")) {
+                                        knownFiles.add(sub);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            LOG.error("Failed to read static resources", e);
+        }
+
+        //limit to 1000 to not have to many files to display
+        return knownFiles.stream().filter(this::isHtmlFileName).limit(1000).distinct().sorted(Comparator.naturalOrder())
+                .collect(Collectors.toList());
+    }
+
+    private boolean isHtmlFileName(String fileName) {
+        return fileName.endsWith(".html") || fileName.endsWith(".htm");
     }
 
     private String adjustRoot(String basePath) {
@@ -295,8 +378,11 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
                 .collect(Collectors.toList());
     }
 
-    public static void staticResources(Set<String> knownFiles) {
-        NotFoundExceptionMapper.staticResources = knownFiles.stream().sorted().collect(Collectors.toList());
+    public static void staticResources(Set<String> knownRoots) {
+        NotFoundExceptionMapper.staticResouceRoots = new HashSet<>();
+        for (String i : knownRoots) {
+            staticResouceRoots.add(Paths.get(i));
+        }
     }
 
     public static void nonJaxRsClassNameToMethodPaths(Map<String, NonJaxRsClassMappings> nonJaxRsPaths) {

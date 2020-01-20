@@ -4,6 +4,8 @@ update_configs:
   - package_manager: "java:maven"
     directory: "/"
     update_schedule: "daily"
+    default_labels:
+      - "area/dependencies"
     allowed_updates:
       - match:
           update_type: "security"

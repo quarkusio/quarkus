@@ -2203,7 +2203,7 @@ we saw the production of a `ServiceStartBuildItem` in the previous section, and 
 <1> Produce a `ServiceStartBuildItem` to indicate that this is a service starting step that needs to run before the `StartupEvent` is sent.
 
 ==== Register Resources for Use in Native Image
-Not all configuration or resources can be consumed at build time. If you have classpath resources that the runtime needs to access, you need to inform the build phase that these resources need to be copied into the native image. This is done by producing one or more `NativeImageResourceBuildItem` or `NativeImageResourceBundleBuildItem` in the case of resource bundles. Examples of this are shown in this sample `registerNativeImageReources` build step:
+Not all configuration or resources can be consumed at build time. If you have classpath resources that the runtime needs to access, you need to inform the build phase that these resources need to be copied into the native image. This is done by producing one or more `NativeImageResourceBuildItem` or `NativeImageResourceBundleBuildItem` in the case of resource bundles. Examples of this are shown in this sample `registerNativeImageResources` build step:
 
 .Registering Resources and ResourceBundles
 [source,java]
@@ -2215,7 +2215,7 @@ public final class MyExtProcessor {
     BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle;
 
     @BuildStep
-    void registerNativeImageReources() {
+    void registerNativeImageResources() {
         resource.produce(new NativeImageResourceBuildItem("/security/runtime.keys")); //<1>
 
         resource.produce(new NativeImageResourceBuildItem(
@@ -2239,7 +2239,7 @@ but you also need to register each listed class for reflection so they can be in
 public final class MyExtProcessor {
 
     @BuildStep
-    void registerNativeImageReources(BuildProducer<ServiceProviderBuildItem> services) {
+    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> services) {
         String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
 
         // find out all the implementation classes listed in the service files
@@ -2269,7 +2269,7 @@ to inspect its fields and methods). If you need to do that, you can do it this w
 public final class MyExtProcessor {
 
     @BuildStep
-    void registerNativeImageReources(BuildProducer<NativeImageResourceBuildItem> resource,
+    void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resource,
                                      BuildProducer<ReflectiveClassBuildItem> reflectionClasses) {
         String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
 
@@ -2299,7 +2299,7 @@ public final class MyExtProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void registerNativeImageReources(RecorderContext recorderContext,
+    void registerNativeImageResources(RecorderContext recorderContext,
                                      SomeServiceRecorder recorder) {
         String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
 

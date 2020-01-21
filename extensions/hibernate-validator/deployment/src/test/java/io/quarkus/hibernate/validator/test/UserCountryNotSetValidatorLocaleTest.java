@@ -25,15 +25,18 @@ public class UserCountryNotSetValidatorLocaleTest {
                 @Override
                 public void run() {
                     userCountry = System.clearProperty("user.country");
+                    userLanguage = System.clearProperty("user.language");
                 }
             }).setAfterAllCustomizer(new Runnable() {
                 @Override
                 public void run() {
                     System.setProperty("user.country", userCountry);
+                    System.setProperty("user.language", userLanguage);
                 }
             });
 
     private static String userCountry;
+    private static String userLanguage;
 
     @Test
     public void testApplicationStarts() {

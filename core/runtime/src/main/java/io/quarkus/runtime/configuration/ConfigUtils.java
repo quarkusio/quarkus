@@ -130,5 +130,9 @@ public final class ConfigUtils {
         public String getName() {
             return "System properties";
         }
+
+        public int getOrdinal() {
+            return 400;
+        }
     }
 }

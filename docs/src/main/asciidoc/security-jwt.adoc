@@ -178,6 +178,7 @@ import java.security.Principal;
 
 import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -687,8 +688,8 @@ import java.util.ArrayList;
 
 import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
-import javax.json.JsonString;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -703,12 +704,12 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 /**
  * Version 3 of the TokenSecuredResource
  */
- @Path("/secured")
- @RequestScoped
+@Path("/secured")
+@RequestScoped
 public class TokenSecuredResourceV3 {
 
-     @Inject
-     JsonWebToken jwt;
+    @Inject
+    JsonWebToken jwt;
 
 ...
 
@@ -781,7 +782,9 @@ import java.util.Optional;
 
 import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
+import javax.json.JsonString;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -804,7 +807,7 @@ public class TokenSecuredResource {
     JsonWebToken jwt;
     @Inject // <1>
     @Claim(standard = Claims.birthdate) // <2>
-    Optional<String> birthdate; // <3>
+    Optional<JsonString> birthdate; // <3>
 
     ...
 
@@ -818,7 +821,7 @@ public class TokenSecuredResource {
 
         // If the JWT contains a birthdate claim, use the day of the month as a pick
         if (birthdate.isPresent()) { // <4>
-            String bdayString = birthdate.get(); <5>
+            String bdayString = birthdate.get().getString(); <5>
             LocalDate bday = LocalDate.parse(bdayString);
             numbers.add(bday.getDayOfMonth());
             remaining --;
@@ -835,7 +838,7 @@ public class TokenSecuredResource {
 ----
 <1> We use CDI `@Inject` along with...
 <2> an {mp-jwt} `@Claim(standard = Claims.birthdate)` qualifier to inject the `birthdate` claim directly as
-<3> an `Optional<String>` value.
+<3> an `Optional<JsonString>` value.
 <4> Now we check whether the injected `birthdate` field is present
 <5> and if it is, get its value.
 

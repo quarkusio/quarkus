@@ -609,11 +609,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-elytron-security-ldap-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-security-test-utils</artifactId>
                 <version>${project.version}</version>
                 <scope>test</scope>

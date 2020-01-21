@@ -96,3 +96,5 @@ update_configs:
           dependency_name: "org.testcontainers:junit-jupiter"
       - match:
           dependency_name: "org.mockito:mockito-core"
+      - match:
+          dependency_name: "org.awaitility:awaitility"

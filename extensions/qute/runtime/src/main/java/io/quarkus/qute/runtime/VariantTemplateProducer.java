@@ -3,6 +3,7 @@ package io.quarkus.qute.runtime;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,11 +51,12 @@ public class VariantTemplateProducer {
         }
         LOGGER.debugf("Initializing VariantTemplateProducer: %s", templateVariants);
 
-        templateVariants = new HashMap<>();
+        Map<String, TemplateVariants> templateVariants = new HashMap<>();
         for (Entry<String, List<String>> entry : variants.entrySet()) {
             TemplateVariants var = new TemplateVariants(initVariants(entry.getKey(), entry.getValue()), entry.getKey());
             templateVariants.put(entry.getKey(), var);
         }
+        this.templateVariants = Collections.unmodifiableMap(templateVariants);
     }
 
     @Typed(VariantTemplate.class)

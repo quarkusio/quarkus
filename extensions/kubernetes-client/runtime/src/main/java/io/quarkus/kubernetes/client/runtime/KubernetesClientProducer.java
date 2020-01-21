@@ -13,7 +13,7 @@ import io.quarkus.arc.DefaultBean;
 @ApplicationScoped
 public class KubernetesClientProducer {
 
-    private KubernetesClientBuildConfig buildConfig;
+    private volatile KubernetesClientBuildConfig buildConfig;
 
     @DefaultBean
     @Singleton

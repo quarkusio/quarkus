@@ -13,8 +13,8 @@ import io.quarkus.mongodb.ReactiveMongoClient;
 @ApplicationScoped
 public class MongoClientProducer {
 
-    private MongoClient client;
-    private ReactiveMongoClient reactiveMongoClient;
+    private volatile MongoClient client;
+    private volatile ReactiveMongoClient reactiveMongoClient;
 
     public void onStop(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event) {
         this.client.close();

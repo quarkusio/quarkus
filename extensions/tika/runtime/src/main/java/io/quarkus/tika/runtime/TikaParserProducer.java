@@ -9,7 +9,7 @@ import io.quarkus.tika.TikaParser;
 @ApplicationScoped
 public class TikaParserProducer {
 
-    private TikaParser parser;
+    private volatile TikaParser parser;
 
     void initialize(TikaParser parser) {
         this.parser = parser;

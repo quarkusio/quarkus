@@ -16,7 +16,7 @@ public class OidcTenantConfig {
      * For example, setting it to '20S' will let the adapter keep requesting the connection for up to 20 seconds.
      */
     @ConfigItem
-    public Optional<Duration> connectionDelay;
+    public Optional<Duration> connectionDelay = Optional.empty();
 
     /**
      * The base URL of the OpenID Connect (OIDC) server, for example, 'https://host:port/auth'.
@@ -25,46 +25,46 @@ public class OidcTenantConfig {
      * 'https://host:port/auth/realms/{realm}' where '{realm}' has to be replaced by the name of the Keycloak realm.
      */
     @ConfigItem
-    Optional<String> authServerUrl;
+    Optional<String> authServerUrl = Optional.empty();
     /**
      * Relative path of the RFC7662 introspection service.
      */
     @ConfigItem
-    Optional<String> introspectionPath;
+    Optional<String> introspectionPath = Optional.empty();
     /**
      * Relative path of the OIDC service returning a JWK set.
      */
     @ConfigItem
-    Optional<String> jwksPath;
+    Optional<String> jwksPath = Optional.empty();
     /**
      * Public key for the local JWT token verification.
      */
     @ConfigItem
-    Optional<String> publicKey;
+    Optional<String> publicKey = Optional.empty();
     /**
      * The client-id of the application. Each application has a client-id that is used to identify the application
      */
     @ConfigItem
-    Optional<String> clientId;
+    Optional<String> clientId = Optional.empty();
     /**
      * Configuration to find and parse a custom claim containing the roles information.
      */
     @ConfigItem
-    Roles roles;
+    Roles roles = new Roles();
     /**
      * Configuration how to validate the token claims.
      */
     @ConfigItem
-    Token token;
+    Token token = new Token();
     /**
      * Credentials which the OIDC adapter will use to authenticate to the OIDC server.
      */
     @ConfigItem
-    Credentials credentials;
+    Credentials credentials = new Credentials();
     /**
      * Different options to configure authorization requests
      */
-    Authentication authentication;
+    Authentication authentication = new Authentication();
 
     public Optional<Duration> getConnectionDelay() {
         return connectionDelay;
@@ -223,14 +223,14 @@ public class OidcTenantConfig {
          *
          */
         @ConfigItem
-        public Optional<String> redirectPath;
+        public Optional<String> redirectPath = Optional.empty();
 
         /**
          * List of scopes
          *
          */
         @ConfigItem
-        public Optional<List<String>> scopes;
+        public Optional<List<String>> scopes = Optional.empty();
 
         public Optional<String> getRedirectPath() {
             return redirectPath;
@@ -270,20 +270,20 @@ public class OidcTenantConfig {
          * Expected issuer 'iss' claim value
          */
         @ConfigItem
-        public Optional<String> issuer;
+        public Optional<String> issuer = Optional.empty();
 
         /**
          * Expected audience `aud` claim value which may be a string or an array of strings
          */
         @ConfigItem
-        public Optional<List<String>> audience;
+        public Optional<List<String>> audience = Optional.empty();
 
         /**
          * Name of the claim which contains a principal name. By default, the 'upn', 'preferred_username' and `sub` claims are
          * checked.
          */
         @ConfigItem
-        public Optional<String> principalClaim;
+        public Optional<String> principalClaim = Optional.empty();
 
         public Optional<String> getIssuer() {
             return issuer;

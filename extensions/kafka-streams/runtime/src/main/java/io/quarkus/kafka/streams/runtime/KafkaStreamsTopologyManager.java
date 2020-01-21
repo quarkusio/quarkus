@@ -47,11 +47,11 @@ public class KafkaStreamsTopologyManager {
     private static final Logger LOGGER = Logger.getLogger(KafkaStreamsTopologyManager.class.getName());
 
     private final ExecutorService executor;
-    private KafkaStreams streams;
-    private KafkaStreamsRuntimeConfig runtimeConfig;
-    private Instance<Topology> topology;
-    private Properties properties;
-    private Map<String, Object> adminClientConfig;
+    private volatile KafkaStreams streams;
+    private volatile KafkaStreamsRuntimeConfig runtimeConfig;
+    private volatile Instance<Topology> topology;
+    private volatile Properties properties;
+    private volatile Map<String, Object> adminClientConfig;
 
     KafkaStreamsTopologyManager() {
         executor = null;

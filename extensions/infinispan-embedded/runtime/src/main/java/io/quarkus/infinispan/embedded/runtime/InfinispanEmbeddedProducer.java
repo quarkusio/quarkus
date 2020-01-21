@@ -25,7 +25,7 @@ import org.infinispan.transaction.lookup.JBossStandaloneJTAManagerLookup;
 @ApplicationScoped
 public class InfinispanEmbeddedProducer {
 
-    private InfinispanEmbeddedRuntimeConfig config;
+    private volatile InfinispanEmbeddedRuntimeConfig config;
 
     public void setRuntimeConfig(InfinispanEmbeddedRuntimeConfig config) {
         this.config = config;

@@ -120,9 +120,6 @@ class MainClassBuildStep {
 
         mv.invokeStaticMethod(MethodDescriptor.ofMethod(Timing.class, "staticInitStarted", void.class));
 
-        // ensure that the config class is initialized
-        mv.invokeStaticMethod(RunTimeConfigurationGenerator.C_ENSURE_INITIALIZED);
-
         // Init the LOG instance
         mv.writeStaticField(logField.getFieldDescriptor(), mv.invokeStaticMethod(
                 ofMethod(Logger.class, "getLogger", Logger.class, String.class), mv.load("io.quarkus.application")));

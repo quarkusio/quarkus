@@ -86,8 +86,6 @@ public final class RunTimeConfigurationGenerator {
             "buildTimeRunTimeDefaultsConfigSource", ConfigSource.class);
     public static final MethodDescriptor C_CREATE_RUN_TIME_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
             "createRunTimeConfig", void.class);
-    public static final MethodDescriptor C_ENSURE_INITIALIZED = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
-            "ensureInitialized", void.class);
     static final FieldDescriptor C_RUN_TIME_DEFAULTS_CONFIG_SOURCE = FieldDescriptor.of(CONFIG_CLASS_NAME,
             "runTimeDefaultsConfigSource", ConfigSource.class);
     static final MethodDescriptor C_READ_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "readConfig", void.class);
@@ -556,12 +554,6 @@ public final class RunTimeConfigurationGenerator {
                     // continue sweepLoop;
                     hasNext.continueScope(sweepLoop);
                 }
-            }
-
-            // generate ensure-initialized method
-            try (MethodCreator mc = cc.getMethodCreator(C_ENSURE_INITIALIZED)) {
-                mc.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
-                mc.returnValue(null);
             }
 
             // generate run time entry point

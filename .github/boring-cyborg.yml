@@ -70,6 +70,7 @@ labelPRBasedOnFilePath:
         - integration-tests/amazon-lambda-http-resteasy/**/*
     area/arc:
         - extensions/arc/**/*
+        - independent-projects/arc/**/*
     area/artemis:
         - extensions/artemis-core/**/*
         - extensions/artemis-jms/**/*
@@ -85,6 +86,10 @@ labelPRBasedOnFilePath:
         - .dependabot/config.yml
         - bom/**/*
         - build-parent/**/*
+    area/devtools:
+        - devtools/**/*
+        - independent-projects/bootstrap/**/*
+        - independent-projects/tools/**/*
     area/documentation:
         - docs/**/*
     area/gradle:

@@ -5,8 +5,6 @@ import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import org.jboss.logging.Logger;
-
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.security.credential.TokenCredential;
@@ -22,8 +20,6 @@ import io.vertx.ext.web.RoutingContext;
  */
 @ApplicationScoped
 public class OAuth2AuthMechanism implements HttpAuthenticationMechanism {
-
-    private static final Logger log = Logger.getLogger(OAuth2AuthMechanism.class);
 
     /**
      * Extract the Authorization header and validate the bearer token if it exists. If it does, and is validated, this

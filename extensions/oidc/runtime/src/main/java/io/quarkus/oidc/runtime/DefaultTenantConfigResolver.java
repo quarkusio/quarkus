@@ -20,9 +20,9 @@ public class DefaultTenantConfigResolver {
     @Inject
     Instance<TenantConfigResolver> tenantConfigResolver;
 
-    private Map<String, TenantConfigContext> tenantsConfig;
-    private TenantConfigContext defaultTenant;
-    private Function<OidcTenantConfig, TenantConfigContext> tenantConfigContextFactory;
+    private volatile Map<String, TenantConfigContext> tenantsConfig;
+    private volatile TenantConfigContext defaultTenant;
+    private volatile Function<OidcTenantConfig, TenantConfigContext> tenantConfigContextFactory;
 
     TenantConfigContext resolve(RoutingContext context) {
         if (tenantConfigResolver.isAmbiguous()) {

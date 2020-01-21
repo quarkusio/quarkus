@@ -15,9 +15,9 @@ import com.cronutils.model.CronType;
 @Singleton
 public class SchedulerSupport {
 
-    private ExecutorService executor;
-    private CronType cronType;
-    private List<ScheduledMethodMetadata> scheduledMethods;
+    private volatile ExecutorService executor;
+    private volatile CronType cronType;
+    private volatile List<ScheduledMethodMetadata> scheduledMethods;
 
     void initialize(SchedulerConfig config, List<ScheduledMethodMetadata> scheduledMethods, ExecutorService executor) {
         this.cronType = config.cronType;

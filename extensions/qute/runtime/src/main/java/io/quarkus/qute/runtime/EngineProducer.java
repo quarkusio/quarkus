@@ -44,12 +44,12 @@ public class EngineProducer {
     @Inject
     Event<EngineBuilder> event;
 
-    private Engine engine;
-    private List<String> tags;
+    private volatile Engine engine;
+    private volatile List<String> tags;
 
-    private List<String> suffixes;
-    private String basePath;
-    private String tagPath;
+    private volatile List<String> suffixes;
+    private volatile String basePath;
+    private volatile String tagPath;
 
     void init(QuteConfig config, List<String> resolverClasses, List<String> templatePaths, List<String> tags) {
         if (engine != null) {

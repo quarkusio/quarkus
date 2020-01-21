@@ -30,7 +30,7 @@ import io.vertx.ext.web.RoutingContext;
 public class KeycloakPolicyEnforcerAuthorizer
         implements HttpSecurityPolicy, BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> {
 
-    private KeycloakAdapterPolicyEnforcer delegate;
+    private volatile KeycloakAdapterPolicyEnforcer delegate;
 
     @Override
     public CompletionStage<CheckResult> checkPermission(RoutingContext request, SecurityIdentity identity,

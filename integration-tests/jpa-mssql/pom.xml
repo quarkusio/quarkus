@@ -189,6 +189,9 @@
                                     <name>microsoft/mssql-server-linux:2017-CU12</name>
                                     <alias>quarkus-test-mssqldb</alias>
                                     <run>
+                                        <network>
+                                            <mode>bridge</mode>
+                                        </network>
                                         <ports>
                                             <port>1433:1433</port>
                                         </ports>

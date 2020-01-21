@@ -1,6 +1,7 @@
 package io.quarkus.agroal.runtime;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 
 import io.agroal.api.configuration.AgroalConnectionFactoryConfiguration;
@@ -133,9 +134,7 @@ public class DataSourceRuntimeConfig {
 
     /**
      * General JDBC properties that can configured for a specific JDBC connection
-     *
-     * Should be comma separated, example: <property_name1>=<property_value1>,<property_name2>=<property_value2>
      */
     @ConfigItem
-    public Optional<String> additionalJdbcProperties;
+    public Map<String, String> additionalJdbcProperties;
 }

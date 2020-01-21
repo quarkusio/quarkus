@@ -9,7 +9,8 @@ include::./attributes.adoc[]
 
 This guide covers:
 
-* Connecting to a CloudSQL postgresql instance with quarkus-agroal and service account using CloudRun
+Connecting to a CloudSQL postgresql instance with quarkus-agroal and service account using CloudRun
+
 == Prerequisites
 
 For this guide you need:
@@ -17,7 +18,7 @@ For this guide you need:
 * roughly 1 hour
 * having access to an Google cloud platform project with owner rights.
 
-This guide will take as input an application developed in the link:datasource.adoc[datasource guide].
+This guide will take as input an application developed in the link:datasource[datasource guide].
 
 Make sure you have the application at hand working locally.
 
@@ -35,7 +36,7 @@ Google CloudSQL managed service allows 4 kinds of connection :
 . Using Cloud SQL Proxy
 . Using service account
 
-The first two don't need anymore details, simply connect to your database following the link:datasource.adoc[datasource guide].
+The first two don't need more details, simply connect to your database following the link:datasource[datasource guide].
 The third allows you to connect as if locally, but is not available for AppEngine or CloudRun where you only deploy one artifact.
 Please check link:https://cloud.google.com/sql/docs/postgres/external-connection-methods?hl=en[Connection options for external applications].
 
@@ -43,31 +44,20 @@ This guide will help you through the fourth possibility : connecting using servi
 
 == Adding necessary dependencies to your application.
 
-You will need to add the _Cloud SQL Postgres Socket Factory_ and postgresql driver dependencies.
+You will need to add the _Cloud SQL Postgres Socket Factory_ and the PostgreSQL JDBC driver extension.
 
 With maven :
 [source,xml, subs="attributes"]
 ----
-<!-- https://mvnrepository.com/artifact/com.google.cloud.sql/postgres-socket-factory -->
 <dependency>
     <groupId>com.google.cloud.sql</groupId>
     <artifactId>postgres-socket-factory</artifactId>
     <version>1.0.15</version>
 </dependency>
-<!-- https://mvnrepository.com/artifact/io.quarkus/quarkus-jdbc-postgresql -->
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-jdbc-postgresql</artifactId>
 </dependency>
-----
-
-With Gradle :
-[source,groovy, subs="attributes"]
-----
-// https://mvnrepository.com/artifact/com.google.cloud.sql/postgres-socket-factory
-compile group: 'com.google.cloud.sql', name: 'postgres-socket-factory', version: '1.0.15'
-// https://mvnrepository.com/artifact/io.quarkus/quarkus-jdbc-postgresql
-compile group: 'io.quarkus', name: 'quarkus-jdbc-postgresql', version: '1.1.1.Final'
 ----
 
 == Configuring the CloudSQL instance
@@ -87,10 +77,10 @@ quarkus.datasource.driver=org.postgresql.Driver
 quarkus.datasource.username = ${DB_USER}
 quarkus.datasource.password = ${DB_PASSWORD}
 quarkus.datasource.socket-factory=com.google.cloud.sql.postgres.SocketFactory
-quarkus.datasource.additional-jdbc-properties=cloud-sql-instance=project:zone:db-name
+quarkus.datasource.additional-jdbc-properties.cloudSqlInstance=project:zone:instance-name
 --
 
-NOTE: To set the environment variables(DB_NAME, DB_USER, DB_PASSWORD) when deploying to CloudRun there is an option  `ADD VARIABLE`
+NOTE: To set the environment variables (DB_NAME, DB_USER, DB_PASSWORD) when deploying to CloudRun there is an option  `ADD VARIABLE`
 
 WARNING: Don't forget to add your service account key to the deployed image, and to accept requests on the expected port
 

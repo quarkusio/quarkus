@@ -47,6 +47,9 @@ public class GcpDataSourceConfigTest {
                 "com.google.cloud.sql.postgres.SocketFactory");
         assertTrue(agroalConnectionFactoryConfiguration.jdbcProperties().containsKey("randomProperty"));
         assertEquals(agroalConnectionFactoryConfiguration.jdbcProperties().getProperty("randomProperty"), "myProperty");
+        assertTrue(agroalConnectionFactoryConfiguration.jdbcProperties().containsKey("cloudSqlInstance"));
+        assertEquals(agroalConnectionFactoryConfiguration.jdbcProperties().getProperty("cloudSqlInstance"),
+                "project:zone:db-name");
         assertEquals(username, agroalConnectionFactoryConfiguration.principal().getName());
         assertEquals(minSize, configuration.minSize());
         assertEquals(maxSize, configuration.maxSize());

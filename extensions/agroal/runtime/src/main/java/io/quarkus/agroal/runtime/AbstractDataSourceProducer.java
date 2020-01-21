@@ -4,8 +4,8 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.annotation.PreDestroy;
@@ -207,16 +207,10 @@ public abstract class AbstractDataSourceProducer {
                     dataSourceRuntimeConfig.socketFactory.get());
         }
 
-        if (dataSourceRuntimeConfig.additionalJdbcProperties.isPresent()) {
-            String generalProperties = dataSourceRuntimeConfig.additionalJdbcProperties.get();
-            List<String> properties = Arrays.asList(generalProperties.split(","));
-            for (String property : properties) {
-                String[] propertyData = property.split("=");
-                if (propertyData.length == 2) {
-                    agroalConnectionFactoryConfigurationSupplier.jdbcProperty(propertyData[0], propertyData[1]);
-                } else {
-                    log.warnv("Property {0} is not correctly formatted", property);
-                }
+        if (!dataSourceRuntimeConfig.additionalJdbcProperties.isEmpty()) {
+            Map<String, String> generalProperties = dataSourceRuntimeConfig.additionalJdbcProperties;
+            for (String propertyName : dataSourceRuntimeConfig.additionalJdbcProperties.keySet()) {
+                agroalConnectionFactoryConfigurationSupplier.jdbcProperty(propertyName, generalProperties.get(propertyName));
             }
         }
 

@@ -17,7 +17,7 @@ public class LocalesBuildTimeConfig {
      * <p>
      * For instance, the Hibernate Validator extension makes use of it.
      */
-    @ConfigItem(defaultValue = "${user.language}-${user.country}", defaultValueDocumentation = "Set containing the build system locale")
+    @ConfigItem(defaultValue = "${user.language}-${user.country:}", defaultValueDocumentation = "Set containing the build system locale")
     public Set<Locale> locales;
 
     /**
@@ -27,6 +27,6 @@ public class LocalesBuildTimeConfig {
      * <p>
      * For instance, the Hibernate Validator extension makes use of it.
      */
-    @ConfigItem(defaultValue = "${user.language}-${user.country}", defaultValueDocumentation = "Build system locale")
+    @ConfigItem(defaultValue = "${user.language}-${user.country:}", defaultValueDocumentation = "Build system locale")
     public Locale defaultLocale;
 }

@@ -10,7 +10,6 @@ import java.util.List;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.ClientRepresentation;
@@ -143,8 +142,7 @@ public class BearerTokenAuthorizationTest {
 
         for (String username : Arrays.asList("alice", "jdoe", "admin")) {
             RestAssured.given().auth().oauth2(getAccessToken(username))
-                    //#6608 .when().get("/api/users/preferredUserName")
-                    .when().get("/api/users/me")
+                    .when().get("/api/users/preferredUserName")
                     .then()
                     .statusCode(200)
                     .body("userName", equalTo(username));
@@ -152,7 +150,6 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
-    @Disabled("This test expects that a principal claim 'email' is used but sometimes a 'preferred_username' claim is returned")
     public void testSecureAccessSuccessCustomPrincipal() {
         for (String username : Arrays.asList("alice", "jdoe", "admin")) {
             RestAssured.given().auth().oauth2(getAccessToken(username))
@@ -167,8 +164,7 @@ public class BearerTokenAuthorizationTest {
     public void testSecureAccessSuccessPreferredUsername() {
         for (String username : Arrays.asList("alice", "jdoe", "admin")) {
             RestAssured.given().auth().oauth2(getAccessToken(username))
-                    .when().get("/api/users/me")
-                    //#6608 .when().get("/api/users/preferredUserName")
+                    .when().get("/api/users/preferredUserName")
                     .then()
                     .statusCode(200)
                     .body("userName", equalTo(username));

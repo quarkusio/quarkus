@@ -40,6 +40,8 @@ public class ApplicationYamlTest {
     @Test
     public void testBasicApplicationYaml() {
         assertEquals("something", ConfigProvider.getConfig().getValue("foo.bar", String.class));
+        assertEquals("somethingElse", ConfigProvider.getConfig().getValue("foo2.bar", String.class));
+        assertEquals("other", ConfigProvider.getConfig().getValue("foo.baz", String.class));
         assertTrue(ConfigProvider.getConfig().getValue("file.system", Boolean.class).booleanValue());
     }
 

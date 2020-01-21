@@ -625,6 +625,11 @@ quarkus:
     password: quarkus
 ----
 
+[NOTE]
+====
+Quarkus also supports using `application.yml` as the name of the YAML file. The same rules apply for this file as for `application.yaml`.
+====
+
 === Profile dependent configuration
 
 Providing profile dependent configuration with YAML is done like with properties.

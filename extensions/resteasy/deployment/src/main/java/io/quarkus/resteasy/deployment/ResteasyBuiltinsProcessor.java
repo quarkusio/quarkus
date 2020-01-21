@@ -16,6 +16,7 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
@@ -26,11 +27,12 @@ import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
 import io.quarkus.resteasy.runtime.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
 import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
-import io.quarkus.undertow.deployment.StaticResourceFilesBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 
 public class ResteasyBuiltinsProcessor {
+
+    protected static final String META_INF_RESOURCES = "META-INF/resources";
 
     @BuildStep
     CapabilityBuildItem capability() {
@@ -76,17 +78,11 @@ public class ResteasyBuiltinsProcessor {
 
     @Record(STATIC_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
-    void addStaticResourcesExceptionMapper(StaticResourceFilesBuildItem paths, ExceptionMapperRecorder recorder) {
-        //limit to 1000 to not have to many files to display
-        Set<String> staticResources = paths.files.stream().filter(this::isHtmlFileName).limit(1000).collect(Collectors.toSet());
-        if (staticResources.isEmpty()) {
-            staticResources = paths.files.stream().limit(1000).collect(Collectors.toSet());
-        }
-        recorder.setStaticResource(staticResources);
-    }
-
-    private boolean isHtmlFileName(String fileName) {
-        return fileName.endsWith(".html") || fileName.endsWith(".htm");
+    void addStaticResourcesExceptionMapper(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            ExceptionMapperRecorder recorder) {
+        recorder.setStaticResourceRoots(applicationArchivesBuildItem.getAllApplicationArchives().stream()
+                .map(i -> i.getArchiveRoot().resolve(META_INF_RESOURCES).toAbsolutePath().toString())
+                .collect(Collectors.toSet()));
     }
 
     @Record(STATIC_INIT)

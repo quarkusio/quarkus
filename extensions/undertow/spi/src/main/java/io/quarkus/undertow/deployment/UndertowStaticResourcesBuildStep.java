@@ -44,7 +44,6 @@ public class UndertowStaticResourcesBuildStep {
     void scanStaticResources(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<KnownPathsBuildItem> knownPathsBuilds,
-            BuildProducer<StaticResourceFilesBuildItem> staticResourceFiles,
             List<GeneratedWebResourceBuildItem> generatedWebResources,
             LaunchModeBuildItem launchModeBuildItem) throws Exception {
 
@@ -114,8 +113,6 @@ public class UndertowStaticResourcesBuildStep {
             //we don't need knownPaths in development mode
             //we serve directly from the project dir
             knownPathsBuilds.produce(new KnownPathsBuildItem(Collections.emptySet(), Collections.emptySet()));
-            //but we need files to display them in case of 404 in development mode
-            staticResourceFiles.produce(new StaticResourceFilesBuildItem(knownFiles));
         } else {
             knownPathsBuilds.produce(new KnownPathsBuildItem(knownFiles, knownDirectories));
         }

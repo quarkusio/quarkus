@@ -1,0 +1,53 @@
+package io.quarkus.hibernate.validator.test;
+
+import javax.inject.Inject;
+import javax.validation.ValidatorFactory;
+import javax.validation.constraints.Pattern;
+
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusUnitTest;
+
+public class UserCountryNotSetValidatorLocaleTest {
+
+    @Inject
+    ValidatorFactory validatorFactory;
+
+    @RegisterExtension
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClasses(Bean.class)
+            .addAsResource(new StringAsset("foo=bar"), "application.properties"))
+            .setBeforeAllCustomizer(new Runnable() {
+                @Override
+                public void run() {
+                    userCountry = System.clearProperty("user.country");
+                }
+            }).setAfterAllCustomizer(new Runnable() {
+                @Override
+                public void run() {
+                    System.setProperty("user.country", userCountry);
+                }
+            });
+
+    private static String userCountry;
+
+    @Test
+    public void testApplicationStarts() {
+        // we don't really need to test anything, just make sure that the application starts
+    }
+
+    static class Bean {
+
+        public Bean(String name) {
+            super();
+            this.name = name;
+        }
+
+        @Pattern(regexp = "A.*", message = "{pattern.message}")
+        private String name;
+    }
+}

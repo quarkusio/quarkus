@@ -11,9 +11,9 @@ import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
  * An implementation of JWTCallerPrincipal
  */
 public class OidcJwtCallerPrincipal extends DefaultJWTCallerPrincipal {
-    private JwtClaims claims;
-    private String principalClaim;
-    private TokenCredential credential;
+    private final JwtClaims claims;
+    private final String principalClaim;
+    private final TokenCredential credential;
 
     public OidcJwtCallerPrincipal(final JwtClaims claims, TokenCredential credential) {
         this(claims, credential, null);

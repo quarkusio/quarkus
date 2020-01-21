@@ -66,16 +66,6 @@ public class VaultProcessor {
                 .build();
     }
 
-    //    @BuildStep
-    //    void registerJacksonSerDeser(BuildProducer<JacksonModuleBuildItem> customSerDeser) {
-    //        customSerDeser.produce(
-    //                new JacksonModuleBuildItem.Builder("Base64StringModule")
-    //                        .add(Base64StringDeserializer.class.getName(),
-    //                                Base64StringSerializer.class.getName(),
-    //                                Base64String.class.getName())
-    //                        .build());
-    //    }
-
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void configure(VaultRecorder recorder, VaultRuntimeConfig serverConfig) {

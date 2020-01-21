@@ -13,10 +13,20 @@ public class FooResource {
     @ConfigProperty(name = "foo.bar")
     String fooBar;
 
+    @ConfigProperty(name = "foo.baz")
+    String fooBaz;
+
     @Path("foo")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public String get() {
+    public String getBar() {
         return fooBar;
+    }
+
+    @Path("foo2")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getBaz() {
+        return fooBaz;
     }
 }

@@ -46,9 +46,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 CompletableFuture<SecurityIdentity> result = new CompletableFuture<>();
                 ContextAwareTokenCredential credential = (ContextAwareTokenCredential) request.getToken();
                 RoutingContext vertxContext = credential.getContext();
-                OidcTenantConfig config = tenantResolver.resolve(vertxContext).oidcConfig;
+                TenantConfigContext resolvedContext = tenantResolver.resolve(vertxContext);
+                OidcTenantConfig config = resolvedContext.oidcConfig;
 
-                tenantResolver.resolve(vertxContext).auth.decodeToken(request.getToken().getToken(),
+                resolvedContext.auth.decodeToken(request.getToken().getToken(),
                         new Handler<AsyncResult<AccessToken>>() {
                             @Override
                             public void handle(AsyncResult<AccessToken> event) {

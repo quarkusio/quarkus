@@ -46,7 +46,7 @@ This guide will help you through the fourth possibility : connecting using servi
 
 You will need to add the _Cloud SQL Postgres Socket Factory_ and the PostgreSQL JDBC driver extension.
 
-With maven :
+.Example dependencies using Maven
 [source,xml, subs="attributes"]
 ----
 <dependency>

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.Typed;
+import javax.enterprise.inject.spi.Bean;
 import javax.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -35,9 +37,19 @@ public class TypedTest {
         InstanceHandle<Stage> stage = container.instance(Stage.class);
         assertTrue(stage.isAvailable());
         assertEquals("produced", stage.get().id);
+        assertTrue(container.instance(MyOtherBean.class).isAvailable());
+        boolean found = false;
+        for (Bean<?> bean : container.beanManager().getBeans(Object.class)) {
+            InjectableBean<?> injectable = (InjectableBean<?>) bean;
+            if (injectable.getDeclaringBean() == null && injectable.getBeanClass().equals(MyOtherBean.class)) {
+                found = true;
+                break;
+            }
+        }
+        assertTrue(found, "MyOtherBean not found");
     }
 
-    @Typed // -> bean types = { Object.class }
+    @Typed // -> bean types = [Object.class]
     @Singleton
     static class MyBean {
 
@@ -47,9 +59,11 @@ public class TypedTest {
 
     }
 
+    @Typed(MyOtherBean.class) // -> bean types = [MyOtherBean.class, Object.class]
     @Singleton
     static class MyOtherBean {
 
+        // -> bean types = [Stage.class, Object.class]
         @Produces
         Stage myStage() {
             return new Stage("produced");
@@ -57,7 +71,7 @@ public class TypedTest {
 
     }
 
-    @Typed
+    @Typed // -> bean types = [Object.class]
     static class Stage {
 
         final String id;

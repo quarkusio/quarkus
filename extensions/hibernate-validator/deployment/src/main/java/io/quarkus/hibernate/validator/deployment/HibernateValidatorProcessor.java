@@ -26,6 +26,7 @@ import javax.validation.valueextraction.ValueExtractor;
 
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
 import org.hibernate.validator.messageinterpolation.AbstractMessageInterpolator;
+import org.hibernate.validator.spi.messageinterpolation.LocaleResolver;
 import org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy;
 import org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory;
 import org.jboss.jandex.AnnotationInstance;
@@ -57,12 +58,15 @@ import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
+import io.quarkus.runtime.LocalesBuildTimeConfig;
 
 class HibernateValidatorProcessor {
 
     private static final DotName CONSTRAINT_VALIDATOR_FACTORY = DotName
             .createSimple(ConstraintValidatorFactory.class.getName());
     private static final DotName MESSAGE_INTERPOLATOR = DotName.createSimple(MessageInterpolator.class.getName());
+    private static final DotName LOCALE_RESOLVER = DotName.createSimple(LocaleResolver.class.getName());
+
     private static final DotName TRAVERSABLE_RESOLVER = DotName.createSimple(TraversableResolver.class.getName());
     private static final DotName PARAMETER_NAME_PROVIDER = DotName.createSimple(ParameterNameProvider.class.getName());
     private static final DotName CLOCK_PROVIDER = DotName.createSimple(ClockProvider.class.getName());
@@ -78,6 +82,8 @@ class HibernateValidatorProcessor {
     private static final DotName VALID = DotName.createSimple(Valid.class.getName());
 
     private static final DotName REPEATABLE = DotName.createSimple(Repeatable.class.getName());
+
+    private LocalesBuildTimeConfig localesBuildTimeConfig;
 
     @BuildStep
     HotDeploymentWatchedFileBuildItem configFile() {
@@ -102,6 +108,8 @@ class HibernateValidatorProcessor {
             // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyContextLocaleResolver"));
         }
 
         // Do not remove the Bean Validation beans
@@ -112,7 +120,8 @@ class HibernateValidatorProcessor {
                         || beanInfo.hasType(MESSAGE_INTERPOLATOR) || beanInfo.hasType(TRAVERSABLE_RESOLVER)
                         || beanInfo.hasType(PARAMETER_NAME_PROVIDER) || beanInfo.hasType(CLOCK_PROVIDER)
                         || beanInfo.hasType(VALUE_EXTRACTOR) || beanInfo.hasType(SCRIPT_EVALUATOR_FACTORY)
-                        || beanInfo.hasType(GETTER_PROPERTY_SELECTION_STRATEGY);
+                        || beanInfo.hasType(GETTER_PROPERTY_SELECTION_STRATEGY)
+                        || beanInfo.hasType(LOCALE_RESOLVER);
             }
         }));
     }
@@ -212,7 +221,7 @@ class HibernateValidatorProcessor {
 
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
-                        recorder.initializeValidatorFactory(classesToBeValidated, shutdownContext)));
+                        recorder.initializeValidatorFactory(classesToBeValidated, shutdownContext, localesBuildTimeConfig)));
     }
 
     @BuildStep

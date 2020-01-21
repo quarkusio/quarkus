@@ -13,10 +13,19 @@
     <artifactId>quarkus-integration-test-hibernate-validator</artifactId>
     <name>Quarkus - Integration Tests - Hibernate Validator</name>
     <description>Module that contains Hibernate Validator/Bean Validation related tests</description>
+
+    <properties>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jsonb</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -25,12 +34,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
-        </dependency>
-
-        <!-- EL implementation -->
-        <dependency>
-           <groupId>org.glassfish</groupId>
-           <artifactId>jakarta.el</artifactId>
         </dependency>
 
         <!-- test dependencies -->

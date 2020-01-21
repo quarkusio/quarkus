@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -15,7 +16,10 @@ import javax.validation.Validator;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Digits;
 import javax.validation.constraints.Email;
+import javax.validation.constraints.Pattern;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -27,6 +31,7 @@ import org.hibernate.validator.constraints.Length;
 import io.quarkus.it.hibernate.validator.custom.MyOtherBean;
 import io.quarkus.it.hibernate.validator.injection.InjectedConstraintValidatorConstraint;
 import io.quarkus.it.hibernate.validator.injection.MyService;
+import io.quarkus.runtime.StartupEvent;
 
 @Path("/hibernate-validator/test")
 public class HibernateValidatorTestResource
@@ -43,6 +48,10 @@ public class HibernateValidatorTestResource
 
     @Inject
     ZipCodeService zipCodeResource;
+
+    public void testValidationOutsideOfResteasyContext(@Observes StartupEvent startupEvent) {
+        validator.validate(new MyOtherBean(null));
+    }
 
     @GET
     @Path("/basic-features")
@@ -176,6 +185,31 @@ public class HibernateValidatorTestResource
         return result.build();
     }
 
+    @GET
+    @Path("/test-validation-message-locale/{id}/")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response testValidationMessageLocale(
+            @Pattern(regexp = "A.*", message = "{pattern.message}") @PathParam("id") String id) {
+        return Response.accepted().build();
+    }
+
+    @POST
+    @Path("/test-manual-validation-message-locale")
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public String testManualValidationMessageLocale(MyLocaleTestBean test) {
+        Set<ConstraintViolation<MyLocaleTestBean>> violations = validator.validate(test);
+
+        ResultBuilder result = new ResultBuilder();
+        if (!violations.isEmpty()) {
+            result.append(formatViolations(violations));
+        } else {
+            result.append(formatViolations(Collections.emptySet()));
+        }
+
+        return result.build();
+    }
+
     private String formatViolations(Set<? extends ConstraintViolation<?>> violations) {
         if (violations.isEmpty()) {
             return "passed";
@@ -185,6 +219,11 @@ public class HibernateValidatorTestResource
                 .map(v -> v.getPropertyPath().toString() + " (" + v.getMessage() + ")")
                 .sorted()
                 .collect(Collectors.joining(", "));
+    }
+
+    public static class MyLocaleTestBean {
+        @Pattern(regexp = "A.*", message = "{pattern.message}")
+        public String name;
     }
 
     public static class MyBean {

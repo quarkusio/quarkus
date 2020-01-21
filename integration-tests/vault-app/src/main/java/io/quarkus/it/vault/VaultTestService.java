@@ -66,7 +66,6 @@ public class VaultTestService {
         }
 
         String coucou = "coucou";
-        ClearData data = new ClearData(coucou);
         SigningInput input = new SigningInput(coucou);
         String keyName = "my-encryption-key";
         String ciphertext = transit.encrypt(keyName, coucou);

@@ -133,7 +133,7 @@ public class DataSourceRuntimeConfig {
     public Optional<String> socketFactory;
 
     /**
-     * General JDBC properties that can configured for a specific JDBC connection
+     * General properties that should be applied for a JDBC
      */
     @ConfigItem
     public Map<String, String> additionalJdbcProperties;

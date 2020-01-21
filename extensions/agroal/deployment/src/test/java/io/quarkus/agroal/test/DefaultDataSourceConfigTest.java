@@ -59,6 +59,15 @@ public class DefaultDataSourceConfigTest {
         assertTrue(agroalConnectionFactoryConfiguration.trackJdbcResources());
         assertTrue(dataSource.getConfiguration().metricsEnabled());
         assertEquals(newConnectionSql, agroalConnectionFactoryConfiguration.initialSql());
+        assertTrue(agroalConnectionFactoryConfiguration.jdbcProperties().containsKey("socketFactory"));
+        assertEquals(agroalConnectionFactoryConfiguration.jdbcProperties().getProperty("socketFactory"),
+                "pass socket factory provider as jdbc property");
+        assertTrue(agroalConnectionFactoryConfiguration.jdbcProperties().containsKey("extraProperty1"));
+        assertEquals(agroalConnectionFactoryConfiguration.jdbcProperties().getProperty("extraProperty1"),
+                "extraProperty1Value");
+        assertTrue(agroalConnectionFactoryConfiguration.jdbcProperties().containsKey("extraProperty2"));
+        assertEquals(agroalConnectionFactoryConfiguration.jdbcProperties().getProperty("extraProperty2"),
+                "extraProperty2Value");
         try (Connection connection = dataSource.getConnection()) {
         }
     }

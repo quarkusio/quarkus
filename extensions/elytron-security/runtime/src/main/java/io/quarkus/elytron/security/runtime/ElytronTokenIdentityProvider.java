@@ -27,7 +27,7 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 @ApplicationScoped
 public class ElytronTokenIdentityProvider implements IdentityProvider<TokenAuthenticationRequest> {
 
-    private static Logger log = Logger.getLogger(ElytronTokenIdentityProvider.class);
+    private static final Logger log = Logger.getLogger(ElytronTokenIdentityProvider.class);
 
     @Inject
     SecurityDomain domain;

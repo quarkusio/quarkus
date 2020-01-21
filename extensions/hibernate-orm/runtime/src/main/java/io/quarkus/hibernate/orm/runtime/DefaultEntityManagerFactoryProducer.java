@@ -5,11 +5,11 @@ import javax.inject.Singleton;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceUnit;
 
-@Singleton
 public class DefaultEntityManagerFactoryProducer {
 
     @Produces
     @PersistenceUnit
+    @Singleton
     EntityManagerFactory entityManagerFactory;
 
 }

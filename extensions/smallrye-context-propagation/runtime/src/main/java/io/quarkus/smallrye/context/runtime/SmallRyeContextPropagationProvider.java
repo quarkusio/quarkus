@@ -18,7 +18,7 @@ import io.smallrye.context.SmallRyeThreadContext;
 @ApplicationScoped
 public class SmallRyeContextPropagationProvider {
 
-    private SmallRyeManagedExecutor managedExecutor;
+    private volatile SmallRyeManagedExecutor managedExecutor;
 
     void initialize(ExecutorService executorService) {
         managedExecutor = new SmallRyeManagedExecutor(-1, -1, (SmallRyeThreadContext) getAllThreadContext(), executorService,

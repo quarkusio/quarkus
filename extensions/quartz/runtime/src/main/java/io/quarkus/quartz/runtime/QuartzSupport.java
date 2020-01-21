@@ -7,9 +7,9 @@ import javax.inject.Singleton;
 @Singleton
 public class QuartzSupport {
 
-    private QuartzRuntimeConfig runtimeConfig;
-    private QuartzBuildTimeConfig buildTimeConfig;
-    private Optional<String> driverDialect;
+    private volatile QuartzRuntimeConfig runtimeConfig;
+    private volatile QuartzBuildTimeConfig buildTimeConfig;
+    private volatile Optional<String> driverDialect;
 
     void initialize(QuartzRuntimeConfig runTimeConfig, QuartzBuildTimeConfig buildTimeConfig, Optional<String> driverDialect) {
         this.runtimeConfig = runTimeConfig;

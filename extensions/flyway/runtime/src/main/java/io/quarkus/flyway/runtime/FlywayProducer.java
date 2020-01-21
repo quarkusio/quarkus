@@ -18,8 +18,8 @@ public class FlywayProducer {
     @Default
     Instance<DataSource> defaultDataSource;
 
-    private FlywayRuntimeConfig flywayRuntimeConfig;
-    private FlywayBuildTimeConfig flywayBuildConfig;
+    private volatile FlywayRuntimeConfig flywayRuntimeConfig;
+    private volatile FlywayBuildTimeConfig flywayBuildConfig;
 
     @Produces
     @Dependent

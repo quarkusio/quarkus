@@ -193,9 +193,6 @@ public final class ValueResolvers {
     @SuppressWarnings("rawtypes")
     private static CompletionStage<Object> mapResolveAsync(EvalContext context) {
         Map map = (Map) context.getBase();
-        if (map.containsKey(context.getName())) {
-            return CompletableFuture.completedFuture(map.get(context.getName()));
-        }
         switch (context.getName()) {
             case "keys":
             case "keySet":
@@ -220,7 +217,8 @@ public final class ValueResolvers {
                     });
                 }
             default:
-                return Results.NOT_FOUND;
+                return map.containsKey(context.getName()) ? CompletableFuture.completedFuture(map.get(context.getName()))
+                        : Results.NOT_FOUND;
         }
     }
 

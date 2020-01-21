@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -55,6 +57,19 @@ public class TemplateExtensionMethodsTest {
     public void testMatchAnyWithParameter() {
         assertEquals("10=bing",
                 engine.getTemplate("any.txt").data("anyInt", 10).render());
+    }
+
+    @Test
+    public void testBuiltinExtensions() {
+        Map<String, String> map = new HashMap<String, String>();
+        map.put("alpha", "1");
+        map.put("bravo", "2");
+        map.put("charlie", "3");
+        assertEquals("3:1:NOT_FOUND:1:false:true",
+                engine.parse(
+                        "{myMap.size}:{myMap.alpha}:{myMap.missing}:{myMap.get(key)}:{myMap.empty}:{myMap.containsKey('charlie')}")
+                        .data("myMap", map).data("key", "alpha").render());
+
     }
 
     @TemplateExtension

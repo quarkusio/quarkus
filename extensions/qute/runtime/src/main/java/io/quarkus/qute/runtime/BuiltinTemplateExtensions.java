@@ -7,11 +7,12 @@ import java.util.Map;
 import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateExtension;
 
-public class DefaultTemplateExtensions {
+@TemplateExtension
+public class BuiltinTemplateExtensions {
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @TemplateExtension(matchName = ANY)
-    public static Object map(Map map, String name) {
+    static Object map(Map map, String name) {
         Object val = map.get(name);
         if (val != null) {
             return val;
@@ -27,13 +28,17 @@ public class DefaultTemplateExtensions {
             case "empty":
             case "isEmpty":
                 return map.isEmpty();
-            case "get":
-                return map.get(name);
-            case "containsKey":
-                return map.containsKey(name);
             default:
-                return Result.NOT_FOUND;
+                return map.getOrDefault(name, Result.NOT_FOUND);
         }
+    }
+
+    static Object get(Map<?, ?> map, Object key) {
+        return map.get(key);
+    }
+
+    static boolean containsKey(Map<?, ?> map, Object key) {
+        return map.containsKey(key);
     }
 
 }

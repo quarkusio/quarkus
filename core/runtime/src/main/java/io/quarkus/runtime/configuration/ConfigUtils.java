@@ -64,7 +64,7 @@ public final class ConfigUtils {
             sources.addAll(
                     new PropertiesConfigSourceProvider("WEB-INF/classes/META-INF/microprofile-config.properties", true,
                             classLoader).getConfigSources(classLoader));
-            sources.add(new EnvConfigSource());
+            sources.add(new EnvConfigSource(300));
             sources.add(new SysPropConfigSource());
             builder.withSources(sources.toArray(new ConfigSource[0]));
         }
@@ -88,6 +88,16 @@ public final class ConfigUtils {
 
     static final class EnvConfigSource implements ConfigSource {
         static final Pattern REP_PATTERN = Pattern.compile("[^a-zA-Z0-9_]");
+
+        private final int ordinal;
+
+        EnvConfigSource(final int ordinal) {
+            this.ordinal = ordinal;
+        }
+
+        public int getOrdinal() {
+            return ordinal;
+        }
 
         public Map<String, String> getProperties() {
             return Collections.emptyMap();
@@ -120,6 +130,10 @@ public final class ConfigUtils {
 
         public String getName() {
             return "System properties";
+        }
+
+        public int getOrdinal() {
+            return 400;
         }
     }
 }

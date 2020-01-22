@@ -32,5 +32,5 @@ steps:
     goals: 'install'
     mavenOptions: $(MAVEN_OPTS)
     jdkVersionOption: ${{ parameters.jdk }}
-    options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-dynamodb -Dtest-vault -Dtest-neo4j -Dno-format ${{ parameters.extra }}'
+    options: '-e -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-dynamodb -Dtest-vault -Dtest-neo4j -Dno-format ${{ parameters.extra }}'
 

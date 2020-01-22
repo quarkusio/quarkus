@@ -3,7 +3,6 @@ package io.quarkus.it.elytron.oauth2;
 import static org.hamcrest.Matchers.containsString;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -13,29 +12,36 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-class ElytronOauth2ExtensionResourceTestCase {
+public class ElytronOauth2ExtensionResourceTestCase {
 
     private static final String BEARER_TOKEN = "337aab0f-b547-489b-9dbd-a54dc7bdf20d";
 
-    private static WireMockServer wireMockServer = new WireMockServer();
+    private static WireMockServer wireMockServer;
 
-    @BeforeAll
-    static void start() {
+    private static void ensureStarted() {
+        if (wireMockServer != null) {
+            return;
+        }
+        wireMockServer = new WireMockServer();
         wireMockServer.start();
 
         // define the mock for the introspect endpoint
         WireMock.stubFor(WireMock.post("/introspect").willReturn(WireMock.aResponse()
                 .withBody(
                         "{\"active\":true,\"scope\":\"READER\",\"username\":null,\"iat\":1562315654,\"exp\":1562317454,\"expires_in\":1458,\"client_id\":\"my_client_id\"}")));
+
     }
 
     @AfterAll
-    static void stop() {
-        wireMockServer.stop();
+    public static void stop() {
+        if (wireMockServer != null) {
+            wireMockServer.stop();
+        }
     }
 
     @Test
-    void anonymous() {
+    public void anonymous() {
+        ensureStarted();
         RestAssured.given()
                 .when()
                 .get("/api/anonymous")
@@ -45,7 +51,8 @@ class ElytronOauth2ExtensionResourceTestCase {
     }
 
     @Test
-    void authenticated() {
+    public void authenticated() {
+        ensureStarted();
         RestAssured.given()
                 .when()
                 .header("Authorization", "Bearer: " + BEARER_TOKEN)
@@ -56,7 +63,8 @@ class ElytronOauth2ExtensionResourceTestCase {
     }
 
     @Test
-    void authenticated_not_authenticated() {
+    public void authenticated_not_authenticated() {
+        ensureStarted();
         RestAssured.given()
                 .when()
                 .get("/api/authenticated")
@@ -65,7 +73,8 @@ class ElytronOauth2ExtensionResourceTestCase {
     }
 
     @Test
-    void forbidden() {
+    public void forbidden() {
+        ensureStarted();
         RestAssured.given()
                 .when()
                 .header("Authorization", "Bearer: " + BEARER_TOKEN)
@@ -75,7 +84,8 @@ class ElytronOauth2ExtensionResourceTestCase {
     }
 
     @Test
-    void forbidden_not_authenticated() {
+    public void forbidden_not_authenticated() {
+        ensureStarted();
         RestAssured.given()
                 .when()
                 .get("/api/forbidden")

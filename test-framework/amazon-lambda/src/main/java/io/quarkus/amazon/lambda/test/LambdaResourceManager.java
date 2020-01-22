@@ -33,15 +33,15 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
             @Override
             public void handleRequest(HttpServerExchange exchange) throws Exception {
                 LambdaStartedNotifier.started = true;
-                LambdaClient.Request req = null;
+                Map.Entry<String, String> req = null;
                 while (req == null) {
                     req = LambdaClient.REQUEST_QUEUE.poll(100, TimeUnit.MILLISECONDS);
                     if (undertow == null || undertow.getWorker().isShutdown()) {
                         return;
                     }
                 }
-                exchange.addResponseHeader(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID, req.id);
-                exchange.writeAsync(req.json);
+                exchange.addResponseHeader(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID, req.getKey());
+                exchange.writeAsync(req.getValue());
             }
         });
         routingHandler.add("POST", AmazonLambdaApi.API_PATH_INVOCATION + "{req}" + AmazonLambdaApi.API_PATH_RESPONSE,
@@ -111,6 +111,7 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
                 .setHandler(new BlockingHandler(routingHandler))
                 .build();
         undertow.start();
+        System.setProperty(AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, "localhost:" + PORT);
         return Collections.singletonMap(AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, "localhost:" + PORT);
     }
 

@@ -63,6 +63,14 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.transaction:jboss-transaction-api_1.3_spec</excludedArtifact>
+                        <excludedArtifact>javax.transaction:jta</excludedArtifact>
+                        <excludedArtifact>javax.transaction:javax.transaction-api</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

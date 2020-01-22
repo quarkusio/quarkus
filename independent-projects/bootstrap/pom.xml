@@ -40,6 +40,7 @@
         <jakarta.inject-api.version>1.0</jakarta.inject-api.version>
         <commons-lang.version>3.9</commons-lang.version>
         <guava.version>27.0.1-jre</guava.version>
+        <asm.version>7.1</asm.version>
     </properties>
     <modules>
         <module>core</module>
@@ -47,6 +48,11 @@
     </modules>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm</artifactId>
+                <version>${asm.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>

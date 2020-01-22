@@ -22,6 +22,7 @@
                     <systemPropertyVariables>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
+                        <io.quarkus.arquillian.copy-fields>true</io.quarkus.arquillian.copy-fields>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->

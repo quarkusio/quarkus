@@ -48,7 +48,8 @@ public final class ConfigUtils {
         final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
         final ApplicationPropertiesConfigSource.InFileSystem inFileSystem = new ApplicationPropertiesConfigSource.InFileSystem();
         final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
-        builder.withSources(inFileSystem, inJar);
+        final ApplicationPropertiesConfigSource.MpConfigInJar mpConfig = new ApplicationPropertiesConfigSource.MpConfigInJar();
+        builder.withSources(inFileSystem, inJar, mpConfig);
         final ExpandingConfigSource.Cache cache = new ExpandingConfigSource.Cache();
         builder.withWrapper(ExpandingConfigSource.wrapper(cache));
         builder.withWrapper(DeploymentProfileConfigSource.wrapper());

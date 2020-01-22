@@ -25,7 +25,6 @@ dependencies {
     implementation "io.quarkus:quarkus-platform-descriptor-json:${version}"
     implementation "io.quarkus:quarkus-platform-descriptor-resolver-json:${version}"
     implementation "io.quarkus:quarkus-development-mode:${version}"
-    implementation "io.quarkus:quarkus-creator:${version}"
 
     testImplementation 'org.assertj:assertj-core:3.14.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.5.2'

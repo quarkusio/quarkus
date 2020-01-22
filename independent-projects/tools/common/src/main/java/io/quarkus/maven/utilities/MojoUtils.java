@@ -184,19 +184,19 @@ public class MojoUtils {
         return String.format("%s:%s", d.getGroupId(), d.getArtifactId());
     }
 
-    public static boolean checkProjectForMavenBuildPlugin(MavenProject project) {
+    public static Plugin checkProjectForMavenBuildPlugin(MavenProject project) {
         for (Plugin plugin : project.getBuildPlugins()) {
             if (plugin.getGroupId().equals("io.quarkus")
                     && plugin.getArtifactId().equals("quarkus-maven-plugin")) {
                 for (PluginExecution pluginExecution : plugin.getExecutions()) {
                     if (pluginExecution.getGoals().contains("build")) {
-                        return true;
+                        return plugin;
                     }
                 }
             }
         }
 
-        return false;
+        return null;
     }
 
     /**

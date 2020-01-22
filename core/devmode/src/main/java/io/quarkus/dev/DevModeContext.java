@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import io.quarkus.bootstrap.model.AppModel;
+
 /**
  * Object that is used to pass context data from the plugin doing the invocation
  * into the dev mode process using java serialization.
@@ -29,10 +31,12 @@ public class DevModeContext implements Serializable {
     private final List<File> classesRoots = new ArrayList<>();
     private File frameworkClassesDir;
     private File cacheDir;
+    private File projectDir;
     private boolean test;
     private boolean abortOnFailedStart;
     // the jar file which is used to launch the DevModeMain
     private File devModeRunnerJarFile;
+    private boolean localProjectDiscovery = true;
 
     private List<String> compilerOptions;
     private String sourceJavaVersion;
@@ -40,6 +44,17 @@ public class DevModeContext implements Serializable {
 
     private List<String> compilerPluginArtifacts;
     private List<String> compilerPluginsOptions;
+
+    private AppModel appModel;
+
+    public boolean isLocalProjectDiscovery() {
+        return localProjectDiscovery;
+    }
+
+    public DevModeContext setLocalProjectDiscovery(boolean localProjectDiscovery) {
+        this.localProjectDiscovery = localProjectDiscovery;
+        return this;
+    }
 
     public List<URL> getClassPath() {
         return classPath;
@@ -147,6 +162,24 @@ public class DevModeContext implements Serializable {
 
     public void setDevModeRunnerJarFile(final File devModeRunnerJarFile) {
         this.devModeRunnerJarFile = devModeRunnerJarFile;
+    }
+
+    public File getProjectDir() {
+        return projectDir;
+    }
+
+    public DevModeContext setProjectDir(File projectDir) {
+        this.projectDir = projectDir;
+        return this;
+    }
+
+    public AppModel getAppModel() {
+        return appModel;
+    }
+
+    public DevModeContext setAppModel(AppModel appModel) {
+        this.appModel = appModel;
+        return this;
     }
 
     public static class ModuleInfo implements Serializable {

@@ -40,6 +40,7 @@ public class RequiredClaimsUnitTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
+                    .addAsResource("publicKey.pem")
                     .addAsResource("application.properties"));
 
     @BeforeEach

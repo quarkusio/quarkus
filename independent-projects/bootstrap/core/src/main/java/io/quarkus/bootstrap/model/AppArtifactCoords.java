@@ -1,5 +1,7 @@
 package io.quarkus.bootstrap.model;
 
+import java.io.Serializable;
+
 import io.quarkus.bootstrap.BootstrapConstants;
 
 /**
@@ -7,7 +9,7 @@ import io.quarkus.bootstrap.BootstrapConstants;
  *
  * @author Alexey Loubyansky
  */
-public class AppArtifactCoords {
+public class AppArtifactCoords implements Serializable {
 
     public static final String TYPE_JAR = BootstrapConstants.JAR;
     public static final String TYPE_POM = BootstrapConstants.POM;
@@ -32,7 +34,7 @@ public class AppArtifactCoords {
     protected final String type;
     protected final String version;
 
-    protected AppArtifactKey key;
+    protected transient AppArtifactKey key;
 
     protected AppArtifactCoords(String[] parts) {
         groupId = parts[0];

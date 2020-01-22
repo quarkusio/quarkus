@@ -21,6 +21,7 @@ import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -28,11 +29,12 @@ import org.junit.runner.RunWith;
  * Tests injection of parameter values into @Test methods.
  */
 @RunWith(Arquillian.class)
+@Ignore
 public class MethodParameterInjectionTest {
 
     @Deployment
     public static JavaArchive createTestArchive() {
-        return ShrinkWrap.create(JavaArchive.class);
+        return ShrinkWrap.create(JavaArchive.class).addClasses(AppScopedBean1.class, AppScopedBean2.class);
     }
 
     @Test

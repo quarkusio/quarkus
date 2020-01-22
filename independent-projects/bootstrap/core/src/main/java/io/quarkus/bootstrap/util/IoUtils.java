@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.util;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -143,4 +144,5 @@ public class IoUtils {
     public static void writeFile(Path file, String content) throws IOException {
         Files.write(file, content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
     }
+
 }

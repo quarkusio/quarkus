@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import io.quarkus.bootstrap.util.PropertyUtils;
 
@@ -27,16 +28,16 @@ import io.quarkus.bootstrap.util.PropertyUtils;
 public class BootstrapMavenOptions {
 
     public static Map<String, Object> parse(String cmdLine) {
-        if(cmdLine == null) {
+        if (cmdLine == null) {
             return Collections.emptyMap();
         }
         final String[] args = cmdLine.split("\\s+");
-        if(args.length == 0) {
+        if (args.length == 0) {
             return Collections.emptyMap();
         }
 
         final String mavenHome = PropertyUtils.getProperty("maven.home");
-        if(mavenHome == null) {
+        if (mavenHome == null) {
             return invokeParser(Thread.currentThread().getContextClassLoader(), args);
         }
 
@@ -45,16 +46,18 @@ public class BootstrapMavenOptions {
             throw new IllegalStateException("Maven lib dir does not exist: " + mvnLib);
         }
         final URL[] urls;
-        try {
-            final List<URL> list = Files.list(mvnLib).map(p -> {
+        try (Stream<Path> files = Files.list(mvnLib)) {
+            final List<URL> list = files.map(p -> {
                 try {
                     return p.toUri().toURL();
                 } catch (MalformedURLException e) {
                     throw new IllegalStateException("Failed to translate " + p + " to URL", e);
                 }
             }).collect(Collectors.toCollection(ArrayList::new));
+
             list.add(getClassOrigin(BootstrapMavenOptions.class).toUri().toURL());
             urls = list.toArray(new URL[list.size()]);
+
         } catch (Exception e) {
             throw new IllegalStateException("Failed to create a URL list out of " + mvnLib + " content", e);
         }
@@ -90,7 +93,7 @@ public class BootstrapMavenOptions {
 
     public String[] getOptionValues(String name) {
         final Object o = options.get(name);
-        return o == null ? null : (String[]) o;
+        return o == null ? null : o instanceof String ? new String[] { o.toString() } : (String[]) o;
     }
 
     public boolean isEmpty() {

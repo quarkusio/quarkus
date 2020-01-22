@@ -1,0 +1,1 @@
+io.quarkus.undertow.websockets.runtime.devmode.WebsocketHotReloadSetup

@@ -84,10 +84,10 @@ public class TestResourceManager {
                 throw new RuntimeException("Unable to stop Quarkus test resource " + testResource, e);
             }
         }
-        ConfigProviderResolver cpr = ConfigProviderResolver.instance();
         try {
+            ConfigProviderResolver cpr = ConfigProviderResolver.instance();
             cpr.releaseConfig(cpr.getConfig());
-        } catch (IllegalStateException ignored) {
+        } catch (Throwable ignored) {
         }
     }
 

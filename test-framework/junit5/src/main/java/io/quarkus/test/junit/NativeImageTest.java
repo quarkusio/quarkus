@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Annotation that indicates that this test should be run using a native image,
- * rather than in the JVM. This must also be combined with {@link QuarkusTestExtension}.
+ * rather than in the JVM.
  *
  * The standard usage pattern is expected to be a base test class that runs the
  * tests using the JVM version of Quarkus, with a subclass that extends the base
@@ -23,7 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *
  */
 @Target(ElementType.TYPE)
-@ExtendWith({ DisabledOnNativeImageCondition.class, QuarkusTestExtension.class })
+@ExtendWith({ DisabledOnNativeImageCondition.class, QuarkusTestExtension.class, NativeTestExtension.class })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface NativeImageTest {
 }

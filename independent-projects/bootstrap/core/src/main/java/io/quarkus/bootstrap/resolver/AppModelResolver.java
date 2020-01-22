@@ -78,6 +78,9 @@ public interface AppModelResolver {
      */
     AppModel resolveModel(AppArtifact root, List<AppDependency> deps) throws AppModelResolverException;
 
+    AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, AppArtifact managingProject)
+            throws AppModelResolverException;
+
     /**
      * Lists versions released later than the version of the artifact up to the version
      * specified or all the later versions in case the up-to-version is not provided.

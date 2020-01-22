@@ -15,6 +15,7 @@ public class AddNewSqlLoadScriptTestCase {
     static QuarkusDevModeTest runner = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("application.properties")
+                    .addAsResource("import.sql")
                     .addClasses(SqlLoadScriptTestResource.class, MyEntity.class));
 
     @Test

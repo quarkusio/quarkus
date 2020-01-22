@@ -12,6 +12,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.elytron.security.runtime.DefaultRoleDecoder;
 import io.quarkus.elytron.security.runtime.ElytronPasswordIdentityProvider;
@@ -100,8 +101,8 @@ class ElytronDeploymentProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void registerPasswordProvider(ElytronRecorder recorder) {
-        recorder.registerPasswordProvider();
+    public void registerPasswordProvider(ElytronRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem) {
+        recorder.registerPasswordProvider(shutdownContextBuildItem);
     }
 
     @BuildStep

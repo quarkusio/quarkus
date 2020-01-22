@@ -308,7 +308,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
             BeanProcessor.Builder beanProcessorBuilder = BeanProcessor.builder()
                     .setName(testClass.getSimpleName())
-                    .setIndex(BeanArchives.buildBeanArchiveIndex(index));
+                    .setIndex(BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(), index));
             if (!resourceAnnotations.isEmpty()) {
                 beanProcessorBuilder.addResourceAnnotations(resourceAnnotations.stream()
                         .map(c -> DotName.createSimple(c.getName()))

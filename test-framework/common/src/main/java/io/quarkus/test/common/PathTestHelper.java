@@ -5,6 +5,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -105,12 +106,25 @@ public final class PathTestHelper {
                 .orElseThrow(() -> new IllegalStateException("Unable to translate path for " + testClass.getName()));
     }
 
-    public static boolean isTestClass(String className, ClassLoader classLoader) {
+    public static boolean isTestClass(String className, ClassLoader classLoader, Path testLocation) {
         String classFileName = className.replace('.', File.separatorChar) + ".class";
         URL resource = classLoader.getResource(classFileName);
-        return resource != null
-                && resource.getProtocol().startsWith("file")
-                && isInTestDir(resource);
+        if (resource == null) {
+            return false;
+        }
+        if (Files.isDirectory(testLocation)) {
+            return resource.getProtocol().startsWith("file") && isInTestDir(resource);
+        }
+        if (!resource.getProtocol().equals("jar")) {
+            return false;
+        }
+        String path = resource.getPath();
+        if (!path.startsWith("file:")) {
+            return false;
+        }
+        path = path.substring(5, path.lastIndexOf('!'));
+
+        return testLocation.equals(Paths.get(path));
     }
 
     private static boolean isInTestDir(URL resource) {

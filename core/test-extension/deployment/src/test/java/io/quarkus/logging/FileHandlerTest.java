@@ -22,6 +22,7 @@ public class FileHandlerTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-file-output-log.properties")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(LoggingTestsHelper.class)
                     .addAsManifestResource("application.properties", "microprofile-config.properties"));
 
     @Test

@@ -1,9 +1,10 @@
 package io.quarkus.maven;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
-import org.apache.maven.artifact.Artifact;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -18,14 +19,11 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppModel;
-import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.CuratedApplicationCreator;
-import io.quarkus.creator.phase.generateconfig.GenerateConfigTask;
+import io.quarkus.runner.bootstrap.GenerateConfigTask;
 
 /**
  * Generates an example application-config.properties, with all properties commented out
@@ -95,49 +93,41 @@ public class GenerateConfigMojo extends AbstractMojo {
             getLog().info("Type of the artifact is POM, skipping generate-config goal");
             return;
         }
-
-        final Artifact projectArtifact = project.getArtifact();
-        final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
-                projectArtifact.getClassifier(), "pom",
-                projectArtifact.getVersion());
-        final AppModel appModel;
-        final BootstrapAppModelResolver modelResolver;
-        try {
-            LocalProject localProject = LocalProject.load(project.getBasedir().toPath());
-            modelResolver = new BootstrapAppModelResolver(
-                    MavenArtifactResolver.builder()
-                            .setRepositorySystem(repoSystem)
-                            .setRepositorySystemSession(repoSession)
-                            .setRemoteRepositories(repos)
-                            .setWorkspace(localProject.getWorkspace())
-                            .build());
-            appModel = modelResolver.resolveModel(appArtifact);
-        } catch (Exception e) {
-            throw new MojoExecutionException("Failed to resolve application model " + appArtifact + " dependencies", e);
-        }
         if (project.getResources().isEmpty()) {
             throw new MojoExecutionException("No resources directory, cannot create application.properties");
         }
 
-        Resource res = project.getResources().get(0);
-        File target = new File(res.getDirectory());
+        try {
+            MavenArtifactResolver resolver = MavenArtifactResolver.builder()
+                    .setRepositorySystem(repoSystem)
+                    .setRepositorySystemSession(repoSession)
+                    .setRemoteRepositories(repos)
+                    .build();
 
-        String name = file;
-        if (name == null || name.isEmpty()) {
-            name = "application.properties.example";
-        }
+            try (CuratedApplication curatedApplication = QuarkusBootstrap
+                    .builder(Paths.get(project.getBuild().getOutputDirectory()))
+                    .setMavenArtifactResolver(resolver)
+                    .setProjectRoot(project.getBasedir().toPath())
+                    .setBaseClassLoader(getClass().getClassLoader())
+                    .setBuildSystemProperties(project.getProperties())
+                    .build().bootstrap()) {
 
-        try (CuratedApplicationCreator appCreationContext = CuratedApplicationCreator.builder()
-                // configure the build phases we want the app to go through
-                .setWorkDir(buildDir.toPath())
-                .setModelResolver(modelResolver)
-                .setAppArtifact(appModel.getAppArtifact())
-                .build()) {
+                Resource res = project.getResources().get(0);
+                File target = new File(res.getDirectory());
 
-            appCreationContext.runTask(new GenerateConfigTask(new File(target, name).toPath()));
-            getLog().info("Generated config file " + name);
-        } catch (AppCreatorException e) {
-            throw new MojoExecutionException("Failed to generate config file", e);
+                String name = file;
+                if (name == null || name.isEmpty()) {
+                    name = "application.properties.example";
+                }
+                Path configFile = new File(target, name).toPath();
+                GenerateConfigTask generateConfigTask = new GenerateConfigTask(configFile);
+                generateConfigTask.run(curatedApplication);
+
+            } catch (Exception e) {
+                throw new MojoExecutionException("Failed to generate config file", e);
+            }
+        } catch (AppModelResolverException e) {
+            throw new RuntimeException(e);
         }
     }
 }

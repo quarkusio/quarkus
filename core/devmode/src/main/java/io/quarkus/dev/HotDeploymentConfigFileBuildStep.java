@@ -1,6 +1,7 @@
 package io.quarkus.dev;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import io.quarkus.deployment.annotations.BuildStep;
@@ -12,11 +13,12 @@ public class HotDeploymentConfigFileBuildStep {
     @BuildStep
     ServiceStartBuildItem setupConfigFileHotDeployment(List<HotDeploymentWatchedFileBuildItem> files) {
         // TODO: this should really be an output of the RuntimeRunner
-        RuntimeUpdatesProcessor processor = DevModeMain.runtimeUpdatesProcessor;
+        RuntimeUpdatesProcessor processor = IsolatedDevModeMain.runtimeUpdatesProcessor;
         if (processor != null) {
-            processor.setWatchedFilePaths(files.stream()
+            Map<String, Boolean> watchedFilePaths = files.stream()
                     .collect(Collectors.toMap(HotDeploymentWatchedFileBuildItem::getLocation,
-                            HotDeploymentWatchedFileBuildItem::isRestartNeeded)));
+                            HotDeploymentWatchedFileBuildItem::isRestartNeeded));
+            processor.setWatchedFilePaths(watchedFilePaths);
         }
         return null;
     }

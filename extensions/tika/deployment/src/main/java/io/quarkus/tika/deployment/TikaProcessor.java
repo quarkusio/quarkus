@@ -16,6 +16,7 @@ import org.apache.tika.detect.Detector;
 import org.apache.tika.detect.EncodingDetector;
 import org.apache.tika.parser.Parser;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -32,6 +33,7 @@ import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.tika.TikaParseException;
 import io.quarkus.tika.runtime.TikaConfiguration;
 import io.quarkus.tika.runtime.TikaParserParameter;
+import io.quarkus.tika.runtime.TikaParserProducer;
 import io.quarkus.tika.runtime.TikaRecorder;
 
 public class TikaProcessor {
@@ -51,6 +53,11 @@ public class TikaProcessor {
     }).collect(Collectors.toMap(kv -> kv[0], kv -> kv[1]));
 
     private TikaConfiguration config;
+
+    @BuildStep
+    AdditionalBeanBuildItem beans() {
+        return AdditionalBeanBuildItem.builder().addBeanClasses(TikaParserProducer.class).build();
+    }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)

@@ -25,6 +25,7 @@ public class JwtCookieUnitTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
+                    .addAsResource("publicKey.pem")
                     .addAsResource("applicationJwtCookie.properties", "application.properties"));
 
     @BeforeEach

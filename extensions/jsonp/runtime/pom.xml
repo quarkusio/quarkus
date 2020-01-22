@@ -29,6 +29,12 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>javax.json:javax.json-api</excludedArtifact>
+                        <excludedArtifact>org.glassfish:javax.json</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

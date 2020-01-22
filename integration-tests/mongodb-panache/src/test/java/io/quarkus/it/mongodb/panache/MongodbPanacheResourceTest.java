@@ -3,7 +3,6 @@ package io.quarkus.it.mongodb.panache;
 import static io.restassured.RestAssured.get;
 import static org.hamcrest.Matchers.is;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -14,10 +13,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 
-import org.jboss.logging.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,15 +21,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import de.flapdoodle.embed.mongo.MongodExecutable;
-import de.flapdoodle.embed.mongo.MongodStarter;
-import de.flapdoodle.embed.mongo.config.IMongodConfig;
-import de.flapdoodle.embed.mongo.config.MongodConfigBuilder;
-import de.flapdoodle.embed.mongo.config.Net;
-import de.flapdoodle.embed.mongo.distribution.Version;
-import de.flapdoodle.embed.process.runtime.Network;
 import io.quarkus.it.mongodb.panache.book.BookDetail;
 import io.quarkus.it.mongodb.panache.person.Person;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
@@ -42,34 +32,12 @@ import io.restassured.parsing.Parser;
 import io.restassured.response.Response;
 
 @QuarkusTest
+@QuarkusTestResource(MongoTestResource.class)
 class MongodbPanacheResourceTest {
-    private static final Logger LOGGER = Logger.getLogger(MongodbPanacheResourceTest.class);
     private static final TypeRef<List<BookDTO>> LIST_OF_BOOK_TYPE_REF = new TypeRef<List<BookDTO>>() {
     };
     private static final TypeRef<List<Person>> LIST_OF_PERSON_TYPE_REF = new TypeRef<List<Person>>() {
     };
-
-    private static MongodExecutable MONGO;
-
-    @BeforeAll
-    public static void startMongoDatabase() throws IOException {
-        Version.Main version = Version.Main.V4_0;
-        int port = 27018;
-        LOGGER.infof("Starting Mongo %s on port %s", version, port);
-        IMongodConfig config = new MongodConfigBuilder()
-                .version(version)
-                .net(new Net(port, Network.localhostIsIPv6()))
-                .build();
-        MONGO = MongodStarter.getDefaultInstance().prepare(config);
-        MONGO.start();
-    }
-
-    @AfterAll
-    public static void stopMongoDatabase() {
-        if (MONGO != null) {
-            MONGO.stop();
-        }
-    }
 
     @Test
     public void testBookEntity() {

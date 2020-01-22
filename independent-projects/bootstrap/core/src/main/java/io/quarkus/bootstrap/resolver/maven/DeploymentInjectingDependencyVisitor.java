@@ -19,6 +19,7 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
+import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.util.ZipUtils;
 
@@ -40,16 +41,19 @@ public class DeploymentInjectingDependencyVisitor {
 
     private final MavenArtifactResolver resolver;
     private final List<Dependency> managedDeps;
+    private final List<Dependency> runtimeExtensionDeps = new ArrayList<>();
     private final List<RemoteRepository> mainRepos;
 
     boolean injectedDeps;
 
     private List<DependencyNode> runtimeNodes = new ArrayList<>();
+    private final AppModel.Builder appBuilder;
 
-    public DeploymentInjectingDependencyVisitor(MavenArtifactResolver resolver, List<Dependency> managedDeps, List<RemoteRepository> mainRepos) {
+    public DeploymentInjectingDependencyVisitor(MavenArtifactResolver resolver, List<Dependency> managedDeps, List<RemoteRepository> mainRepos, AppModel.Builder appBuilder) {
         this.resolver = resolver;
         this.managedDeps = managedDeps.isEmpty() ? new ArrayList<>() : managedDeps;
         this.mainRepos = mainRepos;
+        this.appBuilder = appBuilder;
     }
 
     public boolean isInjectedDeps() {
@@ -111,19 +115,24 @@ public class DeploymentInjectingDependencyVisitor {
             return;
         }
         final String value = rtProps.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
+        appBuilder.handleExtensionProperties(rtProps, node.getArtifact().toString());
         if(value == null) {
             return;
         }
-        if(value != null) {
-            Artifact deploymentArtifact = toArtifact(value);
-            if(deploymentArtifact.getVersion() == null || deploymentArtifact.getVersion().isEmpty()) {
-                deploymentArtifact = deploymentArtifact.setVersion(node.getArtifact().getVersion());
-            }
-            node.setData(QUARKUS_DEPLOYMENT_ARTIFACT, deploymentArtifact);
-            runtimeNodes.add(node);
-            managedDeps.add(new Dependency(node.getArtifact(), JavaScopes.COMPILE));
-            managedDeps.add(new Dependency(deploymentArtifact, JavaScopes.COMPILE));
+        Artifact deploymentArtifact = toArtifact(value);
+        if(deploymentArtifact.getVersion() == null || deploymentArtifact.getVersion().isEmpty()) {
+            deploymentArtifact = deploymentArtifact.setVersion(node.getArtifact().getVersion());
         }
+        node.setData(QUARKUS_DEPLOYMENT_ARTIFACT, deploymentArtifact);
+        runtimeNodes.add(node);
+        Dependency dependency = new Dependency(node.getArtifact(), JavaScopes.COMPILE);
+        managedDeps.add(dependency);
+        runtimeExtensionDeps.add(dependency);
+        managedDeps.add(new Dependency(deploymentArtifact, JavaScopes.COMPILE));
+    }
+
+    public List<Dependency> getRuntimeExtensionDeps() {
+        return runtimeExtensionDeps;
     }
 
     private void replaceWith(DependencyNode originalNode, DependencyNode newNode) throws BootstrapDependencyProcessingException {
@@ -145,7 +154,7 @@ public class DeploymentInjectingDependencyVisitor {
     private DependencyNode collectDependencies(Artifact artifact) throws BootstrapDependencyProcessingException {
         try {
             return managedDeps.isEmpty() ? resolver.collectDependencies(artifact, Collections.emptyList(), mainRepos).getRoot()
-                    : resolver.collectManagedDependencies(artifact, Collections.emptyList(), managedDeps, mainRepos).getRoot();
+                    : resolver.collectManagedDependencies(artifact, Collections.emptyList(), managedDeps, mainRepos, "test").getRoot();
         } catch (AppModelResolverException e) {
             throw new DeploymentInjectionException(e);
         }
@@ -182,7 +191,7 @@ public class DeploymentInjectingDependencyVisitor {
         return toArtifact(str, 0);
     }
 
-    private static Artifact toArtifact(String str, int offset) {
+    public static Artifact toArtifact(String str, int offset) {
         String groupId = null;
         String artifactId = null;
         String classifier = "";

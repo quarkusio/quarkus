@@ -13,7 +13,8 @@ import io.smallrye.reactive.streams.Engine;
 public class SmallRyeReactiveStreamsOperatorsProcessor {
 
     @BuildStep
-    public void build(BuildProducer<ServiceProviderBuildItem> serviceProvider, BuildProducer<FeatureBuildItem> feature) {
+    public void build(BuildProducer<ServiceProviderBuildItem> serviceProvider,
+            BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_REACTIVE_STREAMS_OPERATORS));
         serviceProvider.produce(new ServiceProviderBuildItem(ReactiveStreamsEngine.class.getName(), Engine.class.getName()));
         serviceProvider.produce(new ServiceProviderBuildItem(ReactiveStreamsFactory.class.getName(),

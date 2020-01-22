@@ -76,7 +76,7 @@ public class ApplicationArchiveBuildStep {
         }
     }
 
-    @BuildStep
+    @BuildStep(loadsApplicationClasses = true)
     ApplicationArchivesBuildItem build(ArchiveRootBuildItem root, ApplicationIndexBuildItem appindex,
             List<AdditionalApplicationArchiveMarkerBuildItem> appMarkers,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItem,

@@ -117,6 +117,12 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>javax.persistence:javax.persistence-api</excludedArtifact>
+                        <excludedArtifact>javax.persistence:persistence-api</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

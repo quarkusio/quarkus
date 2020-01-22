@@ -29,10 +29,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.quarkus.bootstrap.BootstrapConstants;
-
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 /**
  * Generates Quarkus extension descriptor for the runtime artifact.
@@ -51,7 +50,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     private static final String ARTIFACT_ID = "artifact-id";
 
     private static DefaultPrettyPrinter prettyPrinter = null;
-    
+
     /**
      * The entry point to Aether, i.e. the component doing all the work.
      *
@@ -91,9 +90,26 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter(required = true, defaultValue = "${project.build.outputDirectory}/META-INF/quarkus-extension.yaml")
     private File extensionFile;
 
-    
     @Parameter(defaultValue = "${project}")
     protected MavenProject project;
+
+    /**
+     * Artifacts that should never end up in the final build. Usually this should only be set if we know
+     * this extension provides a newer version of a given artifact that is under a different GAV. E.g. this
+     * can be used to make sure that the legacy javax API's are not included if an extension is using the new
+     * Jakarta version.
+     */
+    @Parameter
+    List<String> excludedArtifacts;
+
+    /**
+     * Artifacts that are always loaded parent first when running in dev or test mode. This is an advanced option
+     * and should only be used if you are sure that this is the correct solution for the use case.
+     *
+     * A possible example of this would be logging libraries, as these need to be loaded by the system class loader.
+     */
+    @Parameter
+    List<String> parentFirstArtifacts;
 
     @Override
     public void execute() throws MojoExecutionException {
@@ -104,6 +120,17 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         final Properties props = new Properties();
         props.setProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment);
         final Path output = outputDirectory.toPath().resolve(BootstrapConstants.META_INF);
+
+        if (parentFirstArtifacts != null && !parentFirstArtifacts.isEmpty()) {
+            String val = String.join(",", parentFirstArtifacts);
+            props.put(BootstrapConstants.PARENT_FIRST_ARTIFACTS, val);
+        }
+
+        if (excludedArtifacts != null && !excludedArtifacts.isEmpty()) {
+            String val = String.join(",", excludedArtifacts);
+            props.put(BootstrapConstants.EXCLUDED_ARTIFACTS, val);
+        }
+
         try {
             Files.createDirectories(output);
             try (BufferedWriter writer = Files
@@ -141,7 +168,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             mapper = getMapper(true);
             extObject = getMapper(true).createObjectNode();
         }
-        
+
         transformLegacyToNew(output, extObject, mapper);
 
         if (extObject.get("groupId") == null) {
@@ -239,20 +266,20 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
 
         extObject.set("metadata", metadata);
-        
-        
-    //   updateSourceFiles(output, extObject, mapper);
+
+        //   updateSourceFiles(output, extObject, mapper);
 
     }
 
-    /** parse yaml or json and then return jackson JSonNode for furhter processing 
+    /**
+     * parse yaml or json and then return jackson JSonNode for furhter processing
      * 
      ***/
     private ObjectNode processPlatformArtifact(Path descriptor, ObjectMapper mapper)
             throws IOException {
         try (InputStream is = Files.newInputStream(descriptor)) {
-                return mapper.readValue(is, ObjectNode.class);
-         } catch (IOException io) {
+            return mapper.readValue(is, ObjectNode.class);
+        } catch (IOException io) {
             throw new IOException("Failed to parse " + descriptor, io);
         }
     }
@@ -262,31 +289,11 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (yaml) {
             YAMLFactory yf = new YAMLFactory();
             return new ObjectMapper(yf)
-                   .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
+                    .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
         } else {
             return new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
-                    .enable(JsonParser.Feature.ALLOW_COMMENTS).enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS).setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);                
+                    .enable(JsonParser.Feature.ALLOW_COMMENTS).enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS)
+                    .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
         }
     }
-
-    private void updateSourceFiles(final Path output, ObjectNode extObject, ObjectMapper mapper) throws MojoExecutionException {
-        // TODO: remove before going to master
-        Path source = output
-                .resolve("../../../src/main/resources/META-INF/");
-        System.out.println("Try to save " + source);
-        if (source.toFile().exists()) {
-            try (BufferedWriter by = Files.newBufferedWriter(source.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME))) {
-
-                YAMLFactory yf = new YAMLFactory();
-                ObjectMapper ym = new ObjectMapper(yf).enable(SerializationFeature.INDENT_OUTPUT);
-                by.write(ym.writer(prettyPrinter).writeValueAsString(extObject));
-
-                //        source.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME).toFile().delete();
-            } catch (IOException e) {
-                throw new MojoExecutionException(
-                        "Failed to persist " + output.resolve(BootstrapConstants.EXTENSION_PROPS_JSON_FILE_NAME), e);
-            }
-        }
-    }
-
 }

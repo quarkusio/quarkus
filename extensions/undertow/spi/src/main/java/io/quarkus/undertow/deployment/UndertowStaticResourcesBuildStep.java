@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.stream.Stream;
 
 import io.quarkus.deployment.ApplicationArchive;
@@ -40,7 +41,7 @@ public class UndertowStaticResourcesBuildStep {
         }
     }
 
-    @BuildStep
+    @BuildStep(loadsApplicationClasses = true)
     void scanStaticResources(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<KnownPathsBuildItem> knownPathsBuilds,
@@ -73,22 +74,25 @@ public class UndertowStaticResourcesBuildStep {
                 }
             }
         }
-        Enumeration<URL> resources = getClass().getClassLoader().getResources(META_INF_RESOURCES);
+        Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(META_INF_RESOURCES);
         while (resources.hasMoreElements()) {
             URL url = resources.nextElement();
             if (url.getProtocol().equals("jar")) {
                 JarURLConnection jar = (JarURLConnection) url.openConnection();
-                Enumeration<JarEntry> entries = jar.getJarFile().entries();
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    if (entry.getName().startsWith(META_INF_RESOURCES_SLASH)) {
-                        String sub = entry.getName().substring(META_INF_RESOURCES_SLASH.length());
-                        if (!sub.isEmpty()) {
-                            if (entry.getName().endsWith("/")) {
-                                String dir = sub.substring(0, sub.length() - 1);
-                                knownDirectories.add(dir);
-                            } else {
-                                knownFiles.add(sub);
+                jar.setUseCaches(false);
+                try (JarFile jarFile = jar.getJarFile()) {
+                    Enumeration<JarEntry> entries = jarFile.entries();
+                    while (entries.hasMoreElements()) {
+                        JarEntry entry = entries.nextElement();
+                        if (entry.getName().startsWith(META_INF_RESOURCES_SLASH)) {
+                            String sub = entry.getName().substring(META_INF_RESOURCES_SLASH.length());
+                            if (!sub.isEmpty()) {
+                                if (entry.getName().endsWith("/")) {
+                                    String dir = sub.substring(0, sub.length() - 1);
+                                    knownDirectories.add(dir);
+                                } else {
+                                    knownFiles.add(sub);
+                                }
                             }
                         }
                     }

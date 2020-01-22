@@ -59,7 +59,7 @@ public class ServletWebFragmentXmlMergingTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(WebXmlServlet.class)
+                    .addClasses(WebXmlServlet.class, WebXmlFilter.class)
                     .addAsManifestResource(new StringAsset(WEB_FRAGMENT_XML), "web-fragment.xml")
                     .addAsManifestResource(new StringAsset(WEB_XML), "web.xml"));
 

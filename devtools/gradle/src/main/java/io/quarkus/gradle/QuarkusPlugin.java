@@ -74,6 +74,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     Task classesTask = tasks.getByName(JavaPlugin.CLASSES_TASK_NAME);
                     quarkusDev.dependsOn(classesTask);
                     quarkusBuild.dependsOn(classesTask, tasks.getByName(JavaPlugin.JAR_TASK_NAME));
+                    quarkusTestConfig.dependsOn(classesTask);
 
                     buildNative.dependsOn(tasks.getByName(BasePlugin.ASSEMBLE_TASK_NAME));
 

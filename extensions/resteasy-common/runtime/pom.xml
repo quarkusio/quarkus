@@ -53,6 +53,14 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>javax.ws.rs:javax.ws.rs-api</excludedArtifact>
+                        <excludedArtifact>javax.activation:javax.activation-api</excludedArtifact>
+                        <excludedArtifact>javax.activation:activation</excludedArtifact>
+                        <excludedArtifact>jakarta.ws.rs:jakarta.ws.rs-api</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

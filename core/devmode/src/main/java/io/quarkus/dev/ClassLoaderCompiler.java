@@ -5,15 +5,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
-import java.util.Arrays;
 import java.util.Deque;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,6 +22,9 @@ import java.util.jar.Manifest;
 import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.model.AppDependency;
 
 /**
  * Class that handles compilation of source files
@@ -44,32 +44,16 @@ public class ClassLoaderCompiler {
     private final Set<String> allHandledExtensions;
 
     public ClassLoaderCompiler(ClassLoader classLoader,
+            CuratedApplication application,
             List<CompilationProvider> compilationProviders,
             DevModeContext context)
             throws IOException {
         this.compilationProviders = compilationProviders;
 
         Set<URL> urls = new HashSet<>();
-        ClassLoader c = classLoader;
-        while (c != null) {
-            if (c instanceof URLClassLoader) {
-                urls.addAll(Arrays.asList(((URLClassLoader) c).getURLs()));
-            }
-            c = c.getParent();
+        for (AppDependency i : application.getAppModel().getUserDependencies()) {
+            urls.add(i.getArtifact().getPath().toUri().toURL());
         }
-        //this is pretty yuck, but under JDK11 the URLClassLoader trick does not work
-        Enumeration<URL> manifests = classLoader.getResources("META-INF/MANIFEST.MF");
-        while (manifests.hasMoreElements()) {
-            URL url = manifests.nextElement();
-            if (url.getProtocol().equals("jar")) {
-                String path = url.getPath();
-                if (path.startsWith("file:")) {
-                    path = path.substring(5, path.lastIndexOf('!'));
-                    urls.add(new File(URLDecoder.decode(path, StandardCharsets.UTF_8.name())).toURI().toURL());
-                }
-            }
-        }
-
         urls.addAll(context.getClassPath());
 
         Set<String> parsedFiles = new HashSet<>();

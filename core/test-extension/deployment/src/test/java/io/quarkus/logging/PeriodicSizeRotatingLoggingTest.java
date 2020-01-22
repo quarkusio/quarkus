@@ -22,6 +22,7 @@ public class PeriodicSizeRotatingLoggingTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-periodic-size-file-log-rotating.properties")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(LoggingTestsHelper.class)
                     .addAsManifestResource("application.properties", "microprofile-config.properties"))
             .setLogFileName("PeriodicSizeRotatingLoggingTest.log");
 

@@ -85,6 +85,15 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>org.jboss.spec.javax.servlet:jboss-servlet-api_4.0_spec</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</excludedArtifact>
+                        <excludedArtifact>org.jboss.spec.javax.servlet:jboss-servlet-api_3.0_spec</excludedArtifact>
+                        <excludedArtifact>javax.servlet:servlet-api</excludedArtifact>
+                        <excludedArtifact>javax.servlet:javax.servlet-api</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -352,7 +352,7 @@ public final class TestProcessor {
      * @param beanArchiveIndex - index of type information
      * @param testBeanProducer - producer for located Class<IConfigConsumer> bean types
      */
-    @BuildStep
+    @BuildStep(loadsApplicationClasses = true)
     @Record(STATIC_INIT)
     void scanForBeans(TestRecorder recorder, BeanArchiveIndexBuildItem beanArchiveIndex,
             BuildProducer<TestBeanBuildItem> testBeanProducer) {
@@ -365,7 +365,8 @@ public final class TestProcessor {
                         .stream()
                         .anyMatch(dotName -> dotName.equals(DotName.createSimple(IConfigConsumer.class.getName())));
                 if (isConfigConsumer) {
-                    Class<IConfigConsumer> beanClass = (Class<IConfigConsumer>) Class.forName(beanClassInfo.name().toString());
+                    Class<IConfigConsumer> beanClass = (Class<IConfigConsumer>) Class.forName(beanClassInfo.name().toString(),
+                            true, Thread.currentThread().getContextClassLoader());
                     testBeanProducer.produce(new TestBeanBuildItem(beanClass));
                     log.infof("The configured bean: %s", beanClass);
                 }

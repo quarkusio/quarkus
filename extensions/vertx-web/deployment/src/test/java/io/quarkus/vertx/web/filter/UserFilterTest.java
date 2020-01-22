@@ -25,7 +25,7 @@ public class UserFilterTest {
                     .addClasses(MyFilters.class));
 
     @Test
-    void test() {
+    public void test() {
         get("/").then().statusCode(200)
                 .header("X-Filter1", not(nullValue()))
                 .header("X-Filter2", not(nullValue()))

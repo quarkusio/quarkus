@@ -306,7 +306,7 @@ public class QuarkusDev extends QuarkusTask {
                 context.getModules().add(wsModuleInfo);
             }
 
-            for (AppDependency appDependency : appModel.getAllDependencies()) {
+            for (AppDependency appDependency : appModel.getFullDeploymentDeps()) {
                 if (!projectDependencies.contains(appDependency.getArtifact().getKey())) {
                     addToClassPaths(classPathManifest, context, appDependency.getArtifact().getPath().toFile());
                 }

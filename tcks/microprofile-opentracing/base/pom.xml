@@ -23,6 +23,8 @@
                         <suiteXmlFile>${project.basedir}/src/test/resources/tck-suite.xml</suiteXmlFile>
                     </suiteXmlFiles>
                     <systemPropertyVariables>
+                        <!-- These tests embed random imcompatible libraries in the deployment-->
+                        <io.quarkus.arquillian.skip-libraries>true</io.quarkus.arquillian.skip-libraries>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                     </systemPropertyVariables>

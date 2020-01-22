@@ -44,5 +44,5 @@ public class PolicyMappingConfig {
      *
      */
     @ConfigItem
-    public Optional<List<String>> paths;
+    public Optional<String[]> paths;
 }

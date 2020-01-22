@@ -1,6 +1,5 @@
 package io.quarkus.flyway.runtime;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -32,7 +31,7 @@ public final class FlywayDataSourceRuntimeConfig {
      * It will also be the one containing the schema history table.
      */
     @ConfigItem
-    public Optional<List<String>> schemas = Optional.empty();
+    public Optional<String[]> schemas = Optional.empty();
 
     /**
      * The name of Flyway's schema history table.

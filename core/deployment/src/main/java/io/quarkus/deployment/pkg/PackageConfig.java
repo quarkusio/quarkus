@@ -23,7 +23,7 @@ public class PackageConfig {
     /**
      * If the java runner should be packed as an uberjar
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean uberJar;
 
     /**

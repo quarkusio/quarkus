@@ -1,7 +1,6 @@
 package io.quarkus.flyway.runtime;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -18,7 +17,7 @@ public final class FlywayDataSourceBuildTimeConfig {
      */
     public static final FlywayDataSourceBuildTimeConfig defaultConfig() {
         FlywayDataSourceBuildTimeConfig defaultConfig = new FlywayDataSourceBuildTimeConfig();
-        defaultConfig.locations = Arrays.asList(DEFAULT_LOCATION);
+        defaultConfig.locations = Optional.of(new String[] { DEFAULT_LOCATION });
         return defaultConfig;
     }
 
@@ -32,5 +31,5 @@ public final class FlywayDataSourceBuildTimeConfig {
      * scanned recursively down non-hidden directories.
      */
     @ConfigItem(defaultValue = DEFAULT_LOCATION)
-    public List<String> locations;
+    public Optional<String[]> locations;
 }

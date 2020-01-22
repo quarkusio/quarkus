@@ -26,25 +26,25 @@ public class NativeConfig {
     /**
      * If the HTTPS url handler should be enabled, allowing you to do URL.openConnection() for HTTPS URLs
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enableHttpsUrlHandler;
 
     /**
      * If all security services should be added to the native image
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enableAllSecurityServices;
 
     /**
      * If JNI should be enabled
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enableJni;
 
     /**
      * If all character sets should be added to the native image. This increases image size
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean addAllCharsets;
 
     /**
@@ -68,14 +68,14 @@ public class NativeConfig {
     /**
      * If debug symbols should be included
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean debugSymbols;
 
     /**
      * If the native image build should wait for a debugger to be attached before running. This is an advanced option
      * and is generally only intended for those familiar with Substrate internals
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean debugBuildProcess;
 
     /**
@@ -87,7 +87,7 @@ public class NativeConfig {
     /**
      * If the native image server should be restarted
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean cleanupServer;
 
     /**
@@ -100,33 +100,33 @@ public class NativeConfig {
      * If a JVM based 'fallback image' should be created if native image fails. This is not recommended, as this is
      * functionally the same as just running the application in a JVM
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enableFallbackImages;
 
     /**
      * If the native image server should be used. This can speed up compilation but can result in changes not always
      * being picked up due to cache invalidation not working 100%
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enableServer;
 
     /**
      * If all META-INF/services entries should be automatically registered
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean autoServiceLoaderRegistration;
 
     /**
      * If the bytecode of all proxies should be dumped for inspection
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean dumpProxies;
 
     /**
      * If this build should be done using a container runtime. If this is set docker will be used by default,
      * unless container-runtime is also set.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean containerBuild;
 
     /**
@@ -151,7 +151,7 @@ public class NativeConfig {
     /**
      * If the resulting image should allow VM introspection
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enableVmInspection;
 
     /**
@@ -163,7 +163,7 @@ public class NativeConfig {
     /**
      * If reporting on call paths should be enabled
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enableReports;
 
     /**
@@ -176,6 +176,6 @@ public class NativeConfig {
      * If errors should be reported at runtime. This is a more relaxed setting, however it is not recommended as it means
      * your application may fail at runtime if an unsupported feature is used by accident.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean reportErrorsAtRuntime;
 }

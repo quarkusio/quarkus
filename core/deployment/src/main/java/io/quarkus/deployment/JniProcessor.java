@@ -26,8 +26,8 @@ public class JniProcessor {
         /**
          * Enable JNI support.
          */
-        @ConfigItem(defaultValue = "false")
-        boolean enable = false;
+        @ConfigItem
+        boolean enable;
     }
 
     @BuildStep

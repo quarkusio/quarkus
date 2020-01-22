@@ -617,13 +617,15 @@ public final class HibernateOrmProcessor {
                 hibernateConfig.jdbc.timezone.ifPresent(
                         timezone -> desc.getProperties().setProperty(AvailableSettings.JDBC_TIME_ZONE, timezone));
 
-                hibernateConfig.jdbc.statementFetchSize.ifPresent(
-                        fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_FETCH_SIZE,
-                                fetchSize.toString()));
+                if (hibernateConfig.jdbc.statementFetchSize.isPresent()) {
+                    desc.getProperties().setProperty(AvailableSettings.STATEMENT_FETCH_SIZE,
+                            String.valueOf(hibernateConfig.jdbc.statementFetchSize.getAsInt()));
+                }
 
-                hibernateConfig.jdbc.statementBatchSize.ifPresent(
-                        fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,
-                                fetchSize.toString()));
+                if (hibernateConfig.jdbc.statementBatchSize.isPresent()) {
+                    desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,
+                            String.valueOf(hibernateConfig.jdbc.statementBatchSize.getAsInt()));
+                }
 
                 // Logging
                 if (hibernateConfig.log.sql) {

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -410,8 +409,10 @@ public class VertxHttpRecorder {
                     serverOptions);
         }
 
-        for (String cipher : sslConfig.cipherSuites.orElse(Collections.emptyList())) {
-            serverOptions.addEnabledCipherSuite(cipher);
+        if (sslConfig.cipherSuites.isPresent()) {
+            for (String cipher : sslConfig.cipherSuites.get()) {
+                serverOptions.addEnabledCipherSuite(cipher);
+            }
         }
 
         for (String protocol : sslConfig.protocols) {

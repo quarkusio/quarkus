@@ -42,7 +42,7 @@ public class ConsoleConfig {
      * Note that this value will be ignored if an extension is present that takes
      * control of console formatting (e.g. an XML or JSON-format extension).
      */
-    @ConfigItem(defaultValue = "0")
+    @ConfigItem
     int darken;
 
     /**

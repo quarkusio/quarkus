@@ -106,9 +106,9 @@ public class ConfiguredBeanTest {
             throw new IllegalStateException(
                     "buildTimeConfig.optLongValue != 1234567893L; " + buildTimeConfig.allValues.optLongValue.getAsLong());
         }
-        if (buildTimeConfig.allValues.optionalLongValue.get() != 1234567894L) {
+        if (buildTimeConfig.allValues.optionalLongValue.getAsLong() != 1234567894L) {
             throw new IllegalStateException("buildTimeConfig.allValues.optionalLongValue != 1234567894L; "
-                    + buildTimeConfig.allValues.optionalLongValue.get());
+                    + buildTimeConfig.allValues.optionalLongValue.getAsLong());
         }
         if (buildTimeConfig.allValues.nestedConfigMap.size() != 2) {
             throw new IllegalStateException(
@@ -141,17 +141,17 @@ public class ConfiguredBeanTest {
         //quarkus.rt.all-values.ovo=configPart1+configPart2
         Assertions.assertEquals(new ObjectValueOf("configPart1", "configPart2"), runTimeConfig.allValues.ovo);
         // quarkus.rt.all-values.long-primitive=12345678911
-        Assertions.assertEquals(12345678911l, runTimeConfig.allValues.longPrimitive);
+        Assertions.assertEquals(12345678911L, runTimeConfig.allValues.longPrimitive);
         // quarkus.rt.all-values.long-value=12345678921
-        Assertions.assertEquals(12345678921l, runTimeConfig.allValues.longValue.longValue());
+        Assertions.assertEquals(12345678921L, runTimeConfig.allValues.longValue.longValue());
         // quarkus.rt.all-values.opt-long-value=12345678931
         Assertions.assertTrue(runTimeConfig.allValues.optLongValue.isPresent(),
                 "runTimeConfig.allValues.optLongValue.isPresent");
-        Assertions.assertEquals(12345678931l, runTimeConfig.allValues.optLongValue.getAsLong());
+        Assertions.assertEquals(12345678931L, runTimeConfig.allValues.optLongValue.getAsLong());
         // quarkus.rt.all-values.optional-long-value=12345678941
         Assertions.assertTrue(runTimeConfig.allValues.optionalLongValue.isPresent(),
                 "runTimeConfig.allValues.optionalLongValue.isPresent");
-        Assertions.assertEquals(12345678941l, runTimeConfig.allValues.optionalLongValue.get().longValue());
+        Assertions.assertEquals(12345678941L, runTimeConfig.allValues.optionalLongValue.getAsLong());
         // quarkus.btrt.all-values.double-primitive=3.1415926535897932384
         Assertions.assertEquals(3.1415926535897932384, runTimeConfig.allValues.doublePrimitive, 0.00000001);
         // quarkus.btrt.all-values.opt-double-value=3.1415926535897932384
@@ -228,7 +228,7 @@ public class ConfiguredBeanTest {
         // From config.xml
         Socket socket = new Socket("localhost", 12345);
         OutputStream os = socket.getOutputStream();
-        os.write("testRuntimeXmlConfigService\n".getBytes("UTF-8"));
+        os.write("testRuntimeXmlConfigService\n".getBytes(StandardCharsets.UTF_8));
         os.flush();
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {

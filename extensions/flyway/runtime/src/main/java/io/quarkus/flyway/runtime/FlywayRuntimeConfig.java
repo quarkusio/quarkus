@@ -9,7 +9,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(name = "flyway", phase = ConfigPhase.RUN_TIME)
 public final class FlywayRuntimeConfig {
-
     public static final FlywayRuntimeConfig defaultConfig() {
         return new FlywayRuntimeConfig();
     }

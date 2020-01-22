@@ -1,10 +1,8 @@
 package io.quarkus.vertx.http.runtime.cors;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 import io.vertx.core.Handler;
@@ -99,11 +97,9 @@ public class CORSFilter implements Handler<RoutingContext> {
 
             response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
 
-            final Optional<List<String>> exposedHeaders = corsConfig.exposedHeaders;
-
-            if (exposedHeaders.isPresent()) {
+            if (corsConfig.exposedHeaders.isPresent()) {
                 response.headers().set(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
-                        String.join(",", exposedHeaders.orElse(Collections.emptyList())));
+                        String.join(",", corsConfig.exposedHeaders.get()));
             }
 
             if (request.method().equals(HttpMethod.OPTIONS)) {

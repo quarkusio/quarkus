@@ -13,7 +13,7 @@ public class InfinispanClientBuildTimeConfig {
     /**
      * Sets the bounded entry count for near cache. If this value is 0 or less near cache is disabled.
      */
-    @ConfigItem(defaultValue = "0")
+    @ConfigItem
     public int nearCacheMaxEntries;
 
     @Override

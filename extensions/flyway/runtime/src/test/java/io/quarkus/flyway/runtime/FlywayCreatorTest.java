@@ -1,10 +1,9 @@
 package io.quarkus.flyway.runtime;
 
 import static java.util.Arrays.asList;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
@@ -34,22 +33,22 @@ class FlywayCreatorTest {
     @DisplayName("locations default matches flyway default")
     void testLocationsDefault() {
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(pathList(defaultConfig.getLocations()), pathList(createdFlywayConfig().getLocations()));
+        assertArrayEquals(pathList(defaultConfig.getLocations()), pathList(createdFlywayConfig().getLocations()));
     }
 
     @Test
     @DisplayName("locations carried over from configuration")
     void testLocationsOverridden() {
-        buildConfig.locations = Arrays.asList("db/migrations", "db/something");
+        buildConfig.locations = Optional.of(new String[] { "db/migrations", "db/something" });
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(buildConfig.locations, pathList(createdFlywayConfig().getLocations()));
+        assertArrayEquals(buildConfig.locations.get(), pathList(createdFlywayConfig().getLocations()));
     }
 
     @Test
     @DisplayName("not configured locations replaced by default")
     void testNotPresentLocationsOverridden() {
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(pathList(defaultConfig.getLocations()), pathList(createdFlywayConfig().getLocations()));
+        assertArrayEquals(pathList(defaultConfig.getLocations()), pathList(createdFlywayConfig().getLocations()));
     }
 
     @Test
@@ -122,9 +121,9 @@ class FlywayCreatorTest {
     @Test
     @DisplayName("schemas carried over from configuration")
     void testSchemasOverridden() {
-        runtimeConfig.schemas = Optional.of(Arrays.asList("TEST_SCHEMA_1", "TEST_SCHEMA_2"));
+        runtimeConfig.schemas = Optional.of(new String[] { "TEST_SCHEMA_1", "TEST_SCHEMA_2" });
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(runtimeConfig.schemas.get(), asList(createdFlywayConfig().getSchemas()));
+        assertArrayEquals(runtimeConfig.schemas.get(), createdFlywayConfig().getSchemas());
     }
 
     @Test
@@ -175,8 +174,11 @@ class FlywayCreatorTest {
         assertEquals(runtimeConfig.validateOnMigrate, expected);
     }
 
-    private static List<String> pathList(Location[] locations) {
-        return Stream.of(locations).map(Location::getPath).collect(Collectors.toList());
+    private static String[] pathList(Location[] locations) {
+        return Stream.of(locations)
+                .map(Location::getPath)
+                .collect(Collectors.toList())
+                .toArray(new String[0]);
     }
 
     private Configuration createdFlywayConfig() {

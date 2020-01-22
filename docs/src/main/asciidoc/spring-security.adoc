@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 include::./attributes.adoc[]
 :extension-status: preview
 
-While users are encouraged to use <<security.adoc#standard-security-annotations,Java standard annotations for security authorizations>>, Quarkus provides a compatibility layer for Spring Security in the form of the `spring-security` extension.
+While users are encouraged to use link:security#standard-security-annotations[Java standard annotations for security authorizations], Quarkus provides a compatibility layer for Spring Security in the form of the `spring-security` extension.
 
 This guide explains how a Quarkus application can leverage the well known Spring Security annotations to define authorizations on RESTful services using roles.
 
@@ -51,7 +51,7 @@ cd spring-security-quickstart
 
 This command generates a Maven project with a REST endpoint and imports the `spring-web`, `spring-security` and `security-properties-file` extensions.
 
-For more information about `security-properties-file` you can check the guide of link:security-properties[quarkus-elytron-security-properties-file] extension.
+For more information about `security-properties-file`, you can check out the guide of the link:security-properties[quarkus-elytron-security-properties-file] extension.
 
 == GreetingController
 
@@ -141,7 +141,7 @@ public class GreetingController {
 ----
 
 The easiest way to setup users and roles for our example is to use the `security-properties-file` extension. This extension essentially allows users and roles to be defined in the main Quarkus configuration file - `application.properties`.
-For more information about this extension check link:security-properties.adoc[the associated guide].
+For more information about this extension check link:security-properties[the associated guide].
 An example configuration would be the following:
 
 [source,properties]

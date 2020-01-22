@@ -50,6 +50,20 @@ public class HttpConfiguration {
     public int testSslPort;
 
     /**
+     * If this is true then the address, scheme etc will be set from headers forwarded by the proxy server, such as
+     * {@code X-Forwarded-For}. This should only be set if you are behind a proxy that sets these headers.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean proxyAddressForwarding;
+
+    /**
+     * If this is true and proxy address forwarding is enabled then the standard {@code Forwarded} header will be used,
+     * rather than the more common but not standard {@code X-Forwarded-For}.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean allowForwarded;
+
+    /**
      * The CORS config
      */
     public CORSConfig cors;

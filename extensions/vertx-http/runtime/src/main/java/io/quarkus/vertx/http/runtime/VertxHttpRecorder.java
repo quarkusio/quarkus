@@ -249,20 +249,32 @@ public class VertxHttpRecorder {
             });
         }
 
+        Handler<HttpServerRequest> root;
         if (rootPath.equals("/")) {
             if (hotReplacementHandler != null) {
                 router.route().order(-1).handler(hotReplacementHandler);
             }
-            rootHandler = router;
+            root = router;
         } else {
             Router mainRouter = Router.router(vertx.getValue());
             mainRouter.mountSubRouter(rootPath, router);
             if (hotReplacementHandler != null) {
                 mainRouter.route().order(-1).handler(hotReplacementHandler);
             }
-            rootHandler = mainRouter;
+            root = mainRouter;
         }
 
+        if (httpConfiguration.proxyAddressForwarding) {
+            Handler<HttpServerRequest> delegate = root;
+            root = new Handler<HttpServerRequest>() {
+                @Override
+                public void handle(HttpServerRequest event) {
+                    delegate.handle(new ForwardedServerRequestWrapper(event, httpConfiguration.allowForwarded));
+                }
+            };
+        }
+
+        rootHandler = root;
     }
 
     private static void doServerStart(Vertx vertx, HttpConfiguration httpConfiguration, LaunchMode launchMode,

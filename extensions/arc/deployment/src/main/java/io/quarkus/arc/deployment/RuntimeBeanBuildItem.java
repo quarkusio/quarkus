@@ -1,29 +1,38 @@
 package io.quarkus.arc.deployment;
 
 import java.lang.annotation.Annotation;
+import java.lang.annotation.Inherited;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.Dependent;
+import javax.enterprise.context.NormalScope;
 
+import org.jboss.jandex.DotName;
+
+import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
  * Represents a bean that can be easily produced through a recorder (or other runtime Supplier implementation)
+ * 
+ * @deprecated Use {@link SyntheticBeanBuildItem} instead
  */
+@Deprecated
 public final class RuntimeBeanBuildItem extends MultiBuildItem {
 
-    final String scope;
+    final ScopeInfo scope;
     final String type;
     final Supplier<Object> supplier;
     final RuntimeValue<?> runtimeValue;
     final NavigableMap<String, NavigableMap<String, Object>> qualifiers;
     final boolean removable;
 
-    RuntimeBeanBuildItem(String scope, String type, Supplier<Object> supplier,
+    RuntimeBeanBuildItem(ScopeInfo scope, String type, Supplier<Object> supplier,
             NavigableMap<String, NavigableMap<String, Object>> qualifiers, boolean removable,
             RuntimeValue<?> runtimeValue) {
         if (supplier != null && runtimeValue != null) {
@@ -38,7 +47,7 @@ public final class RuntimeBeanBuildItem extends MultiBuildItem {
     }
 
     public String getScope() {
-        return scope;
+        return scope.getDotName().toString();
     }
 
     public String getType() {
@@ -72,7 +81,7 @@ public final class RuntimeBeanBuildItem extends MultiBuildItem {
 
     public static class Builder {
 
-        String scope = Dependent.class.getName();
+        ScopeInfo scope = BuiltinScope.DEPENDENT.getInfo();
         boolean removable = true;
         final String type;
         Supplier<Object> supplier;
@@ -84,12 +93,16 @@ public final class RuntimeBeanBuildItem extends MultiBuildItem {
         }
 
         public Builder setScope(String scope) {
-            this.scope = scope;
+            DotName scopeName = DotName.createSimple(scope);
+            this.scope = Optional.ofNullable(BuiltinScope.from(scopeName)).map(BuiltinScope::getInfo)
+                    .orElse(new ScopeInfo(scopeName, false));
             return this;
         }
 
         public Builder setScope(Class<? extends Annotation> type) {
-            this.scope = type.getName();
+            DotName scopeName = DotName.createSimple(type.getName());
+            this.scope = Optional.ofNullable(BuiltinScope.from(scopeName)).map(BuiltinScope::getInfo).orElse(new ScopeInfo(
+                    scopeName, type.isAnnotationPresent(NormalScope.class), type.isAnnotationPresent(Inherited.class)));
             return this;
         }
 
@@ -127,6 +140,9 @@ public final class RuntimeBeanBuildItem extends MultiBuildItem {
         }
 
         public RuntimeBeanBuildItem build() {
+            if (supplier == null && value == null) {
+                throw new IllegalStateException("Either a supplier or a runtime value must be set");
+            }
             return new RuntimeBeanBuildItem(scope, type, supplier, qualifiers, removable, value);
         }
     }

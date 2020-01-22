@@ -13,7 +13,7 @@ import io.quarkus.panacheql.internal.HqlParserBaseVisitor;
 public class PanacheQlQueryBinder {
 
     public static String bindQuery(Class<?> clazz, String query, Object[] params) {
-        Map<String, String> replacementMap = MongoPropertyUtil.extractReplacementMap(clazz);
+        Map<String, String> replacementMap = MongoPropertyUtil.getReplacementMap(clazz);
 
         //shorthand query
         if (params.length == 1 && query.indexOf('?') == -1) {
@@ -31,7 +31,7 @@ public class PanacheQlQueryBinder {
     }
 
     public static String bindQuery(Class<?> clazz, String query, Map<String, Object> params) {
-        Map<String, String> replacementMap = MongoPropertyUtil.extractReplacementMap(clazz);
+        Map<String, String> replacementMap = MongoPropertyUtil.getReplacementMap(clazz);
 
         Map<String, Object> parameterMaps = new HashMap<>();
         for (Map.Entry<String, Object> entry : params.entrySet()) {

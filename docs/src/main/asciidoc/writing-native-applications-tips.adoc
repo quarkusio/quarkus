@@ -287,6 +287,17 @@ It should be added to the `native-image` configuration using an `<additionalBuil
 You can find more information about all this in https://github.com/oracle/graal/blob/master/substratevm/CLASS-INITIALIZATION.md[the GraalVM documentation].
 ====
 
+[NOTE]
+====
+When multiple classes or packages need to be specified via the `quarkus.native.additional-build-args` configuration property, the `,` symbol needs to be escaped.
+An example of this is the following:
+
+[source]
+----
+quarkus.native.additional-build-args=--initialize-at-run-time=com.example.SomeClass\\,org.acme.SomeOtherClass
+----
+====
+
 === Managing Proxy Classes
 
 While writing native application you'll need to define proxy classes at image build time by specifying the list of interfaces that they implement.

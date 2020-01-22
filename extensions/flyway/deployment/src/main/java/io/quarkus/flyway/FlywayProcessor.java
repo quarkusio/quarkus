@@ -12,14 +12,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -149,10 +142,10 @@ class FlywayProcessor {
     private Collection<String> getMigrationLocations(Collection<String> dataSourceNames) {
         Collection<String> migrationLocations = dataSourceNames.stream()
                 .map(flywayBuildConfig::getConfigForDataSourceName)
-                .flatMap(config -> config.locations.stream())
+                .flatMap(config -> Stream.of(config.locations.get()))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        if (DataSourceUtil.hasDefault(dataSourceNames)) {
-            migrationLocations.addAll(flywayBuildConfig.defaultDataSource.locations);
+        if (DataSourceInitializedBuildItem.isDefaultDataSourcePresent(dataSourceInitializedBuildItem)) {
+            migrationLocations.addAll(Arrays.asList(flywayBuildConfig.defaultDataSource.locations.get()));
         }
         return migrationLocations;
     }
@@ -165,7 +158,7 @@ class FlywayProcessor {
             for (String location : locations) {
                 // Strip any 'classpath:' protocol prefixes because they are assumed
                 // but not recognized by ClassLoader.getResources()
-                if (location != null && location.startsWith(CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL + ':')) {
+                if (location.startsWith(CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL + ':')) {
                     location = location.substring(CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL.length() + 1);
                 }
                 Enumeration<URL> migrations = Thread.currentThread().getContextClassLoader().getResources(location);

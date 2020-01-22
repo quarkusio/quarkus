@@ -2,7 +2,6 @@ package io.quarkus.extest.runtime.config;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
 
@@ -30,7 +29,7 @@ public class AllValuesConfig {
     public OptionalDouble optDoubleValue;
     /** an optional long value */
     @ConfigItem
-    public Optional<Long> optionalLongValue;
+    public OptionalLong optionalLongValue;
     /** A config object with a static of(String) method */
     @ConfigItem
     public ObjectOfValue oov;

@@ -40,7 +40,7 @@ public class WriteConcernConfig {
     /**
      * If set to {@code true}, the driver will retry supported write operations if they fail due to a network error.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean retryWrites;
 
     /**

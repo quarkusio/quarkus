@@ -23,13 +23,13 @@ public class DataSourceJdbcRuntimeConfig {
      * of the connections on boot, while being able to sustain a minimal pool size after boot.
      */
     @ConfigItem
-    public OptionalInt initialSize = OptionalInt.empty();
+    public OptionalInt initialSize;
 
     /**
      * The datasource pool minimum size
      */
-    @ConfigItem(defaultValue = "0")
-    public int minSize = 0;
+    @ConfigItem
+    public int minSize;
 
     /**
      * The datasource pool maximum size

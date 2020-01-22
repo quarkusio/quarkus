@@ -310,9 +310,9 @@ public final class TestProcessor {
             throw new IllegalStateException(
                     "buildTimeConfig.optLongValue != 1234567893L; " + buildTimeConfig.allValues.optLongValue.getAsLong());
         }
-        if (buildTimeConfig.allValues.optionalLongValue.get() != 1234567894L) {
+        if (buildTimeConfig.allValues.optionalLongValue.getAsLong() != 1234567894L) {
             throw new IllegalStateException("buildTimeConfig.allValues.optionalLongValue != 1234567894L; "
-                    + buildTimeConfig.allValues.optionalLongValue.get());
+                    + buildTimeConfig.allValues.optionalLongValue.getAsLong());
         }
         if (buildTimeConfig.allValues.nestedConfigMap.size() != 2) {
             throw new IllegalStateException(

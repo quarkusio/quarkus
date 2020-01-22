@@ -31,7 +31,7 @@ public class CORSConfig {
      * default: returns any requested method as valid
      */
     @ConfigItem
-    public Optional<List<HttpMethod>> methods;
+    public Optional<HttpMethod[]> methods;
 
     /**
      * HTTP headers allowed for CORS
@@ -42,7 +42,7 @@ public class CORSConfig {
      * default: returns any requested header as valid
      */
     @ConfigItem
-    public Optional<List<String>> headers;
+    public Optional<String[]> headers;
 
     /**
      * HTTP headers exposed in CORS
@@ -52,7 +52,7 @@ public class CORSConfig {
      * default: empty
      */
     @ConfigItem
-    public Optional<List<String>> exposedHeaders;
+    public Optional<String[]> exposedHeaders;
 
     /**
      * The `Access-Control-Max-Age` response header value indicating

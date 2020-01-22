@@ -4,6 +4,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.netty.handler.ssl.SslProvider;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -94,7 +95,7 @@ public class NettyHttpClientConfig {
      * <p>
      * 0 means unlimited.
      */
-    @ConfigItem(defaultValue = "0")
+    @ConfigItem
     public int maxHttp2Streams;
 
     /**
@@ -139,7 +140,7 @@ public class NettyHttpClientConfig {
          * `io.netty.eventLoopThreads` system property is set.
          */
         @ConfigItem
-        public Optional<Integer> numberOfThreads;
+        public OptionalInt numberOfThreads;
 
         /**
          * The thread name prefix for threads created by this thread factory used by event loop group.

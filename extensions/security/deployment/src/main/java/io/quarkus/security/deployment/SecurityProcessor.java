@@ -11,7 +11,6 @@ import java.security.Security;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -75,9 +74,11 @@ public class SecurityProcessor {
     @BuildStep
     void services(BuildProducer<JCAProviderBuildItem> jcaProviders) {
         // Create JCAProviderBuildItems for any configured provider names
-        for (String providerName : security.securityProviders.orElse(Collections.emptyList())) {
-            jcaProviders.produce(new JCAProviderBuildItem(providerName));
-            log.debugf("Added providerName: %s", providerName);
+        if (security.securityProviders.isPresent()) {
+            for (String providerName : security.securityProviders.get()) {
+                jcaProviders.produce(new JCAProviderBuildItem(providerName));
+                log.debugf("Added providerName: %s", providerName);
+            }
         }
     }
 

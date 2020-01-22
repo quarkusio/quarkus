@@ -260,7 +260,7 @@ public class DynamodbClientProducer {
                     "quarkus.dynamodb.async-client.max-pending-connection-acquires may not be negative or zero.");
         }
         if (asyncClient.eventLoop.override) {
-            if (asyncClient.eventLoop.numberOfThreads.isPresent() && asyncClient.eventLoop.numberOfThreads.get() <= 0) {
+            if (asyncClient.eventLoop.numberOfThreads.isPresent() && asyncClient.eventLoop.numberOfThreads.getAsInt() <= 0) {
                 throw new RuntimeConfigurationError(
                         "quarkus.dynamodb.async-client.event-loop.number-of-threads may not be negative or zero.");
             }

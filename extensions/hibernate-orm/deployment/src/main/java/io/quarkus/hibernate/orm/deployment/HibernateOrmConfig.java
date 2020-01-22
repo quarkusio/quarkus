@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.deployment;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.OptionalLong;
 
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -236,7 +237,7 @@ public class HibernateOrmConfig {
         /**
          * Whether Hibernate should quote all identifiers.
          */
-        @ConfigItem(defaultValue = "false")
+        @ConfigItem
         public boolean globallyQuotedIdentifiers;
 
         public boolean isAnyPropertySet() {
@@ -260,13 +261,13 @@ public class HibernateOrmConfig {
          * How many rows are fetched at a time by the JDBC driver.
          */
         @ConfigItem
-        public Optional<Integer> statementFetchSize;
+        public OptionalInt statementFetchSize;
 
         /**
          * The number of updates (inserts, updates and deletes) that are sent by the JDBC driver at one time for execution.
          */
         @ConfigItem
-        public Optional<Integer> statementBatchSize;
+        public OptionalInt statementBatchSize;
 
         public boolean isAnyPropertySet() {
             return timezone.isPresent() || statementFetchSize.isPresent() || statementBatchSize.isPresent();
@@ -281,7 +282,7 @@ public class HibernateOrmConfig {
          * <p>
          * Setting it to true is obviously not recommended in production.
          */
-        @ConfigItem(defaultValue = "false")
+        @ConfigItem
         public boolean sql;
 
         /**

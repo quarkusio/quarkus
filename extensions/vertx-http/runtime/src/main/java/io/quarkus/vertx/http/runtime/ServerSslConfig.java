@@ -22,7 +22,7 @@ public class ServerSslConfig {
      * The cipher suites to use. If none is given, a reasonable default is selected.
      */
     @ConfigItem
-    public Optional<List<String>> cipherSuites;
+    public Optional<String[]> cipherSuites;
 
     /**
      * The list of protocols to explicitly enable.

@@ -29,9 +29,9 @@ public class JniProcessor {
         /**
          * @deprecated JNI is always enabled starting from GraalVM 19.3.1.
          */
-        @Deprecated
-        @ConfigItem(defaultValue = "true")
-        boolean enable = true;
+
+        @ConfigItem
+        boolean enable;
     }
 
     @BuildStep

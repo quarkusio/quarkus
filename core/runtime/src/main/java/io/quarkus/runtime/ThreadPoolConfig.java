@@ -49,7 +49,7 @@ public class ThreadPoolConfig {
      * threads beyond the core size should be created as aggressively as threads within it; a value of {@code 1.0f}
      * implies that threads beyond the core size should never be created.
      */
-    @ConfigItem(defaultValue = "0")
+    @ConfigItem
     public float growthResistance;
 
     /**

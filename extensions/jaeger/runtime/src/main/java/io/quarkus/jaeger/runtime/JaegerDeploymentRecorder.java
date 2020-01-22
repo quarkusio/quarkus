@@ -1,6 +1,7 @@
 package io.quarkus.jaeger.runtime;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.Function;
 
 import org.jboss.logging.Logger;
@@ -43,7 +44,7 @@ public class JaegerDeploymentRecorder {
         initTracerProperty("JAEGER_AGENT_HOST", jaeger.agentHostPort, address -> address.getHostName());
         initTracerProperty("JAEGER_AGENT_PORT", jaeger.agentHostPort, address -> String.valueOf(address.getPort()));
         initTracerProperty("JAEGER_REPORTER_LOG_SPANS", jaeger.reporterLogSpans, log -> log.toString());
-        initTracerProperty("JAEGER_REPORTER_MAX_QUEUE_SIZE", jaeger.reporterMaxQueueSize, size -> size.toString());
+        initTracerProperty("JAEGER_REPORTER_MAX_QUEUE_SIZE", jaeger.reporterMaxQueueSize);
         initTracerProperty("JAEGER_REPORTER_FLUSH_INTERVAL", jaeger.reporterFlushInterval,
                 duration -> String.valueOf(duration.toMillis()));
         initTracerProperty("JAEGER_SAMPLER_TYPE", jaeger.samplerType, type -> type);
@@ -59,6 +60,12 @@ public class JaegerDeploymentRecorder {
     private <T> void initTracerProperty(String property, Optional<T> value, Function<T, String> accessor) {
         if (value.isPresent()) {
             System.setProperty(property, accessor.apply(value.get()));
+        }
+    }
+
+    private <T> void initTracerProperty(String property, OptionalInt value) {
+        if (value.isPresent()) {
+            System.setProperty(property, String.valueOf(value.getAsInt()));
         }
     }
 }

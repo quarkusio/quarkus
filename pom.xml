@@ -266,7 +266,7 @@
                                             <structure name="JaCoCo for Quarkus">
                                                 <classfiles>
                                                     <fileset dir="${basedir}">
-                                                        <include name="**ResultHandle doLoad(Method${project.version}.jar"/>
+                                                        <include name="**/*${project.version}.jar"/>
                                                         <exclude name="**/target/lib/*.jar"/>
                                                         <exclude name="independent-projects/**/*.jar"/>
                                                         <exclude name="integration-tests/**/*.jar"/>

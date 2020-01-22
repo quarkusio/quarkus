@@ -36,7 +36,6 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.mongodb.ReactiveMongoClient;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -49,7 +48,7 @@ public class MongoClientRecorder {
     private static volatile MongoClient client;
     private static volatile ReactiveMongoClient reactiveMongoClient;
 
-    public RuntimeValue<MongoClient> configureTheClient(
+    public void configureTheClient(
             MongoClientConfig config,
             BeanContainer container,
             LaunchMode launchMode, ShutdownContext shutdown,
@@ -62,11 +61,6 @@ public class MongoClientRecorder {
         if (!launchMode.isDevOrTest()) {
             shutdown.addShutdownTask(this::close);
         }
-        return new RuntimeValue<>(client);
-    }
-
-    public RuntimeValue<ReactiveMongoClient> configureTheReactiveClient() {
-        return new RuntimeValue<>(reactiveMongoClient);
     }
 
     private void close() {

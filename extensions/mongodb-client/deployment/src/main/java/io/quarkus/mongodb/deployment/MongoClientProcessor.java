@@ -8,8 +8,6 @@ import org.bson.codecs.configuration.CodecProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
-import com.mongodb.client.MongoClient;
-
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -22,11 +20,9 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.mongodb.ReactiveMongoClient;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.mongodb.runtime.MongoClientProducer;
 import io.quarkus.mongodb.runtime.MongoClientRecorder;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 public class MongoClientProcessor {
@@ -53,7 +49,7 @@ public class MongoClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    MongoClientBuildItem build(BuildProducer<FeatureBuildItem> feature, MongoClientRecorder recorder,
+    void build(BuildProducer<FeatureBuildItem> feature, MongoClientRecorder recorder,
             BeanContainerBuildItem beanContainer, LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdown,
             MongoClientConfig config, CodecProviderBuildItem codecs,
@@ -63,11 +59,9 @@ public class MongoClientProcessor {
 
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.MONGODB_CLIENT));
 
-        RuntimeValue<MongoClient> client = recorder.configureTheClient(config, beanContainer.getValue(),
+        recorder.configureTheClient(config, beanContainer.getValue(),
                 launchMode.getLaunchMode(), shutdown,
                 codecs.getCodecProviderClassNames());
-        RuntimeValue<ReactiveMongoClient> reactiveClient = recorder.configureTheReactiveClient();
-        return new MongoClientBuildItem(client, reactiveClient);
     }
 
     @BuildStep

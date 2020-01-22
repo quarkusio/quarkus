@@ -9,10 +9,34 @@
     <properties>
         <quarkus.version>0.19.0</quarkus.version>
         <rest-assured.version>3.3.0</rest-assured.version>
+        <compiler-plugin.version>3.8.1</compiler-plugin.version>
     </properties>
 
     <modules>
         <module>integration-tests</module>
         <module>add-to-bom</module>
     </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom-deployment</artifactId>
+                <version>${quarkus.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${compiler-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>

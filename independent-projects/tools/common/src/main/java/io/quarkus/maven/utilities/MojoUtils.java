@@ -76,13 +76,13 @@ public class MojoUtils {
         Dependency res = new Dependency();
         String[] segments = dependency.split(":");
         if (segments.length >= 2) {
-            res.setGroupId(segments[0]);
-            res.setArtifactId(segments[1]);
+            res.setGroupId(segments[0].toLowerCase());
+            res.setArtifactId(segments[1].toLowerCase());
             if (segments.length >= 3 && !segments[2].isEmpty()) {
                 res.setVersion(segments[2]);
             }
             if (segments.length >= 4) {
-                res.setClassifier(segments[3]);
+                res.setClassifier(segments[3].toLowerCase());
             }
             return res;
         } else {

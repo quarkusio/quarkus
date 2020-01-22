@@ -26,6 +26,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.apache.maven.model.Plugin;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -304,6 +305,59 @@ public class PomTransformer {
             };
         }
 
+        public static Transformation addProperty(String name, String value) {
+            return (Document document, TransformationContext context) -> {
+                try {
+                    Node props = (Node) context.getXPath().evaluate(anyNs("project", "properties"), document,
+                            XPathConstants.NODE);
+                    if (props == null) {
+                        final Node propsIndent = context.indent(1);
+                        props = document.createElement("properties");
+                        props.appendChild(context.indent(1));
+
+                        final Node project = (Node) context.getXPath().evaluate(anyNs("project"), document,
+                                XPathConstants.NODE);
+                        if (project == null) {
+                            throw new IllegalStateException(
+                                    String.format("No <project> in file [%s]", context.getPomXmlPath()));
+                        }
+                        /* ideally before modules */
+                        Node refNode = (Node) context.getXPath().evaluate(anyNs("project", "modules"),
+                                document, XPathConstants.NODE);
+                        Node ws;
+                        if (refNode != null) {
+                            ws = refNode.getPreviousSibling();
+                            if (ws == null || ws.getNodeType() != Node.TEXT_NODE) {
+                                project.insertBefore(ws = context.indent(1), refNode);
+                            }
+                        } else {
+                            ws = project.getLastChild();
+                            if (ws == null || ws.getNodeType() != Node.TEXT_NODE) {
+                                project.appendChild(ws = context.indent(0));
+                            }
+                        }
+                        project.insertBefore(propsIndent, ws);
+                        project.insertBefore(props, ws);
+                    }
+
+                    final Node propNode = document.createElement(name);
+                    propNode.appendChild(document.createTextNode(value));
+
+                    final NodeList modulesChildren = props.getChildNodes();
+                    final int len = modulesChildren.getLength();
+                    Node ws;
+                    if (len == 0 || (ws = modulesChildren.item(len - 1)).getNodeType() != Node.TEXT_NODE) {
+                        ws = context.indent(1);
+                        props.appendChild(ws);
+                    }
+                    props.insertBefore(context.indent(2), ws);
+                    props.insertBefore(propNode, ws);
+                } catch (XPathExpressionException | DOMException e) {
+                    throw new RuntimeException(e);
+                }
+            };
+        }
+
         public static Transformation addDependencyManagementIfNeeded() {
             return (Document document, TransformationContext context) -> {
                 try {
@@ -358,6 +412,55 @@ public class PomTransformer {
             };
         }
 
+        public static Transformation addPluginManagementIfNeeded() {
+            return (Document document, TransformationContext context) -> {
+                try {
+                    Node plugins = (Node) context.getXPath().evaluate(
+                            anyNs("project", "build", "pluginManagement", "plugins"), document, XPathConstants.NODE);
+                    if (plugins == null) {
+                        Node build = (Node) context.getXPath()
+                                .evaluate(anyNs("project", "build"), document, XPathConstants.NODE);
+                        if (build == null) {
+                            Node project = (Node) context.getXPath().evaluate(anyNs("project"), document,
+                                    XPathConstants.NODE);
+                            if (project == null) {
+                                throw new IllegalStateException(
+                                        String.format("//project not found in [%s]", context.getPomXmlPath()));
+                            }
+                            build = document.createElement("build");
+                            Node ws = project.getLastChild();
+                            if (ws == null || ws.getNodeType() != Node.TEXT_NODE) {
+                                project.appendChild(ws = context.indent(0));
+                            }
+                            project.insertBefore(build, ws);
+                            project.insertBefore(context.indent(1), build);
+                        }
+                        Node pluginManagement = (Node) context.getXPath()
+                                .evaluate(anyNs("project", "build", "pluginManagement"), document, XPathConstants.NODE);
+                        if (pluginManagement == null) {
+                            pluginManagement = document.createElement("pluginManagement");
+                            Node ws = build.getLastChild();
+                            if (ws == null || ws.getNodeType() != Node.TEXT_NODE) {
+                                build.appendChild(ws = context.indent(1));
+                            }
+                            build.insertBefore(pluginManagement, ws);
+                            build.insertBefore(context.indent(2), pluginManagement);
+                        }
+                        plugins = document.createElement("plugins");
+                        plugins.appendChild(context.indent(3));
+                        Node ws = pluginManagement.getLastChild();
+                        if (ws == null || ws.getNodeType() != Node.TEXT_NODE) {
+                            pluginManagement.appendChild(ws = context.indent(2));
+                        }
+                        pluginManagement.insertBefore(plugins, ws);
+                        pluginManagement.insertBefore(context.indent(3), plugins);
+                    }
+                } catch (XPathExpressionException | DOMException e) {
+                    throw new RuntimeException(e);
+                }
+            };
+        }
+
         public static Transformation addManagedDependency(String groupId, String artifactId, String version) {
             return addManagedDependency(new Gavtcs(groupId, artifactId, version, null, null, null));
         }
@@ -400,6 +503,38 @@ public class PomTransformer {
                     }
                     dep.appendChild(context.indent(3));
                     dependencyManagementDeps.insertBefore(dep, ws);
+                } catch (XPathExpressionException | DOMException e) {
+                    throw new RuntimeException(e);
+                }
+            };
+        }
+
+        public static Transformation addManagedPlugin(Plugin plugin) {
+            return (Document document, TransformationContext context) -> {
+                try {
+                    addPluginManagementIfNeeded().perform(document, context);
+                    Node managedPlugins = (Node) context.getXPath().evaluate(
+                            anyNs("project", "build", "pluginManagement", "plugins"), document, XPathConstants.NODE);
+                    final NodeList pluginsChildren = managedPlugins.getChildNodes();
+                    Node ws = null;
+                    if (pluginsChildren.getLength() > 0) {
+                        ws = pluginsChildren.item(pluginsChildren.getLength() - 1);
+                    }
+                    if (ws == null || ws.getNodeType() != Node.TEXT_NODE) {
+                        ws = context.indent(4);
+                        managedPlugins.appendChild(ws);
+                    }
+
+                    managedPlugins.insertBefore(context.indent(4), ws);
+                    final Node dep = document.createElement("plugin");
+                    dep.appendChild(context.indent(5));
+                    dep.appendChild(context.textElement("groupId", plugin.getGroupId()));
+                    dep.appendChild(context.indent(5));
+                    dep.appendChild(context.textElement("artifactId", plugin.getArtifactId()));
+                    dep.appendChild(context.indent(5));
+                    dep.appendChild(context.textElement("version", plugin.getVersion()));
+                    dep.appendChild(context.indent(4));
+                    managedPlugins.insertBefore(dep, ws);
                 } catch (XPathExpressionException | DOMException e) {
                     throw new RuntimeException(e);
                 }

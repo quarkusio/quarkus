@@ -13,9 +13,13 @@
     <artifactId>[=artifactId]</artifactId>
 [#if nameBase?? ]    <name>[=namePrefix][=nameBase][=nameSegmentDelimiter]Runtime</name>
 [/#if]
-[#if additionalRuntimeDependencies?size > 0 ]
 
     <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core</artifactId>
+        </dependency>
+[#if additionalRuntimeDependencies?size > 0 ]
 [#list additionalRuntimeDependencies as dep]
         <dependency>
             <groupId>[=dep.groupId]</groupId>
@@ -30,8 +34,8 @@
 [/#if]
         </dependency>
 [/#list]
-    </dependencies>
 [/#if]
+    </dependencies>
 
     <build>
         <plugins>

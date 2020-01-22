@@ -11,10 +11,10 @@
     </parent>
 [/#if]
 
-[#if groupId?? && groupId != grandParentGroupId ]    <groupId>[=groupId]</groupId>
+[#if grandParentGroupId?? ][#if groupId != grandParentGroupId ]    <groupId>[=groupId]</groupId>[/#if][#else ]    <groupId>[=groupId]</groupId>
 [/#if]
     <artifactId>[=artifactId]-parent</artifactId>
-[#if groupId?? && groupId != grandParentGroupId && version?? && version != grandParentVersion ]    <version>[=version]</version>
+[#if groupId?? && (!grandParentGroupId?? || groupId != grandParentGroupId) && version?? && (!grandParentVersion?? || version != grandParentVersion) ]    <version>[=version]</version>
 [/#if]
 [#if nameBase?? ]    <name>[=namePrefix][=nameBase][=nameSegmentDelimiter]Parent</name>
 [/#if]

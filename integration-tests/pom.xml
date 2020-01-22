@@ -94,6 +94,7 @@
         <module>logging-gelf</module>
         <module>cache</module>
         <module>qute</module>
+        <module>bootstrap-config</module>
     </modules>
 
     <build>

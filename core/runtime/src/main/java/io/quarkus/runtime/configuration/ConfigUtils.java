@@ -10,6 +10,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -52,13 +53,18 @@ public final class ConfigUtils {
         return size -> new TreeSet<>();
     }
 
+    public static SmallRyeConfigBuilder configBuilder(final boolean runTime) {
+        return configBuilder(runTime, true);
+    }
+
     /**
      * Get the basic configuration builder.
      *
      * @param runTime {@code true} if the configuration is run time, {@code false} if build time
+     * @param addDiscovered {@code true} if the ConfigSource and Converter objects should be auto-discovered
      * @return the configuration builder
      */
-    public static SmallRyeConfigBuilder configBuilder(final boolean runTime) {
+    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean addDiscovered) {
         final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
         final ApplicationPropertiesConfigSource.InFileSystem inFileSystem = new ApplicationPropertiesConfigSource.InFileSystem();
         final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
@@ -83,8 +89,10 @@ public final class ConfigUtils {
             sources.add(new SysPropConfigSource());
             builder.withSources(sources.toArray(new ConfigSource[0]));
         }
-        builder.addDiscoveredSources();
-        builder.addDiscoveredConverters();
+        if (addDiscovered) {
+            builder.addDiscoveredSources();
+            builder.addDiscoveredConverters();
+        }
         return builder;
     }
 
@@ -98,6 +106,18 @@ public final class ConfigUtils {
         final Iterable<ConfigSource> sources = provider.getConfigSources(Thread.currentThread().getContextClassLoader());
         for (ConfigSource source : sources) {
             builder.withSources(source);
+        }
+    }
+
+    /**
+     * Add a configuration source providers to the builder.
+     *
+     * @param builder the builder
+     * @param providers the providers to add
+     */
+    public static void addSourceProviders(SmallRyeConfigBuilder builder, Collection<ConfigSourceProvider> providers) {
+        for (ConfigSourceProvider provider : providers) {
+            addSourceProvider(builder, provider);
         }
     }
 

@@ -9,6 +9,13 @@ public enum ConfigPhase {
      * Values are read and available for usage at build time, and available on a read-only basis at run time.
      */
     BUILD_AND_RUN_TIME_FIXED(true, true, false),
+
+    /**
+     * Values are read and available for usage at run time and are re-read on each program execution. These values
+     * are used to configure ConfigSourceProvider implementations
+     */
+    BOOTSTRAP(false, true, true),
+
     /**
      * Values are read and available for usage at run time and are re-read on each program execution.
      */

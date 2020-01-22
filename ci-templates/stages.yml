@@ -363,12 +363,13 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 30
+          timeoutInMinutes: 35
           modules:
             - tika
             - hibernate-validator
             - test-extension
             - logging-gelf
+            - bootstrap-config
           name: misc_2
 
       - template: native-build-steps.yaml

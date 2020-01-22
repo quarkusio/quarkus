@@ -64,10 +64,13 @@ public final class BuildTimeConfigurationReader {
 
     final ConfigPatternMap<Container> buildTimePatternMap;
     final ConfigPatternMap<Container> buildTimeRunTimePatternMap;
+    final ConfigPatternMap<Container> bootstrapPatternMap;
     final ConfigPatternMap<Container> runTimePatternMap;
 
     final List<RootDefinition> buildTimeVisibleRoots;
     final List<RootDefinition> allRoots;
+
+    final boolean bootstrapRootsEmpty;
 
     /**
      * Construct a new instance.
@@ -77,6 +80,7 @@ public final class BuildTimeConfigurationReader {
     public BuildTimeConfigurationReader(final List<Class<?>> configRoots) {
         Assert.checkNotNullParam("configRoots", configRoots);
 
+        List<RootDefinition> bootstrapRoots = new ArrayList<>();
         List<RootDefinition> runTimeRoots = new ArrayList<>();
         List<RootDefinition> buildTimeRunTimeRoots = new ArrayList<>();
         List<RootDefinition> buildTimeRoots = new ArrayList<>();
@@ -98,12 +102,15 @@ public final class BuildTimeConfigurationReader {
                 buildTimeRoots.add(definition);
             } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
                 buildTimeRunTimeRoots.add(definition);
+            } else if (phase == ConfigPhase.BOOTSTRAP) {
+                bootstrapRoots.add(definition);
             } else {
                 assert phase == ConfigPhase.RUN_TIME;
                 runTimeRoots.add(definition);
             }
         }
 
+        bootstrapPatternMap = PatternMapBuilder.makePatterns(bootstrapRoots);
         runTimePatternMap = PatternMapBuilder.makePatterns(runTimeRoots);
         buildTimeRunTimePatternMap = PatternMapBuilder.makePatterns(buildTimeRunTimeRoots);
         buildTimePatternMap = PatternMapBuilder.makePatterns(buildTimeRoots);
@@ -112,8 +119,12 @@ public final class BuildTimeConfigurationReader {
         buildTimeVisibleRoots.addAll(buildTimeRoots);
         buildTimeVisibleRoots.addAll(buildTimeRunTimeRoots);
 
-        List<RootDefinition> allRoots = new ArrayList<>(buildTimeVisibleRoots.size() + runTimeRoots.size());
+        bootstrapRootsEmpty = bootstrapRoots.isEmpty();
+
+        List<RootDefinition> allRoots = new ArrayList<>(
+                buildTimeVisibleRoots.size() + bootstrapRoots.size() + runTimeRoots.size());
         allRoots.addAll(buildTimeVisibleRoots);
+        allRoots.addAll(bootstrapRoots);
         allRoots.addAll(runTimeRoots);
 
         this.allRoots = allRoots;
@@ -341,6 +352,21 @@ public final class BuildTimeConfigurationReader {
                         } finally {
                             ExpandingConfigSource.setExpanding(old);
                         }
+                        continue;
+                    }
+                    // also check for the bootstrap properties since those need to be added to specifiedRunTimeDefaultValues as well
+                    ni.goToStart();
+                    ni.next();
+                    matched = bootstrapPatternMap.match(ni);
+                    if (matched != null) {
+                        // it's a specified run-time default (record for later)
+                        boolean old = ExpandingConfigSource.setExpanding(false);
+                        try {
+                            specifiedRunTimeDefaultValues.put(propertyName,
+                                    config.getOptionalValue(propertyName, String.class).orElse(""));
+                        } finally {
+                            ExpandingConfigSource.setExpanding(old);
+                        }
                     }
                 } else {
                     // it's not managed by us; record it
@@ -354,7 +380,8 @@ public final class BuildTimeConfigurationReader {
                 }
             }
             return new ReadResult(objectsByRootClass, specifiedRunTimeDefaultValues, buildTimeRunTimeVisibleValues,
-                    buildTimePatternMap, buildTimeRunTimePatternMap, runTimePatternMap, allRoots);
+                    buildTimePatternMap, buildTimeRunTimePatternMap, bootstrapPatternMap, runTimePatternMap, allRoots,
+                    bootstrapRootsEmpty);
         }
 
         /**
@@ -689,22 +716,28 @@ public final class BuildTimeConfigurationReader {
         final Map<String, String> buildTimeRunTimeVisibleValues;
         final ConfigPatternMap<Container> buildTimePatternMap;
         final ConfigPatternMap<Container> buildTimeRunTimePatternMap;
+        final ConfigPatternMap<Container> bootstrapPatternMap;
         final ConfigPatternMap<Container> runTimePatternMap;
         final Map<Class<?>, RootDefinition> runTimeRootsByClass;
         final List<RootDefinition> allRoots;
+        final boolean bootstrapRootsEmpty;
 
         ReadResult(final Map<Class<?>, Object> objectsByRootClass, final Map<String, String> specifiedRunTimeDefaultValues,
                 final Map<String, String> buildTimeRunTimeVisibleValues,
                 final ConfigPatternMap<Container> buildTimePatternMap,
                 final ConfigPatternMap<Container> buildTimeRunTimePatternMap,
-                final ConfigPatternMap<Container> runTimePatternMap, final List<RootDefinition> allRoots) {
+                final ConfigPatternMap<Container> bootstrapPatternMap,
+                final ConfigPatternMap<Container> runTimePatternMap, final List<RootDefinition> allRoots,
+                boolean bootstrapRootsEmpty) {
             this.objectsByRootClass = objectsByRootClass;
             this.specifiedRunTimeDefaultValues = specifiedRunTimeDefaultValues;
             this.buildTimeRunTimeVisibleValues = buildTimeRunTimeVisibleValues;
             this.buildTimePatternMap = buildTimePatternMap;
             this.buildTimeRunTimePatternMap = buildTimeRunTimePatternMap;
+            this.bootstrapPatternMap = bootstrapPatternMap;
             this.runTimePatternMap = runTimePatternMap;
             this.allRoots = allRoots;
+            this.bootstrapRootsEmpty = bootstrapRootsEmpty;
             Map<Class<?>, RootDefinition> map = new HashMap<>();
             for (RootDefinition root : allRoots) {
                 map.put(root.getConfigurationClass(), root);
@@ -740,12 +773,20 @@ public final class BuildTimeConfigurationReader {
             return buildTimeRunTimePatternMap;
         }
 
+        public ConfigPatternMap<Container> getBootstrapPatternMap() {
+            return bootstrapPatternMap;
+        }
+
         public ConfigPatternMap<Container> getRunTimePatternMap() {
             return runTimePatternMap;
         }
 
         public List<RootDefinition> getAllRoots() {
             return allRoots;
+        }
+
+        public boolean isBootstrapRootsEmpty() {
+            return bootstrapRootsEmpty;
         }
 
         public RootDefinition requireRootDefinitionForClass(Class<?> clazz) {

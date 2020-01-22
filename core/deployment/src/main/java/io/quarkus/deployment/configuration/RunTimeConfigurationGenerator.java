@@ -3,6 +3,7 @@ package io.quarkus.deployment.configuration;
 import static io.quarkus.deployment.util.ReflectUtil.reportError;
 
 import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -73,6 +74,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 public final class RunTimeConfigurationGenerator {
 
     public static final String CONFIG_CLASS_NAME = "io.quarkus.runtime.generated.Config";
+    static final String BSDVCS_CLASS_NAME = "io.quarkus.runtime.generated.BootstrapDefaultValuesConfigSource";
     static final String RTDVCS_CLASS_NAME = "io.quarkus.runtime.generated.RunTimeDefaultValuesConfigSource";
     static final String BTRTDVCS_CLASS_NAME = "io.quarkus.runtime.generated.BuildTimeRunTimeDefaultValuesConfigSource";
 
@@ -84,13 +86,18 @@ public final class RunTimeConfigurationGenerator {
             ConfigSource.class);
     static final FieldDescriptor C_BUILD_TIME_RUN_TIME_DEFAULTS_CONFIG_SOURCE = FieldDescriptor.of(CONFIG_CLASS_NAME,
             "buildTimeRunTimeDefaultsConfigSource", ConfigSource.class);
-    public static final MethodDescriptor C_CREATE_RUN_TIME_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
-            "createRunTimeConfig", void.class);
+    public static final MethodDescriptor C_CREATE_BOOTSTRAP_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
+            "createBootstrapConfig", CONFIG_CLASS_NAME);
     public static final MethodDescriptor C_ENSURE_INITIALIZED = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
             "ensureInitialized", void.class);
+    static final FieldDescriptor C_BOOTSTRAP_DEFAULTS_CONFIG_SOURCE = FieldDescriptor.of(CONFIG_CLASS_NAME,
+            "bootstrapDefaultsConfigSource", ConfigSource.class);
     static final FieldDescriptor C_RUN_TIME_DEFAULTS_CONFIG_SOURCE = FieldDescriptor.of(CONFIG_CLASS_NAME,
             "runTimeDefaultsConfigSource", ConfigSource.class);
-    static final MethodDescriptor C_READ_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "readConfig", void.class);
+    static final MethodDescriptor C_BOOTSTRAP_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "readBootstrapConfig",
+            void.class);
+    public static final MethodDescriptor C_READ_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "readConfig", void.class,
+            List.class);
     static final FieldDescriptor C_SPECIFIED_RUN_TIME_CONFIG_SOURCE = FieldDescriptor.of(CONFIG_CLASS_NAME,
             "specifiedRunTimeConfigSource",
             ConfigSource.class);
@@ -138,8 +145,13 @@ public final class RunTimeConfigurationGenerator {
             IntFunction.class);
     static final MethodDescriptor CU_CONFIG_BUILDER = MethodDescriptor.ofMethod(ConfigUtils.class, "configBuilder",
             SmallRyeConfigBuilder.class, boolean.class);
+    static final MethodDescriptor CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED = MethodDescriptor.ofMethod(ConfigUtils.class,
+            "configBuilder",
+            SmallRyeConfigBuilder.class, boolean.class, boolean.class);
     static final MethodDescriptor CU_ADD_SOURCE_PROVIDER = MethodDescriptor.ofMethod(ConfigUtils.class, "addSourceProvider",
             void.class, SmallRyeConfigBuilder.class, ConfigSourceProvider.class);
+    static final MethodDescriptor CU_ADD_SOURCE_PROVIDERS = MethodDescriptor.ofMethod(ConfigUtils.class, "addSourceProviders",
+            void.class, SmallRyeConfigBuilder.class, Collection.class);
 
     static final MethodDescriptor HM_NEW = MethodDescriptor.ofConstructor(HashMap.class);
     static final MethodDescriptor HM_PUT = MethodDescriptor.ofMethod(HashMap.class, "put", Object.class, Object.class,
@@ -195,6 +207,7 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor QCF_SET_CONFIG = MethodDescriptor.ofMethod(QuarkusConfigFactory.class, "setConfig",
             void.class, SmallRyeConfig.class);
 
+    static final MethodDescriptor BSDVCS_NEW = MethodDescriptor.ofConstructor(BSDVCS_CLASS_NAME);
     static final MethodDescriptor RTDVCS_NEW = MethodDescriptor.ofConstructor(RTDVCS_CLASS_NAME);
 
     static final MethodDescriptor SRC_GET_CONVERTER = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getConverter",
@@ -229,11 +242,12 @@ public final class RunTimeConfigurationGenerator {
         final ClassCreator cc;
         final MethodCreator clinit;
         final BytecodeCreator converterSetup;
+        final MethodCreator readBootstrapConfig;
+        final ResultHandle readBootstrapConfigNameBuilder;
         final MethodCreator readConfig;
         final ResultHandle readConfigNameBuilder;
         final ResultHandle clinitNameBuilder;
         final BuildTimeConfigurationReader.ReadResult buildTimeConfigResult;
-        final ConfigPatternMap<Container> runTimePatternMap;
         final List<RootDefinition> roots;
         // default values given in the build configuration
         final Map<String, String> specifiedRunTimeDefaultValues;
@@ -309,6 +323,13 @@ public final class RunTimeConfigurationGenerator {
             final ResultHandle buildTimeRunTimeDefaultValuesConfigSource = clinit.newInstance(BTRTDVCS_NEW);
             clinit.writeStaticField(C_BUILD_TIME_RUN_TIME_DEFAULTS_CONFIG_SOURCE, buildTimeRunTimeDefaultValuesConfigSource);
 
+            // the bootstrap default values config source
+            if (!buildTimeReadResult.isBootstrapRootsEmpty()) {
+                cc.getFieldCreator(C_BOOTSTRAP_DEFAULTS_CONFIG_SOURCE)
+                        .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+                clinit.writeStaticField(C_BOOTSTRAP_DEFAULTS_CONFIG_SOURCE, clinit.newInstance(BSDVCS_NEW));
+            }
+
             // the run time default values config source
             cc.getFieldCreator(C_RUN_TIME_DEFAULTS_CONFIG_SOURCE)
                     .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
@@ -327,29 +348,37 @@ public final class RunTimeConfigurationGenerator {
 
             // block for converter setup
             converterSetup = clinit.createScope();
+
+            // create readBootstrapConfig method - this will always exist whether or not it contains a method body
+            // the method body will be empty when there are no bootstrap configuration roots
+            readBootstrapConfig = cc.getMethodCreator(C_BOOTSTRAP_CONFIG);
+            if (buildTimeReadResult.isBootstrapRootsEmpty()) {
+                readBootstrapConfigNameBuilder = null;
+            } else {
+                readBootstrapConfigNameBuilder = readBootstrapConfig.newInstance(SB_NEW);
+                readBootstrapConfig.invokeVirtualMethod(SB_APPEND_STRING, readBootstrapConfigNameBuilder,
+                        readBootstrapConfig.load("quarkus"));
+            }
+
             // create readConfig
             readConfig = cc.getMethodCreator(C_READ_CONFIG);
             // the readConfig name builder
             readConfigNameBuilder = readConfig.newInstance(SB_NEW);
             readConfig.invokeVirtualMethod(SB_APPEND_STRING, readConfigNameBuilder, readConfig.load("quarkus"));
-            runTimePatternMap = buildTimeReadResult.getRunTimePatternMap();
+
             accessorFinder = new AccessorFinder();
+        }
+
+        // meant to be called in outside the constructor
+        private boolean bootstrapConfigSetupNeeded() {
+            return readBootstrapConfigNameBuilder != null;
         }
 
         public void run() {
             // in clinit, load the build-time config
             // make the build time config global until we read the run time config -
             // at run time (when we're ready) we update the factory and then release the build time config
-            clinit.invokeStaticMethod(QCF_SET_CONFIG, clinitConfig);
-            // release any previous configuration
-            final ResultHandle clinitCpr = clinit.invokeStaticMethod(CPR_INSTANCE);
-            try (TryBlock getConfigTry = clinit.tryBlock()) {
-                final ResultHandle initialConfigHandle = getConfigTry.invokeVirtualMethod(CPR_GET_CONFIG,
-                        clinitCpr);
-                getConfigTry.invokeVirtualMethod(CPR_RELEASE_CONFIG, clinitCpr, initialConfigHandle);
-                // ignore
-                getConfigTry.addCatch(IllegalStateException.class);
-            }
+            installConfiguration(clinitConfig, clinit);
 
             // fill roots map
             for (RootDefinition root : roots) {
@@ -361,18 +390,28 @@ public final class RunTimeConfigurationGenerator {
             final ConfigPatternMap<Container> buildTimePatternMap = buildTimeConfigResult.getBuildTimePatternMap();
             final ConfigPatternMap<Container> buildTimeRunTimePatternMap = buildTimeConfigResult
                     .getBuildTimeRunTimePatternMap();
+            final ConfigPatternMap<Container> bootstrapPatternMap = buildTimeConfigResult.getBootstrapPatternMap();
             final ConfigPatternMap<Container> runTimePatternMap = buildTimeConfigResult.getRunTimePatternMap();
 
             final BiFunction<Container, Container, Container> combinator = (a, b) -> a == null ? b : a;
-            final ConfigPatternMap<Container> buildTimeRunTimeIgnored = ConfigPatternMap.merge(buildTimePatternMap,
-                    runTimePatternMap, combinator);
-            final ConfigPatternMap<Container> runTimeIgnored = ConfigPatternMap.merge(buildTimePatternMap,
-                    buildTimeRunTimePatternMap, combinator);
+            final ConfigPatternMap<Container> buildTimeRunTimeIgnored = ConfigPatternMap
+                    .merge(ConfigPatternMap.merge(buildTimePatternMap,
+                            runTimePatternMap, combinator), bootstrapPatternMap, combinator);
+            final ConfigPatternMap<Container> runTimeIgnored = ConfigPatternMap
+                    .merge(ConfigPatternMap.merge(buildTimePatternMap,
+                            buildTimeRunTimePatternMap, combinator), bootstrapPatternMap, combinator);
 
             final MethodDescriptor siParserBody = generateParserBody(buildTimeRunTimePatternMap, buildTimeRunTimeIgnored,
                     new StringBuilder("siParseKey"), false, false);
             final MethodDescriptor rtParserBody = generateParserBody(runTimePatternMap, runTimeIgnored,
                     new StringBuilder("rtParseKey"), false, true);
+
+            // create the bootstrap config if necessary
+            ResultHandle bootstrapBuilder = null;
+            if (bootstrapConfigSetupNeeded()) {
+                bootstrapBuilder = readBootstrapConfig.invokeStaticMethod(CU_CONFIG_BUILDER_WITH_ADD_DISCOVERED,
+                        readBootstrapConfig.load(false), readBootstrapConfig.load(false));
+            }
 
             // create the run time config
             final ResultHandle runTimeBuilder = readConfig.invokeStaticMethod(CU_CONFIG_BUILDER, readConfig.load(true));
@@ -399,16 +438,43 @@ public final class RunTimeConfigurationGenerator {
             cc.getFieldCreator(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
             clinit.writeStaticField(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE, specifiedRunTimeSource);
 
+            // add in the custom sources that bootstrap config needs
+            ResultHandle bootstrapConfigSourcesArray = null;
+            if (bootstrapConfigSetupNeeded()) {
+                bootstrapConfigSourcesArray = readBootstrapConfig.newArray(ConfigSource[].class, 4);
+                // build time config (expanded values)
+                readBootstrapConfig.writeArrayValue(bootstrapConfigSourcesArray, 0,
+                        readBootstrapConfig.readStaticField(C_BUILD_TIME_CONFIG_SOURCE));
+                // specified run time config default values
+                readBootstrapConfig.writeArrayValue(bootstrapConfigSourcesArray, 1,
+                        readBootstrapConfig.readStaticField(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE));
+                // build time run time visible default config source
+                readBootstrapConfig.writeArrayValue(bootstrapConfigSourcesArray, 2,
+                        readBootstrapConfig.readStaticField(C_BUILD_TIME_RUN_TIME_DEFAULTS_CONFIG_SOURCE));
+                // bootstrap config default values
+                readBootstrapConfig.writeArrayValue(bootstrapConfigSourcesArray, 3,
+                        readBootstrapConfig.readStaticField(C_BOOTSTRAP_DEFAULTS_CONFIG_SOURCE));
+            }
+
             // add in our custom sources
-            final ResultHandle array = readConfig.newArray(ConfigSource[].class, 4);
+            final ResultHandle runtimeConfigSourcesArray = readConfig.newArray(ConfigSource[].class,
+                    bootstrapConfigSetupNeeded() ? 5 : 4);
             // build time config (expanded values)
-            readConfig.writeArrayValue(array, 0, readConfig.readStaticField(C_BUILD_TIME_CONFIG_SOURCE));
+            readConfig.writeArrayValue(runtimeConfigSourcesArray, 0, readConfig.readStaticField(C_BUILD_TIME_CONFIG_SOURCE));
             // specified run time config default values
-            readConfig.writeArrayValue(array, 1, readConfig.readStaticField(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE));
+            readConfig.writeArrayValue(runtimeConfigSourcesArray, 1,
+                    readConfig.readStaticField(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE));
             // run time config default values
-            readConfig.writeArrayValue(array, 2, readConfig.readStaticField(C_RUN_TIME_DEFAULTS_CONFIG_SOURCE));
+            readConfig.writeArrayValue(runtimeConfigSourcesArray, 2,
+                    readConfig.readStaticField(C_RUN_TIME_DEFAULTS_CONFIG_SOURCE));
             // build time run time visible default config source
-            readConfig.writeArrayValue(array, 3, readConfig.readStaticField(C_BUILD_TIME_RUN_TIME_DEFAULTS_CONFIG_SOURCE));
+            readConfig.writeArrayValue(runtimeConfigSourcesArray, 3,
+                    readConfig.readStaticField(C_BUILD_TIME_RUN_TIME_DEFAULTS_CONFIG_SOURCE));
+            if (bootstrapConfigSetupNeeded()) {
+                // bootstrap config default values
+                readConfig.writeArrayValue(runtimeConfigSourcesArray, 4,
+                        readConfig.readStaticField(C_BOOTSTRAP_DEFAULTS_CONFIG_SOURCE));
+            }
 
             // add in known converters
             for (Class<?> additionalType : additionalTypes) {
@@ -430,28 +496,41 @@ public final class RunTimeConfigurationGenerator {
                 for (Map.Entry<FieldDescriptor, Class<?>> entry : convertersToRegister.entrySet()) {
                     final FieldDescriptor descriptor = entry.getKey();
                     final Class<?> type = entry.getValue();
+                    if (bootstrapConfigSetupNeeded()) {
+                        readBootstrapConfig.invokeVirtualMethod(SRCB_WITH_CONVERTER, bootstrapBuilder,
+                                readBootstrapConfig.loadClass(type),
+                                readBootstrapConfig.load(100), readBootstrapConfig.readStaticField(descriptor));
+                    }
                     readConfig.invokeVirtualMethod(SRCB_WITH_CONVERTER, runTimeBuilder, readConfig.loadClass(type),
                             readConfig.load(100), readConfig.readStaticField(descriptor));
                 }
             }
 
-            // put them in the builder
-            readConfig.invokeVirtualMethod(SRCB_WITH_SOURCES, runTimeBuilder, array);
+            // put sources in the bootstrap builder
+            if (bootstrapConfigSetupNeeded()) {
+                readBootstrapConfig.invokeVirtualMethod(SRCB_WITH_SOURCES, bootstrapBuilder, bootstrapConfigSourcesArray);
+            }
+            // put sources in the builder
+            readConfig.invokeVirtualMethod(SRCB_WITH_SOURCES, runTimeBuilder, runtimeConfigSourcesArray);
 
-            final ResultHandle runTimeConfig = readConfig.invokeVirtualMethod(SRCB_BUILD, runTimeBuilder);
-            // install run time config
-            readConfig.invokeStaticMethod(QCF_SET_CONFIG, runTimeConfig);
-            // now invalidate the cached config, so the next one to load the config gets the new one
-            final ResultHandle configProviderResolver = readConfig.invokeStaticMethod(CPR_INSTANCE);
-            try (TryBlock getConfigTry = readConfig.tryBlock()) {
-                final ResultHandle initialConfigHandle = getConfigTry.invokeVirtualMethod(CPR_GET_CONFIG,
-                        configProviderResolver);
-                getConfigTry.invokeVirtualMethod(CPR_RELEASE_CONFIG, configProviderResolver, initialConfigHandle);
-                // ignore
-                getConfigTry.addCatch(IllegalStateException.class);
+            // add the ConfigSourceProvider List passed as the readConfig method param
+            // (which were generated by the bootstrap config phase - an empty list is passed when there is no bootstrap phase)
+            readConfig.invokeStaticMethod(CU_ADD_SOURCE_PROVIDERS, runTimeBuilder, readConfig.getMethodParam(0));
+
+            ResultHandle bootstrapConfig = null;
+            if (bootstrapConfigSetupNeeded()) {
+                bootstrapConfig = readBootstrapConfig.invokeVirtualMethod(SRCB_BUILD, bootstrapBuilder);
+                installConfiguration(bootstrapConfig, readBootstrapConfig);
             }
 
+            final ResultHandle runTimeConfig = readConfig.invokeVirtualMethod(SRCB_BUILD, runTimeBuilder);
+            installConfiguration(runTimeConfig, readConfig);
+
             final ResultHandle clInitOldLen = clinit.invokeVirtualMethod(SB_LENGTH, clinitNameBuilder);
+            ResultHandle bcOldLen = null;
+            if (bootstrapConfigSetupNeeded()) {
+                bcOldLen = readBootstrapConfig.invokeVirtualMethod(SB_LENGTH, readBootstrapConfigNameBuilder);
+            }
             final ResultHandle rcOldLen = readConfig.invokeVirtualMethod(SB_LENGTH, readConfigNameBuilder);
 
             // generate eager config read (both build and run time at once)
@@ -487,6 +566,25 @@ public final class RunTimeConfigurationGenerator {
                     }
                     clinit.invokeStaticMethod(initGroup, clinitConfig, clinitNameBuilder, instance);
                     clinit.invokeVirtualMethod(SB_SET_LENGTH, clinitNameBuilder, clInitOldLen);
+                } else if (root.getConfigPhase() == ConfigPhase.BOOTSTRAP) {
+                    if (bootstrapConfigSetupNeeded()) {
+                        // config root field is volatile; we initialize and read config from the readBootstrapConfig method
+                        cc.getFieldCreator(rootFieldDescriptor)
+                                .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_VOLATILE);
+                        // construct instance in readBootstrapConfig
+                        final ResultHandle instance = readBootstrapConfig.invokeStaticMethod(ctor);
+                        // assign instance to field
+                        readBootstrapConfig.writeStaticField(rootFieldDescriptor, instance);
+                        if (!rootName.isEmpty()) {
+                            readBootstrapConfig.invokeVirtualMethod(SB_APPEND_CHAR, readBootstrapConfigNameBuilder,
+                                    readBootstrapConfig.load('.'));
+                            readBootstrapConfig.invokeVirtualMethod(SB_APPEND_STRING, readBootstrapConfigNameBuilder,
+                                    readBootstrapConfig.load(rootName));
+                        }
+                        readBootstrapConfig.invokeStaticMethod(initGroup, bootstrapConfig, readBootstrapConfigNameBuilder,
+                                instance);
+                        readBootstrapConfig.invokeVirtualMethod(SB_SET_LENGTH, readBootstrapConfigNameBuilder, bcOldLen);
+                    }
                 } else if (root.getConfigPhase() == ConfigPhase.RUN_TIME) {
                     // config root field is volatile; we initialize and read config from the readConfig method
                     cc.getFieldCreator(rootFieldDescriptor)
@@ -569,12 +667,12 @@ public final class RunTimeConfigurationGenerator {
                 mc.returnValue(null);
             }
 
-            // generate run time entry point
-            try (MethodCreator mc = cc.getMethodCreator(C_CREATE_RUN_TIME_CONFIG)) {
+            // generate bootstrap config entry point
+            try (MethodCreator mc = cc.getMethodCreator(C_CREATE_BOOTSTRAP_CONFIG)) {
                 mc.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
                 ResultHandle instance = mc.newInstance(MethodDescriptor.ofConstructor(CONFIG_CLASS_NAME));
-                mc.invokeVirtualMethod(C_READ_CONFIG, instance);
-                mc.returnValue(null);
+                mc.invokeVirtualMethod(C_BOOTSTRAP_CONFIG, instance);
+                mc.returnValue(instance);
             }
 
             // wrap it up
@@ -600,6 +698,9 @@ public final class RunTimeConfigurationGenerator {
                     configurationException, emptyStackTraceElement);
             isError.throwException(configurationException);
 
+            readBootstrapConfig.returnValue(null);
+            readBootstrapConfig.close();
+
             readConfig.returnValue(null);
             readConfig.close();
 
@@ -607,40 +708,39 @@ public final class RunTimeConfigurationGenerator {
             clinit.close();
             cc.close();
 
-            // generate run time default values config source class
-            try (ClassCreator dvcc = ClassCreator.builder().classOutput(classOutput).className(RTDVCS_CLASS_NAME)
-                    .superClass(AbstractRawDefaultConfigSource.class).setFinal(true).build()) {
-                // implements abstract method AbstractRawDefaultConfigSource#getValue(NameIterator)
-                try (MethodCreator mc = dvcc.getMethodCreator("getValue", String.class, NameIterator.class)) {
-                    final ResultHandle keyIter = mc.getMethodParam(0);
-                    final MethodDescriptor md = generateDefaultValueParse(dvcc, runTimePatternMap,
-                            new StringBuilder("getDefaultFor"));
-                    if (md != null) {
-                        // there is at least one default value
-                        final BranchResult if1 = mc.ifNonZero(mc.invokeVirtualMethod(NI_HAS_NEXT, keyIter));
-                        try (BytecodeCreator true1 = if1.trueBranch()) {
-                            true1.invokeVirtualMethod(NI_NEXT, keyIter);
-                            final BranchResult if2 = true1
-                                    .ifNonZero(true1.invokeVirtualMethod(NI_PREVIOUS_EQUALS, keyIter, true1.load("quarkus")));
-                            try (BytecodeCreator true2 = if2.trueBranch()) {
-                                final ResultHandle result = true2.invokeVirtualMethod(
-                                        md, mc.getThis(), keyIter);
-                                true2.returnValue(result);
-                            }
-                        }
-                    }
-
-                    mc.returnValue(mc.loadNull());
-                }
+            if (bootstrapConfigSetupNeeded()) {
+                // generate bootstrap default values config source class
+                generateDefaultValuesConfigSourceClass(bootstrapPatternMap, BSDVCS_CLASS_NAME);
             }
 
+            // generate run time default values config source class
+            generateDefaultValuesConfigSourceClass(runTimePatternMap, RTDVCS_CLASS_NAME);
+
             // generate build time run time visible default values config source class
-            try (ClassCreator dvcc = ClassCreator.builder().classOutput(classOutput).className(BTRTDVCS_CLASS_NAME)
+            generateDefaultValuesConfigSourceClass(buildTimeRunTimePatternMap, BTRTDVCS_CLASS_NAME);
+        }
+
+        private void installConfiguration(ResultHandle config, MethodCreator methodCreator) {
+            // install config
+            methodCreator.invokeStaticMethod(QCF_SET_CONFIG, config);
+            // now invalidate the cached config, so the next one to load the config gets the new one
+            final ResultHandle configProviderResolver = methodCreator.invokeStaticMethod(CPR_INSTANCE);
+            try (TryBlock getConfigTry = methodCreator.tryBlock()) {
+                final ResultHandle initialConfigHandle = getConfigTry.invokeVirtualMethod(CPR_GET_CONFIG,
+                        configProviderResolver);
+                getConfigTry.invokeVirtualMethod(CPR_RELEASE_CONFIG, configProviderResolver, initialConfigHandle);
+                // ignore
+                getConfigTry.addCatch(IllegalStateException.class);
+            }
+        }
+
+        private void generateDefaultValuesConfigSourceClass(ConfigPatternMap<Container> patternMap, String className) {
+            try (ClassCreator dvcc = ClassCreator.builder().classOutput(classOutput).className(className)
                     .superClass(AbstractRawDefaultConfigSource.class).setFinal(true).build()) {
                 // implements abstract method AbstractRawDefaultConfigSource#getValue(NameIterator)
                 try (MethodCreator mc = dvcc.getMethodCreator("getValue", String.class, NameIterator.class)) {
                     final ResultHandle keyIter = mc.getMethodParam(0);
-                    final MethodDescriptor md = generateDefaultValueParse(dvcc, buildTimeRunTimePatternMap,
+                    final MethodDescriptor md = generateDefaultValueParse(dvcc, patternMap,
                             new StringBuilder("getDefaultFor"));
                     if (md != null) {
                         // there is at least one default value

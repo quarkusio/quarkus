@@ -20,21 +20,24 @@ public class OAuth2Config {
 
     /**
      * The OAuth2 client id used to validate the token.
+     * Mandatory if the extension is enabled.
      */
     @ConfigItem
-    public String clientId;
+    public Optional<String> clientId;
 
     /**
      * The OAuth2 client secret used to validate the token.
+     * Mandatory if the extension is enabled.
      */
     @ConfigItem
-    public String clientSecret;
+    public Optional<String> clientSecret;
 
     /**
      * The OAuth2 introspection endpoint URL used to validate the token and gather the authentication claims.
+     * Mandatory if the extension is enabled.
      */
     @ConfigItem
-    public String introspectionUrl;
+    public Optional<String> introspectionUrl;
 
     /**
      * The OAuth2 server certificate file. <em>Warning</em>: this is not supported in native mode where the certificate

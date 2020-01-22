@@ -26,16 +26,22 @@ import io.quarkus.elytron.security.oauth2.runtime.auth.ElytronOAuth2CallerPrinci
 import io.quarkus.elytron.security.oauth2.runtime.auth.OAuth2Augmentor;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 @Recorder
 public class OAuth2Recorder {
 
     public RuntimeValue<SecurityRealm> createRealm(OAuth2Config config)
             throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, KeyManagementException {
+        if (!config.clientId.isPresent() || !config.clientSecret.isPresent() || !config.introspectionUrl.isPresent()) {
+            throw new ConfigurationException(
+                    "client-id, client-secret and introspection-url must be configured when the oauth2 extension is enabled");
+        }
+
         OAuth2IntrospectValidator.Builder validatorBuilder = OAuth2IntrospectValidator.builder()
-                .clientId(config.clientId)
-                .clientSecret(config.clientSecret)
-                .tokenIntrospectionUrl(URI.create(config.introspectionUrl).toURL());
+                .clientId(config.clientId.get())
+                .clientSecret(config.clientSecret.get())
+                .tokenIntrospectionUrl(URI.create(config.introspectionUrl.get()).toURL());
 
         if (config.caCertFile.isPresent()) {
             validatorBuilder.useSslContext(createSSLContext(config));

@@ -140,7 +140,9 @@ public class ResteasyStandaloneRecorder {
                 }
             });
             handlers.add(ctx -> {
-                if (knownPaths.contains(ctx.normalisedPath())) {
+                String rel = ctx.mountPoint() == null ? ctx.normalisedPath()
+                        : ctx.normalisedPath().substring(ctx.mountPoint().length());
+                if (knownPaths.contains(rel)) {
                     staticHandler.handle(ctx);
                 } else {
                     ctx.next();

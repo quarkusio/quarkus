@@ -205,7 +205,6 @@ public class ResteasyStandaloneBuildStep {
             BeanContainerBuildItem beanContainer,
             ResteasyStandaloneBuildItem standalone,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
-            HttpBuildTimeConfig httpConfig,
             ExecutorBuildItem executorBuildItem) throws Exception {
 
         if (standalone == null) {

@@ -82,7 +82,7 @@ import io.quarkus.qute.api.VariantTemplate;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
 import io.quarkus.qute.generator.ValueResolverGenerator;
-import io.quarkus.qute.runtime.DefaultTemplateExtensions;
+import io.quarkus.qute.runtime.BuiltinTemplateExtensions;
 import io.quarkus.qute.runtime.EngineProducer;
 import io.quarkus.qute.runtime.QuteConfig;
 import io.quarkus.qute.runtime.QuteRecorder;
@@ -145,7 +145,7 @@ public class QuteProcessor {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
                 .addBeanClasses(EngineProducer.class, TemplateProducer.class, VariantTemplateProducer.class, ResourcePath.class,
-                        Template.class, TemplateInstance.class, DefaultTemplateExtensions.class)
+                        Template.class, TemplateInstance.class, BuiltinTemplateExtensions.class)
                 .build();
     }
 

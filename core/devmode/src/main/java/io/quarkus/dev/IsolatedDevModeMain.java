@@ -154,11 +154,16 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             }
         }
         QuarkusConfigFactory.setConfig(null);
-        final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
+
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
         try {
+            final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
             cpr.releaseConfig(cpr.getConfig());
         } catch (Throwable ignored) {
             // just means no config was installed, which is fine
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
         }
         runner = null;
     }
@@ -242,7 +247,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                     synchronized (DevModeMain.class) {
                         if (runner != null) {
                             try {
-                                runner.close();
+                                stop();
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }

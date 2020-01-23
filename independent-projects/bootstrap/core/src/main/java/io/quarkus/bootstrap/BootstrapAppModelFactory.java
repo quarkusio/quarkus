@@ -213,10 +213,10 @@ public class BootstrapAppModelFactory {
     }
 
     public CurationResult resolveAppModel() throws BootstrapException {
-        if (test) {
-            //gradle tests encode the result on the class path
+        if (test || devMode) {
+            //gradle tests and dev encode the result on the class path
 
-            try (InputStream existing = getClass().getResourceAsStream(BootstrapConstants.SERIALIZED_APP_MODEL)){
+            try (InputStream existing = getClass().getClassLoader().getResourceAsStream(BootstrapConstants.SERIALIZED_APP_MODEL)){
                 if(existing != null ) {
                     AppModel appModel = (AppModel) new ObjectInputStream(existing).readObject();
                     return new CurationResult(appModel);

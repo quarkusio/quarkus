@@ -12,8 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import io.quarkus.bootstrap.model.AppModel;
-
 /**
  * Object that is used to pass context data from the plugin doing the invocation
  * into the dev mode process using java serialization.
@@ -44,8 +42,6 @@ public class DevModeContext implements Serializable {
 
     private List<String> compilerPluginArtifacts;
     private List<String> compilerPluginsOptions;
-
-    private AppModel appModel;
 
     public boolean isLocalProjectDiscovery() {
         return localProjectDiscovery;
@@ -170,15 +166,6 @@ public class DevModeContext implements Serializable {
 
     public DevModeContext setProjectDir(File projectDir) {
         this.projectDir = projectDir;
-        return this;
-    }
-
-    public AppModel getAppModel() {
-        return appModel;
-    }
-
-    public DevModeContext setAppModel(AppModel appModel) {
-        this.appModel = appModel;
         return this;
     }
 

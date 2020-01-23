@@ -37,6 +37,9 @@ update_configs:
           dependency_name: "com.cronutils:cron-utils"
       - match:
           dependency_name: "org.eclipse:yasson"
+      # Elytron
+      - match:
+          dependency_name: "org.wildfly.security:wildfly-elytron-*"
       # JDBC Drivers
       - match:
           dependency_name: "org.postgresql:postgresql"

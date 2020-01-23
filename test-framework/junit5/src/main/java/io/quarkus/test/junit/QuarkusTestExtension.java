@@ -351,7 +351,12 @@ public class QuarkusTestExtension
             }
             newMethod.setAccessible(true);
             newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
-        } catch (Exception e) {
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            }
+            throw new RuntimeException(e.getCause());
+        } catch (IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }

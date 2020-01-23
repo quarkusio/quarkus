@@ -10,43 +10,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.runtime.configuration.QuarkusConfigFactory;
-import io.quarkus.tika.runtime.TikaParserParameter;
-import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
+import io.quarkus.test.QuarkusUnitTest;
 
 public class TikaProcessorTest {
 
-    // We must register a configuration otherwise we'll get an exception.
-
-    static volatile SmallRyeConfig config;
-
-    @BeforeAll
-    public static void setItUp() {
-        final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-        builder.addDefaultSources();
-        builder.addDiscoveredConverters();
-        builder.addDiscoveredSources();
-        config = builder.build();
-        QuarkusConfigFactory.setConfig(config);
-        ConfigProviderResolver cpr = ConfigProviderResolver.instance();
-        final Config existingConfig = cpr.getConfig();
-        if (existingConfig != TikaProcessorTest.config) {
-            cpr.releaseConfig(existingConfig);
-        }
-    }
-
-    @AfterAll
-    public static void tearItDown() {
-        ConfigProviderResolver cpr = ConfigProviderResolver.instance();
-        cpr.releaseConfig(config);
-    }
+    @RegisterExtension
+    static final QuarkusUnitTest quarkusUnitTest = new QuarkusUnitTest();
 
     @Test
     public void testPDFParserName() throws Exception {
@@ -82,7 +54,7 @@ public class TikaProcessorTest {
 
     @Test
     public void testPdfParserConfig() throws Exception {
-        Map<String, List<TikaParserParameter>> parserConfig = getParserConfig(null, "pdf",
+        Map<String, List<TikaProcessor.TikaParserParameter>> parserConfig = getParserConfig(null, "pdf",
                 Collections.singletonMap("pdf",
                         Collections.singletonMap("sort-by-position", "true")),
                 Collections.emptyMap());
@@ -115,13 +87,19 @@ public class TikaProcessorTest {
         assertEquals(69, names.size());
     }
 
+    @Test
+    public void testUnhyphenation() {
+        assertEquals("sortByPosition", TikaProcessor.unhyphenate("sort-by-position"));
+        assertEquals("position", TikaProcessor.unhyphenate("position"));
+    }
+
     private Set<String> getParserNames(String tikaConfigPath, String parsers) throws Exception {
         return TikaProcessor.getSupportedParserConfig(
                 Optional.ofNullable(tikaConfigPath), Optional.ofNullable(parsers),
                 Collections.emptyMap(), Collections.emptyMap()).keySet();
     }
 
-    private Map<String, List<TikaParserParameter>> getParserConfig(String tikaConfigPath, String parsers,
+    private Map<String, List<TikaProcessor.TikaParserParameter>> getParserConfig(String tikaConfigPath, String parsers,
             Map<String, Map<String, String>> parserParamMaps,
             Map<String, String> parserAbbreviations) throws Exception {
         return TikaProcessor.getSupportedParserConfig(

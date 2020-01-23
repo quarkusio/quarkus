@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -377,26 +378,28 @@ public class JarResultBuildStep {
      */
     private void copyJsonConfigFiles(ApplicationArchivesBuildItem applicationArchivesBuildItem, Path thinJarDirectory)
             throws IOException {
-        // this will contain all the resources in both maven and gradle cases - the latter is true because we copy them in AugmentTask
-        Path classesLocation = applicationArchivesBuildItem.getRootArchive().getArchiveLocation();
-        try (Stream<Path> stream = Files.find(classesLocation, 1, new BiPredicate<Path, BasicFileAttributes>() {
-            @Override
-            public boolean test(Path path, BasicFileAttributes basicFileAttributes) {
-                return basicFileAttributes.isRegularFile() && path.toString().endsWith(".json");
-            }
-        })) {
-            stream.forEach(new Consumer<Path>() {
+        // archiveLocation contains the location of the application jar at this point
+        Path appJarPath = applicationArchivesBuildItem.getRootArchive().getArchiveLocation();
+        try (FileSystem jarFileSystem = FileSystems.newFileSystem(appJarPath, null)) {
+            try (Stream<Path> stream = Files.find(jarFileSystem.getPath("/"), 1, new BiPredicate<Path, BasicFileAttributes>() {
                 @Override
-                public void accept(Path jsonPath) {
-                    try {
-                        Files.copy(jsonPath, thinJarDirectory.resolve(jsonPath.getFileName()));
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(
-                                "Unable to copy json config file from " + jsonPath + " to " + thinJarDirectory,
-                                e);
-                    }
+                public boolean test(Path path, BasicFileAttributes basicFileAttributes) {
+                    return basicFileAttributes.isRegularFile() && path.toString().endsWith(".json");
                 }
-            });
+            })) {
+                stream.forEach(new Consumer<Path>() {
+                    @Override
+                    public void accept(Path jsonPath) {
+                        try {
+                            Files.copy(jsonPath.getFileName(), thinJarDirectory.resolve(jsonPath.getFileName().toString()));
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(
+                                    "Unable to copy json config file from " + jsonPath + " to " + thinJarDirectory,
+                                    e);
+                        }
+                    }
+                });
+            }
         }
     }
 

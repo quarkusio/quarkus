@@ -273,7 +273,7 @@
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->
-                                            <include>javax.xml.bind:jaxb-api:*:*:test</include>
+                                            <include>jakarta.xml.bind:jakarta.xml.bind-api:*:*:test</include>
                                         </includes>
                                     </bannedDependencies>
                                 </rules>

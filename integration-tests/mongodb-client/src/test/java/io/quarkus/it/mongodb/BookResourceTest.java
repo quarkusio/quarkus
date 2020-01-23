@@ -20,6 +20,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
+import io.restassured.config.ObjectMapperConfig;
 import io.restassured.mapper.ObjectMapper;
 import io.restassured.mapper.ObjectMapperDeserializationContext;
 import io.restassured.mapper.ObjectMapperSerializationContext;
@@ -45,7 +46,7 @@ public class BookResourceTest {
                 return jsonb.toJson(context.getObjectToSerialize());
             }
         };
-        RestAssured.objectMapper(mapper);
+        RestAssured.config().objectMapperConfig(ObjectMapperConfig.objectMapperConfig().defaultObjectMapper(mapper));
     }
 
     @AfterAll

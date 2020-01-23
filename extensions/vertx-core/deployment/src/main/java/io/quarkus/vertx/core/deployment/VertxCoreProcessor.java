@@ -2,12 +2,16 @@ package io.quarkus.vertx.core.deployment;
 
 import java.util.function.Supplier;
 
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.IOThreadDetectorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -21,6 +25,7 @@ import io.quarkus.vertx.core.runtime.VertxCoreProducer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
+import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.spi.resolver.ResolverProvider;
 
@@ -87,5 +92,14 @@ class VertxCoreProcessor {
     @BuildStep
     LogCleanupFilterBuildItem filterNettyHostsFileParsingWarn() {
         return new LogCleanupFilterBuildItem("io.netty.resolver.HostsFileParser", "Failed to load and parse hosts file");
+    }
+
+    @BuildStep
+    void registerVerticleClasses(CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        for (ClassInfo ci : indexBuildItem.getIndex()
+                .getAllKnownSubclasses(DotName.createSimple(AbstractVerticle.class.getName()))) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ci.toString()));
+        }
     }
 }

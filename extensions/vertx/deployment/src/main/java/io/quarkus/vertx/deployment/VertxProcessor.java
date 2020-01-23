@@ -10,6 +10,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -34,6 +36,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -46,6 +49,7 @@ import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.runtime.VertxProducer;
 import io.quarkus.vertx.runtime.VertxRecorder;
+import io.vertx.reactivex.core.AbstractVerticle;
 
 class VertxProcessor {
 
@@ -151,6 +155,15 @@ class VertxProcessor {
                 }
             }
         });
+    }
+
+    @BuildStep
+    void registerRxVerticleClasses(CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        for (ClassInfo ci : indexBuildItem.getIndex()
+                .getAllKnownSubclasses(DotName.createSimple(AbstractVerticle.class.getName()))) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ci.toString()));
+        }
     }
 
 }

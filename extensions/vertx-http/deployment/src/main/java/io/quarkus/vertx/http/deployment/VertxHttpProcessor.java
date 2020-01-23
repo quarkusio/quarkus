@@ -25,6 +25,7 @@ import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
@@ -113,7 +114,9 @@ class VertxHttpProcessor {
             HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass, List<WebsocketSubProtocolsBuildItem> websocketSubProtocols,
             List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
-            BodyHandlerBuildItem bodyHandlerBuildItem)
+            BodyHandlerBuildItem bodyHandlerBuildItem,
+            CoreVertxBuildItem core // Injected to be sure that Vert.x has been produced before calling this method.
+    )
             throws BuildException, IOException {
         Optional<DefaultRouteBuildItem> defaultRoute;
         if (defaultRoutes == null || defaultRoutes.isEmpty()) {

@@ -16,12 +16,14 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 
 /**
@@ -138,6 +140,17 @@ public class BuildMojo extends AbstractMojo {
         boolean clear = false;
         try {
 
+            final AppArtifact appCoords;
+            DefaultArtifact appMvnArtifact = null;
+            appMvnArtifact = new DefaultArtifact(project.getArtifact().getGroupId(),
+                    project.getArtifact().getArtifactId(),
+                    project.getArtifact().getClassifier(),
+                    project.getArtifact().getArtifactHandler().getExtension(),
+                    project.getArtifact().getVersion());
+            appCoords = new AppArtifact(appMvnArtifact.getGroupId(), appMvnArtifact.getArtifactId(),
+                    appMvnArtifact.getClassifier(), appMvnArtifact.getExtension(),
+                    appMvnArtifact.getVersion());
+
             final Properties projectProperties = project.getProperties();
             final Properties realProperties = new Properties();
             for (String name : projectProperties.stringPropertyNames()) {
@@ -158,9 +171,10 @@ public class BuildMojo extends AbstractMojo {
                     .setRemoteRepositories(repos)
                     .build();
 
-            CuratedApplication curatedApplication = QuarkusBootstrap.builder(outputDirectory.toPath())
+            CuratedApplication curatedApplication = QuarkusBootstrap.builder(project.getArtifact().getFile().toPath())
                     .setProjectRoot(project.getBasedir().toPath())
                     .setMavenArtifactResolver(resolver)
+                    .setAppArtifact(appCoords)
                     .setBaseClassLoader(BuildMojo.class.getClassLoader())
                     .setBuildSystemProperties(realProperties)
                     .setLocalProjectDiscovery(false)
@@ -182,7 +196,7 @@ public class BuildMojo extends AbstractMojo {
             }
 
         } catch (Exception e) {
-            throw new MojoExecutionException("Failed to build quarkus application", e);
+            throw new MojoExecutionException("Failed to build Quarkus application", e);
         } finally {
             if (clear) {
                 System.clearProperty(QUARKUS_PACKAGE_UBER_JAR);

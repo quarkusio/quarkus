@@ -306,10 +306,11 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 25
+          timeoutInMinutes: 30
           modules:
             - infinispan-cache-jpa
             - infinispan-client
+            - infinispan-embedded
             - cache
           name: cache
 

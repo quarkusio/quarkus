@@ -2,13 +2,17 @@ package io.quarkus.it.main;
 
 import static org.hamcrest.Matchers.*;
 
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.it.rest.ProgrammaticRestInterface;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
@@ -22,6 +26,15 @@ public class RestClientTestCase {
     public void testMicroprofileClient() {
         RestAssured.when().get("/client/manual").then()
                 .body(is("TEST"));
+    }
+
+    @Test
+    public void testMicorprofileClientFromTest() throws Exception {
+
+        ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
+                .baseUrl(new URL(ConfigProvider.getConfig().getValue("test.url", String.class)))
+                .build(ProgrammaticRestInterface.class);
+        Assertions.assertEquals("TEST", iface.get());
     }
 
     @Test

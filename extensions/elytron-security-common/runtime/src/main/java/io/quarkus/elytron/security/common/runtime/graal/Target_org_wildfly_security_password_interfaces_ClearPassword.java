@@ -1,4 +1,4 @@
-package io.quarkus.elytron.security.runtime.graal;
+package io.quarkus.elytron.security.common.runtime.graal;
 
 import static org.wildfly.common.Assert.checkNotNullParam;
 

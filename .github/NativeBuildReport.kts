@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 
 val token = args[0]; 
 val status = args[1];
-val issueNumber = args[2];
+val issueNumber = args[2].toInt();
 
 val REPO = "quarkusio/quarkus"
 

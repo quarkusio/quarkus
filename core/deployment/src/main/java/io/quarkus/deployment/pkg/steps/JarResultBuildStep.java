@@ -642,9 +642,7 @@ public class JarResultBuildStep {
                                 services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(content);
                             } else {
                                 Path target = fs.getPath(relativePath);
-                                if (!Files.exists(target)) {
-                                    Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
-                                }
+                                Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
                             }
                         }
                     } catch (Exception e) {

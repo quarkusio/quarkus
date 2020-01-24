@@ -14,7 +14,6 @@ import java.util.function.IntFunction;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
-import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 
 import io.smallrye.config.PropertiesConfigSourceProvider;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -71,19 +70,6 @@ public final class ConfigUtils {
         builder.addDiscoveredSources();
         builder.addDiscoveredConverters();
         return builder;
-    }
-
-    /**
-     * Add a configuration source provider to the builder.
-     *
-     * @param builder the builder
-     * @param provider the provider to add
-     */
-    public static void addSourceProvider(SmallRyeConfigBuilder builder, ConfigSourceProvider provider) {
-        final Iterable<ConfigSource> sources = provider.getConfigSources(Thread.currentThread().getContextClassLoader());
-        for (ConfigSource source : sources) {
-            builder.withSources(source);
-        }
     }
 
     static final class EnvConfigSource implements ConfigSource {

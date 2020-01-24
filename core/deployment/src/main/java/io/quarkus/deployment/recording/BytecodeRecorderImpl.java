@@ -387,7 +387,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
         loadComplete = true;
         //now we know know many items we have, create the array
-        ResultHandle array = mainMethod.newArray(Object.class, mainMethod.load(deferredParameterCount));
+        ResultHandle array = mainMethod.newArray(Object.class, deferredParameterCount);
 
         //this context manages the creation of new methods
         //it tracks the number of instruction groups and when they hit a threshold it
@@ -805,7 +805,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 ResultHandle createValue(MethodContext context, MethodCreator method, ResultHandle array) {
                     //TODO large arrays can still generate a fair bit of bytecode, and there appears to be a gizmo issue that prevents casting to an array
                     //fix this later
-                    ResultHandle out = method.newArray(expectedType.getComponentType(), method.load(length));
+                    ResultHandle out = method.newArray(expectedType.getComponentType(), length);
                     for (int i = 0; i < length; ++i) {
                         method.writeArrayValue(out, i, context.loadDeferred(components[i]));
                     }

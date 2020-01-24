@@ -147,8 +147,7 @@ public class JsonbProcessor {
             try (MethodCreator customize = classCreator.getMethodCreator("customize", void.class, JsonbConfig.class)) {
                 ResultHandle jsonbConfig = customize.getMethodParam(0);
                 if (!customSerializerClasses.isEmpty()) {
-                    ResultHandle serializersArray = customize.newArray(JsonbSerializer.class,
-                            customize.load(customSerializerClasses.size()));
+                    ResultHandle serializersArray = customize.newArray(JsonbSerializer.class, customSerializerClasses.size());
                     int i = 0;
                     for (String customSerializerClass : customSerializerClasses) {
                         customize.writeArrayValue(serializersArray, i,
@@ -162,7 +161,7 @@ public class JsonbProcessor {
                 }
                 if (!customDeserializerClasses.isEmpty()) {
                     ResultHandle deserializersArray = customize.newArray(JsonbDeserializer.class,
-                            customize.load(customDeserializerClasses.size()));
+                            customDeserializerClasses.size());
                     int i = 0;
                     for (String customDeserializerClass : customDeserializerClasses) {
                         customize.writeArrayValue(deserializersArray, i,

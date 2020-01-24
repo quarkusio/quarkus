@@ -266,8 +266,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
     }
 
     private ResultHandle generateParamsArray(List<Integer> queryParameterIndexes, MethodCreator methodCreator) {
-        ResultHandle paramsArray = methodCreator.newArray(Object.class,
-                methodCreator.load(queryParameterIndexes.size()));
+        ResultHandle paramsArray = methodCreator.newArray(Object.class, queryParameterIndexes.size());
         for (int i = 0; i < queryParameterIndexes.size(); i++) {
             methodCreator.writeArrayValue(paramsArray, methodCreator.load(i),
                     methodCreator.getMethodParam(queryParameterIndexes.get(i)));

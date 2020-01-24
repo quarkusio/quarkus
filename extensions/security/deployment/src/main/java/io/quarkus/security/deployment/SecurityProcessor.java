@@ -196,7 +196,7 @@ public class SecurityProcessor {
     }
 
     private ResultHandle paramTypes(MethodCreator ctor, List<Type> parameters) {
-        ResultHandle result = ctor.newArray(String.class, ctor.load(parameters.size()));
+        ResultHandle result = ctor.newArray(String.class, parameters.size());
 
         for (int i = 0; i < parameters.size(); i++) {
             ctor.writeArrayValue(result, i, ctor.load(parameters.get(i).name().toString()));

@@ -370,10 +370,11 @@ public class TokenUtils {
      * @throws Exception on decode failure
      */
     public static PrivateKey readPrivateKey(final String pemResName) throws Exception {
-        InputStream contentIS = TokenUtils.class.getResourceAsStream(pemResName);
-        byte[] tmp = new byte[4096];
-        int length = contentIS.read(tmp);
-        return decodePrivateKey(new String(tmp, 0, length, "UTF-8"));
+        try (InputStream contentIS = TokenUtils.class.getResourceAsStream(pemResName)) {
+            byte[] tmp = new byte[4096];
+            int length = contentIS.read(tmp);
+            return decodePrivateKey(new String(tmp, 0, length, "UTF-8"));
+        }
     }
 
     /**

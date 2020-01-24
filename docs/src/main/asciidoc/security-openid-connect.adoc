@@ -100,7 +100,7 @@ public class UsersResource {
         return new User(securityIdentity);
     }
 
-    public class User {
+    public static class User {
 
         private final String userName;
 

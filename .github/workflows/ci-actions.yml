@@ -377,6 +377,7 @@ jobs:
           - category: Cache
             timeout: 30
             test-modules: >
+              hazelcast-client
               infinispan-cache-jpa
               infinispan-client
               infinispan-embedded

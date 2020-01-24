@@ -23,6 +23,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String HIBERNATE_ORM_PANACHE = "hibernate-orm-panache";
     public static final String HIBERNATE_VALIDATOR = "hibernate-validator";
     public static final String HIBERNATE_SEARCH_ELASTICSEARCH = "hibernate-search-elasticsearch";
+    public static final String HAZELCAST_CLIENT = "hazelcast-client";
     public static final String INFINISPAN_CLIENT = "infinispan-client";
     public static final String INFINISPAN_EMBEDDED = "infinispan-embedded";
     public static final String JAEGER = "jaeger";

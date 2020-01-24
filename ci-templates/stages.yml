@@ -361,6 +361,7 @@ stages:
             - infinispan-cache-jpa
             - infinispan-client
             - infinispan-embedded
+            - hazelcast-client
             - cache
           name: cache
 

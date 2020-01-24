@@ -1,0 +1,46 @@
+hazelcast-client:
+  network:
+    cluster-members:
+      - 127.0.0.1
+    outbound-ports:
+      - 34600
+      - 34700-34710
+    smart-routing: false
+    redo-operation: true
+    connection-timeout: 60000
+    socket-options:
+      tcp-no-delay: false
+      keep-alive: true
+      reuse-address: true
+      linger-seconds: 3
+      buffer-size: 128
+
+  config-replacers:
+    fail-if-value-missing: false
+    replacers:
+      - class-name: com.hazelcast.config.replacer.EncryptionReplacer
+        properties:
+          passwordFile: password
+          passwordUserProperties: false
+          cipherAlgorithm: DES
+          keyLengthBits: 64
+          secretKeyAlgorithm: DES
+          secretKeyFactoryAlgorithm: PBKDF2WithHmacSHA1
+
+  discovery-strategies:
+    node-filter:
+      class: io.quarkus.it.hazelcast.client.CustomNodeFilter
+
+  serialization:
+    portable-version: 3
+    use-native-byte-order: true
+    byte-order: BIG_ENDIAN
+    enable-compression: false
+    enable-shared-object: true
+    allow-unsafe: false
+    data-serializable-factories:
+      - factory-id: 42
+        class-name: io.quarkus.it.hazelcast.client.IdentifiedDataSerializableWrapperFactory
+    portable-factories:
+      - factory-id: 1
+        class-name: io.quarkus.it.hazelcast.client.PortableWrapperFactory

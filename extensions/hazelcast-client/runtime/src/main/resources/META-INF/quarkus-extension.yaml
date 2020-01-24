@@ -1,0 +1,13 @@
+---
+name: "Hazelcast Client"
+metadata:
+  keywords:
+  - "hazelcast-client"
+  - "hazelcast"
+  - "cache"
+  - "distributed cache"
+  - "caching"
+  guide: "https://quarkus.io/guides/hazelcast-client"
+  categories:
+  - "data"
+  status: "preview"

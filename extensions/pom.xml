@@ -112,6 +112,9 @@
         <module>oidc</module>
         <module>keycloak-authorization</module>
 
+        <!-- Hazelcast -->
+        <module>hazelcast-client</module>
+
         <!-- Infinispan -->
         <module>infinispan-client</module>
         <module>infinispan-embedded</module>

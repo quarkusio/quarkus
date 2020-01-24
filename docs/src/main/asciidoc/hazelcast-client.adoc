@@ -1,0 +1,88 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Hazelcast Client
+
+include::./attributes.adoc[]
+
+https://hazelcast.com/products/imdg/[Hazelcast IMDG] is a distributed in-memory object store and compute engine
+that supports a wide variety of data structures such as Map, Set, List, MultiMap, RingBuffer, HyperLogLog.
+
+Use Hazelcast IMDG to store your data in RAM, spread and replicate it across a cluster of machines,
+and perform data-local computation on it.
+
+Hazelcast is:
+- cloud and Kubernetes friendly
+- often used as a Distributed Cache amongst other use cases
+
+More information about Hazelcast can be found at http://hazelcast.org.
+
+== Configuration
+
+You can add the `hazelcast-client` extension to your Quarkus project by adding the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-hazelcast-client</artifactId>
+</dependency>
+----
+
+Extension exposes a single native-mode-compatible Hazelcast Client bean (`HazelcastInstance`)
+which can be directly injected into your beans:
+
+[source,java]
+----
+@Inject
+HazelcastInstance hazelcastClient;
+----
+
+If your use case is more demanding, you can wire `HazelcastInstance` bean yourself - keep in mind
+that you will be able to benefit from GraalVM compatibility anyway.
+
+The Hazelcast client exposes most common configuration options via `application.properties` file
+that can be provided in the `src/main/resources` directory. These are the properties that
+can be configured in this file:
+
+include::{generated-dir}/config/quarkus-hazelcast-client.adoc[opts=optional, leveloffset=+1]
+
+If you require fine-grained configuration options, you can fall back to configuring the client
+using the classic `hazelcast-client.yaml` or `hazelcast-client.xml` config files.
+
+== Testing
+
+To make testing simple, Quarkus provides the `HazelcastServerTestResource` which automatically launches
+an embedded Hazelcast instance with defaults settings and manages its lifecycle:
+
+[source,java]
+----
+@QuarkusTest
+@QuarkusTestResource(HazelcastServerTestResource.class)
+public class HazelcastAwareTest {
+
+    @Test
+    public void test() {
+        // you can safely call embedded Hazelcast instance from here
+    }
+}
+----
+
+Maven dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-hazelcast</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+
+== Native Mode Limitations
+- Java serialization is not supported
+- User code deployment is not supported
+

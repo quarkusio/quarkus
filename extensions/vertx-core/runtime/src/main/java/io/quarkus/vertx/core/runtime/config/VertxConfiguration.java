@@ -79,4 +79,10 @@ public class VertxConfiguration {
     @ConfigItem
     public ClusterConfiguration cluster;
 
+    /**
+     * Enable or disable native transport
+     */
+    @ConfigItem
+    public boolean preferNativeTransport;
+
 }

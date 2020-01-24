@@ -35,7 +35,7 @@ public class HttpConfiguration {
      * The HTTP host
      */
     @ConfigItem(defaultValue = "0.0.0.0")
-    public String host;
+    public Optional<String> host;
 
     /**
      * The HTTPS port
@@ -109,6 +109,36 @@ public class HttpConfiguration {
      */
     @ConfigItem(name = "auth.session.encryption-key")
     public Optional<String> encryptionKey;
+
+    /**
+     * Enable socket reuse port (linux/macOs native transport only)
+     */
+    @ConfigItem(defaultValue = "false", name = "so-reuse-port")
+    public boolean soReusePort;
+
+    /**
+     * Enable tcp quick ack (linux native transport only)
+     */
+    @ConfigItem(defaultValue = "false", name = "tcp-quick-ack")
+    public boolean tcpQuickAck;
+
+    /**
+     * Enable tcp cork (linux native transport only)
+     */
+    @ConfigItem(defaultValue = "false", name = "tcp-cork")
+    public boolean tcpCork;
+
+    /**
+     * Enable tcp fast open (linux native transport only)
+     */
+    @ConfigItem(defaultValue = "false", name = "tcp-fast-open")
+    public boolean tcpFastOpen;
+
+    /**
+     * Path to a unix domain socket
+     */
+    @ConfigItem(name = "domain-socket")
+    public Optional<String> domainSocket;
 
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;

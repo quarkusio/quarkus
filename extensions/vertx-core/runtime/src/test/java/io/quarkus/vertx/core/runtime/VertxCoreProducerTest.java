@@ -100,6 +100,7 @@ public class VertxCoreProducerTest {
         vc.maxWorkerExecuteTime = Optional.of(Duration.ofSeconds(1));
         vc.internalBlockingPoolSize = 20;
         vc.useAsyncDNS = false;
+        vc.preferNativeTransport = false;
         vc.eventbus = new EventBusConfiguration();
         vc.eventbus.keyCertificatePem = new PemKeyCertConfiguration();
         vc.eventbus.keyCertificatePem.keys = Optional.empty();

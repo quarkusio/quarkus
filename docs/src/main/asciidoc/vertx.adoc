@@ -49,6 +49,74 @@ Otherwise, you can manually add this to the dependencies section of your `pom.xm
 </dependency>
 ----
 
+== Native Transport
+
+Vert.x is capable of using https://netty.io/wiki/native-transports.html[Netty's native transports] which offers
+performance improvements on certain platforms. To enable them you must include the appropriate dependency for your
+platform. It's usually a good idea to include both to keep your application platform agnostic. Netty is smart enough
+to use the correct one, that includes none at all on unsupported platforms:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.netty</groupId>
+  <artifactId>netty-transport-native-epoll</artifactId>
+  <classifier>linux-x86_64</classifier>
+</dependency>
+
+<dependency>
+  <groupId>io.netty</groupId>
+  <artifactId>netty-transport-native-kqueue</artifactId>
+  <classifier>osx-x86_64</classifier>
+</dependency>
+----
+
+You will also have to explicitly configure Vert.x to use the native transport. In `application.properties` add:
+
+[source]
+----
+quarkus.vertx.prefer-native-transport=true
+----
+
+Or in `application.yml`:
+
+[source,yml]
+----
+quarkus:
+  vertx:
+    prefer-native-transport: true
+----
+
+=== Native Linux Transport
+
+On Linux you can enable the following socket options:
+
+* SO_REUSEPORT
+----
+quarkus.http.so-reuse-port=true
+----
+* TCP_QUICKACK
+----
+quarkus.http.tcp-quick-ack=true
+----
+* TCP_CORK
+----
+quarkus.http.tcp-cork=true
+----
+* TCP_FASTOPEN
+----
+quarkus.http.tcp-fast-open=true
+----
+
+=== Native MacOS Transport
+
+On MacOS Sierra and above you can enable the following socket options:
+
+* SO_REUSEPORT
+----
+quarkus.http.so-reuse-port=true
+----
+
 == Accessing Vert.x
 
 Once the extension has been added, you can access the _managed_ Vert.x instance using `@Inject`:
@@ -583,6 +651,32 @@ public void init(@Observes StartupEvent e, Vertx vertx, Instance<AbstractVerticl
     }
 }
 ====
+
+== Listening to a Unix Domain Socket
+
+Listening on a unix domain socket allows us to dispense with the overhead of TCP
+if the connection to the server is established from the same host. This can happen
+if access to the service goes through a proxy which is often the case
+if you're setting up a service mesh with a proxy like Envoy.
+
+IMPORTANT: This will only work on platforms that support <<native-transport>>.
+
+To setup please enable the appropriate <<native-transport>> and set the following
+environment property:
+
+----
+quarkus.http.domain-socket=/var/run/quarkus-http.socket
+----
+
+By itself this will not disable the tcp socket which by default will open on
+`0.0.0.0:8080`. You can disable it by leaving the following environment property empty:
+
+----
+quarkus.http.host=
+----
+
+These properties can be set through Java's `-D` command line parameter or
+on `application.properties`.
 
 == Read only deployment environments
 

@@ -54,7 +54,8 @@ class HibernateSearchElasticsearchProcessor {
 
     @BuildStep
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
-        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.search.engine.Version", "HSEARCH000034"));
+        filters.produce(new LogCleanupFilterBuildItem(
+                "org.hibernate.search.mapper.orm.bootstrap.impl.HibernateSearchIntegrator", "HSEARCH000034"));
     }
 
     @BuildStep
@@ -135,10 +136,6 @@ class HibernateSearchElasticsearchProcessor {
     private void registerReflection(IndexView index, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
         Set<DotName> reflectiveClassCollector = new HashSet<>();
-
-        // TODO remove this when upgrading to Beta4 (when https://hibernate.atlassian.net/browse/HSEARCH-3795 is solved)
-        reflectiveClass.produce(
-                new ReflectiveClassBuildItem(false, false, org.hibernate.search.engine.logging.impl.Log_$logger.class));
 
         if (buildTimeConfig.defaultBackend.analysis.configurer.isPresent()) {
             reflectiveClass.produce(

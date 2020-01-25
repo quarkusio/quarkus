@@ -26,7 +26,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: maven-repo
-        path: ~/.m2/repository
+        path: $HOME/.m2/repository
     - name: Cleanup Cache
       shell: bash
       run: |
@@ -56,6 +56,6 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: maven-repo
-        path: ~/.m2/repository
+        path: $HOME/.m2/repository
     - name: Build with Maven
       run: mvn -pl integration-tests/main -B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dtest-neo4j -Dnative-image.xmx=6g -Dnative -Dno-format

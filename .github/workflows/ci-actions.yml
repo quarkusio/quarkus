@@ -63,9 +63,9 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: maven-repo
-        path: maven-repoo.tgz
+        path: maven-repo.tgz
     - name: Extract Maven Repo
       shell: bash
-      run: tar xzvf maven-repo.tgz -C ~
+      run: tar -xzvf maven-repo.tgz -C ~
     - name: Build with Maven
       run: mvn -pl integration-tests/main -B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dtest-neo4j -Dnative-image.xmx=6g -Dnative -Dno-format

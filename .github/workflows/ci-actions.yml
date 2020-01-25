@@ -20,13 +20,13 @@ jobs:
         # Improves the reusability of the cache to limit key changes
         key: ${{ runner.os }}-maven-${{ hashFiles('bom/runtime/pom.xml') }}
         restore-keys: ${{ runner.os }}-maven-
-    - name: Build
-      run: mvn -e -B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs clean install
+#    - name: Build
+#      run: mvn -e -B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs clean install
     - name: Persist Maven Repo
       uses: actions/upload-artifact@v1
       with:
         name: maven-repo
-        path: $HOME/.m2/repository
+        path: ${{ $HOME/.m2/repository }}
     - name: Cleanup Cache
       shell: bash
       run: |

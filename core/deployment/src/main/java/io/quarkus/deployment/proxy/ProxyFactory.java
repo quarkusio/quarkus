@@ -145,7 +145,7 @@ public class ProxyFactory<T> {
                     // method = clazz.getDeclaredMethod(...)
 
                     ResultHandle getDeclaredMethodParamsArray = mc.newArray(Class.class,
-                            mc.load(methodInfo.getParameterCount()));
+                            methodInfo.getParameterCount());
                     for (int i = 0; i < methodInfo.getParameterCount(); i++) {
                         ResultHandle paramClass = mc.loadClass(methodInfo.getParameters()[i].getType());
                         mc.writeArrayValue(getDeclaredMethodParamsArray, i, paramClass);
@@ -158,7 +158,7 @@ public class ProxyFactory<T> {
 
                     // result = invocationHandler.invoke(...)
 
-                    ResultHandle invokeParamsArray = mc.newArray(Object.class, mc.load(methodInfo.getParameterCount()));
+                    ResultHandle invokeParamsArray = mc.newArray(Object.class, methodInfo.getParameterCount());
                     for (int i = 0; i < methodInfo.getParameterCount(); i++) {
                         mc.writeArrayValue(invokeParamsArray, i, mc.getMethodParam(i));
                     }

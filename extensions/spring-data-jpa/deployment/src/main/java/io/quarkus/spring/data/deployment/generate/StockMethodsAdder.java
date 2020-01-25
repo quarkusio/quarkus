@@ -718,7 +718,7 @@ public class StockMethodsAdder {
                     ResultHandle idToString = entityNull.invokeVirtualMethod(
                             ofMethod(Object.class, "toString", String.class),
                             id);
-                    ResultHandle formatArgsArray = entityNull.newArray(Object.class, entityNull.load(1));
+                    ResultHandle formatArgsArray = entityNull.newArray(Object.class, 1);
                     entityNull.writeArrayValue(formatArgsArray, entityNull.load(0), idToString);
 
                     ResultHandle messageFormat = entityNull.load("No entity " + entityTypeStr + " with id %s exists");

@@ -1,0 +1,59 @@
+name: Java CI
+
+on: [push, pull_request]
+
+jobs:
+  build-jdk8:
+    name: "JDK 8 Build"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1 
+      with:
+        java-version: 1.8
+    - name: Cache Maven Repository
+      id: cache-maven
+      uses: actions/cache@v1
+        path: ~/.m2/repository
+        # Improves the reusability of the cache to limit key changes
+        key: ${{ runner.os }}-maven-${{ hashFiles('bom/runtime/pom.xml') }}
+        restore-keys: ${{ runner.os }}-maven-
+    - name: Build
+      run: mvn -e -B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs clean install
+    - name: Persist Maven Repo
+      uses: actions/upload-artifact@v1
+      with:
+        name: maven-repo
+        path: ~/.m2/repository
+    - name: Cleanup Cache
+      shell: bash
+      run: |
+        find ~/.m2/repositoiry/io/quarkus/ -mindepth 1 -maxdepth 1 \( ! -name http -a ! -name gizmo -a ! -name security \) -exec echo {} \; -exec rm -rf {} \;
+         
+  native-main:
+    name: Native Tests - Main
+    needs: build-jdk8
+    runs-on: ubuntu-latest
+
+    services:
+      image: postgres:10.5
+      env:
+        POSTGRES_USER: hibernate_orm_test 
+        POSTGRES_PASSWORD: hibernate_orm_test 
+        POSTGRES_DB: hibernate_orm_test 
+      ports:
+      - 5432:5432
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+    - name: Download Maven Repo
+      uses: actions/download-artifact@v1
+      with:
+        name: maven-repo
+        path: ~/.m2/repository
+    - name: Build with Maven
+      run: mvn -pl integration-tests/main -B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dtest-neo4j -Dnative-image.xmx=6g -Dnative -Dno-format

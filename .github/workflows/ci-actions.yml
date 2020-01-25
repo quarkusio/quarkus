@@ -63,7 +63,7 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: maven-repo
-        path: maven-repo.tgz
+        path: .
     - name: Extract Maven Repo
       shell: bash
       run: tar -xzvf maven-repo.tgz -C ~

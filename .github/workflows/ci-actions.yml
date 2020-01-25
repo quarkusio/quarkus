@@ -8,8 +8,6 @@ jobs:
     name: "JDK 8 Build"
     runs-on: ubuntu-latest
     steps:
-  #  - run:   echo ::set-env name=HOME::$HOME
-  #    shell: bash
     - uses: actions/checkout@v2
     - name: Set up JDK 1.8
       uses: actions/setup-java@v1 
@@ -21,11 +19,10 @@ jobs:
       with:  
         path: ~/.m2/repository
         # Improves the reusability of the cache to limit key changes
-        key: ${{ runner.os }}-maven-${{ hashFiles('bom/runtime/pom.xml') }}
-        restore-keys: ${{ runner.os }}-maven-
+        key: ${{ runner.os }}-qmaven-${{ hashFiles('bom/runtime/pom.xml') }}
+        restore-keys: ${{ runner.os }}-qmaven-
     - name: Build
-      #run: mvn -e -B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs clean install
-      run: mvn io.quarkus:quarkus-maven-plugin:1.1.1.Final:list-extensions
+      run: mvn -e -B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs clean install
     - name: Tar Maven Repo
       shell: bash
       run: tar -czvf maven-repo.tgz -C ~ .m2/repository
@@ -68,4 +65,4 @@ jobs:
       shell: bash
       run: tar -xzvf maven-repo.tgz -C ~
     - name: Build with Maven
-      run: mvn -pl integration-tests/main -B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dtest-neo4j -Dnative-image.xmx=6g -Dnative -Dno-format
+      run: mvn -pl integration-tests/main -B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dtest-neo4j -Dnative-image.xmx=6g -Dnative -Dno-format install

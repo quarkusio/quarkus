@@ -4,11 +4,12 @@ on: [push, pull_request]
 
 jobs:
   build-jdk8:
-    env:
-      thehome: $HOME/.m2/repository
+ 
     name: "JDK 8 Build"
     runs-on: ubuntu-latest
     steps:
+    - run:   echo ::set-env name=HOME::$HOME
+      shell: bash
     - uses: actions/checkout@v2
     - name: Set up JDK 1.8
       uses: actions/setup-java@v1 
@@ -28,7 +29,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: maven-repo
-        path: ${{ env.GITHUB_HOME }}/.m2/repository
+        path: ${{ env.HOME }}/.m2/repository
     - name: Cleanup Cache
       shell: bash
       run: |

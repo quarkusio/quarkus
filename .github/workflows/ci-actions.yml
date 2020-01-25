@@ -4,6 +4,8 @@ on: [push, pull_request]
 
 jobs:
   build-jdk8:
+    env:
+      thehome: $HOME/.m2/repository
     name: "JDK 8 Build"
     runs-on: ubuntu-latest
     steps:
@@ -26,7 +28,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: maven-repo
-        path: "$HOME/.m2/repository"
+        path: ${{ thehome }}
     - name: Cleanup Cache
       shell: bash
       run: |

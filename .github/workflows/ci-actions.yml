@@ -28,7 +28,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: maven-repo
-        path: ${{ thehome }}
+        path: ${{ env['thehome'] }}
     - name: Cleanup Cache
       shell: bash
       run: |

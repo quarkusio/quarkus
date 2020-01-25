@@ -2,6 +2,8 @@ package io.quarkus.flyway.runtime;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -162,7 +164,19 @@ class FlywayCreatorTest {
     void testValidateOnMigrate() {
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertEquals(runtimeConfig.validateOnMigrate, createdFlywayConfig().isValidateOnMigrate());
-        assertEquals(runtimeConfig.validateOnMigrate, true);
+        assertTrue(runtimeConfig.validateOnMigrate);
+    }
+
+    @Test
+    @DisplayName("outOfOrder is correctly set")
+    void testOutOfOrder() {
+        runtimeConfig.outOfOrder = false;
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertFalse(createdFlywayConfig().isOutOfOrder());
+
+        runtimeConfig.outOfOrder = true;
+        creator = new FlywayCreator(runtimeConfig, buildConfig);
+        assertTrue(createdFlywayConfig().isOutOfOrder());
     }
 
     @ParameterizedTest

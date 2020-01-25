@@ -28,7 +28,7 @@ jobs:
       run: mvn io.quarkus:quarkus-maven-plugin:1.1.1.Final:list-extensions
     - name: Tar Maven Repo
       shell: bash
-      run: (cd ~; tar czvf maven-repo.tgz .m2/repository)
+      run: tar -C ~ czvf maven-repo.tgz .m2/repository
     - name: Persist Maven Repo
       uses: actions/upload-artifact@v1
       with:
@@ -66,6 +66,6 @@ jobs:
         path: maven-repoo.tgz
     - name: Extract Maven Repo
       shell: bash
-      run: (cd ~; tar xzvf maven-repo.tgz)
+      run: tar -C ~ xzvf maven-repo.tgz
     - name: Build with Maven
       run: mvn -pl integration-tests/main -B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dtest-neo4j -Dnative-image.xmx=6g -Dnative -Dno-format

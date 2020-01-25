@@ -17,7 +17,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
@@ -38,7 +37,6 @@ public class JSchTest {
     }
 
     @Test
-    @DisabledOnNativeImage("This test fails with GraalVM 19.2.1 but is successful with GraalVM 19.3.1")
     void shouldConnect() {
         given().queryParam("host", sshd.getHost())
                 .queryParam("port", sshd.getPort())

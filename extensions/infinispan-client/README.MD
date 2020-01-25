@@ -78,16 +78,11 @@ This is configured via hotrod-client.properties file located in META-INF. Everyt
 you have to add the certificate from the server to the configured truststore if it already trusted in the default
 java cacerts file.
 
-#### Configure your project to allow security services (enable JNI optional)
+#### Configure your project to allow security services
 
 You (currently) need to enable all security services in Substrate
 (https://github.com/oracle/graal/blob/master/substratevm/JCA-SECURITY-SERVICES.md). This can be done by adding
 `<enableAllSecurityServices>true</enableAllSecurityServices>` to the quarkus-maven-plugin configuration values.
-
-You may have to also enable JNI, depending on the security provider by also adding `<enableJni>true</enableJni>` to the
-same configuration values. If you have to enable JNI you will then also have to add the appropriate shared library to
-be contained in a directory defined by `java.library.path`. In many times this shared library will be `sunec`, which
-can be located at `<JAVA_HOME>/jre/lib/<platform>/libsunec.so`.
 
 ### Authentication
 

@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -48,10 +49,12 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
     private final IndexView index;
     private final ClassOutput nonBeansClassOutput;
+    private final Consumer<String> customClassCreatedCallback;
 
-    public CustomQueryMethodsAdder(IndexView index, ClassOutput classOutput) {
+    public CustomQueryMethodsAdder(IndexView index, ClassOutput classOutput, Consumer<String> customClassCreatedCallback) {
         this.index = index;
         this.nonBeansClassOutput = classOutput;
+        this.customClassCreatedCallback = customClassCreatedCallback;
     }
 
     public void add(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor, ClassInfo repositoryClassInfo,
@@ -307,6 +310,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
             DotName interfaceName = mapping.getKey();
             DotName implName = mapping.getValue();
             generateCustomResultTypes(interfaceName, implName, customResultTypes.get(implName));
+            customClassCreatedCallback.accept(implName.toString());
         }
     }
 

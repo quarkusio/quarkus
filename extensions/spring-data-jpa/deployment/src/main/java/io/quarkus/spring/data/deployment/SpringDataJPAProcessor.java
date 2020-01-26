@@ -30,6 +30,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.hibernate.orm.deployment.IgnorableNonIndexedClasses;
@@ -54,14 +55,14 @@ public class SpringDataJPAProcessor {
     void build(CombinedIndexBuildItem index,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
 
         IndexView indexIndex = index.getIndex();
         List<ClassInfo> interfacesExtendingCrudRepository = getAllInterfacesExtending(DotNames.SUPPORTED_REPOSITORIES,
                 indexIndex);
 
         removeNoRepositoryBeanClasses(interfacesExtendingCrudRepository);
-        implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans,
+        implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans, reflectiveClasses,
                 interfacesExtendingCrudRepository, indexIndex);
     }
 
@@ -102,6 +103,7 @@ public class SpringDataJPAProcessor {
     private void implementCrudRepositories(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             List<ClassInfo> crudRepositoriesToImplement, IndexView index) {
 
         ClassOutput beansClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
@@ -121,7 +123,11 @@ public class SpringDataJPAProcessor {
                 compositeIndex, (n) -> {
                     // the implementation of fragments don't need to be beans themselves
                     additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(n));
-                });
+                }, (className -> {
+                    // the generated classes that implement interfaces for holding custom query results need
+                    // to be registered for reflection here since this is the only point where the generated class is known
+                    reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, className));
+                }));
 
         for (ClassInfo crudRepositoryToImplement : crudRepositoriesToImplement) {
             repositoryCreator.implementCrudRepository(crudRepositoryToImplement);

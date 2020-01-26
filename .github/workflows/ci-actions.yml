@@ -49,9 +49,9 @@ jobs:
       postgres:
         image: postgres:10.5
         env:
-          POSTGRES_USER: $DB_USER
-          POSTGRES_PASSWORD: $DB_PASSWORD
-          POSTGRES_DB: $DB_NAME
+          POSTGRES_USER: ${{ env.DB_USER }}
+          POSTGRES_PASSWORD: ${{ env.DB_PASSWORD }}
+          POSTGRES_DB: ${{ env.DB_NAME }}
         ports:
           - 5432:5432
     steps:
@@ -111,9 +111,9 @@ jobs:
       postgres:
         image: postgres:10.5
         env:
-          POSTGRES_USER: $DB_USER
-          POSTGRES_PASSWORD: $DB_PASSWORD
-          POSTGRES_DB: $DB_NAME
+          POSTGRES_USER: ${{ env.DB_USER }}
+          POSTGRES_PASSWORD: ${{ env.DB_PASSWORD }}
+          POSTGRES_DB: ${{ env.DB_NAME }}
         ports:
           - 5432:5432
 
@@ -156,9 +156,9 @@ jobs:
       postgres:
         image: postgres:10.5
         env:
-          POSTGRES_USER: $DB_USER
-          POSTGRES_PASSWORD: $DB_PASSWORD
-          POSTGRES_DB: $DB_NAME
+          POSTGRES_USER: ${{ env.DB_USER }}
+          POSTGRES_PASSWORD: ${{ env.DB_PASSWORD }}
+          POSTGRES_DB: ${{ env.DB_NAME }}
         ports:
           - 5432:5432
 
@@ -282,10 +282,10 @@ jobs:
       - name: Build with Maven
         run: |
           for i in \
-            - artemis-core \
-            - artemis-jms \
-            - kafka \
-            - kafka-streams
+            artemis-core \
+            artemis-jms \
+            kafka \
+            kafka-streams
           do modules+=("integration-tests/$i"); done
           IFS=,
           eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS

@@ -73,6 +73,9 @@ labelPRBasedOnFilePath:
         - extensions/artemis-jms/**/*
         - integration-tests/artemis-core/**/*
         - integration-tests/artemis-jms/**/*
+    area/cache:
+        - extensions/cache/**/*
+        - integration-tests/cache/**/*
     area/config:
         - extensions/config-yaml/**/*
         - core/deployment/src/main/java/io/quarkus/deployment/configuration/**/*

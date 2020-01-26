@@ -24,7 +24,6 @@
 ### - extensions/mailer
 ### - extensions/netty
 ### - extensions/pom.xml
-### - extensions/quartz
 ### - integration-tests
 ### - integration-tests/.project
 ### - integration-tests/.settings
@@ -39,7 +38,6 @@
 ### - integration-tests/keycloak-authorization
 ### - integration-tests/main
 ### - integration-tests/pom.xml
-### - integration-tests/quartz
 ### - integration-tests/shared-library
 ### - integration-tests/test-extension
 ### - integration-tests/virtual-http
@@ -215,6 +213,8 @@ labelPRBasedOnFilePath:
         - integration-tests/scala/**/*
     area/scheduler:
         - extensions/scheduler/**/*
+        - extensions/quartz/**/*
+        - integration-tests/quartz/**/*
     area/security:
         - extensions/security/**/*
         - extensions/elytron-security/**/*

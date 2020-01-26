@@ -507,7 +507,7 @@ public class JarResultBuildStep {
             }
         }
 
-        copyFiles(appArchives.getRootArchive().getArchiveRoot(), runnerZipFs, services);
+        copyApplicationFiles(appArchives.getRootArchive().getArchiveRoot(), runnerZipFs, true, services);
 
         for (Map.Entry<String, List<byte[]>> entry : services.entrySet()) {
             try (final OutputStream os = wrapForJDK8232879(
@@ -618,7 +618,8 @@ public class JarResultBuildStep {
      * @param services the services map
      * @throws IOException if an error occurs
      */
-    private void copyFiles(Path dir, FileSystem fs, Map<String, List<byte[]>> services) throws IOException {
+    private void copyApplicationFiles(Path dir, FileSystem fs, boolean overwriteExisting, Map<String, List<byte[]>> services)
+            throws IOException {
         try (Stream<Path> fileTreeElements = Files.walk(dir)) {
             fileTreeElements.forEach(new Consumer<Path>() {
                 @Override
@@ -643,6 +644,11 @@ public class JarResultBuildStep {
                             } else {
                                 Path target = fs.getPath(relativePath);
                                 if (!Files.exists(target)) {
+                                    Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
+                                } else if (overwriteExisting) {
+                                    // log a message to indicate that the file is being overwritten
+                                    log.debug("File " + path + " from current application will overwrite existing " +
+                                            "file at " + target);
                                     Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
                                 }
                             }

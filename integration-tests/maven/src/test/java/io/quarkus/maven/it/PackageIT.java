@@ -2,6 +2,7 @@ package io.quarkus.maven.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,6 +17,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
@@ -73,7 +76,7 @@ public class PackageIT extends MojoTestBase {
         createAndVerifyUberJar();
     }
 
-    private void createAndVerifyUberJar() throws IOException, MavenInvocationException, InterruptedException {
+    private File createAndVerifyUberJar() throws IOException, MavenInvocationException, InterruptedException {
         Properties p = new Properties();
         p.setProperty("quarkus.package.uber-jar", "true");
 
@@ -85,9 +88,11 @@ public class PackageIT extends MojoTestBase {
         final File targetDir = getTargetDir();
         List<File> jars = getFilesEndingWith(targetDir, ".jar");
         assertThat(jars).hasSize(1);
+        final File uberJar = jars.get(0);
         assertThat(getNumberOfFilesEndingWith(targetDir, ".original")).isEqualTo(1);
 
-        ensureManifestOfJarIsReadableByJarInputStream(jars.get(0));
+        ensureManifestOfJarIsReadableByJarInputStream(uberJar);
+        return uberJar;
     }
 
     @Test
@@ -171,6 +176,50 @@ public class PackageIT extends MojoTestBase {
         final Path runnerJar = targetDir.toPath().resolve("acme-1.0-SNAPSHOT-runner.jar");
         Assert.assertTrue("Runner jar " + runnerJar + " is missing", Files.exists(runnerJar));
         assertZipEntriesCanBeOpenedAndClosed(runnerJar);
+    }
+
+    /**
+     * Test that if an application, being built as a uber jar, contains a certain file and the application's
+     * dependency too has the same file, then the uber jar will always contain the application's file and not
+     * the one from its dependencies.
+     *
+     * @throws Exception
+     * @see <a href="https://github.com/quarkusio/quarkus/issues/6754"/>
+     */
+    @Test
+    public void testDeterminsticResourceInclusionUberJar() throws Exception {
+        // first "mvn install" the dependency project used by the uberjar-check
+        final File dependencyProjectDir = initProject("projects/uberjar-dependency", "projects/project-uberjar-dependency");
+        final RunningInvoker invoker = new RunningInvoker(dependencyProjectDir, false);
+        final MavenProcessInvocationResult result = invoker.execute(Collections.singletonList("clean install"),
+                Collections.emptyMap());
+        assertEquals(0, result.getProcess().waitFor(), "uberjar-dependency project build failed");
+
+        // now build the application, which depends on the previous project, as a uber jar
+        testDir = initProject("projects/uberjar-resource-inclusion", "projects/project-uberjar-resource-inclusion");
+        final File uberJar = createAndVerifyUberJar();
+        // verify that any duplicate resource from within dependencies of the application
+        // doesn't get included instead of the one from the application itself
+        try (final JarFile jar = new JarFile(uberJar)) {
+            final JarEntry jarEntry = jar.getJarEntry("application.properties");
+            assertNotNull(jarEntry, "application.properties is missing in uber jar");
+            try (final InputStream is = jar.getInputStream(jarEntry)) {
+                final Properties props = new Properties();
+                props.load(is);
+                assertEquals("from uberjar-resource-inclusion", props.get("which-application-properties"),
+                        "Unexpected application.properties included in uber jar");
+            }
+            final String someOtherResource = "META-INF/resources/helloworld.properties";
+            final JarEntry someOtherResourceJarEntry = jar.getJarEntry(someOtherResource);
+            assertNotNull(someOtherResourceJarEntry, someOtherResource + " is missing in uber jar");
+            try (final InputStream is = jar.getInputStream(someOtherResourceJarEntry)) {
+                final Properties props = new Properties();
+                props.load(is);
+                assertEquals("hello from uberjar-resource-inclusion", props.get("greeting"),
+                        "Unexpected " + someOtherResource + " included in uber jar");
+            }
+        }
+
     }
 
     private List<File> getFilesEndingWith(File dir, String suffix) {

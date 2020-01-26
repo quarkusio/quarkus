@@ -62,6 +62,11 @@ jobs:
           curl -s "https://get.sdkman.io" | bash
           source ~/.sdkman/bin/sdkman-init.sh && \
           sdk install kotlin 1.3.61 && \
+
+          # we need to install Java 8 because kscript doesn't yet work with Java 11: https://github.com/holgerbrandl/kscript/issues/239
+          if [[ ${JAVA_VERSION} = 11 ]]; then
+            echo "y" | sdk install java 8.0.232-open
+          
           sdk install kscript 2.9.0
           [[ ${JAVA_VERSION} = 8 ]] && ISSUE_NUMBER="6717" || ISSUE_NUMBER="6723"
           kscript .github/NativeBuildReport.kts ${GITHUB_TOKEN} ${STATUS} ${ISSUE_NUMBER}

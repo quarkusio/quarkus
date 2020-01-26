@@ -69,7 +69,7 @@ jobs:
         shell: bash
         run: tar -xzvf maven-repo.tgz -C ~
       - name: Build with Maven
-        run: mvn -pl integration-tests/main $NATIVE_TEST_MAVEN_OPTS
+        run: eval mvn -pl integration-tests/main $NATIVE_TEST_MAVEN_OPTS
 
   native-data1:
     name: Native Tests - Data1
@@ -100,7 +100,7 @@ jobs:
             jpa-without-entity
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
 
   native-data2:
     name: Native Tests - Data2
@@ -145,7 +145,7 @@ jobs:
             reactive-mysql-client
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
   
   native-data3:
     name: Native Tests - Data3
@@ -184,7 +184,7 @@ jobs:
             reactive-pg-client 
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
   
   native-data4:
     name: Native Tests - Data4
@@ -223,7 +223,7 @@ jobs:
             neo4j
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
   
   native-amazon:
     name: Native Tests - Amazon
@@ -258,7 +258,7 @@ jobs:
             amazon-lambda-http 
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
 
   native-messaging:
     name: Native Tests - Messaging
@@ -288,7 +288,7 @@ jobs:
             - kafka-streams
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
 
   native-security1:
     name: Native Tests - Security 1
@@ -328,7 +328,7 @@ jobs:
             elytron-undertow
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
 
   native-security2:
     name: Native Tests - Security 2
@@ -370,7 +370,7 @@ jobs:
             keycloak-authorization
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
 
   native-cache:
     name: Native Tests - Cache
@@ -400,7 +400,7 @@ jobs:
             cache
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
 
   native-http:
     name: Native Tests - HTTP
@@ -431,7 +431,7 @@ jobs:
             virtual-http 
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
   
   native-misc1:
     name: Native Tests - Misc 1
@@ -462,7 +462,7 @@ jobs:
             jgit
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
 
   native-misc2:
     name: Native Tests - Misc 2
@@ -492,7 +492,7 @@ jobs:
             logging-gelf
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
 
   native-misc3:
     name: Native Tests - Misc 3
@@ -521,7 +521,7 @@ jobs:
             quartz
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
 
   native-spring:
     name: Native Tests - Spring
@@ -551,7 +551,7 @@ jobs:
             spring-boot-properties
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
   native-data5:
     name: Native Tests - Data 5
     needs: build-jdk8
@@ -579,4 +579,4 @@ jobs:
             narayana-jta
           do modules+=("integration-tests/$i"); done
           IFS=,
-          mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS

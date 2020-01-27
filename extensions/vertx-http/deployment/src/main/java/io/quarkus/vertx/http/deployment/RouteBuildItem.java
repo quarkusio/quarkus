@@ -15,14 +15,13 @@ public final class RouteBuildItem extends MultiBuildItem {
     private final Function<Router, Route> routeFunction;
     private final Handler<RoutingContext> handler;
     private final HandlerType type;
-    private final boolean resume;
 
+    @Deprecated
     public RouteBuildItem(Function<Router, Route> routeFunction, Handler<RoutingContext> handler, HandlerType type,
             boolean resume) {
         this.routeFunction = routeFunction;
         this.handler = handler;
         this.type = type;
-        this.resume = resume;
     }
 
     public RouteBuildItem(Function<Router, Route> routeFunction, Handler<RoutingContext> handler, HandlerType type) {
@@ -59,9 +58,5 @@ public final class RouteBuildItem extends MultiBuildItem {
 
     public Function<Router, Route> getRouteFunction() {
         return routeFunction;
-    }
-
-    public boolean isResume() {
-        return resume;
     }
 }

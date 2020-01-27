@@ -1,12 +1,13 @@
 package io.quarkus.it.keycloak;
 
+import static io.quarkus.it.keycloak.KeycloakRealmResourceManager.getAccessToken;
 import static org.hamcrest.Matchers.equalTo;
 
 import java.util.Arrays;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
-import org.keycloak.representations.AccessTokenResponse;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -18,9 +19,6 @@ import io.restassured.RestAssured;
 @QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
 public class BearerTokenAuthorizationTest {
-
-    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
-    private static final String KEYCLOAK_REALM = "quarkus";
 
     @Test
     public void testSecureAccessSuccessWithCors() {
@@ -101,16 +99,13 @@ public class BearerTokenAuthorizationTest {
                 .statusCode(401);
     }
 
-    private String getAccessToken(String userName) {
-        return RestAssured
-                .given()
-                .param("grant_type", "password")
-                .param("username", userName)
-                .param("password", userName)
-                .param("client_id", "quarkus-app")
-                .param("client_secret", "secret")
-                .when()
-                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
-                .as(AccessTokenResponse.class).getToken();
+    //see https://github.com/quarkusio/quarkus/issues/5809
+    @RepeatedTest(20)
+    public void testOidcAndVertxHandler() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice"))
+                .when().body("Hello World").post("/vertx")
+                .then()
+                .statusCode(200)
+                .body(equalTo("Hello World"));
     }
 }

@@ -22,54 +22,13 @@ import io.vertx.core.http.StreamPriority;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
-class ForwardedServerRequestWrapper implements HttpServerRequest {
+class ResumingRequestWrapper implements HttpServerRequest {
 
+    private boolean userSetState;
     private final HttpServerRequest delegate;
-    private final ForwardedParser forwardedParser;
 
-    private boolean modified;
-
-    private HttpMethod method;
-    private String path;
-    private String query;
-    private String uri;
-    private String absoluteURI;
-
-    ForwardedServerRequestWrapper(HttpServerRequest request, boolean allowForwarded) {
+    ResumingRequestWrapper(HttpServerRequest request) {
         delegate = request;
-        forwardedParser = new ForwardedParser(delegate, allowForwarded);
-    }
-
-    void changeTo(HttpMethod method, String uri) {
-        modified = true;
-        this.method = method;
-        this.uri = uri;
-        // lazy initialization
-        this.path = null;
-        this.query = null;
-        this.absoluteURI = null;
-
-        // parse
-        int queryIndex = uri.indexOf('?');
-        int fragmentIndex = uri.indexOf('#');
-
-        // there's a query
-        if (queryIndex != -1) {
-            path = uri.substring(0, queryIndex);
-            // there's a fragment
-            if (fragmentIndex != -1) {
-                query = uri.substring(queryIndex + 1, fragmentIndex);
-            } else {
-                query = uri.substring(queryIndex + 1);
-            }
-        } else {
-            // there's a fragment
-            if (fragmentIndex != -1) {
-                path = uri.substring(0, fragmentIndex);
-            } else {
-                path = uri;
-            }
-        }
     }
 
     @Override
@@ -79,30 +38,35 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
 
     @Override
     public HttpServerRequest exceptionHandler(Handler<Throwable> handler) {
-        delegate.exceptionHandler(handler);
-        return this;
+        return delegate.exceptionHandler(handler);
     }
 
     @Override
     public HttpServerRequest handler(Handler<Buffer> handler) {
         delegate.handler(handler);
+        if (!userSetState) {
+            delegate.resume();
+        }
         return this;
     }
 
     @Override
     public HttpServerRequest pause() {
+        userSetState = true;
         delegate.pause();
         return this;
     }
 
     @Override
     public HttpServerRequest resume() {
+        userSetState = true;
         delegate.resume();
         return this;
     }
 
     @Override
     public HttpServerRequest fetch(long amount) {
+        userSetState = true;
         delegate.fetch(amount);
         return this;
     }
@@ -110,6 +74,9 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     @Override
     public HttpServerRequest endHandler(Handler<Void> handler) {
         delegate.endHandler(handler);
+        if (!userSetState) {
+            delegate.resume();
+        }
         return this;
     }
 
@@ -120,42 +87,27 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
 
     @Override
     public HttpMethod method() {
-        if (!modified) {
-            return delegate.method();
-        }
-        return method;
+        return delegate.method();
     }
 
     @Override
     public String rawMethod() {
-        if (!modified) {
-            return delegate.rawMethod();
-        }
-        return method.toString();
+        return delegate.rawMethod();
     }
 
     @Override
     public String uri() {
-        if (!modified) {
-            return delegate.uri();
-        }
-        return uri;
+        return delegate.uri();
     }
 
     @Override
     public String path() {
-        if (!modified) {
-            return delegate.path();
-        }
-        return path;
+        return delegate.path();
     }
 
     @Override
     public String query() {
-        if (!modified) {
-            return delegate.query();
-        }
-        return query;
+        return delegate.query();
     }
 
     @Override
@@ -190,7 +142,7 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
 
     @Override
     public SocketAddress remoteAddress() {
-        return forwardedParser.remoteAddress();
+        return delegate.remoteAddress();
     }
 
     @Override
@@ -210,33 +162,17 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
 
     @Override
     public String absoluteURI() {
-        if (!modified) {
-            return forwardedParser.absoluteURI();
-        } else {
-            if (absoluteURI == null) {
-                String scheme = forwardedParser.scheme();
-                String host = forwardedParser.host();
-
-                // if both are not null we can rebuild the uri
-                if (scheme != null && host != null) {
-                    absoluteURI = scheme + "://" + host + uri;
-                } else {
-                    absoluteURI = uri;
-                }
-            }
-
-            return absoluteURI;
-        }
+        return delegate.absoluteURI();
     }
 
     @Override
     public String scheme() {
-        return forwardedParser.scheme();
+        return delegate.scheme();
     }
 
     @Override
     public String host() {
-        return forwardedParser.host();
+        return delegate.host();
     }
 
     @Override
@@ -253,6 +189,9 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     @Override
     public HttpServerRequest bodyHandler(Handler<Buffer> handler) {
         delegate.bodyHandler(handler);
+        if (!userSetState) {
+            delegate.resume();
+        }
         return this;
     }
 
@@ -275,6 +214,9 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
     @Override
     public HttpServerRequest uploadHandler(Handler<HttpServerFileUpload> handler) {
         delegate.uploadHandler(handler);
+        if (!userSetState) {
+            delegate.resume();
+        }
         return this;
     }
 
@@ -300,7 +242,7 @@ class ForwardedServerRequestWrapper implements HttpServerRequest {
 
     @Override
     public boolean isSSL() {
-        return forwardedParser.isSSL();
+        return delegate.isSSL();
     }
 
     @Override

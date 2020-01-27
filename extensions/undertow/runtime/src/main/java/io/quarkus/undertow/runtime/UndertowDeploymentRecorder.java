@@ -361,6 +361,7 @@ public class UndertowDeploymentRecorder {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
+                event.request().pause();
                 VertxHttpExchange exchange = new VertxHttpExchange(event.request(), allocator, executorService, event,
                         event.getBody());
                 Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;

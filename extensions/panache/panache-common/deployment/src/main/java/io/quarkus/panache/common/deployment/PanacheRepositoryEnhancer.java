@@ -36,12 +36,14 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
         protected String entitySignature;
         protected String entityBinaryType;
         protected String daoBinaryName;
+        protected ClassInfo daoClassInfo;
         protected ClassInfo panacheRepositoryBaseClassInfo;
         protected IndexView indexView;
 
         public PanacheRepositoryClassVisitor(String className, ClassVisitor outputClassVisitor,
                 ClassInfo panacheRepositoryBaseClassInfo, IndexView indexView) {
             super(Opcodes.ASM7, outputClassVisitor);
+            daoClassInfo = indexView.getClassByName(DotName.createSimple(className));
             daoBinaryName = className.replace('.', '/');
             this.panacheRepositoryBaseClassInfo = panacheRepositoryBaseClassInfo;
             this.indexView = indexView;
@@ -101,20 +103,16 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-            // FIXME: do not add method if already present
-            return super.visitMethod(access, name, descriptor, signature, exceptions);
-        }
-
-        @Override
         public void visitEnd() {
-
             for (MethodInfo method : panacheRepositoryBaseClassInfo.methods()) {
-                AnnotationInstance bridge = method.annotation(JandexUtil.DOTNAME_GENERATE_BRIDGE);
-                if (bridge != null)
-                    generateMethod(method, bridge.value("targetReturnTypeErased"));
+                // Do not generate a method that already exists
+                if (!daoClassInfo.methods().contains(method)) {
+                    AnnotationInstance bridge = method.annotation(JandexUtil.DOTNAME_GENERATE_BRIDGE);
+                    if (bridge != null) {
+                        generateMethod(method, bridge.value("targetReturnTypeErased"));
+                    }
+                }
             }
-
             super.visitEnd();
         }
 
@@ -126,9 +124,9 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
             String castTo = null;
             if (targetReturnTypeErased != null && targetReturnTypeErased.asBoolean()) {
                 org.jboss.jandex.Type type = method.returnType();
-                if (type.kind() == Kind.TYPE_VARIABLE) {
-                    if (type.asTypeVariable().identifier().equals("Entity"))
-                        castTo = entityBinaryType;
+                if (type.kind() == Kind.TYPE_VARIABLE &&
+                        type.asTypeVariable().identifier().equals("Entity")) {
+                    castTo = entityBinaryType;
                 }
                 if (castTo == null)
                     castTo = type.name().toString('/');

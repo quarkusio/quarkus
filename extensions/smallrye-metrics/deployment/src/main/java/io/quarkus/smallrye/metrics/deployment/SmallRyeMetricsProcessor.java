@@ -12,6 +12,7 @@ import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.MET
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRICS_ANNOTATIONS;
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRICS_BINDING;
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRIC_INTERFACE;
+import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.SIMPLE_TIMER_INTERFACE;
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.TIMER_INTERFACE;
 
 import java.lang.reflect.Modifier;
@@ -82,6 +83,7 @@ import io.smallrye.metrics.interceptors.CountedInterceptor;
 import io.smallrye.metrics.interceptors.MeteredInterceptor;
 import io.smallrye.metrics.interceptors.MetricNameFactory;
 import io.smallrye.metrics.interceptors.MetricsInterceptor;
+import io.smallrye.metrics.interceptors.SimplyTimedInterceptor;
 import io.smallrye.metrics.interceptors.TimedInterceptor;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
@@ -146,6 +148,7 @@ public class SmallRyeMetricsProcessor {
                 ConcurrentGaugeInterceptor.class,
                 CountedInterceptor.class,
                 TimedInterceptor.class,
+                SimplyTimedInterceptor.class,
                 MetricsRequestHandler.class));
         unremovableBeans.produce(new UnremovableBeanBuildItem(
                 new UnremovableBeanBuildItem.BeanClassNameExclusion(MetricsRequestHandler.class.getName())));
@@ -180,6 +183,7 @@ public class SmallRyeMetricsProcessor {
                                     || annotations.containsKey(SmallRyeMetricsDotNames.CONCURRENT_GAUGE)
                                     || annotations.containsKey(SmallRyeMetricsDotNames.COUNTED)
                                     || annotations.containsKey(SmallRyeMetricsDotNames.METERED)
+                                    || annotations.containsKey(SmallRyeMetricsDotNames.SIMPLY_TIMED)
                                     || annotations.containsKey(SmallRyeMetricsDotNames.TIMED)
                                     || annotations.containsKey(SmallRyeMetricsDotNames.METRIC)) {
                                 LOGGER.debugf(
@@ -464,6 +468,9 @@ public class SmallRyeMetricsProcessor {
         }
         if (name.equals(HISTOGRAM_INTERFACE)) {
             return MetricType.HISTOGRAM;
+        }
+        if (name.equals(SIMPLE_TIMER_INTERFACE)) {
+            return MetricType.SIMPLE_TIMER;
         }
         if (name.equals(TIMER_INTERFACE)) {
             return MetricType.TIMER;

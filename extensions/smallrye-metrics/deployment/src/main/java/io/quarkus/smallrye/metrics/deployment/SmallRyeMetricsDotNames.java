@@ -7,12 +7,14 @@ import java.util.Set;
 import org.eclipse.microprofile.metrics.Counter;
 import org.eclipse.microprofile.metrics.Histogram;
 import org.eclipse.microprofile.metrics.Meter;
+import org.eclipse.microprofile.metrics.SimpleTimer;
 import org.eclipse.microprofile.metrics.Timer;
 import org.eclipse.microprofile.metrics.annotation.ConcurrentGauge;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.eclipse.microprofile.metrics.annotation.Gauge;
 import org.eclipse.microprofile.metrics.annotation.Metered;
 import org.eclipse.microprofile.metrics.annotation.Metric;
+import org.eclipse.microprofile.metrics.annotation.SimplyTimed;
 import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
@@ -32,6 +34,8 @@ public class SmallRyeMetricsDotNames {
             .createSimple(org.eclipse.microprofile.metrics.ConcurrentGauge.class.getName());
     public static final DotName METER_INTERFACE = DotName
             .createSimple(Meter.class.getName());
+    public static final DotName SIMPLE_TIMER_INTERFACE = DotName
+            .createSimple(SimpleTimer.class.getName());
     public static final DotName TIMER_INTERFACE = DotName
             .createSimple(Timer.class.getName());
     public static final DotName HISTOGRAM_INTERFACE = DotName
@@ -40,6 +44,7 @@ public class SmallRyeMetricsDotNames {
     // annotations
     public static final DotName GAUGE = DotName.createSimple(Gauge.class.getName());
     public static final DotName TIMED = DotName.createSimple(Timed.class.getName());
+    public static final DotName SIMPLY_TIMED = DotName.createSimple(SimplyTimed.class.getName());
     public static final DotName METRIC = DotName.createSimple(Metric.class.getName());
     public static final DotName COUNTED = DotName.createSimple(Counted.class.getName());
     public static final DotName METERED = DotName.createSimple(Metered.class.getName());
@@ -49,6 +54,7 @@ public class SmallRyeMetricsDotNames {
     public static final Set<DotName> METRICS_ANNOTATIONS = new HashSet<>(Arrays.asList(
             GAUGE,
             TIMED,
+            SIMPLY_TIMED,
             COUNTED,
             METERED,
             CONCURRENT_GAUGE));

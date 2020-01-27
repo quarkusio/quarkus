@@ -9,14 +9,14 @@ import io.quarkus.builder.item.MultiBuildItem;
  */
 public final class TemplatePathBuildItem extends MultiBuildItem {
 
+    static final String TAGS = "tags/";
+
     private final String path;
     private final Path fullPath;
-    private final boolean tag;
 
-    public TemplatePathBuildItem(String path, Path fullPath, boolean tag) {
+    public TemplatePathBuildItem(String path, Path fullPath) {
         this.path = path;
         this.fullPath = fullPath;
-        this.tag = tag;
     }
 
     /**
@@ -42,7 +42,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
      * @return {@code true} if it represents a user tag, {@code false} otherwise
      */
     public boolean isTag() {
-        return tag;
+        return path.startsWith(TAGS);
     }
 
     public boolean isRegular() {

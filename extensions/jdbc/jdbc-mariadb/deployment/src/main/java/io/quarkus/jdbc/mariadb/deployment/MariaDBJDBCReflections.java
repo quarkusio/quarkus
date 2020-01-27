@@ -16,7 +16,7 @@ public final class MariaDBJDBCReflections {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, driverName));
 
         //MariaDB's connection process requires reflective read to all fields of Options:
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, "org.mariadb.jdbc.internal.util.Options"));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, "org.mariadb.jdbc.util.Options"));
     }
 
     @BuildStep

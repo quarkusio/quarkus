@@ -47,7 +47,7 @@ class OptaPlannerProcessor {
     void recordSolverFactory(OptaPlannerRecorder recorder, RecorderContext recorderContext,
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) {
-        ClassLoader classLoader = getClass().getClassLoader();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         String solverConfigXML = null;
         SolverConfig solverConfig;
         if (solverConfigXML != null) {

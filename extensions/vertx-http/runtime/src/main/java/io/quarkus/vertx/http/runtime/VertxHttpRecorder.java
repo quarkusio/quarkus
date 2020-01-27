@@ -38,10 +38,12 @@ import io.quarkus.runtime.Timing;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.Filters;
+import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
@@ -177,7 +179,8 @@ public class VertxHttpRecorder {
     public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, RuntimeValue<Vertx> vertx,
             RuntimeValue<Router> runtimeValue, String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
-            Handler<RoutingContext> bodyHandler, HttpConfiguration httpConfiguration) {
+            Handler<RoutingContext> bodyHandler, HttpConfiguration httpConfiguration,
+            GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig) {
         // install the default route at the end
         Router router = runtimeValue.getValue();
 
@@ -273,6 +276,12 @@ public class VertxHttpRecorder {
                 }
             };
         }
+
+        if (shutdownConfig.isShutdownTimeoutSet()) {
+            gracefulShutdownFilter.next(root);
+            root = gracefulShutdownFilter;
+        }
+
         Handler<HttpServerRequest> delegate = root;
         root = new Handler<HttpServerRequest>() {
             @Override
@@ -603,6 +612,10 @@ public class VertxHttpRecorder {
         } else {
             vr.handler(requestHandler);
         }
+    }
+
+    public GracefulShutdownFilter createGracefulShutdownHandler() {
+        return new GracefulShutdownFilter();
     }
 
     private static class WebDeploymentVerticle extends AbstractVerticle {

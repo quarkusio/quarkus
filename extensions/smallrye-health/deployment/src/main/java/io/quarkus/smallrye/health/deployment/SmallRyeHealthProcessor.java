@@ -18,6 +18,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
@@ -25,6 +26,7 @@ import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import io.quarkus.smallrye.health.runtime.ShutdownReadinessListener;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
 import io.quarkus.smallrye.health.runtime.SmallRyeLivenessHandler;
@@ -153,5 +155,10 @@ class SmallRyeHealthProcessor {
             livenessPathItemProducer.produce(new KubernetesHealthLivenessPathBuildItem(basePath + health.livenessPath));
             readinessPathItemProducer.produce(new KubernetesHealthReadinessPathBuildItem(basePath + health.readinessPath));
         }
+    }
+
+    @BuildStep
+    ShutdownListenerBuildItem shutdownListener() {
+        return new ShutdownListenerBuildItem(new ShutdownReadinessListener());
     }
 }

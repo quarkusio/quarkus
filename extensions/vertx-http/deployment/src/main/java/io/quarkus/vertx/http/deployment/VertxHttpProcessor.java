@@ -19,6 +19,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
@@ -26,6 +27,7 @@ import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
@@ -36,6 +38,7 @@ import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
+import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.vertx.core.Handler;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
@@ -117,6 +120,8 @@ class VertxHttpProcessor {
             List<WebsocketSubProtocolsBuildItem> websocketSubProtocols,
             List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
             BodyHandlerBuildItem bodyHandlerBuildItem,
+            BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
+            ShutdownConfig shutdownConfig,
             CoreVertxBuildItem core // Injected to be sure that Vert.x has been produced before calling this method.
     )
             throws BuildException, IOException {
@@ -132,6 +137,9 @@ class VertxHttpProcessor {
             }
         }
 
+        GracefulShutdownFilter gracefulShutdownFilter = recorder.createGracefulShutdownHandler();
+        shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(gracefulShutdownFilter));
+
         List<Filter> listOfFilters = filters.stream()
                 .filter(f -> f.getHandler() != null)
                 .map(FilterBuildItem::toFilter).collect(Collectors.toList());
@@ -142,9 +150,9 @@ class VertxHttpProcessor {
 
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
-                listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath,
-                launchMode.getLaunchMode(),
-                !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, httpConfiguration);
+                listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath, launchMode.getLaunchMode(),
+                !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, httpConfiguration, gracefulShutdownFilter,
+                shutdownConfig);
 
         boolean startVirtual = requireVirtual.isPresent() || httpBuildTimeConfig.virtual;
         if (startVirtual) {

@@ -44,6 +44,7 @@ import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
@@ -61,7 +62,7 @@ class KubernetesProcessor {
     private static final String DOCKER_REGISTRY_PROPERTY = PROPERTY_PREFIX + "docker.registry";
     private static final String APP_GROUP_PROPERTY = "app.group";
 
-    private static final String OUTPUT_ARTIFACT_FORMAT = "%s-%s%s.jar";
+    private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
 
     @Inject
     BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer;
@@ -72,6 +73,7 @@ class KubernetesProcessor {
     @BuildStep(onlyIf = IsNormal.class)
     public void build(ApplicationInfoBuildItem applicationInfo,
             ArchiveRootBuildItem archiveRootBuildItem,
+            OutputTargetBuildItem outputTargetBuildItem,
             PackageConfig packageConfig,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
@@ -124,7 +126,7 @@ class KubernetesProcessor {
         kubernetesGroup.ifPresent(v -> System.setProperty(APP_GROUP_PROPERTY, v));
 
         Path artifactPath = archiveRootBuildItem.getArchiveRoot().resolve(String.format(OUTPUT_ARTIFACT_FORMAT,
-                applicationInfo.getName(), applicationInfo.getVersion(), packageConfig.runnerSuffix));
+                outputTargetBuildItem.getBaseName(), packageConfig.runnerSuffix));
         final Map<String, String> generatedResourcesMap;
         try {
             final SessionWriter sessionWriter = new SimpleFileWriter(root, false);

@@ -56,7 +56,7 @@ public class EngineProducer {
             LOGGER.warn("Qute already initialized!");
             return;
         }
-        LOGGER.debugf("Initializing Qute with: %s", resolverClasses);
+        LOGGER.debugf("Initializing Qute [templates: %s, tags: %s, resolvers: %s", templatePaths, tags, resolverClasses);
 
         suffixes = config.suffixes;
         basePath = "templates/";

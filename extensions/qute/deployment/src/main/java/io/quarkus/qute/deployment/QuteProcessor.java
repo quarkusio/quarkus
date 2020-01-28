@@ -542,28 +542,11 @@ public class QuteProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources)
             throws IOException {
         ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
-        String basePath = "templates/";
+        String basePath = "templates";
         Path templatesPath = applicationArchive.getChildPath(basePath);
 
         if (templatesPath != null) {
-            scan(templatesPath, templatesPath, basePath, watchedPaths, templatePaths, nativeImageResources);
-        }
-
-        String tagBasePath = basePath + "tags/";
-        Path tagsPath = applicationArchive.getChildPath(tagBasePath);
-        if (tagsPath != null) {
-            try (Stream<Path> tagFiles = Files.list(tagsPath)) {
-                Iterator<Path> iter = tagFiles.filter(Files::isRegularFile)
-                        .iterator();
-                while (iter.hasNext()) {
-                    Path path = iter.next();
-                    String tagPath = path.getFileName().toString();
-                    LOGGER.debugf("Found tag: %s", path);
-                    produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources, tagBasePath, tagPath, path,
-                            true);
-                }
-            }
-
+            scan(templatesPath, templatesPath, basePath + "/", watchedPaths, templatePaths, nativeImageResources);
         }
     }
 
@@ -666,7 +649,9 @@ public class QuteProcessor {
         List<String> tags = new ArrayList<>();
         for (TemplatePathBuildItem templatePath : templatePaths) {
             if (templatePath.isTag()) {
-                tags.add(templatePath.getPath());
+                // tags/myTag.html -> myTag.html
+                String tagPath = templatePath.getPath();
+                tags.add(tagPath.substring(TemplatePathBuildItem.TAGS.length(), tagPath.length()));
             } else {
                 templates.add(templatePath.getPath());
             }
@@ -870,16 +855,17 @@ public class QuteProcessor {
     private static void produceTemplateBuildItems(BuildProducer<TemplatePathBuildItem> templatePaths,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources, String basePath, String filePath,
-            Path originalPath,
-            boolean tag) {
+            Path originalPath) {
         if (filePath.isEmpty()) {
             return;
         }
         String fullPath = basePath + filePath;
+        LOGGER.debugf("Produce template build items [filePath: %s, fullPath: %s, originalPath: %s", filePath, fullPath,
+                originalPath);
         // NOTE: we cannot just drop the template because a template param can be added 
         watchedPaths.produce(new HotDeploymentWatchedFileBuildItem(fullPath, true));
         nativeImageResources.produce(new NativeImageResourceBuildItem(fullPath));
-        templatePaths.produce(new TemplatePathBuildItem(filePath, originalPath, tag));
+        templatePaths.produce(new TemplatePathBuildItem(filePath, originalPath));
     }
 
     private void scan(Path root, Path directory, String basePath, BuildProducer<HotDeploymentWatchedFileBuildItem> watchedPaths,
@@ -897,9 +883,8 @@ public class QuteProcessor {
                         templatePath = templatePath.replace(File.separatorChar, '/');
                     }
                     produceTemplateBuildItems(templatePaths, watchedPaths, nativeImageResources, basePath, templatePath,
-                            filePath,
-                            false);
-                } else if (Files.isDirectory(filePath) && !filePath.getFileName().toString().equals("tags")) {
+                            filePath);
+                } else if (Files.isDirectory(filePath)) {
                     LOGGER.debugf("Scan directory: %s", filePath);
                     scan(root, filePath, basePath, watchedPaths, templatePaths, nativeImageResources);
                 }

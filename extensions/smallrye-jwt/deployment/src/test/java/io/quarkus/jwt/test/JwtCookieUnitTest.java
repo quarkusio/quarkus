@@ -33,7 +33,7 @@ public class JwtCookieUnitTest {
 
     @BeforeEach
     public void generateToken() throws Exception {
-        token = TokenUtils.generateTokenString("/TokenNoGroups.json");
+        token = TokenUtils.generateTokenString(null, "kid", "/TokenNoGroups.json", null, null);
     }
 
     /**

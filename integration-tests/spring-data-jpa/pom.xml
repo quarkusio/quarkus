@@ -73,7 +73,7 @@
 
     <profiles>
         <profile>
-            <id>native-image</id>
+            <id>native</id>
             <activation>
                 <property>
                     <name>native</name>
@@ -82,7 +82,6 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <executions>
                             <execution>
@@ -98,26 +97,11 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <plugin>
-                        <groupId>io.quarkus</groupId>
-                        <artifactId>quarkus-maven-plugin</artifactId>
-                        <version>${project.version}</version>
-                        <executions>
-                            <execution>
-                                <id>native-image</id>
-                                <goals>
-                                    <goal>native-image</goal>
-                                </goals>
-                                <configuration>
-                                    <cleanupServer>true</cleanupServer>
-                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                    <graalvmHome>${graalvmHome}</graalvmHome>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                 </plugins>
             </build>
+            <properties>
+                <quarkus.package.type>native</quarkus.package.type>
+            </properties>
         </profile>
     </profiles>
 </project>

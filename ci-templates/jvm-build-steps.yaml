@@ -26,6 +26,9 @@ steps:
     docker run --rm --publish 3306:3306 --name build-mysql -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl 
   displayName: 'start mysql'
 
+- script: docker run --rm --publish 3308:3306 --name build-mariadb  -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_RANDOM_ROOT_PASSWORD=true -d mariadb:10.4
+  displayName: 'start mariadb'
+
 - script: docker run --rm --publish 8180:8080 --name build-keycloak  -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -e JAVA_OPTS="-server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -Dkeycloak.profile.feature.upload_scripts=enabled" -d quay.io/keycloak/keycloak:8.0.1
   displayName: 'start keycloak'
 
@@ -38,5 +41,5 @@ steps:
     goals: 'install'
     mavenOptions: $(MAVEN_OPTS)
     jdkVersionOption: ${{ parameters.jdk }}
-    options: '-e -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-dynamodb -Dtest-vault -Dtest-neo4j -Dtest-keycloak -Dtest-mssql -Dno-format ${{ parameters.extra }}'
+    options: '-e -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-dynamodb -Dtest-vault -Dtest-neo4j -Dtest-keycloak -Dtest-mssql -Dtest-mariadb -Dmariadb.url="jdbc:mariadb://localhost:3308/hibernate_orm_test" -Dno-format ${{ parameters.extra }}'
 

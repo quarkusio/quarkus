@@ -171,7 +171,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
 
             for (String sourcePath : module.getSourcePaths()) {
                 final Set<File> changedSourceFiles;
-                try (final Stream<Path> sourcesStream = Files.walk(Paths.get(sourcePath))) {
+                Path start = Paths.get(sourcePath);
+                if (!Files.exists(start)) {
+                    continue;
+                }
+                try (final Stream<Path> sourcesStream = Files.walk(start)) {
                     changedSourceFiles = sourcesStream
                             .parallel()
                             .filter(p -> matchingHandledExtension(p).isPresent()
@@ -218,6 +222,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         try {
             for (String folder : module.getClassesPath().split(File.pathSeparator)) {
                 final Path moduleClassesPath = Paths.get(folder);
+                if (!Files.exists(moduleClassesPath)) {
+                    continue;
+                }
                 try (final Stream<Path> classesStream = Files.walk(moduleClassesPath)) {
                     final Set<Path> classFilePaths = classesStream
                             .parallel()

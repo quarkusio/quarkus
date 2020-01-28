@@ -35,7 +35,13 @@ public class HttpConfiguration {
      * The HTTP host
      */
     @ConfigItem(defaultValue = "0.0.0.0")
-    public Optional<String> host;
+    public String host;
+
+    /**
+     * Enable listening to host:port
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean hostEnabled;
 
     /**
      * The HTTPS port
@@ -137,8 +143,14 @@ public class HttpConfiguration {
     /**
      * Path to a unix domain socket
      */
-    @ConfigItem(name = "domain-socket")
-    public Optional<String> domainSocket;
+    @ConfigItem(defaultValue = "/var/run/io.quarkus.app.socket")
+    public String domainSocket;
+
+    /**
+     * Enable listening to host:port
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean domainSocketEnabled;
 
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;

@@ -386,7 +386,7 @@ public class VertxHttpRecorder {
      */
     private static HttpServerOptions createSslOptions(HttpConfiguration httpConfiguration, LaunchMode launchMode)
             throws IOException {
-        if (!httpConfiguration.host.isPresent()) {
+        if (!httpConfiguration.hostEnabled) {
             return null;
         }
 
@@ -465,7 +465,7 @@ public class VertxHttpRecorder {
             }
         }
         serverOptions.setSsl(true);
-        serverOptions.setHost(httpConfiguration.host.get());
+        serverOptions.setHost(httpConfiguration.host);
         serverOptions.setPort(httpConfiguration.determineSslPort(launchMode));
         serverOptions.setClientAuth(sslConfig.clientAuth);
         serverOptions.setReusePort(httpConfiguration.soReusePort);
@@ -546,12 +546,12 @@ public class VertxHttpRecorder {
 
     private static HttpServerOptions createHttpServerOptions(HttpConfiguration httpConfiguration,
             LaunchMode launchMode, String websocketSubProtocols) {
-        if (!httpConfiguration.host.isPresent()) {
+        if (!httpConfiguration.hostEnabled) {
             return null;
         }
         // TODO other config properties
         HttpServerOptions options = new HttpServerOptions();
-        options.setHost(httpConfiguration.host.get());
+        options.setHost(httpConfiguration.host);
         options.setPort(httpConfiguration.determinePort(launchMode));
         setIdleTimeout(httpConfiguration, options);
         options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
@@ -565,11 +565,11 @@ public class VertxHttpRecorder {
 
     private static HttpServerOptions createDomainSocketOptions(HttpConfiguration httpConfiguration,
             String websocketSubProtocols) {
-        if (!httpConfiguration.domainSocket.isPresent()) {
+        if (!httpConfiguration.domainSocketEnabled) {
             return null;
         }
         HttpServerOptions options = new HttpServerOptions();
-        options.setHost(httpConfiguration.domainSocket.get());
+        options.setHost(httpConfiguration.domainSocket);
         setIdleTimeout(httpConfiguration, options);
         options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         options.setWebsocketSubProtocols(websocketSubProtocols);

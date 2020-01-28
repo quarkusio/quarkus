@@ -14,10 +14,13 @@ public class StereotypeInfo {
     private final ClassInfo target;
     // allows to differentiate between standard stereotype and one that is in fact additional bean defining annotation
     private final boolean isAdditionalBeanDefiningAnnotation;
+    // allows to differentiate between standard stereotype and one that was added through an AdditionalStereotypeBuildItem
+    private final boolean isAdditionalStereotypeBuildItem;
 
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
             Integer alternativePriority,
-            boolean isNamed, boolean isAdditionalBeanDefiningAnnotation, ClassInfo target) {
+            boolean isNamed, boolean isAdditionalBeanDefiningAnnotation, boolean isAdditionalStereotypeBuildItem,
+            ClassInfo target) {
         this.defaultScope = defaultScope;
         this.interceptorBindings = interceptorBindings;
         this.alternative = alternative;
@@ -25,12 +28,13 @@ public class StereotypeInfo {
         this.isNamed = isNamed;
         this.target = target;
         this.isAdditionalBeanDefiningAnnotation = isAdditionalBeanDefiningAnnotation;
+        this.isAdditionalStereotypeBuildItem = isAdditionalStereotypeBuildItem;
     }
 
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
             Integer alternativePriority,
             boolean isNamed, ClassInfo target) {
-        this(defaultScope, interceptorBindings, alternative, alternativePriority, isNamed, false, target);
+        this(defaultScope, interceptorBindings, alternative, alternativePriority, isNamed, false, false, target);
     }
 
     public ScopeInfo getDefaultScope() {
@@ -59,5 +63,9 @@ public class StereotypeInfo {
 
     public boolean isAdditionalBeanDefiningAnnotation() {
         return isAdditionalBeanDefiningAnnotation;
+    }
+
+    public boolean isAdditionalStereotypeBuildItem() {
+        return isAdditionalStereotypeBuildItem;
     }
 }

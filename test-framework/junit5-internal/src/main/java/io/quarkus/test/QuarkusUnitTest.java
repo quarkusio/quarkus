@@ -50,6 +50,8 @@ import org.junit.jupiter.api.extension.TestInstantiationException;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildException;
@@ -95,6 +97,8 @@ public class QuarkusUnitTest
 
     private Class<?> actualTestClass;
     private Object actualTestInstance;
+
+    private boolean allowTestClassOutsideDeployment;
 
     public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
         return assertException(t -> {
@@ -158,6 +162,16 @@ public class QuarkusUnitTest
     // set a Runnable that will run after EVERYTHING else is done
     public QuarkusUnitTest setAfterAllCustomizer(Runnable afterAllCustomizer) {
         this.afterAllCustomizer = afterAllCustomizer;
+        return this;
+    }
+
+    /**
+     * Normally access to any test classes that are not packaged in the deployment will result
+     * in a ClassNotFoundException. If this is true then access is allowed, which can be useful
+     * when testing shutdown behaviour.
+     */
+    public QuarkusUnitTest setAllowTestClassOutsideDeployment(boolean allowTestClassOutsideDeployment) {
+        this.allowTestClassOutsideDeployment = allowTestClassOutsideDeployment;
         return this;
     }
 
@@ -362,11 +376,18 @@ public class QuarkusUnitTest
             final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
 
             try {
-                curatedApplication = QuarkusBootstrap.builder(deploymentDir)
+                QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder(deploymentDir)
                         .setMode(QuarkusBootstrap.Mode.TEST)
                         .addExcludedPath(testLocation)
-                        .setProjectRoot(testLocation)
-                        .build().bootstrap();
+                        .setProjectRoot(testLocation);
+                if (!allowTestClassOutsideDeployment) {
+                    builder
+                            .setBaseClassLoader(
+                                    QuarkusClassLoader
+                                            .builder("QuarkusUnitTest ClassLoader", getClass().getClassLoader(), false)
+                                            .addBannedElement(ClassPathElement.fromPath(testLocation)).build());
+                }
+                curatedApplication = builder.build().bootstrap();
 
                 runningQuarkusApplication = new AugmentActionImpl(curatedApplication, customizers)
                         .createInitialRuntimeApplication()

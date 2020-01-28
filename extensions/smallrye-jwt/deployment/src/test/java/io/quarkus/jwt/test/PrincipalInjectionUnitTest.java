@@ -21,7 +21,8 @@ import io.restassured.RestAssured;
 
 public class PrincipalInjectionUnitTest {
     private static Class[] testClasses = {
-            PrincipalInjectionEndpoint.class
+            PrincipalInjectionEndpoint.class,
+            TokenUtils.class
     };
     /**
      * The test generated JWT token string
@@ -37,6 +38,8 @@ public class PrincipalInjectionUnitTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
                     .addAsResource("publicKey.pem")
+                    .addAsResource("privateKey.pem")
+                    .addAsResource("Token1.json")
                     .addAsResource("application.properties"));
 
     @BeforeEach

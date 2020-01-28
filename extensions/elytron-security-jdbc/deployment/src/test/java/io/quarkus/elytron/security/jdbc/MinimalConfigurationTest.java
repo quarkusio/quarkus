@@ -12,6 +12,7 @@ public class MinimalConfigurationTest extends JdbcSecurityRealmTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
+                    .addAsResource("minimal-config/import.sql")
                     .addAsResource("minimal-config/application.properties", "application.properties"));
 
 }

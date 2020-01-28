@@ -19,6 +19,7 @@ public class CustomRoleDecoderTest extends JdbcSecurityRealmTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClassesWithCustomRoleDecoder)
+                    .addAsResource("custom-role-decoder/import.sql")
                     .addAsResource("custom-role-decoder/application.properties", "application.properties"));
 
 }

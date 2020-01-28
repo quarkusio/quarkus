@@ -21,7 +21,8 @@ import io.restassured.RestAssured;
 
 public class RequiredClaimsUnitTest {
     private static Class[] testClasses = {
-            RequiredClaimsEndpoint.class
+            RequiredClaimsEndpoint.class,
+            TokenUtils.class
     };
 
     /**
@@ -41,6 +42,8 @@ public class RequiredClaimsUnitTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
                     .addAsResource("publicKey.pem")
+                    .addAsResource("privateKey.pem")
+                    .addAsResource("RequiredClaims.json")
                     .addAsResource("application.properties"));
 
     @BeforeEach

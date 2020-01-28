@@ -16,6 +16,7 @@ public class SentryLoggerCustomTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setAllowTestClassOutsideDeployment(true)
             .withConfigurationResource("application-sentry-logger-custom.properties");
 
     @Test

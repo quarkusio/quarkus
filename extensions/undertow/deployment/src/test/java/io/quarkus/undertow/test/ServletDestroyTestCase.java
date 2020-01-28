@@ -19,6 +19,7 @@ public class ServletDestroyTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(PreDestroyServlet.class))
+            .setAllowTestClassOutsideDeployment(true)
             .setAfterUndeployListener(() -> {
                 try {
                     Assertions.assertEquals("Servlet Destroyed", Messages.MESSAGES.poll(2, TimeUnit.SECONDS));

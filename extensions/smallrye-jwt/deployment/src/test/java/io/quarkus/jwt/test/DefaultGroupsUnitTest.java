@@ -14,7 +14,8 @@ import io.restassured.RestAssured;
 
 public class DefaultGroupsUnitTest {
     private static Class<?>[] testClasses = {
-            DefaultGroupsEndpoint.class
+            DefaultGroupsEndpoint.class,
+            TokenUtils.class
     };
     /**
      * The test generated JWT token string
@@ -26,6 +27,8 @@ public class DefaultGroupsUnitTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
                     .addAsResource("publicKey.pem")
+                    .addAsResource("privateKey.pem")
+                    .addAsResource("TokenNoGroups.json")
                     .addAsResource("applicationDefaultGroups.properties", "application.properties"));
 
     @BeforeEach

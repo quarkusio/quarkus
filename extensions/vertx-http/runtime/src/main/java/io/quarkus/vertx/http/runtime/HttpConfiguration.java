@@ -113,25 +113,25 @@ public class HttpConfiguration {
     /**
      * Enable socket reuse port (linux/macOs native transport only)
      */
-    @ConfigItem(defaultValue = "false", name = "so-reuse-port")
+    @ConfigItem(defaultValue = "false")
     public boolean soReusePort;
 
     /**
      * Enable tcp quick ack (linux native transport only)
      */
-    @ConfigItem(defaultValue = "false", name = "tcp-quick-ack")
+    @ConfigItem(defaultValue = "false")
     public boolean tcpQuickAck;
 
     /**
      * Enable tcp cork (linux native transport only)
      */
-    @ConfigItem(defaultValue = "false", name = "tcp-cork")
+    @ConfigItem(defaultValue = "false")
     public boolean tcpCork;
 
     /**
      * Enable tcp fast open (linux native transport only)
      */
-    @ConfigItem(defaultValue = "false", name = "tcp-fast-open")
+    @ConfigItem(defaultValue = "false")
     public boolean tcpFastOpen;
 
     /**

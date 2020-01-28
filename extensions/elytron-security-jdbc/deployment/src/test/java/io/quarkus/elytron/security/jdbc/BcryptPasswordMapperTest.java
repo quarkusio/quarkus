@@ -12,6 +12,7 @@ public class BcryptPasswordMapperTest extends JdbcSecurityRealmTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
+                    .addAsResource("bcrypt-password-mapper/import.sql")
                     .addAsResource("bcrypt-password-mapper/application.properties", "application.properties"));
 
 }

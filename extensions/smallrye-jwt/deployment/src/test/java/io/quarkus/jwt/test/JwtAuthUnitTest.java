@@ -22,7 +22,8 @@ import io.restassured.response.Response;
 
 public class JwtAuthUnitTest {
     private static Class[] testClasses = {
-            JsonValuejectionEndpoint.class
+            JsonValuejectionEndpoint.class,
+            TokenUtils.class
     };
     /**
      * The test generated JWT token string
@@ -38,6 +39,8 @@ public class JwtAuthUnitTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
                     .addAsResource("publicKey.pem")
+                    .addAsResource("privateKey.pem")
+                    .addAsResource("Token1.json")
                     .addAsResource("application.properties"));
 
     @BeforeEach

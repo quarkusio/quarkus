@@ -23,6 +23,7 @@ public class SentryLoggerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setAllowTestClassOutsideDeployment(true)
             .withConfigurationResource("application-sentry-logger-default.properties");
 
     @Test

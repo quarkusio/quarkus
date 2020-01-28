@@ -13,6 +13,7 @@ public class SentryLoggerWrongTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setAllowTestClassOutsideDeployment(true)
             .withConfigurationResource("application-sentry-logger-wrong.properties")
             .setExpectedException(ConfigurationException.class);
 

@@ -33,7 +33,8 @@ public class RolesAllowedTestCase {
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<JavaArchive>() {
         @Override
         public JavaArchive get() {
-            return ShrinkWrap.create(JavaArchive.class).addClasses(TestIdentityProvider.class, PathHandler.class)
+            return ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class)
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties");
         }
     });

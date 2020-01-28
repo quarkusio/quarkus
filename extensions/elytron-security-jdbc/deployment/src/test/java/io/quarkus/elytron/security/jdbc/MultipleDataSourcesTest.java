@@ -12,6 +12,8 @@ public class MultipleDataSourcesTest extends JdbcSecurityRealmTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
+                    .addAsResource("multiple-data-sources/users.sql")
+                    .addAsResource("multiple-data-sources/permissions.sql")
                     .addAsResource("multiple-data-sources/application.properties", "application.properties"));
 
 }

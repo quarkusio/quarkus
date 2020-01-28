@@ -15,6 +15,7 @@ public class SentryLoggerDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setAllowTestClassOutsideDeployment(true)
             .withConfigurationResource("application-sentry-logger-disabled.properties");
 
     @Test

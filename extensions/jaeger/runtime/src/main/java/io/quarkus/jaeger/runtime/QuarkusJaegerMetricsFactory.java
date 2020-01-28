@@ -21,6 +21,9 @@ public class QuarkusJaegerMetricsFactory implements MetricsFactory {
 
     @Override
     public Counter createCounter(final String name, final Map<String, String> tags) {
+        // On restart (e.g. in dev mode) Jaeger registers
+        // the same metrics which would result in exception
+        registry.remove(name);
         org.eclipse.microprofile.metrics.Counter counter = registry.counter(meta(name, MetricType.COUNTER), toTagArray(tags));
 
         return new Counter() {
@@ -33,6 +36,7 @@ public class QuarkusJaegerMetricsFactory implements MetricsFactory {
 
     @Override
     public Timer createTimer(final String name, final Map<String, String> tags) {
+        registry.remove(name);
         org.eclipse.microprofile.metrics.Timer timer = registry.timer(meta(name, MetricType.TIMER), toTagArray(tags));
 
         return new Timer() {
@@ -45,6 +49,7 @@ public class QuarkusJaegerMetricsFactory implements MetricsFactory {
 
     @Override
     public Gauge createGauge(final String name, final Map<String, String> tags) {
+        registry.remove(name);
         JaegerGauge gauge = registry.register(meta(name, MetricType.GAUGE), new JaegerGauge(), toTagArray(tags));
 
         return new Gauge() {

@@ -29,11 +29,14 @@ steps:
 - script: docker run --rm --publish 8180:8080 --name build-keycloak  -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -e JAVA_OPTS="-server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -Dkeycloak.profile.feature.upload_scripts=enabled" -d quay.io/keycloak/keycloak:8.0.1
   displayName: 'start keycloak'
 
+- script: docker run --rm --publish 1433:1433 --name build-mssql -e ACCEPT_EULA=Y -e SA_PASSWORD=ActuallyRequired11Complexity -d microsoft/mssql-server-linux:2017-CU12
+  displayName: 'start microsoft sql server'
+
 - task: Maven@3
   displayName: 'Maven Build'
   inputs:
     goals: 'install'
     mavenOptions: $(MAVEN_OPTS)
     jdkVersionOption: ${{ parameters.jdk }}
-    options: '-e -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-dynamodb -Dtest-vault -Dtest-neo4j -Dtest-keycloak -Dno-format ${{ parameters.extra }}'
+    options: '-e -B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-dynamodb -Dtest-vault -Dtest-neo4j -Dtest-keycloak -Dtest-mssql -Dno-format ${{ parameters.extra }}'
 

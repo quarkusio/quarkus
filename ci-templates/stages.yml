@@ -211,6 +211,7 @@ stages:
             - jpa-derby
             - jpa-without-entity
           name: data_1
+          mssql: true
 
       - template: native-build-steps.yaml
         parameters:

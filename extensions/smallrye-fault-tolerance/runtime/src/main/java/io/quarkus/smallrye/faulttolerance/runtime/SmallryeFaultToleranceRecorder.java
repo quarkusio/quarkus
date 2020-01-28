@@ -2,22 +2,27 @@ package io.quarkus.smallrye.faulttolerance.runtime;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.enterprise.inject.spi.DeploymentException;
 
 import org.eclipse.microprofile.faulttolerance.exceptions.FaultToleranceDefinitionException;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.faulttolerance.config.FaultToleranceOperation;
 
 @Recorder
 public class SmallryeFaultToleranceRecorder {
 
-    public void validate(List<String> beanNames) {
+    public void createFaultToleranceOperation(Set<String> beanNames) {
         List<Throwable> allExceptions = new ArrayList<>();
+        Map<QuarkusFaultToleranceOperationProvider.CacheKey, FaultToleranceOperation> operationCache = new HashMap<>(
+                beanNames.size());
         for (String beanName : beanNames) {
             try {
                 ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -26,11 +31,16 @@ public class SmallryeFaultToleranceRecorder {
                 }
                 Class<?> beanClass = Class.forName(beanName, true, classLoader);
 
-                for (Method method : getMethodsForValidation(beanClass)) {
+                for (Method method : getAllMethods(beanClass)) {
                     FaultToleranceOperation operation = FaultToleranceOperation.of(beanClass, method);
                     if (operation.isLegitimate()) {
                         try {
                             operation.validate();
+
+                            // register the operation at validation time to avoid re-creating it at runtime
+                            QuarkusFaultToleranceOperationProvider.CacheKey cacheKey = new QuarkusFaultToleranceOperationProvider.CacheKey(
+                                    beanClass, method);
+                            operationCache.put(cacheKey, operation);
                         } catch (FaultToleranceDefinitionException e) {
                             allExceptions.add(e);
                         }
@@ -61,16 +71,17 @@ public class SmallryeFaultToleranceRecorder {
                 throw deploymentException;
             }
         }
+        Arc.container().instance(QuarkusFaultToleranceOperationProvider.class).get().init(operationCache);
     }
 
-    private Set<Method> getMethodsForValidation(Class<?> beanClass) {
+    private Set<Method> getAllMethods(Class<?> beanClass) {
         Set<Method> allMethods = new HashSet<>();
         Class<?> currentClass = beanClass;
-        while (!currentClass.equals(Object.class)) {
+        while (currentClass != null && !currentClass.equals(Object.class)) {
             for (Method m : currentClass.getDeclaredMethods()) {
                 allMethods.add(m);
             }
-            currentClass = currentClass.getSuperclass();
+            currentClass = currentClass.getSuperclass(); // this will be null for interfaces
         }
         return allMethods;
     }

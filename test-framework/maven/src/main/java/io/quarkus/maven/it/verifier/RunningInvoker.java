@@ -118,6 +118,12 @@ public class RunningInvoker extends MavenProcessInvoker {
 
         if (System.getProperty("mavenOpts") != null) {
             request.setMavenOpts(System.getProperty("mavenOpts"));
+        } else {
+            //we need to limit the memory consumption, as we can have a lot of these processes
+            //running at once, if they add default to 75% of total mem we can easily run out
+            //of physical memory as they will consume way more than what they need instead of
+            //just running GC
+            request.setMavenOpts("-Xmx128m");
         }
 
         request.setShellEnvironmentInherited(true);

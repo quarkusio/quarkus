@@ -46,6 +46,12 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
             // if no explicit debug options have been specified, let's just disable debugging
             args.add("-Ddebug=false");
         }
+
+        //we need to limit the memory consumption, as we can have a lot of these processes
+        //running at once, if they add default to 75% of total mem we can easily run out
+        //of physical memory as they will consume way more than what they need instead of
+        //just running GC
+        args.add("-Djvm.args=-Xmx128m");
         running.execute(args, Collections.emptyMap());
     }
 

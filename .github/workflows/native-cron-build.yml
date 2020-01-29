@@ -20,9 +20,6 @@ jobs:
       - name: Pull docker image
         run: docker pull quay.io/quarkus/ubi-quarkus-native-image:19.3.1-java${{ matrix.java }}
 
-      - name: Pull docker image
-        run: docker pull quay.io/quarkus/ubi-quarkus-native-image:19.3.1-java${{ matrix.java }}
-
       - name: Set up Java
         uses: actions/setup-java@v1
         with:

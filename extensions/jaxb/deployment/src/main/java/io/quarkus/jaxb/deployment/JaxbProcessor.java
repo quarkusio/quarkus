@@ -175,10 +175,18 @@ class JaxbProcessor {
         addReflectiveClass(true, false, "com.sun.xml.bind.v2.ContextFactory");
         addReflectiveClass(true, false, "com.sun.xml.internal.bind.v2.ContextFactory");
 
+        addReflectiveClass(true, false, "com.sun.xml.internal.stream.XMLInputFactoryImpl");
+        addReflectiveClass(true, false, "com.sun.org.apache.xpath.internal.functions.FuncNot");
+        addReflectiveClass(true, false, "com.sun.org.apache.xerces.internal.impl.dv.xs.SchemaDVFactoryImpl");
+
         addResourceBundle("javax.xml.bind.Messages");
         addResourceBundle("javax.xml.bind.helpers.Messages");
         addResourceBundle("com.sun.org.apache.xml.internal.serializer.utils.SerializerMessages");
         addResourceBundle("com.sun.org.apache.xml.internal.res.XMLErrorResources");
+        addResourceBundle("com.sun.org.apache.xerces.internal.impl.msg.XMLMessages");
+        addResourceBundle("com.sun.org.apache.xerces.internal.impl.msg.XMLSchemaMessages");
+        addResourceBundle("com.sun.org.apache.xerces.internal.impl.xpath.regex.message");
+
         nativeImageProps
                 .produce(new NativeImageSystemPropertyBuildItem("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize", "true"));
 

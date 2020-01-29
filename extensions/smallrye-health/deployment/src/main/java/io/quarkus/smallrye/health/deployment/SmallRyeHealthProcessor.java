@@ -32,6 +32,7 @@ import io.quarkus.smallrye.health.runtime.SmallRyeReadinessHandler;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.smallrye.health.SmallRyeHealthReporter;
 
 class SmallRyeHealthProcessor {
@@ -140,11 +141,17 @@ class SmallRyeHealthProcessor {
     }
 
     @BuildStep
-    public void kubernetes(BuildProducer<KubernetesHealthLivenessPathBuildItem> livenessPathItemProducer,
+    public void kubernetes(HttpBuildTimeConfig httpConfig,
+            BuildProducer<KubernetesHealthLivenessPathBuildItem> livenessPathItemProducer,
             BuildProducer<KubernetesHealthReadinessPathBuildItem> readinessPathItemProducer) {
-        livenessPathItemProducer
-                .produce(new KubernetesHealthLivenessPathBuildItem(health.rootPath + health.livenessPath));
-        readinessPathItemProducer
-                .produce(new KubernetesHealthReadinessPathBuildItem(health.rootPath + health.readinessPath));
+        if (httpConfig.rootPath == null) {
+            livenessPathItemProducer.produce(new KubernetesHealthLivenessPathBuildItem(health.rootPath + health.livenessPath));
+            readinessPathItemProducer
+                    .produce(new KubernetesHealthReadinessPathBuildItem(health.rootPath + health.readinessPath));
+        } else {
+            String basePath = httpConfig.rootPath.replaceAll("/$", "") + health.rootPath;
+            livenessPathItemProducer.produce(new KubernetesHealthLivenessPathBuildItem(basePath + health.livenessPath));
+            readinessPathItemProducer.produce(new KubernetesHealthReadinessPathBuildItem(basePath + health.readinessPath));
+        }
     }
 }

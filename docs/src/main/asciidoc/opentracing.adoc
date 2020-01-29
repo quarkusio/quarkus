@@ -46,7 +46,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=opentracing-quickstart \
     -DclassName="org.acme.opentracing.TracedResource" \
     -Dpath="/hello" \
-    -Dextensions="opentracing"
+    -Dextensions="quarkus-smallrye-opentracing"
 cd opentracing-quickstart
 ----
 

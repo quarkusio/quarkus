@@ -157,7 +157,7 @@ public class TokenUtils {
             SecretKey sk = KeyGenerator.getInstance("HMACSHA256").generateKey();
             return jws.sign(sk);
         } else {
-            return jws.sign(pk);
+            return pk == null ? jws.sign() : jws.sign(pk);
         }
     }
 

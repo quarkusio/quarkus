@@ -36,7 +36,6 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
@@ -72,7 +71,7 @@ public class KafkaProcessor {
 
     @BuildStep
     public void build(CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<JniBuildItem> jni, Capabilities capabilities) {
+            Capabilities capabilities) {
         Set<ClassInfo> toRegister = new HashSet<>();
 
         toRegister.addAll(indexBuildItem.getIndex()
@@ -114,9 +113,6 @@ public class KafkaProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, RangeAssignor.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, RoundRobinAssignor.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, StickyAssignor.class.getName()));
-
-        // enable JNI
-        jni.produce(new JniBuildItem());
     }
 
     @BuildStep

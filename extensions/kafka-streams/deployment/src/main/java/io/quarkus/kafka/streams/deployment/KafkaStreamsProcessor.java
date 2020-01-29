@@ -22,7 +22,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -44,7 +43,6 @@ class KafkaStreamsProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized,
             BuildProducer<NativeImageResourceBuildItem> nativeLibs,
-            BuildProducer<JniBuildItem> jni,
             LaunchModeBuildItem launchMode,
             NativeConfig config) throws IOException {
 
@@ -53,7 +51,6 @@ class KafkaStreamsProcessor {
         registerClassesThatAreLoadedThroughReflection(reflectiveClasses, launchMode);
         addSupportForRocksDbLib(nativeLibs, config);
         enableLoadOfNativeLibs(reinitialized);
-        enableJniForNativeBuild(jni);
     }
 
     private void registerClassesThatAreLoadedThroughReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
@@ -121,10 +118,6 @@ class KafkaStreamsProcessor {
 
     private void enableLoadOfNativeLibs(BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized) {
         reinitialized.produce(new RuntimeReinitializedClassBuildItem("org.rocksdb.RocksDB"));
-    }
-
-    private void enableJniForNativeBuild(BuildProducer<JniBuildItem> jni) {
-        jni.produce(new JniBuildItem());
     }
 
     private void registerClassName(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, String defaultKeySerdeClass) {

@@ -24,7 +24,6 @@ import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildIt
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -58,11 +57,6 @@ public class DynamodbProcessor {
     private static final DotName ASYNC_CLIENT_NAME = DotName.createSimple(DynamoDbAsyncClient.class.getName());
 
     DynamodbBuildTimeConfig buildTimeConfig;
-
-    @BuildStep
-    JniBuildItem jni() {
-        return new JniBuildItem();
-    }
 
     @BuildStep
     AdditionalApplicationArchiveMarkerBuildItem marker() {

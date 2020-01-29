@@ -35,7 +35,7 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <jacoco.version>0.8.3</jacoco.version>
+        <jacoco.version>0.8.5</jacoco.version>
     </properties>
 
     <modules>

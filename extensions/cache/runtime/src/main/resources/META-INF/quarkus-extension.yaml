@@ -1,10 +1,10 @@
 ---
-name: "Application Data Caching"
+name: "Cache"
 metadata:
   keywords:
   - "cache"
   - "caching"
-  guide: "https://quarkus.io/guides/application-data-caching"
+  guide: "https://quarkus.io/guides/cache"
   categories:
   - "data"
   status: "preview"

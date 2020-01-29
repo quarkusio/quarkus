@@ -1,5 +1,7 @@
 package io.quarkus.runtime.configuration;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigFactory;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -34,6 +36,17 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
     }
 
     public static void setConfig(SmallRyeConfig config) {
+        //This is a hack, but there is not a great deal that can be done about it
+        //it is possible that when running in test/dev mode some code will be run with the system TCCL
+        //e.g. when using the fork join pool
+        //if this happens any use of config will fail, as the system class loader will resolve the
+        //wrong instance of the config classes
+        if (QuarkusConfigFactory.config != null) {
+            ConfigProviderResolver.instance().releaseConfig(QuarkusConfigFactory.config);
+        }
+        if (config != null) {
+            ConfigProviderResolver.instance().registerConfig(config, ClassLoader.getSystemClassLoader());
+        }
         QuarkusConfigFactory.config = config;
     }
 }

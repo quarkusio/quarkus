@@ -728,8 +728,6 @@ public final class RunTimeConfigurationGenerator {
         }
 
         private void installConfiguration(ResultHandle config, MethodCreator methodCreator) {
-            // install config
-            methodCreator.invokeStaticMethod(QCF_SET_CONFIG, config);
             // now invalidate the cached config, so the next one to load the config gets the new one
             final ResultHandle configProviderResolver = methodCreator.invokeStaticMethod(CPR_INSTANCE);
             try (TryBlock getConfigTry = methodCreator.tryBlock()) {
@@ -739,6 +737,8 @@ public final class RunTimeConfigurationGenerator {
                 // ignore
                 getConfigTry.addCatch(IllegalStateException.class);
             }
+            // install config
+            methodCreator.invokeStaticMethod(QCF_SET_CONFIG, config);
         }
 
         private void generateDefaultValuesConfigSourceClass(ConfigPatternMap<Container> patternMap, String className) {

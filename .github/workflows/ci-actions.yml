@@ -19,12 +19,13 @@ jobs:
           java-version: 1.8
       - name: Cache Maven Repository
         id: cache-maven
-        uses: actions/cache@v1
+        uses: n1hility/cache@v2
         with:
           path: ~/.m2/repository
           # Improves the reusability of the cache to limit key changes
-          key: ${{ runner.os }}-qmaven-${{ hashFiles('bom/runtime/pom.xml') }}
-          restore-keys: ${{ runner.os }}-qmaven-
+          key: ${{ runner.os }}-q2maven-${{ hashFiles('bom/runtime/pom.xml') }}
+          restore-keys: ${{ runner.os }}-q2maven-
+          restore-only: ${{ github.event_name == 'pull_request' }}
       - name: Build
         run: mvn -e -B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs clean install
       - name: Tar Maven Repo

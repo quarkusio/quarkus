@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.core.Is.is;
 
-import java.net.InetAddress;
 import java.nio.file.Files;
 
 import org.apache.sshd.server.SshServer;
@@ -33,7 +32,7 @@ public class JSchTest {
         sshd.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setCommandFactory(UnknownCommandFactory.INSTANCE);
-        sshd.setHost(InetAddress.getLocalHost().getHostName());
+        sshd.setHost("localhost");
         sshd.start();
     }
 

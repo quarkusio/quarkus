@@ -17,6 +17,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
@@ -280,7 +282,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                     if (transformers != null) {
                         data = handleTransform(name, data, transformers);
                     }
-                    definePackage(name);
+                    definePackage(name, classPathElement);
                     return defineClass(name, data, 0, data.length,
                             protectionDomains.computeIfAbsent(classPathElement, (ce) -> ce.getProtectionDomain(this)));
                 }
@@ -293,11 +295,28 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
     }
 
-    private void definePackage(String name) {
+    private void definePackage(String name, ClassPathElement classPathElement) {
         final String pkgName = getPackageNameFromClassName(name);
         if ((pkgName != null) && getPackage(pkgName) == null) {
             synchronized (getClassLoadingLock(pkgName)) {
                 if (getPackage(pkgName) == null) {
+                    ClassPathResource mf = classPathElement.getResource("META-INF/MANIFEST.MF");
+                    if (mf != null) {
+                        try {
+                            Manifest manifest = new Manifest(new ByteArrayInputStream(mf.getData()));
+                            Attributes ma = manifest.getMainAttributes();
+                            definePackage(pkgName, ma.getValue(Attributes.Name.SPECIFICATION_TITLE),
+                                    ma.getValue(Attributes.Name.SPECIFICATION_VERSION),
+                                    ma.getValue(Attributes.Name.SPECIFICATION_VENDOR),
+                                    ma.getValue(Attributes.Name.IMPLEMENTATION_TITLE),
+                                    ma.getValue(Attributes.Name.IMPLEMENTATION_VERSION),
+                                    ma.getValue(Attributes.Name.IMPLEMENTATION_VENDOR), null);
+                            return;
+                        } catch (IOException e) {
+                            log.warnf("Failed to parse manifest for %s", name);
+                        }
+                    }
+
                     // this could certainly be improved to use the actual manifest
                     definePackage(pkgName, null, null, null, null, null, null, null);
                 }

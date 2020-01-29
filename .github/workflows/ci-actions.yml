@@ -24,7 +24,7 @@ jobs:
           path: ~/.m2/repository
           # Improves the reusability of the cache to limit key changes
           key: ${{ runner.os }}-q2maven-${{ hashFiles('bom/runtime/pom.xml') }}
-          restore-keys: ${{ runner.os }}-q2maven-
+          restore-keys: ${{ runner.os }}-qmaven-
           restore-only: ${{ github.event_name == 'pull_request' }}
       - name: Build
         run: mvn -e -B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs clean install

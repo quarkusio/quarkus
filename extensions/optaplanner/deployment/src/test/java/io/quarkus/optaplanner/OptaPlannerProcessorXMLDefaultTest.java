@@ -33,7 +33,7 @@ public class OptaPlannerProcessorXMLDefaultTest {
     @Inject
     SolverFactory<TestdataPlanningSolution> solverFactory;
 
-    @Test
+    @Test()
     public void solverConfigXml_default() {
         assertNotNull(solverConfig);
         assertEquals(TestdataPlanningSolution.class, solverConfig.getSolutionClass());

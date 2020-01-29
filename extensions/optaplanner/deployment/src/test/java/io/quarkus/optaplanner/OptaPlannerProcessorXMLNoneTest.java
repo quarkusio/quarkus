@@ -34,9 +34,7 @@ public class OptaPlannerProcessorXMLNoneTest {
     @Inject
     SolverFactory<TestdataPlanningSolution> solverFactory;
 
-    // TODO FIXME
     @Test
-    @Disabled("BUG: The solverConfig.xml isn't filtered out, so the terminationConfig isn't null.")
     public void solverConfigXml_default() {
         assertNotNull(solverConfig);
         assertEquals(TestdataPlanningSolution.class, solverConfig.getSolutionClass());

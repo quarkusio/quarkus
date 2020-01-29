@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        java: [ 8, 11 ]
+        java: [ 11 ]
     name: build-and-testing
     steps:
 

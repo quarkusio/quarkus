@@ -193,6 +193,15 @@ final class MethodDescriptors {
             CreationalContextImpl.class,
             "hasDependentInstances", boolean.class);
 
+    static final MethodDescriptor THREAD_CURRENT_THREAD = MethodDescriptor.ofMethod(Thread.class, "currentThread",
+            Thread.class);
+
+    static final MethodDescriptor THREAD_GET_TCCL = MethodDescriptor.ofMethod(Thread.class, "getContextClassLoader",
+            ClassLoader.class);
+
+    static final MethodDescriptor CL_FOR_NAME = MethodDescriptor.ofMethod(Class.class, "forName", Class.class, String.class,
+            boolean.class, ClassLoader.class);
+
     private MethodDescriptors() {
     }
 

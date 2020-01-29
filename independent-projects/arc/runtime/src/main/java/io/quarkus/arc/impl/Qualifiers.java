@@ -5,6 +5,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import javax.enterprise.inject.Any;
@@ -14,6 +15,8 @@ import javax.enterprise.util.Nonbinding;
 public final class Qualifiers {
 
     public static final Set<Annotation> DEFAULT_QUALIFIERS = initDefaultQualifiers();
+
+    public static final Set<Annotation> IP_DEFAULT_QUALIFIERS = Collections.singleton(Default.Literal.INSTANCE);
 
     private Qualifiers() {
     }

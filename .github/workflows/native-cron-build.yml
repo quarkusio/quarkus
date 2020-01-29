@@ -10,15 +10,12 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        java: [ 8, 11 ]
+        java: [ 11 ]
     name: build-and-testing
     steps:
 
       - name: Stop MySQL
         run: sudo systemctl stop mysql
-
-      - name: Pull docker image
-        run: docker pull quay.io/quarkus/ubi-quarkus-native-image:19.3.1-java${{ matrix.java }}
 
       - name: Pull docker image
         run: docker pull quay.io/quarkus/ubi-quarkus-native-image:19.3.1-java${{ matrix.java }}

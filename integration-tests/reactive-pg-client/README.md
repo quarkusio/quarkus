@@ -24,4 +24,4 @@ You can then run the tests as follows (either with `-Dnative` or not):
 mvn clean install -Dtest-postgresql
 ```
 
-If you have specific requirements, you can define a specific connection URL with `-Dpostgres.url=vertx-reactive:postgresql://:5431/hibernate_orm_test`.
+If you have specific requirements, you can define a specific connection URL with `-Dreactive-postgres.url=vertx-reactive:postgresql://:5431/hibernate_orm_test`.

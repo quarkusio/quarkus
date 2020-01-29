@@ -24,4 +24,4 @@ You can then run the tests as follows (either with `-Dnative` or not):
 mvn clean install -Dtest-mariadb
 ```
 
-If you have specific requirements, you can define a specific connection URL with `-Dmariadb.url=vertx-reactive:mysql://localhost:3308/hibernate_orm_test`.
+If you have specific requirements, you can define a specific connection URL with `-Dreactive-mysql.url=vertx-reactive:mysql://localhost:3308/hibernate_orm_test`.

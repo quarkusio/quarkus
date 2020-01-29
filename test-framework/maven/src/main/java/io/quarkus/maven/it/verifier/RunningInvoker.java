@@ -88,6 +88,7 @@ public class RunningInvoker extends MavenProcessInvoker {
         if (result == null) {
             return;
         }
+        result.destroy();
         List<ProcessInfo> list = JProcesses.getProcessList().stream().filter(pi ->
         // Kill all process using the live reload and the live reload process.
         // This might be too much

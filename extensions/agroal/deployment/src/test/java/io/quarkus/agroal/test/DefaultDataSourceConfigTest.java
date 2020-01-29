@@ -1,5 +1,8 @@
 package io.quarkus.agroal.test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -59,15 +62,11 @@ public class DefaultDataSourceConfigTest {
         assertTrue(agroalConnectionFactoryConfiguration.trackJdbcResources());
         assertTrue(dataSource.getConfiguration().metricsEnabled());
         assertEquals(newConnectionSql, agroalConnectionFactoryConfiguration.initialSql());
-        assertTrue(agroalConnectionFactoryConfiguration.jdbcProperties().containsKey("socketFactory"));
-        assertEquals(agroalConnectionFactoryConfiguration.jdbcProperties().getProperty("socketFactory"),
-                "pass socket factory provider as jdbc property");
-        assertTrue(agroalConnectionFactoryConfiguration.jdbcProperties().containsKey("extraProperty1"));
-        assertEquals(agroalConnectionFactoryConfiguration.jdbcProperties().getProperty("extraProperty1"),
-                "extraProperty1Value");
-        assertTrue(agroalConnectionFactoryConfiguration.jdbcProperties().containsKey("extraProperty2"));
-        assertEquals(agroalConnectionFactoryConfiguration.jdbcProperties().getProperty("extraProperty2"),
-                "extraProperty2Value");
+        assertThat(agroalConnectionFactoryConfiguration.jdbcProperties())
+                .contains(entry("socketFactory", "pass socket factory provider as jdbc property"),
+                        entry("extraProperty1", "extraProperty1Value"),
+                        entry("extraProperty2", "extraProperty2Value"));
+        assertThatCode(() -> dataSource.getConnection().close()).doesNotThrowAnyException();
         try (Connection connection = dataSource.getConnection()) {
         }
     }

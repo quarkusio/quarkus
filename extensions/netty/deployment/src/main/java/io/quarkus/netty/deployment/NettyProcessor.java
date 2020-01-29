@@ -12,7 +12,8 @@ import org.jboss.logging.Logger;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -148,9 +149,10 @@ class NettyProcessor {
         recorder.eagerlyInitChannelId();
     }
 
+    @SuppressWarnings("unchecked")
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void createExecutors(BuildProducer<RuntimeBeanBuildItem> runtimeBeanBuildItemBuildProducer,
+    void createExecutors(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             Optional<EventLoopSupplierBuildItem> loopSupplierBuildItem,
             NettyRecorder recorder) {
         //TODO: configuration
@@ -163,16 +165,25 @@ class NettyProcessor {
             boss = recorder.createEventLoop(1);
             main = recorder.createEventLoop(0);
         }
-        runtimeBeanBuildItemBuildProducer.produce(RuntimeBeanBuildItem.builder(EventLoopGroup.class)
-                .setSupplier(boss)
-                .setScope(ApplicationScoped.class)
+
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
+                .supplier(boss)
+                .scope(ApplicationScoped.class)
                 .addQualifier(BossEventLoopGroup.class)
-                .build());
-        runtimeBeanBuildItemBuildProducer.produce(RuntimeBeanBuildItem.builder(EventLoopGroup.class)
-                .setSupplier(main)
-                .setScope(ApplicationScoped.class)
+                .done());
+
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
+                .supplier(main)
+                .scope(ApplicationScoped.class)
                 .addQualifier(MainEventLoopGroup.class)
-                .build());
+                .done());
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem registerQualifiers() {
+        // We need to register the qualifiers manually because they're not part of the index
+        // Previously they were indexed because we indexed the "uber-producer-class" generated for RuntimeBeanBuildItems
+        return AdditionalBeanBuildItem.builder().addBeanClasses(BossEventLoopGroup.class, MainEventLoopGroup.class).build();
     }
 
     @BuildStep

@@ -4,6 +4,7 @@ import io.quarkus.arc.InjectableBean;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import javax.enterprise.inject.Any;
@@ -37,18 +38,28 @@ public final class Qualifiers {
 
         for (Annotation qualifier : qualifiers) {
             Class<? extends Annotation> qualifierClass = qualifier.annotationType();
-            if (qualifierClass.equals(requiredQualifier.annotationType())) {
-                boolean matches = true;
-                for (Method value : members) {
-                    if (!value.isAnnotationPresent(Nonbinding.class)
-                            && !invoke(value, requiredQualifier).equals(invoke(value, qualifier))) {
+            if (!qualifierClass.equals(requiredQualifierClass)) {
+                continue;
+            }
+            boolean matches = true;
+            for (Method value : members) {
+                if (value.isAnnotationPresent(Nonbinding.class)) {
+                    continue;
+                }
+                Object val1 = invoke(value, requiredQualifier);
+                Object val2 = invoke(value, qualifier);
+                if (val1.getClass().isArray()) {
+                    if (!val2.getClass().isArray() || !Arrays.equals((Object[]) val1, (Object[]) val2)) {
                         matches = false;
                         break;
                     }
+                } else if (!val1.equals(val2)) {
+                    matches = false;
+                    break;
                 }
-                if (matches) {
-                    return true;
-                }
+            }
+            if (matches) {
+                return true;
             }
         }
         return false;

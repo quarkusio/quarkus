@@ -69,6 +69,8 @@ public final class QualifierConfigurator<C extends Consumer<AnnotationInstance>>
             return AnnotationValue.createShortValue(name, (short) val);
         } else if (val instanceof Boolean) {
             return AnnotationValue.createBooleanValue(name, (boolean) val);
+        } else if (val instanceof Character) {
+            return AnnotationValue.createCharacterValue(name, (char) val);
         } else if (val instanceof Enum) {
             return AnnotationValue.createEnumValue(name, DotName.createSimple(val.getClass().getName()), val.toString());
         } else if (val instanceof Class) {

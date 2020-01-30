@@ -163,15 +163,26 @@ public class ConfigBuildStep {
                 case FLOAT:
                 case LONG:
                 case INT:
+                case SHORT:
+                case BYTE:
+                case CHAR:
                     return true;
                 default:
                     return false;
             }
         }
-        return DotNames.STRING.equals(type.name()) || DotNames.OPTIONAL.equals(type.name()) || SET_NAME.equals(type.name())
-                || LIST_NAME.equals(type.name()) || DotNames.LONG.equals(type.name()) || DotNames.FLOAT.equals(type.name())
-                || DotNames.INTEGER.equals(type.name()) || DotNames.BOOLEAN.equals(type.name())
-                || DotNames.DOUBLE.equals(type.name());
+        return DotNames.STRING.equals(type.name()) ||
+                DotNames.OPTIONAL.equals(type.name()) ||
+                SET_NAME.equals(type.name()) ||
+                LIST_NAME.equals(type.name()) ||
+                DotNames.LONG.equals(type.name()) ||
+                DotNames.FLOAT.equals(type.name()) ||
+                DotNames.INTEGER.equals(type.name()) ||
+                DotNames.BOOLEAN.equals(type.name()) ||
+                DotNames.DOUBLE.equals(type.name()) ||
+                DotNames.SHORT.equals(type.name()) ||
+                DotNames.BYTE.equals(type.name()) ||
+                DotNames.CHARACTER.equals(type.name());
     }
 
 }

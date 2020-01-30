@@ -94,7 +94,7 @@ public final class CreateUtils {
         try {
             final Path classOrigin = MojoUtils.getClassOrigin(cls);
             if (Files.isDirectory(classOrigin)) {
-                return resolvePluginInfo(classOrigin);
+                return resolvePluginInfo(classOrigin.resolve("META-INF").resolve("maven").resolve("plugin.xml"));
             }
             try (FileSystem fs = ZipUtils.newFileSystem(classOrigin)) {
                 return resolvePluginInfo(fs.getPath("META-INF", "maven", "plugin.xml"));

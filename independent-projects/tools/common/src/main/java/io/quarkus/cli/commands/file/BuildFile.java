@@ -63,7 +63,7 @@ public abstract class BuildFile implements Closeable {
     protected abstract boolean hasDependency(Extension extension) throws IOException;
 
     public boolean addExtensionAsGAV(String query) throws IOException {
-        Dependency parsed = MojoUtils.parse(query.trim().toLowerCase());
+        Dependency parsed = MojoUtils.parse(query.trim());
         boolean alreadyThere = getDependencies().stream()
                 .anyMatch(d -> d.getManagementKey().equalsIgnoreCase(parsed.getManagementKey()));
         if (!alreadyThere) {

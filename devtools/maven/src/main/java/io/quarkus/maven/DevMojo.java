@@ -268,13 +268,17 @@ public class DevMojo extends AbstractMojo {
             if (plugin == null) {
                 throw new MojoExecutionException("Failed to locate " + key + " among the project plugins");
             }
+            Xpp3Dom configuration = (Xpp3Dom) plugin.getConfiguration();
+            if (configuration == null) {
+                configuration = MojoExecutor.configuration();
+            }
             MojoExecutor.executeMojo(
                     MojoExecutor.plugin(
                             MojoExecutor.groupId(ORG_APACHE_MAVEN_PLUGINS),
                             MojoExecutor.artifactId(MAVEN_COMPILER_PLUGIN),
                             MojoExecutor.version(plugin.getVersion())),
                     MojoExecutor.goal("compile"),
-                    MojoExecutor.configuration(),
+                    configuration,
                     MojoExecutor.executionEnvironment(
                             project,
                             session,

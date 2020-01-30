@@ -16,6 +16,7 @@ import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 import javax.json.bind.JsonbConfig;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
@@ -129,6 +130,14 @@ public class TestResource {
         XmlObject xmlObject = new XmlObject();
         xmlObject.setValue("A Value");
         return xmlObject;
+    }
+
+    @POST
+    @Consumes("application/xml")
+    @Produces("text/plain")
+    @Path("/consumeXml")
+    public String consumeXml(XmlObject xmlObject) {
+        return xmlObject.getValue();
     }
 
     @GET

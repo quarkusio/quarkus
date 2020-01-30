@@ -15,8 +15,8 @@
     <description>Module that contains JPA related tests running with the MSSQL database</description>
 
     <properties>
-        <mssqldb.url>SomeJDBCUrl</mssqldb.url>
-        <mssqldb.sa-password>SomeJDBCPassword</mssqldb.sa-password>
+        <mssqldb.url>jdbc:sqlserver://localhost:1433;databaseName=tempdb</mssqldb.url>
+        <mssqldb.sa-password>ActuallyRequired11Complexity</mssqldb.sa-password>
     </properties>
 
     <dependencies>

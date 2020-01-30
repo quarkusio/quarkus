@@ -16,7 +16,7 @@
     <name>Quarkus - Integration Tests - Reactive Pg Client</name>
 
     <properties>
-        <postgres.url>vertx-reactive:postgresql:///hibernate_orm_test</postgres.url>
+        <reactive-postgres.url>vertx-reactive:postgresql:///hibernate_orm_test</reactive-postgres.url>
     </properties>
 
     <dependencies>
@@ -160,7 +160,7 @@
                 </property>
             </activation>
             <properties>
-                <postgres.url>vertx-reactive:postgresql://:5431/hibernate_orm_test</postgres.url>
+                <reactive-postgres.url>vertx-reactive:postgresql://:5431/hibernate_orm_test</reactive-postgres.url>
             </properties>
             <build>
                 <plugins>

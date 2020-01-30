@@ -203,7 +203,7 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 30
+          timeoutInMinutes: 40
           modules:
             - jpa-h2
             - jpa-mariadb
@@ -211,6 +211,8 @@ stages:
             - jpa-derby
             - jpa-without-entity
           name: data_1
+          mssql: true
+          mariadb: true
 
       - template: native-build-steps.yaml
         parameters:

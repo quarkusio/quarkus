@@ -32,7 +32,7 @@
     <name>Quarkus - Integration Tests - Reactive MySQL Client</name>
 
     <properties>
-        <mariadb.url>vertx-reactive:mysql://localhost:3306/hibernate_orm_test</mariadb.url>
+        <reactive-mysql.url>vertx-reactive:mysql://localhost:3306/hibernate_orm_test</reactive-mysql.url>
     </properties>
 
     <dependencies>
@@ -176,7 +176,7 @@
                 </property>
             </activation>
             <properties>
-                <mariadb.url>vertx-reactive:mysql://localhost:3308/hibernate_orm_test</mariadb.url>
+                <reactive-mysql.url>vertx-reactive:mysql://localhost:3308/hibernate_orm_test</reactive-mysql.url>
             </properties>
             <build>
                 <plugins>

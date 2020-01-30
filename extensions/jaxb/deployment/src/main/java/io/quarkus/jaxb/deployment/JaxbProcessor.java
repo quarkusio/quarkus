@@ -128,7 +128,8 @@ class JaxbProcessor {
     ApplicationArchivesBuildItem applicationArchivesBuildItem;
 
     @BuildStep
-    void process(BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageProps,
+    void processAnnotationsAndIndexFiles(
+            BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageProps,
             BuildProducer<ServiceProviderBuildItem> providerItem,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinitions,
             CombinedIndexBuildItem combinedIndexBuildItem,
@@ -168,6 +169,30 @@ class JaxbProcessor {
                     new ReflectiveClassBuildItem(true, true, xmlJavaTypeAdapterInstance.value().asClass().name().toString()));
         }
 
+        if (!index.getAnnotations(XML_ANY_ELEMENT).isEmpty()) {
+            addReflectiveClass(false, false, "javax.xml.bind.annotation.W3CDomHandler");
+        }
+
+        JAXB_ANNOTATIONS.stream()
+                .map(Class::getName)
+                .forEach(className -> {
+                    proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(className, Locatable.class.getName()));
+                    addReflectiveClass(true, false, className);
+                });
+
+        for (JaxbFileRootBuildItem i : fileRoots) {
+            try (Stream<Path> stream = iterateResources(i.getFileRoot())) {
+                stream.filter(p -> p.getFileName().toString().equals("jaxb.index"))
+                        .forEach(this::handleJaxbFile);
+            }
+        }
+    }
+
+    @BuildStep
+    void registerClasses(
+            BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageProps,
+            BuildProducer<ServiceProviderBuildItem> providerItem) {
+
         addReflectiveClass(false, false, "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl");
         addReflectiveClass(false, false, "com.sun.org.apache.xerces.internal.jaxp.datatype.DatatypeFactoryImpl");
         addReflectiveClass(false, false, "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl");
@@ -190,33 +215,16 @@ class JaxbProcessor {
         nativeImageProps
                 .produce(new NativeImageSystemPropertyBuildItem("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize", "true"));
 
-        if (!index.getAnnotations(XML_ANY_ELEMENT).isEmpty()) {
-            addReflectiveClass(false, false, "javax.xml.bind.annotation.W3CDomHandler");
-        }
-
         JAXB_REFLECTIVE_CLASSES.stream()
                 .map(Class::getName)
                 .forEach(className -> addReflectiveClass(true, false, className));
-
-        JAXB_ANNOTATIONS.stream()
-                .map(Class::getName)
-                .forEach(className -> {
-                    proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(className, Locatable.class.getName()));
-                    addReflectiveClass(true, false, className);
-                });
 
         JAXB_SERIALIZERS.stream()
                 .map(s -> "com/sun/org/apache/xml/internal/serializer/output_" + s + ".properties")
                 .forEach(this::addResource);
 
-        for (JaxbFileRootBuildItem i : fileRoots) {
-            try (Stream<Path> stream = iterateResources(i.getFileRoot())) {
-                stream.filter(p -> p.getFileName().toString().equals("jaxb.index"))
-                        .forEach(this::handleJaxbFile);
-            }
-        }
-
-        providerItem.produce(new ServiceProviderBuildItem(JAXBContext.class.getName(), "com.sun.xml.bind.v2.ContextFactory"));
+        providerItem
+                .produce(new ServiceProviderBuildItem(JAXBContext.class.getName(), "com.sun.xml.bind.v2.ContextFactory"));
     }
 
     private void handleJaxbFile(Path p) {

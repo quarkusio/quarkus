@@ -119,43 +119,41 @@ class VertxWebProcessor {
         // Collect all business methods annotated with @Route and @RouteFilter
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
         for (BeanInfo bean : validationPhase.getContext().beans().classBeans()) {
-            if (bean.isClassBean()) {
-                // NOTE: inherited business methods are not taken into account
-                ClassInfo beanClass = bean.getTarget().get().asClass();
-                AnnotationInstance routeBaseAnnotation = beanClass.classAnnotation(ROUTE_BASE);
-                for (MethodInfo method : beanClass.methods()) {
-                    List<AnnotationInstance> routes = new LinkedList<>();
-                    AnnotationInstance routeAnnotation = annotationStore.getAnnotation(method, ROUTE);
-                    if (routeAnnotation != null) {
+            // NOTE: inherited business methods are not taken into account
+            ClassInfo beanClass = bean.getTarget().get().asClass();
+            AnnotationInstance routeBaseAnnotation = beanClass.classAnnotation(ROUTE_BASE);
+            for (MethodInfo method : beanClass.methods()) {
+                List<AnnotationInstance> routes = new LinkedList<>();
+                AnnotationInstance routeAnnotation = annotationStore.getAnnotation(method, ROUTE);
+                if (routeAnnotation != null) {
+                    validateRouteMethod(bean, method, ROUTE_PARAM_TYPES);
+                    routes.add(routeAnnotation);
+                }
+                if (routes.isEmpty()) {
+                    AnnotationInstance routesAnnotation = annotationStore.getAnnotation(method, ROUTES);
+                    if (routesAnnotation != null) {
                         validateRouteMethod(bean, method, ROUTE_PARAM_TYPES);
-                        routes.add(routeAnnotation);
+                        Collections.addAll(routes, routesAnnotation.value().asNestedArray());
                     }
-                    if (routes.isEmpty()) {
-                        AnnotationInstance routesAnnotation = annotationStore.getAnnotation(method, ROUTES);
-                        if (routesAnnotation != null) {
-                            validateRouteMethod(bean, method, ROUTE_PARAM_TYPES);
-                            Collections.addAll(routes, routesAnnotation.value().asNestedArray());
-                        }
-                    }
+                }
+                if (!routes.isEmpty()) {
+                    LOGGER.debugf("Found route handler business method %s declared on %s", method, bean);
+                    routeHandlerBusinessMethods
+                            .produce(new AnnotatedRouteHandlerBuildItem(bean, method, routes, routeBaseAnnotation));
+                }
+                //
+                AnnotationInstance filterAnnotation = annotationStore.getAnnotation(method, ROUTE_FILTER);
+                if (filterAnnotation != null) {
                     if (!routes.isEmpty()) {
-                        LOGGER.debugf("Found route handler business method %s declared on %s", method, bean);
-                        routeHandlerBusinessMethods
-                                .produce(new AnnotatedRouteHandlerBuildItem(bean, method, routes, routeBaseAnnotation));
-                    }
-                    // 
-                    AnnotationInstance filterAnnotation = annotationStore.getAnnotation(method, ROUTE_FILTER);
-                    if (filterAnnotation != null) {
-                        if (!routes.isEmpty()) {
-                            errors.produce(new ValidationErrorBuildItem(new IllegalStateException(
-                                    String.format(
-                                            "@Route and @RouteFilter cannot be declared on business method %s declared on %s",
-                                            method, bean))));
-                        } else {
-                            validateRouteMethod(bean, method, ROUTE_FILTER_TYPES);
-                            routeFilterBusinessMethods
-                                    .produce(new AnnotatedRouteFilterBuildItem(bean, method, filterAnnotation));
-                            LOGGER.debugf("Found route filter business method %s declared on %s", method, bean);
-                        }
+                        errors.produce(new ValidationErrorBuildItem(new IllegalStateException(
+                                String.format(
+                                        "@Route and @RouteFilter cannot be declared on business method %s declared on %s",
+                                        method, bean))));
+                    } else {
+                        validateRouteMethod(bean, method, ROUTE_FILTER_TYPES);
+                        routeFilterBusinessMethods
+                                .produce(new AnnotatedRouteFilterBuildItem(bean, method, filterAnnotation));
+                        LOGGER.debugf("Found route filter business method %s declared on %s", method, bean);
                     }
                 }
             }

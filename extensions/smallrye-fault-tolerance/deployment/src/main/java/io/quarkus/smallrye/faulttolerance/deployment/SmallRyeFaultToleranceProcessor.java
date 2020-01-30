@@ -1,14 +1,11 @@
 package io.quarkus.smallrye.faulttolerance.deployment;
 
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.OptionalInt;
 import java.util.Set;
 
 import javax.annotation.Priority;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.Config;
@@ -25,15 +22,19 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -60,14 +61,15 @@ import io.smallrye.faulttolerance.propagation.ContextPropagationExecutorFactory;
 
 public class SmallRyeFaultToleranceProcessor {
 
-    @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
-
-    @Inject
-    BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageSystemProperty;
-
-    @Inject
-    CombinedIndexBuildItem combinedIndexBuildItem;
+    private static final Set<DotName> FT_ANNOTATIONS = new HashSet<>();
+    static {
+        FT_ANNOTATIONS.add(DotName.createSimple(Asynchronous.class.getName()));
+        FT_ANNOTATIONS.add(DotName.createSimple(Bulkhead.class.getName()));
+        FT_ANNOTATIONS.add(DotName.createSimple(CircuitBreaker.class.getName()));
+        FT_ANNOTATIONS.add(DotName.createSimple(Fallback.class.getName()));
+        FT_ANNOTATIONS.add(DotName.createSimple(Retry.class.getName()));
+        FT_ANNOTATIONS.add(DotName.createSimple(Timeout.class.getName()));
+    }
 
     @BuildStep
     public void build(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
@@ -75,20 +77,15 @@ public class SmallRyeFaultToleranceProcessor {
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<BeanDefiningAnnotationBuildItem> additionalBda,
             Capabilities capabilities,
-            BuildProducer<SystemPropertyBuildItem> systemProperty) {
+            BuildProducer<SystemPropertyBuildItem> systemProperty,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageSystemProperty) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_FAULT_TOLERANCE));
 
         serviceProvider.produce(new ServiceProviderBuildItem(ExecutorFactory.class.getName(),
                 ContextPropagationExecutorFactory.class.getName()));
-
-        Set<DotName> ftAnnotations = new HashSet<>();
-        ftAnnotations.add(DotName.createSimple(Asynchronous.class.getName()));
-        ftAnnotations.add(DotName.createSimple(Bulkhead.class.getName()));
-        ftAnnotations.add(DotName.createSimple(CircuitBreaker.class.getName()));
-        ftAnnotations.add(DotName.createSimple(Fallback.class.getName()));
-        ftAnnotations.add(DotName.createSimple(Retry.class.getName()));
-        ftAnnotations.add(DotName.createSimple(Timeout.class.getName()));
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
@@ -111,7 +108,7 @@ public class SmallRyeFaultToleranceProcessor {
             additionalBean.produce(fallbackHandlersBeans.build());
         }
 
-        for (DotName annotation : ftAnnotations) {
+        for (DotName annotation : FT_ANNOTATIONS) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, annotation.toString()));
             // also make them bean defining annotations
             additionalBda.produce(new BeanDefiningAnnotationBuildItem(annotation));
@@ -126,7 +123,7 @@ public class SmallRyeFaultToleranceProcessor {
 
             @Override
             public void transform(TransformationContext context) {
-                if (ftAnnotations.contains(context.getTarget().asClass().name())) {
+                if (FT_ANNOTATIONS.contains(context.getTarget().asClass().name())) {
                     context.transform().add(FaultToleranceBinding.class).done();
                 }
             }
@@ -136,7 +133,7 @@ public class SmallRyeFaultToleranceProcessor {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
         // Also register MP FT annotations so that they are recognized as interceptor bindings
         // Note that MP FT API jar is nor indexed, nor contains beans.xml so it is not part of the app index
-        for (DotName ftAnnotation : ftAnnotations) {
+        for (DotName ftAnnotation : FT_ANNOTATIONS) {
             builder.addBeanClass(ftAnnotation.toString());
         }
         builder.addBeanClasses(FaultToleranceInterceptor.class,
@@ -187,13 +184,43 @@ public class SmallRyeFaultToleranceProcessor {
     @BuildStep
     // needs to be RUNTIME_INIT because we need to read MP Config
     @Record(ExecutionTime.RUNTIME_INIT)
-    void validateFaultToleranceAnnotations(
-            ValidationPhaseBuildItem validationPhase, SmallryeFaultToleranceRecorder recorder) {
-        List<String> beanNames = new ArrayList<>();
-        for (BeanInfo bean : validationPhase.getContext().beans().classBeans()) {
-            beanNames.add(bean.getBeanClass().toString());
+    void validateFaultToleranceAnnotations(SmallryeFaultToleranceRecorder recorder,
+            ValidationPhaseBuildItem validationPhase,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
+        AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
+        Set<String> beanNames = new HashSet<>();
+        IndexView index = beanArchiveIndexBuildItem.getIndex();
+
+        for (BeanInfo info : validationPhase.getContext().beans()) {
+            if (hasFTAnnotations(index, annotationStore, info.getImplClazz())) {
+                beanNames.add(info.getBeanClass().toString());
+            }
         }
-        recorder.validate(beanNames);
+
+        recorder.createFaultToleranceOperation(beanNames);
+    }
+
+    private boolean hasFTAnnotations(IndexView index, AnnotationStore annotationStore, ClassInfo info) {
+        // first check annotations on type
+        if (annotationStore.hasAnyAnnotation(info, FT_ANNOTATIONS)) {
+            return true;
+        }
+
+        // then check on the methods
+        for (MethodInfo method : info.methods()) {
+            if (annotationStore.hasAnyAnnotation(method, FT_ANNOTATIONS)) {
+                return true;
+            }
+        }
+
+        // then check on the parent
+        DotName parentClassName = info.superName();
+        ClassInfo parentClassInfo = index.getClassByName(parentClassName);
+        if (parentClassName.equals(DotNames.OBJECT) || parentClassInfo == null) {
+            return false; //no more parents
+        }
+
+        return hasFTAnnotations(index, annotationStore, parentClassInfo);
     }
 
     @BuildStep

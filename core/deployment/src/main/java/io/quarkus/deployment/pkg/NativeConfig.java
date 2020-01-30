@@ -74,7 +74,7 @@ public class NativeConfig {
 
     /**
      * If the native image build should wait for a debugger to be attached before running. This is an advanced option
-     * and is generally only intended for those familiar with Substrate internals
+     * and is generally only intended for those familiar with GraalVM internals
      */
     @ConfigItem(defaultValue = "false")
     public boolean debugBuildProcess;

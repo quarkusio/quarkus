@@ -3,6 +3,7 @@ package io.quarkus.it.spring.data.jpa;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -106,5 +107,19 @@ public class MovieResource {
     @Path("/nullify/rating/forTitle/{title}")
     public void setRatingToNullForTitle(@PathParam("title") String title) {
         movieRepository.setRatingToNullForTitle(title);
+    }
+
+    @GET
+    @Path("/count/rating")
+    @Produces("application/json")
+    public List<MovieRepository.MovieCountByRating> countByRating() {
+        List<MovieRepository.MovieCountByRating> list = movieRepository.countByRating();
+
+        // #6205 - Make sure elements in list have been properly cast to the target object type.
+        // If the type is wrong (Object array), this will throw a ClassNotFoundException
+        MovieRepository.MovieCountByRating first = list.get(0);
+        Objects.requireNonNull(first);
+
+        return list;
     }
 }

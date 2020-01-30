@@ -1,6 +1,7 @@
 package io.quarkus.it.spring.data.jpa;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.ws.rs.GET;
@@ -58,4 +59,33 @@ public class BookResource {
         Optional<Book> book = bookRepository.findByPublicationYear(year);
         return book.map(b -> Response.ok(book).build()).orElse(Response.noContent().build());
     }
+
+    @GET
+    @Path("/count/year")
+    @Produces("application/json")
+    public List<BookRepository.BookCountByYear> countAllByPublicationYear() {
+        List<BookRepository.BookCountByYear> list = bookRepository.findAllByPublicationYear();
+
+        // #6205 - Make sure elements in list have been properly cast to the target object type.
+        // If the type is wrong (Object array), this will throw a ClassNotFoundException
+        BookRepository.BookCountByYear first = list.get(0);
+        Objects.requireNonNull(first);
+
+        return list;
+    }
+
+    @GET
+    @Path("/count/year2")
+    @Produces("application/json")
+    public List<BookRepository.BookCountByYear> countAllByPublicationYear2() {
+        List<BookRepository.BookCountByYear> list = bookRepository.findAllByPublicationYear2();
+
+        // #6205 - Make sure elements in list have been properly cast to the target object type.
+        // If the type is wrong (Object array), this will throw a ClassNotFoundException
+        BookRepository.BookCountByYear first = list.get(0);
+        Objects.requireNonNull(first);
+
+        return list;
+    }
+
 }

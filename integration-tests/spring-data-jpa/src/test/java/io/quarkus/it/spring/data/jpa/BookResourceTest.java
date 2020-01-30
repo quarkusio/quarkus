@@ -88,4 +88,20 @@ public class BookResourceTest {
                 .statusCode(200)
                 .body("size()", is(0));
     }
+
+    @Test
+    void testCountAllByPublicationYear() {
+        when().get("/book/count/year").then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body(containsString("publicationYear"));
+    }
+
+    @Test
+    void testCountAllByPublicationYear2() {
+        when().get("/book/count/year2").then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body(containsString("publicationYear"));
+    }
 }

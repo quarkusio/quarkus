@@ -127,7 +127,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                             methodCreator.load(finalQuery), sort, paramsArray);
 
                     generateFindQueryResultHandling(methodCreator, panacheQuery, pageableParameterIndex, repositoryClassInfo,
-                            entityClassInfo, returnType.name(), parseResult.getTopCount(), method.name());
+                            entityClassInfo, returnType.name(), parseResult.getTopCount(), method.name(), null);
 
                 } else if (parseResult.getQueryType() == MethodNameParser.QueryType.COUNT) {
                     if (!DotNames.PRIMITIVE_LONG.equals(returnType.name()) && !DotNames.LONG.equals(returnType.name())) {

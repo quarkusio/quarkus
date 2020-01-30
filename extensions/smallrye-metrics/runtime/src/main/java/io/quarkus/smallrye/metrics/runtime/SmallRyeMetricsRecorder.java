@@ -1,10 +1,12 @@
 package io.quarkus.smallrye.metrics.runtime;
 
+import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ClassLoadingMXBean;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryPoolMXBean;
+import java.lang.management.MemoryType;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
@@ -36,6 +38,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.metrics.ExtendedMetadata;
 import io.smallrye.metrics.MetricRegistries;
 import io.smallrye.metrics.TagsUtils;
 import io.smallrye.metrics.elementdesc.BeanInfo;
@@ -122,6 +125,24 @@ public class SmallRyeMetricsRecorder {
         threadingMetrics(registry, names);
         runtimeMetrics(registry, names);
         baseMemoryMetrics(registry, names);
+
+        if (!names.isEmpty()) {
+            shutdown.addShutdownTask(() -> {
+                for (String i : names) {
+                    registry.remove(i);
+                }
+            });
+        }
+    }
+
+    public void registerMicrometerJvmMetrics(ShutdownContext shutdown) {
+        MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.BASE);
+        List<String> names = new ArrayList<>();
+
+        micrometerJvmGcMetrics(registry, names, shutdown);
+        micrometerJvmThreadMetrics(registry, names);
+        micrometerJvmMemoryMetrics(registry, names);
+        micrometerJvmClassLoaderMetrics(registry, names);
 
         if (!names.isEmpty()) {
             shutdown.addShutdownTask(() -> {
@@ -581,6 +602,195 @@ public class SmallRyeMetricsRecorder {
                 }
             }
         }
+    }
+
+    private void micrometerJvmGcMetrics(MetricRegistry registry, List<String> names, ShutdownContext shutdown) {
+        if (!ImageInfo.inImageCode()) {
+            MicrometerGCMetrics gcMetrics = new MicrometerGCMetrics();
+
+            registry.register(new ExtendedMetadata("jvm.gc.max.data.size",
+                    MetricType.GAUGE,
+                    MetricUnits.BYTES,
+                    "Max size of old generation memory pool",
+                    true), new LambdaGauge(gcMetrics::getMaxDataSize));
+            names.add("jvm.gc.max.data.size");
+            registry.register(new ExtendedMetadata("jvm.gc.live.data.size",
+                    MetricType.GAUGE,
+                    MetricUnits.BYTES,
+                    "Size of old generation memory pool after a full GC",
+                    true), new LambdaGauge(gcMetrics::getLiveDataSize));
+            names.add("jvm.gc.live.data.size");
+            registry.register(new ExtendedMetadata("jvm.gc.memory.promoted",
+                    MetricType.COUNTER,
+                    MetricUnits.BYTES,
+                    "Count of positive increases in the size of the old generation memory pool before GC to after GC",
+                    true,
+                    "jvm_gc_memory_promoted_bytes_total"), new LambdaCounter(gcMetrics::getPromotedBytes));
+            names.add("jvm.gc.memory.promoted");
+            registry.register(new ExtendedMetadata("jvm.gc.memory.allocated",
+                    MetricType.COUNTER,
+                    MetricUnits.BYTES,
+                    "Incremented for an increase in the size of the young generation memory pool after one GC to before the next",
+                    true,
+                    "jvm_gc_memory_allocated_bytes_total"), new LambdaCounter(gcMetrics::getAllocatedBytes));
+            names.add("jvm.gc.memory.allocated");
+
+            // start updating the metric values in a listener for GC events
+            // Metrics that mimic the jvm.gc.pause timer will be registered lazily as GC events occur
+            gcMetrics.startWatchingNotifications();
+            shutdown.addShutdownTask(gcMetrics::cleanUp);
+        }
+    }
+
+    private void micrometerJvmThreadMetrics(MetricRegistry registry, List<String> names) {
+        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+
+        registry.register(
+                new ExtendedMetadata("jvm.threads.peak",
+                        MetricType.GAUGE,
+                        "threads",
+                        "The peak live thread count since the Java virtual machine started or peak was reset",
+                        true),
+                new LambdaGauge(threadBean::getPeakThreadCount));
+        names.add("jvm.threads.peak");
+        registry.register(
+                new ExtendedMetadata("jvm.threads.daemon",
+                        MetricType.GAUGE,
+                        "threads",
+                        "The current number of live daemon threads",
+                        true),
+                new LambdaGauge(threadBean::getDaemonThreadCount));
+        names.add("jvm.threads.daemon");
+        registry.register(
+                new ExtendedMetadata("jvm.threads.live",
+                        MetricType.GAUGE,
+                        "threads",
+                        "The current number of live threads including both daemon and non-daemon threads",
+                        true),
+                new LambdaGauge(threadBean::getThreadCount));
+        names.add("jvm.threads.live");
+
+        if (!ImageInfo.inImageCode()) {
+            ExtendedMetadata threadStatesMetadata = new ExtendedMetadata("jvm.threads.states",
+                    MetricType.GAUGE,
+                    "threads",
+                    "The current number of threads having a particular state",
+                    true);
+            for (Thread.State state : Thread.State.values()) {
+                registry.register(threadStatesMetadata,
+                        new LambdaGauge(() -> getThreadStateCount(threadBean, state)),
+                        new Tag("state", state.name().toLowerCase().replace("_", "-")));
+                names.add("jvm.threads.states");
+            }
+        }
+    }
+
+    private void micrometerJvmMemoryMetrics(MetricRegistry registry, List<String> names) {
+        if (!ImageInfo.inImageCode()) {
+            for (MemoryPoolMXBean memoryPoolMXBean : ManagementFactory.getMemoryPoolMXBeans()) {
+                String area = MemoryType.HEAP.equals(memoryPoolMXBean.getType()) ? "heap" : "nonheap";
+                Tag[] tags = new Tag[] { new Tag("id", memoryPoolMXBean.getName()),
+                        new Tag("area", area) };
+
+                registry.register(
+                        new ExtendedMetadata("jvm.memory.used",
+                                MetricType.GAUGE,
+                                "bytes",
+                                "The amount of used memory",
+                                true),
+                        new LambdaGauge(() -> memoryPoolMXBean.getUsage().getUsed()),
+                        tags);
+                names.add("jvm.memory.used");
+
+                registry.register(
+                        new ExtendedMetadata("jvm.memory.committed",
+                                MetricType.GAUGE,
+                                "bytes",
+                                "The amount of memory in bytes that is committed for the Java virtual machine to use",
+                                true),
+                        new LambdaGauge(() -> memoryPoolMXBean.getUsage().getCommitted()),
+                        tags);
+                names.add("jvm.memory.committed");
+
+                registry.register(
+                        new ExtendedMetadata("jvm.memory.max",
+                                MetricType.GAUGE,
+                                "bytes",
+                                "The maximum amount of memory in bytes that can be used for memory management",
+                                true),
+                        new LambdaGauge(() -> memoryPoolMXBean.getUsage().getMax()),
+                        tags);
+                names.add("jvm.memory.max");
+            }
+
+            for (BufferPoolMXBean bufferPoolBean : ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class)) {
+                Tag tag = new Tag("id", bufferPoolBean.getName());
+
+                registry.register(
+                        new ExtendedMetadata("jvm.buffer.count",
+                                MetricType.GAUGE,
+                                "buffers",
+                                "An estimate of the number of buffers in the pool",
+                                true),
+                        new LambdaGauge(() -> bufferPoolBean.getCount()),
+                        tag);
+                names.add("jvm.buffer.count");
+
+                registry.register(
+                        new ExtendedMetadata("jvm.buffer.memory.used",
+                                MetricType.GAUGE,
+                                "bytes",
+                                "An estimate of the memory that the Java virtual machine is using for this buffer pool",
+                                true),
+                        new LambdaGauge(() -> bufferPoolBean.getMemoryUsed()),
+                        tag);
+                names.add("jvm.buffer.memory.used");
+
+                registry.register(
+                        new ExtendedMetadata("jvm.buffer.total.capacity",
+                                MetricType.GAUGE,
+                                "bytes",
+                                "An estimate of the total capacity of the buffers in this pool",
+                                true),
+                        new LambdaGauge(() -> bufferPoolBean.getTotalCapacity()),
+                        tag);
+                names.add("jvm.buffer.total.capacity");
+            }
+
+        }
+    }
+
+    private void micrometerJvmClassLoaderMetrics(MetricRegistry registry, List<String> names) {
+        // The ClassLoadingMXBean can be used in native mode, but it only returns zeroes, so there's no point in including such metrics.
+        if (!ImageInfo.inImageCode()) {
+            ClassLoadingMXBean classLoadingBean = ManagementFactory.getClassLoadingMXBean();
+
+            registry.register(
+                    new ExtendedMetadata("jvm.classes.loaded",
+                            MetricType.GAUGE,
+                            "classes",
+                            "The number of classes that are currently loaded in the Java virtual machine",
+                            true,
+                            "jvm_classes_loaded_classes"),
+                    new LambdaGauge(() -> classLoadingBean.getLoadedClassCount()));
+            names.add("jvm.classes.loaded");
+
+            registry.register(
+                    new ExtendedMetadata("jvm.classes.unloaded",
+                            MetricType.COUNTER,
+                            "classes",
+                            "The total number of classes unloaded since the Java virtual machine has started execution",
+                            true,
+                            "jvm_classes_unloaded_classes_total"),
+                    new LambdaCounter(() -> classLoadingBean.getUnloadedClassCount()));
+            names.add("jvm.classes.unloaded");
+        }
+    }
+
+    private long getThreadStateCount(ThreadMXBean threadBean, Thread.State state) {
+        return Arrays.stream(threadBean.getThreadInfo(threadBean.getAllThreadIds()))
+                .filter(threadInfo -> threadInfo != null && threadInfo.getThreadState() == state)
+                .count();
     }
 
 }

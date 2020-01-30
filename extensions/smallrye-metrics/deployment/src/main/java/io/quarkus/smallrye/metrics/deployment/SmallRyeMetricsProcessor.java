@@ -103,6 +103,15 @@ public class SmallRyeMetricsProcessor {
         @ConfigItem(name = "extensions.enabled", defaultValue = "true")
         public boolean extensionsEnabled;
 
+        /**
+         * Apply Micrometer compatibility mode, where instead of regular 'base' and 'vendor' metrics,
+         * Quarkus exposes the same 'jvm' metrics that Micrometer does. Application metrics are unaffected by this mode.
+         * The use case is to facilitate migration from Micrometer-based metrics, because original dashboards for JVM metrics
+         * will continue working without having to rewrite them.
+         */
+        @ConfigItem(name = "micrometer.compatibility", defaultValue = "false")
+        public boolean micrometerCompatibility;
+
     }
 
     SmallRyeMetricsConfig metrics;
@@ -249,9 +258,15 @@ public class SmallRyeMetricsProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    void registerBaseAndVendorMetrics(SmallRyeMetricsRecorder metrics, ShutdownContextBuildItem shutdown) {
-        metrics.registerBaseMetrics(shutdown);
-        metrics.registerVendorMetrics(shutdown);
+    void registerBaseAndVendorMetrics(SmallRyeMetricsRecorder metrics,
+            ShutdownContextBuildItem shutdown,
+            SmallRyeMetricsConfig config) {
+        if (config.micrometerCompatibility) {
+            metrics.registerMicrometerJvmMetrics(shutdown);
+        } else {
+            metrics.registerBaseMetrics(shutdown);
+            metrics.registerVendorMetrics(shutdown);
+        }
     }
 
     @BuildStep

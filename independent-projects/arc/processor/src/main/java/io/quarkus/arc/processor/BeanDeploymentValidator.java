@@ -52,7 +52,7 @@ public interface BeanDeploymentValidator extends BuildExtension {
 
     }
 
-    public enum ValidationRule {
+    enum ValidationRule {
 
         NO_ARGS_CONSTRUCTOR;
 

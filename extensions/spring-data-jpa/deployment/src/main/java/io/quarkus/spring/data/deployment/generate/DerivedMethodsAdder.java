@@ -83,8 +83,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
             try (MethodCreator methodCreator = classCreator.getMethodCreator(method.name(), returnType.name().toString(),
                     parameterTypesStr)) {
-                ResultHandle paramsArray = methodCreator.newArray(Object.class,
-                        methodCreator.load(parseResult.getParamCount()));
+                ResultHandle paramsArray = methodCreator.newArray(Object.class, parseResult.getParamCount());
                 for (int i = 0; i < queryParameterIndexes.size(); i++) {
                     methodCreator.writeArrayValue(paramsArray, methodCreator.load(i),
                             methodCreator.getMethodParam(queryParameterIndexes.get(i)));
@@ -128,7 +127,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                             methodCreator.load(finalQuery), sort, paramsArray);
 
                     generateFindQueryResultHandling(methodCreator, panacheQuery, pageableParameterIndex, repositoryClassInfo,
-                            entityClassInfo, returnType.name(), parseResult.getTopCount(), method.name());
+                            entityClassInfo, returnType.name(), parseResult.getTopCount(), method.name(), null);
 
                 } else if (parseResult.getQueryType() == MethodNameParser.QueryType.COUNT) {
                     if (!DotNames.PRIMITIVE_LONG.equals(returnType.name()) && !DotNames.LONG.equals(returnType.name())) {

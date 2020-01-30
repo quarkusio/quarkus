@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -85,7 +85,7 @@ public class CompilerFlagsTest {
     }
 
     private Set<String> setOf(String... strings) {
-        return new HashSet<>(Arrays.asList(strings));
+        return new LinkedHashSet<>(Arrays.asList(strings));
     }
 
 }

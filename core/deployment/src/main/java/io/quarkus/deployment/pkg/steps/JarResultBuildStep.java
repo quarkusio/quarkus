@@ -115,6 +115,7 @@ public class JarResultBuildStep {
     // we shouldn't have to specify these flags when opening a ZipFS (since they are the default ones), but failure to do so
     // makes a subsequent uberJar creation fail in java 8 (but works fine in Java 11)
     private static final OpenOption[] DEFAULT_OPEN_OPTIONS = { TRUNCATE_EXISTING, WRITE, CREATE };
+    private static final BiPredicate<Path, BasicFileAttributes> IS_JSON_FILE_PREDICATE = new IsJsonFilePredicate();
 
     @BuildStep
     OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
@@ -378,29 +379,43 @@ public class JarResultBuildStep {
      */
     private void copyJsonConfigFiles(ApplicationArchivesBuildItem applicationArchivesBuildItem, Path thinJarDirectory)
             throws IOException {
-        // archiveLocation contains the location of the application jar at this point
-        Path appJarPath = applicationArchivesBuildItem.getRootArchive().getArchiveLocation();
-        try (FileSystem jarFileSystem = FileSystems.newFileSystem(appJarPath, null)) {
-            try (Stream<Path> stream = Files.find(jarFileSystem.getPath("/"), 1, new BiPredicate<Path, BasicFileAttributes>() {
-                @Override
-                public boolean test(Path path, BasicFileAttributes basicFileAttributes) {
-                    return basicFileAttributes.isRegularFile() && path.toString().endsWith(".json");
-                }
-            })) {
+        Path archiveLocation = applicationArchivesBuildItem.getRootArchive().getArchiveLocation();
+        if (Files.isDirectory(archiveLocation)) { // this is the use case where the native image is built as part of the regular build
+            try (Stream<Path> stream = Files.find(archiveLocation, 1, IS_JSON_FILE_PREDICATE)) {
                 stream.forEach(new Consumer<Path>() {
                     @Override
                     public void accept(Path jsonPath) {
                         try {
-                            Files.copy(jsonPath.getFileName(), thinJarDirectory.resolve(jsonPath.getFileName().toString()));
+                            Files.copy(jsonPath, thinJarDirectory.resolve(jsonPath.getFileName()));
                         } catch (IOException e) {
-                            throw new UncheckedIOException(
-                                    "Unable to copy json config file from " + jsonPath + " to " + thinJarDirectory,
-                                    e);
+                            toUncheckedException(e, jsonPath, thinJarDirectory);
                         }
                     }
                 });
             }
+        } else {
+            // this is to support building native images using the NativeImageMojo
+            try (FileSystem jarFileSystem = FileSystems.newFileSystem(archiveLocation, null)) {
+                try (Stream<Path> stream = Files.find(jarFileSystem.getPath("/"), 1, IS_JSON_FILE_PREDICATE)) {
+                    stream.forEach(new Consumer<Path>() {
+                        @Override
+                        public void accept(Path jsonPath) {
+                            try {
+                                Files.copy(jsonPath.getFileName(), thinJarDirectory.resolve(jsonPath.getFileName().toString()));
+                            } catch (IOException e) {
+                                toUncheckedException(e, jsonPath, thinJarDirectory);
+                            }
+                        }
+                    });
+                }
+            }
         }
+    }
+
+    private static void toUncheckedException(IOException e, Path jsonPath, Path thinJarDirectory) {
+        throw new UncheckedIOException(
+                "Unable to copy json config file from " + jsonPath + " to " + thinJarDirectory,
+                e);
     }
 
     private void doThinJarGeneration(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -725,5 +740,13 @@ public class JarResultBuildStep {
                 || s.endsWith(".DSA")
                 || s.endsWith(".RSA")
                 || s.endsWith(".EC");
+    }
+
+    private static class IsJsonFilePredicate implements BiPredicate<Path, BasicFileAttributes> {
+
+        @Override
+        public boolean test(Path path, BasicFileAttributes basicFileAttributes) {
+            return basicFileAttributes.isRegularFile() && path.toString().endsWith(".json");
+        }
     }
 }

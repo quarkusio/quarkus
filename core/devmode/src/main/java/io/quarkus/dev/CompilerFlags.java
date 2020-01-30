@@ -2,7 +2,7 @@ package io.quarkus.dev;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -27,7 +27,7 @@ public class CompilerFlags {
             String sourceJavaVersion,
             String targetJavaVersion) {
 
-        this.defaultFlags = defaultFlags == null ? new HashSet<>() : new HashSet<>(defaultFlags);
+        this.defaultFlags = defaultFlags == null ? new LinkedHashSet<>() : new LinkedHashSet<>(defaultFlags);
         this.userFlags = userFlags == null ? new ArrayList<>() : new ArrayList<>(userFlags);
         this.sourceJavaVersion = sourceJavaVersion;
         this.targetJavaVersion = targetJavaVersion;
@@ -38,7 +38,7 @@ public class CompilerFlags {
 
         // The set of effective default flags is the set of default flags except the ones also
         // set by the user.  This ensures that we do not needlessly pass the default flags twice.
-        Set<String> effectiveDefaultFlags = new HashSet<>(this.defaultFlags);
+        Set<String> effectiveDefaultFlags = new LinkedHashSet<>(this.defaultFlags);
         effectiveDefaultFlags.removeAll(userFlags);
 
         flagList.addAll(effectiveDefaultFlags);

@@ -413,6 +413,7 @@ These sections can be used to include another template and possibly override som
     <div>
       My body.
     </div>
+  {/body}
 {/include}
 ----
 <1> `include` section is used to specify the extended template.

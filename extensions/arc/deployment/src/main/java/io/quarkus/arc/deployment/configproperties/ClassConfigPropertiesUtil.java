@@ -364,7 +364,7 @@ final class ClassConfigPropertiesUtil {
         ResultHandle validationResult = bytecodeCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(VALIDATOR_CLASS, "validate", Set.class, Object.class, Class[].class),
                 bytecodeCreator.getMethodParam(1), configObject,
-                bytecodeCreator.newArray(Class.class, bytecodeCreator.load(0)));
+                bytecodeCreator.newArray(Class.class, 0));
         ResultHandle constraintSetIsEmpty = bytecodeCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(Set.class, "isEmpty", boolean.class), validationResult);
         BranchResult constraintSetIsEmptyBranch = bytecodeCreator.ifNonZero(constraintSetIsEmpty);

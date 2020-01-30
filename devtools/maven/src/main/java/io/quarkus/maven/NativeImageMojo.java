@@ -93,7 +93,11 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private Boolean enableServer;
 
-    @Parameter(defaultValue = "false")
+    /**
+     * @deprecated JNI is always enabled starting from GraalVM 19.3.1.
+     */
+    @Deprecated
+    @Parameter(defaultValue = "true")
     private Boolean enableJni;
 
     @Parameter(defaultValue = "false")
@@ -369,8 +373,10 @@ public class NativeImageMojo extends AbstractMojo {
         if (enableIsolates != null) {
             configs.put("quarkus.native.enable-isolates", enableIsolates.toString());
         }
-        if (enableJni != null) {
-            configs.put("quarkus.native.enable-jni", enableJni.toString());
+        if (Boolean.FALSE.equals(enableJni)) {
+            getLog().warn("Your application is setting the deprecated 'enableJni' Maven option to false. Please"
+                    + " consider removing this option as it is ignored (JNI is always enabled) and it will be removed"
+                    + " in a future Quarkus version.");
         }
 
         if (enableServer != null) {

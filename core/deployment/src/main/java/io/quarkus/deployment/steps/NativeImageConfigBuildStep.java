@@ -122,22 +122,16 @@ class NativeImageConfigBuildStep {
         }
         nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
 
-        boolean requireJni = false;
         if (!enableAllSecurityServicesBuildItems.isEmpty()) {
-            requireJni = true;
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-security-services", "true"));
         }
 
-        if (!jniBuildItems.isEmpty() || requireJni) {
-            for (JniBuildItem jniBuildItem : jniBuildItems) {
-                if (jniBuildItem.getLibraryPaths() != null && !jniBuildItem.getLibraryPaths().isEmpty()) {
-                    for (String path : jniBuildItem.getLibraryPaths()) {
-                        javaLibraryPathAdditionalPath
-                                .produce(new JavaLibraryPathAdditionalPathBuildItem(path));
-                    }
+        for (JniBuildItem jniBuildItem : jniBuildItems) {
+            if (jniBuildItem.getLibraryPaths() != null && !jniBuildItem.getLibraryPaths().isEmpty()) {
+                for (String path : jniBuildItem.getLibraryPaths()) {
+                    javaLibraryPathAdditionalPath.produce(new JavaLibraryPathAdditionalPathBuildItem(path));
                 }
             }
-            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.jni.enable", "true"));
         }
 
         if (!nativeImageEnableAllCharsetsBuildItems.isEmpty()) {

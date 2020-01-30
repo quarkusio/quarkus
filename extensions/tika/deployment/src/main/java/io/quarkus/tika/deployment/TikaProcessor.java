@@ -25,7 +25,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -77,11 +76,6 @@ public class TikaProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.TIKA);
-    }
-
-    @BuildStep
-    void setupJni(BuildProducer<JniBuildItem> jniProducer) {
-        jniProducer.produce(new JniBuildItem());
     }
 
     @BuildStep

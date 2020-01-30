@@ -18,8 +18,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
-[#if !assumeManaged ]            <version>[=quarkusVersion]</version>
-[/#if]
         </dependency>
         <dependency>
             <groupId>[=groupId]</groupId>

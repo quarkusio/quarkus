@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.core.Is.is;
 
-import java.net.InetAddress;
 import java.nio.file.Files;
 
 import org.apache.sshd.server.SshServer;
@@ -17,7 +16,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
@@ -33,12 +31,11 @@ public class JSchTest {
         sshd.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setCommandFactory(UnknownCommandFactory.INSTANCE);
-        sshd.setHost(InetAddress.getLocalHost().getHostName());
+        sshd.setHost("localhost");
         sshd.start();
     }
 
     @Test
-    @DisabledOnNativeImage("This test fails with GraalVM 19.2.1 but is successful with GraalVM 19.3.1")
     void shouldConnect() {
         given().queryParam("host", sshd.getHost())
                 .queryParam("port", sshd.getPort())

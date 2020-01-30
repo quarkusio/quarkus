@@ -206,6 +206,9 @@ public class JpaOperations {
     }
 
     public static String toOrderBy(Sort sort) {
+        if (sort.getColumns().size() == 0) {
+            return "";
+        }
         StringBuilder sb = new StringBuilder(" ORDER BY ");
         for (int i = 0; i < sort.getColumns().size(); i++) {
             Sort.Column column = sort.getColumns().get(i);

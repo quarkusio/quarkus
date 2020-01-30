@@ -19,6 +19,7 @@ public class JPAValidationTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(MyEntity.class, JPATestValidationResource.class)
+                    .addAsResource("application.properties")
                     .addAsResource(new StringAsset(""), "import.sql")); // define an empty import.sql file
 
     @Test

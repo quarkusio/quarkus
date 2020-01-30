@@ -180,7 +180,7 @@ public class EventResource {
   @GET
   @Path("/{name}")
   public CompletionStage<String> hello(String name) {
-      return bus.<String>send("greeting", name)                             // <2>
+      return bus.<String>request("greeting", name)                             // <2>
               .thenApply(Message::body);
   }
 }
@@ -197,11 +197,11 @@ The `EventBus` object provides methods to:
 [source, java]
 ----
 // Case 1
-bus.send("address", "hello");
+bus.request("address", "hello");
 // Case 2
 bus.publish("address", "hello");
 // Case 3
-bus.send("address", "hello, how are you?").thenAccept(message -> {
+bus.request("address", "hello, how are you?").thenAccept(message -> {
     // response
 });
 ----
@@ -250,7 +250,7 @@ public class EventResource {
     @GET
     @Path("/async/{name}")
     public CompletionStage<String> hello(@PathParam("name") String name) {
-        return bus.<String>send("greeting", name)                           // <1>
+        return bus.<String>request("greeting", name)                        // <1>
                 .thenApply(Message::body);                                  // <2>
     }
 }

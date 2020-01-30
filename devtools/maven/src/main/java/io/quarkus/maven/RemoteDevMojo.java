@@ -18,7 +18,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.toolchain.ToolchainManager;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -49,28 +48,11 @@ public class RemoteDevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.sourceDirectory}")
     private File sourceDir;
 
-    @Parameter(defaultValue = "${jvm.args}")
-    private String jvmArgs;
-
     @Parameter(defaultValue = "${session}")
     private MavenSession session;
 
-    @Parameter(defaultValue = "TRUE")
-    private boolean deleteDevJar;
-
     @Component
     private MavenVersionEnforcer mavenVersionEnforcer;
-
-    @Component
-    private ToolchainManager toolchainManager;
-
-    public ToolchainManager getToolchainManager() {
-        return toolchainManager;
-    }
-
-    public MavenSession getSession() {
-        return session;
-    }
 
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {

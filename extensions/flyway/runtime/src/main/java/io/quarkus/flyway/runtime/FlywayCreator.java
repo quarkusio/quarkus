@@ -29,6 +29,7 @@ class FlywayCreator {
         flywayRuntimeConfig.repeatableSqlMigrationPrefix.ifPresent(configure::repeatableSqlMigrationPrefix);
         configure.baselineOnMigrate(flywayRuntimeConfig.baselineOnMigrate);
         configure.validateOnMigrate(flywayRuntimeConfig.validateOnMigrate);
+        configure.outOfOrder(flywayRuntimeConfig.outOfOrder);
         flywayRuntimeConfig.baselineVersion.ifPresent(configure::baselineVersion);
         flywayRuntimeConfig.baselineDescription.ifPresent(configure::baselineDescription);
         return configure.load();

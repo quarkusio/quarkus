@@ -99,4 +99,10 @@ public final class FlywayDataSourceRuntimeConfig {
      */
     @ConfigItem
     public boolean validateOnMigrate = true;
+
+    /**
+     * Allows migrations to be run "out of order".
+     */
+    @ConfigItem
+    public boolean outOfOrder;
 }

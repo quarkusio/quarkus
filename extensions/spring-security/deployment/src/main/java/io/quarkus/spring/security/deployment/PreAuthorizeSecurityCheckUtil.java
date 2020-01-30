@@ -118,7 +118,7 @@ final class PreAuthorizeSecurityCheckUtil {
 
         @Override
         public ResultHandle apply(BytecodeCreator creator) {
-            ResultHandle rolesAllowedArgs = creator.newArray(String.class, creator.load(roleValueProducers.size()));
+            ResultHandle rolesAllowedArgs = creator.newArray(String.class, roleValueProducers.size());
             int i = 0;
             for (Function<BytecodeCreator, ResultHandle> roleValueProducer : roleValueProducers) {
                 creator.writeArrayValue(rolesAllowedArgs, i++, roleValueProducer.apply(creator));

@@ -13,6 +13,13 @@
     <artifactId>myproject-with-grand-parent</artifactId>
     <name>With Grand Parent - Runtime</name>
 
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core</artifactId>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>

@@ -10,7 +10,6 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -96,7 +95,6 @@ public class TracingTest {
     }
 
     @Test
-    @Disabled("https://github.com/quarkusio/quarkus/issues/2187")
     public void testContextPropagationInFaultTolerance() {
         try {
             RestAssured.defaultParser = Parser.TEXT;

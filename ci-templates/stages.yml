@@ -85,7 +85,7 @@ stages:
       - job: Build_JDK8_Linux
         displayName: 'Build JDK8 Linux'
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
-        timeoutInMinutes: 90
+        timeoutInMinutes: 120
         pool:
           vmImage: 'Ubuntu 16.04'
 
@@ -108,12 +108,12 @@ stages:
       - job: Windows_Build
         displayName: 'Windows JVM Build'
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
-        timeoutInMinutes: 90
+        timeoutInMinutes: 120
         pool:
           # Always use hosted pool for windows
           vmImage: 'vs2017-win2016'
           MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
-          MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+          MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER) -Xmx3072m'
         steps:
           - task: CacheBeta@0 #we know the very first job will have restored or created this, so this will never write built artifacts to the cache
             inputs:
@@ -130,7 +130,7 @@ stages:
               options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
 
       - job: Build_JDK11_Linux
-        timeoutInMinutes: 90
+        timeoutInMinutes: 120
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         displayName: 'Linux JDK11 Build'
         pool: ${{parameters.poolSettings}}
@@ -144,7 +144,7 @@ stages:
           - template: prepare-cache.yaml
 
       - job: Build_JDK12_Linux
-        timeoutInMinutes: 90
+        timeoutInMinutes: 120
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         displayName: 'Linux JDK12 Build'
         pool: ${{parameters.poolSettings}}
@@ -203,7 +203,7 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 30
+          timeoutInMinutes: 40
           modules:
             - jpa-h2
             - jpa-mariadb
@@ -211,6 +211,8 @@ stages:
             - jpa-derby
             - jpa-without-entity
           name: data_1
+          mssql: true
+          mariadb: true
 
       - template: native-build-steps.yaml
         parameters:
@@ -361,6 +363,7 @@ stages:
             - kogito
             - kubernetes-client
             - quartz
+            - qute
           name: misc_3
 
       - template: native-build-steps.yaml

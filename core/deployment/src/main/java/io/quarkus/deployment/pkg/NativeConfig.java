@@ -36,9 +36,10 @@ public class NativeConfig {
     public boolean enableAllSecurityServices;
 
     /**
-     * If JNI should be enabled
+     * @deprecated JNI is always enabled starting from GraalVM 19.3.1.
      */
-    @ConfigItem(defaultValue = "false")
+    @Deprecated
+    @ConfigItem(defaultValue = "true")
     public boolean enableJni;
 
     /**
@@ -73,7 +74,7 @@ public class NativeConfig {
 
     /**
      * If the native image build should wait for a debugger to be attached before running. This is an advanced option
-     * and is generally only intended for those familiar with Substrate internals
+     * and is generally only intended for those familiar with GraalVM internals
      */
     @ConfigItem(defaultValue = "false")
     public boolean debugBuildProcess;
@@ -132,7 +133,7 @@ public class NativeConfig {
     /**
      * The docker image to use to do the image build
      */
-    @ConfigItem(defaultValue = "quay.io/quarkus/ubi-quarkus-native-image:19.2.1")
+    @ConfigItem(defaultValue = "quay.io/quarkus/ubi-quarkus-native-image:19.3.1-java8")
     public String builderImage;
 
     /**

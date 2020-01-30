@@ -3,6 +3,9 @@ package io.quarkus.spring.data.deployment.generate;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.persistence.NoResultException;
@@ -15,6 +18,7 @@ import org.springframework.data.domain.SliceImpl;
 
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
+import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -55,7 +59,7 @@ public abstract class AbstractMethodsAdder {
 
     protected void generateFindQueryResultHandling(MethodCreator methodCreator, ResultHandle panacheQuery,
             Integer pageableParameterIndex, ClassInfo repositoryClassInfo, ClassInfo entityClassInfo,
-            DotName returnType, Integer limit, String methodName) {
+            DotName returnType, Integer limit, String methodName, DotName customResultType) {
 
         ResultHandle page = null;
         if (limit != null) {
@@ -116,9 +120,39 @@ public abstract class AbstractMethodsAdder {
             catchBlock.returnValue(emptyOptional);
         } else if (DotNames.LIST.equals(returnType) || DotNames.COLLECTION.equals(returnType)
                 || DotNames.ITERATOR.equals(returnType)) {
-            ResultHandle list = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(PanacheQuery.class, "list", List.class),
-                    panacheQuery);
+            ResultHandle list;
+
+            if (customResultType == null) {
+                list = methodCreator.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(PanacheQuery.class, "list", List.class),
+                        panacheQuery);
+            } else {
+                ResultHandle stream = methodCreator.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(PanacheQuery.class, "stream", Stream.class),
+                        panacheQuery);
+
+                // Function to convert Object[] to the custom type (using the generated static convert method)
+                FunctionCreator function = methodCreator.createFunction(Function.class);
+                BytecodeCreator funcBytecode = function.getBytecode();
+                ResultHandle obj = funcBytecode.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(customResultType.toString(), "convert_" + methodName,
+                                customResultType.toString(),
+                                Object[].class.getName()),
+                        funcBytecode.getMethodParam(0));
+                funcBytecode.returnValue(obj);
+
+                stream = methodCreator.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(Stream.class, "map", Stream.class, Function.class),
+                        stream, function.getInstance());
+
+                // Re-collect the stream into a list
+                ResultHandle collector = methodCreator.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(Collectors.class, "toList", Collector.class));
+                list = methodCreator.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod(Stream.class, "collect", Object.class, Collector.class),
+                        stream, collector);
+            }
+
             if (DotNames.ITERATOR.equals(returnType)) {
                 ResultHandle iterator = methodCreator.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Iterable.class, "iterator", Iterator.class),

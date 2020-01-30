@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.annotation.security.DeclareRoles;
@@ -80,7 +79,7 @@ import org.jboss.metadata.web.spec.WebResourceCollectionMetaData;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrarBuildItem;
-import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -535,11 +534,10 @@ public class UndertowBuildStep {
 
     @BuildStep
     @Record(STATIC_INIT)
-    RuntimeBeanBuildItem servletContextBean(
+    SyntheticBeanBuildItem servletContextBean(
             UndertowDeploymentRecorder recorder) {
-        return RuntimeBeanBuildItem.builder(ServletContext.class).setScope(ApplicationScoped.class)
-                .setSupplier((Supplier) recorder.servletContextSupplier())
-                .build();
+        return SyntheticBeanBuildItem.configure(ServletContext.class).scope(ApplicationScoped.class)
+                .supplier(recorder.servletContextSupplier()).done();
     }
 
     /**

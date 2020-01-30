@@ -12,6 +12,7 @@ public class MultipleQueriesConfigurationTest extends JdbcSecurityRealmTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
+                    .addAsResource("multiple-queries/import.sql")
                     .addAsResource("multiple-queries/application.properties", "application.properties"));
 
 }

@@ -1,4 +1,4 @@
-package io.quarkus.elytron.security.runtime.graal;
+package io.quarkus.elytron.security.common.runtime.graal;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.TargetClass;

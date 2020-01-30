@@ -139,7 +139,15 @@ curl $URL/hello/greeting/quarkus
 
 Your application is accessible at the printed URL.
 
-The `.s2i/environment` file in the quickstart sets required variables for the S2I Builder image to find the Quarkus `runner` JAR, and copy the JARs from the `lib/` directory.
+The `.s2i/environment` file in the quickstart sets required variables for the S2I Builder image to find the Quarkus `runner` JAR, and copy the JARs from the `lib/` directory:
+
+[source,text]
+----
+MAVEN_S2I_ARTIFACT_DIRS=target
+S2I_SOURCE_DEPLOYMENTS_FILTER=*-runner.jar lib
+JAVA_OPTIONS=-Dquarkus.http.host=0.0.0.0
+AB_JOLOKIA_OFF=true
+----
 
 == Going further
 

@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.build.extension.annotations;
+package io.quarkus.arc.test.buildextension.annotations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.build.extension.beans;
+package io.quarkus.arc.test.buildextension.beans;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;

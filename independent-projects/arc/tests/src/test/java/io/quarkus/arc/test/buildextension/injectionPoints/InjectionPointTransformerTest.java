@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.build.extension.injectionPoints;
+package io.quarkus.arc.test.buildextension.injectionPoints;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;

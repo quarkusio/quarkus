@@ -12,9 +12,13 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
 /**
+ * Use this configurator to construct an {@link AnnotationInstance} that represents a CDI qualifier.
+ * <p>
  * This construct is not thread-safe.
  * 
  * @param <C>
+ * @see BeanConfigurator
+ * @see ObserverConfigurator
  */
 public final class QualifierConfigurator<C extends Consumer<AnnotationInstance>> {
 

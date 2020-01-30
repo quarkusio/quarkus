@@ -18,7 +18,6 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
@@ -69,8 +68,14 @@ public class ObserverInfo implements InjectionTargetInfo {
                 if (transformer.appliesTo(observedType, qualifiers)) {
                     transformer.transform(context);
                     if (context.vetoed) {
-                        LOGGER.debugf("Observer method %s.%s() vetoed by %s", observerMethod.declaringClass().name(),
-                                observerMethod.name(), transformer.getClass().getName());
+                        String info;
+                        if (observerMethod != null) {
+                            info = String.format("method %s.%s()", observerMethod.declaringClass().name(),
+                                    observerMethod.name());
+                        } else {
+                            info = beanClass.toString();
+                        }
+                        LOGGER.debugf("Observer %s vetoed by %s", info, transformer.getClass().getName());
                         break;
                     }
                 }
@@ -87,10 +92,15 @@ public class ObserverInfo implements InjectionTargetInfo {
         }
 
         if (!transactionPhase.equals(TransactionPhase.IN_PROGRESS) && !jtaCapabilities) {
-            final ClassInfo clazz = observerMethod.declaringClass();
+            String info;
+            if (observerMethod != null) {
+                info = String.format("method %s.%s()", observerMethod.declaringClass().name(),
+                        observerMethod.name());
+            } else {
+                info = beanClass.toString();
+            }
             LOGGER.warnf("The observer %s#%s makes use of '%s' transactional observers but no " +
-                    "JTA capabilities were detected.", clazz,
-                    observerMethod.name(), transactionPhase);
+                    "JTA capabilities were detected.", info, transactionPhase);
         }
         return new ObserverInfo(beanDeployment, beanClass, declaringBean, observerMethod, injection, eventParameter, isAsync,
                 priority,

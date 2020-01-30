@@ -108,6 +108,27 @@ public class NativeImageBuildStep {
                 nativeImage.add("--publish=" + DEBUG_BUILD_PROCESS_PORT + ":" + DEBUG_BUILD_PROCESS_PORT);
             }
             Collections.addAll(nativeImage, "--rm", nativeConfig.builderImage);
+
+            if ("docker".equals(containerRuntime) || "podman".equals(containerRuntime)) {
+                // we pull the docker image in order to give users an indication of which step the process is at
+                // it's not strictly necessary we do this, however if we don't the subsequent version command
+                // will appear to block and no output will be shown
+                log.info("Pulling image " + nativeConfig.builderImage);
+                Process pullProcess = null;
+                try {
+                    pullProcess = new ProcessBuilder(Arrays.asList(containerRuntime, "pull", nativeConfig.builderImage))
+                            .inheritIO()
+                            .start();
+                    pullProcess.waitFor();
+                } catch (IOException | InterruptedException e) {
+                    throw new RuntimeException("Failed to pull builder image " + nativeConfig.builderImage, e);
+                } finally {
+                    if (pullProcess != null) {
+                        pullProcess.destroy();
+                    }
+                }
+            }
+
         } else {
             if (IS_LINUX) {
                 noPIE = detectNoPIE();

@@ -40,6 +40,14 @@ update_configs:
       # Quarkus
       - match:
           dependency_name: "io.quarkus.gizmo:gizmo"
+      - match:
+          dependency_name: "io.quarkus.http:quarkus-http-vertx-backend"
+      - match:
+          dependency_name: "io.quarkus.http:quarkus-http-core"
+      - match:
+          dependency_name: "io.quarkus.http:quarkus-http-servlet"
+      - match:
+          dependency_name: "io.quarkus.http:quarkus-http-websockets-jsr"
       # Elytron
       - match:
           dependency_name: "org.wildfly.security:wildfly-elytron-*"

@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.enterprise.event.Reception;
 import javax.enterprise.inject.Model;
 import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.DeploymentException;
@@ -840,33 +841,25 @@ public class BeanDeployment {
     }
 
     private RegistrationContext registerSyntheticBeans(List<BeanRegistrar> beanRegistrars, BuildContext buildContext) {
-        RegistrationContext registrationContext = new RegistrationContext() {
-
-            @Override
-            public <T> BeanConfigurator<T> configure(DotName beanClassName) {
-                return new BeanConfigurator<T>(beanClassName, BeanDeployment.this, beans::add);
-            }
-
-            @Override
-            public <V> V get(Key<V> key) {
-                return buildContext.get(key);
-            }
-
-            @Override
-            public <V> V put(Key<V> key, V value) {
-                return buildContext.put(key, value);
-            }
-
-            @Override
-            public BeanStream beans() {
-                return new BeanStream(get(BuildExtension.Key.BEANS));
-            }
-
-        };
+        BeanRegistrationContextImpl context = new BeanRegistrationContextImpl(buildContext, this);
         for (BeanRegistrar registrar : beanRegistrars) {
-            registrar.register(registrationContext);
+            context.registrar = registrar;
+            registrar.register(context);
+            context.registrar = null;
         }
-        return registrationContext;
+        return context;
+    }
+
+    private void addSyntheticBean(BeanInfo bean) {
+        beans.add(bean);
+    }
+
+    private void addSyntheticObserver(ObserverConfigurator configurator) {
+        observers.add(ObserverInfo.create(this, configurator.beanClass, null, null, null, null, configurator.observedType,
+                configurator.observedQualifiers,
+                Reception.ALWAYS, configurator.transactionPhase, configurator.isAsync, configurator.priority,
+                observerTransformers, buildContext,
+                jtaCapabilities, configurator.notifyConsumer));
     }
 
     static void processErrors(List<Throwable> errors) {
@@ -990,6 +983,45 @@ public class BeanDeployment {
         @Override
         public BeanStream removedBeans() {
             return new BeanStream(get(BuildExtension.Key.REMOVED_BEANS));
+        }
+
+    }
+
+    private static class BeanRegistrationContextImpl implements RegistrationContext {
+
+        private final BuildContext buildContext;
+        private final BeanDeployment beanDeployment;
+        private BeanRegistrar registrar;
+
+        BeanRegistrationContextImpl(BuildContext buildContext, BeanDeployment beanDeployment) {
+            this.buildContext = buildContext;
+            this.beanDeployment = beanDeployment;
+        }
+
+        @Override
+        public <T> BeanConfigurator<T> configure(DotName beanClassName) {
+            return new BeanConfigurator<T>(beanClassName, beanDeployment, beanDeployment::addSyntheticBean);
+        }
+
+        @Override
+        public ObserverConfigurator configureObserver() {
+            return new ObserverConfigurator(DotName.createSimple(registrar.getClass().getName()),
+                    beanDeployment::addSyntheticObserver);
+        }
+
+        @Override
+        public <V> V get(Key<V> key) {
+            return buildContext.get(key);
+        }
+
+        @Override
+        public <V> V put(Key<V> key, V value) {
+            return buildContext.put(key, value);
+        }
+
+        @Override
+        public BeanStream beans() {
+            return new BeanStream(get(BuildExtension.Key.BEANS));
         }
 
     }

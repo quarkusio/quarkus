@@ -8,12 +8,9 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Inherited;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -29,7 +26,7 @@ import org.jboss.jandex.Type.Kind;
 /**
  * This construct is not thread-safe.
  */
-public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>, T> {
+public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>, T> implements Consumer<AnnotationInstance> {
 
     protected final DotName implClazz;
     protected final Set<Type> types;
@@ -240,77 +237,9 @@ public abstract class BeanConfiguratorBase<B extends BeanConfiguratorBase<B, T>,
         return (T) obj;
     }
 
-    public static class QualifierConfigurator<B extends BeanConfiguratorBase<B, ?>> {
-
-        private final B beanConfiguratorBase;
-        private final List<AnnotationValue> values;
-
-        private DotName annotationName;
-
-        QualifierConfigurator(B beanConfiguratorBase) {
-            this.beanConfiguratorBase = beanConfiguratorBase;
-            this.values = new ArrayList<>();
-        }
-
-        public QualifierConfigurator<B> annotation(Class<? extends Annotation> annotationClass) {
-            this.annotationName = DotName.createSimple(annotationClass.getName());
-            return this;
-        }
-
-        public QualifierConfigurator<B> annotation(DotName annotationName) {
-            this.annotationName = annotationName;
-            return this;
-        }
-
-        public QualifierConfigurator<B> addValue(String name, Object value) {
-            values.add(createAnnotationValue(name, value));
-            return this;
-        }
-
-        public B done() {
-            return beanConfiguratorBase.addQualifier(AnnotationInstance.create(annotationName, null, values));
-        }
-
-        @SuppressWarnings("unchecked")
-        static AnnotationValue createAnnotationValue(String name, Object val) {
-            if (val instanceof String) {
-                return AnnotationValue.createStringValue(name, val.toString());
-            } else if (val instanceof Integer) {
-                return AnnotationValue.createIntegerValue(name, (int) val);
-            } else if (val instanceof Long) {
-                return AnnotationValue.createLongalue(name, (long) val);
-            } else if (val instanceof Byte) {
-                return AnnotationValue.createByteValue(name, (byte) val);
-            } else if (val instanceof Float) {
-                return AnnotationValue.createFloatValue(name, (float) val);
-            } else if (val instanceof Double) {
-                return AnnotationValue.createDouleValue(name, (double) val);
-            } else if (val instanceof Short) {
-                return AnnotationValue.createShortValue(name, (short) val);
-            } else if (val instanceof Boolean) {
-                return AnnotationValue.createBooleanValue(name, (boolean) val);
-            } else if (val instanceof Enum) {
-                return AnnotationValue.createEnumValue(name, DotName.createSimple(val.getClass().getName()), val.toString());
-            } else if (val instanceof Class) {
-                return AnnotationValue.createClassValue(name,
-                        Type.create(DotName.createSimple(((Class<?>) val).getName()), Kind.CLASS));
-            } else if (val instanceof List) {
-                List<Object> listOfVals = (List<Object>) val;
-                AnnotationValue[] values = new AnnotationValue[listOfVals.size()];
-                for (int i = 0; i < values.length; i++) {
-                    values[i] = createAnnotationValue(name, listOfVals.get(i));
-                }
-                return AnnotationValue.createArrayValue(name, values);
-            } else if (val.getClass().isArray()) {
-                AnnotationValue[] values = new AnnotationValue[Array.getLength(val)];
-                for (int i = 0; i < values.length; i++) {
-                    values[i] = createAnnotationValue(name, Array.get(val, i));
-                }
-                return AnnotationValue.createArrayValue(name, values);
-            }
-            throw new IllegalArgumentException("Unsupported value type for [" + name + "]: " + val);
-        }
-
+    @Override
+    public void accept(AnnotationInstance qualifier) {
+        addQualifier(qualifier);
     }
 
 }

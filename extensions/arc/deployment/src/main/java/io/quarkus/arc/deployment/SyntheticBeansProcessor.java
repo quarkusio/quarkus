@@ -12,7 +12,7 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.processor.BeanConfigurator;
-import io.quarkus.arc.processor.BeanConfiguratorBase.QualifierConfigurator;
+import io.quarkus.arc.processor.QualifierConfigurator;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;

@@ -10,6 +10,8 @@ import org.jboss.jandex.Type.Kind;
 abstract class AbstractGenerator {
 
     static final String DEFAULT_PACKAGE = Arc.class.getPackage().getName() + ".generator";
+    static final String UNDERSCORE = "_";
+    static final String SYNTHETIC_SUFFIX = "Synthetic";
 
     /**
      * Create a generated bean name from a bean package. When bean is located

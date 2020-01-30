@@ -37,6 +37,9 @@ update_configs:
           dependency_name: "com.cronutils:cron-utils"
       - match:
           dependency_name: "org.eclipse:yasson"
+      # Quarkus
+      - match:
+          dependency_name: "io.quarkus.gizmo:gizmo"
       # Elytron
       - match:
           dependency_name: "org.wildfly.security:wildfly-elytron-*"

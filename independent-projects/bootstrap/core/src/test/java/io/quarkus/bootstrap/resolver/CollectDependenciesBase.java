@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.resolver;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 import io.quarkus.bootstrap.model.AppDependency;
@@ -43,8 +44,16 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
             expected.addAll(expectedResult);
             expected.addAll(deploymentDeps);
         }
-        final List<AppDependency> resolvedDeps = resolver.resolveModel(root.toAppArtifact()).getAllDependencies();
+        final List<AppDependency> resolvedDeps = getTestResolver().resolveModel(root.toAppArtifact()).getFullDeploymentDeps();
         assertEquals(expected, resolvedDeps);
+    }
+
+    protected BootstrapAppModelResolver getTestResolver() throws Exception {
+        return resolver;
+    }
+
+    protected Path getInstallDir(TsArtifact artifact) {
+        return repoHome.resolve(artifact.getGroupId().replace('.', '/')).resolve(artifact.getArtifactId()).resolve(artifact.getVersion());
     }
 
     protected TsArtifact install(TsArtifact dep, boolean collected) {
@@ -140,5 +149,13 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
 
     protected void addManagedDep(TsArtifact dep) {
         root.addManagedDependency(new TsDependency(dep));
+    }
+
+    protected void addDep(TsArtifact dep) {
+        root.addDependency(dep);
+    }
+
+    protected void setPomProperty(String name, String value) {
+        root.setPomProperty(name, value);
     }
 }

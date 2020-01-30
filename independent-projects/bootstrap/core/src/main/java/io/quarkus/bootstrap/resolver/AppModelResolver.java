@@ -78,6 +78,9 @@ public interface AppModelResolver {
      */
     AppModel resolveModel(AppArtifact root, List<AppDependency> deps) throws AppModelResolverException;
 
+    AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, AppArtifact managingProject)
+            throws AppModelResolverException;
+
     /**
      * Lists versions released later than the version of the artifact up to the version
      * specified or all the later versions in case the up-to-version is not provided.
@@ -97,7 +100,7 @@ public interface AppModelResolver {
      * @param fromVersionIncluded  whether the specified lowest version should be included in the range
      * @param upToVersion  the highest version of the range
      * @param upToVersionIncluded  whether the specified highest version should be included in the range
-     * @return  the next version from the specified range or null if the next version is not avaiable
+     * @return  the next version from the specified range or null if the next version is not available
      * @throws AppModelResolverException  in case of a failure
      */
     String getNextVersion(AppArtifact artifact, String fromVersion, boolean fromVersionIncluded, String upToVersion, boolean upToVersionIncluded) throws AppModelResolverException;

@@ -13,6 +13,7 @@
     <artifactId>quarkus-mongodb-client</artifactId>
     <name>Quarkus - MongoDB Client - Runtime</name>
     <description>An imperative and reactive client for MongoDB</description>
+
     <dependencies>
 
         <dependency>
@@ -29,15 +30,22 @@
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
-            <artifactId>mongo-java-driver</artifactId>
+            <artifactId>mongodb-driver-sync</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-reactivestreams</artifactId>
         </dependency>
 
+        <!-- Add the health extension as optional as we will produce the health check only if it's included -->
         <dependency>
-            <groupId>com.oracle.substratevm</groupId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
         </dependency>
 

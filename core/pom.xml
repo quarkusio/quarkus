@@ -19,8 +19,8 @@
         <module>processor</module>
         <module>devmode</module>
         <module>builder</module>
-        <module>creator</module>
         <module>test-extension</module>
+        <module>devmode-spi</module>
     </modules>
 
     <build>

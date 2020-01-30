@@ -1,5 +1,7 @@
 package io.quarkus.gradle.tasks;
 
+import static java.util.stream.Collectors.joining;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -15,6 +17,8 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -37,6 +42,7 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.artifacts.ResolvedDependency;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -49,20 +55,18 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.options.Option;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
 import io.quarkus.gradle.QuarkusPluginExtension;
 import io.quarkus.utilities.JavaBinFinder;
 
-/**
- * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
- */
 public class QuarkusDev extends QuarkusTask {
 
     private Set<File> filesIncludedInClasspath = new HashSet<>();
@@ -84,8 +88,9 @@ public class QuarkusDev extends QuarkusTask {
     @InputDirectory
     @Optional
     public File getBuildDir() {
-        if (buildDir == null)
+        if (buildDir == null) {
             buildDir = getProject().getBuildDir();
+        }
         return buildDir;
     }
 
@@ -96,10 +101,11 @@ public class QuarkusDev extends QuarkusTask {
     @Optional
     @InputDirectory
     public File getSourceDir() {
-        if (sourceDir == null)
+        if (sourceDir == null) {
             return extension().sourceDir();
-        else
+        } else {
             return new File(sourceDir);
+        }
     }
 
     @Option(description = "Set source directory", option = "source-dir")
@@ -110,10 +116,11 @@ public class QuarkusDev extends QuarkusTask {
     @Optional
     @InputDirectory
     public File getWorkingDir() {
-        if (workingDir == null)
+        if (workingDir == null) {
             return extension().workingDir();
-        else
+        } else {
             return new File(workingDir);
+        }
     }
 
     @Option(description = "Set working directory", option = "working-dir")
@@ -132,7 +139,6 @@ public class QuarkusDev extends QuarkusTask {
         this.jvmArgs = jvmArgs;
     }
 
-    @Optional
     @Input
     public boolean isPreventnoverify() {
         return preventnoverify;
@@ -241,22 +247,13 @@ public class QuarkusDev extends QuarkusTask {
                 throw new GradleException("Failed to resolve application model " + extension.getAppArtifact() + " dependencies",
                         e);
             }
-            for (AppDependency appDep : appModel.getAllDependencies()) {
-                addToClassPaths(classPathManifest, context, appDep.getArtifact().getPath().toFile());
-            }
 
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
             File wiringClassesDirectory = new File(getBuildDir(), "wiring-classes");
             wiringClassesDirectory.mkdirs();
             addToClassPaths(classPathManifest, context, wiringClassesDirectory);
 
-            //we also want to add the maven plugin jar to the class path
-            //this allows us to just directly use classes, without messing around copying them
-            //to the runner jar
-            addGradlePluginDeps(classPathManifest, context);
-
             //now we need to build a temporary jar to actually run
-
             File tempFile = new File(getBuildDir(), extension.finalName() + "-dev.jar");
             tempFile.delete();
             tempFile.deleteOnExit();
@@ -264,19 +261,27 @@ public class QuarkusDev extends QuarkusTask {
             StringBuilder resources = new StringBuilder();
             String res = null;
             for (File file : extension.resourcesDir()) {
-                if (resources.length() > 0)
+                if (resources.length() > 0) {
                     resources.append(File.pathSeparator);
+                }
                 resources.append(file.getAbsolutePath());
                 res = file.getAbsolutePath();
             }
 
-            final Configuration compileCp = project.getConfigurations().getByName("compileClasspath");
+            final Set<AppArtifactKey> projectDependencies = new HashSet<>();
+            final Configuration compileCp = project.getConfigurations()
+                    .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
             final DependencySet compileCpDependencies = compileCp.getAllDependencies();
 
             for (Dependency dependency : compileCpDependencies) {
                 if (!(dependency instanceof ProjectDependency)) {
                     continue;
                 }
+
+                // Create the key via AppArtifact to make sure we use same defaults for type and classifier
+                AppArtifactKey key = new AppArtifact(dependency.getGroup(), dependency.getName(), dependency.getVersion())
+                        .getKey();
+                projectDependencies.add(key);
 
                 Project dependencyProject = ((ProjectDependency) dependency).getDependencyProject();
                 Convention convention = dependencyProject.getConvention();
@@ -293,8 +298,45 @@ public class QuarkusDev extends QuarkusTask {
                     sourcePaths.add(sourceDir.getAbsolutePath());
                 }
 
-                String classesPaths = mainSourceSet.getOutput().getClassesDirs().getAsPath();
-                String resourcePaths = mainSourceSet.getResources().getSourceDirectories().getAsPath();
+                FileCollection classesDirs = mainSourceSet.getOutput().getClassesDirs();
+                final String classesPaths;
+                Set<File> classDirFiles = classesDirs.getFiles();
+                if (classDirFiles.size() == 1) {
+                    classesPaths = classesDirs.getAsPath();
+                } else {
+                    //there does not seem to be any sane way of dealing with multiple output dirs, as there does not seem
+                    //to be a way to map them. We will need to address this at some point, but for now we just stick them
+                    //all in a temp dir
+
+                    Path path = getTemporaryDir().toPath();
+                    classesPaths = path.toAbsolutePath().toString();
+                    for (File c : classDirFiles) {
+                        Path cd = c.toPath();
+                        if (!Files.exists(cd)) {
+                            continue;
+                        }
+                        try (Stream<Path> stream = Files.walk(cd)) {
+                            stream.forEach(s -> {
+                                try {
+                                    if (Files.isDirectory(s)) {
+                                        return;
+                                    }
+                                    final Path file = cd.relativize(path);
+                                    final Path targetPath = path.resolve(file.toString());
+                                    Files.createDirectories(targetPath.getParent());
+                                    byte[] data = Files.readAllBytes(s);
+                                    Files.write(targetPath, data);
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+
+                            });
+                        }
+                    }
+
+                }
+
+                String resourcePaths = mainSourceSet.getResources().getSourceDirectories().getSingleFile().getAbsolutePath(); //TODO: multiple resource directories
 
                 DevModeContext.ModuleInfo wsModuleInfo = new DevModeContext.ModuleInfo(
                         dependencyProject.getName(),
@@ -305,6 +347,17 @@ public class QuarkusDev extends QuarkusTask {
 
                 context.getModules().add(wsModuleInfo);
             }
+
+            for (AppDependency appDependency : appModel.getFullDeploymentDeps()) {
+                if (!projectDependencies.contains(appDependency.getArtifact().getKey())) {
+                    addToClassPaths(classPathManifest, context, appDependency.getArtifact().getPath().toFile());
+                }
+            }
+
+            //we also want to add the maven plugin jar to the class path
+            //this allows us to just directly use classes, without messing around copying them
+            //to the runner jar
+            addGradlePluginDeps(classPathManifest, context);
 
             DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(
                     project.getName(),
@@ -323,6 +376,8 @@ public class QuarkusDev extends QuarkusTask {
             context.setFrameworkClassesDir(wiringClassesDirectory.getAbsoluteFile());
             context.setCacheDir(new File(getBuildDir(), "transformer-cache").getAbsoluteFile());
 
+            // this is the jar file we will use to launch the dev mode main class
+            context.setDevModeRunnerJarFile(tempFile);
             try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(tempFile))) {
                 out.putNextEntry(new ZipEntry("META-INF/"));
                 Manifest manifest = new Manifest();
@@ -338,21 +393,26 @@ public class QuarkusDev extends QuarkusTask {
                 obj.writeObject(context);
                 obj.close();
                 out.write(bytes.toByteArray());
+
+                out.putNextEntry(new ZipEntry(BootstrapConstants.SERIALIZED_APP_MODEL));
+                bytes = new ByteArrayOutputStream();
+                obj = new ObjectOutputStream(new DataOutputStream(bytes));
+                obj.writeObject(appModel);
+                obj.close();
+                out.write(bytes.toByteArray());
             }
 
             extension.outputDirectory().mkdirs();
 
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
-            ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[0]));
-            pb.redirectErrorStream(true);
-            pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
-            pb.directory(getWorkingDir());
-            System.out.println("Starting process: ");
-            pb.command().forEach(System.out::println);
-            System.out.println("Args: ");
-            args.forEach(System.out::println);
-
+            ProcessBuilder pb = new ProcessBuilder(args)
+                    .redirectErrorStream(true)
+                    .redirectInput(ProcessBuilder.Redirect.INHERIT)
+                    .directory(getWorkingDir());
+            if (getLogger().isDebugEnabled()) {
+                getLogger().debug("Launching JVM with command line: {}", pb.command().stream().collect(joining(" ")));
+            }
             Process p = pb.start();
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
@@ -363,7 +423,7 @@ public class QuarkusDev extends QuarkusTask {
             try {
                 ExecutorService es = Executors.newSingleThreadExecutor();
                 es.submit(() -> copyOutputToConsole(p.getInputStream()));
-
+                es.shutdown();
                 p.waitFor();
             } catch (Exception e) {
                 p.destroy();
@@ -398,7 +458,7 @@ public class QuarkusDev extends QuarkusTask {
     private void addGradlePluginDeps(StringBuilder classPathManifest, DevModeContext context) {
         Configuration conf = getProject().getBuildscript().getConfigurations().getByName("classpath");
         ResolvedDependency quarkusDep = conf.getResolvedConfiguration().getFirstLevelModuleDependencies().stream()
-                .filter(rd -> "quarkus-gradle-plugin".equals(rd.getModuleName()))
+                .filter(rd -> "io.quarkus.gradle.plugin".equals(rd.getModuleName()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Unable to find quarkus-gradle-plugin dependency"));
 
@@ -411,19 +471,9 @@ public class QuarkusDev extends QuarkusTask {
         if (filesIncludedInClasspath.add(file)) {
             getProject().getLogger().info("Adding dependency {}", file);
 
-            URI uri = file.toPath().toAbsolutePath().toUri();
-            String path = uri.getRawPath();
-            if (PropertyUtils.isWindows()) {
-                if (path.length() > 2 && Character.isLetter(path.charAt(0)) && path.charAt(1) == ':') {
-                    path = "/" + path;
-                }
-            }
-            classPathManifest.append(path);
+            final URI uri = file.toPath().toAbsolutePath().toUri();
             context.getClassPath().add(toUrl(uri));
-            if (file.isDirectory()) {
-                classPathManifest.append("/");
-            }
-            classPathManifest.append(" ");
+            classPathManifest.append(uri).append(" ");
         }
     }
 

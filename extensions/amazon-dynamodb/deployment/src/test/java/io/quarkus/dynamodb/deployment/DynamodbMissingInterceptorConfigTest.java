@@ -21,6 +21,7 @@ public class DynamodbMissingInterceptorConfigTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setExpectedException(ConfigurationError.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(BadInterceptor.class)
                     .addAsResource("missing-interceptor-config.properties", "application.properties"));
 
     @Test

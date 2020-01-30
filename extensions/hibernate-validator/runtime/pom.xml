@@ -26,6 +26,11 @@
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
         </dependency>
+        <!-- EL implementation -->
+        <dependency>
+           <groupId>org.glassfish</groupId>
+           <artifactId>jakarta.el</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-core</artifactId>
@@ -58,7 +63,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.oracle.substratevm</groupId>
+            <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
         </dependency>
     </dependencies>
@@ -68,6 +73,11 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>javax.validation:validation-api</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -168,6 +168,9 @@ final class MethodDescriptors {
     static final MethodDescriptor COLLECTIONS_UNMODIFIABLE_SET = MethodDescriptor.ofMethod(Collections.class, "unmodifiableSet",
             Set.class, Set.class);
 
+    static final MethodDescriptor COLLECTIONS_EMPTY_MAP = MethodDescriptor.ofMethod(Collections.class, "emptyMap",
+            Map.class);
+
     static final MethodDescriptor ARC_CONTAINER = MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class);
 
     static final MethodDescriptor ARC_CONTAINER_GET_ACTIVE_CONTEXT = MethodDescriptor.ofMethod(ArcContainer.class,
@@ -185,6 +188,19 @@ final class MethodDescriptors {
     static final MethodDescriptor SUBCLASS_METHOD_METADATA_CONSTRUCTOR = MethodDescriptor.ofConstructor(
             SubclassMethodMetadata.class,
             List.class, Method.class, Set.class);
+
+    static final MethodDescriptor CREATIONAL_CTX_HAS_DEPENDENT_INSTANCES = MethodDescriptor.ofMethod(
+            CreationalContextImpl.class,
+            "hasDependentInstances", boolean.class);
+
+    static final MethodDescriptor THREAD_CURRENT_THREAD = MethodDescriptor.ofMethod(Thread.class, "currentThread",
+            Thread.class);
+
+    static final MethodDescriptor THREAD_GET_TCCL = MethodDescriptor.ofMethod(Thread.class, "getContextClassLoader",
+            ClassLoader.class);
+
+    static final MethodDescriptor CL_FOR_NAME = MethodDescriptor.ofMethod(Class.class, "forName", Class.class, String.class,
+            boolean.class, ClassLoader.class);
 
     private MethodDescriptors() {
     }

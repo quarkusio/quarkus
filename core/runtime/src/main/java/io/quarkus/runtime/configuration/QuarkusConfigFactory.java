@@ -20,6 +20,16 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
 
     public SmallRyeConfig getConfigFor(final SmallRyeConfigProviderResolver configProviderResolver,
             final ClassLoader classLoader) {
+        if (config == null) {
+            //TODO: this code path is only hit when start fails in dev mode very early in the process
+            //the recovery code will fail without this as it cannot read any properties such as
+            //the HTTP port or logging info
+            return configProviderResolver.getBuilder().forClassLoader(classLoader)
+                    .addDefaultSources()
+                    .addDiscoveredSources()
+                    .addDiscoveredConverters()
+                    .build();
+        }
         return config;
     }
 

@@ -13,6 +13,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -31,7 +32,7 @@ public class MessageConsumerMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(SimpleBean.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(SimpleBean.class, Transformer.class));
 
     @Inject
     SimpleBean simpleBean;
@@ -40,7 +41,7 @@ public class MessageConsumerMethodTest {
     public void testSend() throws InterruptedException {
         EventBus eventBus = Arc.container().instance(EventBus.class).get();
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.send("foo", "hello", ar -> {
+        eventBus.request("foo", "hello", ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -58,7 +59,7 @@ public class MessageConsumerMethodTest {
     public void testSendAsync() throws InterruptedException {
         EventBus eventBus = Arc.container().instance(EventBus.class).get();
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.send("foo-async", "hello", ar -> {
+        eventBus.request("foo-async", "hello", ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -76,7 +77,7 @@ public class MessageConsumerMethodTest {
     public void testSendDefaultAddress() throws InterruptedException {
         EventBus eventBus = Arc.container().instance(EventBus.class).get();
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.send("io.quarkus.vertx.deployment.MessageConsumerMethodTest$SimpleBean", "Hello", ar -> {
+        eventBus.request("io.quarkus.vertx.deployment.MessageConsumerMethodTest$SimpleBean", "Hello", ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -88,6 +89,24 @@ public class MessageConsumerMethodTest {
             }
         });
         assertEquals("hello", synchronizer.poll(2, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testRequestContext() throws InterruptedException {
+        EventBus eventBus = Arc.container().instance(EventBus.class).get();
+        BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
+        eventBus.request("request", "Martin", ar -> {
+            if (ar.succeeded()) {
+                try {
+                    synchronizer.put(ar.result().body());
+                } catch (InterruptedException e) {
+                    fail(e);
+                }
+            } else {
+                fail(ar.cause());
+            }
+        });
+        assertEquals("MArtin", synchronizer.poll(2, TimeUnit.SECONDS));
     }
 
     @Test
@@ -139,6 +158,9 @@ public class MessageConsumerMethodTest {
 
         static final List<String> MESSAGES = new CopyOnWriteArrayList<>();
 
+        @Inject
+        Transformer transformer;
+
         @ConsumeEvent // io.quarkus.vertx.deployment.MessageConsumerMethodTest$SimpleBean
         String sendDefaultAddress(String message) {
             return message.toLowerCase();
@@ -183,6 +205,20 @@ public class MessageConsumerMethodTest {
             MESSAGES.add(message.body().toUpperCase());
             latch.countDown();
         }
+
+        @ConsumeEvent("request")
+        String requestContextActive(String message) {
+            return transformer.transform(message);
+        }
+    }
+
+    @RequestScoped
+    static class Transformer {
+
+        String transform(String message) {
+            return message.replace('a', 'A');
+        }
+
     }
 
 }

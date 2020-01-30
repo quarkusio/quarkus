@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.stream.Stream;
 
 import io.quarkus.deployment.ApplicationArchive;
@@ -40,11 +41,10 @@ public class UndertowStaticResourcesBuildStep {
         }
     }
 
-    @BuildStep
+    @BuildStep(loadsApplicationClasses = true)
     void scanStaticResources(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<KnownPathsBuildItem> knownPathsBuilds,
-            BuildProducer<StaticResourceFilesBuildItem> staticResourceFiles,
             List<GeneratedWebResourceBuildItem> generatedWebResources,
             LaunchModeBuildItem launchModeBuildItem) throws Exception {
 
@@ -74,22 +74,25 @@ public class UndertowStaticResourcesBuildStep {
                 }
             }
         }
-        Enumeration<URL> resources = getClass().getClassLoader().getResources(META_INF_RESOURCES);
+        Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(META_INF_RESOURCES);
         while (resources.hasMoreElements()) {
             URL url = resources.nextElement();
             if (url.getProtocol().equals("jar")) {
                 JarURLConnection jar = (JarURLConnection) url.openConnection();
-                Enumeration<JarEntry> entries = jar.getJarFile().entries();
-                while (entries.hasMoreElements()) {
-                    JarEntry entry = entries.nextElement();
-                    if (entry.getName().startsWith(META_INF_RESOURCES_SLASH)) {
-                        String sub = entry.getName().substring(META_INF_RESOURCES_SLASH.length());
-                        if (!sub.isEmpty()) {
-                            if (entry.getName().endsWith("/")) {
-                                String dir = sub.substring(0, sub.length() - 1);
-                                knownDirectories.add(dir);
-                            } else {
-                                knownFiles.add(sub);
+                jar.setUseCaches(false);
+                try (JarFile jarFile = jar.getJarFile()) {
+                    Enumeration<JarEntry> entries = jarFile.entries();
+                    while (entries.hasMoreElements()) {
+                        JarEntry entry = entries.nextElement();
+                        if (entry.getName().startsWith(META_INF_RESOURCES_SLASH)) {
+                            String sub = entry.getName().substring(META_INF_RESOURCES_SLASH.length());
+                            if (!sub.isEmpty()) {
+                                if (entry.getName().endsWith("/")) {
+                                    String dir = sub.substring(0, sub.length() - 1);
+                                    knownDirectories.add(dir);
+                                } else {
+                                    knownFiles.add(sub);
+                                }
                             }
                         }
                     }
@@ -114,8 +117,6 @@ public class UndertowStaticResourcesBuildStep {
             //we don't need knownPaths in development mode
             //we serve directly from the project dir
             knownPathsBuilds.produce(new KnownPathsBuildItem(Collections.emptySet(), Collections.emptySet()));
-            //but we need files to display them in case of 404 in development mode
-            staticResourceFiles.produce(new StaticResourceFilesBuildItem(knownFiles));
         } else {
             knownPathsBuilds.produce(new KnownPathsBuildItem(knownFiles, knownDirectories));
         }

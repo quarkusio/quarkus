@@ -59,12 +59,6 @@ import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
 
 public class SpringWebProcessor {
 
-    private static final DotName EXCEPTION = DotName.createSimple("java.lang.Exception");
-    private static final DotName RUNTIME_EXCEPTION = DotName.createSimple("java.lang.RuntimeException");
-
-    private static final DotName OBJECT = DotName.createSimple("java.lang.Object");
-    private static final DotName STRING = DotName.createSimple("java.lang.String");
-
     private static final DotName REST_CONTROLLER_ANNOTATION = DotName
             .createSimple("org.springframework.web.bind.annotation.RestController");
 
@@ -100,7 +94,7 @@ public class SpringWebProcessor {
     private static final DotName RESPONSE_ENTITY = DotName.createSimple("org.springframework.http.ResponseEntity");
 
     private static final Set<DotName> DISALLOWED_EXCEPTION_CONTROLLER_RETURN_TYPES = new HashSet<>(Arrays.asList(
-            MODEL_AND_VIEW, VIEW, MODEL, HTTP_ENTITY, STRING));
+            MODEL_AND_VIEW, VIEW, MODEL, HTTP_ENTITY));
 
     @BuildStep
     FeatureBuildItem registerFeature() {
@@ -287,6 +281,10 @@ public class SpringWebProcessor {
                     useAllAvailable = true;
                     break OUTER;
                 }
+                if (collectProviders(providersToRegister, categorizedContextResolvers, instance, "produces")) {
+                    useAllAvailable = true;
+                    break OUTER;
+                }
 
                 if (collectProviders(providersToRegister, categorizedReaders, instance, "consumes")) {
                     useAllAvailable = true;
@@ -338,7 +336,7 @@ public class SpringWebProcessor {
         // Look for all exception classes that are annotated with @ResponseStatus
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedExceptionMappers, false);
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedExceptionMappers, true);
         generateMappersForResponseStatusOnException(providersProducer, index, classOutput, typesUtil);
         generateMappersForExceptionHandlerInControllerAdvice(providersProducer, reflectiveClassProducer, index, classOutput,
                 typesUtil);

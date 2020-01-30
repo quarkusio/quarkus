@@ -11,13 +11,14 @@ import javax.inject.Singleton;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.ThreadContext;
 
+import io.quarkus.arc.DefaultBean;
 import io.smallrye.context.SmallRyeManagedExecutor;
 import io.smallrye.context.SmallRyeThreadContext;
 
 @ApplicationScoped
 public class SmallRyeContextPropagationProvider {
 
-    private SmallRyeManagedExecutor managedExecutor;
+    private volatile SmallRyeManagedExecutor managedExecutor;
 
     void initialize(ExecutorService executorService) {
         managedExecutor = new SmallRyeManagedExecutor(-1, -1, (SmallRyeThreadContext) getAllThreadContext(), executorService,
@@ -36,6 +37,7 @@ public class SmallRyeContextPropagationProvider {
 
     @Produces
     @Singleton
+    @DefaultBean
     public ThreadContext getAllThreadContext() {
         return ThreadContext.builder().propagated(ThreadContext.ALL_REMAINING).cleared().unchanged().build();
     }
@@ -43,6 +45,7 @@ public class SmallRyeContextPropagationProvider {
     @Typed(ManagedExecutor.class)
     @Produces
     @Singleton
+    @DefaultBean
     public ManagedExecutor getAllManagedExecutor() {
         return managedExecutor;
     }

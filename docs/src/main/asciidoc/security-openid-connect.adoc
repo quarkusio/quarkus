@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 = Quarkus - Using OpenID Connect Adapter to Protect JAX-RS Applications
 
 include::./attributes.adoc[]
+:extension-status: preview
 
 This guide demonstrates how your Quarkus application can use an OpenID Connect Adapter to protect your JAX-RS applications using bearer token authorization, where these tokens are issued by OpenId Connect and OAuth 2.0 compliant Authorization Servers such as https://www.keycloak.org/about.html[Keycloak].
 
@@ -13,12 +14,7 @@ Bearer Token Authorization is the process of authorizing HTTP requests based on 
 
 We are going to give you a guideline on how to use OpenId Connect and OAuth 2.0 in your JAX-RS applications using the Quarkus OpenID Connect Extension.
 
-[NOTE]
-====
-This extension is considered `preview`.
-API or configuration properties might change as the extension matures.
-Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
-====
+include::./status-include.adoc[]
 
 == Prerequisites
 
@@ -104,7 +100,7 @@ public class UsersResource {
         return new User(securityIdentity);
     }
 
-    public class User {
+    public static class User {
 
         private final String userName;
 
@@ -167,9 +163,9 @@ If you plan to consume this application from another application running on a di
 
 To start a Keycloak Server you can use Docker and just run the following command:
 
-[source,bash]
+[source,bash,subs=attributes+]
 ----
-docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:7.0.0
+docker run --name keycloak -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -p 8180:8080 {keycloak-docker-image}
 ----
 
 You should be able to access your Keycloak Server at http://localhost:8180/auth[localhost:8180/auth].

@@ -38,6 +38,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.event.Reception;
+import javax.enterprise.event.TransactionPhase;
 import javax.enterprise.inject.spi.EventContext;
 import javax.enterprise.inject.spi.ObserverMethod;
 import org.jboss.jandex.AnnotationInstance;
@@ -126,6 +127,11 @@ public class ObserverGenerator extends AbstractGenerator {
         if (observedQualifiers != null) {
             implementGetObservedQualifiers(observerCreator, observedQualifiers.getFieldDescriptor());
         }
+
+        if (!observer.getTransactionPhase().equals(TransactionPhase.IN_PROGRESS)) {
+            implementGetTransactionPhase(observerCreator, observer);
+        }
+
         implementGetBeanClass(observerCreator, observer.getDeclaringBean().getTarget().get().asClass().name());
         implementNotify(observer, observerCreator, injectionPointToProviderField, reflectionRegistration, isApplicationClass);
         if (observer.getPriority() != ObserverMethod.DEFAULT_PRIORITY) {
@@ -161,6 +167,12 @@ public class ObserverGenerator extends AbstractGenerator {
                 .setModifiers(ACC_PUBLIC);
         getObservedQualifiers
                 .returnValue(getObservedQualifiers.readInstanceField(observedQualifiersField, getObservedQualifiers.getThis()));
+    }
+
+    protected void implementGetTransactionPhase(ClassCreator observerCreator, ObserverInfo observer) {
+        MethodCreator getTransactionPhase = observerCreator.getMethodCreator("getTransactionPhase", TransactionPhase.class)
+                .setModifiers(ACC_PUBLIC);
+        getTransactionPhase.returnValue(getTransactionPhase.load(observer.getTransactionPhase()));
     }
 
     protected void implementGetBeanClass(ClassCreator observerCreator, DotName beanClass) {
@@ -336,7 +348,7 @@ public class ObserverGenerator extends AbstractGenerator {
                                 annotationLiterals, observer));
             } else {
                 if (injectionPoint.getResolvedBean().getAllInjectionPoints().stream()
-                        .anyMatch(ip -> BuiltinBean.INJECTION_POINT.getRawTypeDotName().equals(ip.getRequiredType().name()))) {
+                        .anyMatch(ip -> BuiltinBean.INJECTION_POINT.hasRawTypeDotName(ip.getRequiredType().name()))) {
                     // IMPL NOTE: Injection point resolves to a dependent bean that injects InjectionPoint metadata and so we need to wrap the injectable
                     // reference provider
                     ResultHandle requiredQualifiersHandle = BeanGenerator.collectQualifiers(classOutput, observerCreator,

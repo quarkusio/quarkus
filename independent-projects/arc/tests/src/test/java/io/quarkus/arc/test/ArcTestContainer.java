@@ -12,6 +12,7 @@ import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.arc.processor.InjectionPointsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
+import io.quarkus.arc.processor.ObserverTransformer;
 import io.quarkus.arc.processor.ResourceOutput;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -68,6 +69,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         private final List<InterceptorBindingRegistrar> interceptorBindingRegistrars;
         private final List<AnnotationsTransformer> annotationsTransformers;
         private final List<InjectionPointsTransformer> injectionsPointsTransformers;
+        private final List<ObserverTransformer> observerTransformers;
         private final List<BeanDeploymentValidator> beanDeploymentValidators;
         private boolean shouldFail = false;
         private boolean removeUnusedBeans = false;
@@ -82,6 +84,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             interceptorBindingRegistrars = new ArrayList<>();
             annotationsTransformers = new ArrayList<>();
             injectionsPointsTransformers = new ArrayList<>();
+            observerTransformers = new ArrayList<>();
             beanDeploymentValidators = new ArrayList<>();
             exclusions = new ArrayList<>();
         }
@@ -122,6 +125,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             return this;
         }
 
+        public Builder observerTransformers(ObserverTransformer... transformers) {
+            Collections.addAll(this.observerTransformers, transformers);
+            return this;
+        }
+
         public Builder interceptorBindingRegistrars(InterceptorBindingRegistrar... registrars) {
             Collections.addAll(this.interceptorBindingRegistrars, registrars);
             return this;
@@ -150,6 +158,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         public ArcTestContainer build() {
             return new ArcTestContainer(resourceReferenceProviders, beanClasses, resourceAnnotations, beanRegistrars,
                     contextRegistrars, interceptorBindingRegistrars, annotationsTransformers, injectionsPointsTransformers,
+                    observerTransformers,
                     beanDeploymentValidators, shouldFail, removeUnusedBeans, exclusions);
         }
 
@@ -171,6 +180,8 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
     private final List<InjectionPointsTransformer> injectionPointsTransformers;
 
+    private final List<ObserverTransformer> observerTransformers;
+
     private final List<BeanDeploymentValidator> beanDeploymentValidators;
 
     private final boolean shouldFail;
@@ -181,7 +192,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
     public ArcTestContainer(Class<?>... beanClasses) {
         this(Collections.emptyList(), Arrays.asList(beanClasses), Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyList(), Collections.emptyList(),
+                Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
                 Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), false, false,
                 Collections.emptyList());
     }
@@ -191,6 +202,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             List<BeanRegistrar> beanRegistrars, List<ContextRegistrar> contextRegistrars,
             List<InterceptorBindingRegistrar> bindingRegistrars,
             List<AnnotationsTransformer> annotationsTransformers, List<InjectionPointsTransformer> ipTransformers,
+            List<ObserverTransformer> observerTransformers,
             List<BeanDeploymentValidator> beanDeploymentValidators, boolean shouldFail, boolean removeUnusedBeans,
             List<Predicate<BeanInfo>> exclusions) {
         this.resourceReferenceProviders = resourceReferenceProviders;
@@ -201,6 +213,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.bindingRegistrars = bindingRegistrars;
         this.annotationsTransformers = annotationsTransformers;
         this.injectionPointsTransformers = ipTransformers;
+        this.observerTransformers = observerTransformers;
         this.beanDeploymentValidators = beanDeploymentValidators;
         this.buildFailure = new AtomicReference<Throwable>(null);
         this.shouldFail = shouldFail;
@@ -295,7 +308,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
 
             BeanProcessor.Builder beanProcessorBuilder = BeanProcessor.builder()
                     .setName(testClass.getSimpleName())
-                    .setIndex(BeanArchives.buildBeanArchiveIndex(index));
+                    .setIndex(BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(), index));
             if (!resourceAnnotations.isEmpty()) {
                 beanProcessorBuilder.addResourceAnnotations(resourceAnnotations.stream()
                         .map(c -> DotName.createSimple(c.getName()))
@@ -315,6 +328,9 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             }
             for (InjectionPointsTransformer injectionPointsTransformer : injectionPointsTransformers) {
                 beanProcessorBuilder.addInjectionPointTransformer(injectionPointsTransformer);
+            }
+            for (ObserverTransformer observerTransformer : observerTransformers) {
+                beanProcessorBuilder.addObserverTransformer(observerTransformer);
             }
             for (BeanDeploymentValidator validator : beanDeploymentValidators) {
                 beanProcessorBuilder.addBeanDeploymentValidator(validator);

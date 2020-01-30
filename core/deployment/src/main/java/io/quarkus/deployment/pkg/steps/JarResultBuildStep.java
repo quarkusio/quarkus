@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -47,7 +48,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
@@ -61,6 +61,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
@@ -114,6 +115,16 @@ public class JarResultBuildStep {
     // we shouldn't have to specify these flags when opening a ZipFS (since they are the default ones), but failure to do so
     // makes a subsequent uberJar creation fail in java 8 (but works fine in Java 11)
     private static final OpenOption[] DEFAULT_OPEN_OPTIONS = { TRUNCATE_EXISTING, WRITE, CREATE };
+    private static final BiPredicate<Path, BasicFileAttributes> IS_JSON_FILE_PREDICATE = new IsJsonFilePredicate();
+
+    @BuildStep
+    OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
+        String name = packageConfig.outputName.isPresent() ? packageConfig.outputName.get() : bst.getBaseName();
+        Path path = packageConfig.outputDirectory.isPresent()
+                ? bst.getOutputDirectory().resolve(packageConfig.outputDirectory.get())
+                : bst.getOutputDirectory();
+        return new OutputTargetBuildItem(path, name);
+    }
 
     @BuildStep(onlyIf = JarRequired.class)
     ArtifactResultBuildItem jarOutput(JarBuildItem jarBuildItem) {
@@ -174,7 +185,6 @@ public class JarResultBuildStep {
 
             log.info("Building fat jar: " + runnerJar);
 
-            final AppModelResolver depResolver = curateOutcomeBuildItem.getResolver();
             final Map<String, String> seen = new HashMap<>();
             final Map<String, Set<AppDependency>> duplicateCatcher = new HashMap<>();
             final StringBuilder classPath = new StringBuilder();
@@ -191,7 +201,7 @@ public class JarResultBuildStep {
 
             for (AppDependency appDep : appDeps) {
                 final AppArtifact depArtifact = appDep.getArtifact();
-                final Path resolvedDep = depResolver.resolve(depArtifact);
+                final Path resolvedDep = depArtifact.getPath();
 
                 // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
                 if (!resolvedDep.getFileName().toString().endsWith(".jar")) {
@@ -369,25 +379,43 @@ public class JarResultBuildStep {
      */
     private void copyJsonConfigFiles(ApplicationArchivesBuildItem applicationArchivesBuildItem, Path thinJarDirectory)
             throws IOException {
-        // this will contain all the resources in both maven and gradle cases - the latter is true because we copy them in AugmentTask
-        Path classesLocation = applicationArchivesBuildItem.getRootArchive().getArchiveLocation();
-        Files.find(classesLocation, 1, new BiPredicate<Path, BasicFileAttributes>() {
-            @Override
-            public boolean test(Path path, BasicFileAttributes basicFileAttributes) {
-                return basicFileAttributes.isRegularFile() && path.toString().endsWith(".json");
+        Path archiveLocation = applicationArchivesBuildItem.getRootArchive().getArchiveLocation();
+        if (Files.isDirectory(archiveLocation)) { // this is the use case where the native image is built as part of the regular build
+            try (Stream<Path> stream = Files.find(archiveLocation, 1, IS_JSON_FILE_PREDICATE)) {
+                stream.forEach(new Consumer<Path>() {
+                    @Override
+                    public void accept(Path jsonPath) {
+                        try {
+                            Files.copy(jsonPath, thinJarDirectory.resolve(jsonPath.getFileName()));
+                        } catch (IOException e) {
+                            toUncheckedException(e, jsonPath, thinJarDirectory);
+                        }
+                    }
+                });
             }
-        }).forEach(new Consumer<Path>() {
-            @Override
-            public void accept(Path jsonPath) {
-                try {
-                    Files.copy(jsonPath, thinJarDirectory.resolve(jsonPath.getFileName()));
-                } catch (IOException e) {
-                    throw new UncheckedIOException(
-                            "Unable to copy json config file from " + jsonPath + " to " + thinJarDirectory,
-                            e);
+        } else {
+            // this is to support building native images using the NativeImageMojo
+            try (FileSystem jarFileSystem = FileSystems.newFileSystem(archiveLocation, null)) {
+                try (Stream<Path> stream = Files.find(jarFileSystem.getPath("/"), 1, IS_JSON_FILE_PREDICATE)) {
+                    stream.forEach(new Consumer<Path>() {
+                        @Override
+                        public void accept(Path jsonPath) {
+                            try {
+                                Files.copy(jsonPath.getFileName(), thinJarDirectory.resolve(jsonPath.getFileName().toString()));
+                            } catch (IOException e) {
+                                toUncheckedException(e, jsonPath, thinJarDirectory);
+                            }
+                        }
+                    });
                 }
             }
-        });
+        }
+    }
+
+    private static void toUncheckedException(IOException e, Path jsonPath, Path thinJarDirectory) {
+        throw new UncheckedIOException(
+                "Unable to copy json config file from " + jsonPath + " to " + thinJarDirectory,
+                e);
     }
 
     private void doThinJarGeneration(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -400,14 +428,13 @@ public class JarResultBuildStep {
             List<GeneratedClassBuildItem> allClasses,
             FileSystem runnerZipFs)
             throws BootstrapDependencyProcessingException, AppModelResolverException, IOException {
-        final AppModelResolver depResolver = curateOutcomeBuildItem.getResolver();
         final Map<String, String> seen = new HashMap<>();
         final StringBuilder classPath = new StringBuilder();
         final Map<String, List<byte[]>> services = new HashMap<>();
 
         final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
 
-        copyLibraryJars(transformedClasses, libDir, depResolver, classPath, appDeps);
+        copyLibraryJars(transformedClasses, libDir, classPath, appDeps);
 
         AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
         // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
@@ -417,11 +444,11 @@ public class JarResultBuildStep {
                 generatedResources, seen);
     }
 
-    private void copyLibraryJars(TransformedClassesBuildItem transformedClasses, Path libDir, AppModelResolver depResolver,
-            StringBuilder classPath, List<AppDependency> appDeps) throws AppModelResolverException, IOException {
+    private void copyLibraryJars(TransformedClassesBuildItem transformedClasses, Path libDir,
+            StringBuilder classPath, List<AppDependency> appDeps) throws IOException {
         for (AppDependency appDep : appDeps) {
             final AppArtifact depArtifact = appDep.getArtifact();
-            final Path resolvedDep = depResolver.resolve(depArtifact);
+            final Path resolvedDep = depArtifact.getPath();
 
             // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
             if (!resolvedDep.getFileName().toString().endsWith(".jar")) {
@@ -715,5 +742,13 @@ public class JarResultBuildStep {
                 || s.endsWith(".DSA")
                 || s.endsWith(".RSA")
                 || s.endsWith(".EC");
+    }
+
+    private static class IsJsonFilePredicate implements BiPredicate<Path, BasicFileAttributes> {
+
+        @Override
+        public boolean test(Path path, BasicFileAttributes basicFileAttributes) {
+            return basicFileAttributes.isRegularFile() && path.toString().endsWith(".json");
+        }
     }
 }

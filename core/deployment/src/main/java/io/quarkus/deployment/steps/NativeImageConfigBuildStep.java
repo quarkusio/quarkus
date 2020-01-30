@@ -18,7 +18,8 @@ import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
 import io.quarkus.deployment.builditem.JniBuildItem;
-import io.quarkus.deployment.builditem.NativeEnableAllCharsetsBuildItem;
+import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
+import io.quarkus.deployment.builditem.NativeImageEnableAllTimeZonesBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.SslTrustStoreSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -43,7 +44,8 @@ class NativeImageConfigBuildStep {
             List<NativeImageConfigBuildItem> nativeImageConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
             List<JniBuildItem> jniBuildItems,
-            List<NativeEnableAllCharsetsBuildItem> nativeEnableAllCharsetsBuildItems,
+            List<NativeImageEnableAllCharsetsBuildItem> nativeImageEnableAllCharsetsBuildItems,
+            List<NativeImageEnableAllTimeZonesBuildItem> nativeImageEnableAllTimeZonesBuildItems,
             List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
             List<EnableAllSecurityServicesBuildItem> enableAllSecurityServicesBuildItems,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxy,
@@ -102,7 +104,8 @@ class NativeImageConfigBuildStep {
                 } else {
                     // On MacOS, the SunEC library is directly in jre/lib/
                     // This is useful for testing or if you have a similar environment in production
-                    systemProperty.produce(new SystemPropertyBuildItem("java.library.path", graalVmLibDirectory.toString()));
+                    javaLibraryPathAdditionalPath
+                            .produce(new JavaLibraryPathAdditionalPathBuildItem(graalVmLibDirectory.toString()));
                 }
 
                 // This is useful for testing but the user will have to override it.
@@ -119,26 +122,24 @@ class NativeImageConfigBuildStep {
         }
         nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
 
-        boolean requireJni = false;
         if (!enableAllSecurityServicesBuildItems.isEmpty()) {
-            requireJni = true;
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-security-services", "true"));
         }
 
-        if (!jniBuildItems.isEmpty() || requireJni) {
-            for (JniBuildItem jniBuildItem : jniBuildItems) {
-                if (jniBuildItem.getLibraryPaths() != null && !jniBuildItem.getLibraryPaths().isEmpty()) {
-                    for (String path : jniBuildItem.getLibraryPaths()) {
-                        javaLibraryPathAdditionalPath
-                                .produce(new JavaLibraryPathAdditionalPathBuildItem(path));
-                    }
+        for (JniBuildItem jniBuildItem : jniBuildItems) {
+            if (jniBuildItem.getLibraryPaths() != null && !jniBuildItem.getLibraryPaths().isEmpty()) {
+                for (String path : jniBuildItem.getLibraryPaths()) {
+                    javaLibraryPathAdditionalPath.produce(new JavaLibraryPathAdditionalPathBuildItem(path));
                 }
             }
-            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.jni.enable", "true"));
         }
 
-        if (!nativeEnableAllCharsetsBuildItems.isEmpty()) {
+        if (!nativeImageEnableAllCharsetsBuildItems.isEmpty()) {
             nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-charsets", "true"));
+        }
+
+        if (!nativeImageEnableAllTimeZonesBuildItems.isEmpty()) {
+            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-timezones", "true"));
         }
     }
 

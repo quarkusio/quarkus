@@ -35,7 +35,7 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <jacoco.version>0.8.3</jacoco.version>
+        <jacoco.version>0.8.5</jacoco.version>
     </properties>
 
     <modules>
@@ -43,6 +43,7 @@
         <module>independent-projects/arc</module>
         <module>independent-projects/bootstrap</module>
         <module>independent-projects/tools</module>
+        <module>independent-projects/qute</module>
 
         <!-- BOMs and parent POM -->
         <module>bom/runtime</module>
@@ -265,7 +266,7 @@
                                             <structure name="JaCoCo for Quarkus">
                                                 <classfiles>
                                                     <fileset dir="${basedir}">
-                                                        <include name="**ResultHandle doLoad(Method${project.version}.jar"/>
+                                                        <include name="**/*${project.version}.jar"/>
                                                         <exclude name="**/target/lib/*.jar"/>
                                                         <exclude name="independent-projects/**/*.jar"/>
                                                         <exclude name="integration-tests/**/*.jar"/>

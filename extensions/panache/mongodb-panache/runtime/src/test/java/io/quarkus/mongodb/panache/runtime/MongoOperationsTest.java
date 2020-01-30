@@ -5,9 +5,14 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.bson.codecs.pojo.annotations.BsonProperty;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.panache.common.Parameters;
@@ -19,6 +24,16 @@ class MongoOperationsTest {
         public boolean isOk;
         @BsonProperty("value")
         public String property;
+    }
+
+    @BeforeAll
+    static void setupFieldReplacement() {
+        Map<String, Map<String, String>> replacementCache = new HashMap<>();
+        Map<String, String> replacementMap = new HashMap<>();
+        replacementMap.put("property", "value");
+        replacementCache.put(DemoObj.class.getName(), replacementMap);
+        replacementCache.put(Object.class.getName(), Collections.emptyMap());//because the test use Object ...
+        MongoPropertyUtil.setReplacementCache(replacementCache);
     }
 
     @Test
@@ -33,6 +48,10 @@ class MongoOperationsTest {
         assertEquals("{'field':ISODate('2019-03-04')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field", new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
+        assertEquals("{'field':ISODate('2019-03-04T01:01:01')}", query);
+
+        query = MongoOperations.bindQuery(Object.class, "field",
+                new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC) });
         assertEquals("{'field':ISODate('2019-03-04T01:01:01')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field",
@@ -69,6 +88,10 @@ class MongoOperationsTest {
         assertEquals("{'field': ISODate('2019-03-04T01:01:01')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "{'field': ?1}",
+                new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC) });
+        assertEquals("{'field': ISODate('2019-03-04T01:01:01')}", query);
+
+        query = MongoOperations.bindQuery(Object.class, "{'field': ?1}",
                 new Object[] { toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1)) });
         assertEquals("{'field': ISODate('2019-03-04T01:01:01.000')}", query);
 
@@ -100,6 +123,10 @@ class MongoOperationsTest {
         assertEquals("{'field': ISODate('2019-03-04T01:01:01')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "{'field': :field}",
+                Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC)).map());
+        assertEquals("{'field': ISODate('2019-03-04T01:01:01')}", query);
+
+        query = MongoOperations.bindQuery(Object.class, "{'field': :field}",
                 Parameters.with("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))).map());
         assertEquals("{'field': ISODate('2019-03-04T01:01:01.000')}", query);
 
@@ -125,6 +152,10 @@ class MongoOperationsTest {
         assertEquals("{'field':ISODate('2019-03-04')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field = ?1", new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
+        assertEquals("{'field':ISODate('2019-03-04T01:01:01')}", query);
+
+        query = MongoOperations.bindQuery(Object.class, "field = ?1",
+                new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC) });
         assertEquals("{'field':ISODate('2019-03-04T01:01:01')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field = ?1",
@@ -178,6 +209,10 @@ class MongoOperationsTest {
 
         query = MongoOperations.bindQuery(Object.class, "field = :field",
                 Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1)).map());
+        assertEquals("{'field':ISODate('2019-03-04T01:01:01')}", query);
+
+        query = MongoOperations.bindQuery(Object.class, "field = :field",
+                Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC)).map());
         assertEquals("{'field':ISODate('2019-03-04T01:01:01')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field = :field",

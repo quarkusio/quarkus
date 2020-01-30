@@ -297,7 +297,7 @@ Requests that do not time out should show two recommended coffee samples in JSON
 Let's make our recommendations feature even better by providing a fallback (and presumably faster) way of getting related
 coffees.
 
-Add a fallback method to `CaffeeResource` and a `@Fallback` annotation to `CoffeeResource#recommendations()` method
+Add a fallback method to `CoffeeResource` and a `@Fallback` annotation to `CoffeeResource#recommendations()` method
 as follows:
 
 [source,java]
@@ -330,9 +330,9 @@ Check the server output to see that fallback is really happening:
 
 [source]
 ----
-2019-03-06 13:21:54,170 INFO  [org.acm.fau.CoffeeResource] (pool-15-thread-3) CoffeeResource#recommendations() invocation #2 returning successfully
-2019-03-06 13:21:55,159 ERROR [org.acm.fau.CoffeeResource] (pool-15-thread-4) CoffeeResource#recommendations() invocation #3 timed out after 248 ms
-2019-03-06 13:21:55,161 INFO  [org.acm.fau.CoffeeResource] (HystrixTimer-1) Falling back to RecommendationResource#fallbackRecommendations()
+2020-01-09 13:21:34,250 INFO  [org.acm.fau.CoffeeResource] (executor-thread-1) CoffeeResource#recommendations() invocation #1 returning successfully
+2020-01-09 13:21:36,354 ERROR [org.acm.fau.CoffeeResource] (executor-thread-1) CoffeeResource#recommendations() invocation #2 timed out after 250 ms
+2020-01-09 13:21:36,355 INFO  [org.acm.fau.CoffeeResource] (executor-thread-1) Falling back to RecommendationResource#fallbackRecommendations()
 ----
 
 NOTE: The fallback method is required to have the same parameters as the original method.

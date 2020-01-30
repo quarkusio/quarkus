@@ -12,6 +12,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.neo4j.runtime.Neo4jConfiguration;
 import io.quarkus.neo4j.runtime.Neo4jDriverProducer;
 import io.quarkus.neo4j.runtime.Neo4jDriverRecorder;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class Neo4jDriverProcessor {
 
@@ -36,5 +37,11 @@ class Neo4jDriverProcessor {
             ShutdownContextBuildItem shutdownContext) {
 
         recorder.configureNeo4jProducer(beanContainerBuildItem.getValue(), configuration, shutdownContext);
+    }
+
+    @BuildStep
+    HealthBuildItem addHealthCheck(Neo4jBuildTimeConfig buildTimeConfig) {
+        return new HealthBuildItem("io.quarkus.neo4j.runtime.health.Neo4jHealthCheck",
+                buildTimeConfig.healthEnabled, "neo4j");
     }
 }

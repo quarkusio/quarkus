@@ -8,9 +8,11 @@ import static io.quarkus.vault.runtime.config.VaultAuthenticationType.USERPASS;
 
 import java.net.URL;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -33,98 +35,134 @@ public class VaultRuntimeConfig {
 
     /**
      * Vault server url.
-     * <p>
+     *
      * Example: https://localhost:8200
+     *
+     * @asciidoclet
      */
     @ConfigItem
     public Optional<URL> url;
 
     /**
-     * Authentication type when logging in to get a Vault client token.
-     * <p>
-     * Possible values are:
-     * <ul>
-     * <li>kubernetes: Kubernetes authentication as defined in https://www.vaultproject.io/api/auth/kubernetes/index.html</li>
-     * <li>userpass: user/password authentication as defined in https://www.vaultproject.io/api/auth/userpass/index.html</li>
-     * <li>app-role: role/secret authentication as defined in https://www.vaultproject.io/api/auth/approle/index.html</li>
-     * </ul>
-     * The actual type is determined automatically based on sub-properties quarkus.vault.authentication.*
+     * Authentication
      */
     @ConfigItem
+    @ConfigDocSection
     public VaultAuthenticationConfig authentication;
 
     /**
      * Renew grace period duration.
-     * <p>
+     *
      * This value if used to extend a lease before it expires its ttl, or recreate a new lease before the current
      * lease reaches its max_ttl.
      * By default Vault leaseDuration is equal to 7 days (ie: 168h or 604800s).
      * If a connection pool maxLifetime is set, it is reasonable to set the renewGracePeriod to be greater
      * than the maxLifetime, so that we are sure we get a chance to renew leases before we reach the ttl.
      * In any case you need to make sure there will be attempts to fetch secrets within the renewGracePeriod,
-     * because that is when the renewals will happen. This particularly important for db dynamic secrets
+     * because that is when the renewals will happen. This is particularly important for db dynamic secrets
      * because if the lease reaches its ttl or max_ttl, the password of the db user will become invalid and
      * it will be not longer possible to log in.
      * This value should also be smaller than the ttl, otherwise that would mean that we would try to recreate
      * leases all the time.
+     *
+     * @asciidoclet
      */
     @ConfigItem(defaultValue = DEFAULT_RENEW_GRACE_PERIOD)
     public Duration renewGracePeriod;
 
     /**
      * Vault config source cache period.
-     * <p>
+     *
      * Properties fetched from vault as MP config will be kept in a cache, and will not be fetched from vault
      * again until the expiration of that period.
-     * This property is ignored if secret-config-kv-path is not set.
+     * This property is ignored if `secret-config-kv-path` is not set.
+     *
+     * @asciidoclet
      */
     @ConfigItem(defaultValue = DEFAULT_SECRET_CONFIG_CACHE_PERIOD)
     public Duration secretConfigCachePeriod;
 
+    // @formatter:off
     /**
-     * Vault path in kv store, where all properties will be available as MP config.
+     * List of comma separated vault paths in kv store,
+     * where all properties will be available as MP config properties **as-is**, with no prefix.
+     *
+     * For instance, if vault contains property `foo`, it will be made available to the
+     * quarkus application as `@ConfigProperty(name = "foo") String foo;`
+     *
+     * If 2 paths contain the same property, the last path will win.
+     *
+     * For instance if
+     *
+     * * `secret/base-config` contains `foo=bar` and
+     * * `secret/myapp/config` contains `foo=myappbar`, then
+     *
+     * `@ConfigProperty(name = "foo") String foo` will have value `myappbar`
+     * with application properties `quarkus.vault.secret-config-kv-path=base-config,myapp/config`
+     * 
+     * @asciidoclet
      */
+    // @formatter:on
     @ConfigItem
-    public Optional<String> secretConfigKvPath;
+    public Optional<List<String>> secretConfigKvPath;
+
+    // @formatter:off
+    /**
+     * List of comma separated vault paths in kv store,
+     * where all properties will be available as **prefixed** MP config properties.
+     *
+     * For instance if the application properties contains
+     * `quarkus.vault.secret-config-kv-path.myprefix=config`, and
+     * vault path `secret/config` contains `foo=bar`, then `myprefix.foo`
+     * will be available in the MP config.
+     *
+     * If the same property is available in 2 different paths for the same prefix, the last one
+     * will win.
+     * 
+     * @asciidoclet
+     */
+    // @formatter:on
+    @ConfigItem(name = "secret-config-kv-path.\"prefix\"")
+    public Map<String, List<String>> secretConfigKvPrefixPath;
 
     /**
      * Used to hide confidential infos, for logging in particular.
      * Possible values are:
-     * <li>
-     * <ul>
-     * low: display all secrets.
-     * </ul>
-     * <ul>
-     * medium: display only usernames and lease ids (ie: passwords and tokens are masked).
-     * </ul>
-     * <ul>
-     * high: hide lease ids and dynamic credentials username.
-     * </ul>
-     * </li>
+     *
+     * * low: display all secrets.
+     * * medium: display only usernames and lease ids (ie: passwords and tokens are masked).
+     * * high: hide lease ids and dynamic credentials username.
+     *
+     * @asciidoclet
      */
     @ConfigItem(defaultValue = "medium")
     public LogConfidentialityLevel logConfidentialityLevel;
 
     /**
      * Kv secret engine version.
-     * <p>
+     *
      * see https://www.vaultproject.io/docs/secrets/kv/index.html
+     *
+     * @asciidoclet
      */
     @ConfigItem(defaultValue = KV_SECRET_ENGINE_VERSION_V1)
     public int kvSecretEngineVersion;
 
     /**
      * Kv secret engine path.
-     * <p>
+     *
      * see https://www.vaultproject.io/docs/secrets/kv/index.html
+     *
+     * @asciidoclet
      */
     @ConfigItem(defaultValue = DEFAULT_KV_SECRET_ENGINE_MOUNT_PATH)
     public String kvSecretEngineMountPath;
 
     /**
-     * Tls config
+     * TLS
      */
     @ConfigItem
+    @ConfigDocSection
     public VaultTlsConfig tls;
 
     /**
@@ -140,15 +178,24 @@ public class VaultRuntimeConfig {
     public Duration readTimeout;
 
     /**
-     * List of named credentials providers, such as: quarkus.vault.credentials-provider.foo.kv-path=mypath
-     * <p>
-     * This defines a credentials provider 'foo' returning key 'password' from vault path 'mypath'.
+     * List of named credentials providers, such as: `quarkus.vault.credentials-provider.foo.kv-path=mypath`
+     *
+     * This defines a credentials provider `foo` returning key `password` from vault path `mypath`.
      * Once defined, this provider can be used in credentials consumers, such as the Agroal connection pool.
-     * <p>
-     * Example: quarkus.datasource.credentials-provider=foo
+     *
+     * Example: `quarkus.datasource.credentials-provider=foo`
+     *
+     * @asciidoclet
      */
     @ConfigItem
     public Map<String, CredentialsProviderConfig> credentialsProvider;
+
+    /**
+     * Transit Engine
+     */
+    @ConfigItem
+    @ConfigDocSection
+    public VaultTransitConfig transit;
 
     public VaultAuthenticationType getAuthenticationType() {
         if (authentication.kubernetes.role.isPresent()) {

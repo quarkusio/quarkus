@@ -20,6 +20,14 @@ import io.restassured.http.ContentType;
 @QuarkusTest
 public class PanacheFunctionalityTest {
 
+    /**
+     * Tests that direct use of the entity in the test class does not break transformation
+     *
+     * see https://github.com/quarkusio/quarkus/issues/1724
+     */
+    @SuppressWarnings("unused")
+    Person p = new Person();
+
     @Test
     public void testPanacheFunctionality() throws Exception {
         RestAssured.when().get("/test/model-dao").then().body(is("OK"));
@@ -52,6 +60,19 @@ public class PanacheFunctionalityTest {
     @Test
     public void testBug5274() {
         RestAssured.when().get("/test/5274").then().body(is("OK"));
+    }
+
+    @Test
+    public void testBug5885() {
+        RestAssured.when().get("/test/5885").then().body(is("OK"));
+    }
+
+    @Test
+    public void testJaxbAnnotationTransfer() {
+        RestAssured.when()
+                .get("/test/testJaxbAnnotationTransfer")
+                .then()
+                .body(is("OK"));
     }
 
     /**

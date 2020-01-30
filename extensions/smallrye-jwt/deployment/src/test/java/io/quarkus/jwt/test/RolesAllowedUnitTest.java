@@ -17,7 +17,8 @@ import io.restassured.response.Response;
 
 public class RolesAllowedUnitTest {
     private static Class[] testClasses = {
-            RolesEndpoint.class
+            RolesEndpoint.class,
+            TokenUtils.class
     };
     /**
      * The test generated JWT token string
@@ -32,6 +33,10 @@ public class RolesAllowedUnitTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
+                    .addAsResource("publicKey.pem")
+                    .addAsResource("privateKey.pem")
+                    .addAsResource("Token1.json")
+                    .addAsResource("Token2.json")
                     .addAsResource("application.properties"));
 
     @BeforeEach

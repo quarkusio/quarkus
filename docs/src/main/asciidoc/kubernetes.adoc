@@ -63,7 +63,7 @@ quarkus.application.name=test-quarkus-app # this is also optional and defaults t
 ----
 
 and following the execution of `./mvnw package` you will notice amongst the other files that are created, two files named
-`kubernetes.json` and `kubernetes.yaml` in the `target/kubernetes/` directory.
+`kubernetes.json` and `kubernetes.yml` in the `target/kubernetes/` directory.
 
 If you look at either file you will see that it contains both a Kubernetes `Deployment` and a `Service`.
 
@@ -142,21 +142,21 @@ By default the Kubernetes resources do not contain readiness and liveness probes
 The values of the generated probes will be determined by the configured health properties: `quarkus.smallrye-health.root-path`, `quarkus.smallrye-health.liveness-path` and `quarkus.smallrye-health.readiness-path`.
 More information about the health extension can be found in the relevant link:microprofile-health[guide].
 
-=== Using the kubernetes client
+=== Using the Kubernetes client
 
-Applications, that are deployed to kubernetes and need to access the API server, will usually make use of the `kubernetes-client` exetension:
+Applications that are deployed to Kubernetes and need to access the API server, will usually make use of the `kubernetes-client` extension:
 
 [source,xml]
 ----
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-kubernetes</artifactId>
+      <artifactId>quarkus-kubernetes-client</artifactId>
     </dependency>
 ----
 
-To access the API server from within a kubernetes cluster, some RBAC related resources are required (e.g. a ServiceAccount, a RoleBinding etc).
-So, when the `kubernetes-client` extension is present, those resources are going to be automatically created, so that application will be greanted the `view` role.
-If more roles, are required they will have to be added manually. 
+To access the API server from within a Kubernetes cluster, some RBAC related resources are required (e.g. a ServiceAccount, a RoleBinding etc.).
+So, when the `kubernetes-client` extension is present, the `kubernetes` extension is going to create those resources automatically, so that application will be granted the `view` role.
+If more roles are required, they will have to be added manually.
 
 == Tuning the generated resources using application.properties
 
@@ -178,7 +178,7 @@ The docker registry and the user of the docker image can be specified, with the 
 [source]
 ----
 kubernetes.group=myUser 
-kubernetes.registry=http://my.docker-registry.net 
+docker.registry=http://my.docker-registry.net
 ----
 
 Note: These options used to be `quarkus.kubernetes.docker.registry` and `quarkus.kubernetes.group` respectively.
@@ -209,39 +209,38 @@ The table below describe all the available configuration options.
 
 .Kubernetes
 |====
-| Property                               | Type                                          | Description | Default Value                            
-| kubernetes.group                       | String                                        |             |                                          
-| kubernetes.name                        | String                                        |             |                                          
-| kubernetes.version                     | String                                        |             |                                          
-| kubernetes.init-containers              | Container[]                                   |             |                                          
-| kubernetes.labels                      | Label[]                                       |             |                                          
-| kubernetes.annotations                 | Annotation[]                                  |             |                                          
-| kubernetes.env-vars                     | Env[]                                         |             |                                          
-| kubernetes.working-dir                  | String                                        |             |                                          
-| kubernetes.command                     | String[]                                      |             |                                          
-| kubernetes.arguments                   | String[]                                      |             |                                          
-| kubernetes.replicas                    | int                                           |             | 1                                        
-| kubernetes.service-account              | String                                        |             |                                          
-| kubernetes.host                        | String                                        |             |                                          
-| kubernetes.ports                       | Port[]                                        |             |                                          
-| kubernetes.service-type                 | ServiceType                                   |             | ClusterIP                                
-| kubernetes.pvc-volumes                  | PersistentVolumeClaimVolume[]                 |             |                                          
-| kubernetes.secret-volumes               | SecretVolume[]                                |             |                                          
-| kubernetes.config-map-volumes            | ConfigMapVolume[]                             |             |                                          
-| kubernetes.git-repo-volumes              | GitRepoVolume[]                               |             |                                          
-| kubernetes.aws-elastic-block-store-volumes | AwsElasticBlockStoreVolume[]                  |             |                                          
-| kubernetes.azure-disk-volumes            | AzureDiskVolume[]                             |             |                                          
-| kubernetes.azure-file-volumes            | AzureFileVolume[]                             |             |                                          
-| kubernetes.mounts                      | Mount[]                                       |             |                                          
-| kubernetes.image-pull-policy             | ImagePullPolicy                               |             | IfNotPresent                             
-| kubernetes.image-pull-secrets            | String[]                                      |             |                                          
-| kubernetes.liveness-probe               | Probe                                         |             | 
-| kubernetes.readiness-probe              | Probe                                         |             | 
-| kubernetes.sidecars                    | Container[]                                   |             |                                          
-| kubernetes.expose                      | boolean                                       |             | false                                    
-| kubernetes.docker-file                  | String                                        |             | Dockerfile                               
-| kubernetes.registry                    | String                                        |             |                                          
-| kubernetes.auto-deploy-enabled           | boolean                                       |             | false                                    
+| Property                                   | Type                          | Description | Default Value
+| kubernetes.group                           | String                        |             |
+| kubernetes.name                            | String                        |             |
+| kubernetes.version                         | String                        |             |
+| kubernetes.init-containers                 | Container[]                   |             |
+| kubernetes.labels                          | Label[]                       |             |
+| kubernetes.annotations                     | Annotation[]                  |             |
+| kubernetes.env-vars                        | Env[]                         |             |
+| kubernetes.working-dir                     | String                        |             |
+| kubernetes.command                         | String[]                      |             |
+| kubernetes.arguments                       | String[]                      |             |
+| kubernetes.replicas                        | int                           |             | 1
+| kubernetes.service-account                 | String                        |             |
+| kubernetes.host                            | String                        |             |
+| kubernetes.ports                           | Port[]                        |             |
+| kubernetes.service-type                    | ServiceType                   |             | ClusterIP
+| kubernetes.pvc-volumes                     | PersistentVolumeClaimVolume[] |             |
+| kubernetes.secret-volumes                  | SecretVolume[]                |             |
+| kubernetes.config-map-volumes              | ConfigMapVolume[]             |             |
+| kubernetes.git-repo-volumes                | GitRepoVolume[]               |             |
+| kubernetes.aws-elastic-block-store-volumes | AwsElasticBlockStoreVolume[]  |             |
+| kubernetes.azure-disk-volumes              | AzureDiskVolume[]             |             |
+| kubernetes.azure-file-volumes              | AzureFileVolume[]             |             |
+| kubernetes.mounts                          | Mount[]                       |             |
+| kubernetes.image-pull-policy               | ImagePullPolicy               |             | IfNotPresent
+| kubernetes.image-pull-secrets              | String[]                      |             |
+| kubernetes.liveness-probe                  | Probe                         |             | ( see Probe )
+| kubernetes.readiness-probe                 | Probe                         |             | ( see Probe )
+| kubernetes.sidecars                        | Container[]                   |             |
+| kubernetes.expose                          | boolean                       |             | false
+| kubernetes.headless                        | boolean                       |             | false
+| kubernetes.auto-deploy-enabled             | boolean                       |             | false
 |====
 
 Properties that use non standard types, can be referenced by expanding the property.
@@ -287,40 +286,39 @@ Below you will find tables describing all available types.
 
 .Probe
 |====
-| Property            | Type   | Description | Default Value 
-|---------------------+--------+-------------+---------------
-| http-action-path      | String |             |               
-| exec-action          | String |             |               
+| Property              | Type   | Description | Default Value
+| http-action-path      | String |             |
+| exec-action           | String |             |
 | tcp-socket-action     | String |             |               
 | initial-delay-seconds | int    |             |             0 
-| period-seconds       | int    |             |            30 
-| timeout-seconds      | int    |             |            10 
+| period-seconds        | int    |             |            30
+| timeout-seconds       | int    |             |            10
 |====
 
 .Port
 |====
-| Property      | Type     | Description | Default Value 
-| name          | String   |             |               
-| container-port | int      |             |               
-| hostPort      | int      |             | 0             
-| path          | String   |             | /             
-| protocol      | Protocol |             | TCP           
+| Property        | Type     | Description | Default Value
+| name            | String   |             |
+| container-port  | int      |             |
+| host-port       | int      |             | 0
+| path            | String   |             | /
+| protocol        | Protocol |             | TCP
 |====
 
 .Container
 |====
-| Property        | Type                                    | Description | Default Value                            
-| image           | String                                  |             |                                          
-| name            | String                                  |             |                                          
-| env-vars         | Env[]                                   |             |                                          
-| working-dir      | String                                  |             |                                          
-| command         | String[]                                |             |                                          
-| arguments       | String[]                                |             |                                          
-| ports           | Port[]                                  |             |                                          
-| mounts          | Mount[]                                 |             |                                          
+| Property          | Type                                    | Description | Default Value
+| image             | String                                  |             |
+| name              | String                                  |             |
+| env-vars          | Env[]                                   |             |                                          
+| working-dir       | String                                  |             |                                          
+| command           | String[]                                |             |
+| arguments         | String[]                                |             |
+| ports             | Port[]                                  |             |
+| mounts            | Mount[]                                 |             |
 | image-pull-policy | ImagePullPolicy                         |             | IfNotPresent                             
-| liveness-probe   | Probe                                   |             |                                          
-| readiness-probe  | Probe                                   |             |                                          
+| liveness-probe    | Probe                                   |             |                                          
+| readiness-probe   | Probe                                   |             |                                          
 |====
 
 
@@ -328,39 +326,39 @@ Below you will find tables describing all available types.
 
 .Mount
 |====
-| Property | Type    | Description | Default Value 
-| name     | String  |             |               
-| path     | String  |             |               
+| Property  | Type    | Description | Default Value
+| name      | String  |             |
+| path      | String  |             |
 | sub-path  | String  |             |               
 | read-only | boolean |             | false         
 |====
 
 .ConfigMapVolume
 |====
-| Property      | Type    | Description | Default Value 
-| volume-name    | String  |             |               
+| Property        | Type    | Description | Default Value
+| volume-name     | String  |             |
 | config-map-name | String  |             |               
-| default-mode   | int     |             | 384           
-| optional      | boolean |             | false         
+| default-mode    | int     |             | 384
+| optional        | boolean |             | false
 |====
 
 .SecretVolume
 |====
-| Property    | Type    | Description | Default Value 
+| Property     | Type    | Description | Default Value
 | volume-name  | String  |             |               
 | secret-name  | String  |             |               
 | default-mode | int     |             | 384           
-| optional    | boolean |             | false         
+| optional     | boolean |             | false
 |====
 
 
 .AzureDiskVolume
 |====
-| Property    | Type    | Description | Default Value 
+| Property     | Type    | Description | Default Value
 | volume-name  | String  |             |               
 | disk-name    | String  |             |               
 | disk-uri     | String  |             |               
-| kind        | String  |             | Managed       
+| kind         | String  |             | Managed
 | caching-mode | String  |             | ReadWrite     
 | fs-type      | String  |             | ext4          
 | read-only    | boolean |             | false         
@@ -368,33 +366,33 @@ Below you will find tables describing all available types.
 
 .AwsElasticBlockStoreVolume
 |====
-| Property   | Type    | Description | Default Value 
+| Property    | Type    | Description | Default Value
 | volume-name | String  |             |               
 | volume-id   | String  |             |               
-| partition  | int     |             |               
+| partition   | int     |             |
 | fs-type     | String  |             | ext4          
 | read-only   | boolean |             | false         
 |====
 
 .GitRepoVolume
 |====
-| Property   | Type   | Description | Default Value 
+| Property    | Type   | Description | Default Value
 | volume-name | String |             |               
-| repository | String |             |               
-| directory  | String |             |               
-| revision   | String |             |               
+| repository  | String |             |
+| directory   | String |             |
+| revision    | String |             |
 |====
 
 .PersistentVolumeClaimVolume
 |====
-| Property   | Type    | Description | Default Value
+| Property    | Type    | Description | Default Value
 | volume-name | String  |             |              
 | claim-name  | String  |             |              
 | read-only   | boolean |             | false        
 |====
 .AzureFileVolume
 |====
-| Property   | Type    | Description | Default Value
+| Property    | Type    | Description | Default Value
 | volume-name | String  |             |              
 | share-name  | String  |             |              
 | secret-name | String  |             |              
@@ -405,11 +403,11 @@ Below you will find tables describing all available types.
 
 .Docker 
 |====
-| Property | Type | Description | Default Value 
-| docker-file | String |   | Dockerfile 
-| registry | String |   |  |
-| auto-push-enabled | boolean |   | false 
-| auto-build-enabled | boolean |   | false 
+| Property           | Type    | Description | Default Value
+| docker.docker-file        | String  |             | Dockerfile
+| docker.registry           | String  |             |
+| docker.auto-push-enabled  | boolean |             | false
+| docker.auto-build-enabled | boolean |             | false
 |====
 
 === OpenShift support
@@ -432,48 +430,51 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 
 .Openshift
 |====
-| Property | Type | Description | Default Value 
-| openshift.group | String |   |  
-| openshift.name | String |   |  
-| openshift.version | String |   |  
-| openshift.init-containers | Container[] |   |  
-| openshift.labels | Label[] |   |  
-| openshift.annotations | Annotation[] |   |  
-| openshift.env-vars | Env[] |   |  
-| openshift.working-dir | String |   |  
-| openshift.command | String[] |   |  
-| openshift.arguments | String[] |   |  
-| openshift.replicas | int |   | 1 
-| openshift.service-account | String |   |  
-| openshift.host | String |   |  
-| openshift.ports | Port[] |   |  
-| openshift.service-type | ServiceType |   | ClusterIP 
-| openshift.pvc-volumes | PersistentVolumeClaimVolume[] |   |  
-| openshift.secret-volumes | SecretVolume[] |   |  
-| openshift.config-map-volumes | ConfigMapVolume[] |   |  
-| openshift.git-repo-volumes | GitRepoVolume[] |   |  
-| openshift.aws-elastic-block-store-volumes | AwsElasticBlockStoreVolume[] |   |  
-| openshift.azure-disk-volumes | AzureDiskVolume[] |   |  
-| openshift.azure-file-volumes | AzureFileVolume[] |   |  
-| openshift.mounts | Mount[] |   |  
-| openshift.image-pull-policy | ImagePullPolicy |   | IfNotPresent 
-| openshift.image-pull-secrets | String[] |   |  
-| openshift.liveness-probe | Probe |   | ( see Probe ) 
-| openshift.readiness-probe | Probe |   | ( see Probe ) 
-| openshift.sidecars | Container[] |   |  
-| openshift.expose | boolean |   | false 
-| openshift.auto-deploy-enabled | boolean |   | false 
+| Property                                  | Type                          | Description | Default Value
+| openshift.group                           | String                        |             |
+| openshift.name                            | String                        |             |
+| openshift.version                         | String                        |             |
+| openshift.init-containers                 | Container[]                   |             |
+| openshift.labels                          | Label[]                       |             |
+| openshift.annotations                     | Annotation[]                  |             |
+| openshift.env-vars                        | Env[]                         |             |
+| openshift.working-dir                     | String                        |             |
+| openshift.command                         | String[]                      |             |
+| openshift.arguments                       | String[]                      |             |
+| openshift.replicas                        | int                           |             | 1
+| openshift.service-account                 | String                        |             |
+| openshift.host                            | String                        |             |
+| openshift.ports                           | Port[]                        |             |
+| openshift.service-type                    | ServiceType                   |             | ClusterIP
+| openshift.pvc-volumes                     | PersistentVolumeClaimVolume[] |             |
+| openshift.secret-volumes                  | SecretVolume[]                |             |
+| openshift.config-map-volumes              | ConfigMapVolume[]             |             |
+| openshift.git-repo-volumes                | GitRepoVolume[]               |             |
+| openshift.aws-elastic-block-store-volumes | AwsElasticBlockStoreVolume[]  |             |
+| openshift.azure-disk-volumes              | AzureDiskVolume[]             |             |
+| openshift.azure-file-volumes              | AzureFileVolume[]             |             |
+| openshift.mounts                          | Mount[]                       |             |
+| openshift.image-pull-policy               | ImagePullPolicy               |             | IfNotPresent
+| openshift.image-pull-secrets              | String[]                      |             |
+| openshift.liveness-probe                  | Probe                         |             | ( see Probe )
+| openshift.readiness-probe                 | Probe                         |             | ( see Probe )
+| openshift.sidecars                        | Container[]                   |             |
+| openshift.expose                          | boolean                       |             | false
+| openshift.headless                        | boolean                       |             | false
+| openshift.auto-deploy-enabled             | boolean                       |             | false
 |====
 
 .S2i
 |====
-| Property | Type | Description | Default Value 
-| s2i.enabled | boolean |   | true 
-| s2i.registry | String |   |  
-| s2i.builder-image | String |   | fabric8/s2i-java:2.3 
-| s2i.build-env-vars | Env[] |   |  
-| s2i.auto-push-enabled | boolean |   | false 
-| s2i.auto-build-enabled | boolean |   | false 
+| Property                | Type    | Description | Default Value
+| s2i.enabled             | boolean |             | true
+| s2i.docker-file         | String  |             | Dockerfile
+| s2i.registry            | String  |             |
+| s2i.builder-image       | String  |             | fabric8/s2i-java:2.3
+| s2i.build-env-vars      | Env[]   |             |
+| s2i.auto-push-enabled   | boolean |             | false
+| s2i.auto-build-enabled  | boolean |             | false
+| s2i.auto-deploy-enabled | boolean |             | false               
 |====
 
 === Knative
@@ -530,33 +531,32 @@ The generated service can be customized using the following properties:
 
 .Knative
 |====
-| Property | Type | Description | Default Value 
-| knative.group | String |   |  
-| knative.name | String |   |  
-| knative.version | String |   |  
-| knative.labels | Label[] |   |  
-| knative.annotations | Annotation[] |   |  
-| knative.env-vars | Env[] |   |  
-| knative.working-dir | String |   |  
-| knative.command | String[] |   |  
-| knative.arguments | String[] |   |  
-| knative.service-account | String |   |  
-| knative.host | String |   |  
-| knative.ports | Port[] |   |  
-| knative.service-type | ServiceType |   | ClusterIP 
-| knative.pvc-volumes | PersistentVolumeClaimVolume[] |   |  
-| knative.secret-volumes | SecretVolume[] |   |  
-| knative.config-map-volumes | ConfigMapVolume[] |   |  
-| knative.git-repo-volumes | GitRepoVolume[] |   |  
-| knative.aws-elastic-block-store-volumes | AwsElasticBlockStoreVolume[] |   |  
-| knative.azure-disk-volumes | AzureDiskVolume[] |   |  
-| knative.azure-file-volumes | AzureFileVolume[] |   |  
-| knative.mounts | Mount[] |   |  
-| knative.image-pull-policy | ImagePullPolicy |   | IfNotPresent 
-| knative.image-pull-secrets | String[] |   |  
-| knative.liveness-probe | Probe |   | ( see Probe ) 
-| knative.readiness-probe | Probe |   | ( see Probe ) 
-| knative.sidecars | Container[] |   |  
-| knative.expose | boolean |   | false 
-| knative.auto-deploy-enabled | boolean |   | false 
+| Property                                | Type                          | Description | Default Value
+| knative.group                           | String                        |             |
+| knative.name                            | String                        |             |
+| knative.version                         | String                        |             |
+| knative.labels                          | Label[]                       |             |
+| knative.annotations                     | Annotation[]                  |             |
+| knative.env-vars                        | Env[]                         |             |
+| knative.working-dir                     | String                        |             |
+| knative.command                         | String[]                      |             |
+| knative.arguments                       | String[]                      |             |
+| knative.service-account                 | String                        |             |
+| knative.host                            | String                        |             |
+| knative.ports                           | Port[]                        |             |
+| knative.service-type                    | ServiceType                   |             | ClusterIP
+| knative.pvc-volumes                     | PersistentVolumeClaimVolume[] |             |
+| knative.secret-volumes                  | SecretVolume[]                |             |
+| knative.config-map-volumes              | ConfigMapVolume[]             |             |
+| knative.git-repo-volumes                | GitRepoVolume[]               |             |
+| knative.aws-elastic-block-store-volumes | AwsElasticBlockStoreVolume[]  |             |
+| knative.azure-disk-volumes              | AzureDiskVolume[]             |             |
+| knative.azure-file-volumes              | AzureFileVolume[]             |             |
+| knative.mounts                          | Mount[]                       |             |
+| knative.image-pull-policy               | ImagePullPolicy               |             | IfNotPresent
+| knative.image-pull-secrets              | String[]                      |             |
+| knative.liveness-probe                  | Probe                         |             | ( see Probe )
+| knative.readiness-probe                 | Probe                         |             | ( see Probe )
+| knative.sidecars                        | Container[]                   |             |
+| knative.expose                          | boolean                       |             | false
 |====

@@ -17,7 +17,7 @@ public class SecurityCheckInstantiationUtil {
     private SecurityCheckInstantiationUtil() {
     }
 
-    public static Function<BytecodeCreator, ResultHandle> rolesAllowedSecurityCheck(final String[] rolesAllowed) {
+    public static Function<BytecodeCreator, ResultHandle> rolesAllowedSecurityCheck(String... rolesAllowed) {
         return new Function<BytecodeCreator, ResultHandle>() {
             @Override
             public ResultHandle apply(BytecodeCreator creator) {
@@ -26,7 +26,7 @@ public class SecurityCheckInstantiationUtil {
                             "Cannot use a null array to create an instance of " + RolesAllowedCheck.class.getName());
                 }
 
-                ResultHandle rolesAllowedArgs = creator.newArray(String.class, creator.load(rolesAllowed.length));
+                ResultHandle rolesAllowedArgs = creator.newArray(String.class, rolesAllowed.length);
                 int i = 0;
                 for (String val : rolesAllowed) {
                     creator.writeArrayValue(rolesAllowedArgs, i++, creator.load(val));

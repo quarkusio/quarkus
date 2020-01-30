@@ -19,6 +19,10 @@
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-development-mode-spi</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.logmanager</groupId>
             <artifactId>jboss-logmanager-embedded</artifactId>
         </dependency>

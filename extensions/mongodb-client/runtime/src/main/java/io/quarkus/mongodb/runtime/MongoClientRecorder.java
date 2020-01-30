@@ -79,7 +79,7 @@ public class MongoClientRecorder {
     }
 
     void initialize(MongoClientConfig config, List<String> codecProviders) {
-        CodecRegistry defaultCodecRegistry = com.mongodb.MongoClient.getDefaultCodecRegistry();
+        CodecRegistry defaultCodecRegistry = MongoClientSettings.getDefaultCodecRegistry();
 
         MongoClientSettings.Builder settings = MongoClientSettings.builder();
 
@@ -139,7 +139,7 @@ public class MongoClientRecorder {
         settings.applyToClusterSettings(builder -> {
             if (!maybeConnectionString.isPresent()) {
                 // Parse hosts
-                List<ServerAddress> hosts = parseHosts(config.hosts.orElse(Collections.emptyList()));
+                List<ServerAddress> hosts = parseHosts(config.hosts);
                 builder.hosts(hosts);
 
                 if (hosts.size() == 1 && !config.replicaSetName.isPresent()) {

@@ -1,6 +1,6 @@
 package io.quarkus.arquillian;
 
-import javax.enterprise.context.spi.CreationalContext;
+import java.io.IOException;
 
 import org.jboss.arquillian.core.api.Instance;
 import org.jboss.arquillian.core.api.annotation.Inject;
@@ -11,15 +11,15 @@ import org.jboss.arquillian.test.spi.event.suite.After;
 public class CreationalContextDestroyer {
 
     @Inject
-    private Instance<CreationalContext<?>> creationalContext;
+    private Instance<InjectionEnricher.CreationContextHolder> creationalContext;
 
-    public void destroy(@Observes EventContext<After> event) {
+    public void destroy(@Observes EventContext<After> event) throws IOException {
         try {
             event.proceed();
         } finally {
-            CreationalContext<?> cc = creationalContext.get();
+            InjectionEnricher.CreationContextHolder cc = creationalContext.get();
             if (cc != null) {
-                cc.release();
+                cc.close();
             }
         }
     }

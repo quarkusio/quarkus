@@ -12,6 +12,7 @@
 
     <artifactId>quarkus-keycloak-authorization</artifactId>
     <name>Quarkus - Keycloak Authorization - Runtime</name>
+    <description>Policy enforcer using Keycloak-managed permissions to control access to protected resources</description>
 
     <dependencies>
         <dependency>

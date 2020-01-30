@@ -265,6 +265,24 @@ If you have multiple datasources, all datasources will be checked and the status
 
 This behavior can be disabled via the property `quarkus.datasource.health.enabled`.
 
+== Datasource Metrics
+
+If you are using the `quarkus-smallrye-metrics` extension, `quarkus-agroal` can expose some data source metrics on the
+`/metrics` endpoint. This can be turned on by setting the property `quarkus.datasource.metrics.enabled` to true.
+
+For the exposed metrics to contain any actual values, it is necessary that metric collection is enabled internally
+by Agroal mechanisms. By default, this metric collection mechanism gets turned on for all data sources if the `quarkus-smallrye-metrics`
+is present and metrics for the Agroal extension are enabled. If you want to disable metrics for a particular data source,
+this can be done by setting `quarkus.datasource.enable-metrics` to `false` (or `quarkus.datasource.<datasource name>.enable-metrics` for a named datasource). This disables
+collecting the metrics as well as exposing them in the `/metrics` endpoint, because it does not make sense to
+expose metrics if the mechanism to collect them is disabled.
+
+Conversely, setting `quarkus.datasource.enable-metrics` to `true` (or `quarkus.datasource.<datasource name>.enable-metrics` for a named datasource) explicitly can be used to enable collection of metrics even if
+the `quarkus-smallrye-metrics` extension is not in use. This can be useful if you need to access the collected metrics programmatically.
+They are available after calling `dataSource.getMetrics()` on an injected `AgroalDataSource` instance. If collection of metrics is disabled
+for this data source, all values will be zero.
+
+
 == Narayana Transaction Manager integration
 
 If the Narayana JTA extension is also available, integration is automatic.
@@ -319,4 +337,3 @@ quarkus.datasource.driver=org.h2.Driver
 == Agroal Configuration Reference
 
 include::{generated-dir}/config/quarkus-agroal.adoc[opts=optional, leveloffset=+1]
-

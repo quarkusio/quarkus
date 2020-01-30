@@ -39,6 +39,33 @@ public final class LogConfig {
     public Map<String, CategoryConfig> categories;
 
     /**
+     * Console handlers.
+     * <p>
+     * The named console handlers configured here can be linked on one or more categories.
+     */
+    @ConfigItem(name = "handler.console")
+    @ConfigDocSection
+    public Map<String, ConsoleConfig> consoleHandlers;
+
+    /**
+     * File handlers.
+     * <p>
+     * The named file handlers configured here can be linked on one or more categories.
+     */
+    @ConfigItem(name = "handler.file")
+    @ConfigDocSection
+    public Map<String, FileConfig> fileHandlers;
+
+    /**
+     * Syslog handlers.
+     * <p>
+     * The named syslog handlers configured here can be linked on one or more categories.
+     */
+    @ConfigItem(name = "handler.syslog")
+    @ConfigDocSection
+    public Map<String, SyslogConfig> syslogHandlers;
+
+    /**
      * Console logging.
      * <p>
      * Console logging is enabled by default.

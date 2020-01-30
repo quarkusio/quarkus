@@ -3,6 +3,9 @@ package io.quarkus.arquillian;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import org.jboss.arquillian.container.spi.context.annotation.DeploymentScoped;
+import org.jboss.arquillian.core.api.InstanceProducer;
+import org.jboss.arquillian.core.api.annotation.Inject;
 import org.jboss.arquillian.core.api.annotation.Observes;
 
 public class QuarkusBeforeAfterLifecycle {
@@ -17,6 +20,10 @@ public class QuarkusBeforeAfterLifecycle {
     private static final String TESTNG_INVOKE_AFTER_METHOD = "invokeTestNgAfterMethods";
 
     private static final int DEFAULT_PRECEDENCE = -100;
+
+    @Inject
+    @DeploymentScoped
+    private InstanceProducer<ClassLoader> appClassloader;
 
     public void on(@Observes(precedence = DEFAULT_PRECEDENCE) org.jboss.arquillian.test.spi.event.suite.Before event)
             throws Throwable {
@@ -77,10 +84,18 @@ public class QuarkusBeforeAfterLifecycle {
     private void invokeCallbacks(String methodName, String junitOrTestNgCallbackClass)
             throws IllegalAccessException, IllegalArgumentException, InvocationTargetException,
             NoSuchMethodException, SecurityException, ClassNotFoundException {
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        Class<?> callbacksClass = cl.loadClass(junitOrTestNgCallbackClass);
-        Method declaredMethod = callbacksClass.getDeclaredMethod(methodName);
-        declaredMethod.invoke(null);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        ClassLoader cl = appClassloader.get() != null ? appClassloader.get() : old;
+
+        try {
+            Thread.currentThread().setContextClassLoader(cl);
+            Class<?> callbacksClass = cl.loadClass(junitOrTestNgCallbackClass);
+            Method declaredMethod = callbacksClass.getDeclaredMethod(methodName, Object.class);
+            declaredMethod.setAccessible(true);
+            declaredMethod.invoke(null, QuarkusDeployableContainer.testInstance);
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 
 }

@@ -106,6 +106,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <javaParameters>true</javaParameters>
                     <!-- Soon to be replaced by plugin that will pre-configure all necessary annotations -->
                     <compilerPlugins>
                         <plugin>all-open</plugin>
@@ -114,6 +115,8 @@
                     <pluginOptions>
                         <!-- Each annotation is placed on its own line -->
                         <option>all-open:annotation=javax.ws.rs.Path</option>
+                        <option>all-open:annotation=javax.enterprise.context.ApplicationScoped</option>
+                        <option>all-open:annotation=io.quarkus.test.junit.QuarkusTest</option>
                     </pluginOptions>
                 </configuration>
 

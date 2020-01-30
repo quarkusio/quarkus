@@ -24,6 +24,8 @@ import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.netty.runtime.virtual.VirtualAddress;
@@ -35,6 +37,7 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.Timing;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
+import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.http.runtime.filters.Filter;
@@ -61,9 +64,12 @@ import io.vertx.core.net.impl.VertxHandler;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
 
 @Recorder
 public class VertxHttpRecorder {
+
+    public static final String MAX_REQUEST_SIZE_KEY = "io.quarkus.max-request-size";
 
     private static final Logger LOGGER = Logger.getLogger(VertxHttpRecorder.class.getName());
 
@@ -169,7 +175,8 @@ public class VertxHttpRecorder {
 
     public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, RuntimeValue<Vertx> vertx,
-            RuntimeValue<Router> runtimeValue, String rootPath, LaunchMode launchMode) {
+            RuntimeValue<Router> runtimeValue, String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
+            Handler<RoutingContext> bodyHandler, HttpConfiguration httpConfiguration) {
         // install the default route at the end
         Router router = runtimeValue.getValue();
 
@@ -199,6 +206,48 @@ public class VertxHttpRecorder {
 
         container.instance(RouterProducer.class).initialize(resumingRouter);
         router.route().last().failureHandler(new QuarkusErrorHandler(launchMode.isDevOrTest()));
+
+        if (requireBodyHandler) {
+            //if this is set then everything needs the body handler installed
+            //TODO: config etc
+            router.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
+                @Override
+                public void handle(RoutingContext routingContext) {
+                    routingContext.request().resume();
+                    bodyHandler.handle(routingContext);
+                }
+            });
+        }
+
+        if (httpConfiguration.limits.maxBodySize.isPresent()) {
+            long limit = httpConfiguration.limits.maxBodySize.get().asLongValue();
+            Long limitObj = limit;
+            router.route().order(-2).handler(new Handler<RoutingContext>() {
+                @Override
+                public void handle(RoutingContext event) {
+                    String lengthString = event.request().headers().get(HttpHeaderNames.CONTENT_LENGTH);
+
+                    if (lengthString != null) {
+                        long length = Long.parseLong(lengthString);
+                        if (length > limit) {
+                            event.response().headers().add(HttpHeaderNames.CONNECTION, "close");
+                            event.response().setStatusCode(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE.code());
+                            event.response().endHandler(new Handler<Void>() {
+                                @Override
+                                public void handle(Void e) {
+                                    event.request().connection().close();
+                                }
+                            });
+                            event.response().end();
+                            return;
+                        }
+                    } else {
+                        event.put(MAX_REQUEST_SIZE_KEY, limitObj);
+                    }
+                    event.next();
+                }
+            });
+        }
 
         if (rootPath.equals("/")) {
             if (hotReplacementHandler != null) {
@@ -281,9 +330,14 @@ public class VertxHttpRecorder {
             throw new RuntimeException("Unable to start HTTP server", e);
         }
 
-        // TODO log proper message
-        Timing.setHttpServer(String.format(
-                "Listening on: http://%s:%s", httpServerOptions.getHost(), httpServerOptions.getPort()));
+        String serverListeningMessage = String.format(
+                "Listening on: http://%s:%s", httpServerOptions.getHost(), httpServerOptions.getPort());
+
+        if (sslConfig != null) {
+            serverListeningMessage = serverListeningMessage
+                    + String.format(" and https://%s:%s", sslConfig.getHost(), sslConfig.getPort());
+        }
+        Timing.setHttpServer(serverListeningMessage);
     }
 
     /**
@@ -468,16 +522,20 @@ public class VertxHttpRecorder {
     }
 
     public void addRoute(RuntimeValue<Router> router, Function<Router, Route> route, Handler<RoutingContext> handler,
-            HandlerType blocking) {
+            HandlerType blocking, boolean resume) {
 
         Route vr = route.apply(router.getValue());
 
+        Handler<RoutingContext> requestHandler = handler;
+        if (resume) {
+            requestHandler = new ResumeHandler(handler);
+        }
         if (blocking == HandlerType.BLOCKING) {
-            vr.blockingHandler(new ResumeHandler(handler));
+            vr.blockingHandler(requestHandler);
         } else if (blocking == HandlerType.FAILURE) {
-            vr.failureHandler(new ResumeHandler(handler));
+            vr.failureHandler(requestHandler);
         } else {
-            vr.handler(new ResumeHandler(handler));
+            vr.handler(requestHandler);
         }
     }
 
@@ -622,4 +680,24 @@ public class VertxHttpRecorder {
         return ACTUAL_ROOT;
     }
 
+    public Handler<RoutingContext> createBodyHandler(HttpConfiguration httpConfiguration) {
+        BodyHandler bodyHandler = BodyHandler.create();
+        Optional<MemorySize> maxBodySize = httpConfiguration.limits.maxBodySize;
+        if (maxBodySize.isPresent()) {
+            bodyHandler.setBodyLimit(maxBodySize.get().asLongValue());
+        }
+        final BodyConfig bodyConfig = httpConfiguration.body;
+        bodyHandler.setHandleFileUploads(bodyConfig.handleFileUploads);
+        bodyHandler.setUploadsDirectory(bodyConfig.uploadsDirectory);
+        bodyHandler.setDeleteUploadedFilesOnEnd(bodyConfig.deleteUploadedFilesOnEnd);
+        bodyHandler.setMergeFormAttributes(bodyConfig.mergeFormAttributes);
+        bodyHandler.setPreallocateBodyBuffer(bodyConfig.preallocateBodyBuffer);
+        return new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext event) {
+                event.request().resume();
+                bodyHandler.handle(event);
+            }
+        };
+    }
 }

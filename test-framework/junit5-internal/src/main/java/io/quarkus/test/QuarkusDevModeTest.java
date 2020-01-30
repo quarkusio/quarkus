@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -15,10 +17,13 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import java.util.stream.Stream;
 
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
@@ -45,13 +50,12 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
  * testing their extension functionality in dev mode. Unlike {@link QuarkusUnitTest} this will test against
  * a clean deployment for each test method. This is nessesary to prevent undefined behaviour by making sure the
  * deployment starts in a clean state for each test.
- *
- *
+ * <p>
+ * <p>
  * NOTE: These tests do not run with {@link io.quarkus.runtime.LaunchMode#TEST} but rather with
  * {@link io.quarkus.runtime.LaunchMode#DEVELOPMENT}. This is necessary to ensure dev mode is tested correctly.
- *
+ * <p>
  * A side effect of this is that the tests will run on port 8080 by default instead of port 8081.
- *
  */
 public class QuarkusDevModeTest
         implements BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
@@ -60,7 +64,7 @@ public class QuarkusDevModeTest
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
     }
 
-    boolean started = false;
+    private boolean started = false;
 
     private DevModeMain devModeMain;
     private Path deploymentDir;
@@ -151,6 +155,7 @@ public class QuarkusDevModeTest
             DevModeContext context = exportArchive(deploymentDir, projectSourceRoot);
             context.setTest(true);
             context.setAbortOnFailedStart(true);
+            context.setLocalProjectDiscovery(false);
             devModeMain = new DevModeMain(context);
             devModeMain.start();
             started = true;
@@ -275,9 +280,61 @@ public class QuarkusDevModeTest
                             Collections.singleton(deploymentSourcePath.toAbsolutePath().toString()),
                             classes.toAbsolutePath().toString(), deploymentResourcePath.toAbsolutePath().toString()));
 
+            setDevModeRunnerJarFile(context);
             return context;
         } catch (Exception e) {
             throw new RuntimeException("Unable to create the archive", e);
+        }
+    }
+
+    private static void setDevModeRunnerJarFile(final DevModeContext context) {
+        try {
+            /*
+             * See https://github.com/quarkusio/quarkus/issues/6280
+             * Maven surefire plugin launches the (forked) JVM for tests using a "surefirebooter" jar file.
+             * This jar file's name starts with the prefix "surefirebooter" and ends with the extension ".jar".
+             * The jar is launched using "java -jar .../surefirebooter*.jar ..." semantics. This jar has a
+             * MANIFEST which contains "Class-Path" entries. These entries trigger a bug in the JDK code
+             * https://bugs.openjdk.java.net/browse/JDK-8232170 which causes hot deployment related logic in Quarkus
+             * to fail in dev mode.
+             * The goal in this next section is to narrow down to this specific surefirebooter*.jar which was used to launch
+             * the tests and mark it as the "dev mode runner jar" (through DevModeContext#setDevModeRunnerJarFile),
+             * so that programmatic compilation of code (during hot deployment) doesn't run into issues noted in
+             * https://bugs.openjdk.java.net/browse/JDK-8232170.
+             * In reality the surefirebooter*.jar isn't really a "dev mode runner jar" (i.e. it's not the -dev.jar that
+             * Quarkus generates), but it's fine to mark it as such to get past this issue. This is more of a workaround
+             * on top of another workaround. In the medium/long term the actual JDK issue fix will make its way into
+             * almost all prominently used Java versions.
+             */
+            final Enumeration<URL> manifests = QuarkusDevModeTest.class.getClassLoader().getResources("META-INF/MANIFEST.MF");
+            while (manifests.hasMoreElements()) {
+                final URL url = manifests.nextElement();
+                // don't open streams to manifest entries unless it resembles to the one
+                // we are interested in
+                if (!url.getPath().contains("surefirebooter")) {
+                    continue;
+                }
+                try (final InputStream is = url.openStream()) {
+                    final Manifest manifest = new Manifest(is);
+                    final String mainClass = manifest.getMainAttributes().getValue(Attributes.Name.MAIN_CLASS);
+                    // additional check to make sure we are probing the right jar
+                    if ("org.apache.maven.surefire.booter.ForkedBooter".equals(mainClass)) {
+                        final String manifestFilePath = url.getPath();
+                        if (manifestFilePath.startsWith("file:")) {
+                            // manifest file path will be of the form jar:file:....!META-INF/MANIFEST.MF
+                            final String jarFilePath = manifestFilePath.substring(5, manifestFilePath.lastIndexOf('!'));
+                            final File surefirebooterJar = new File(
+                                    URLDecoder.decode(jarFilePath, StandardCharsets.UTF_8.name()));
+                            context.setDevModeRunnerJarFile(surefirebooterJar);
+                        }
+                        break;
+                    }
+
+                }
+            }
+        } catch (Throwable t) {
+            // ignore and move on
+            return;
         }
     }
 
@@ -303,13 +360,15 @@ public class QuarkusDevModeTest
 
     /**
      * Adds the source file that corresponds to the given class to the deployment
-     * 
+     *
      * @param sourceFile
      */
     public void addSourceFile(Class<?> sourceFile) {
         Path path = copySourceFilesForClass(projectSourceRoot, deploymentSourcePath, testLocation,
                 testLocation.resolve(sourceFile.getName().replace(".", "/") + ".class"));
         sleepForFileChanges(path);
+        // since this is a new file addition, even wait for the parent dir's last modified timestamp to change
+        sleepForFileChanges(path.getParent());
     }
 
     void modifyFile(String name, Function<String, String> mutator, Path path) {
@@ -384,11 +443,15 @@ public class QuarkusDevModeTest
      * the deployment resources directory
      */
     public void addResourceFile(String path, byte[] data) {
+        final Path resourceFilePath = deploymentResourcePath.resolve(path);
         try {
-            Files.write(deploymentResourcePath.resolve(path), data);
+            Files.write(resourceFilePath, data);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+        sleepForFileChanges(resourceFilePath);
+        // since this is a new file addition, even wait for the parent dir's last modified timestamp to change
+        sleepForFileChanges(resourceFilePath.getParent());
     }
 
     /**
@@ -396,11 +459,14 @@ public class QuarkusDevModeTest
      * the deployment resources directory
      */
     public void deleteResourceFile(String path) {
+        final Path resourceFilePath = deploymentResourcePath.resolve(path);
         try {
-            Files.delete(deploymentResourcePath.resolve(path));
+            Files.delete(resourceFilePath);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+        // wait for last modified time of the parent to get updated
+        sleepForFileChanges(resourceFilePath.getParent());
     }
 
     /**

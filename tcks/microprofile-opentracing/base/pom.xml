@@ -23,6 +23,8 @@
                         <suiteXmlFile>${project.basedir}/src/test/resources/tck-suite.xml</suiteXmlFile>
                     </suiteXmlFiles>
                     <systemPropertyVariables>
+                        <!-- These tests embed random imcompatible libraries in the deployment-->
+                        <io.quarkus.arquillian.skip-libraries>true</io.quarkus.arquillian.skip-libraries>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
                     </systemPropertyVariables>
@@ -51,7 +53,7 @@
             <artifactId>quarkus-resteasy-jackson</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.smallrye</groupId>
+            <groupId>io.smallrye.config</groupId>
             <artifactId>smallrye-config</artifactId>
             <exclusions>
                 <exclusion>
@@ -93,7 +95,15 @@
                     <groupId>org.jboss.resteasy</groupId>
                     <artifactId>resteasy-jackson-provider</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>jakarta.xml.bind</groupId>
+                    <artifactId>jakarta.xml.bind-api</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.spec.javax.xml.bind</groupId>
+            <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shrinkwrap.resolver</groupId>

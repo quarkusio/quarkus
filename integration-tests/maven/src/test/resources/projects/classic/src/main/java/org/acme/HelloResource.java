@@ -11,9 +11,14 @@ import javax.ws.rs.core.MediaType;
 @Path("/hello")
 public class HelloResource {
 
-    @Inject
     @ConfigProperty(name = "greeting")
     String greeting;
+
+    @ConfigProperty(name = "quarkus.application.version")
+    String applicationVersion;
+
+    @ConfigProperty(name = "quarkus.application.name")
+    String applicationName;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -33,6 +38,13 @@ public class HelloResource {
     @Produces(MediaType.TEXT_PLAIN)
     public String pkg() {
         return Blah.class.getPackage().getName();
+    }
+
+    @GET
+    @Path("/nameAndVersion")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String nameAndVersion() {
+        return applicationName + "/" +  applicationVersion;
     }
 
 

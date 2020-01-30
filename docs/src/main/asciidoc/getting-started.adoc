@@ -73,6 +73,8 @@ The solution is located in the `getting-started` directory.
 
 The easiest way to create a new Quarkus project is to open a terminal and run the following command:
 
+For Linux & MacOS users
+
 [source,shell,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
@@ -81,6 +83,22 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello"
 cd getting-started
+----
+
+For Windows users
+
+- If using cmd , (don't use forward slash `\`)
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started -DclassName="org.acme.quickstart.GreetingResource" -Dpath="/hello"
+----
+
+- If using Powershell , wrap `-D` parameters in double quotes
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started" "-DclassName=org.acme.quickstart.GreetingResource" "-Dpath=/hello"
 ----
 
 It generates the following in  `./getting-started`:
@@ -206,7 +224,7 @@ $ curl -w "\n" http://localhost:8080/hello
 hello
 ```
 
-Hit `CTRL+C` to stop the application, but you can also keep it running and enjoy the blazing fast hot-reload.
+Hit `CTRL+C` to stop the application, or keep it running and enjoy the blazing fast hot-reload.
 
 [TIP]
 .Automatically add newline with `curl -w "\n"`
@@ -446,7 +464,7 @@ The async version of the code is available in the {quickstarts-base-url}[GitHub]
 
 This guide covered the creation of an application using Quarkus.
 However, there is much more.
-We recommend continuing the journey with the link:building-native-image[building a native executable guide], where you learn about the native executable creation and the packaging in a container.
+We recommend continuing the journey with the link:building-native-image[building a native executable guide], where you learn about creating a native executable and packaging it in a container.
 
 In addition, the link:tooling[tooling guide] document explains how to:
 

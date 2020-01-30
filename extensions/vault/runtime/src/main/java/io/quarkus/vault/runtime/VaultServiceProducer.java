@@ -5,21 +5,24 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Named;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.vault.CredentialsProvider;
 import io.quarkus.vault.VaultKVSecretEngine;
+import io.quarkus.vault.VaultTransitSecretEngine;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 
 @ApplicationScoped
 public class VaultServiceProducer {
 
-    private static final Logger log = Logger.getLogger(VaultServiceProducer.class);
-
     @Produces
     @ApplicationScoped
     public VaultKVSecretEngine createKVSecretEngine() {
         return VaultManager.getInstance().getVaultKvManager();
+    }
+
+    @Produces
+    @ApplicationScoped
+    public VaultTransitSecretEngine createTransitSecretEngine() {
+        return VaultManager.getInstance().getVaultTransitManager();
     }
 
     @Produces

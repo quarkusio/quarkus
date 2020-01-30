@@ -20,6 +20,8 @@ import org.drools.compiler.commons.jci.compilers.JavaCompiler;
 import org.drools.compiler.commons.jci.compilers.JavaCompilerSettings;
 import org.drools.compiler.compiler.io.memory.MemoryFileSystem;
 import org.drools.compiler.kproject.models.KieModuleModelImpl;
+import org.drools.core.base.ClassFieldAccessorFactory;
+import org.drools.modelcompiler.builder.GeneratedFile;
 import org.drools.modelcompiler.builder.JavaParserCompiler;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
@@ -32,7 +34,6 @@ import org.kie.api.builder.model.KieModuleModel;
 import org.kie.internal.kogito.codegen.Generated;
 import org.kie.kogito.Model;
 import org.kie.kogito.codegen.ApplicationGenerator;
-import org.kie.kogito.codegen.GeneratedFile;
 import org.kie.kogito.codegen.decision.DecisionCodegen;
 import org.kie.kogito.codegen.di.CDIDependencyInjectionAnnotator;
 import org.kie.kogito.codegen.process.ProcessCodegen;
@@ -40,6 +41,8 @@ import org.kie.kogito.codegen.process.persistence.PersistenceGenerator;
 import org.kie.kogito.codegen.rules.IncrementalRuleCodegen;
 
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -53,7 +56,9 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 public class KogitoAssetsProcessor {
@@ -77,7 +82,8 @@ public class KogitoAssetsProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             IndexView index,
             LaunchModeBuildItem launchMode,
-            BuildProducer<NativeImageResourceBuildItem> resource) throws IOException {
+            BuildProducer<NativeImageResourceBuildItem> resource,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) throws IOException {
 
         Path projectPath = getProjectPath(root.getArchiveLocation());
         ClassInfo persistenceClass = index
@@ -107,7 +113,8 @@ public class KogitoAssetsProcessor {
 
         if (!generatedFiles.isEmpty()) {
             MemoryFileSystem trgMfs = new MemoryFileSystem();
-            CompilationResult result = compile(root, trgMfs, generatedFiles, launchMode.getLaunchMode(),
+            CompilationResult result = compile(root, trgMfs, curateOutcomeBuildItem.getEffectiveModel(), generatedFiles,
+                    launchMode.getLaunchMode(),
                     root.getArchiveLocation());
             register(trgMfs, generatedBeans, (className, data) -> new GeneratedBeanBuildItem(className, data),
                     launchMode.getLaunchMode(), result, root.getArchiveLocation());
@@ -134,6 +141,11 @@ public class KogitoAssetsProcessor {
         return result;
     }
 
+    @BuildStep
+    public RuntimeInitializedClassBuildItem runtimeInitializedClass() {
+        return new RuntimeInitializedClassBuildItem(ClassFieldAccessorFactory.class.getName());
+    }
+
     @BuildStep(loadsApplicationClasses = true)
     public void generateModel(ArchiveRootBuildItem root,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
@@ -141,7 +153,8 @@ public class KogitoAssetsProcessor {
             LaunchModeBuildItem launchMode,
             LiveReloadBuildItem liveReload,
             BuildProducer<NativeImageResourceBuildItem> resource,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws IOException {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) throws IOException {
 
         if (liveReload.isLiveReload()) {
             return;
@@ -164,7 +177,8 @@ public class KogitoAssetsProcessor {
             Set<DotName> kogitoIndex = new HashSet<>();
 
             MemoryFileSystem trgMfs = new MemoryFileSystem();
-            CompilationResult result = compile(root, trgMfs, generatedFiles, launchMode.getLaunchMode(),
+            CompilationResult result = compile(root, trgMfs, curateOutcomeBuildItem.getEffectiveModel(), generatedFiles,
+                    launchMode.getLaunchMode(),
                     targetClassesPath);
             register(trgMfs, generatedBeans, (className, data) -> {
 
@@ -178,7 +192,7 @@ public class KogitoAssetsProcessor {
             Index index = kogitoIndexer.complete();
 
             generatePersistenceInfo(root, generatedBeans, CompositeIndex.create(combinedIndexBuildItem.getIndex(), index),
-                    launchMode, resource);
+                    launchMode, resource, curateOutcomeBuildItem);
 
             reflectiveClass.produce(
                     new ReflectiveClassBuildItem(true, true, "org.kie.kogito.services.event.AbstractProcessDataEvent"));
@@ -206,14 +220,18 @@ public class KogitoAssetsProcessor {
     }
 
     private Path getProjectPath(Path archiveLocation) {
-        Path projectPath = archiveLocation.toString().endsWith("target" + File.separator + "classes")
-                ? archiveLocation.getParent().getParent()
-                : archiveLocation;
-
-        return projectPath;
+        //TODO: revisit this, we should not be depending on a project, it breaks the upgrade use case
+        String path = archiveLocation.toString();
+        if (path.endsWith("target" + File.separator + "classes")) {
+            return archiveLocation.getParent().getParent();
+        } else if (path.endsWith(".jar") && archiveLocation.getParent().getFileName().toString().equals("target")) {
+            return archiveLocation.getParent().getParent();
+        }
+        return archiveLocation;
     }
 
     private CompilationResult compile(ArchiveRootBuildItem root, MemoryFileSystem trgMfs,
+            AppModel appModel,
             Collection<GeneratedFile> generatedFiles,
             LaunchMode launchMode, Path projectPath)
             throws IOException {
@@ -221,17 +239,20 @@ public class KogitoAssetsProcessor {
         JavaCompiler javaCompiler = JavaParserCompiler.getCompiler();
         JavaCompilerSettings compilerSettings = javaCompiler.createDefaultSettings();
         compilerSettings.addClasspath(root.getArchiveLocation().toString());
+        for (AppDependency i : appModel.getUserDependencies()) {
+            compilerSettings.addClasspath(i.getArtifact().getPath().toAbsolutePath().toString());
+        }
 
         MemoryFileSystem srcMfs = new MemoryFileSystem();
 
         String[] sources = new String[generatedFiles.size()];
         int index = 0;
         for (GeneratedFile entry : generatedFiles) {
-            String generatedClassFile = entry.relativePath().replace("src/main/java/", "");
+            String generatedClassFile = entry.getPath().replace("src/main/java/", "");
             String fileName = toRuntimeSource(toClassName(generatedClassFile));
             sources[index++] = fileName;
 
-            srcMfs.write(fileName, entry.contents());
+            srcMfs.write(fileName, entry.getData());
 
             String location = generatedClassesDir;
             if (launchMode == LaunchMode.DEVELOPMENT) {
@@ -351,10 +372,10 @@ public class KogitoAssetsProcessor {
         if (location == null) {
             return;
         }
-        String generatedClassFile = f.relativePath().replace("src/main/java", "");
+        String generatedClassFile = f.getPath().replace("src/main/java", "");
         Files.write(
                 pathOf(location, generatedClassFile),
-                f.contents());
+                f.getData());
     }
 
     private Path pathOf(String location, String end) {

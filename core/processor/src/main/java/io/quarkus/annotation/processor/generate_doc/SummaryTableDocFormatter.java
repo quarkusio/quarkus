@@ -11,7 +11,8 @@ final class SummaryTableDocFormatter implements DocFormatter {
     public static final String SEARCHABLE_TABLE_CLASS = ".searchable"; // a css class indicating if a table is searchable
     public static final String CONFIGURATION_TABLE_CLASS = ".configuration-reference";
     private static final String TABLE_ROW_FORMAT = "\n\na|%s [[%s]]`link:#%s[%s]`\n\n[.description]\n--\n%s\n--|%s %s\n|%s\n";
-    private static final String TABLE_SECTION_ROW_FORMAT = "\n\nh|[[%s]]link:#%s[%s]\nh|Type\nh|Default";
+    private static final String SECTION_TITLE = "[[%s]]link:#%s[%s]";
+    private static final String TABLE_SECTION_ROW_FORMAT = "\n\nh|%s\n%s\nh|Type\nh|Default";
     private static final String TABLE_HEADER_FORMAT = "[.configuration-legend]%s\n[%s, cols=\"80,.^10,.^10\"]\n|===";
 
     private String anchorPrefix = "";
@@ -32,7 +33,9 @@ final class SummaryTableDocFormatter implements DocFormatter {
         // make sure that section-less configs get a legend
         if (configDocItems.isEmpty() || configDocItems.get(0).isConfigKey()) {
             String anchor = anchorPrefix + getAnchor("configuration");
-            writer.append(String.format(TABLE_SECTION_ROW_FORMAT, anchor, anchor, "Configuration property"));
+            writer.append(String.format(TABLE_SECTION_ROW_FORMAT,
+                    String.format(SECTION_TITLE, anchor, anchor, "Configuration property"),
+                    Constants.EMPTY));
         }
 
         for (ConfigDocItem configDocItem : configDocItems) {
@@ -88,8 +91,10 @@ final class SummaryTableDocFormatter implements DocFormatter {
     @Override
     public void format(Writer writer, ConfigDocSection configDocSection) throws IOException {
         String anchor = anchorPrefix + getAnchor(configDocSection.getName());
-        final String sectionRow = String.format(TABLE_SECTION_ROW_FORMAT, anchor, anchor,
-                configDocSection.getSectionDetailsTitle());
+        String sectionTitle = String.format(SECTION_TITLE, anchor, anchor, configDocSection.getSectionDetailsTitle());
+        final String sectionRow = String.format(TABLE_SECTION_ROW_FORMAT, sectionTitle,
+                configDocSection.isOptional() ? "This configuration section is optional" : Constants.EMPTY);
+
         writer.append(sectionRow);
 
         for (ConfigDocItem configDocItem : configDocSection.getConfigDocItems()) {

@@ -85,8 +85,8 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
 
         basicRestProjectGenerator.generate(mockWriter, BASIC_PROJECT_CONTEXT);
 
-        verify(mockWriter, times(9)).mkdirs(anyString());
-        verify(mockWriter, times(2)).mkdirs("");
+        verify(mockWriter, times(10)).mkdirs(anyString());
+        verify(mockWriter, times(3)).mkdirs("");
         verify(mockWriter, times(1)).mkdirs("src/main/java");
         verify(mockWriter, times(1)).mkdirs("src/main/java/org/example");
         verify(mockWriter, times(1)).mkdirs("src/test/java");
@@ -95,7 +95,7 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
         verify(mockWriter, times(1)).mkdirs("src/main/resources/META-INF/resources");
         verify(mockWriter, times(1)).mkdirs("src/main/docker");
 
-        verify(mockWriter, times(10)).write(anyString(), anyString());
+        verify(mockWriter, times(11)).write(anyString(), anyString());
         verify(mockWriter, times(1)).write(eq("pom.xml"),
                 argThat(argument -> argument.contains("<groupId>org.example</groupId>")
                         && argument.contains("<artifactId>quarkus-app</artifactId")

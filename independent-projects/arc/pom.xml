@@ -36,10 +36,11 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <!-- Versions -->
         <version.cdi>2.0.2</version.cdi>
-        <version.jandex>2.1.1.Final</version.jandex>
+        <version.jta>1.3.3</version.jta>
+        <version.jandex>2.1.2.Final</version.jandex>
         <version.junit5>5.5.2</version.junit5>
         <version.maven>3.5.4</version.maven>
-        <version.assertj>3.12.2</version.assertj>
+        <version.assertj>3.15.0</version.assertj>
         <version.jboss-logging>3.3.2.Final</version.jboss-logging>
         <version.jakarta-annotation>1.3.5</version.jakarta-annotation>
         <version.gizmo>1.0.0.Final</version.gizmo>
@@ -126,6 +127,12 @@
                 <artifactId>jakarta.annotation-api</artifactId>
                 <version>${version.jakarta-annotation}</version>
                 <!-- scope>provided</scope -->
+            </dependency>
+
+            <dependency>
+                <groupId>jakarta.transaction</groupId>
+                <artifactId>jakarta.transaction-api</artifactId>
+                <version>${version.jta}</version>
             </dependency>
 
             <dependency>

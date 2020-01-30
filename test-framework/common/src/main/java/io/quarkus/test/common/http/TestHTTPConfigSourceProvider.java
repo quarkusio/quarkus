@@ -1,5 +1,6 @@
 package io.quarkus.test.common.http;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,22 +29,26 @@ public class TestHTTPConfigSourceProvider implements ConfigSourceProvider {
     }
 
     public Iterable<ConfigSource> getConfigSources(final ClassLoader forClassLoader) {
-        return Collections.singletonList(new ConfigSource() {
-            public Map<String, String> getProperties() {
-                return entries;
-            }
+        return Collections.singletonList(new TestURLConfigSource());
+    }
 
-            public String getValue(final String propertyName) {
-                return entries.get(propertyName);
-            }
+    static class TestURLConfigSource implements ConfigSource, Serializable {
+        private static final long serialVersionUID = 4841094273900625000L;
 
-            public String getName() {
-                return "test URL provider";
-            }
+        public Map<String, String> getProperties() {
+            return entries;
+        }
 
-            public int getOrdinal() {
-                return Integer.MIN_VALUE + 1000;
-            }
-        });
+        public String getValue(final String propertyName) {
+            return entries.get(propertyName);
+        }
+
+        public String getName() {
+            return "test URL provider";
+        }
+
+        public int getOrdinal() {
+            return Integer.MIN_VALUE + 1000;
+        }
     }
 }

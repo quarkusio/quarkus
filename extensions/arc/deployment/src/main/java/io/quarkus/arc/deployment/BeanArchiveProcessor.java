@@ -45,7 +45,7 @@ public class BeanArchiveProcessor {
     @Inject
     BuildProducer<GeneratedClassBuildItem> generatedClass;
 
-    @BuildStep
+    @BuildStep(loadsApplicationClasses = true)
     public BeanArchiveIndexBuildItem build() throws Exception {
 
         // First build an index from application archives
@@ -61,12 +61,12 @@ public class BeanArchiveProcessor {
         Set<DotName> additionalIndex = new HashSet<>();
         for (String beanClass : additionalBeans) {
             IndexingUtil.indexClass(beanClass, additionalBeanIndexer, applicationIndex, additionalIndex,
-                    ArcProcessor.class.getClassLoader());
+                    Thread.currentThread().getContextClassLoader());
         }
         Set<DotName> generatedClassNames = new HashSet<>();
         for (GeneratedBeanBuildItem beanClass : generatedBeans) {
             IndexingUtil.indexClass(beanClass.getName(), additionalBeanIndexer, applicationIndex, additionalIndex,
-                    ArcProcessor.class.getClassLoader(),
+                    Thread.currentThread().getContextClassLoader(),
                     beanClass.getData());
             generatedClassNames.add(DotName.createSimple(beanClass.getName().replace('/', '.')));
             generatedClass.produce(new GeneratedClassBuildItem(true, beanClass.getName(), beanClass.getData()));
@@ -74,7 +74,9 @@ public class BeanArchiveProcessor {
 
         // Finally, index ArC/CDI API built-in classes
         return new BeanArchiveIndexBuildItem(
-                BeanArchives.buildBeanArchiveIndex(applicationIndex, additionalBeanIndexer.complete()), generatedClassNames,
+                BeanArchives.buildBeanArchiveIndex(Thread.currentThread().getContextClassLoader(), applicationIndex,
+                        additionalBeanIndexer.complete()),
+                generatedClassNames,
                 additionalBeans);
     }
 

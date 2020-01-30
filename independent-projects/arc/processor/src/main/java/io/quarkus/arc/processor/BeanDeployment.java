@@ -78,6 +78,8 @@ public class BeanDeployment {
 
     private final InjectionPointModifier injectionPointTransformer;
 
+    private final List<ObserverTransformer> observerTransformers;
+
     private final Set<DotName> resourceAnnotations;
 
     private final List<InjectionPointInfo> injectionPoints;
@@ -90,20 +92,24 @@ public class BeanDeployment {
 
     private final Collection<BeanDefiningAnnotation> beanDefiningAnnotations;
     private final boolean removeFinalForProxyableMethods;
+    private final boolean jtaCapabilities;
 
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             List<AnnotationsTransformer> annotationTransformers) {
         this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(),
-                null, false, null, Collections.emptyMap(), Collections.emptyList(), false);
+                Collections.emptyList(),
+                null, false, null, Collections.emptyMap(), Collections.emptyList(), false, false);
     }
 
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             List<AnnotationsTransformer> annotationTransformers,
             List<InjectionPointsTransformer> injectionPointsTransformers,
+            List<ObserverTransformer> observerTransformers,
             Collection<DotName> resourceAnnotations,
             BuildContextImpl buildContext, boolean removeUnusedBeans, List<Predicate<BeanInfo>> unusedExclusions,
             Map<DotName, Collection<AnnotationInstance>> additionalStereotypes,
-            List<InterceptorBindingRegistrar> bindingRegistrars, boolean removeFinalForProxyableMethods) {
+            List<InterceptorBindingRegistrar> bindingRegistrars, boolean removeFinalForProxyableMethods,
+            boolean jtaCapabilities) {
         this.buildContext = buildContext;
         Set<BeanDefiningAnnotation> beanDefiningAnnotations = new HashSet<>();
         if (additionalBeanDefiningAnnotations != null) {
@@ -117,6 +123,7 @@ public class BeanDeployment {
             buildContext.putInternal(Key.ANNOTATION_STORE.asString(), annotationStore);
         }
         this.injectionPointTransformer = new InjectionPointModifier(injectionPointsTransformers, buildContext);
+        this.observerTransformers = observerTransformers;
         this.removeUnusedBeans = removeUnusedBeans;
         this.unusedExclusions = removeUnusedBeans ? unusedExclusions : null;
         this.removedBeans = new CopyOnWriteArraySet<>();
@@ -157,6 +164,7 @@ public class BeanDeployment {
         this.beanResolver = new BeanResolver(this);
         this.interceptorResolver = new InterceptorResolver(this);
         this.removeFinalForProxyableMethods = removeFinalForProxyableMethods;
+        this.jtaCapabilities = jtaCapabilities;
     }
 
     ContextRegistrar.RegistrationContext registerCustomContexts(List<ContextRegistrar> contextRegistrars) {
@@ -195,7 +203,7 @@ public class BeanDeployment {
     BeanRegistrar.RegistrationContext registerBeans(List<BeanRegistrar> beanRegistrars) {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         this.beans.addAll(findBeans(initBeanDefiningAnnotations(beanDefiningAnnotations, stereotypes.keySet()), observers,
-                injectionPoints));
+                injectionPoints, jtaCapabilities));
         buildContextPut(Key.BEANS.asString(), Collections.unmodifiableList(beans));
         buildContextPut(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
 
@@ -239,6 +247,10 @@ public class BeanDeployment {
             test: for (BeanInfo bean : beans) {
                 // Named beans can be used in templates and expressions
                 if (bean.getName() != null) {
+                    continue test;
+                }
+                // Unremovable synthetic beans
+                if (!bean.isRemovable()) {
                     continue test;
                 }
                 // Custom exclusions
@@ -294,6 +306,9 @@ public class BeanDeployment {
             }
             LOGGER.debugf("Removed %s unused beans in %s ms", removable.size(), System.currentTimeMillis() - removalStart);
         }
+
+        buildContext.putInternal(BuildExtension.Key.REMOVED_BEANS.asString(), Collections.unmodifiableSet(removedBeans));
+
         LOGGER.debugf("Bean deployment initialized in %s ms", System.currentTimeMillis() - start);
     }
 
@@ -544,7 +559,7 @@ public class BeanDeployment {
     }
 
     private List<BeanInfo> findBeans(Collection<DotName> beanDefiningAnnotations, List<ObserverInfo> observers,
-            List<InjectionPointInfo> injectionPoints) {
+            List<InjectionPointInfo> injectionPoints, boolean jtaCapabilities) {
 
         Set<ClassInfo> beanClasses = new HashSet<>();
         Set<MethodInfo> producerMethods = new HashSet<>();
@@ -730,14 +745,14 @@ public class BeanDeployment {
             }
         }
 
-        for (Map.Entry<MethodInfo, Set<ClassInfo>> syncObserverEntry : syncObserverMethods.entrySet()) {
-            registerObserverMethods(syncObserverEntry.getValue(), observers, injectionPoints,
-                    beanClassToBean, syncObserverEntry.getKey(), false);
+        for (Map.Entry<MethodInfo, Set<ClassInfo>> entry : syncObserverMethods.entrySet()) {
+            registerObserverMethods(entry.getValue(), observers, injectionPoints,
+                    beanClassToBean, entry.getKey(), false, observerTransformers, jtaCapabilities);
         }
 
-        for (Map.Entry<MethodInfo, Set<ClassInfo>> syncObserverEntry : asyncObserverMethods.entrySet()) {
-            registerObserverMethods(syncObserverEntry.getValue(), observers, injectionPoints,
-                    beanClassToBean, syncObserverEntry.getKey(), true);
+        for (Map.Entry<MethodInfo, Set<ClassInfo>> entry : asyncObserverMethods.entrySet()) {
+            registerObserverMethods(entry.getValue(), observers, injectionPoints,
+                    beanClassToBean, entry.getKey(), true, observerTransformers, jtaCapabilities);
         }
 
         if (LOGGER.isTraceEnabled()) {
@@ -748,19 +763,25 @@ public class BeanDeployment {
         return beans;
     }
 
-    private void registerObserverMethods(Collection<ClassInfo> classes,
+    private void registerObserverMethods(Collection<ClassInfo> beanClasses,
             List<ObserverInfo> observers,
             List<InjectionPointInfo> injectionPoints,
             Map<ClassInfo, BeanInfo> beanClassToBean,
             MethodInfo observerMethod,
-            boolean async) {
-        for (ClassInfo key : classes) {
-            BeanInfo declaringBean = beanClassToBean.get(key);
+            boolean async, List<ObserverTransformer> observerTransformers,
+            boolean jtaCapabilities) {
+
+        for (ClassInfo beanClass : beanClasses) {
+            BeanInfo declaringBean = beanClassToBean.get(beanClass);
             if (declaringBean != null) {
                 Injection injection = Injection.forObserver(observerMethod, declaringBean.getImplClazz(), this,
                         injectionPointTransformer);
-                observers.add(new ObserverInfo(declaringBean, observerMethod, injection, async));
-                injectionPoints.addAll(injection.injectionPoints);
+                ObserverInfo observer = ObserverInfo.create(declaringBean, observerMethod, injection, async,
+                        observerTransformers, buildContext, jtaCapabilities);
+                if (observer != null) {
+                    observers.add(observer);
+                    injectionPoints.addAll(injection.injectionPoints);
+                }
             }
         }
     }
@@ -834,6 +855,11 @@ public class BeanDeployment {
             @Override
             public <V> V put(Key<V> key, V value) {
                 return buildContext.put(key, value);
+            }
+
+            @Override
+            public BeanStream beans() {
+                return new BeanStream(get(BuildExtension.Key.BEANS));
             }
 
         };
@@ -954,6 +980,16 @@ public class BeanDeployment {
         @Override
         public List<Throwable> getDeploymentProblems() {
             return Collections.unmodifiableList(errors);
+        }
+
+        @Override
+        public BeanStream beans() {
+            return new BeanStream(get(BuildExtension.Key.BEANS));
+        }
+
+        @Override
+        public BeanStream removedBeans() {
+            return new BeanStream(get(BuildExtension.Key.REMOVED_BEANS));
         }
 
     }

@@ -23,6 +23,7 @@ public class ServletContextInjectionTestCase {
     @Test
     public void testServletContextInjection() {
         Assertions.assertNotNull(servletContext);
+        Assertions.assertEquals(4, servletContext.getMajorVersion());
     }
 
 }

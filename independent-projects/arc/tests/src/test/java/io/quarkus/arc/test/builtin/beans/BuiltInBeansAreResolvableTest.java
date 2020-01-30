@@ -49,6 +49,7 @@ public class BuiltInBeansAreResolvableTest {
         assertFalse(instance.select(BeanManager.class, new DummyQualifier.Literal()).isResolvable());
     }
 
+    @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
     @Test
     public void testEventBean() {
         // use dynamic resolution to test it
@@ -57,33 +58,34 @@ public class BuiltInBeansAreResolvableTest {
         Instance<Event> rawNoQualifier = instance.select(Event.class);
         assertTrue(rawNoQualifier.isResolvable());
         DummyBean.resetCounters();
-        rawNoQualifier.get().fire(new Object());
-        assertEquals(0, DummyBean.noQualifiers);
+        rawNoQualifier.get().fire(new Payload());
+        assertEquals(1, DummyBean.noQualifiers);
         assertEquals(0, DummyBean.qualifierTimesTriggered);
-        assertEquals(1, DummyBean.objectTimesTriggered);
+        assertEquals(1, DummyBean.timesTriggered);
 
         // event with type and no qualifier
-        Instance<Event<String>> typedEventNoQualifier = instance.select(new TypeLiteral<Event<String>>() {
+        Instance<Event<Payload>> typedEventNoQualifier = instance.select(new TypeLiteral<Event<Payload>>() {
         });
         assertTrue(typedEventNoQualifier.isResolvable());
         DummyBean.resetCounters();
-        typedEventNoQualifier.get().fire("foo");
+        typedEventNoQualifier.get().fire(new Payload());
         assertEquals(1, DummyBean.noQualifiers);
         assertEquals(0, DummyBean.qualifierTimesTriggered);
-        assertEquals(1, DummyBean.objectTimesTriggered);
+        assertEquals(1, DummyBean.timesTriggered);
 
         // event with type and qualifier
-        Instance<Event<String>> typedEventWithQualifier = instance.select(new TypeLiteral<Event<String>>() {
+        Instance<Event<Payload>> typedEventWithQualifier = instance.select(new TypeLiteral<Event<Payload>>() {
         }, new DummyQualifier.Literal());
         assertTrue(typedEventWithQualifier.isResolvable());
         DummyBean.resetCounters();
-        typedEventWithQualifier.get().fire("foo");
+        typedEventWithQualifier.get().fire(new Payload());
         assertEquals(1, DummyBean.noQualifiers);
         assertEquals(1, DummyBean.qualifierTimesTriggered);
-        assertEquals(1, DummyBean.objectTimesTriggered);
+        assertEquals(1, DummyBean.timesTriggered);
 
     }
 
+    @SuppressWarnings({ "serial", "unchecked" })
     @Test
     public void testInstanceBean() {
         BeanManager bm = Arc.container().beanManager();
@@ -202,29 +204,32 @@ public class BuiltInBeansAreResolvableTest {
 
         public static int noQualifiers = 0;
         public static int qualifierTimesTriggered = 0;
-        public static int objectTimesTriggered = 0;
+        public static int timesTriggered = 0;
 
-        public void observeEvent(@Observes String payload) {
+        public void observeEvent(@Observes Payload payload) {
             noQualifiers++;
         }
 
-        public void observeQualifiedEvent(@Observes @DummyQualifier String payload) {
+        public void observeQualifiedEvent(@Observes @DummyQualifier Payload payload) {
             qualifierTimesTriggered++;
         }
 
-        public void observeBasicEvent(@Observes @Any Object objPayload) {
-            objectTimesTriggered++;
+        public void observeBasicEvent(@Observes @Any Payload payload) {
+            timesTriggered++;
         }
 
         public static void resetCounters() {
             noQualifiers = 0;
             qualifierTimesTriggered = 0;
-            objectTimesTriggered = 0;
+            timesTriggered = 0;
         }
 
         public void ping() {
         }
 
         ;
+    }
+
+    static class Payload {
     }
 }

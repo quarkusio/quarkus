@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>quarkus-test-common</artifactId>
-    <name>Quarkus - Test framework - Common</name>
+    <name>Quarkus - Test Framework - Common</name>
 
     <dependencies>
         <dependency>

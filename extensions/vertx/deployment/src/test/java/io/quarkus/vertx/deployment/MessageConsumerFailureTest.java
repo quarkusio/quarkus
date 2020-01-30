@@ -35,20 +35,22 @@ public class MessageConsumerFailureTest {
 
     @Test
     public void testFailure() throws InterruptedException {
-        verifyFailure("foo", "Foo is dead");
-        verifyFailure("foo-message", null);
-        verifyFailure("foo-completion-stage", "Something is null");
+        verifyFailure("foo", "java.lang.IllegalStateException: Foo is dead");
+        verifyFailure("foo-message", "java.lang.NullPointerException");
+        verifyFailure("foo-completion-stage", "java.lang.NullPointerException: Something is null");
     }
 
     void verifyFailure(String address, String expectedMessage) throws InterruptedException {
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.send(address, "hello", ar -> {
-            if (ar.cause() != null) {
-                try {
+        eventBus.request(address, "hello", ar -> {
+            try {
+                if (ar.cause() != null) {
                     synchronizer.put(ar.cause());
-                } catch (InterruptedException e) {
-                    throw new IllegalStateException(e);
+                } else {
+                    synchronizer.put(false);
                 }
+            } catch (InterruptedException e) {
+                throw new IllegalStateException(e);
             }
         });
         Object ret = synchronizer.poll(2, TimeUnit.SECONDS);

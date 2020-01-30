@@ -29,7 +29,11 @@
             <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.oracle.substratevm</groupId>
+            <groupId>com.amazonaws.serverless</groupId>
+            <artifactId>aws-serverless-java-container-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
         </dependency>
     </dependencies>

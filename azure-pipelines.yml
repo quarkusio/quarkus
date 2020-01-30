@@ -3,6 +3,7 @@ trigger:
   branches:
     include:
       - master
+      - '1.1'
 
 pr:
   branches:
@@ -18,6 +19,9 @@ pr:
       - LICENSE.txt
       - dco.txt
       - .github/ISSUE_TEMPLATE/*.md
+      - .github/labeler.yml
+      - .github/boring-cyborg.yml
+      - .github/workflows/*
       - .dependabot/config.yml
 
 variables:

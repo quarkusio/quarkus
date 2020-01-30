@@ -454,6 +454,12 @@ Finally, the second-level cache can be disabled globally by setting `hibernate.c
 
 When second-level cache is disabled, all cache annotations are ignored and all queries are run ignoring caches; this is generally useful only to diagnose issues.
 
+[[metrics]]
+== Metrics
+The SmallRye Metrics extension is capable of exposing metrics that Hibernate ORM collects at runtime. To enable exposure of Hibernate metrics
+on the `/metrics` endpoint, make sure your project depends on the `quarkus-smallrye-metrics` artifact and set the configuration property `quarkus.hibernate-orm.metrics.enabled` to `true`.
+Metrics will then be available under the `vendor` scope.
+
 == Limitations and other things you should know
 
 Quarkus does not modify the libraries it uses; this rule applies to Hibernate ORM as well: when using

@@ -11,12 +11,8 @@
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>quarkus-vault-test</artifactId>
-    <name>Quarkus - Vault - Test</name>
-
-    <properties>
-        <test-containers.version>1.12.0</test-containers.version>
-    </properties>
+    <artifactId>quarkus-test-vault</artifactId>
+    <name>Quarkus - Test Framework - Vault</name>
 
     <dependencies>
 
@@ -31,7 +27,6 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
-            <version>${test-containers.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.xml.bind</groupId>

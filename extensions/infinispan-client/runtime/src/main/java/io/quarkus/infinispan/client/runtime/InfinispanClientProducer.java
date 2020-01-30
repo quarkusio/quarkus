@@ -48,9 +48,9 @@ public class InfinispanClientProducer {
     @Inject
     private BeanManager beanManager;
 
-    private Properties properties;
-    private RemoteCacheManager cacheManager;
-    private InfinispanClientRuntimeConfig infinispanClientRuntimeConfig;
+    private volatile Properties properties;
+    private volatile RemoteCacheManager cacheManager;
+    private volatile InfinispanClientRuntimeConfig infinispanClientRuntimeConfig;
 
     public void setRuntimeConfig(InfinispanClientRuntimeConfig infinispanClientConfigRuntime) {
         this.infinispanClientRuntimeConfig = infinispanClientConfigRuntime;
@@ -288,11 +288,17 @@ public class InfinispanClientProducer {
 
     @Produces
     public synchronized RemoteCacheManager remoteCacheManager() {
+        //TODO: should this just be application scoped?
         if (cacheManager != null) {
             return cacheManager;
         }
-        initialize();
-        return cacheManager;
+        synchronized (this) {
+            if (cacheManager != null) {
+                return cacheManager;
+            }
+            initialize();
+            return cacheManager;
+        }
     }
 
     void configure(Properties properties) {

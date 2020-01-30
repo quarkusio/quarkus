@@ -20,11 +20,11 @@ public class SecurityConstrainer {
     @Inject
     SecurityCheckStorage storage;
 
-    public void checkRoles(Method method) {
+    public void check(Method method, Object[] parameters) {
 
         SecurityCheck securityCheck = storage.getSecurityCheck(method);
         if (securityCheck != null) {
-            securityCheck.apply(identity);
+            securityCheck.apply(identity, method, parameters);
         }
     }
 }

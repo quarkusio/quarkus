@@ -15,7 +15,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
  * An extension that needs to produce other build items during the "bean registration" phase should use this build item. The
  * build step should produce a {@link BeanConfiguratorBuildItem} or at least inject a {@link BuildProducer} for this build item,
  * otherwise it could be ignored or processed at the wrong time, e.g. after
- * {@link ArcProcessor#validate(BeanRegistrationPhaseBuildItem, List)}.
+ * {@link ArcProcessor#validate(BeanRegistrationPhaseBuildItem, List, BuildProducer)}.
  * 
  * @see BeanConfiguratorBuildItem
  */

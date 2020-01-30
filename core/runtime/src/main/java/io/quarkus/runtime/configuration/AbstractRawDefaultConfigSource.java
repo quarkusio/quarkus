@@ -1,5 +1,6 @@
 package io.quarkus.runtime.configuration;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
 
@@ -8,7 +9,9 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 /**
  * The base class for the config source that yields the 'raw' default values.
  */
-public abstract class AbstractRawDefaultConfigSource implements ConfigSource {
+public abstract class AbstractRawDefaultConfigSource implements ConfigSource, Serializable {
+    private static final long serialVersionUID = 2524612253582530249L;
+
     protected AbstractRawDefaultConfigSource() {
     }
 

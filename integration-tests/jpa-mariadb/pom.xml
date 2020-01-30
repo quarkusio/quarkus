@@ -148,7 +148,6 @@
                                     <enableServer>false</enableServer>
                                     <dumpProxies>false</dumpProxies>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableJni>false</enableJni>
                                     <debugBuildProcess>false</debugBuildProcess>
                                 </configuration>
                             </execution>
@@ -179,6 +178,9 @@
                                     <name>mariadb:10.4</name>
                                     <alias>quarkus-test-mariadb</alias>
                                     <run>
+                                        <network>
+                                            <mode>bridge</mode>
+                                        </network>
                                         <ports>
                                             <port>3308:3306</port>
                                         </ports>

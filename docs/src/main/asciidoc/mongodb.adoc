@@ -5,17 +5,13 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Quarkus - Using the MongoDB Client
 include::./attributes.adoc[]
+:extension-status: preview
 
 MongoDB is a well known NoSQL Database that is widely used.
 
 In this guide, we see how you can get your REST services to use the MongoDB database.
 
-[NOTE]
-====
-This extension is considered `preview`.
-API or configuration properties might change as the extension matures.
-Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
-====
+include::./status-include.adoc[]
 
 == Prerequisites
 
@@ -335,7 +331,7 @@ More information in the codec documentation: https://mongodb.github.io/mongo-jav
 ----
 package org.acme.rest.json.codec;
 
-import com.mongodb.MongoClient;
+import com.mongodb.MongoClientSettings;
 import org.acme.rest.json.Fruit;
 import org.bson.*;
 import org.bson.codecs.Codec;
@@ -350,7 +346,7 @@ public class FruitCodec implements CollectibleCodec<Fruit> {
     private final Codec<Document> documentCodec;
 
     public FruitCodec() {
-        this.documentCodec = MongoClient.getDefaultCodecRegistry().get(Document.class);
+        this.documentCodec = MongoClientSettings.getDefaultCodecRegistry().get(Document.class);
     }
 
     @Override
@@ -473,6 +469,30 @@ public class CodecFruitService {
 == Simplifying MongoDB with Panache
 
 The link:mongodb-panache[MongoDB with Panache] extension facilitates the usage of MongoDB by providing active record style entities (and repositories) like you have in link:hibernate-orm-panache.html[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
+
+== Connection Health Check
+
+If you are using the `quarkus-smallrye-health` extension, `quarkus-mongodb` will automatically add a readiness health check
+to validate the connection to the cluster.
+
+So when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
+
+This behavior can be disabled by setting the `quarkus.mongodb.health.enabled` property to `false` in your `application.properties`.
+
+== The legacy client
+
+We don't include the legacy MongoDB client by default. It contains the now retired MongoDB Java API (DB, DBCollection,... )
+and the `com.mongodb.MongoClient` that is now superseded by `com.mongodb.client.MongoClient`.
+
+If you want to use the legacy API, you need to add the following dependency to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.mongodb</groupId>
+    <artifactId>mongodb-driver-legacy</artifactId>
+</dependency>
+----
 
 == Building a native executable
 

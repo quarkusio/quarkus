@@ -32,7 +32,15 @@ public class LocalProject {
     private static final String POM_XML = "pom.xml";
 
     public static LocalProject load(Path path) throws BootstrapException {
-        return new LocalProject(readModel(locateCurrentProjectDir(path, true).resolve(POM_XML)), null);
+        return load(path, true);
+    }
+
+    public static LocalProject load(Path path, boolean required) throws BootstrapException {
+        Path cpd = locateCurrentProjectDir(path, required);
+        if (cpd == null) {
+            return null;
+        }
+        return new LocalProject(readModel(cpd.resolve(POM_XML)), null);
     }
 
     public static LocalProject loadWorkspace(Path path) throws BootstrapException {
@@ -40,15 +48,20 @@ public class LocalProject {
     }
 
     public static LocalProject loadWorkspace(Path path, boolean required) throws BootstrapException {
+        path = path.toAbsolutePath().normalize();
         final Path currentProjectDir = locateCurrentProjectDir(path, required);
+        if (currentProjectDir == null) {
+            return null;
+        }
         final LocalWorkspace ws = new LocalWorkspace();
         final LocalProject project = load(ws, null, loadRootModel(currentProjectDir), currentProjectDir);
         return project == null ? load(ws, null, readModel(currentProjectDir.resolve(POM_XML)), currentProjectDir) : project;
     }
 
-    private static LocalProject load(LocalWorkspace workspace, LocalProject parent, Model model, Path currentProjectDir) throws BootstrapException {
+    private static LocalProject load(LocalWorkspace workspace, LocalProject parent, Model model, Path currentProjectDir)
+            throws BootstrapException {
         final LocalProject project = new LocalProject(model, workspace);
-        if(parent != null) {
+        if (parent != null) {
             parent.modules.add(project);
         }
         LocalProject result = currentProjectDir == null || !currentProjectDir.equals(project.getDir()) ? null : project;
@@ -56,8 +69,9 @@ public class LocalProject {
         if (!modules.isEmpty()) {
             Path dirArg = result == null ? currentProjectDir : null;
             for (String module : modules) {
-                final LocalProject loaded = load(workspace, project, readModel(project.getDir().resolve(module).resolve(POM_XML)), dirArg);
-                if(loaded != null && result == null) {
+                final LocalProject loaded = load(workspace, project,
+                        readModel(project.getDir().resolve(module).resolve(POM_XML)), dirArg);
+                if (loaded != null && result == null) {
                     result = loaded;
                     dirArg = null;
                 }
@@ -70,18 +84,18 @@ public class LocalProject {
         Path pomXml = currentProjectDir.resolve(POM_XML);
         Model model = readModel(pomXml);
         Parent parent = model.getParent();
-        while(parent != null) {
-            if(parent.getRelativePath() != null && !parent.getRelativePath().isEmpty()) {
+        while (parent != null) {
+            if (parent.getRelativePath() != null && !parent.getRelativePath().isEmpty()) {
                 pomXml = pomXml.getParent().resolve(parent.getRelativePath()).normalize();
-                if(!Files.exists(pomXml)) {
+                if (!Files.exists(pomXml)) {
                     return model;
                 }
-                if(Files.isDirectory(pomXml)) {
+                if (Files.isDirectory(pomXml)) {
                     pomXml = pomXml.resolve(POM_XML);
                 }
             } else {
                 pomXml = pomXml.getParent().getParent().resolve(POM_XML);
-                if(!Files.exists(pomXml)) {
+                if (!Files.exists(pomXml)) {
                     return model;
                 }
             }
@@ -103,13 +117,13 @@ public class LocalProject {
 
     private static Path locateCurrentProjectDir(Path path, boolean required) throws BootstrapException {
         Path p = path;
-        while(p != null) {
-            if(Files.exists(p.resolve(POM_XML))) {
+        while (p != null) {
+            if (Files.exists(p.resolve(POM_XML))) {
                 return p;
             }
             p = p.getParent();
         }
-        if(required) {
+        if (required) {
             throw new BootstrapException("Failed to locate project pom.xml for " + path);
         }
         return null;
@@ -127,28 +141,10 @@ public class LocalProject {
         this.rawModel = rawModel;
         this.dir = rawModel.getProjectDirectory().toPath();
         this.workspace = workspace;
-        final Parent parent = rawModel.getParent();
-        String groupId = rawModel.getGroupId();
-        if(groupId == null) {
-            if(parent == null) {
-                throw new BootstrapException("Failed to determine groupId for " + rawModel.getPomFile());
-            }
-            this.groupId = parent.getGroupId();
-        } else {
-            this.groupId = groupId;
-        }
-
+        this.groupId = ModelUtils.getGroupId(rawModel);
         this.artifactId = rawModel.getArtifactId();
-        String version = rawModel.getVersion();
-        if(version == null) {
-            if(parent == null) {
-                throw new BootstrapException("Failed to determine version for " + rawModel.getPomFile());
-            }
-            this.version = parent.getVersion();
-        } else {
-            this.version = version;
-        }
-        if(workspace != null) {
+        this.version = ModelUtils.getVersion(rawModel);
+        if (workspace != null) {
             workspace.addProject(this, rawModel.getPomFile().lastModified());
         }
     }
@@ -180,13 +176,15 @@ public class LocalProject {
     public Path getSourcesSourcesDir() {
         if (getRawModel().getBuild() != null && getRawModel().getBuild().getSourceDirectory() != null) {
             String originalValue = getRawModel().getBuild().getSourceDirectory();
-            return Paths.get(originalValue.startsWith(PROJECT_BASEDIR) ? originalValue.replace(PROJECT_BASEDIR, this.dir.toString()) : originalValue);
+            return Paths
+                    .get(originalValue.startsWith(PROJECT_BASEDIR) ? originalValue.replace(PROJECT_BASEDIR, this.dir.toString())
+                            : originalValue);
         }
         return dir.resolve("src/main/java");
     }
 
     public Path getResourcesSourcesDir() {
-        if(getRawModel().getBuild() != null && getRawModel().getBuild().getResources() != null) {
+        if (getRawModel().getBuild() != null && getRawModel().getBuild().getResources() != null) {
             for (Resource i : getRawModel().getBuild().getResources()) {
                 //todo: support multiple resources dirs for config hot deployment
                 return Paths.get(i.getDirectory());
@@ -208,40 +206,43 @@ public class LocalProject {
     }
 
     public AppArtifact getAppArtifact() {
-        final AppArtifact appArtifact = new AppArtifact(groupId, artifactId, BootstrapConstants.EMPTY, rawModel.getPackaging(), version);
+        final AppArtifact appArtifact = new AppArtifact(groupId, artifactId, BootstrapConstants.EMPTY, rawModel.getPackaging(),
+                version);
         appArtifact.setPath(getClassesDir());
         return appArtifact;
     }
 
     public List<LocalProject> getSelfWithLocalDeps() {
-        if(workspace == null) {
+        if (workspace == null) {
             return Collections.singletonList(this);
         }
         final List<LocalProject> ordered = new ArrayList<>();
-        collectSelfWithLocalDeps(this, new HashSet<>(),  ordered);
+        collectSelfWithLocalDeps(this, new HashSet<>(), ordered);
         return ordered;
     }
 
-    private static void collectSelfWithLocalDeps(LocalProject project, Set<AppArtifactKey> addedDeps, List<LocalProject> ordered) {
-        if(!project.modules.isEmpty()) {
-            for(LocalProject module : project.modules) {
+    private static void collectSelfWithLocalDeps(LocalProject project, Set<AppArtifactKey> addedDeps,
+            List<LocalProject> ordered) {
+        if (!project.modules.isEmpty()) {
+            for (LocalProject module : project.modules) {
                 collectSelfWithLocalDeps(module, addedDeps, ordered);
             }
         }
-        for(Dependency dep : project.getRawModel().getDependencies()) {
+        for (Dependency dep : project.getRawModel().getDependencies()) {
             final AppArtifactKey depKey = project.getKey(dep);
             final LocalProject localDep = project.workspace.getProject(depKey);
-            if(localDep == null || addedDeps.contains(depKey)) {
+            if (localDep == null || addedDeps.contains(depKey)) {
                 continue;
             }
             collectSelfWithLocalDeps(localDep, addedDeps, ordered);
         }
-        if(addedDeps.add(project.getKey())) {
+        if (addedDeps.add(project.getKey())) {
             ordered.add(project);
         }
     }
 
     private AppArtifactKey getKey(Dependency dep) {
-        return new AppArtifactKey(PROJECT_GROUPID.equals(dep.getGroupId()) ? getGroupId() : dep.getGroupId(), dep.getArtifactId());
+        return new AppArtifactKey(PROJECT_GROUPID.equals(dep.getGroupId()) ? getGroupId() : dep.getGroupId(),
+                dep.getArtifactId());
     }
 }

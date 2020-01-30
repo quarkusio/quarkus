@@ -63,6 +63,12 @@ public class VaultTestExtension {
     static final String POSTGRESQL_HOST = "mypostgresdb";
     static final String VAULT_URL = (useTls() ? "https" : "http") + "://localhost:" + VAULT_PORT;
     public static final String SECRET_KEY = "secret";
+    public static final String ENCRYPTION_KEY_NAME = "my-encryption-key";
+    public static final String ENCRYPTION_KEY2_NAME = "my-encryption-key2";
+    public static final String ENCRYPTION_DERIVED_KEY_NAME = "my-derivation-encryption-key";
+    public static final String SIGN_KEY_NAME = "my-sign-key";
+    public static final String SIGN_KEY2_NAME = "my-sign-key2";
+    public static final String SIGN_DERIVATION_KEY_NAME = "my-derivation-sign-key";
 
     public static final String TMP_VAULT_POSTGRES_CREATION_SQL_FILE = "/tmp/vault-postgres-creation.sql";
     public static final String TMP_VAULT_CONFIG_JSON_FILE = "/tmp/vault-config.json";
@@ -204,6 +210,12 @@ public class VaultTestExtension {
         execVault(format("vault kv put %s/%s %s=%s", SECRET_PATH_V1, APP_SECRET_PATH, SECRET_KEY, SECRET_VALUE));
         execVault(format("vault kv put %s/%s %s=%s", SECRET_PATH_V1, APP_CONFIG_PATH, PASSWORD_PROPERTY_NAME, DB_PASSWORD));
 
+        // multi config
+        execVault(format("vault kv put %s/multi/default1 color=blue size=XL", SECRET_PATH_V1));
+        execVault(format("vault kv put %s/multi/default2 color=red weight=3", SECRET_PATH_V1));
+        execVault(format("vault kv put %s/multi/singer1 firstname=paul lastname=shaffer", SECRET_PATH_V1));
+        execVault(format("vault kv put %s/multi/singer2 lastname=simon age=78 color=green", SECRET_PATH_V1));
+
         // static secrets kv v2
         execVault(format("vault secrets enable -path=%s -version=2 kv", SECRET_PATH_V2));
         execVault(format("vault kv put %s/%s %s=%s", SECRET_PATH_V2, APP_SECRET_PATH, SECRET_KEY, SECRET_VALUE));
@@ -234,6 +246,17 @@ public class VaultTestExtension {
                 VAULT_DBROLE, DB_NAME, TMP_VAULT_POSTGRES_CREATION_SQL_FILE, db_default_ttl, db_max_ttl);
         execVault(vault_write_database_roles_mydbrole);
 
+        // transit
+
+        execVault("vault secrets enable transit");
+        execVault(format("vault write -f transit/keys/%s", ENCRYPTION_KEY_NAME));
+        execVault(format("vault write -f transit/keys/%s", ENCRYPTION_KEY2_NAME));
+        execVault(format("vault write transit/keys/%s derived=true", ENCRYPTION_DERIVED_KEY_NAME));
+        execVault(format("vault write transit/keys/%s type=ecdsa-p256", SIGN_KEY_NAME));
+        execVault(format("vault write transit/keys/%s type=ecdsa-p256", SIGN_KEY2_NAME));
+        execVault(format("vault write transit/keys/%s type=ed25519 derived=true", SIGN_DERIVATION_KEY_NAME));
+
+        execVault("vault write transit/keys/jws type=ecdsa-p256");
     }
 
     public static boolean useTls() {

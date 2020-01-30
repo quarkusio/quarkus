@@ -20,13 +20,18 @@ import io.restassured.response.Response;
 public class ScopingUnitTest {
     private static Class<?>[] testClasses = {
             DefaultScopedEndpoint.class,
-            RequestScopedEndpoint.class
+            RequestScopedEndpoint.class,
+            TokenUtils.class
     };
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
+                    .addAsResource("publicKey.pem")
+                    .addAsResource("privateKey.pem")
+                    .addAsResource("Token1.json")
+                    .addAsResource("Token2.json")
                     .addAsResource("application.properties"));
 
     @Test

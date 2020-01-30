@@ -18,6 +18,7 @@ public class PersistenceAndQuarkusConfigTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setExpectedException(ConfigurationError.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(MyEntity.class)
                     .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
                     .addAsResource("application.properties"));
 

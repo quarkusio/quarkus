@@ -17,7 +17,6 @@ final public class Constants {
     public static final char DOT = '.';
     public static final String EMPTY = "";
     public static final String DASH = "-";
-    public static final String CORE = "core-";
     public static final String ADOC_EXTENSION = ".adoc";
     public static final String DIGIT_OR_LOWERCASE = "^[a-z0-9]+$";
 

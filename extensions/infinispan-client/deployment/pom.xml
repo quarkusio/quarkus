@@ -23,6 +23,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-elytron-security-common-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-infinispan-client</artifactId>
         </dependency>
         <dependency>
@@ -32,6 +36,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-netty-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonp-deployment</artifactId>
         </dependency>
     </dependencies>
 

@@ -1,8 +1,10 @@
 package io.quarkus.mongodb.panache.runtime;
 
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
@@ -33,6 +35,10 @@ final class CommonQueryBinder {
         if (value instanceof LocalDateTime) {
             LocalDateTime dateValue = (LocalDateTime) value;
             return "ISODate('" + DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(dateValue) + "')";
+        }
+        if (value instanceof Instant) {
+            Instant dateValue = (Instant) value;
+            return "ISODate('" + DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(dateValue.atZone(ZoneOffset.UTC)) + "')";
         }
         return "'" + value.toString().replace("\\", "\\\\").replace("'", "\\'") + "'";
     }

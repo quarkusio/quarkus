@@ -4,6 +4,7 @@ import java.util.function.BiFunction;
 
 import org.hibernate.bytecode.enhance.spi.DefaultEnhancementContext;
 import org.hibernate.bytecode.enhance.spi.Enhancer;
+import org.hibernate.bytecode.enhance.spi.UnloadedField;
 import org.hibernate.bytecode.spi.BytecodeProvider;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -46,6 +47,15 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
             //note that as getLoadingClassLoader is resolved immediately this can't be created until transform time
 
             DefaultEnhancementContext enhancementContext = new DefaultEnhancementContext() {
+
+                @Override
+                public boolean doBiDirectionalAssociationManagement(final UnloadedField field) {
+                    //Don't enable automatic association management as it's often too surprising.
+                    //Also, there's several cases in which its semantics are of unspecified,
+                    //such as what should happen when dealing with ordered collections.
+                    return false;
+                }
+
                 @Override
                 public ClassLoader getLoadingClassLoader() {
                     return Thread.currentThread().getContextClassLoader();

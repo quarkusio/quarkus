@@ -27,7 +27,7 @@ import io.quarkus.vertx.http.runtime.security.TrustedAuthenticationRequest;
 @ApplicationScoped
 public class ElytronTrustedIdentityProvider implements IdentityProvider<TrustedAuthenticationRequest> {
 
-    private static Logger log = Logger.getLogger(ElytronTrustedIdentityProvider.class);
+    private static final Logger log = Logger.getLogger(ElytronTrustedIdentityProvider.class);
 
     @Inject
     SecurityDomain domain;
@@ -70,7 +70,7 @@ public class ElytronTrustedIdentityProvider implements IdentityProvider<TrustedA
                     throw new RuntimeException(e);
                 } catch (SecurityException e) {
                     log.debug("Authentication failed", e);
-                    throw new AuthenticationFailedException();
+                    throw new AuthenticationFailedException(e);
                 }
             }
         });

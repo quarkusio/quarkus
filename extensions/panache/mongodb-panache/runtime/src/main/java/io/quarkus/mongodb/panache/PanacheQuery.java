@@ -1,6 +1,7 @@
 package io.quarkus.mongodb.panache;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.quarkus.panache.common.Page;
@@ -17,6 +18,14 @@ import io.quarkus.panache.common.Page;
 public interface PanacheQuery<Entity> {
 
     // Builder
+
+    /**
+     * Defines a projection class: the getters, and the public fields, will be used to restrict which fields should be
+     * retrieved from the database.
+     *
+     * @return this query, modified
+     */
+    public <T> PanacheQuery<T> project(Class<T> type);
 
     /**
      * Sets the current page.
@@ -148,10 +157,29 @@ public interface PanacheQuery<Entity> {
     public <T extends Entity> T firstResult();
 
     /**
+     * Returns the first result of the current page index. This ignores the current page size to fetch
+     * a single result.
+     *
+     * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
+     * @see #singleResultOptional()
+     */
+    public <T extends Entity> Optional<T> firstResultOptional();
+
+    /**
      * Executes this query for the current page and return a single result.
      * 
-     * @return the single result (throws if there is not exactly one)
+     * @return the single result
+     * @throws PanacheQueryException if there is not exactly one result.
      * @see #firstResult()
      */
     public <T extends Entity> T singleResult();
+
+    /**
+     * Executes this query for the current page and return a single result.
+     *
+     * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
+     * @throws PanacheQueryException if there is more than one result.
+     * @see #firstResultOptional()
+     */
+    public <T extends Entity> Optional<T> singleResultOptional();
 }

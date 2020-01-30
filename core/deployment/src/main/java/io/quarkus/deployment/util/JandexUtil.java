@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -63,46 +64,80 @@ public final class JandexUtil {
         if (recursiveMatchResult == null) {
             return Collections.emptyList();
         }
-        final List<Type> result = new ArrayList<>();
-        for (int i = 0; i < recursiveMatchResult.argumentsOfMatch.size(); i++) {
-            final Type argument = recursiveMatchResult.argumentsOfMatch.get(i);
-            if (isDirectlyHandledType(argument)) {
-                result.add(argument);
-            } else if (argument instanceof TypeVariable) {
-
-                String unmatchedParameter = argument.asTypeVariable().identifier();
-
-                for (RecursiveMatchLevel recursiveMatchLevel : recursiveMatchResult.recursiveMatchLevels) {
-                    Type matchingCapturedType = null;
-                    for (int j = 0; j < recursiveMatchLevel.definitions.size(); j++) {
-                        final Type definition = recursiveMatchLevel.definitions.get(j);
-                        if ((definition instanceof TypeVariable)
-                                && unmatchedParameter.equals(definition.asTypeVariable().identifier())) {
-                            matchingCapturedType = recursiveMatchLevel.captures.get(j);
-                            break; // out of the definitions loop
-                        }
-                    }
-                    // at this point their MUST be a match, if there isn't we have made some mistake in the implementation
-                    if (matchingCapturedType == null) {
-                        throw new IllegalStateException("Error retrieving generic types");
-                    }
-                    if (isDirectlyHandledType(matchingCapturedType)) {
-                        result.add(matchingCapturedType);
-                        break; // out of level loop
-                    }
-                    if (matchingCapturedType instanceof TypeVariable) {
-                        // continue the search in the lower levels using the new name
-                        unmatchedParameter = matchingCapturedType.asTypeVariable().identifier();
-                    }
-                }
-            }
-        }
+        final List<Type> result = resolveTypeParameters(recursiveMatchResult);
 
         if (result.size() != recursiveMatchResult.argumentsOfMatch.size()) {
             throw new IllegalStateException("Unable to properly match generic types");
         }
 
         return result;
+    }
+
+    private static List<Type> resolveTypeParameters(RecursiveMatchResult recursiveMatchResult) {
+        final List<Type> result = new ArrayList<>();
+        for (int i = 0; i < recursiveMatchResult.argumentsOfMatch.size(); i++) {
+            final Type argument = recursiveMatchResult.argumentsOfMatch.get(i);
+            if (argument instanceof ClassType) {
+                result.add(argument);
+            } else if (argument instanceof ParameterizedType) {
+                ParameterizedType argumentParameterizedType = argument.asParameterizedType();
+                List<Type> resolvedTypes = new ArrayList<>(argumentParameterizedType.arguments().size());
+                for (Type argType : argumentParameterizedType.arguments()) {
+                    if (argType instanceof TypeVariable) {
+                        resolvedTypes.add(findTypeFromTypeVariable(recursiveMatchResult, argType.asTypeVariable()));
+                    } else {
+                        resolvedTypes.add(argType);
+                    }
+                }
+                result.add(ParameterizedType.create(argumentParameterizedType.name(), resolvedTypes.toArray(new Type[0]),
+                        argumentParameterizedType.owner()));
+            } else if (argument instanceof TypeVariable) {
+                Type typeFromTypeVariable = findTypeFromTypeVariable(recursiveMatchResult, argument.asTypeVariable());
+                if (typeFromTypeVariable != null) {
+                    result.add(typeFromTypeVariable);
+                }
+            } else if (argument instanceof ArrayType) {
+                ArrayType argumentAsArrayType = argument.asArrayType();
+                Type componentType = argumentAsArrayType.component();
+                if (componentType instanceof TypeVariable) { // should always be the case
+                    Type typeFromTypeVariable = findTypeFromTypeVariable(recursiveMatchResult, componentType.asTypeVariable());
+                    if (typeFromTypeVariable != null) {
+                        result.add(ArrayType.create(typeFromTypeVariable, argumentAsArrayType.dimensions()));
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private static Type findTypeFromTypeVariable(RecursiveMatchResult recursiveMatchResult, TypeVariable typeVariable) {
+        String unmatchedParameter = typeVariable.identifier();
+
+        for (RecursiveMatchLevel recursiveMatchLevel : recursiveMatchResult.recursiveMatchLevels) {
+            Type matchingCapturedType = null;
+            for (int j = 0; j < recursiveMatchLevel.definitions.size(); j++) {
+                final Type definition = recursiveMatchLevel.definitions.get(j);
+                if ((definition instanceof TypeVariable)
+                        && unmatchedParameter.equals(definition.asTypeVariable().identifier())) {
+                    matchingCapturedType = recursiveMatchLevel.captures.get(j);
+                    break; // out of the definitions loop
+                }
+            }
+            // at this point their MUST be a match, if there isn't we have made some mistake in the implementation
+            if (matchingCapturedType == null) {
+                throw new IllegalStateException("Error retrieving generic types");
+            }
+            if (isDirectlyHandledType(matchingCapturedType)) {
+                // search is over
+                return matchingCapturedType;
+            }
+            if (matchingCapturedType instanceof TypeVariable) {
+                // continue the search in the lower levels using the new name
+                unmatchedParameter = matchingCapturedType.asTypeVariable().identifier();
+            }
+        }
+
+        return null;
     }
 
     private static boolean isDirectlyHandledType(Type matchingCapturedType) {
@@ -172,6 +207,19 @@ public final class JandexUtil {
             final RecursiveMatchLevel recursiveMatchLevel = new RecursiveMatchLevel(classInfo.typeParameters(),
                     type.asParameterizedType().arguments());
             newVisitedTypes.add(0, recursiveMatchLevel);
+        } else if (type instanceof ClassType) {
+            // we need to check if the class contains any bounds
+            final ClassInfo classInfo = index.getClassByName(type.name());
+            if ((classInfo != null) && !classInfo.typeParameters().isEmpty()) {
+                // in this case we just use the first bound as the capture type
+                // TODO do we need something more sophisticated than this?
+                List<Type> captures = new ArrayList<>(classInfo.typeParameters().size());
+                for (TypeVariable typeParameter : classInfo.typeParameters()) {
+                    captures.add(typeParameter.bounds().get(0));
+                }
+                final RecursiveMatchLevel recursiveMatchLevel = new RecursiveMatchLevel(classInfo.typeParameters(), captures);
+                newVisitedTypes.add(0, recursiveMatchLevel);
+            }
         }
         return newVisitedTypes;
     }

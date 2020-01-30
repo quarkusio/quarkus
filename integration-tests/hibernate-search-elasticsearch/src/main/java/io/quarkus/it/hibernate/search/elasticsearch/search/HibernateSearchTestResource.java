@@ -60,6 +60,43 @@ public class HibernateSearchTestResource {
     }
 
     @PUT
+    @Path("/purge")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testPurge() {
+        SearchSession searchSession = Search.session(entityManager);
+
+        searchSession.workspace().purge();
+
+        return "OK";
+    }
+
+    @PUT
+    @Path("/flush")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testFlush() {
+        SearchSession searchSession = Search.session(entityManager);
+
+        searchSession.workspace().flush();
+
+        return "OK";
+    }
+
+    @GET
+    @Path("/search-empty")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testSearchEmpty() {
+        SearchSession searchSession = Search.session(entityManager);
+
+        List<Person> person = searchSession.search(Person.class)
+                .predicate(f -> f.matchAll())
+                .fetchHits(20);
+
+        assertEquals(0, person.size());
+
+        return "OK";
+    }
+
+    @PUT
     @Path("/mass-indexer")
     @Produces(MediaType.TEXT_PLAIN)
     public String testMassIndexer() throws InterruptedException {

@@ -54,7 +54,6 @@ The Quarkus maven plugin must be configured like this:
                 <enableHttpUrlHandler>true</enableHttpUrlHandler>
                 <enableHttpsUrlHandler>true</enableHttpsUrlHandler>
                 <enableAllSecurityServices>true</enableAllSecurityServices>
-                <enableJni>true</enableJni>
             </configuration>
         </execution>
     </executions>

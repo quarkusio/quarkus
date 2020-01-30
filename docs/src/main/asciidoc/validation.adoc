@@ -128,7 +128,7 @@ Let's now create the `Result` class as an inner class:
 
 [source, java]
 ----
-private class Result {
+public static class Result {
         
     Result(String message) {
         this.success = true;
@@ -322,3 +322,25 @@ Thus, as demonstrated in our example, you can fully use injection in your constr
 ====
 Except in very specific situations, it is recommended to make the said beans `@ApplicationScoped`.
 ====
+
+=== Validation and localization
+
+By default, constraint violation messages will be returned in the build system locale.
+
+You can configure this behavior by adding the following configuration in your `application.properties`:
+
+[source, properties]
+----
+# The default locale to use
+quarkus.default-locale=fr-FR
+----
+
+If you are using RESTEasy, in the context of a JAX-RS endpoint, Hibernate Validator will automatically resolve the optimal locale to use from the `Accept-Language` HTTP header,
+provided the supported locales have been properly specified in the `application.properties`:
+
+[source, properties]
+----
+# The list of all the supported locales
+quarkus.locales=en-US,es-ES,fr-FR
+----
+

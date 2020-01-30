@@ -19,7 +19,22 @@ public class HibernateSearchTest {
                 .statusCode(200)
                 .body(is("OK"));
 
+        RestAssured.when().put("/test/hibernate-search/purge").then()
+                .statusCode(200)
+                .body(is("OK"));
+
+        RestAssured.when().put("/test/hibernate-search/flush").then()
+                .statusCode(200)
+                .body(is("OK"));
+
+        RestAssured.when().get("/test/hibernate-search/search-empty").then()
+                .statusCode(200);
+
         RestAssured.when().put("/test/hibernate-search/mass-indexer").then()
+                .statusCode(200)
+                .body(is("OK"));
+
+        RestAssured.when().get("/test/hibernate-search/search").then()
                 .statusCode(200)
                 .body(is("OK"));
     }

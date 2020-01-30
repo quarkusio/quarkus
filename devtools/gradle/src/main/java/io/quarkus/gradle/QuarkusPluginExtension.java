@@ -4,74 +4,92 @@ import java.io.File;
 import java.util.Set;
 
 import org.gradle.api.Project;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.tasks.SourceSet;
 
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 
-/**
- * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
- */
 public class QuarkusPluginExtension {
 
     private final Project project;
 
-    private String outputDirectory;
+    private File outputDirectory;
 
     private String finalName;
 
-    private String sourceDir;
+    private File sourceDir;
 
-    private String workingDir;
+    private File workingDir;
 
-    private String outputConfigDirectory;
+    private File outputConfigDirectory;
 
     public QuarkusPluginExtension(Project project) {
         this.project = project;
     }
 
     public File outputDirectory() {
-        if (outputDirectory == null)
-            outputDirectory = project.getConvention().getPlugin(JavaPluginConvention.class)
-                    .getSourceSets().getByName("main").getOutput().getClassesDirs().getAsPath();
+        if (outputDirectory == null) {
+            outputDirectory = getLastFile(project.getConvention().getPlugin(JavaPluginConvention.class)
+                    .getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs());
+        }
+        return outputDirectory;
+    }
 
-        return new File(outputDirectory);
+    public void setOutputDirectory(String outputDirectory) {
+        this.outputDirectory = new File(outputDirectory);
     }
 
     public File outputConfigDirectory() {
         if (outputConfigDirectory == null) {
             outputConfigDirectory = project.getConvention().getPlugin(JavaPluginConvention.class)
-                    .getSourceSets().getByName("main").getOutput().getResourcesDir().getAbsolutePath();
+                    .getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getResourcesDir();
         }
-        return new File(outputConfigDirectory);
+        return outputConfigDirectory;
+    }
+
+    public void setOutputConfigDirectory(String outputConfigDirectory) {
+        this.outputConfigDirectory = new File(outputConfigDirectory);
     }
 
     public File sourceDir() {
         if (sourceDir == null) {
-            sourceDir = project.getConvention().getPlugin(JavaPluginConvention.class)
-                    .getSourceSets().getByName("main").getAllJava().getSourceDirectories().getAsPath();
+            sourceDir = getLastFile(project.getConvention().getPlugin(JavaPluginConvention.class)
+                    .getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getAllJava().getSourceDirectories());
         }
-        return new File(sourceDir);
+        return sourceDir;
+    }
+
+    public void setSourceDir(String sourceDir) {
+        this.sourceDir = new File(sourceDir);
     }
 
     public File workingDir() {
         if (workingDir == null) {
-            workingDir = outputDirectory().getPath();
+            workingDir = outputDirectory();
         }
+        return workingDir;
+    }
 
-        return new File(workingDir);
+    public void setWorkingDir(String workingDir) {
+        this.workingDir = new File(workingDir);
     }
 
     public String finalName() {
         if (finalName == null || finalName.length() == 0) {
-            this.finalName = project.getName() + "-" + project.getVersion();
+            this.finalName = String.format("%s-%s", project.getName(), project.getVersion());
         }
         return finalName;
     }
 
+    public void setFinalName(String finalName) {
+        this.finalName = finalName;
+    }
+
     public Set<File> resourcesDir() {
         return project.getConvention().getPlugin(JavaPluginConvention.class)
-                .getSourceSets().getByName("main").getResources().getSrcDirs();
+                .getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).getResources().getSrcDirs();
     }
 
     public AppArtifact getAppArtifact() {
@@ -81,5 +99,19 @@ public class QuarkusPluginExtension {
 
     public AppModelResolver resolveAppModel() {
         return new AppModelGradleResolver(project);
+    }
+
+    /**
+     * Returns the last file from the specified {@link FileCollection}.
+     * Needed for the Scala plugin.
+     */
+    private File getLastFile(FileCollection fileCollection) {
+        File result = null;
+        for (File f : fileCollection) {
+            if (result == null || f.exists()) {
+                result = f;
+            }
+        }
+        return result;
     }
 }

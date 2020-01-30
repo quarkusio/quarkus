@@ -58,6 +58,17 @@ public class ContextEndpoint {
     }
 
     @GET
+    @Path("/resteasy-tc")
+    public CompletionStage<String> resteasyThreadContextTest(@Context UriInfo uriInfo) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        CompletableFuture<String> ret = allTc.withContextCapture(CompletableFuture.completedFuture("OK"));
+        return ret.thenApplyAsync(text -> {
+            uriInfo.getAbsolutePath();
+            return text;
+        }, executor);
+    }
+
+    @GET
     @Path("/servlet")
     public CompletionStage<String> servletTest(@Context UriInfo uriInfo) {
         CompletableFuture<String> ret = all.completedFuture("OK");
@@ -68,13 +79,12 @@ public class ContextEndpoint {
     }
 
     @GET
-    @Path("/thread-context")
-    public CompletionStage<String> threadContextTest(@Context UriInfo uriInfo) {
+    @Path("/servlet-tc")
+    public CompletionStage<String> servletThreadContextTest(@Context UriInfo uriInfo) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
-
         CompletableFuture<String> ret = allTc.withContextCapture(CompletableFuture.completedFuture("OK"));
         return ret.thenApplyAsync(text -> {
-            uriInfo.getAbsolutePath();
+            servletRequest.getContentType();
             return text;
         }, executor);
     }
@@ -94,6 +104,22 @@ public class ContextEndpoint {
     }
 
     @GET
+    @Path("/arc-tc")
+    public CompletionStage<String> arcThreadContextTest() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        Assert.assertTrue(Arc.container().instance(RequestBean.class).isAvailable());
+        RequestBean instance = Arc.container().instance(RequestBean.class).get();
+        String previousValue = instance.callMe();
+        CompletableFuture<String> ret = allTc.withContextCapture(CompletableFuture.completedFuture("OK"));
+        return ret.thenApplyAsync(text -> {
+            RequestBean instance2 = Arc.container().instance(RequestBean.class).get();
+            Assertions.assertEquals(previousValue, instance2.callMe());
+            return text;
+        }, executor);
+    }
+
+    @GET
     @Path("/noarc")
     public CompletionStage<String> noarcTest() {
         ManagedExecutor me = ManagedExecutor.builder().cleared(ThreadContext.CDI).build();
@@ -106,6 +132,22 @@ public class ContextEndpoint {
             Assertions.assertNotEquals(previousValue, instance2.callMe());
             return text;
         });
+    }
+
+    @GET
+    @Path("/noarc-tc")
+    public CompletionStage<String> noarcThreadContextTest() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ThreadContext tc = ThreadContext.builder().cleared(ThreadContext.CDI).build();
+        Assert.assertTrue(Arc.container().instance(RequestBean.class).isAvailable());
+        RequestBean instance = Arc.container().instance(RequestBean.class).get();
+        String previousValue = instance.callMe();
+        CompletableFuture<String> ret = tc.withContextCapture(CompletableFuture.completedFuture("OK"));
+        return ret.thenApplyAsync(text -> {
+            RequestBean instance2 = Arc.container().instance(RequestBean.class).get();
+            Assertions.assertNotEquals(previousValue, instance2.callMe());
+            return text;
+        }, executor);
     }
 
     @Inject
@@ -134,6 +176,32 @@ public class ContextEndpoint {
             Assertions.assertEquals(t1, t2);
             return text;
         });
+    }
+
+    @Transactional
+    @GET
+    @Path("/transaction-tc")
+    public CompletionStage<String> transactionThreadContextTest() throws SystemException {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        CompletableFuture<String> ret = allTc.withContextCapture(CompletableFuture.completedFuture("OK"));
+
+        ContextEntity entity = new ContextEntity();
+        entity.name = "Stef";
+        entity.persist();
+        Transaction t1 = Panache.getTransactionManager().getTransaction();
+        Assertions.assertNotNull(t1);
+
+        return ret.thenApplyAsync(text -> {
+            Assertions.assertEquals(1, ContextEntity.count());
+            Transaction t2;
+            try {
+                t2 = Panache.getTransactionManager().getTransaction();
+            } catch (SystemException e) {
+                throw new RuntimeException(e);
+            }
+            Assertions.assertEquals(t1, t2);
+            return text;
+        }, executor);
     }
 
     @Transactional

@@ -86,6 +86,22 @@ public class HibernateOrmConfig {
     public int batchFetchSize;
 
     /**
+     * Pluggable strategy contract for applying physical naming rules for database object names.
+     *
+     * Class name of the Hibernate PhysicalNamingStrategy implementation
+     */
+    @ConfigItem
+    Optional<String> physicalNamingStrategy;
+
+    /**
+     * Pluggable strategy for applying implicit naming rules when an explicit name is not given.
+     *
+     * Class name of the Hibernate ImplicitNamingStrategy implementation
+     */
+    @ConfigItem
+    Optional<String> implicitNamingStrategy;
+
+    /**
      * Query related configuration.
      */
     @ConfigItem
@@ -120,17 +136,24 @@ public class HibernateOrmConfig {
     public Map<String, HibernateOrmConfigCache> cache;
 
     /**
-     * Whether statistics collection is enabled.
+     * Whether statistics collection is enabled. If 'metrics.enabled' is true, then the default here is
+     * considered true, otherwise the default is false.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean statistics;
+    @ConfigItem
+    public Optional<Boolean> statistics;
+
+    /**
+     * Whether or not metrics are published in case the smallrye-metrics extension is present (default to false).
+     */
+    @ConfigItem(name = "metrics.enabled", defaultValue = "false")
+    public boolean metricsEnabled;
 
     public boolean isAnyPropertySet() {
         return dialect.isPresent() ||
                 dialectStorageEngine.isPresent() ||
                 sqlLoadScript.isPresent() ||
                 batchFetchSize > 0 ||
-                statistics ||
+                statistics.isPresent() ||
                 query.isAnyPropertySet() ||
                 database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
@@ -199,10 +222,17 @@ public class HibernateOrmConfig {
         @ConfigItem
         public Optional<String> charset;
 
+        /**
+         * Whether Hibernate should quote all identifiers.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean globallyQuotedIdentifiers;
+
         public boolean isAnyPropertySet() {
             return !"none".equals(generation) || defaultCatalog.isPresent() || defaultSchema.isPresent()
                     || generationHaltOnError
-                    || charset.isPresent();
+                    || charset.isPresent()
+                    || globallyQuotedIdentifiers;
         }
     }
 

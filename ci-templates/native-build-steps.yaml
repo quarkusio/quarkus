@@ -7,6 +7,7 @@ parameters:
   dynamodb: false
   keycloak: false
   mysql: false
+  neo4j: false
   timeoutInMinutes: 80
 
 
@@ -14,8 +15,8 @@ jobs:
   - job: ${{ parameters.name }}
     condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
     displayName: ${{ join(', ', parameters.modules) }}
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
-    pool: ${{ parameters.poolSettings }}
+    timeoutInMinutes: ${{parameters.timeoutInMinutes}}
+    pool: ${{parameters.poolSettings}}
 
     workspace:
       clean: all
@@ -25,10 +26,11 @@ jobs:
     steps:
     - script: docker rm -f $(docker ps -qa) || true
       displayName: 'Docker Cleanup'
-    - task: DownloadPipelineArtifact@2
+    - task: DownloadPipelineArtifact@1
       inputs:
         artifact: $(Build.SourceVersion)-BuiltMavenRepo
-        path: $(Pipeline.Workspace)/.m2/repository/
+        targetPath: $(Pipeline.Workspace)/.m2/repository/
+    - bash: (cd $(Pipeline.Workspace)/.m2/repository/$(Build.SourceVersion)-BuiltMavenRepo/; mv * ..)
     - ${{ if eq(parameters.postgres, 'true') }}:
       - script: docker run --rm --publish 5432:5432 --name build-postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -d postgres:10.5
         displayName: 'start postgres'
@@ -36,8 +38,11 @@ jobs:
       - script: docker run --rm --publish 8000:8000 --name build-dynamodb -d amazon/dynamodb-local:1.11.477
         displayName: 'start dynamodb'
     - ${{ if eq(parameters.keycloak, 'true') }}:
-        - script: docker run --rm --publish 8180:8080 --name build-keycloak  -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -e JAVA_OPTS="-server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -Dkeycloak.profile.feature.upload_scripts=enabled" -d quay.io/keycloak/keycloak:7.0.1
+        - script: docker run --rm --publish 8180:8080 --name build-keycloak  -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -e JAVA_OPTS="-server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -Dkeycloak.profile.feature.upload_scripts=enabled" -d quay.io/keycloak/keycloak:8.0.1
           displayName: 'start keycloak'
+    - ${{ if eq(parameters.neo4j, 'true') }}:
+        - script: docker run --rm --publish 7687:7687 --name build-neo4j -e NEO4J_AUTH=neo4j/secret -e NEO4J_dbms_memory_pagecache_size=10M -e NEO4J_dbms_memory_heap_initial__size=10M -d neo4j/neo4j-experimental:4.0.0-rc01
+          displayName: 'start neo4j'
     - ${{ if eq(parameters.mysql, 'true') }}:
       - bash: |
           sudo service mysql stop || true
@@ -49,4 +54,4 @@ jobs:
       inputs:
         goals: 'install'
         mavenOptions: $(MAVEN_OPTS)
-        options: '-pl integration-tests/${{ join('',integration-tests/'', parameters.modules) }} -B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dnative-image.xmx=6g -Dnative -Dno-format'
+        options: '-pl integration-tests/${{ join('',integration-tests/'', parameters.modules) }} -B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Ddocker-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-vault -Dtest-neo4j -Dnative-image.xmx=6g -Dnative -Dno-format'

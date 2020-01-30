@@ -5,7 +5,6 @@ import static org.hamcrest.Matchers.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -16,7 +15,7 @@ import io.restassured.RestAssured;
  * Can quickly start a matching database with:
  *
  * <pre>
- *     docker run --publish=7474:7474 --publish=7687:7687 -e 'NEO4J_AUTH=neo4j/music' neo4j:3.5.3
+ *     docker run --publish=7474:7474 --publish=7687:7687 -e 'NEO4J_AUTH=neo4j/music' neo4j/neo4j-experimental:4.0.0-rc01
  * </pre>
  */
 @QuarkusTest
@@ -36,12 +35,21 @@ public class Neo4jFunctionalityTest {
     }
 
     @Test
-    @Disabled // Works only with Neo4j 4.0
     public void testReactiveNeo4jFunctionality() {
         RestAssured.given()
                 .when().get("/neo4j/reactive")
                 .prettyPeek()
                 .then().statusCode(200)
                 .contentType("text/event-stream");
+    }
+
+    @Test
+    public void health() {
+        RestAssured.when().get("/health/ready").then()
+                .log().all()
+                .body("status", is("UP"),
+                        "checks.status", containsInAnyOrder("UP"),
+                        "checks.name", containsInAnyOrder("Neo4j connection health check"),
+                        "checks.data.server", containsInAnyOrder(matchesRegex("Neo4j/.*@.*:\\d*")));
     }
 }

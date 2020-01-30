@@ -53,7 +53,11 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>com.oracle.substratevm</groupId>
+            <groupId>jakarta.transaction</groupId>
+            <artifactId>jakarta.transaction-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
         </dependency>
     </dependencies>

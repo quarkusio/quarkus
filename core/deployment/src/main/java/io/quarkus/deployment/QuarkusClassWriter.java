@@ -20,21 +20,8 @@ public class QuarkusClassWriter extends ClassWriter {
     }
 
     @Override
-    protected String getCommonSuperClass(String type1, String type2) {
-        ClassLoader cl = getClassLoader();
-        Class<?> c1 = null, c2 = null;
-        try {
-            c1 = cl.loadClass(type1.replace('/', '.'));
-        } catch (ClassNotFoundException e) {
-        }
-        try {
-            c2 = cl.loadClass(type2.replace('/', '.'));
-        } catch (ClassNotFoundException e) {
-        }
-        if (c1 != null && c2 != null) {
-            return super.getCommonSuperClass(type1, type2);
-        }
-        return Object.class.getName().replace('.', '/');
+    protected ClassLoader getClassLoader() {
+        // the TCCL is safe for transformations when this ClassWriter runs
+        return Thread.currentThread().getContextClassLoader();
     }
-
 }

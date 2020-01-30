@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.panache.runtime;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
@@ -16,6 +17,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
+import io.quarkus.panache.common.exception.PanacheQueryException;
 
 public class JpaOperations {
 
@@ -99,11 +101,11 @@ public class JpaOperations {
         return query;
     }
 
-    private static int paramCount(Object[] params) {
+    static int paramCount(Object[] params) {
         return params != null ? params.length : 0;
     }
 
-    private static int paramCount(Map<String, Object> params) {
+    static int paramCount(Map<String, Object> params) {
         return params != null ? params.size() : 0;
     }
 
@@ -112,7 +114,7 @@ public class JpaOperations {
         return entityClass.getName();
     }
 
-    private static String createFindQuery(Class<?> entityClass, String query, int paramCount) {
+    static String createFindQuery(Class<?> entityClass, String query, int paramCount) {
         if (query == null)
             return "FROM " + getEntityName(entityClass);
 
@@ -155,6 +157,32 @@ public class JpaOperations {
         return "SELECT COUNT(*) FROM " + getEntityName(entityClass) + " WHERE " + query;
     }
 
+    private static String createUpdateQuery(Class<?> entityClass, String query, int paramCount) {
+        if (query == null) {
+            throw new PanacheQueryException("Query string cannot be null");
+        }
+
+        String trimmed = query.trim();
+        if (trimmed.isEmpty()) {
+            throw new PanacheQueryException("Query string cannot be empty");
+        }
+
+        String trimmedLc = trimmed.toLowerCase();
+        if (trimmedLc.startsWith("update ")) {
+            return query;
+        }
+        if (trimmedLc.startsWith("from ")) {
+            return "UPDATE " + query;
+        }
+        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
+            query += " = ?1";
+        }
+        if (trimmedLc.startsWith("set ")) {
+            return "UPDATE FROM " + getEntityName(entityClass) + " " + query;
+        }
+        return "UPDATE FROM " + getEntityName(entityClass) + " SET " + query;
+    }
+
     private static String createDeleteQuery(Class<?> entityClass, String query, int paramCount) {
         if (query == null)
             return "DELETE FROM " + getEntityName(entityClass);
@@ -178,6 +206,9 @@ public class JpaOperations {
     }
 
     public static String toOrderBy(Sort sort) {
+        if (sort.getColumns().size() == 0) {
+            return "";
+        }
         StringBuilder sb = new StringBuilder(" ORDER BY ");
         for (int i = 0; i < sort.getColumns().size(); i++) {
             Sort.Column column = sort.getColumns().get(i);
@@ -199,6 +230,14 @@ public class JpaOperations {
 
     public static Object findById(Class<?> entityClass, Object id, LockModeType lockModeType) {
         return getEntityManager().find(entityClass, id, lockModeType);
+    }
+
+    public static Optional<?> findByIdOptional(Class<?> entityClass, Object id) {
+        return Optional.ofNullable(findById(entityClass, id));
+    }
+
+    public static Optional<?> findByIdOptional(Class<?> entityClass, Object id, LockModeType lockModeType) {
+        return Optional.ofNullable(findById(entityClass, id, lockModeType));
     }
 
     public static PanacheQuery<?> find(Class<?> entityClass, String query, Object... params) {
@@ -383,6 +422,28 @@ public class JpaOperations {
         Query jpaQuery = getEntityManager().createQuery(query);
         bindParameters(jpaQuery, params);
         return jpaQuery.executeUpdate();
+    }
+
+    public static int executeUpdate(Class<?> entityClass, String query, Object... params) {
+        String updateQuery = createUpdateQuery(entityClass, query, paramCount(params));
+        return executeUpdate(updateQuery, params);
+    }
+
+    public static int executeUpdate(Class<?> entityClass, String query, Map<String, Object> params) {
+        String updateQuery = createUpdateQuery(entityClass, query, paramCount(params));
+        return executeUpdate(updateQuery, params);
+    }
+
+    public static int update(Class<?> entityClass, String query, Map<String, Object> params) {
+        return executeUpdate(entityClass, query, params);
+    }
+
+    public static int update(Class<?> entityClass, String query, Parameters params) {
+        return update(entityClass, query, params.map());
+    }
+
+    public static int update(Class<?> entityClass, String query, Object... params) {
+        return executeUpdate(entityClass, query, params);
     }
 
     public static void setRollbackOnly() {

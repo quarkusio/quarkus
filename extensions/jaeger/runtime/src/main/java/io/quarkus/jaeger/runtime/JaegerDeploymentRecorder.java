@@ -60,6 +60,8 @@ public class JaegerDeploymentRecorder {
         initTracerProperty("JAEGER_TAGS", jaeger.tags, tags -> tags.toString());
         initTracerProperty("JAEGER_PROPAGATION", jaeger.propagation, format -> format.toString());
         initTracerProperty("JAEGER_SENDER_FACTORY", jaeger.senderFactory, sender -> sender);
+        initTracerProperty(QuarkusJaegerTracer.LOG_TRACE_CONTEXT, Optional.of(jaeger.logTraceContext),
+                logTraceContext -> logTraceContext.toString());
     }
 
     private <T> void initTracerProperty(String property, Optional<T> value, Function<T, String> accessor) {

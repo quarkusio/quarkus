@@ -1,5 +1,6 @@
 package io.quarkus.it.spring;
 
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,11 +34,26 @@ public class AppConfiguration {
         return new AnotherRequestBean();
     }
 
+    @Bean
+    @CustomPrototype
+    public CustomPrototypeBean beanWithCustomPrototype() {
+        return new CustomPrototypeBean();
+    }
+
     private static class SingletonBean {
 
     }
 
     private static class AnotherRequestBean {
+
+    }
+
+    public static class CustomPrototypeBean {
+
+    }
+
+    @Named
+    public static class NamedBean {
 
     }
 }

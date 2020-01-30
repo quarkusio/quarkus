@@ -2,11 +2,13 @@ package io.quarkus.arc.processor;
 
 import io.quarkus.arc.AlternativePriority;
 import io.quarkus.arc.DefaultBean;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.impl.ComputingCache;
 import java.util.Optional;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
+import javax.enterprise.context.Initialized;
 import javax.enterprise.context.control.ActivateRequestContext;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
@@ -54,6 +56,7 @@ public final class DotNames {
     public static final DotName POST_CONSTRUCT = create(PostConstruct.class);
     public static final DotName PRE_DESTROY = create(PreDestroy.class);
     public static final DotName INSTANCE = create(Instance.class);
+    public static final DotName INJECTABLE_INSTANCE = create(InjectableInstance.class);
     public static final DotName PROVIDER = create(Provider.class);
     public static final DotName INJECTION_POINT = create(InjectionPoint.class);
     public static final DotName INTERCEPTOR = create(Interceptor.class);
@@ -81,6 +84,7 @@ public final class DotNames {
     public static final DotName NAMED = create(Named.class);
     public static final DotName ACTIVATE_REQUEST_CONTEXT = create(ActivateRequestContext.class);
     public static final DotName TRANSACTION_PHASE = create(TransactionPhase.class);
+    public static final DotName INITIALIZED = create(Initialized.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);

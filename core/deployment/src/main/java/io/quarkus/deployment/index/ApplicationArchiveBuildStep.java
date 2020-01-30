@@ -72,11 +72,11 @@ public class ApplicationArchiveBuildStep {
     void addConfiguredIndexedDependencies(BuildProducer<IndexDependencyBuildItem> indexDependencyBuildItemBuildProducer) {
         for (IndexDependencyConfig indexDependencyConfig : config.indexDependency.values()) {
             indexDependencyBuildItemBuildProducer.produce(new IndexDependencyBuildItem(indexDependencyConfig.groupId,
-                    indexDependencyConfig.artifactId, indexDependencyConfig.classifier));
+                    indexDependencyConfig.artifactId, indexDependencyConfig.classifier.orElse(null)));
         }
     }
 
-    @BuildStep
+    @BuildStep(loadsApplicationClasses = true)
     ApplicationArchivesBuildItem build(ArchiveRootBuildItem root, ApplicationIndexBuildItem appindex,
             List<AdditionalApplicationArchiveMarkerBuildItem> appMarkers,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItem,

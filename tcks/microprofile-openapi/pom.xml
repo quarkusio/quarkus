@@ -44,6 +44,10 @@
             <artifactId>quarkus-smallrye-openapi</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jsonb</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.microprofile.openapi</groupId>
             <artifactId>microprofile-openapi-tck</artifactId>
             <version>${microprofile-open-api.version}</version>
@@ -57,8 +61,8 @@
                     <artifactId>javax.ws.rs-api</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>javax.xml.bind</groupId>
-                    <artifactId>jaxb-api</artifactId>
+                    <groupId>jakarta.xml.bind</groupId>
+                    <artifactId>jakarta.xml.bind-api</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>javax.servlet</groupId>

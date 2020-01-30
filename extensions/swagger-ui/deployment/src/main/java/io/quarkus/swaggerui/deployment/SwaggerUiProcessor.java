@@ -67,7 +67,7 @@ public class SwaggerUiProcessor {
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
-        if (launch.getLaunchMode().isDevOrTest() || swaggerUiConfig.alwaysInclude) {
+        if (swaggerUiConfig.enable && (launch.getLaunchMode().isDevOrTest() || swaggerUiConfig.alwaysInclude)) {
             feature.produce(new FeatureBuildItem(FeatureBuildItem.SWAGGER_UI));
         }
     }
@@ -86,6 +86,10 @@ public class SwaggerUiProcessor {
         if ("/".equals(swaggerUiConfig.path)) {
             throw new ConfigurationError(
                     "quarkus.swagger-ui.path was set to \"/\", this is not allowed as it blocks the application from serving anything else.");
+        }
+
+        if (!swaggerUiConfig.enable) {
+            return;
         }
 
         String openApiPath = httpRootPathBuildItem.adjustPath(openapi.path);
@@ -118,7 +122,8 @@ public class SwaggerUiProcessor {
                     throw new RuntimeException(e);
                 }
             }
-            Handler<RoutingContext> handler = recorder.handler(cached.cachedDirectory, swaggerUiConfig.path);
+            Handler<RoutingContext> handler = recorder.handler(cached.cachedDirectory,
+                    httpRootPathBuildItem.adjustPath(swaggerUiConfig.path));
             routes.produce(new RouteBuildItem(swaggerUiConfig.path, handler));
             routes.produce(new RouteBuildItem(swaggerUiConfig.path + "/*", handler));
             displayableEndpoints.produce(new NotFoundPageDisplayableEndpointBuildItem(swaggerUiConfig.path + "/"));
@@ -216,6 +221,12 @@ public class SwaggerUiProcessor {
          */
         @ConfigItem(defaultValue = "false")
         boolean alwaysInclude;
+
+        /**
+         * If Swagger UI should be enabled. By default, Swagger UI is enabled.
+         */
+        @ConfigItem(defaultValue = "true")
+        boolean enable;
     }
 
     private static final class CachedSwaggerUI implements Runnable {

@@ -14,9 +14,9 @@
 # docker run -i --rm -p 8080:8080 quarkus/${project_artifactId}
 #
 ###
-FROM registry.access.redhat.com/ubi8/ubi-minimal
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1
 WORKDIR /work/
 COPY ${build_dir}/*-runner /work/application
-RUN chmod 775 /work
+RUN chmod 775 /work /work/application
 EXPOSE 8080
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]

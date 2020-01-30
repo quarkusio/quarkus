@@ -198,7 +198,7 @@ Get a CDI portable extension running::
 The CDI portable extension model is very flexible.
 Too flexible to benefit from the build time boot promoted by Quarkus.
 Most extension we have seen do not make use of these extreme flexibilities capabilities.
-The way to port a CDI extension to Quarkus is to rewrite it as a Quarkus extension which will define the various beans at build time (deployment time in extension parley).
+The way to port a CDI extension to Quarkus is to rewrite it as a Quarkus extension which will define the various beans at build time (deployment time in extension parlance).
 
 == Technical aspect
 
@@ -378,7 +378,24 @@ The above sequence of commands does the following:
 A Maven build performed immediately after generating the modules should fail due to a `fail()` assertion in one of the test classes.
 
 There is one step (specific to the Quarkus source tree) that you should do manually when creating a new extension:
-Add the extension coordinates to `devtools/common/src/main/filtered/extensions.json`.
+create a `quarkus-extension.yaml` file that describe your extension inside the runtime module `src/main/resources/META-INF` folder.
+
+This is the `quarkus-extension.yaml` of the `quarkus-agroal` extension, you can use it as an example:
+
+[source,yaml]
+----
+name: "Agroal - Database connection pool"
+metadata:
+  keywords:
+  - "agroal"
+  - "database-connection-pool"
+  - "datasource"
+  - "jdbc"
+  guide: "https://quarkus.io/guides/datasource"
+  categories:
+  - "data"
+  status: "stable"
+----
 
 Note that the parameters of the mojo that will be constant for all the extensions added to this source tree are configured in `extensions/pom.xml` so that they do not need to be passed on the command line each time a new extension is added:
 
@@ -530,7 +547,7 @@ public ServiceWriterBuildItem registerOneService() {
  * providers of multiple configuration-related services.
  */
 @BuildStep
-public void registerSeveralSerivces(
+public void registerSeveralServices(
     BuildProducer<ServiceWriterBuildItem> providerProducer
 ) {
     providerProducer.produce(new ServiceWriterBuildItem(
@@ -616,7 +633,7 @@ conceptual goal that does not have a concrete representation.
  * causing this step to be run.
  */
 @BuildStep
-@Produces(NativeImageBuildItem.class)
+@Produce(NativeImageBuildItem.class)
 void produceNativeImage() {
     // ...
     // (produce the native image)
@@ -632,7 +649,7 @@ void produceNativeImage() {
  * an instance of {@code SomeOtherBuildItem}.
  */
 @BuildStep
-@Consumes(NativeImageBuildItem.class)
+@Consume(NativeImageBuildItem.class)
 SomeOtherBuildItem secondBuildStep() {
     return new SomeOtherBuildItem("foobar");
 }
@@ -674,7 +691,7 @@ A build step may produce values for subsequent steps in several possible ways:
 - By returning a <<simple-build-items,simple build item>> or <<multi-build-items,multi build item>> instance
 - By returning a `List` of a multi build item class
 - By injecting a `BuildProducer` of a simple or multi build item class
-- By annotating the method with `@io.quarkus.deployment.annotations.Produces`, giving the class name of a
+- By annotating the method with `@io.quarkus.deployment.annotations.Produce`, giving the class name of a
 <<empty-build-items,empty build item>>
 
 If a simple build item is declared on a build step, it _must_ be produced during that build step, otherwise an error
@@ -694,7 +711,7 @@ A build step may consume values from previous steps in the following ways:
 - By injecting a <<simple-build-items,simple build item>>
 - By injecting an `Optional` of a simple build item class
 - By injecting a `List` of a <<multi-build-items,multi build item>> class
-- By annotating the method with `@io.quarkus.deployment.annotations.Consumes`, giving the class name of a
+- By annotating the method with `@io.quarkus.deployment.annotations.Consume`, giving the class name of a
 <<empty-build-items,empty build item>>
 
 Normally it is an error for a step which is included to consume a simple build item that is not produced by any other
@@ -1273,6 +1290,143 @@ HealthBuildItem addHealthCheck(AgroalBuildTimeConfig agroalBuildTimeConfig) {
 }
 ----
 
+=== Extension Metrics
+
+An extension can decide to provide metrics through the `quarkus-smallrye-metrics` extension.
+A typical use case for this would be that an extension scans the application code for relevant components (like entities, messaging endpoints, etc.)
+and creates a set of metrics for each of these components. A unified mechanism for metric registration is provided via the `MetricBuildItem` class
+provided by the `quarkus-smallrye-metrics-spi` module.
+
+There are several distinct situations that can occur and each requires slightly different handling:
+
+1. The underlying library used by your extension is using the MicroProfile Metrics API directly.
+2. The underlying library uses its own way for collecting metrics and makes them available at runtime using its own API.
+3. The underlying library does not provide metrics (or there is no library at all) and you need to insert some code in the extension's codebase that will collect the metrics.
+
+What is common for all cases is that the extension should have a build-time config property that enables metrics exposure for the extension,
+it should be named `quarkus.<extension>.metrics.enabled` and be `false` by default.
+
+==== Case 1: The library uses MP Metrics
+If the library exposes metrics by itself, we don't have to do much. However, there are a few points to consider:
+
+- It should be possible to disable all metrics for an extension, which can be a bit problematic if the library registers them directly
+rather than through the unified registration mechanism in the `quarkus-smallrye-metrics-spi` module. Therefore the library should contain
+a way to turn all metrics off, for example using a library-specific system property that can be set during build time (by emitting a `SystemPropertyBuildItem`),
+and will disable metrics if at least one of the properties `quarkus.<extensionName>.metrics.enabled` and `quarkus.smallrye-metrics.extensions.enabled` is `false`.
+- It is desirable to be able to omit the MP Metrics dependency at runtime, so if possible, the library should be written in a way that
+it will still work when the MP Metrics dependencies (or at least the implementation, `io.smallrye:smallrye-metrics`) are unavailable. This can be achieved by
+wrapping all code that does something metric-related into an `if` condition that checks whether metrics integration is enabled. If the library performs injections
+of the `MetricRegistry`, which is not avoidable by introducing an `if` condition, it will unfortunately not be possible to remove the `microprofile-metrics` dependency,
+but it is still possible to avoid the need for `smallrye-metrics` (which contains the implementation class of the metric registry) by introducing a custom "no-op"
+implementation of the `MetricRegistry` which can, for example, return `null` from all its methods. This no-op implementation should be added to the application's classes
+so that it can be injected instead of the regular `io.smallrye.metrics.MetricRegistryImpl`. An example of a no-op implementation can be found at
+https://github.com/quarkusio/quarkus/blob/master/extensions/smallrye-fault-tolerance/runtime/src/main/java/io/quarkus/smallrye/faulttolerance/runtime/NoopMetricRegistry.java[NoopMetricRegistry]
+
+==== Case 2: The library provides its own metric API
+In this case, the extension can make use of the `quarkus-smallrye-metrics-spi` module to expose the metrics from the library using MP Metrics.
+
+You should do the following:
+
+- Import the `quarkus-smallrye-metrics-spi` library in your deployment module.
+- Import the `quarkus-smallrye-metrics` extension as an **optional** dependency in your runtime module so it will not impact the size of the application if
+metrics are not included.
+- In your processor, produce any number of `MetricBuildItem` items as shown in the example below.
+The metric name of all metrics should start with a short name of the extension that owns them.
+- Pass the value of `quarkus.<extension>.metrics.enabled` to the constructor of `MetricBuildItem` objects that the extension produces and if it is false, the metric will be ignored.
+
+An example build step for build-time registration of metrics:
+
+[source%nowrap.java]
+----
+@BuildStep
+void registerMetrics(BuildProducer<MetricBuildItem> metrics) {
+    Metadata activeCountMetadata = Metadata.builder()
+            .withName("agroal.active.count")
+            .withDescription("Count of active connections")
+            .withType(MetricType.GAUGE)
+            .build();
+    List<DataSource> dataSources = getAllDataSources(); // your relevant components specific to the extension
+    for(DataSource dataSource : dataSources) {
+        metrics.produce(new MetricBuildItem(activeCountMetadata,
+                new ActiveCountGauge(dataSource.getName()),
+                agroalBuildTimeConfig.metricsEnabled,
+                configRootName, // name of the config root pertaining to this extension
+                new Tag("datasource", dataSource.getName())));
+    }
+}
+----
+
+In this example, there is a gauge per each data source that shows the current number of active connections.
+In this example, we provide an object that implements the logic of the metric, in the case of a gauge,
+it needs to implement `org.eclipse.microprofile.metrics.Gauge`. Example:
+
+[source%nowrap.java]
+----
+public class ActiveCountGauge implements Gauge<Long> {
+
+    private String dataSourceName;
+
+    public ActiveCountGauge() {
+
+    }
+
+    public ActiveCountGauge(String dataSourceName) {
+        this.dataSourceName = dataSourceName;
+    }
+
+    @Override
+    public Long getValue() {
+        DataSource ds = obtainDataSource(dataSourceName); // some logic to get hold of the data source
+        return ds.getMetrics().getActiveCount();
+    }
+}
+----
+
+When registering gauges, it is required to provide a custom object that implements the correct metric type.
+For metric types other than gauges, this is optional - you can choose whether to provide an implementation,
+or whether the default implementation class from `SmallRye Metrics` should be instantiated for the metric and registered
+in the metric registry. To update the metric value, it will be necessary to look them up in the metric registry
+and call the methods specific to each metric type.
+
+Look into the `AgroalProcessor#registerMetrics` method for an example how this was done for the Agroal extension.
+
+==== Case 3: It is necessary to collect metrics within the extension code
+
+In this case, the dependency setup and build-time registration is the same as in case 2. The difference will be that instead of introducing
+custom metric objects that bridge between library-specific metrics and MP Metrics, the extension's code will contain metric collection code like this:
+
+[source%nowrap.java]
+----
+public void methodThatShouldBeCounted() {
+    if(metricsEnabled) {
+        Counter counter = MetricRegistries.get(MetricRegistry.Type.VENDOR).counter("name");
+        counter.inc();
+    }
+    // proceed with the invocation normally
+}
+----
+
+In this case, be aware that the MP Metrics API and implementation might not be available on the runtime classpath!
+This is why there is a `if(metricsEnabled)` check that should make sure that if metrics are not enabled, we don't touch MP Metrics classes,
+because that would fail. The extension itself will need to provide such check, and it must return true only if both of these conditions hold:
+
+- The Metrics capability is present and therefore the SmallRye Metrics library is available
+- Metrics are not disabled for this extension
+
+The recommended way to implement this check would be to produce a specific `SystemPropertyBuildItem` during build, which will make it easy
+to evaluate these two conditions, and then check back to this system property at runtime. Example:
+
+----
+@BuildStep
+SystemPropertyBuildItem produceMetricsEnabledProperty(AgroalBuildTimeConfig extensionSpecificConfig,
+        Capabilities capabilities) {
+    return new SystemPropertyBuildItem("metrics.enabled",
+            String.valueOf(capabilities.isCapabilityPresent(Capabilities.METRICS) &&
+                            extensionSpecificConfig.metricsEnabled));
+}
+----
+
+
 === Customizing JSON handling from an extension
 Extensions often need to register serializers and/or deserializers for types the extension provides.
 
@@ -1400,10 +1554,10 @@ More info about customizing Jackson can be found on the JSON guide link:rest-jso
 
 === Testing Extensions
 
-Testing of extensions should be done with the `io.quarkus.test.QuarkusUnitTest` runner. This runner allows
-for Arquillian-style tests that test specific functionalities. It is not intended for testing user applications, as this
-should be done via `io.quarkus.test.junit.QuarkusTest`. The main difference between these test runners is that
-`QuarkusTest` simply boots the application once at the start of the run, while `QuarkusUnitTest` deploys a custom
+Testing of Quarkus extensions should be done with the `io.quarkus.test.QuarkusUnitTest` JUnit 5 extension. 
+This extension allows for Arquillian-style tests that test specific functionalities. 
+It is not intended for testing user applications, as this should be done via `io.quarkus.test.junit.QuarkusTest`. 
+The main difference is that `QuarkusTest` simply boots the application once at the start of the run, while `QuarkusUnitTest` deploys a custom
 Quarkus application for each test class.
 
 These tests should be placed in the deployment module, if additional Quarkus modules are required for testing
@@ -1439,7 +1593,6 @@ import io.restassured.RestAssured;
 
 public class FailingUnitTest {
 
-
     @RegisterExtension                                                                  // <1>
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() ->
@@ -1447,6 +1600,7 @@ public class FailingUnitTest {
                             .addClasses(FailingHealthCheck.class)
                             .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
             );
+
     @Inject                                                                             // <3>
     @Health
     Instance<HealthCheck> checks;
@@ -1468,8 +1622,7 @@ public class FailingUnitTest {
 }
 ----
 
-
-<1> This tells JUnit to use the Quarkus unit test runner
+<1> The `QuarkusUnitTest` extension must be used with a static field. If used with a non-static field, the test application is not started.
 <2> This producer is used to build the application to be tested. It uses Shrinkwrap to create a JavaArchive to test
 <3> It is possible to inject beans from our test deployment directly into the test case
 <4> This method directly invokes the health check Servlet and verifies the response
@@ -1625,6 +1778,9 @@ executable. Some of these build items are listed below:
 `io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem`::
  Includes static resources into the native executable.
 
+`io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryBuildItem`::
+ Includes directory's static resources into the native executable.
+
 `io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem`::
 A class that will be reinitialized at runtime by Substrate. This will result in the static initializer running twice.
 
@@ -1643,8 +1799,11 @@ A class that will be initialized at runtime rather than build time. This will ca
 `io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem`::
 A convenience feature that allows you to control most of the above features from a single build item.
 
-`io.quarkus.deployment.builditem.NativeEnableAllCharsetsBuildItem`::
+`io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem`::
 Indicates that all charsets should be enabled in native image.
+
+`io.quarkus.deployment.builditem.NativeImageEnableAllTimeZonesBuildItem`::
+Indicates that all timezones should be enabled in native image.
 
 `io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem`::
 A convenient way to tell Quarkus that the extension requires SSL and it should be enabled during native image build.
@@ -1744,7 +1903,7 @@ cd rest-json
 ----
 
 ==== Bean Defining Annotations
-The CDI layer processes CDI beans that are either explicitly registered or that it discovers based on bean defining annotations as defined in http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations">[2.5.1. Bean defining annotations]. You can expand this set of annotations to include annotations your extension processes using a `BeanDefiningAnnotationBuildItem` as shown in this `TestProcessor#registerBeanDefinningAnnotations` example:
+The CDI layer processes CDI beans that are either explicitly registered or that it discovers based on bean defining annotations as defined in http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations[2.5.1. Bean defining annotations]. You can expand this set of annotations to include annotations your extension processes using a `BeanDefiningAnnotationBuildItem` as shown in this `TestProcessor#registerBeanDefinningAnnotations` example:
 
 .Register a Bean Definining Annotation
 [source,java]
@@ -2044,7 +2203,7 @@ we saw the production of a `ServiceStartBuildItem` in the previous section, and 
 <1> Produce a `ServiceStartBuildItem` to indicate that this is a service starting step that needs to run before the `StartupEvent` is sent.
 
 ==== Register Resources for Use in Native Image
-Not all configuration or resources can be consumed at build time. If you have classpath resources that the runtime needs to access, you need to inform the build phase that these resources need to be copied into the native image. This is done by producing one or more `NativeImageResourceBuildItem` or `NativeImageResourceBundleBuildItem` in the case of resource bundles. Examples of this are shown in this sample `registerNativeImageReources` build step:
+Not all configuration or resources can be consumed at build time. If you have classpath resources that the runtime needs to access, you need to inform the build phase that these resources need to be copied into the native image. This is done by producing one or more `NativeImageResourceBuildItem` or `NativeImageResourceBundleBuildItem` in the case of resource bundles. Examples of this are shown in this sample `registerNativeImageResources` build step:
 
 .Registering Resources and ResourceBundles
 [source,java]
@@ -2056,7 +2215,7 @@ public final class MyExtProcessor {
     BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle;
 
     @BuildStep
-    void registerNativeImageReources() {
+    void registerNativeImageResources() {
         resource.produce(new NativeImageResourceBuildItem("/security/runtime.keys")); //<1>
 
         resource.produce(new NativeImageResourceBuildItem(
@@ -2080,18 +2239,18 @@ but you also need to register each listed class for reflection so they can be in
 public final class MyExtProcessor {
 
     @BuildStep
-    void registerNativeImageReources(BuildProducer<ServiceProviderBuildItem> services) {
+    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> services) {
         String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
-        
+
         // find out all the implementation classes listed in the service files
-        Set<String> implementations = 
+        Set<String> implementations =
             ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                                           service);
 
-        // register every listed implementation class so they can be instantiated 
+        // register every listed implementation class so they can be instantiated
         // in native-image at run-time
         services.produce(
-            new ServiceProviderBuildItem(io.quarkus.SomeService.class.getName(), 
+            new ServiceProviderBuildItem(io.quarkus.SomeService.class.getName(),
                                          implementations.toArray(new String[0])));
     }
 }
@@ -2110,16 +2269,16 @@ to inspect its fields and methods). If you need to do that, you can do it this w
 public final class MyExtProcessor {
 
     @BuildStep
-    void registerNativeImageReources(BuildProducer<NativeImageResourceBuildItem> resource,
+    void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resource,
                                      BuildProducer<ReflectiveClassBuildItem> reflectionClasses) {
         String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
-        
+
         // register the service file so it is visible in native-image
         resource.produce(new NativeImageResourceBuildItem(service));
-        
-        // register every listed implementation class so they can be inspected/instantiated 
+
+        // register every listed implementation class so they can be inspected/instantiated
         // in native-image at run-time
-        Set<String> implementations = 
+        Set<String> implementations =
             ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                                           service);
         reflectionClasses.produce(
@@ -2131,7 +2290,7 @@ public final class MyExtProcessor {
 While this is the easiest way to get your services running natively, it's less efficient than scanning the implementation
 classes at build time and generating code that registers them at static-init time instead of relying on reflection.
 
-You can achieve that by adapting the previous build step to use a static-init recorder instead of registering 
+You can achieve that by adapting the previous build step to use a static-init recorder instead of registering
 classes for reflection:
 
 [source,java]
@@ -2140,19 +2299,19 @@ public final class MyExtProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void registerNativeImageReources(RecorderContext recorderContext, 
+    void registerNativeImageResources(RecorderContext recorderContext,
                                      SomeServiceRecorder recorder) {
         String service = "META-INF/services/" + io.quarkus.SomeService.class.getName();
-        
+
         // read the implementation classes
         Collection<Class<? extends io.quarkus.SomeService>> implementationClasses = new LinkedHashSet<>();
         Set<String> implementations = ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                                                                     service);
         for(String implementation : implementations) {
-            implementationClasses.add((Class<? extends io.quarkus.SomeService>) 
+            implementationClasses.add((Class<? extends io.quarkus.SomeService>)
                 recorderContext.classProxy(implementation));
         }
-        
+
         // produce a static-initializer with those classes
         recorder.configure(implementationClasses);
     }

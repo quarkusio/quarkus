@@ -308,6 +308,243 @@ You can build the native executable with:
 ./mvnw package -Pnative
 ----
 
+== Imperative usage
+
+Sometimes, you need to have an imperative way of sending messages.
+
+For example, if you need to send a message to a stream, from inside a REST endpoint, when receiving a POST request.
+In this case, you cannot use `@Output` because your method has parameters.
+
+For this, you can use an `Emitter`.
+
+[source, java]
+----
+import io.smallrye.reactive.messaging.annotations.Channel;
+import io.smallrye.reactive.messaging.annotations.Emitter;
+
+import javax.inject.Inject;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.core.MediaType;
+
+@Path("/prices")
+public class PriceResource {
+
+    @Inject @Channel("price-create") Emitter<Double> priceEmitter;
+
+    @POST
+    @Consumes(MediaType.TEXT_PLAIN)
+    public void addPrice(Double price) {
+        priceEmitter.send(price);
+    }
+}
+----
+
+NOTE: The `Emitter` configuration is done the same way as the other stream configuration used by `@Incoming` and `@Outgoing`.
+In addition, you can use `@OnOverflow` to configure back-pressure strategy.
+
+== Kafka Health Check
+
+If you are using the `quarkus-smallrye-health` extension, `quarkus-kafka` can add a readiness health check
+to validate the connection to the broker. This is disabled by default.
+
+If enabled, when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
+
+This behavior can be enabled by setting the `quarkus.kafka.health.enabled` property to `true` in your `application.properties`.
+You also need to point `quarkus.kafka.bootstrap-servers` to your Kafka cluster.
+
+== JSON serialization
+
+Quarkus has built-in capabilities to deal with JSON Kafka messages.
+
+Imagine we have a `Fruit` pojo as follows:
+
+[source,java]
+----
+public class Fruit {
+
+    public String name;
+    public int price;
+
+    public Fruit() {
+    }
+
+    public Fruit(String name, int price) {
+        this.name = name;
+        this.price = price;
+    }
+}
+----
+
+And we want to use it to receive messages from Kafka, make some price transformation, and send messages back to Kafka.
+
+[source,java]
+----
+import io.smallrye.reactive.messaging.annotations.Broadcast;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+
+import javax.enterprise.context.ApplicationScoped;
+
+/**
+* A bean consuming data from the "fruit-in" Kafka topic and applying some price conversion.
+* The result is pushed to the "fruit-out" stream.
+*/
+@ApplicationScoped
+public class FruitProcessor {
+
+    private static final double CONVERSION_RATE = 0.88;
+
+    @Incoming("fruit-in")
+    @Outgoing("fruit-out")
+    @Broadcast
+    public double process(Fruit fruit) {
+        fruit.price = fruit.price * CONVERSION_RATE;
+        return fruit;
+    }
+
+}
+----
+
+To do this, we will need to setup JSON serialization with JSON-B or Jackson.
+
+NOTE: With JSON serialization correctly configured, you can also use `Publisher<Fruit>` and `Emitter<Fruit>`.
+
+=== Serializing via JSON-B
+
+First, you need to include the `quarkus-resteasy-jsonb` extension (if you already use the `quarkus-resteasy-jsonb` extension, this is not needed).
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jsonb</artifactId>
+</dependency>
+----
+
+There is an existing `JsonbSerializer` that can be used to serialize all pojos via JSON-B,
+but the corresponding deserializer is generic, so it needs to be subclassed.
+
+So, let's create a `FruitDeserializer` that extends the generic `JsonbDeserializer`.
+
+[source,java]
+----
+package com.acme.fruit.jsonb;
+
+import io.quarkus.kafka.client.serialization.JsonbDeserializer;
+
+public class FruitDeserializer extends JsonbDeserializer<Fruit> {
+    public FruitDeserializer(){
+        // pass the class to the parent.
+        super(Fruit.class);
+    }
+}
+----
+
+NOTE: If you don't want to create a deserializer for each of your pojo, you can use the generic `io.vertx.kafka.client.serialization.JsonObjectDeserializer`
+that will deserialize to a `javax.json.JsonObject`. The corresponding serializer can also be used: `io.vertx.kafka.client.serialization.JsonObjectSerializer`.
+
+Finally, configure your streams to use the JSON-B serializer and deserializer.
+
+[source,properties]
+----
+# Configure the Kafka source (we read from it)
+mp.messaging.incoming.fruit-in.connector=smallrye-kafka
+mp.messaging.incoming.fruit-in.topic=fruit-in
+mp.messaging.incoming.fruit-in.value.deserializer=com.acme.fruit.jsonb.FruitDeserializer
+
+# Configure the Kafka sink (we write to it)
+mp.messaging.outgoing.fruit-out.connector=smallrye-kafka
+mp.messaging.outgoing.fruit-out.topic=fruit-out
+mp.messaging.outgoing.fruit-out.value.serializer=io.quarkus.kafka.client.serialization.JsonbSerializer
+----
+
+Now, your Kafka messages will contain a JSON-B serialized representation of your Fruit pojo.
+
+=== Serializing via Jackson
+
+First, you need to include the `quarkus-resteasy-jackson` extension (if you already use the `quarkus-jackson-jsonb` extension, this is not needed).
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jackson</artifactId>
+</dependency>
+----
+
+There is an existing `ObjectMapperSerializer` that can be used to serialize all pojos via Jackson,
+but the corresponding deserializer is generic, so it needs to be subclassed.
+
+So, let's create a `FruitDeserializer` that extends the `ObjectMapperDeserializer`.
+
+[source,java]
+----
+package com.acme.fruit.jackson;
+
+import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
+
+public class FruitDeserializer extends ObjectMapperDeserializer<Fruit> {
+    public FruitDeserializer(){
+        // pass the class to the parent.
+        super(Fruit.class);
+    }
+}
+----
+
+Finally, configure your streams to use the Jackson serializer and deserializer.
+
+[source,properties]
+----
+# Configure the Kafka source (we read from it)
+mp.messaging.incoming.fruit-in.connector=smallrye-kafka
+mp.messaging.incoming.fruit-in.topic=fruit-in
+mp.messaging.incoming.fruit-in.value.deserializer=com.acme.fruit.jackson.FruitDeserializer
+
+# Configure the Kafka sink (we write to it)
+mp.messaging.outgoing.fruit-out.connector=smallrye-kafka
+mp.messaging.outgoing.fruit-out.topic=fruit-out
+mp.messaging.outgoing.fruit-out.value.serializer=io.quarkus.kafka.client.serialization.ObjectMapperSerializer
+----
+
+Now, your Kafka messages will contain a Jackson serialized representation of your Fruit pojo.
+
+=== Sending JSON Server-Sent Events (SSE)
+
+If you want RESTEasy to send JSON Server-Sent Events, you need to use the `@SseElementType` annotation to define the content type of the events,
+as the method will be annotated with `@Produces(MediaType.SERVER_SENT_EVENTS)`.
+
+The following example shows how to use SSE from a Kafka topic source.
+
+[source,java]
+----
+import io.smallrye.reactive.messaging.annotations.Channel;
+import org.reactivestreams.Publisher;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import org.jboss.resteasy.annotations.SseElementType;
+
+@Path("/fruits")
+public class PriceResource {
+
+    @Inject
+    @Channel("fruit-out") Publisher<Fruit> fruits;
+
+    @GET
+    @Path("/stream")
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @SseElementType(MediaType.APPLICATION_JSON)
+    public Publisher<Fruit> stream() {
+        return fruits;
+    }
+}
+----
+
 == Going further
 
 This guide has shown how you can interact with Kafka using Quarkus.

@@ -4,12 +4,12 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
 = Quarkus - Neo4j
-:neo4j_version: 3.5.6
+:neo4j_version: 4.0.0
 
 include::./attributes.adoc[]
+:extension-status: preview
 
-https://neo4j.com[Neo4j] is a graph database management system developed by Neo4j, Inc.
-Neo4j is a native graph database focused not only on the data itself, but especially on the relations between data.
+https://neo4j.com[Neo4j] is a graph database management system developed by Neo4j, Inc. Neo4j is a native graph database focused not only on the data itself, but especially on the relations between data.
 Neo4j stores data as a property graph, which consists of vertices or nodes as we call them, connected with edges or relationships.
 Both of them can have properties.
 
@@ -34,13 +34,7 @@ The driver itself is released under the Apache 2.0 license,
 while Neo4j itself is available in a GPL3-licensed open-source "community edition",
 with online backup and high availability extensions licensed under a closed-source commercial license.
 
-[WARNING]
-====
-This extension is considered `preview`.
-It is based on an alpha version of the Neo4j driver.
-Some interactions with the driver, the API or configuration properties might change as the extension matures.
-Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
-====
+include::./status-include.adoc[]
 
 == Programming model
 
@@ -279,14 +273,14 @@ It uses transaction functions of the driver:
 public CompletionStage<Response> create(Fruit fruit) {
     AsyncSession session = driver.asyncSession();
     return session
-        .writeTransactionAsync(tx ->
-            tx.runAsync("CREATE (f:Fruit {name: $name}) RETURN f", Values.parameters("name", fruit.name))
+        .writeTransactionAsync(tx -> tx
+            .runAsync("CREATE (f:Fruit {name: $name}) RETURN f", Values.parameters("name", fruit.name))
+            .thenCompose(fn -> fn.singleAsync())
         )
-        .thenCompose(fn -> fn.singleAsync())
         .thenApply(record -> Fruit.from(record.get("f").asNode()))
-        .thenCompose(persistedFruid -> session.closeAsync().thenApply(signal -> persistedFruid))
-        .thenApply(persistedFruid -> Response
-            .created(URI.create("/fruits/" + persistedFruid.id))
+        .thenCompose(persistedFruit -> session.closeAsync().thenApply(signal -> persistedFruit))
+        .thenApply(persistedFruit -> Response
+            .created(URI.create("/fruits/" + persistedFruit.id))
             .build()
         );
 }
@@ -321,10 +315,10 @@ We also add some exception handling, in case the resource is called with an inva
 public CompletionStage<Response> getSingle(@PathParam("id") Long id) {
     AsyncSession session = driver.asyncSession();
     return session
-        .readTransactionAsync(tx ->
-            tx.runAsync("MATCH (f:Fruit) WHERE id(f) = $id RETURN f", Values.parameters("id", id))
+        .readTransactionAsync(tx -> tx
+            .runAsync("MATCH (f:Fruit) WHERE id(f) = $id RETURN f", Values.parameters("id", id))
+            .thenCompose(fn -> fn.singleAsync())
     )
-    .thenCompose(fn -> fn.singleAsync())
     .handle((record, exception) -> {
         if(exception != null) {
             Throwable source = exception;
@@ -368,10 +362,10 @@ public CompletionStage<Response> delete(@PathParam("id") Long id) {
 
     AsyncSession session = driver.asyncSession();
     return session
-        .writeTransactionAsync(tx ->
-            tx.runAsync("MATCH (f:Fruit) WHERE id(f) = $id DELETE f", Values.parameters("id", id))
+        .writeTransactionAsync(tx -> tx
+            .runAsync("MATCH (f:Fruit) WHERE id(f) = $id DELETE f", Values.parameters("id", id))
+            .thenCompose(fn -> fn.consumeAsync()) // <1>
         )
-        .thenCompose(fn -> fn.consumeAsync()) // <1>
         .thenCompose(response -> session.closeAsync())
         .thenApply(signal -> Response.noContent().build());
 }
@@ -400,6 +394,15 @@ It can be run with `java -jar target/neo4j-quickstart-1.0-SNAPSHOT-runner.jar`.
 With GraalVM installed, you can also create a native executable binary: `./mvnw clean package -Dnative`.
 Depending on your system, that will take some time.
 
+=== Connection Health Check
+
+If you are using the `quarkus-smallrye-health` extension, `quarkus-neo4j` will automatically add a readiness health check
+to validate the connection to Neo4j.
+
+So when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
+
+This behavior can be disabled by setting the `quarkus.neo4j.health.enabled` property to `false` in your `application.properties`.
+
 === Explore Cypher and the Graph
 
 There are tons of options to model your domain within a Graph.
@@ -420,7 +423,7 @@ Please add the following dependency management and dependency to your `pom.xml`
       <dependency>
           <groupId>io.projectreactor</groupId>
           <artifactId>reactor-bom</artifactId>
-          <version>Californium-SR4</version>
+          <version>Dysprosium-RELEASE</version>
           <type>pom</type>
           <scope>import</scope>
       </dependency>
@@ -451,7 +454,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.reactive.RxSession;
-import org.neo4j.driver.reactive.RxStatementResult;
+import org.neo4j.driver.reactive.RxResult;
 import org.reactivestreams.Publisher;
 
 import reactor.core.publisher.Flux;
@@ -468,7 +471,7 @@ public class ReactiveFruitResource {
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public Publisher<String> get() {
         return Flux.using(driver::rxSession, session -> session.readTransaction(tx -> {
-            RxStatementResult result = tx.run("MATCH (f:Fruit) RETURN f.name as name ORDER BY f.name");
+            RxResult result = tx.run("MATCH (f:Fruit) RETURN f.name as name ORDER BY f.name");
             return Flux.from(result.records()).map(record -> record.get("name").asString());
         }), RxSession::close);
     }

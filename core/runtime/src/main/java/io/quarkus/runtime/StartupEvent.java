@@ -16,8 +16,6 @@ package io.quarkus.runtime;
  *
  * The annotated method can access other injected beans.
  *
- *
- * TODO: make a real API.
  */
 public class StartupEvent {
 }

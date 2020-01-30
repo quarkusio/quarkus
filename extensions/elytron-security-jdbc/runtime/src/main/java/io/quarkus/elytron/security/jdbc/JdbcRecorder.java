@@ -19,6 +19,8 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class JdbcRecorder {
 
+    private static final Provider[] PROVIDERS = new Provider[] { new WildFlyElytronProvider() };
+
     /**
      * Create a runtime value for a {@linkplain JdbcSecurityRealm}
      *
@@ -29,7 +31,7 @@ public class JdbcRecorder {
         Supplier<Provider[]> providers = new Supplier<Provider[]>() {
             @Override
             public Provider[] get() {
-                return new Provider[] { new WildFlyElytronProvider() };
+                return PROVIDERS;
             }
         };
         JdbcSecurityRealmBuilder builder = JdbcSecurityRealm.builder().setProviders(providers);

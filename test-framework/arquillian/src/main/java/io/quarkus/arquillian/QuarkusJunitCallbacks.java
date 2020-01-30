@@ -18,23 +18,25 @@ import org.junit.Before;
  */
 class QuarkusJunitCallbacks {
 
-    static void invokeJunitBefores() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        Object testInstance = QuarkusDeployableContainer.testInstance;
+    static void invokeJunitBefores(Object testInstance)
+            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         // if there is no managed deployment, then we have no test instance because it hasn't been deployed yet
         if (testInstance != null) {
             List<Method> befores = new ArrayList<>();
-            collectCallbacks(testInstance.getClass(), befores, Before.class);
+            collectCallbacks(testInstance.getClass(), befores, (Class<? extends Annotation>) testInstance.getClass()
+                    .getClassLoader().loadClass(Before.class.getName()));
             for (Method before : befores) {
                 before.invoke(testInstance);
             }
         }
     }
 
-    static void invokeJunitAfters() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        Object testInstance = QuarkusDeployableContainer.testInstance;
+    static void invokeJunitAfters(Object testInstance)
+            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         if (testInstance != null) {
             List<Method> afters = new ArrayList<>();
-            collectCallbacks(testInstance.getClass(), afters, After.class);
+            collectCallbacks(testInstance.getClass(), afters, (Class<? extends Annotation>) testInstance.getClass()
+                    .getClassLoader().loadClass(After.class.getName()));
             for (Method after : afters) {
                 after.invoke(testInstance);
             }

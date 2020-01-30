@@ -13,6 +13,7 @@ import org.keycloak.jose.jwk.JWK;
 import org.keycloak.jose.jws.JWSHeader;
 import org.keycloak.json.StringListMapDeserializer;
 import org.keycloak.json.StringOrArrayDeserializer;
+import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.IDToken;
@@ -31,6 +32,7 @@ import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 
 public class KeycloakReflectionBuildStep {
@@ -60,7 +62,8 @@ public class KeycloakReflectionBuildStep {
                 ScopeRepresentation.class.getName(),
                 ResourceOwnerRepresentation.class.getName(),
                 StringListMapDeserializer.class.getName(),
-                StringOrArrayDeserializer.class.getName()));
+                StringOrArrayDeserializer.class.getName(),
+                OIDCConfigurationRepresentation.class.getName()));
     }
 
     @BuildStep
@@ -73,5 +76,15 @@ public class KeycloakReflectionBuildStep {
                 HttpClaimInformationPointProviderFactory.class.getName(),
                 ClaimsInformationPointProviderFactory.class.getName()));
 
+    }
+
+    @BuildStep
+    public void runtimeInit(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit) {
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.BouncyIntegration"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.PemUtils"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.DerUtils"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.KeystoreUtil"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.CertificateUtils"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.keycloak.common.util.OCSPUtils"));
     }
 }

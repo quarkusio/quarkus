@@ -4,6 +4,8 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.jandex.AnnotationInstance;
@@ -21,7 +23,6 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
@@ -96,8 +97,10 @@ class SmallRyeJwtProcessor {
      */
     @BuildStep
     NativeImageResourceBuildItem registerNativeImageResources() {
-        String publicKeyLocation = QuarkusConfig.getString("mp.jwt.verify.publickey.location", null, true);
-        if (publicKeyLocation != null) {
+        final Config config = ConfigProvider.getConfig();
+        Optional<String> publicKeyLocationOpt = config.getOptionalValue("mp.jwt.verify.publickey.location", String.class);
+        if (publicKeyLocationOpt.isPresent()) {
+            final String publicKeyLocation = publicKeyLocationOpt.get();
             if (publicKeyLocation.indexOf(':') < 0 || publicKeyLocation.startsWith("classpath:")) {
                 log.infof("Adding %s to native image", publicKeyLocation);
                 return new NativeImageResourceBuildItem(publicKeyLocation);

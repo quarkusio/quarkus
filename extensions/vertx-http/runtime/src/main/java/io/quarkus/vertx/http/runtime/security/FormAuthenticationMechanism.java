@@ -37,6 +37,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     private volatile String postLocation = DEFAULT_POST_LOCATION;
     private volatile String locationCookie = "quarkus-redirect-location";
     private volatile String landingPage = "/index.html";
+    private volatile boolean redirectAfterLogin;
 
     private volatile PersistentLoginManager loginManager;
 
@@ -66,6 +67,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         loginPage = form.loginPage.startsWith("/") ? form.loginPage : "/" + form.loginPage;
         errorPage = form.errorPage.startsWith("/") ? form.errorPage : "/" + form.errorPage;
         landingPage = form.landingPage.startsWith("/") ? form.landingPage : "/" + form.landingPage;
+        redirectAfterLogin = form.redirectAfterLogin;
     }
 
     public CompletionStage<SecurityIdentity> runFormAuth(final RoutingContext exchange,
@@ -97,10 +99,15 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                                         result.completeExceptionally(throwable);
                                     } else {
                                         loginManager.save(identity, exchange, null);
-                                        handleRedirectBack(exchange);
-                                        //we  have authenticated, but we want to just redirect back to the original page
-                                        //so we don't actually authenticate the current request
-                                        //instead we have just set a cookie so the redirected request will be authenticated
+                                        if (redirectAfterLogin || exchange.getCookie(locationCookie) != null) {
+                                            handleRedirectBack(exchange);
+                                            //we  have authenticated, but we want to just redirect back to the original page
+                                            //so we don't actually authenticate the current request
+                                            //instead we have just set a cookie so the redirected request will be authenticated
+                                        } else {
+                                            exchange.response().setStatusCode(200);
+                                            exchange.response().end();
+                                        }
                                         result.complete(null);
                                     }
                                     return null;

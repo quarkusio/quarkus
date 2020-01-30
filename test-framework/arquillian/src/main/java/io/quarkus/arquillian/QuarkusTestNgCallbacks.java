@@ -24,11 +24,12 @@ public class QuarkusTestNgCallbacks {
 
     private static final String ARQ_TESTNG_SUPERCLASS = "org.jboss.arquillian.testng.Arquillian";
 
-    static void invokeTestNgBeforeClasses() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        Object testInstance = QuarkusDeployableContainer.testInstance;
+    static void invokeTestNgBeforeClasses(Object testInstance)
+            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         if (testInstance != null) {
             List<Method> beforeClasses = new ArrayList<>();
-            collectCallbacks(testInstance.getClass(), beforeClasses, BeforeClass.class);
+            collectCallbacks(testInstance.getClass(), beforeClasses, (Class<? extends Annotation>) testInstance.getClass()
+                    .getClassLoader().loadClass(BeforeClass.class.getName()));
             for (Method m : beforeClasses) {
                 // we don't know the values for parameterized methods that TestNG allows, we just skip those
                 if (m.getParameterCount() == 0) {
@@ -39,11 +40,12 @@ public class QuarkusTestNgCallbacks {
         }
     }
 
-    static void invokeTestNgAfterClasses() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        Object testInstance = QuarkusDeployableContainer.testInstance;
+    static void invokeTestNgAfterClasses(Object testInstance)
+            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         if (testInstance != null) {
             List<Method> afterClasses = new ArrayList<>();
-            collectCallbacks(testInstance.getClass(), afterClasses, AfterClass.class);
+            collectCallbacks(testInstance.getClass(), afterClasses, (Class<? extends Annotation>) testInstance.getClass()
+                    .getClassLoader().loadClass(AfterClass.class.getName()));
             for (Method m : afterClasses) {
                 // we don't know the values for parameterized methods that TestNG allows, we just skip those
                 if (m.getParameterCount() == 0) {
@@ -54,12 +56,14 @@ public class QuarkusTestNgCallbacks {
         }
     }
 
-    static void invokeTestNgAfterMethods() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        Object testInstance = QuarkusDeployableContainer.testInstance;
+    static void invokeTestNgAfterMethods(Object testInstance)
+            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         if (testInstance != null) {
             List<Method> afterMethods = new ArrayList<>();
-            collectCallbacks(testInstance.getClass(), afterMethods, AfterMethod.class);
-            collectCallbacks(testInstance.getClass(), afterMethods, AfterTest.class);
+            collectCallbacks(testInstance.getClass(), afterMethods, (Class<? extends Annotation>) testInstance.getClass()
+                    .getClassLoader().loadClass(AfterMethod.class.getName()));
+            collectCallbacks(testInstance.getClass(), afterMethods, (Class<? extends Annotation>) testInstance.getClass()
+                    .getClassLoader().loadClass(AfterTest.class.getName()));
             for (Method m : afterMethods) {
                 // we don't know the values for parameterized methods that TestNG allows, we just skip those
                 if (m.getParameterCount() == 0) {
@@ -70,12 +74,14 @@ public class QuarkusTestNgCallbacks {
         }
     }
 
-    static void invokeTestNgBeforeMethods() throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        Object testInstance = QuarkusDeployableContainer.testInstance;
+    static void invokeTestNgBeforeMethods(Object testInstance)
+            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         if (testInstance != null) {
             List<Method> beforeMethods = new ArrayList<>();
-            collectCallbacks(testInstance.getClass(), beforeMethods, BeforeMethod.class);
-            collectCallbacks(testInstance.getClass(), beforeMethods, BeforeTest.class);
+            collectCallbacks(testInstance.getClass(), beforeMethods, (Class<? extends Annotation>) testInstance.getClass()
+                    .getClassLoader().loadClass(BeforeMethod.class.getName()));
+            collectCallbacks(testInstance.getClass(), beforeMethods, (Class<? extends Annotation>) testInstance.getClass()
+                    .getClassLoader().loadClass(BeforeTest.class.getName()));
             for (Method m : beforeMethods) {
                 // we don't know the values for parameterized methods that TestNG allows, we just skip those
                 if (m.getParameterCount() == 0) {

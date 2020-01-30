@@ -3,23 +3,19 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Amazon Lambda with Resteasy, Undertow, or Vert.x Web 
+= Quarkus - Amazon Lambda with RESTEasy, Undertow, or Vert.x Web 
+:extension-status: preview
 
 include::./attributes.adoc[]
 
-The `quarkus-amazon-lambda-http` extension allows you to write microservices with Resteasy (JAX-RS),
+The `quarkus-amazon-lambda-http` extension allows you to write microservices with RESTEasy (JAX-RS),
 Undertow (servlet), or Vert.x Web and make these microservices deployable as an Amazon Lambda
 using https://aws.amazon.com/api-gateway/[Amazon's API Gateway] and https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html[Amazon's SAM framework].
 
 You can deploy your Lambda as a pure Java jar, or you can compile your project to a native image and deploy that for a smaller
 memory footprint and startup time.
 
-[NOTE]
-====
-This extension is considered `preview`.
-API or configuration properties might change as the extension matures.
-Feedback is welcome on our https://groups.google.com/d/forum/quarkus-dev[mailing list] or as issues in our https://github.com/quarkusio/quarkus/issues[GitHub issue tracker].
-====
+include::./status-include.adoc[]
 
 == Prerequisites
 
@@ -189,14 +185,20 @@ It should give you something like the following output:
 
 The `OutputValue` attribute is the root URL for your lambda. Copy it to your browser and add `hello` at the end.
 
+[NOTE]
+Responses for binary types will be automatically encoded with base64.  This is different than the behavior using
+`quarkus:dev` which will return the raw bytes.  Amazon's API has additional restrictions requiring the base64 encoding.
+In general, client code will automatically handle this encoding but in certain custom situations, you should be aware
+you may need to manually manage that encoding.
+
 == Examine the POM
 
-If you want to adapt an existing Resteasy, Undertow, or Vert.x Web project to Amazon Lambda, there's a couple
+If you want to adapt an existing RESTEasy, Undertow, or Vert.x Web project to Amazon Lambda, there's a couple
 of things you need to do.  Take a look at the generate example project to get an example of what you need to adapt.
 
 1. Include the `quarkus-amazon-lambda-http` extension as a pom dependency
 2. Configure Quarkus build an `uber-jar`
-3. If you are doing a native GraalVM build, Amazon requires you to rename your executable to `bootstrap` and zip it up.  Notice that the `pom.xml` uses the `maven-assemby-plugin` to perform this requirement.
+3. If you are doing a native GraalVM build, Amazon requires you to rename your executable to `bootstrap` and zip it up.  Notice that the `pom.xml` uses the `maven-assembly-plugin` to perform this requirement.
 
 == Examine sam.yaml
 

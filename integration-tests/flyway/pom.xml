@@ -20,6 +20,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-h2</artifactId>
         </dependency>
         <dependency>
@@ -116,7 +120,6 @@
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableJni>false</enableJni>
                                     <debugBuildProcess>false</debugBuildProcess>
                                 </configuration>
                             </execution>

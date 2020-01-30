@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -25,11 +26,15 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.internal.artifacts.DefaultModuleIdentifier;
+import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
+import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
 import org.gradle.jvm.tasks.Jar;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
@@ -38,6 +43,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 public class AppModelGradleResolver implements AppModelResolver {
 
     private AppModel appModel;
+
     private final Project project;
 
     public AppModelGradleResolver(Project project) {
@@ -45,7 +51,8 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     @Override
-    public String getLatestVersion(AppArtifact arg0, String arg1, boolean arg2) throws AppModelResolverException {
+    public String getLatestVersion(AppArtifact appArtifact, String upToVersion, boolean inclusive)
+            throws AppModelResolverException {
         throw new UnsupportedOperationException();
     }
 
@@ -55,18 +62,20 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     @Override
-    public String getNextVersion(AppArtifact arg0, String fromVersion, boolean fromVersionIncluded, String arg1, boolean arg2)
+    public String getNextVersion(AppArtifact appArtifact, String fromVersion, boolean fromVersionIncluded, String upToVersion,
+            boolean upToVersionIncluded)
             throws AppModelResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<String> listLaterVersions(AppArtifact arg0, String arg1, boolean arg2) throws AppModelResolverException {
+    public List<String> listLaterVersions(AppArtifact appArtifact, String upToVersion, boolean inclusive)
+            throws AppModelResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void relink(AppArtifact arg0, Path arg1) throws AppModelResolverException {
+    public void relink(AppArtifact appArtifact, Path localPath) throws AppModelResolverException {
 
     }
 
@@ -74,12 +83,12 @@ public class AppModelGradleResolver implements AppModelResolver {
     public Path resolve(AppArtifact appArtifact) throws AppModelResolverException {
         if (!appArtifact.isResolved()) {
 
-            final GradleDependencyArtifact dep = new GradleDependencyArtifact();
+            final DefaultDependencyArtifact dep = new DefaultDependencyArtifact();
             dep.setExtension(appArtifact.getType());
             dep.setType(appArtifact.getType());
             dep.setName(appArtifact.getArtifactId());
 
-            final QuarkusExtDependency gradleDep = new QuarkusExtDependency(appArtifact.getGroupId(),
+            final DefaultExternalModuleDependency gradleDep = new DefaultExternalModuleDependency(appArtifact.getGroupId(),
                     appArtifact.getArtifactId(), appArtifact.getVersion(), null);
             gradleDep.addArtifact(dep);
 
@@ -103,19 +112,20 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     @Override
-    public List<AppDependency> resolveUserDependencies(AppArtifact appArtifact, List<AppDependency> directDeps)
-            throws AppModelResolverException {
+    public List<AppDependency> resolveUserDependencies(AppArtifact appArtifact, List<AppDependency> directDeps) {
         return Collections.emptyList();
     }
 
     @Override
     public AppModel resolveModel(AppArtifact appArtifact) throws AppModelResolverException {
+        AppModel.Builder appBuilder = new AppModel.Builder();
         if (appModel != null && appModel.getAppArtifact().equals(appArtifact)) {
             return appModel;
         }
-        final Configuration compileCp = project.getConfigurations().getByName("compileClasspath");
+        final Configuration compileCp = project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
         final List<Dependency> extensionDeps = new ArrayList<>();
         final List<AppDependency> userDeps = new ArrayList<>();
+        Map<AppArtifactKey, AppDependency> versionMap = new HashMap<>();
         Map<ModuleIdentifier, ModuleVersionIdentifier> userModules = new HashMap<>();
         for (ResolvedArtifact a : compileCp.getResolvedConfiguration().getResolvedArtifacts()) {
             final File f = a.getFile();
@@ -125,14 +135,17 @@ public class AppModelGradleResolver implements AppModelResolver {
             }
 
             userModules.put(getModuleId(a), a.getModuleVersion().getId());
-            userDeps.add(toAppDependency(a));
+            AppDependency dependency = toAppDependency(a);
+            userDeps.add(dependency);
+            versionMap.put(new AppArtifactKey(dependency.getArtifact().getGroupId(), dependency.getArtifact().getArtifactId(),
+                    dependency.getArtifact().getClassifier()), dependency);
 
             final Dependency dep;
             if (f.isDirectory()) {
-                dep = processQuarkusDir(a, f.toPath().resolve(BootstrapConstants.META_INF));
+                dep = processQuarkusDir(a, f.toPath().resolve(BootstrapConstants.META_INF), appBuilder);
             } else {
                 try (FileSystem artifactFs = FileSystems.newFileSystem(f.toPath(), null)) {
-                    dep = processQuarkusDir(a, artifactFs.getPath(BootstrapConstants.META_INF));
+                    dep = processQuarkusDir(a, artifactFs.getPath(BootstrapConstants.META_INF), appBuilder);
                 } catch (IOException e) {
                     throw new GradleException("Failed to process " + f, e);
                 }
@@ -142,6 +155,7 @@ public class AppModelGradleResolver implements AppModelResolver {
             }
         }
         List<AppDependency> deploymentDeps = new ArrayList<>();
+        List<AppDependency> fullDeploymentDeps = new ArrayList<>();
         if (!extensionDeps.isEmpty()) {
             final Configuration deploymentConfig = project.getConfigurations()
                     .detachedConfiguration(extensionDeps.toArray(new Dependency[extensionDeps.size()]));
@@ -151,14 +165,25 @@ public class AppModelGradleResolver implements AppModelResolver {
                 if (userVersion != null) {
                     continue;
                 }
-                deploymentDeps.add(toAppDependency(a));
+                AppDependency dependency = toAppDependency(a);
+                deploymentDeps.add(alignVersion(dependency, versionMap));
+            }
+        }
+        fullDeploymentDeps.addAll(deploymentDeps);
+        fullDeploymentDeps.addAll(userDeps);
+
+        Iterator<AppDependency> it = deploymentDeps.iterator();
+        while (it.hasNext()) {
+            AppDependency val = it.next();
+            if (userDeps.contains(val)) {
+                it.remove();
             }
         }
 
         // In the case of quarkusBuild (which is the primary user of this),
         // it's not necessary to actually resolve the original application JAR
         if (!appArtifact.isResolved()) {
-            final Jar jarTask = (Jar) project.getTasks().findByName("jar");
+            final Jar jarTask = (Jar) project.getTasks().findByName(JavaPlugin.JAR_TASK_NAME);
             if (jarTask == null) {
                 throw new AppModelResolverException("Failed to locate task 'jar' in the project.");
             }
@@ -170,12 +195,32 @@ public class AppModelGradleResolver implements AppModelResolver {
                 }
             }
         }
-        return this.appModel = new AppModel(appArtifact, userDeps, deploymentDeps);
+        appBuilder.addRuntimeDeps(userDeps)
+                .addFullDeploymentDeps(fullDeploymentDeps)
+                .addDeploymentDeps(deploymentDeps)
+                .setAppArtifact(appArtifact);
+        return this.appModel = appBuilder.build();
+    }
+
+    private AppDependency alignVersion(AppDependency dependency, Map<AppArtifactKey, AppDependency> versionMap) {
+        AppArtifactKey appKey = new AppArtifactKey(dependency.getArtifact().getGroupId(),
+                dependency.getArtifact().getArtifactId(),
+                dependency.getArtifact().getClassifier());
+        if (versionMap.containsKey(appKey)) {
+            return versionMap.get(appKey);
+        }
+        return dependency;
     }
 
     @Override
-    public AppModel resolveModel(AppArtifact arg0, List<AppDependency> arg1) throws AppModelResolverException {
+    public AppModel resolveModel(AppArtifact root, List<AppDependency> deps) throws AppModelResolverException {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AppModel resolveManagedModel(AppArtifact appArtifact, List<AppDependency> directDeps, AppArtifact managingProject)
+            throws AppModelResolverException {
+        return resolveModel(appArtifact);
     }
 
     private ModuleIdentifier getModuleId(ResolvedArtifact a) {
@@ -190,7 +235,7 @@ public class AppModelGradleResolver implements AppModelResolver {
         return new AppDependency(appArtifact, "runtime");
     }
 
-    private Dependency processQuarkusDir(ResolvedArtifact a, Path quarkusDir) {
+    private Dependency processQuarkusDir(ResolvedArtifact a, Path quarkusDir, AppModel.Builder appBuilder) {
         if (!Files.exists(quarkusDir)) {
             return null;
         }
@@ -202,10 +247,11 @@ public class AppModelGradleResolver implements AppModelResolver {
         if (extProps == null) {
             return null;
         }
+        appBuilder.handleExtensionProperties(extProps, a.toString());
         String value = extProps.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
         final String[] split = value.split(":");
 
-        return new QuarkusExtDependency(split[0], split[1], split[2], null);
+        return new DefaultExternalModuleDependency(split[0], split[1], split[2], null);
     }
 
     private Properties resolveDescriptor(final Path path) {

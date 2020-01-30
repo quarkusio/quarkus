@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -26,6 +25,7 @@ import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
@@ -35,8 +35,10 @@ import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
 import io.quarkus.vertx.http.runtime.filters.Filter;
+import io.vertx.core.Handler;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 
 class VertxHttpProcessor {
 
@@ -74,11 +76,9 @@ class VertxHttpProcessor {
     }
 
     @BuildStep(onlyIf = IsNormal.class)
-    @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
-    public KubernetesPortBuildItem kubernetes(HttpConfiguration config, VertxHttpRecorder recorder) {
-        int port = ConfigProvider.getConfig().getValue("quarkus.http.port", OptionalInt.class).orElse(8080);
-        recorder.warnIfPortChanged(config, port);
-        return new KubernetesPortBuildItem(config.port, "http");
+    public KubernetesPortBuildItem kubernetes() {
+        int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
+        return new KubernetesPortBuildItem(port, "http");
     }
 
     @BuildStep
@@ -91,10 +91,16 @@ class VertxHttpProcessor {
         RuntimeValue<Router> router = recorder.initializeRouter(vertx.getVertx(), launchModeBuildItem.getLaunchMode(),
                 shutdown);
         for (RouteBuildItem route : routes) {
-            recorder.addRoute(router, route.getRouteFunction(), route.getHandler(), route.getType());
+            recorder.addRoute(router, route.getRouteFunction(), route.getHandler(), route.getType(), route.isResume());
         }
 
         return new VertxWebRouterBuildItem(router);
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    BodyHandlerBuildItem bodyHandler(VertxHttpRecorder recorder, HttpConfiguration httpConfiguration) {
+        return new BodyHandlerBuildItem(recorder.createBodyHandler(httpConfiguration));
     }
 
     @BuildStep
@@ -106,7 +112,11 @@ class VertxHttpProcessor {
             List<DefaultRouteBuildItem> defaultRoutes, List<FilterBuildItem> filters,
             VertxWebRouterBuildItem router, EventLoopCountBuildItem eventLoopCount,
             HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass, List<WebsocketSubProtocolsBuildItem> websocketSubProtocols)
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass, List<WebsocketSubProtocolsBuildItem> websocketSubProtocols,
+            List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
+            BodyHandlerBuildItem bodyHandlerBuildItem,
+            CoreVertxBuildItem core // Injected to be sure that Vert.x has been produced before calling this method.
+    )
             throws BuildException, IOException {
         Optional<DefaultRouteBuildItem> defaultRoute;
         if (defaultRoutes == null || defaultRoutes.isEmpty()) {
@@ -124,9 +134,14 @@ class VertxHttpProcessor {
                 .filter(f -> f.getHandler() != null)
                 .map(FilterBuildItem::toFilter).collect(Collectors.toList());
 
+        //if the body handler is required then we know it is installed for all routes, so we don't need to register it here
+        Handler<RoutingContext> bodyHandler = !requireBodyHandlerBuildItems.isEmpty() ? bodyHandlerBuildItem.getHandler()
+                : null;
+
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
-                listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath, launchMode.getLaunchMode());
+                listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath, launchMode.getLaunchMode(),
+                !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, httpConfiguration);
 
         boolean startVirtual = requireVirtual.isPresent() || httpBuildTimeConfig.virtual;
         if (startVirtual) {

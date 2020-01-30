@@ -43,6 +43,8 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
+import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
@@ -51,12 +53,16 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 class KubernetesProcessor {
 
     private static final String PROPERTY_PREFIX = "dekorate.";
-    private static final String ALLOWED_GENERATOR = "kubernetes";
+    private static final Set<String> ALLOWED_GENERATORS = new HashSet(
+            Arrays.asList("kubernetes", "openshift", "knative", "docker", "s2i"));
+    private static final Set<String> IMAGE_GENERATORS = new HashSet(Arrays.asList("docker", "s2i"));
 
     private static final String DEPLOYMENT_TARGET = "kubernetes.deployment.target";
     private static final String KUBERNETES = "kubernetes";
     private static final String DOCKER_REGISTRY_PROPERTY = PROPERTY_PREFIX + "docker.registry";
     private static final String APP_GROUP_PROPERTY = "app.group";
+
+    private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
 
     @Inject
     BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer;
@@ -67,6 +73,8 @@ class KubernetesProcessor {
     @BuildStep(onlyIf = IsNormal.class)
     public void build(ApplicationInfoBuildItem applicationInfo,
             ArchiveRootBuildItem archiveRootBuildItem,
+            OutputTargetBuildItem outputTargetBuildItem,
+            PackageConfig packageConfig,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
@@ -97,23 +105,32 @@ class KubernetesProcessor {
                 .collect(Collectors.toList());
 
         Map<String, Object> configAsMap = StreamSupport.stream(config.getPropertyNames().spliterator(), false)
-                .filter(k -> ALLOWED_GENERATOR.equals(generatorName(k)))
+                .filter(k -> ALLOWED_GENERATORS.contains(generatorName(k)))
                 .collect(Collectors.toMap(k -> PROPERTY_PREFIX + k, k -> config.getValue(k, String.class)));
-        // this is a hack to get kubernetes.registry working because currently it's not supported as is in Dekorate
-        Optional<String> kubernetesRegistry = config.getOptionalValue(ALLOWED_GENERATOR + ".registry", String.class);
-        if (kubernetesRegistry.isPresent()) {
-            System.setProperty(DOCKER_REGISTRY_PROPERTY, kubernetesRegistry.get());
-        }
-        // this is a hack to work around Dekorate using the default group for some of the properties
-        Optional<String> kubernetesGroup = config.getOptionalValue(ALLOWED_GENERATOR + ".group", String.class);
-        if (kubernetesGroup.isPresent()) {
-            System.setProperty(APP_GROUP_PROPERTY, kubernetesGroup.get());
-        }
 
+        // this is a hack to get kubernetes.registry working because currently it's not supported as is in Dekorate
+        Optional<String> dockerRegistry = IMAGE_GENERATORS.stream()
+                .map(g -> config.getOptionalValue(g + ".registry", String.class))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
+
+        dockerRegistry.ifPresent(v -> System.setProperty(DOCKER_REGISTRY_PROPERTY, v));
+
+        // this is a hack to work around Dekorate using the default group for some of the properties
+        Optional<String> kubernetesGroup = ALLOWED_GENERATORS.stream()
+                .map(g -> config.getOptionalValue(g + ".group", String.class))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
+        kubernetesGroup.ifPresent(v -> System.setProperty(APP_GROUP_PROPERTY, v));
+
+        Path artifactPath = archiveRootBuildItem.getArchiveRoot().resolve(String.format(OUTPUT_ARTIFACT_FORMAT,
+                outputTargetBuildItem.getBaseName(), packageConfig.runnerSuffix));
         final Map<String, String> generatedResourcesMap;
         try {
             final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
-            Project project = createProject(applicationInfo, archiveRootBuildItem);
+            Project project = createProject(applicationInfo, artifactPath);
             sessionWriter.setProject(project);
             final Session session = Session.getSession();
             session.setWriter(sessionWriter);
@@ -131,7 +148,7 @@ class KubernetesProcessor {
             if (kubernetesGroup.isPresent()) {
                 System.clearProperty(APP_GROUP_PROPERTY);
             }
-            if (kubernetesRegistry.isPresent()) {
+            if (dockerRegistry.isPresent()) {
                 System.clearProperty(DOCKER_REGISTRY_PROPERTY);
             }
         }
@@ -215,11 +232,12 @@ class KubernetesProcessor {
         return result;
     }
 
-    private Project createProject(ApplicationInfoBuildItem app, ArchiveRootBuildItem archiveRootBuildItem) {
+    private Project createProject(ApplicationInfoBuildItem app, Path artifactPath) {
         //Let dekorate create a Project instance and then override with what is found in ApplicationInfoBuildItem.
-        Project project = FileProjectFactory.create(archiveRootBuildItem.getArchiveLocation().toFile());
+        Project project = FileProjectFactory.create(artifactPath.toFile());
         BuildInfo buildInfo = new BuildInfo(app.getName(), app.getVersion(),
                 "jar", project.getBuildInfo().getBuildTool(),
+                artifactPath,
                 project.getBuildInfo().getOutputFile(),
                 project.getBuildInfo().getClassOutputDir());
 

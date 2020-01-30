@@ -23,6 +23,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-metrics</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
             <scope>compile</scope>
             <optional>true</optional>
@@ -50,7 +55,7 @@
                     <artifactId>javassist</artifactId>
                 </exclusion>
 
-                <!-- XML parsers only needed to parse configurations during the deployment phase -->
+                <!-- These XML parsers are banned in the project as we use the new package -->
                 <exclusion>
                     <groupId>javax.xml.bind</groupId>
                     <artifactId>jaxb-api</artifactId>
@@ -67,6 +72,21 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- We need XML mapping support to support Hibernate Envers -->
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>jakarta.xml.bind</groupId>
+                    <artifactId>jakarta.xml.bind-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.spec.javax.xml.bind</groupId>
+            <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
+        </dependency>
         <dependency>
             <groupId>jakarta.persistence</groupId>
             <artifactId>jakarta.persistence-api</artifactId>
@@ -76,7 +96,7 @@
             <artifactId>jakarta.transaction-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.oracle.substratevm</groupId>
+            <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
         </dependency>
         <dependency>
@@ -97,6 +117,12 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>javax.persistence:javax.persistence-api</excludedArtifact>
+                        <excludedArtifact>javax.persistence:persistence-api</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

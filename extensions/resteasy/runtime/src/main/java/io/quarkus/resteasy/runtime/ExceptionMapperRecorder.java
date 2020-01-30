@@ -9,7 +9,7 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class ExceptionMapperRecorder {
 
-    public void setStaticResource(Set<String> resources) {
+    public void setStaticResourceRoots(Set<String> resources) {
         NotFoundExceptionMapper.staticResources(resources);
     }
 
@@ -32,4 +32,7 @@ public class ExceptionMapperRecorder {
         NotFoundExceptionMapper.nonJaxRsClassNameToMethodPaths(nonJaxRsClassNameToMethodPaths);
     }
 
+    public void setHttpRoot(String rootPath) {
+        NotFoundExceptionMapper.setHttpRoot(rootPath);
+    }
 }

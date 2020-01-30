@@ -11,10 +11,6 @@ include::./attributes.adoc[]
 :sectnumlevels: 4
 :toc:
 
-:numbered:
-:sectnums:
-:sectnumlevels: 4
-
 Quarkus DI solution is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
 However, it is not a full CDI implementation verified by the TCK.
 Only a subset of the CDI features is implemented - see also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
@@ -55,7 +51,7 @@ To generate the index just add the following to your `pom.xml`:
     <plugin>
       <groupId>org.jboss.jandex</groupId>
       <artifactId>jandex-maven-plugin</artifactId>
-      <version>1.0.6</version>
+      <version>1.0.7</version>
       <executions>
         <execution>
           <id>make-index</id>
@@ -155,7 +151,7 @@ public class CounterBean {
 * Interceptors
 ** Business method interceptors: `@AroundInvoke`
 ** Interceptors for lifecycle event callbacks: `@PostConstruct`, `@PreDestroy`, `@AroundConstruct`
-* Events and observers, including asynchronous events
+* Events and observer methods, including asynchronous events and transactional observer methods
 
 [[limitations]]
 == Limitations
@@ -168,9 +164,103 @@ public class CounterBean {
 * `beans.xml` descriptor content is ignored
 * Passivation and passivating scopes are not supported
 * Interceptor methods on superclasses are not implemented yet
-* `BEFORE_COMPLETION`, `AFTER_COMPLETION`, `AFTER_FAILURE` and `AFTER_SUCCESS` transactional observers are not implemented yet
 
 == Non-standard Features
+
+=== Eager Instantiation of Beans
+
+[[lazy_by_default]]
+==== Lazy By Default
+
+By default, CDI beans are created lazily, when needed.
+What exactly "needed" means depends on the scope of a bean.
+
+* A *normal scoped bean* (`@ApplicationScoped`, `@RequestScoped`, etc.) is needed when a method is invoked upon an injected instance (contextual reference per the specification). 
++
+In other words, injecting a normal scoped bean will not suffice because a _client proxy_ is injected instead of a contextual instance of the bean.
+
+* A *bean with a pseudo-scope* (`@Dependent` and `@Singleton` ) is created when injected.
+
+.Lazy Instantiation Example
+[source,java]
+----
+@Singleton // => pseudo-scope
+class AmazingService {
+  String ping() {
+    return "amazing";
+  }
+}
+
+@ApplicationScoped // => normal scope
+class CoolService {
+  String ping() {
+    return "cool";
+  }
+}
+
+@Path("/ping")
+public class PingResource {
+
+  @Inject
+  AmazingService s1; <1>
+  
+  @Inject
+  CoolService s2; <2>
+  
+  @GET
+  public String ping() {
+    return s1.ping() + s2.ping(); <3>
+  }
+}
+----
+<1> Injection triggers the instantiation of `AmazingService`.
+<2> Injection itself does not result in the instantiation of `CoolService`. A client proxy is injected. 
+<3> The first invocation upon the injected proxy triggers the instantiation of `CoolService`.
+
+==== Startup Event
+
+However, if you really need to instantiate a bean eagerly you can:
+
+* Declare an observer of the `StartupEvent` - the scope of the bean does not matter in this case:
++
+[source,java]
+----
+@ApplicationScoped
+class CoolService {
+  void startup(@Observes StartupEvent event) { <1>
+  }
+}
+----
+<1> A `CoolService` is created during startup to service the observer method invocation.
+
+* Use the bean in an observer of the `StartupEvent` - normal scoped beans must be used as described in <<lazy_by_default>>:    
++
+[source,java]
+----
+@Dependent
+class MyBeanStarter {
+
+  void startup(@Observes StartupEvent event, AmazingService amazing, CoolService cool) { <1>
+    cool.toString(); <2>
+  }
+}
+----
+<1> The `AmazingService` is created during injection.
+<2> The `CoolService` is a normal scoped bean so we have to invoke a method upon the injected proxy to force the instantiation.
+
+NOTE: Quarkus users are encouraged to always prefer the `@Observes StartupEvent` to `@Initialized(ApplicationScoped.class)` as explained in the link:lifecycle[Application Initialization and Termination] guide. 
+
+=== Request Context Lifecycle 
+
+The request context is also active:
+
+* during notification of a synchronous observer method.
+
+The request context is destroyed:
+
+* after the observer notification completes for an event, if it was not already active when the notification started.
+
+NOTE: An event with qualifier `@Initialized(RequestScoped.class)` is fired when the request context is initialized for an observer notification. Moreover, the events with qualifiers `@BeforeDestroyed(RequestScoped.class)` and `@Destroyed(RequestScoped.class)` are fired when the request context is destroyed. 
 
 === Qualified Injected Fields
 
@@ -379,8 +469,8 @@ NOTE: A bean registration that is a result of an `AdditionalBeanBuildItem` is re
 === Synthetic Beans
 
 Sometimes it is very useful to register a synthetic bean, i.e. a bean that doesn't need to have a corresponding java class.
-In CDI this could be achieved using `AfterBeanDiscovery.addBean()` methods.
-In Quarkus we produce a `BeanRegistrarBuildItem` and leverage the `io.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
+In CDI, this could be achieved using `AfterBeanDiscovery.addBean()` methods.
+In Quarkus, we produce a `BeanRegistrarBuildItem` and leverage the `io.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
 
 [source,java]
 ----
@@ -397,6 +487,8 @@ BeanRegistrarBuildItem syntheticBean() {
 ----
 
 NOTE: The output of a `BeanConfigurator` is recorded as bytecode. Therefore there are some limitations in how a synthetic bean instance is created. See also `BeanConfigurator.creator()` methods.
+
+TIP: You can easily filter all class-based beans via the convenient `BeanStream` returned from the `RegistrationContext.beans()` method.
 
 If an extension needs to produce other build items during the "bean registration" phase it should use the `BeanRegistrationPhaseBuildItem` instead.
 The reason is that injected objects are only valid during a `@BuildStep` method invocation.
@@ -473,20 +565,50 @@ The following sample shows how to apply transformation to injection points with 
 [source,java]
 ----
 @BuildStep
-InjectionPointTransformerBuildItem transform() {
+InjectionPointTransformerBuildItem transformer() {
     return new InjectionPointTransformerBuildItem(new InjectionPointsTransformer() {
 
         public boolean appliesTo(Type requiredType) {
-            return requiredType.equals(Type.create(DotName.createSimple(Foo.class.getName()), Type.Kind.CLASS));
+            return requiredType.name().equals(DotName.createSimple(Foo.class.getName()));
         }
 
-        public void transform(TransformationContext transformationContext) {
-            if (transformationContext.getQualifiers().stream()
+        public void transform(TransformationContext context) {
+            if (context.getQualifiers().stream()
                     .anyMatch(a -> a.name().equals(DotName.createSimple(MyQualifier.class.getName())))) {
-                transformationContext.transform().removeAll()
+                context.transform()
+                        .removeAll()
                         .add(DotName.createSimple(MyOtherQualifier.class.getName()))
                         .done();
             }
+        }
+    });
+}
+----
+
+=== Observer Transformation
+
+Any https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#observer_methods[observer method] definition can be vetoed or transformed using an `ObserverTransformerBuildItem`.
+The attributes that can be transformed include:
+
+- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#getObservedQualifiers--[qualifiers] 
+- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#getReception--[reception] 
+- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#getPriority--[priority] 
+- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#getTransactionPhase--[transaction phase] 
+- https://docs.jboss.org/cdi/api/2.0/javax/enterprise/inject/spi/ObserverMethod.html#isAsync--[asynchronous] 
+
+[source,java]
+----
+@BuildStep
+ObserverTransformerBuildItem transformer() {
+    return new ObserverTransformerBuildItem(new ObserverTransformer() {
+
+        public boolean appliesTo(Type observedType, Set<AnnotationInstance> qualifiers) {
+            return observedType.name.equals(DotName.createSimple(MyEvent.class.getName()));
+        }
+
+        public void transform(TransformationContext context) {
+            // Veto all observers of MyEvent
+            context.veto();
         }
     });
 }
@@ -511,7 +633,7 @@ BeanDeploymentValidatorBuildItem beanDeploymentValidator() {
 }
 ----
 
-NOTE: See also `io.quarkus.arc.processor.BuildExtension.Key` to discover the available metadata.
+TIP: You can easily filter all registered beans via the convenient `BeanStream` returned from the `ValidationContext.beans()` method.
 
 If an extension needs to produce other build items during the "validation" phase it should use the `ValidationPhaseBuildItem` instead.
 The reason is that injected objects are only valid during a `@BuildStep` method invocation.
@@ -574,13 +696,15 @@ The built-in keys located in `io.quarkus.arc.processor.BuildExtension.Key` are:
 * `ANNOTATION_STORE`
 ** Contains an `AnnotationStore` that keeps information about all `AnnotationTarget` annotations after application of annotation transformers
 * `INJECTION_POINTS`
-** `List<InjectionPointInfo>` containing all injection points
+** `Collection<InjectionPointInfo>` containing all injection points
 * `BEANS`
-** `List<BeanInfo>` containing all beans
+** `Collection<BeanInfo>` containing all beans
+* `REMOVED_BEANS`
+** `Collection<BeanInfo>` containing all the removed beans; see <<remove_unused_beans>> for more information
 * `OBSERVERS`
-** `List<ObserverInfo>` containing all observers
+** `Collection<ObserverInfo>` containing all observers
 * `SCOPES`
-** `List<ScopeInfo>` containing all scopes, including custom ones
+** `Collection<ScopeInfo>` containing all scopes, including custom ones
 * `QUALIFIERS`
 ** `Map<DotName, ClassInfo>` containing all qualifiers
 * `INTERCEPTOR_BINDINGS`
@@ -599,8 +723,10 @@ Here is a summary of which extensions can access which metadata:
 ** Has access to `ANNOTATION_STORE`
 * `InjectionPointsTransformer`
 ** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`
+* `ObserverTransformer`
+** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`
 * `BeanRegistrar`
-** Has access to all build metadata
+** Has access to `ANNOTATION_STORE`, `QUALIFIERS`, `INTERCEPTOR_BINDINGS`, `STEREOTYPES`, `BEANS`
 * `BeanDeploymentValidator`
 ** Has access to all build metadata
 

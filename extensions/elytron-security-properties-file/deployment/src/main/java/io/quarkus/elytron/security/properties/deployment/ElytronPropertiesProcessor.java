@@ -1,11 +1,8 @@
 package io.quarkus.elytron.security.properties.deployment;
 
-import java.util.Set;
-
 import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.SecurityRealm;
 
-import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -55,14 +52,13 @@ class ElytronPropertiesProcessor {
      * to include the build artifact.
      *
      * @param recorder - runtime security recorder
-     * @param resources - NativeImageResourceBuildItem used to register the realm user/roles properties files names.
      * @param securityRealm - the producer factory for the SecurityRealmBuildItem
      * @return the AuthConfigBuildItem for the realm authentication mechanism if there was an enabled PropertiesRealmConfig,
      *         null otherwise
      * @throws Exception - on any failure
      */
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     void configureFileRealmAuthConfig(ElytronPropertiesFileRecorder recorder,
             BuildProducer<NativeImageResourceBuildItem> resources,
             BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
@@ -70,13 +66,19 @@ class ElytronPropertiesProcessor {
             PropertiesRealmConfig realmConfig = propertiesConfig.file;
             log.debugf("Configuring from PropertiesRealmConfig, users=%s, roles=%s", realmConfig.users,
                     realmConfig.roles);
-            // Add the users/roles properties files resource names to build artifact
-            resources.produce(new NativeImageResourceBuildItem(realmConfig.users, realmConfig.roles));
             // Have the runtime recorder create the LegacyPropertiesSecurityRealm and create the build item
             RuntimeValue<SecurityRealm> realm = recorder.createRealm(realmConfig);
             securityRealm
                     .produce(new SecurityRealmBuildItem(realm, realmConfig.realmName, recorder.loadRealm(realm, realmConfig)));
             // Return the realm authentication mechanism build item
+        }
+    }
+
+    @BuildStep
+    void nativeResource(BuildProducer<NativeImageResourceBuildItem> resources) throws Exception {
+        if (propertiesConfig.file.enabled) {
+            PropertiesRealmConfig realmConfig = propertiesConfig.file;
+            resources.produce(new NativeImageResourceBuildItem(realmConfig.users, realmConfig.roles));
         }
     }
 
@@ -100,30 +102,12 @@ class ElytronPropertiesProcessor {
      * @throws Exception - on any failure
      */
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     void configureMPRealmConfig(ElytronPropertiesFileRecorder recorder,
             BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
         if (propertiesConfig.embedded.enabled) {
             MPRealmConfig realmConfig = propertiesConfig.embedded;
             log.info("Configuring from MPRealmConfig");
-            // These are not being populated correctly by the core config Map logic for some reason, so reparse them here
-            log.debugf("MPRealmConfig.users: %s", realmConfig.users);
-            log.debugf("MPRealmConfig.roles: %s", realmConfig.roles);
-            Set<String> userKeys = QuarkusConfig.getNames(USERS_PREFIX);
-
-            log.debugf("userKeys: %s", userKeys);
-            for (String key : userKeys) {
-                String pass = QuarkusConfig.getString(USERS_PREFIX + '.' + key, null, false);
-                log.debugf("%s.pass = %s", key, pass);
-                realmConfig.users.put(key, pass);
-            }
-            Set<String> roleKeys = QuarkusConfig.getNames(ROLES_PREFIX);
-            log.debugf("roleKeys: %s", roleKeys);
-            for (String key : roleKeys) {
-                String roles = QuarkusConfig.getString(ROLES_PREFIX + '.' + key, null, false);
-                log.debugf("%s.roles = %s", key, roles);
-                realmConfig.roles.put(key, roles);
-            }
 
             RuntimeValue<SecurityRealm> realm = recorder.createRealm(realmConfig);
             securityRealm

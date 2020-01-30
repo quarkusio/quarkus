@@ -19,18 +19,19 @@ public final class PatternMapBuilder {
         for (RootDefinition rootDefinition : rootDefinitions) {
             final String rootName = rootDefinition.getRootName();
             ConfigPatternMap<Container> addTo = patternMap, child;
-            assert !rootName.isEmpty();
-            NameIterator ni = new NameIterator(rootName);
-            assert ni.hasNext();
-            do {
-                final String seg = ni.getNextSegment();
-                child = addTo.getChild(seg);
-                ni.next();
-                if (child == null) {
-                    addTo.addChild(seg, child = new ConfigPatternMap<>());
-                }
-                addTo = child;
-            } while (ni.hasNext());
+            if (!rootName.isEmpty()) {
+                NameIterator ni = new NameIterator(rootName);
+                assert ni.hasNext();
+                do {
+                    final String seg = ni.getNextSegment();
+                    child = addTo.getChild(seg);
+                    ni.next();
+                    if (child == null) {
+                        addTo.addChild(seg, child = new ConfigPatternMap<>());
+                    }
+                    addTo = child;
+                } while (ni.hasNext());
+            }
             addGroup(addTo, rootDefinition, null);
         }
         return patternMap;
@@ -66,7 +67,9 @@ public final class PatternMapBuilder {
             Container matched = patternMap.getMatched();
             if (matched != null) {
                 throw new IllegalArgumentException(
-                        "Multiple matching properties for name \"" + matched.getPropertyName() + "\"");
+                        "Multiple matching properties for name \"" + matched.getPropertyName()
+                                + "\" property was matched by both " + container.findField() + " and " + matched.findField()
+                                + ". This is likely because you have an incompatible combination of extensions that both define the same properties (e.g. including both reactive and blocking database extensions)");
             }
             patternMap.setMatched(container);
         } else if (member instanceof ClassDefinition.MapMember) {

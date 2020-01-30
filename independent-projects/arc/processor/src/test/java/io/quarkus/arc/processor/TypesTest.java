@@ -37,8 +37,9 @@ public class TypesTest {
         Set<Type> bazTypes = Types.getTypeClosure(index.getClassByName(bazName), null,
                 Collections.emptyMap(),
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList(),
                         Collections.emptyList(), null,
-                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false),
+                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false, false),
                 resolvedTypeVariables::put);
         assertEquals(3, bazTypes.size());
         assertTrue(bazTypes.contains(Type.create(bazName, Kind.CLASS)));
@@ -54,8 +55,9 @@ public class TypesTest {
         // Foo<T>, Object
         Set<Type> fooTypes = Types.getClassBeanTypeClosure(fooClass,
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList(),
                         Collections.emptyList(), null,
-                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false));
+                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false, false));
         assertEquals(2, fooTypes.size());
         for (Type t : fooTypes) {
             if (t.kind().equals(Kind.PARAMETERIZED_TYPE)) {
@@ -70,16 +72,18 @@ public class TypesTest {
         // Object is the sole type
         Set<Type> producerMethodTypes = Types.getProducerMethodTypeClosure(producerMethod,
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList(),
                         Collections.emptyList(), null,
-                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false));
+                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false, false));
         assertEquals(1, producerMethodTypes.size());
 
         // Object is the sole type
         FieldInfo producerField = producerClass.field(producersName);
         Set<Type> producerFieldTypes = Types.getProducerFieldTypeClosure(producerField,
                 new BeanDeployment(index, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList(),
                         Collections.emptyList(), null,
-                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false));
+                        false, Collections.emptyList(), Collections.emptyMap(), Collections.emptyList(), false, false));
         assertEquals(1, producerFieldTypes.size());
     }
 

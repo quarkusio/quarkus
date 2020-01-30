@@ -105,7 +105,6 @@
                                     <enableServer>false</enableServer>
                                     <dumpProxies>false</dumpProxies>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableJni>true</enableJni>
                                     <enableAllSecurityServices>true</enableAllSecurityServices>
                                     <enableReports>false</enableReports>
                                 </configuration>

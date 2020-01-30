@@ -31,8 +31,13 @@
             <artifactId>kafka-streams</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.oracle.substratevm</groupId>
+            <groupId>org.graalvm.nativeimage</groupId>
             <artifactId>svm</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

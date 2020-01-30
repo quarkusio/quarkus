@@ -22,4 +22,11 @@ public class DataSourceBuildTimeConfig {
     @ConfigItem(defaultValue = "enabled")
     public TransactionIntegration transactions;
 
+    /**
+     * Enable datasource metrics collection. If unspecified, collecting metrics will be enabled by default if the
+     * smallrye-metrics extension is active.
+     */
+    @ConfigItem
+    public Optional<Boolean> enableMetrics;
+
 }

@@ -13,7 +13,7 @@ import io.quarkus.arc.DefaultBean;
 @ApplicationScoped
 public class KubernetesClientProducer {
 
-    private KubernetesClientBuildConfig buildConfig;
+    private volatile KubernetesClientBuildConfig buildConfig;
 
     @DefaultBean
     @Singleton
@@ -33,8 +33,8 @@ public class KubernetesClientProducer {
                 .withPassword(buildConfig.password.orElse(base.getPassword()))
                 .withCaCertFile(buildConfig.caCertFile.orElse(base.getCaCertFile()))
                 .withCaCertData(buildConfig.caCertData.orElse(base.getCaCertData()))
-                .withClientCertFile(buildConfig.clientCertFile.orElse(base.getCaCertFile()))
-                .withClientCertData(buildConfig.clientCertData.orElse(base.getCaCertData()))
+                .withClientCertFile(buildConfig.clientCertFile.orElse(base.getClientCertFile()))
+                .withClientCertData(buildConfig.clientCertData.orElse(base.getClientCertData()))
                 .withClientKeyFile(buildConfig.clientKeyFile.orElse(base.getClientKeyFile()))
                 .withClientKeyData(buildConfig.clientKeyData.orElse(base.getClientKeyData()))
                 .withClientKeyPassphrase(buildConfig.clientKeyPassphrase.orElse(base.getClientKeyPassphrase()))

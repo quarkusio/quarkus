@@ -4,8 +4,8 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -25,6 +25,8 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
+import org.eclipse.microprofile.metrics.Metadata;
+import org.eclipse.microprofile.metrics.MetricType;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.DerbyTenSevenDialect;
@@ -45,6 +47,7 @@ import org.jboss.jandex.Indexer;
 
 import io.quarkus.agroal.deployment.DataSourceDriverBuildItem;
 import io.quarkus.agroal.deployment.DataSourceInitializedBuildItem;
+import io.quarkus.agroal.deployment.DataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -82,7 +85,9 @@ import io.quarkus.hibernate.orm.runtime.TransactionEntityManagers;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL95Dialect;
+import io.quarkus.hibernate.orm.runtime.metrics.HibernateCounter;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.smallrye.metrics.deployment.spi.MetricBuildItem;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -128,7 +133,7 @@ public final class HibernateOrmProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    @BuildStep
+    @BuildStep(loadsApplicationClasses = true)
     @Record(STATIC_INIT)
     public void build(RecorderContext recorderContext, HibernateOrmRecorder recorder,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
@@ -263,13 +268,13 @@ public final class HibernateOrmProcessor {
     @BuildStep
     void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceAnnotations,
             BuildProducer<GeneratedResourceBuildItem> resources,
-            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) throws UnsupportedEncodingException {
+            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) {
         if (!hasEntities(jpaEntities, nonJpaModels)) {
             return;
         }
 
         resources.produce(new GeneratedResourceBuildItem("META-INF/services/io.quarkus.arc.ResourceReferenceProvider",
-                JPAResourceReferenceProvider.class.getName().getBytes("UTF-8")));
+                JPAResourceReferenceProvider.class.getName().getBytes(StandardCharsets.UTF_8)));
         resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_CONTEXT));
         resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_UNIT));
     }
@@ -335,12 +340,170 @@ public final class HibernateOrmProcessor {
     public void startPersistenceUnits(HibernateOrmRecorder recorder, BeanContainerBuildItem beanContainer,
             Optional<DataSourceInitializedBuildItem> dataSourceInitialized,
             JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels,
-            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationsRuntimeConfigured) throws Exception {
+            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationsRuntimeConfigured,
+            Optional<DataSourceSchemaReadyBuildItem> schemaReadyBuildItem) throws Exception {
         if (!hasEntities(jpaEntities, nonJpaModels)) {
             return;
         }
 
         recorder.startAllPersistenceUnits(beanContainer.getValue());
+    }
+
+    @BuildStep
+    public void metrics(HibernateOrmConfig config,
+            BuildProducer<MetricBuildItem> metrics) {
+        // TODO: When multiple PUs are supported, create metrics for each PU. For now we only assume the "default" PU.
+        boolean metricsEnabled = config.metricsEnabled && config.statistics.orElse(true);
+        metrics.produce(createMetricBuildItem("hibernate-orm.sessions.open",
+                "Global number of sessions opened",
+                "sessionsOpened",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.sessions.closed",
+                "Global number of sessions closed",
+                "sessionsClosed",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.sessions.closed",
+                "Global number of sessions closed",
+                "sessionsClosed",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.transactions",
+                "The number of transactions we know to have completed",
+                "transactionCount",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.transactions.successful",
+                "The number of transactions we know to have been successful",
+                "successfulTransactions",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.optimistic.lock.failures",
+                "The number of Hibernate StaleObjectStateExceptions or JPA OptimisticLockExceptions that occurred.",
+                "optimisticLockFailures",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.flushes",
+                "Global number of flush operations executed (either manual or automatic).",
+                "flushes",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.connections.obtained",
+                "Get the global number of connections asked by the sessions " +
+                        "(the actual number of connections used may be much smaller depending " +
+                        "whether you use a connection pool or not)",
+                "connectionsObtained",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.statements.prepared",
+                "The number of prepared statements that were acquired",
+                "statementsPrepared",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.statements.closed",
+                "The number of prepared statements that were released",
+                "statementsClosed",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.second-level-cache.puts",
+                "Global number of cacheable entities/collections put in the cache",
+                "secondLevelCachePuts",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.second-level-cache.hits",
+                "Global number of cacheable entities/collections successfully retrieved from the cache",
+                "secondLevelCacheHits",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.second-level-cache.misses",
+                "Global number of cacheable entities/collections not found in the cache and loaded from the database.",
+                "secondLevelCacheMisses",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.entities.loaded",
+                "Global number of entity loads",
+                "entitiesLoaded",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.entities.updated",
+                "Global number of entity updates",
+                "entitiesUpdated",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.entities.inserted",
+                "Global number of entity inserts",
+                "entitiesInserted",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.entities.deleted",
+                "Global number of entity deletes",
+                "entitiesDeleted",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.entities.fetched",
+                "Global number of entity fetches",
+                "entitiesFetched",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.collections.loaded",
+                "Global number of collections loaded",
+                "collectionsLoaded",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.collections.updated",
+                "Global number of collections updated",
+                "collectionsUpdated",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.collections.removed",
+                "Global number of collections removed",
+                "collectionsRemoved",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.collections.recreated",
+                "Global number of collections recreated",
+                "collectionsRecreated",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.collections.fetched",
+                "Global number of collections fetched",
+                "collectionsFetched",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.natural-id.queries.executions",
+                "Global number of natural id queries executed against the database",
+                "naturalIdQueriesExecutedToDatabase",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.natural-id.cache.hits",
+                "Global number of cached natural id lookups successfully retrieved from cache",
+                "naturalIdCacheHits",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.natural-id.cache.puts",
+                "Global number of cacheable natural id lookups put in cache",
+                "naturalIdCachePuts",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.natural-id.cache.misses",
+                "Global number of cached natural id lookups *not* found in cache",
+                "naturalIdCacheMisses",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.queries.executed",
+                "Global number of executed queries",
+                "queriesExecutedToDatabase",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.query-cache.puts",
+                "Global number of cacheable queries put in cache",
+                "queryCachePuts",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.query-cache.hits",
+                "Global number of cached queries successfully retrieved from cache",
+                "queryCacheHits",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.query-cache.misses",
+                "Global number of cached queries *not* found in cache",
+                "queryCacheMisses",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.timestamps-cache.puts",
+                "Global number of timestamps put in cache",
+                "updateTimestampsCachePuts",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.timestamps-cache.hits",
+                "Global number of timestamps successfully retrieved from cache",
+                "updateTimestampsCacheHits",
+                metricsEnabled));
+        metrics.produce(createMetricBuildItem("hibernate-orm.timestamps-cache.misses",
+                "Global number of timestamp requests that were not found in the cache",
+                "updateTimestampsCacheMisses",
+                metricsEnabled));
+    }
+
+    private MetricBuildItem createMetricBuildItem(String metricName, String description, String metric,
+            boolean metricsEnabled) {
+        return new MetricBuildItem(Metadata.builder()
+                .withName(metricName)
+                .withDescription(description)
+                .withType(MetricType.COUNTER)
+                .build(),
+                new HibernateCounter("default", metric),
+                metricsEnabled,
+                "hibernate-orm");
     }
 
     private Optional<String> getSqlLoadScript(LaunchMode launchMode) {
@@ -405,6 +568,15 @@ public final class HibernateOrmProcessor {
                     systemProperty.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE,
                             hibernateConfig.dialectStorageEngine.get()));
                 }
+                // Physical Naming Strategy
+                hibernateConfig.physicalNamingStrategy.ifPresent(
+                        namingStrategy -> desc.getProperties()
+                                .setProperty(AvailableSettings.PHYSICAL_NAMING_STRATEGY, namingStrategy));
+
+                // Implicit Naming Strategy
+                hibernateConfig.implicitNamingStrategy.ifPresent(
+                        namingStrategy -> desc.getProperties()
+                                .setProperty(AvailableSettings.IMPLICIT_NAMING_STRATEGY, namingStrategy));
 
                 // Database
                 desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION,
@@ -422,6 +594,10 @@ public final class HibernateOrmProcessor {
 
                 hibernateConfig.database.defaultSchema.ifPresent(
                         schema -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_SCHEMA, schema));
+
+                if (hibernateConfig.database.globallyQuotedIdentifiers) {
+                    desc.getProperties().setProperty(AvailableSettings.GLOBALLY_QUOTED_IDENTIFIERS, "true");
+                }
 
                 // Query
                 if (hibernateConfig.batchFetchSize > 0) {
@@ -461,7 +637,8 @@ public final class HibernateOrmProcessor {
                 }
 
                 // Statistics
-                if (hibernateConfig.statistics) {
+                if (hibernateConfig.metricsEnabled
+                        || (hibernateConfig.statistics.isPresent() && hibernateConfig.statistics.get())) {
                     desc.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
                 }
 

@@ -78,6 +78,7 @@ package org.acme.jwt;
 import java.security.Principal;
 
 import javax.annotation.security.PermitAll;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -105,7 +106,7 @@ public class TokenSecuredResource {
     public String hello(@Context SecurityContext ctx) { // <4>
         Principal caller =  ctx.getUserPrincipal(); <5>
         String name = caller == null ? "anonymous" : caller.getName();
-        boolean hasJWT = jwt.getClaims() != null;
+        boolean hasJWT = jwt.getClaimNames() != null;
         String helloReply = String.format("hello + %s, isSecure: %s, authScheme: %s, hasJWT: %s", name, ctx.isSecure(), ctx.getAuthenticationScheme(), hasJWT);
         return helloReply; // <6>
     }
@@ -177,6 +178,7 @@ import java.security.Principal;
 
 import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -264,14 +266,11 @@ For part A of step 1, create a `security-jwt-quickstart/src/main/resources/appli
 ----
 mp.jwt.verify.publickey.location=META-INF/resources/publicKey.pem #<1>
 mp.jwt.verify.issuer=https://quarkus.io/using-jwt-rbac #<2>
-
-quarkus.smallrye-jwt.auth-mechanism=MP-JWT # <3>
-quarkus.smallrye-jwt.enabled=true # <4>
+quarkus.smallrye-jwt.enabled=true #<3>
 ----
 <1> We are setting public key location to point to a classpath publicKey.pem resource location. We will add this key in part B, <<Adding a Public Key>>.
 <2> We are setting the issuer to the URL string `https://quarkus.io/using-jwt-rbac`.
-<3> We are setting the authentication mechanism name to MP-JWT. This is not strictly required to allow our quickstart to work, but it is the {mp-jwt} specification standard name for the token based authentication mechanism.
-<4> We are enabling the {extension-name}. Also not required since this is the default,
+<3> We are enabling the {extension-name}. Also not required since this is the default,
 but we are making it explicit.
  
 === Adding a Public Key
@@ -299,33 +298,30 @@ nQIDAQAB
 
 === Generating a JWT
 
-Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the
-https://bitbucket.org/b_c/jose4j/wiki/Home[Jose4J] library and the TokenUtils class shown in the following listing. Take this source and place it into `security-jwt-quickstart/src/test/java/org/acme/jwt/TokenUtils.java`.
+Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt` and the TokenUtils class shown in the following listing. Take this source and place it into `security-jwt-quickstart/src/test/java/org/acme/jwt/TokenUtils.java`.
 
-NOTE: JWT libraries for many different programming languages can be found at the JWT.io website https://jwt.io/#libraries[JWT Libraries].
 
 .JWT utility class
 [source, java]
 ----
 package org.acme.jwt;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jose4j.jws.AlgorithmIdentifiers;
-import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.NumericDate;
 
+import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.build.JwtClaimsBuilder;
 /**
  * Utilities for generating a JWT for testing
  */
@@ -354,34 +350,16 @@ public class TokenUtils {
     public static String generateTokenString(PrivateKey privateKey, String kid,
         String jsonResName, Map<String, Long> timeClaims) throws Exception {
 
-        JwtClaims claims = JwtClaims.parse(readTokenContent(jsonResName));
+        JwtClaimsBuilder claims = Jwt.claims(jsonResName);
         long currentTimeInSecs = currentTimeInSecs();
-        long exp = timeClaims != null && timeClaims.containsKey(Claims.exp.name())
+        long exp = timeClaims != null && timeClaims.containsKey(Claims.exp.name()) 
             ? timeClaims.get(Claims.exp.name()) : currentTimeInSecs + 300;
 
-        claims.setIssuedAt(NumericDate.fromSeconds(currentTimeInSecs));
-        claims.setClaim(Claims.auth_time.name(), NumericDate.fromSeconds(currentTimeInSecs));
-        claims.setExpirationTime(NumericDate.fromSeconds(exp));
+        claims.issuedAt(currentTimeInSecs);
+        claims.claim(Claims.auth_time.name(), currentTimeInSecs);
+        claims.expiresAt(exp);
 
-        for (Map.Entry<String, Object> entry : claims.getClaimsMap().entrySet()) {
-            System.out.printf("\tAdded claim: %s, value: %s\n", entry.getKey(), entry.getValue());
-        }
-
-        JsonWebSignature jws = new JsonWebSignature();
-        jws.setPayload(claims.toJson());
-        jws.setKey(privateKey);
-        jws.setKeyIdHeaderValue(kid);
-        jws.setHeader("typ", "JWT");
-        jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
-
-        return jws.getCompactSerialization();
-    }
-
-    private static String readTokenContent(String jsonResName) throws IOException {
-        InputStream contentIS = TokenUtils.class.getResourceAsStream(jsonResName);
-        try (BufferedReader buffer = new BufferedReader(new InputStreamReader(contentIS))) {
-            return buffer.lines().collect(Collectors.joining("\n"));
-        }
+        return claims.jws().signatureKeyId(kid).sign(privateKey);
     }
 
     /**
@@ -392,10 +370,11 @@ public class TokenUtils {
      * @throws Exception on decode failure
      */
     public static PrivateKey readPrivateKey(final String pemResName) throws Exception {
-        InputStream contentIS = TokenUtils.class.getResourceAsStream(pemResName);
-        byte[] tmp = new byte[4096];
-        int length = contentIS.read(tmp);
-        return decodePrivateKey(new String(tmp, 0, length, "UTF-8"));
+        try (InputStream contentIS = TokenUtils.class.getResourceAsStream(pemResName)) {
+            byte[] tmp = new byte[4096];
+            int length = contentIS.read(tmp);
+            return decodePrivateKey(new String(tmp, 0, length, "UTF-8"));
+        }
     }
 
     /**
@@ -710,8 +689,8 @@ import java.util.ArrayList;
 
 import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
-import javax.json.JsonString;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -726,12 +705,12 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 /**
  * Version 3 of the TokenSecuredResource
  */
- @Path("/secured")
- @RequestScoped
+@Path("/secured")
+@RequestScoped
 public class TokenSecuredResourceV3 {
 
-     @Inject
-     JsonWebToken jwt;
+    @Inject
+    JsonWebToken jwt;
 
 ...
 
@@ -804,7 +783,9 @@ import java.util.Optional;
 
 import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
+import javax.json.JsonString;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -827,7 +808,7 @@ public class TokenSecuredResource {
     JsonWebToken jwt;
     @Inject // <1>
     @Claim(standard = Claims.birthdate) // <2>
-    Optional<String> birthdate; // <3>
+    Optional<JsonString> birthdate; // <3>
 
     ...
 
@@ -841,7 +822,7 @@ public class TokenSecuredResource {
 
         // If the JWT contains a birthdate claim, use the day of the month as a pick
         if (birthdate.isPresent()) { // <4>
-            String bdayString = birthdate.get(); <5>
+            String bdayString = birthdate.get().getString(); <5>
             LocalDate bday = LocalDate.parse(bdayString);
             numbers.add(bday.getDayOfMonth());
             remaining --;
@@ -858,7 +839,7 @@ public class TokenSecuredResource {
 ----
 <1> We use CDI `@Inject` along with...
 <2> an {mp-jwt} `@Claim(standard = Claims.birthdate)` qualifier to inject the `birthdate` claim directly as
-<3> an `Optional<String>` value.
+<3> an `Optional<JsonString>` value.
 <4> Now we check whether the injected `birthdate` field is present
 <5> and if it is, get its value.
 
@@ -955,3 +936,24 @@ precedence:
  - JSON Web Key Set (JWKS)
  - JSON Web Key (JWK) Base64 URL encoded
  - JSON Web Key Set (JWKS) Base64 URL encoded
+
+=== Additional Smallrye JWT configuration
+
+Smallrye JWT provides more properties which can be used to customize the token processing:
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|smallrye.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token.
+|smallrye.jwt.token.cookie|none|Name of the cookie containing a token. This property will be effective only if  `smallrye.jwt.token.header` is set to `Cookie`.
+|smallrye.jwt.token.schemes|`Bearer`|Comma-separated list containing an alternative single or multiple schemes, for example, `DPoP`.
+|smallrye.jwt.require.named-principal|`false`|If an application relies on `java.security.Principal` returning a name then a token must have a `upn` or `preferred_username` or `sub` claim set. Setting this property will result in Smallrye JWT throwing an exception if none of these claims is available for the application code to reliably deal with a non-null `Principal` name.
+|smallrye.jwt.path.sub|none|Path to the claim containing the subject name. It starts from the top level JSON object and can contain multiple segments where each segment represents a JSON object name only, example: `realms/subject`. This property can be used if a token has no 'sub' claim but has the subject set in a different claim.
+|smallrye.jwt.claims.sub|none| This property can be used to set a default sub claim value when the current token has no standard or custom `sub` claim available. Effectively this property can be used to customize `java.security.Principal` name if no `upn` or `preferred_username` or `sub` claim is set.
+|smallrye.jwt.path.groups|none|Path to the claim containing the groups. It starts from the top level JSON object and can contain multiple segments where each segment represents a JSON object name only, example: `realm/groups`. This property can be used if a token has no 'groups' claim but has the groups set in a different claim.
+|smallrye.jwt.path.groups-separator|` `|Separator for splitting a string which may contain multiple group values. It will only be used if the `smallrye.jwt.path.groups` property points to a custom claim whose value is a string. The default value is a single space because a standard OAuth2 `scope` claim may contain a space separated sequence.
+|smallrye.jwt.claims.groups|none| This property can be used to set a default groups claim value when the current token has no standard or custom groups claim available.
+|smallrye.jwt.jwk.refresh-interval|60|JWK cache refresh interval in minutes. It will be ignored unless the `mp.jwt.verify.publickey.location` points to the HTTPS URL based JWK set and no HTTP `Cache-Control` response header with a positive `max-age` parameter value is returned from a JWK HTTPS endpoint.
+|smallrye.jwt.expiration.grace|60|Expiration grace in seconds. By default an expired token will still be accepted if the current time is no more than 1 min after the token expiry time.
+|smallrye.jwt.verify.audience|none|Comma separated list of the audiences that a token `aud` claim may contain.
+|===

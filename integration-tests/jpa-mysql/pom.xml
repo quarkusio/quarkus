@@ -15,7 +15,7 @@
     <description>Module that contains JPA related tests running with the MySQL database</description>
 
     <properties>
-        <mysql.url>jdbc:mysql://localhost:3306/hibernate_orm_test?serverTimezone=UTC</mysql.url>
+        <mysql.url>jdbc:mysql://localhost:3306/hibernate_orm_test</mysql.url>
     </properties>
 
     <dependencies>
@@ -148,7 +148,6 @@
                                     <enableServer>false</enableServer>
                                     <dumpProxies>false</dumpProxies>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableJni>false</enableJni>
                                     <debugBuildProcess>false</debugBuildProcess>
                                 </configuration>
                             </execution>
@@ -196,14 +195,12 @@
                                         <!-- Speed things up a bit by not actually flushing writes to disk -->
                                         <tmpfs>/var/lib/mysql</tmpfs>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
-                                            <tcp>
-                                                <mode>mapped</mode>
-                                                <ports>
-                                                    <port>3306</port>
-                                                </ports>
-                                            </tcp>
-                                            <time>40000</time>
+                                            <!-- good docs found at: http://dmp.fabric8.io/#start-wait -->
+                                            <time>20000</time>
+                                            <!-- wait until MySQL is actually up by checking if mysqladmin can ping the server with specified username/password -->
+                                            <exec>
+                                                <postStart>mysqladmin ping -h localhost -u hibernate_orm_test -phibernate_orm_test</postStart>
+                                            </exec>
                                         </wait>
                                     </run>
                                 </image>

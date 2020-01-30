@@ -15,8 +15,9 @@
 
     <packaging>jar</packaging>
     <properties>
-        <asciidoctorj.version>2.0.0</asciidoctorj.version>
+        <asciidoctorj.version>2.2.0</asciidoctorj.version>
         <asciidoctor-maven-plugin.version>2.0.0-RC.1</asciidoctor-maven-plugin.version>
+        <asciidoctorj-pdf.version>1.5.0-beta.8</asciidoctorj-pdf.version>
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
         <quickstarts-base-url>https://github.com/quarkusio/quarkus-quickstarts</quickstarts-base-url>
@@ -90,13 +91,25 @@
                           <severity>WARN</severity>
                         </failIf>
                     </logHandler>
+                    <sourceDirectory>src/main/asciidoc</sourceDirectory>
+                    <preserveDirectories>true</preserveDirectories>
                     <attributes>
                         <generated-dir>${project.basedir}/../target/asciidoc/generated</generated-dir>
+                        <imagesdir>./images</imagesdir>
+                        <icons>font</icons>
+                        <sectanchors>true</sectanchors>
+                        <!-- set the idprefix to blank -->
+                        <idprefix/>
+                        <idseparator>-</idseparator>
+                        <docinfo1>true</docinfo1>
+                        <!-- avoid content security policy violations -->
+                        <skip-front-matter>true</skip-front-matter>
 
                         <quarkus-version>${project.version}</quarkus-version>
                         <surefire-version>${version.surefire.plugin}</surefire-version>
                         <graalvm-version>${graal-sdk.version-for-documentation}</graalvm-version>
                         <restassured-version>${rest-assured.version}</restassured-version>
+                        <keycloak-docker-image>${keycloak.docker.image}</keycloak-docker-image>
                         <!-- Project website home page -->
                         <quarkus-home-url>${quarkus-home-url}</quarkus-home-url>
                         <!-- Root URL of the GitHub organization -->
@@ -151,21 +164,11 @@
                         <configuration>
                             <skip>${skipDocs}</skip>
                             <backend>html5</backend>
-                            <sourceDirectory>src/main/asciidoc</sourceDirectory>
-                            <preserveDirectories>true</preserveDirectories>
                             <attributes>
                                 <source-highlighter>coderay</source-highlighter>
-                                <imagesdir>./images</imagesdir>
-                                <icons>font</icons>
-                                <sectanchors>true</sectanchors>
-                                <!-- set the idprefix to blank -->
-                                <idprefix/>
-                                <idseparator>-</idseparator>
-                                <docinfo1>true</docinfo1>
                                 <!-- avoid content security policy violations -->
                                 <linkcss>true</linkcss>
                                 <copycss>true</copycss>
-                                <skip-front-matter>true</skip-front-matter>
                             </attributes>
                         </configuration>
                     </execution>
@@ -193,7 +196,7 @@
                                 <descriptor>assembly.xml</descriptor>
                             </descriptors>
                             <recompressZippedFiles>true</recompressZippedFiles>
-                            <finalName>quarkus-docs-${project.version}</finalName>
+                            <finalName>quarkus-documentation-${project.version}</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <outputDirectory>target/</outputDirectory>
                             <workDirectory>target/assembly/work</workDirectory>
@@ -220,4 +223,76 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>documentation-pdf</id>
+            <activation>
+                <property>
+                    <name>documentation-pdf</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.asciidoctor</groupId>
+                        <artifactId>asciidoctor-maven-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.asciidoctor</groupId>
+                                <artifactId>asciidoctorj-pdf</artifactId>
+                                <version>${asciidoctorj-pdf.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>output-pdf</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>process-asciidoc</goal>
+                                </goals> 
+                                <configuration>
+                                    <skip>${skipDocs}</skip>
+                                    <backend>pdf</backend>
+                                    <outputDirectory>${project.build.directory}/generated-docs-pdf</outputDirectory>
+                                    <sourceHighlighter>coderay</sourceHighlighter>
+                                    <attributes>
+                                        <pdf-stylesdir>${basedir}/src/main/resources/theme</pdf-stylesdir>
+                                        <pdf-style>quarkus</pdf-style>
+                                        <pdf-fontsdir>${basedir}/src/main/resources/theme/fonts</pdf-fontsdir>
+                                        <icon-set>fas</icon-set>
+                                        <pagenums />
+                                    </attributes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>assemble-pdf</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly-pdf.xml</descriptor>
+                                    </descriptors>
+                                    <recompressZippedFiles>true</recompressZippedFiles>
+                                    <finalName>quarkus-documentation-pdf-${project.version}</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <outputDirectory>target/</outputDirectory>
+                                    <workDirectory>target/assembly-pdf/work</workDirectory>
+                                    <tarLongFileMode>gnu</tarLongFileMode>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

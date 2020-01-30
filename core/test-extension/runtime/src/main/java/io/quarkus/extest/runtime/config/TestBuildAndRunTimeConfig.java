@@ -38,6 +38,8 @@ public class TestBuildAndRunTimeConfig {
     @ConvertWith(WholeNumberConverter.class)
     public Map<String, Integer> mapOfNumbers;
 
+    public Map<String, Map<String, String>> mapMap;
+
     /**
      * Enum object
      */

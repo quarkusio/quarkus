@@ -45,8 +45,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vault-test</artifactId>
-            <version>${project.version}</version>
+            <artifactId>quarkus-test-vault</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -172,7 +171,6 @@
                                     <enableServer>false</enableServer>
                                     <dumpProxies>false</dumpProxies>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableJni>false</enableJni>
                                 </configuration>
                             </execution>
                         </executions>

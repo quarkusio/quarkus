@@ -1,5 +1,6 @@
 package io.quarkus.kogito.deployment;
 
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,9 +72,15 @@ public class JandexProtoGenerator implements ProtoGenerator<ClassInfo> {
 
         for (FieldInfo pd : clazz.fields()) {
 
+            // ignore static and/or transient fields
+            if (Modifier.isStatic(pd.flags()) || Modifier.isTransient(pd.flags())) {
+                continue;
+            }
+
             String fieldTypeString = pd.type().name().toString();
 
             DotName fieldType = pd.type().name();
+            String protoType;
             if (pd.type().kind() == Kind.PARAMETERIZED_TYPE) {
                 fieldTypeString = "Collection";
 
@@ -83,11 +90,17 @@ public class JandexProtoGenerator implements ProtoGenerator<ClassInfo> {
                             + " uses collection without type information");
                 }
                 fieldType = typeParameters.get(0).name();
+                protoType = protoType(fieldType.toString());
+            } else {
+                protoType = protoType(fieldTypeString);
             }
-            String protoType = protoType(fieldTypeString);
 
             if (protoType == null) {
-                ProtoMessage another = messageFromClass(proto, index.getClassByName(fieldType), index, packageName,
+                ClassInfo classInfo = index.getClassByName(fieldType);
+                if (classInfo == null) {
+                    throw new IllegalStateException("Cannot find class info in jandex index for " + fieldType);
+                }
+                ProtoMessage another = messageFromClass(proto, classInfo, index, packageName,
                         messageComment, fieldComment);
                 protoType = another.getName();
             }
@@ -131,7 +144,7 @@ public class JandexProtoGenerator implements ProtoGenerator<ClassInfo> {
         if (processId != null) {
 
             Proto modelProto = generate("@Indexed",
-                    "@Field(store = Store.YES, analyze = Analyze.YES)",
+                    INDEX_COMMENT,
                     modelClazz.name().prefix().toString() + "." + processId, modelClazz,
                     "import \"kogito-index.proto\";",
                     "import \"kogito-types.proto\";",
@@ -140,10 +153,8 @@ public class JandexProtoGenerator implements ProtoGenerator<ClassInfo> {
 
             ProtoMessage modelMessage = modelProto.getMessages().stream().filter(msg -> msg.getName().equals(name)).findFirst()
                     .orElseThrow(() -> new IllegalStateException("Unable to find model message"));
-            modelMessage.addField("repeated", "org.kie.kogito.index.model.ProcessInstanceMeta", "processInstances")
-                    .setComment("@Field(store = Store.YES, analyze = Analyze.YES)");
-            modelMessage.addField("repeated", "org.kie.kogito.index.model.UserTaskInstanceMeta", "userTasks")
-                    .setComment("@Field(store = Store.YES, analyze = Analyze.YES)");
+            modelMessage.addField("optional", "org.kie.kogito.index.model.KogitoMetadata", "metadata")
+                    .setComment(INDEX_COMMENT);
 
             Path protoFilePath = Paths.get(targetDirectory, "classes", "/persistence/" + processId + ".proto");
 

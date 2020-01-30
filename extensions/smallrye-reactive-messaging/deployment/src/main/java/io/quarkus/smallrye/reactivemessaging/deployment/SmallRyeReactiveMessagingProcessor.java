@@ -118,27 +118,25 @@ public class SmallRyeReactiveMessagingProcessor {
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
 
         // We need to collect all business methods annotated with @Incoming/@Outgoing first
-        for (BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
-            if (bean.isClassBean()) {
-                // TODO: add support for inherited business methods
-                for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
-                    AnnotationInstance incoming = annotationStore.getAnnotation(method,
-                            io.quarkus.smallrye.reactivemessaging.deployment.DotNames.INCOMING);
-                    AnnotationInstance outgoing = annotationStore.getAnnotation(method,
-                            io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OUTGOING);
-                    if (incoming != null || outgoing != null) {
-                        if (incoming != null && incoming.value().asString().isEmpty()) {
-                            validationPhase.getContext().addDeploymentProblem(
-                                    new DeploymentException("Empty @Incoming annotation on method " + method));
-                        }
-                        if (outgoing != null && outgoing.value().asString().isEmpty()) {
-                            validationPhase.getContext().addDeploymentProblem(
-                                    new DeploymentException("Empty @Outgoing annotation on method " + method));
-                        }
-                        // TODO: validate method params and return type?
-                        mediatorMethods.produce(new MediatorBuildItem(bean, method));
-                        LOGGER.debugf("Found mediator business method %s declared on %s", method, bean);
+        for (BeanInfo bean : validationPhase.getContext().beans().classBeans()) {
+            // TODO: add support for inherited business methods
+            for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
+                AnnotationInstance incoming = annotationStore.getAnnotation(method,
+                        io.quarkus.smallrye.reactivemessaging.deployment.DotNames.INCOMING);
+                AnnotationInstance outgoing = annotationStore.getAnnotation(method,
+                        io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OUTGOING);
+                if (incoming != null || outgoing != null) {
+                    if (incoming != null && incoming.value().asString().isEmpty()) {
+                        validationPhase.getContext().addDeploymentProblem(
+                                new DeploymentException("Empty @Incoming annotation on method " + method));
                     }
+                    if (outgoing != null && outgoing.value().asString().isEmpty()) {
+                        validationPhase.getContext().addDeploymentProblem(
+                                new DeploymentException("Empty @Outgoing annotation on method " + method));
+                    }
+                    // TODO: validate method params and return type?
+                    mediatorMethods.produce(new MediatorBuildItem(bean, method));
+                    LOGGER.debugf("Found mediator business method %s declared on %s", method, bean);
                 }
             }
         }

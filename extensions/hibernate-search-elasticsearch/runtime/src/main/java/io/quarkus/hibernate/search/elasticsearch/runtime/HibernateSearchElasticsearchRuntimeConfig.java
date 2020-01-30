@@ -2,6 +2,7 @@ package io.quarkus.hibernate.search.elasticsearch.runtime;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -9,6 +10,8 @@ import org.hibernate.search.backend.elasticsearch.index.IndexLifecycleStrategyNa
 import org.hibernate.search.backend.elasticsearch.index.IndexStatus;
 import org.hibernate.search.mapper.orm.automaticindexing.AutomaticIndexingSynchronizationStrategyName;
 import org.hibernate.search.mapper.orm.search.loading.EntityLoadingCacheLookupStrategy;
+import org.hibernate.search.util.common.SearchException;
+import org.hibernate.search.util.common.impl.StringHelper;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -62,8 +65,15 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         /**
          * The list of hosts of the Elasticsearch servers.
          */
-        @ConfigItem(defaultValue = "http://localhost:9200")
-        Optional<List<String>> hosts;
+        @ConfigItem(defaultValue = "localhost:9200")
+        List<String> hosts;
+
+        /**
+         * The protocol to use when contacting Elasticsearch servers.
+         * Set to "https" to enable SSL/TLS.
+         */
+        @ConfigItem(defaultValue = "http")
+        ElasticsearchClientProtocol protocol;
 
         /**
          * The username used for authentication.
@@ -115,6 +125,40 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         Map<String, ElasticsearchIndexConfig> indexes;
     }
 
+    public enum ElasticsearchClientProtocol {
+        /**
+         * Use clear-text HTTP, with SSL/TLS disabled.
+         */
+        HTTP("http"),
+        /**
+         * Use HTTPS, with SSL/TLS enabled.
+         */
+        HTTPS("https");
+
+        public static ElasticsearchClientProtocol of(String value) {
+            return StringHelper.parseDiscreteValues(
+                    values(),
+                    ElasticsearchClientProtocol::getHibernateSearchString,
+                    (invalidValue, validValues) -> new SearchException(
+                            String.format(
+                                    Locale.ROOT,
+                                    "Invalid protocol: '%1$s'. Valid protocols are: %2$s.",
+                                    invalidValue,
+                                    validValues)),
+                    value);
+        }
+
+        private final String hibernateSearchString;
+
+        ElasticsearchClientProtocol(String hibernateSearchString) {
+            this.hibernateSearchString = hibernateSearchString;
+        }
+
+        public String getHibernateSearchString() {
+            return hibernateSearchString;
+        }
+    }
+
     @ConfigGroup
     public static class ElasticsearchIndexConfig {
         /**
@@ -139,11 +183,6 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         @ConfigItem(defaultValue = "10S")
         Duration refreshInterval;
 
-        /**
-         * The scheme that should be used for the new nodes discovered.
-         */
-        @ConfigItem(defaultValue = "http")
-        String defaultScheme;
     }
 
     @ConfigGroup

@@ -124,6 +124,8 @@ public class HibernateSearchElasticsearchRecorder {
                 ElasticsearchBackendRuntimeConfig elasticsearchBackendConfig) {
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.HOSTS,
                     elasticsearchBackendConfig.hosts);
+            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.PROTOCOL,
+                    elasticsearchBackendConfig.protocol.getHibernateSearchString());
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.USERNAME,
                     elasticsearchBackendConfig.username);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.PASSWORD,
@@ -140,8 +142,6 @@ public class HibernateSearchElasticsearchRecorder {
             if (elasticsearchBackendConfig.discovery.enabled) {
                 addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_REFRESH_INTERVAL,
                         elasticsearchBackendConfig.discovery.refreshInterval.getSeconds());
-                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_SCHEME,
-                        elasticsearchBackendConfig.discovery.defaultScheme);
             }
 
             addBackendDefaultIndexConfig(propertyCollector, backendName, ElasticsearchIndexSettings.LIFECYCLE_STRATEGY,

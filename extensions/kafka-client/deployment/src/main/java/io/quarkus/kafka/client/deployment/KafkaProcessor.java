@@ -1,8 +1,7 @@
 package io.quarkus.kafka.client.deployment;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.zip.Checksum;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.clients.consumer.RoundRobinAssignor;
@@ -34,21 +33,15 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.JniBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 public class KafkaProcessor {
 
@@ -75,35 +68,44 @@ public class KafkaProcessor {
             StringDeserializer.class,
             FloatDeserializer.class,
     };
-    static final String TARGET_JAVA_9_CHECKSUM_FACTORY = "io.quarkus.kafka.client.generated.Target_Java9ChecksumFactory";
 
     @BuildStep
     public void build(CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<JniBuildItem> jni, Capabilities capabilities) {
-        Collection<ClassInfo> serializers = indexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple(Serializer.class.getName()));
-        Collection<ClassInfo> deserializers = indexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple(Deserializer.class.getName()));
-        Collection<ClassInfo> partitioners = indexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple(Partitioner.class.getName()));
-        Collection<ClassInfo> partitionAssignors = indexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple(PartitionAssignor.class.getName()));
+            Capabilities capabilities) {
+        Set<ClassInfo> toRegister = new HashSet<>();
+
+        toRegister.addAll(indexBuildItem.getIndex()
+                .getAllKnownImplementors(DotName.createSimple(Serializer.class.getName())));
+        toRegister.addAll(indexBuildItem.getIndex()
+                .getAllKnownImplementors(DotName.createSimple(Deserializer.class.getName())));
+        toRegister.addAll(indexBuildItem.getIndex()
+                .getAllKnownImplementors(DotName.createSimple(Partitioner.class.getName())));
+        toRegister.addAll(indexBuildItem.getIndex()
+                .getAllKnownImplementors(DotName.createSimple(PartitionAssignor.class.getName())));
 
         for (Class i : BUILT_INS) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, i.getName()));
+            toRegister.addAll(indexBuildItem.getIndex()
+                    .getAllKnownSubclasses(DotName.createSimple(i.getName())));
         }
         if (capabilities.isCapabilityPresent(Capabilities.JSONB)) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JsonbSerializer.class, JsonbDeserializer.class));
+            toRegister.addAll(indexBuildItem.getIndex()
+                    .getAllKnownSubclasses(DotName.createSimple(JsonbSerializer.class.getName())));
+            toRegister.addAll(indexBuildItem.getIndex()
+                    .getAllKnownSubclasses(DotName.createSimple(JsonbDeserializer.class.getName())));
         }
         if (capabilities.isCapabilityPresent(Capabilities.JACKSON)) {
             reflectiveClass.produce(
                     new ReflectiveClassBuildItem(false, false, ObjectMapperSerializer.class, ObjectMapperDeserializer.class));
+            toRegister.addAll(indexBuildItem.getIndex()
+                    .getAllKnownSubclasses(DotName.createSimple(ObjectMapperSerializer.class.getName())));
+            toRegister.addAll(indexBuildItem.getIndex()
+                    .getAllKnownSubclasses(DotName.createSimple(ObjectMapperDeserializer.class.getName())));
         }
 
-        for (Collection<ClassInfo> list : Arrays.asList(serializers, deserializers, partitioners, partitionAssignors)) {
-            for (ClassInfo s : list) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, s.toString()));
-            }
+        for (ClassInfo s : toRegister) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, s.toString()));
         }
 
         // built in partitioner and partition assignors
@@ -111,33 +113,11 @@ public class KafkaProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, RangeAssignor.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, RoundRobinAssignor.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, StickyAssignor.class.getName()));
-
-        // enable JNI
-        jni.produce(new JniBuildItem());
     }
 
-    /**
-     * Generate a class which replaces the usage of {@code MethodHandle} in {@code Java9ChecksumFactory} with a plain
-     * constructor invocation when run under GraalVM. This is necessary because the native image generator does not
-     * support method handles.
-     *
-     * @return the generated class
-     */
     @BuildStep
-    public void replaceJava9Code(BuildProducer<GeneratedClassBuildItem> producer) {
-        // make our own class output to ensure that our step is run.
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(producer, false);
-        try (ClassCreator cc = ClassCreator.builder().className(TARGET_JAVA_9_CHECKSUM_FACTORY)
-                .classOutput(classOutput).setFinal(true).superClass(Object.class).build()) {
-
-            cc.addAnnotation("com/oracle/svm/core/annotate/TargetClass").addValue("className",
-                    "org.apache.kafka.common.utils.Crc32C$Java9ChecksumFactory");
-            cc.addAnnotation("com/oracle/svm/core/annotate/Substitute");
-
-            try (MethodCreator mc = cc.getMethodCreator("create", Checksum.class)) {
-                mc.addAnnotation("com/oracle/svm/core/annotate/Substitute");
-                mc.returnValue(mc.newInstance(MethodDescriptor.ofConstructor("java.util.zip.CRC32C")));
-            }
-        }
+    HealthBuildItem addHealthCheck(KafkaBuildTimeConfig buildTimeConfig) {
+        return new HealthBuildItem("io.quarkus.kafka.client.health.KafkaHealthCheck",
+                buildTimeConfig.healthEnabled, "kafka");
     }
 }

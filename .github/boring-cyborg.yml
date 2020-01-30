@@ -1,0 +1,280 @@
+### labeler.yaml
+### This is a best naive guess on auto labeling
+### with this script: https://repl.it/@maxandersen/labels
+### should be verified/tuned by changing the script and once
+### committed updates would be done manually.
+
+### you can test this script by running the following in quarkus folder:
+### jbang https://git.io/JvJox .github/labeler.yml <optional path>
+
+### Non-covered dirs....
+### - extensions
+### - extensions/agroal
+### - extensions/amazon-dynamodb
+### - extensions/azure-functions-http
+### - extensions/caffeine
+### - extensions/flyway
+### - extensions/jackson
+### - extensions/jdbc
+### - extensions/jgit
+### - extensions/jsch
+### - extensions/jsonb
+### - extensions/jsonp
+### - extensions/keycloak-authorization
+### - extensions/mailer
+### - extensions/netty
+### - extensions/pom.xml
+### - integration-tests
+### - integration-tests/.project
+### - integration-tests/.settings
+### - integration-tests/amazon-dynamodb
+### - integration-tests/class-transformer
+### - integration-tests/flyway
+### - integration-tests/jackson
+### - integration-tests/jgit
+### - integration-tests/jsch
+### - integration-tests/jsonb
+### - integration-tests/keycloak
+### - integration-tests/keycloak-authorization
+### - integration-tests/main
+### - integration-tests/pom.xml
+### - integration-tests/shared-library
+### - integration-tests/test-extension
+### - integration-tests/virtual-http
+
+### Non-covered area/
+### area/bootstrap-maven
+### area/build
+### area/camel
+### area/core
+### area/dev-mode
+### area/housekeeping
+### area/infra
+### area/new-http
+### area/oidc-interoperability
+### area/openapi
+### area/platform
+### area/reactive-messaging
+### area/security-consolidation
+### area/user experience
+### area/amazon-lambda:
+labelPRBasedOnFilePath:
+    area/amazon-lambda:
+        - extensions/amazon-lambda/**/*
+        - extensions/amazon-lambda-http/**/*
+        - integration-tests/amazon-lambda/**/*
+        - integration-tests/amazon-lambda-http/**/*
+        - integration-tests/amazon-lambda-http-it/**/*
+        - integration-tests/amazon-lambda-http-resteasy/**/*
+    area/arc:
+        - extensions/arc/**/*
+    area/artemis:
+        - extensions/artemis-core/**/*
+        - extensions/artemis-jms/**/*
+        - integration-tests/artemis-core/**/*
+        - integration-tests/artemis-jms/**/*
+    area/cache:
+        - extensions/cache/**/*
+        - integration-tests/cache/**/*
+    area/config:
+        - extensions/config-yaml/**/*
+        - core/deployment/src/main/java/io/quarkus/deployment/configuration/**/*
+        - core/runtime/src/main/java/io/quarkus/runtime/configuration/**/*
+    area/core:
+        - core/**/*
+    area/dependencies:
+        - .dependabot/config.yml
+        - bom/**/*
+        - build-parent/**/*
+    area/documentation:
+        - docs/**/*
+    area/gradle:
+        - devtools/gradle/**/*
+    area/hibernate-orm:
+        - extensions/hibernate-orm/**/*
+        - extensions/spring-data-jpa/**/*
+        - integration-tests/common-jpa-entities/**/*
+        - integration-tests/hibernate-orm-panache/**/*
+        - integration-tests/infinispan-cache-jpa/**/*
+        - integration-tests/jpa-derby/**/*
+        - integration-tests/jpa-h2/**/*
+        - integration-tests/jpa-mariadb/**/*
+        - integration-tests/jpa-mssql/**/*
+        - integration-tests/jpa-mysql/**/*
+        - integration-tests/jpa-postgresql/**/*
+        - integration-tests/jpa-without-entity/**/*
+        - integration-tests/jpa/**/*
+        - integration-tests/spring-data-jpa/**/*
+
+    area/hibernate-search:
+        - extensions/hibernate-search-elasticsearch/**/*
+        - integration-tests/hibernate-search-elasticsearch/**/*
+        - extensions/elasticsearch-rest-client/**/*
+
+    area/hibernate-validator:
+        - extensions/hibernate-validator/**/*
+        - integration-tests/hibernate-validator/**/*
+    area/infinispan:
+        - extensions/infinispan-client/**/*
+        - extensions/infinispan-embedded/**/*
+        - integration-tests/infinispan-cache-jpa/**/*
+        - integration-tests/infinispan-client/**/*
+        - integration-tests/infinispan-embedded/**/*
+    area/jaeger:
+        - extensions/jaeger/**/*
+    area/jaxb:
+        - extensions/jaxb/**/*
+    area/kafka:
+        - extensions/kafka-client/**/*
+        - integration-tests/kafka/**/*
+    area/kafka-streams:
+        - extensions/kafka-streams/**/*
+        - integration-tests/kafka-streams/**/*
+    area/kogito:
+        - extensions/kogito/**/*
+        - integration-tests/kogito/**/*
+        - integration-tests/kogito-maven/**/*
+    area/kotlin:
+        - extensions/kotlin/**/*
+        - integration-tests/kotlin/**/*
+    area/kubernetes:
+        - extensions/kubernetes/**/*
+        - extensions/kubernetes-client/**/*
+        - integration-tests/kubernetes/**/*
+        - integration-tests/kubernetes-client/**/*
+    area/logging:
+        - extensions/logging-gelf/**/*
+        - extensions/logging-json/**/*
+        - extensions/logging-sentry/**/*
+        - integration-tests/logging-gelf/**/*
+    area/maven:
+        - integration-tests/maven/**/*
+        - independent-projects/bootstrap/maven-plugin/**/*
+        - integration-tests/maven/**/*
+        - integration-tests/kogito-maven/**/*
+        - test-framework/maven/**/*
+        - devtools/maven/**/*
+    area/mongodb:
+        - extensions/mongodb-client/**/*
+        - integration-tests/mongodb-client/**/*
+        - integration-tests/mongodb-panache/**/*
+        - extensions/panache/mongodb-panache/**/*
+    area/narayana:
+        - extensions/narayana-jta/**/*
+        - extensions/narayana-stm/**/*
+        - integration-tests/narayana-jta/**/*
+        - integration-tests/narayana-stm/**/*
+    area/neo4j:
+        - extensions/neo4j/**/*
+        - integration-tests/neo4j/**/*
+    area/oidc:
+        - extensions/oidc/**/*
+        - integration-tests/oidc/**/*
+        - integration-tests/oidc-code-flow/**/*
+    area/panache:
+        - extensions/panache/**/*
+    area/persistence:
+        - integration-tests/jpa/**/*
+        - integration-tests/jpa-derby/**/*
+        - integration-tests/jpa-h2/**/*
+        - integration-tests/jpa-mariadb/**/*
+        - integration-tests/jpa-mssql/**/*
+        - integration-tests/jpa-mysql/**/*
+        - integration-tests/jpa-postgresql/**/*
+        - integration-tests/jpa-without-entity/**/*
+        - integration-tests/common-jpa-entities/**/*
+    area/platform:
+        - independent-projects/tools/**/*
+    area/qute:
+        - extensions/qute/**/*
+    area/reactive:
+        - extensions/reactive-mysql-client/**/*
+        - extensions/reactive-pg-client/**/*
+        - extensions/reactive-streams-operators/**/*
+        - integration-tests/reactive-mysql-client/**/*
+        - integration-tests/reactive-pg-client/**/*
+    area/reactive-messaging:
+        - extensions/smallrye-reactive-messaging-amqp
+        - extensions/smallrye-reactive-messaging
+        - extensions/smallrye-reactive-messaging-mqtt
+        - extensions/smallrye-reactive-messaging-kafka
+    area/rest-client:
+        - extensions/rest-client/**/*
+    area/resteasy:
+        - extensions/resteasy/**/*
+        - extensions/resteasy-common/**/*
+        - extensions/resteasy-jackson/**/*
+        - extensions/resteasy-jaxb/**/*
+        - extensions/resteasy-jsonb/**/*
+        - extensions/resteasy-qute/**/*
+        - extensions/resteasy-server-common/**/*
+        - integration-tests/resteasy-jackson/**/*
+        - integration-tests/elytron-resteasy/**/*
+        - integration-tests/virtual-http-resteasy/**/*
+    area/scala:
+        - extensions/scala/**/*
+        - integration-tests/scala/**/*
+    area/scheduler:
+        - extensions/scheduler/**/*
+        - extensions/quartz/**/*
+        - integration-tests/quartz/**/*
+    area/security:
+        - extensions/security/**/*
+        - extensions/elytron-security/**/*
+        - extensions/elytron-security-common/**/*
+        - extensions/elytron-security-jdbc/**/*
+        - extensions/elytron-security-oauth2/**/*
+        - extensions/elytron-security-properties-file/**/*
+        - extensions/vertx-keycloak/**/*
+        - integration-tests/elytron-security/**/*
+        - integration-tests/elytron-security-jdbc/**/*
+        - integration-tests/elytron-security-oauth2/**/*
+        
+    area/smallrye:
+        - extensions/smallrye-context-propagation/**/*
+        - extensions/smallrye-fault-tolerance/**/*
+        - extensions/smallrye-health/**/*
+        - extensions/smallrye-jwt/**/*
+        - extensions/smallrye-metrics/**/*
+        - extensions/smallrye-openapi/**/*
+        - extensions/smallrye-openapi-common/**/*
+        - extensions/smallrye-opentracing/**/*
+        - extensions/smallrye-reactive-messaging/**/*
+        - extensions/smallrye-reactive-messaging-amqp/**/*
+        - extensions/smallrye-reactive-messaging-kafka/**/*
+        - extensions/smallrye-reactive-messaging-mqtt/**/*
+    area/spring:
+        - extensions/spring-data-jpa/**/*
+        - extensions/spring-di/**/*
+        - extensions/spring-security/**/*
+        - extensions/spring-web/**/*
+        - integration-tests/spring-data-jpa/**/*
+        - integration-tests/spring-di/**/*
+        - integration-tests/spring-web/**/*
+    area/swagger-ui:
+        - extensions/swagger-ui/**/*
+    area/testing:
+        - test-framework/**/*
+    area/tika:
+        - extensions/tika/**/*
+        - integration-tests/tika/**/*
+    area/undertow:
+        - extensions/undertow/**/*
+        - integration-tests/elytron-undertow/**/*
+    area/undertow-websockets:
+        - extensions/undertow-websockets/**/*
+    area/vault:
+        - extensions/vault/**/*
+        - integration-tests/vault/**/*
+        - integration-tests/vault-agroal/**/*
+        - integration-tests/vault-app/**/*
+    area/vertx:
+        - extensions/vertx/**/*
+        - extensions/vertx-core/**/*
+        - extensions/vertx-graphql/**/*
+        - extensions/vertx-http/**/*
+        - extensions/vertx-keycloak/**/*
+        - extensions/vertx-web/**/*
+        - integration-tests/vertx/**/*
+        - integration-tests/vertx-graphql/**/*
+        - integration-tests/vertx-http/**/*

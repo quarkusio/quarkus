@@ -66,16 +66,22 @@ public class BeanProcessor {
 
     private BeanProcessor(String name, IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             ResourceOutput output,
-            boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration,
+            boolean sharedAnnotationLiterals,
+            ReflectionRegistration reflectionRegistration,
             List<AnnotationsTransformer> annotationTransformers,
             List<InjectionPointsTransformer> injectionPointsTransformers,
-            Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars,
+            List<ObserverTransformer> observerTransformers,
+            Collection<DotName> resourceAnnotations,
+            List<BeanRegistrar> beanRegistrars,
             List<ContextRegistrar> contextRegistrars,
-            List<BeanDeploymentValidator> beanDeploymentValidators, Predicate<DotName> applicationClassPredicate,
+            List<BeanDeploymentValidator> beanDeploymentValidators,
+            Predicate<DotName> applicationClassPredicate,
             boolean unusedBeansRemovalEnabled,
-            List<Predicate<BeanInfo>> unusedExclusions, Map<DotName, Collection<AnnotationInstance>> additionalStereotypes,
+            List<Predicate<BeanInfo>> unusedExclusions,
+            Map<DotName, Collection<AnnotationInstance>> additionalStereotypes,
             List<InterceptorBindingRegistrar> interceptorBindingRegistrars,
-            boolean removeFinalForProxyableMethods) {
+            boolean removeFinalForProxyableMethods,
+            boolean jtaCapabilities) {
         this.reflectionRegistration = reflectionRegistration;
         this.applicationClassPredicate = applicationClassPredicate;
         this.name = name;
@@ -91,9 +97,12 @@ public class BeanProcessor {
         this.beanDeploymentValidators = initAndSort(beanDeploymentValidators, buildContext);
         this.beanDeployment = new BeanDeployment(index, additionalBeanDefiningAnnotations,
                 initAndSort(annotationTransformers, buildContext),
-                initAndSort(injectionPointsTransformers, buildContext), resourceAnnotations, buildContext,
+                initAndSort(injectionPointsTransformers, buildContext),
+                initAndSort(observerTransformers, buildContext),
+                resourceAnnotations, buildContext,
                 unusedBeansRemovalEnabled, unusedExclusions,
-                additionalStereotypes, interceptorBindingRegistrars, removeFinalForProxyableMethods);
+                additionalStereotypes, interceptorBindingRegistrars, removeFinalForProxyableMethods,
+                jtaCapabilities);
     }
 
     public ContextRegistrar.RegistrationContext registerCustomContexts() {
@@ -234,12 +243,14 @@ public class BeanProcessor {
 
         private final List<AnnotationsTransformer> annotationTransformers = new ArrayList<>();
         private final List<InjectionPointsTransformer> injectionPointTransformers = new ArrayList<>();
+        private final List<ObserverTransformer> observerTransformers = new ArrayList<>();
         private final List<BeanRegistrar> beanRegistrars = new ArrayList<>();
         private final List<ContextRegistrar> contextRegistrars = new ArrayList<>();
         private final List<InterceptorBindingRegistrar> additionalInterceptorBindingRegistrars = new ArrayList<>();
         private final List<BeanDeploymentValidator> beanDeploymentValidators = new ArrayList<>();
 
         private boolean removeUnusedBeans = false;
+        private boolean jtaCapabilities = false;
         private final List<Predicate<BeanInfo>> removalExclusions = new ArrayList<>();
 
         private Predicate<DotName> applicationClassPredicate = new Predicate<DotName>() {
@@ -304,6 +315,11 @@ public class BeanProcessor {
             return this;
         }
 
+        public Builder addObserverTransformer(ObserverTransformer transformer) {
+            this.observerTransformers.add(transformer);
+            return this;
+        }
+
         public Builder addResourceAnnotations(Collection<DotName> resourceAnnotations) {
             this.resourceAnnotations.addAll(resourceAnnotations);
             return this;
@@ -326,6 +342,11 @@ public class BeanProcessor {
 
         public Builder setApplicationClassPredicate(Predicate<DotName> applicationClassPredicate) {
             this.applicationClassPredicate = applicationClassPredicate;
+            return this;
+        }
+
+        public Builder setJtaCapabilities(boolean jtaCapabilities) {
+            this.jtaCapabilities = jtaCapabilities;
             return this;
         }
 
@@ -369,10 +390,10 @@ public class BeanProcessor {
 
         public BeanProcessor build() {
             return new BeanProcessor(name, index, additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
-                    reflectionRegistration, annotationTransformers, injectionPointTransformers, resourceAnnotations,
-                    beanRegistrars, contextRegistrars, beanDeploymentValidators,
+                    reflectionRegistration, annotationTransformers, injectionPointTransformers, observerTransformers,
+                    resourceAnnotations, beanRegistrars, contextRegistrars, beanDeploymentValidators,
                     applicationClassPredicate, removeUnusedBeans, removalExclusions, additionalStereotypes,
-                    additionalInterceptorBindingRegistrars, removeFinalForProxyableMethods);
+                    additionalInterceptorBindingRegistrars, removeFinalForProxyableMethods, jtaCapabilities);
         }
 
     }

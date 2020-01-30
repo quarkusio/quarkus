@@ -11,8 +11,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-integration-test-amazon-lambda-http-resteasy</artifactId>
-    <name>Quarkus - Integration Tests - Amazon Lambda HTTP Resteasy</name>
-    <description>Test with Resteasy Standalone and Amazon Lambda HTTP</description>
+    <name>Quarkus - Integration Tests - Amazon Lambda HTTP RESTEasy</name>
+    <description>Test with RESTEasy Standalone and Amazon Lambda HTTP</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -101,7 +101,6 @@
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableJni>false</enableJni>
                                     <debugBuildProcess>false</debugBuildProcess>
                                 </configuration>
                             </execution>

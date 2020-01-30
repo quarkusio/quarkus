@@ -1,13 +1,15 @@
 package io.quarkus.oidc;
 
-import io.quarkus.security.credential.TokenCredential;
+import io.quarkus.oidc.runtime.ContextAwareTokenCredential;
+import io.vertx.ext.web.RoutingContext;
 
-public class IdTokenCredential extends TokenCredential {
+public class IdTokenCredential extends ContextAwareTokenCredential {
+
     public IdTokenCredential() {
-        this(null);
+        this(null, null);
     }
 
-    public IdTokenCredential(String token) {
-        super(token, "id_token");
+    public IdTokenCredential(String token, RoutingContext context) {
+        super(token, "id_token", context);
     }
 }

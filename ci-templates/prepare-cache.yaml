@@ -1,0 +1,6 @@
+steps:
+# We remove all the Quarkus artifacts before pushing the $(MAVEN_CACHE_FOLDER) to the cache.
+# We don't remove Quarkus HTTP, Gizmo and Quarkus Security as they are external to this build.
+- script: find $(MAVEN_CACHE_FOLDER)io/quarkus/ -mindepth 1 -maxdepth 1 \( ! -name http -a ! -name gizmo -a ! -name security \) -exec echo {} \; -exec rm -rf {} \;
+  displayName: 'Remove Quarkus artifacts before caching'
+

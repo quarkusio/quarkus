@@ -32,6 +32,7 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.util.FileUtil;
 
 public class NativeImageBuildStep {
 
@@ -73,8 +74,6 @@ public class NativeImageBuildStep {
 
         final String runnerJarName = runnerJar.getFileName().toString();
 
-        boolean vmVersionOutOfDate = isThisGraalVMVersionObsolete();
-
         HashMap<String, String> env = new HashMap<>(System.getenv());
         List<String> nativeImage;
 
@@ -84,8 +83,12 @@ public class NativeImageBuildStep {
             String containerRuntime = nativeConfig.containerRuntime.orElse("docker");
             // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
             nativeImage = new ArrayList<>();
-            Collections.addAll(nativeImage, containerRuntime, "run", "-v",
-                    outputDir.toAbsolutePath() + ":/project:z");
+
+            String outputPath = outputDir.toAbsolutePath().toString();
+            if (IS_WINDOWS) {
+                outputPath = FileUtil.translateToVolumePath(outputPath);
+            }
+            Collections.addAll(nativeImage, containerRuntime, "run", "-v", outputPath + ":/project:z");
 
             if (IS_LINUX) {
                 if ("docker".equals(containerRuntime)) {
@@ -131,6 +134,29 @@ public class NativeImageBuildStep {
             nativeImage = Collections.singletonList(getNativeImageExecutable(graal, java, env).getAbsolutePath());
         }
 
+        final Optional<String> graalVMVersion;
+
+        try {
+            List<String> versionCommand = new ArrayList<>(nativeImage);
+            versionCommand.add("--version");
+
+            Process versionProcess = new ProcessBuilder(versionCommand.toArray(new String[0]))
+                    .redirectErrorStream(true)
+                    .start();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(versionProcess.getInputStream(), StandardCharsets.UTF_8))) {
+                graalVMVersion = reader.lines().filter((l) -> l.startsWith("GraalVM Version")).findFirst();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get GraalVM version", e);
+        }
+
+        if (graalVMVersion.isPresent()) {
+            checkGraalVMVersion(graalVMVersion.get());
+        } else {
+            log.error("Unable to get GraalVM version from the native-image binary.");
+        }
+
         try {
             List<String> command = new ArrayList<>(nativeImage);
             if (nativeConfig.cleanupServer) {
@@ -145,16 +171,21 @@ public class NativeImageBuildStep {
                 process.waitFor();
             }
             Boolean enableSslNative = false;
+            boolean enableAllTimeZones = false;
             for (NativeImageSystemPropertyBuildItem prop : nativeImageProperties) {
                 //todo: this should be specific build items
                 if (prop.getKey().equals("quarkus.ssl.native") && prop.getValue() != null) {
                     enableSslNative = Boolean.parseBoolean(prop.getValue());
-                } else if (prop.getKey().equals("quarkus.jni.enable") && prop.getValue() != null) {
-                    nativeConfig.enableJni |= Boolean.parseBoolean(prop.getValue());
+                } else if (prop.getKey().equals("quarkus.jni.enable") && prop.getValue().equals("false")) {
+                    log.warn("Your application is setting the deprecated 'quarkus.jni.enable' configuration key to false."
+                            + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
+                            + " will be removed in a future Quarkus version.");
                 } else if (prop.getKey().equals("quarkus.native.enable-all-security-services") && prop.getValue() != null) {
                     nativeConfig.enableAllSecurityServices |= Boolean.parseBoolean(prop.getValue());
                 } else if (prop.getKey().equals("quarkus.native.enable-all-charsets") && prop.getValue() != null) {
                     nativeConfig.addAllCharsets |= Boolean.parseBoolean(prop.getValue());
+                } else if (prop.getKey().equals("quarkus.native.enable-all-timezones") && prop.getValue() != null) {
+                    enableAllTimeZones = Boolean.parseBoolean(prop.getValue());
                 } else {
                     // todo maybe just -D is better than -J-D in this case
                     if (prop.getValue() == null) {
@@ -166,17 +197,16 @@ public class NativeImageBuildStep {
             }
             if (enableSslNative) {
                 nativeConfig.enableHttpsUrlHandler = true;
-                nativeConfig.enableJni = true;
                 nativeConfig.enableAllSecurityServices = true;
             }
 
-            nativeConfig.additionalBuildArgs.ifPresent(command::addAll);
+            nativeConfig.additionalBuildArgs.ifPresent(l -> l.stream().map(String::trim).forEach(command::add));
             command.add("--initialize-at-build-time=");
             command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
+            command.add("-H:+JNI");
             command.add("-jar");
             command.add(runnerJarName);
-            //https://github.com/oracle/graal/issues/660
-            command.add("-J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1");
+
             if (nativeConfig.enableFallbackImages) {
                 command.add("-H:FallbackThreshold=5");
             } else {
@@ -222,6 +252,9 @@ public class NativeImageBuildStep {
             } else {
                 command.add("-H:-AddAllCharsets");
             }
+            if (enableAllTimeZones) {
+                command.add("-H:+IncludeAllTimeZones");
+            }
             if (!protocols.isEmpty()) {
                 command.add("-H:EnableURLProtocols=" + String.join(",", protocols));
             }
@@ -235,10 +268,10 @@ public class NativeImageBuildStep {
             if (!nativeConfig.enableIsolates) {
                 command.add("-H:-SpawnIsolates");
             }
-            if (nativeConfig.enableJni) {
-                command.add("-H:+JNI");
-            } else {
-                command.add("-H:-JNI");
+            if (!nativeConfig.enableJni) {
+                log.warn("Your application is setting the deprecated 'quarkus.native.enable-jni' configuration key to false."
+                        + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
+                        + " will be removed in a future Quarkus version.");
             }
             if (!nativeConfig.enableServer && !IS_WINDOWS) {
                 command.add("--no-server");
@@ -289,17 +322,14 @@ public class NativeImageBuildStep {
         }
     }
 
-    //FIXME remove after transition period
-    private boolean isThisGraalVMVersionObsolete() {
-        final String vmName = System.getProperty("java.vm.name");
-        log.info("Running Quarkus native-image plugin on " + vmName);
-        final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.", "19.2.0");
-        final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(vmName::contains);
+    private void checkGraalVMVersion(String version) {
+        log.info("Running Quarkus native-image plugin on " + version);
+        final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.", "19.2.", "19.3.0");
+        final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(v -> version.contains(" " + v));
         if (vmVersionIsObsolete) {
-            log.error("Out of date build of GraalVM detected! Please upgrade to GraalVM 19.2.1.");
-            return true;
+            throw new IllegalStateException(
+                    "Out of date version of GraalVM detected: " + version + ". Please upgrade to GraalVM 19.3.1.");
         }
-        return false;
     }
 
     private static File getNativeImageExecutable(Optional<String> graalVmHome, File javaHome, Map<String, String> env) {

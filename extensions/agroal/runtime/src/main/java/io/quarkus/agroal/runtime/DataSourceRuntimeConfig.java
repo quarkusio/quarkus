@@ -104,12 +104,6 @@ public class DataSourceRuntimeConfig {
     public Optional<AgroalConnectionFactoryConfiguration.TransactionIsolation> transactionIsolationLevel;
 
     /**
-     * Enable datasource metrics collection.
-     */
-    @ConfigItem
-    public boolean enableMetrics;
-
-    /**
      * When enabled Agroal will be able to produce a warning when a connection is returned
      * to the pool without the application having closed all open statements.
      * This is unrelated with tracking of open connections.

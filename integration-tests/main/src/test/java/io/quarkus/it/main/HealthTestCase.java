@@ -28,7 +28,7 @@ public class HealthTestCase {
                     .header("Content-Type", containsString("charset=UTF-8"))
                     .body("status", is("UP"),
                             "checks.status", containsInAnyOrder("UP"),
-                            "checks.name", containsInAnyOrder("Database connection(s) health check"));
+                            "checks.name", containsInAnyOrder("Database connections health check"));
         } finally {
             RestAssured.reset();
         }

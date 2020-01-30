@@ -21,7 +21,6 @@
                     <systemPropertyVariables>
                         <!-- Disable quarkus optimization -->
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
-                        <io_smallrye_faulttolerance_asyncTimeout>true</io_smallrye_faulttolerance_asyncTimeout>
                     </systemPropertyVariables>
                     <!-- This workaround allows us to run a single test using
                         the "test" system property -->
@@ -33,11 +32,6 @@
                     <excludes>
                         <!-- We do not support enablement via beans.xml -->
                         <exclude>org.eclipse.microprofile.fault.tolerance.tck.interceptor.xmlInterceptorEnabling.FaultToleranceInterceptorEnableByXmlTest</exclude>
-
-                        <!-- https://github.com/eclipse/microprofile-fault-tolerance/issues/408 -->
-                        <!-- Hystrix is unable to interrupt the calling thread, as it didn't create it. -->
-                        <!-- We have a custom version of this TCK class that excludes TimeoutUninterruptableTest.testTimeout() as all the other methods pass -->
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.TimeoutUninterruptableTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>

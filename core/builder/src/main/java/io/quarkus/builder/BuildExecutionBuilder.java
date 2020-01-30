@@ -9,7 +9,6 @@ import java.util.Map;
 import org.wildfly.common.Assert;
 
 import io.quarkus.builder.item.BuildItem;
-import io.quarkus.builder.item.NamedBuildItem;
 
 /**
  * A builder for a deployer execution.
@@ -49,10 +48,7 @@ public final class BuildExecutionBuilder {
      */
     public <T extends BuildItem> BuildExecutionBuilder produce(T item) {
         Assert.checkNotNullParam("item", item);
-        if (item instanceof NamedBuildItem) {
-            throw new IllegalArgumentException("Cannot produce a named build item without a name");
-        }
-        produce(new ItemId(item.getClass(), null), item);
+        produce(new ItemId(item.getClass()), item);
         return this;
     }
 
@@ -69,45 +65,7 @@ public final class BuildExecutionBuilder {
     public <T extends BuildItem> BuildExecutionBuilder produce(Class<T> type, T item) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("item", item);
-        if (NamedBuildItem.class.isAssignableFrom(type)) {
-            throw new IllegalArgumentException("Cannot produce a named build item without a name");
-        }
-        produce(new ItemId(type, null), item);
-        return this;
-    }
-
-    /**
-     * Provide an initial item.
-     *
-     * @param name the build item name (must not be {@code null})
-     * @param item the item value
-     * @return this builder
-     * @throws IllegalArgumentException if this deployer chain was not declared to initially produce {@code type},
-     *         or if the item does not allow multiplicity but this method is called more than one time
-     */
-    public <N, T extends NamedBuildItem<N>> BuildExecutionBuilder produce(N name, T item) {
-        Assert.checkNotNullParam("name", name);
-        Assert.checkNotNullParam("item", item);
-        produce(new ItemId(item.getClass(), name), item);
-        return this;
-    }
-
-    /**
-     * Provide an initial item.
-     *
-     * @param type the item type (must not be {@code null})
-     * @param name the build item name (must not be {@code null})
-     * @param item the item value
-     * @return this builder
-     * @throws IllegalArgumentException if this deployer chain was not declared to initially produce {@code type},
-     *         or if {@code type} is {@code null}, or if the item does not allow multiplicity but this method is called
-     *         more than one time
-     */
-    public <N, T extends NamedBuildItem<N>> BuildExecutionBuilder produce(Class<T> type, N name, T item) {
-        Assert.checkNotNullParam("type", type);
-        Assert.checkNotNullParam("name", name);
-        Assert.checkNotNullParam("item", item);
-        produce(new ItemId(type, name), item);
+        produce(new ItemId(type), item);
         return this;
     }
 

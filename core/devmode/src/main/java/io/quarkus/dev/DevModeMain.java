@@ -2,38 +2,24 @@ package io.quarkus.dev;
 
 import java.io.Closeable;
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.net.URI;
 import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.ServiceLoader;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.Consumer;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
-import io.quarkus.builder.BuildChainBuilder;
-import io.quarkus.builder.BuildContext;
-import io.quarkus.builder.BuildStep;
-import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
-import io.quarkus.deployment.builditem.LiveReloadBuildItem;
-import io.quarkus.deployment.devmode.HotReplacementSetup;
-import io.quarkus.runner.RuntimeRunner;
-import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.Timing;
-import io.quarkus.runtime.configuration.QuarkusConfigFactory;
+import io.quarkus.bootstrap.app.AdditionalDependency;
+import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
 
 /**
  * The main entry point for the dev mojo execution
@@ -43,34 +29,26 @@ public class DevModeMain implements Closeable {
     public static final String DEV_MODE_CONTEXT = "META-INF/dev-mode-context.dat";
     private static final Logger log = Logger.getLogger(DevModeMain.class);
 
-    private static volatile ClassLoader currentAppClassLoader;
-    private static volatile URLClassLoader runtimeCl;
     private final DevModeContext context;
 
-    private static volatile Closeable runner;
-    static volatile Throwable deploymentProblem;
-    static volatile Throwable compileProblem;
-    static volatile RuntimeUpdatesProcessor runtimeUpdatesProcessor;
-    private List<HotReplacementSetup> hotReplacement = new ArrayList<>();
-
-    private final Map<Class<?>, Object> liveReloadContext = new ConcurrentHashMap<>();
+    private static volatile CuratedApplication curatedApplication;
+    private Closeable realCloseable;
 
     public DevModeMain(DevModeContext context) {
         this.context = context;
     }
 
     public static void main(String... args) throws Exception {
-        Timing.staticInitStarted();
 
         try (InputStream devModeCp = DevModeMain.class.getClassLoader().getResourceAsStream(DEV_MODE_CONTEXT)) {
             DevModeContext context = (DevModeContext) new ObjectInputStream(new DataInputStream(devModeCp)).readObject();
-            new DevModeMain(context).start();
+            try (DevModeMain devModeMain = new DevModeMain(context)) {
+                devModeMain.start();
 
-            LockSupport.park();
+                LockSupport.park();
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
-        } finally {
-
         }
     }
 
@@ -82,204 +60,58 @@ public class DevModeMain implements Closeable {
             }
         }
 
-        for (HotReplacementSetup service : ServiceLoader.load(HotReplacementSetup.class)) {
-            hotReplacement.add(service);
-        }
-
-        runtimeUpdatesProcessor = setupRuntimeCompilation(context);
-        if (runtimeUpdatesProcessor != null) {
-            runtimeUpdatesProcessor.checkForFileChange();
-            runtimeUpdatesProcessor.checkForChangedClasses();
-        }
-        //TODO: we can't handle an exception on startup with hot replacement, as Undertow might not have started
-
-        doStart(false, Collections.emptySet());
-        if (deploymentProblem != null || compileProblem != null) {
-            if (context.isAbortOnFailedStart()) {
-                throw new RuntimeException(deploymentProblem == null ? compileProblem : deploymentProblem);
-            }
-        }
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                synchronized (DevModeMain.class) {
-                    if (runner != null) {
-                        try {
-                            runner.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    if (runtimeCl != null) {
-                        try {
-                            runtimeCl.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }
-        }, "Quarkus Shutdown Thread"));
-
-    }
-
-    private synchronized void doStart(boolean liveReload, Set<String> changedResources) {
         try {
-            final URL[] urls = new URL[context.getClassesRoots().size()];
-            for (int i = 0; i < context.getClassesRoots().size(); i++) {
-                urls[i] = context.getClassesRoots().get(i).toURI().toURL();
+            URL thisArchive = getClass().getResource(DevModeMain.class.getSimpleName() + ".class");
+            int endIndex = thisArchive.getPath().indexOf("!");
+            Path path;
+            if (endIndex != -1) {
+                path = Paths.get(new URI(thisArchive.getPath().substring(0, endIndex)));
+            } else {
+                path = Paths.get(thisArchive.toURI());
+                path = path.getParent();
+                for (char i : DevModeMain.class.getName().toCharArray()) {
+                    if (i == '.') {
+                        path = path.getParent();
+                    }
+                }
             }
-            runtimeCl = new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
-            currentAppClassLoader = runtimeCl;
-            ClassLoader old = Thread.currentThread().getContextClassLoader();
-            //we can potentially throw away this class loader, and reload the app
-            try {
-                Thread.currentThread().setContextClassLoader(runtimeCl);
-                RuntimeRunner.Builder builder = RuntimeRunner.builder()
-                        .setLaunchMode(LaunchMode.DEVELOPMENT)
-                        .setLiveReloadState(new LiveReloadBuildItem(liveReload, changedResources, liveReloadContext))
-                        .setClassLoader(runtimeCl)
-                        // just use the first item in classesRoot which is where the actual class files are written
-                        .setTarget(context.getClassesRoots().get(0).toPath())
-                        .setTransformerCache(context.getCacheDir().toPath());
-                if (context.getFrameworkClassesDir() != null) {
-                    builder.setFrameworkClassesPath(context.getFrameworkClassesDir().toPath());
-                }
-
-                List<Path> addAdditionalHotDeploymentPaths = new ArrayList<>();
-                for (DevModeContext.ModuleInfo i : context.getModules()) {
-                    if (i.getClassesPath() != null) {
-                        Path classesPath = Paths.get(i.getClassesPath());
-                        addAdditionalHotDeploymentPaths.add(classesPath);
-                        builder.addAdditionalHotDeploymentPath(classesPath);
-                    }
-                }
-                // Make it possible to identify wiring classes generated for classes from additional hot deployment paths
-                builder.addChainCustomizer(new Consumer<BuildChainBuilder>() {
-                    @Override
-                    public void accept(BuildChainBuilder buildChainBuilder) {
-                        buildChainBuilder.addBuildStep(new BuildStep() {
-                            @Override
-                            public void execute(BuildContext context) {
-                                context.produce(new ApplicationClassPredicateBuildItem(n -> {
-                                    return getClassInApplicationClassPaths(n, addAdditionalHotDeploymentPaths) != null;
-                                }));
-                            }
-                        }).produces(ApplicationClassPredicateBuildItem.class).build();
-                    }
-                });
-
-                Properties buildSystemProperties = new Properties();
-                buildSystemProperties.putAll(context.getBuildSystemProperties());
-                builder.setBuildSystemProperties(buildSystemProperties);
-
-                RuntimeRunner runner = builder
-                        .build();
-                runner.run();
-                DevModeMain.runner = runner;
-                deploymentProblem = null;
-
-            } catch (Throwable t) {
-                deploymentProblem = t;
-                if (context.isAbortOnFailedStart() || liveReload) {
-                    log.error("Failed to start quarkus", t);
-                } else {
-                    //we need to set this here, while we still have the correct TCCL
-                    //this is so the config is still valid, and we can read HTTP config from application.properties
-                    log.error("Failed to start Quarkus", t);
-                    log.info("Attempting to start hot replacement endpoint to recover from previous Quarkus startup failure");
-                    if (runtimeUpdatesProcessor != null) {
-                        runtimeUpdatesProcessor.startupFailed();
-                    }
-                }
-
-            } finally {
-                Thread.currentThread().setContextClassLoader(old);
+            QuarkusBootstrap.Builder bootstrapBuilder = QuarkusBootstrap.builder(context.getClassesRoots().get(0).toPath())
+                    .setIsolateDeployment(true)
+                    .setLocalProjectDiscovery(context.isLocalProjectDiscovery())
+                    .addAdditionalDeploymentArchive(path)
+                    .setMode(QuarkusBootstrap.Mode.DEV);
+            if (context.getProjectDir() != null) {
+                bootstrapBuilder.setProjectRoot(context.getProjectDir().toPath());
+            } else {
+                bootstrapBuilder.setProjectRoot(new File(".").toPath());
             }
+            for (int i = 1; i < context.getClassesRoots().size(); ++i) {
+                bootstrapBuilder.addAdditionalApplicationArchive(
+                        new AdditionalDependency(context.getClassesRoots().get(i).toPath(), false, false));
+            }
+
+            for (DevModeContext.ModuleInfo i : context.getModules()) {
+                if (i.getClassesPath() != null) {
+                    Path classesPath = Paths.get(i.getClassesPath());
+                    bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(classesPath, true, false));
+
+                }
+            }
+            Properties buildSystemProperties = new Properties();
+            buildSystemProperties.putAll(context.getBuildSystemProperties());
+            bootstrapBuilder.setBuildSystemProperties(buildSystemProperties);
+            curatedApplication = bootstrapBuilder.setTest(context.isTest()).build().bootstrap();
+            realCloseable = (Closeable) curatedApplication.runInAugmentClassLoader(IsolatedDevModeMain.class.getName(),
+                    Collections.singletonMap(DevModeContext.class.getName(), context));
         } catch (Throwable t) {
-            deploymentProblem = t;
-            log.error("Failed to start quarkus", t);
+            log.error("Quarkus dev mode failed to start in curation phase", t);
+            throw new RuntimeException(t);
+            //System.exit(1);
         }
     }
 
-    public synchronized void restartApp(Set<String> changedResources) {
-        stop();
-        Timing.restart();
-        doStart(true, changedResources);
-    }
-
-    public static ClassLoader getCurrentAppClassLoader() {
-        return currentAppClassLoader;
-    }
-
-    private static Path getClassInApplicationClassPaths(String name, List<Path> addAdditionalHotDeploymentPaths) {
-        final String fileName = name.replace('.', '/') + ".class";
-        Path classLocation;
-        for (Path i : addAdditionalHotDeploymentPaths) {
-            classLocation = i.resolve(fileName);
-            if (Files.exists(classLocation)) {
-                return classLocation;
-            }
-        }
-        return null;
-    }
-
-    private RuntimeUpdatesProcessor setupRuntimeCompilation(DevModeContext context) throws Exception {
-        if (!context.getModules().isEmpty()) {
-            ServiceLoader<CompilationProvider> serviceLoader = ServiceLoader.load(CompilationProvider.class);
-            List<CompilationProvider> compilationProviders = new ArrayList<>();
-            for (CompilationProvider provider : serviceLoader) {
-                compilationProviders.add(provider);
-                context.getModules().forEach(moduleInfo -> moduleInfo.addSourcePaths(provider.handledSourcePaths()));
-            }
-            ClassLoaderCompiler compiler;
-            try {
-                compiler = new ClassLoaderCompiler(Thread.currentThread().getContextClassLoader(),
-                        compilationProviders, context);
-            } catch (Exception e) {
-                log.error("Failed to create compiler, runtime compilation will be unavailable", e);
-                return null;
-            }
-            RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(context, compiler, this);
-
-            for (HotReplacementSetup service : hotReplacement) {
-                service.setupHotDeployment(processor);
-                processor.addHotReplacementSetup(service);
-            }
-            return processor;
-        }
-        return null;
-    }
-
-    public void stop() {
-        if (runner != null) {
-            ClassLoader old = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(runtimeCl);
-            try {
-                runner.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                Thread.currentThread().setContextClassLoader(old);
-            }
-        }
-        QuarkusConfigFactory.setConfig(null);
-        final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
-        try {
-            cpr.releaseConfig(cpr.getConfig());
-        } catch (IllegalStateException ignored) {
-            // just means no config was installed, which is fine
-        }
-        DevModeMain.runner = null;
-    }
-
-    public void close() {
-        try {
-            stop();
-        } finally {
-            for (HotReplacementSetup i : hotReplacement) {
-                i.close();
-            }
-        }
+    @Override
+    public void close() throws IOException {
+        realCloseable.close();
     }
 }

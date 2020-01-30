@@ -19,6 +19,9 @@
         <module>scheduler</module>
         <module>quartz</module>
 
+        <!-- Configuration -->
+        <module>config-yaml</module>
+
         <!-- Formats -->
         <module>jackson</module>
         <module>jaxb</module>
@@ -45,6 +48,7 @@
         <module>resteasy-jsonb</module>
         <module>resteasy-jackson</module>
         <module>resteasy-jaxb</module>
+        <module>resteasy-qute</module>
         <module>rest-client</module>
         <module>smallrye-openapi-common</module>
         <module>smallrye-openapi</module>
@@ -74,6 +78,7 @@
         <module>panache</module>
         <module>hibernate-search-elasticsearch</module>
         <module>elasticsearch-rest-client</module>
+        <module>jsch</module>
         <module>jgit</module>
         <module>kafka-client</module>
         <module>kafka-streams</module>
@@ -88,9 +93,11 @@
         <module>spring-web</module>
         <module>spring-data-jpa</module>
         <module>spring-security</module>
+        <module>spring-boot-properties</module>
 
         <!-- Security -->
         <module>security</module>
+        <module>elytron-security-common</module>
         <module>elytron-security</module>
         <module>elytron-security-jdbc</module>
         <module>elytron-security-properties-file</module>
@@ -105,6 +112,7 @@
 
         <!-- Caching -->
         <module>caffeine</module>
+        <module>cache</module>
 
         <!-- Integrations -->
         <module>amazon-lambda</module>
@@ -132,6 +140,11 @@
 
         <!-- Logging -->
         <module>logging-json</module>
+        <module>logging-sentry</module>
+        <module>logging-gelf</module>
+        
+        <!-- Templating -->
+        <module>qute</module>
     </modules>
 
     <!-- Unfortunately the config below introduces a build dependency on the maven plugin

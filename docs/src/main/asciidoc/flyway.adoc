@@ -43,12 +43,22 @@ In your `pom.xml`, add the following dependencies:
 </dependencies>
 --
 
-Flyway support relies on the Quarkus default datasource config, you must add the default datasource properties
-to the `{config-file}` file in order to allow Flyway to manage the schema.
+Flyway support relies on the Quarkus datasource config.
+It can be customized for the default datasource as well as for every <<multiple-datasources,named datasource>>.
+First, you need to add the datasource config to the `{config-file}` file
+in order to allow Flyway to manage the schema.
 Also, you can customize the Flyway behaviour by using the following properties:
 
 `quarkus.flyway.migrate-at-start`::
 **true** to execute Flyway automatically when the application starts, **false** otherwise. +
+**default:** false
+
+`quarkus.flyway.validate-on-migrate`::
+**true** to validate the applied migrations against the available ones, **false** otherwise. +
+**default:** true
+
+`quarkus.flyway.clean-at-start`::
+**true** to execute Flyway clean command automatically when the application starts, **false** otherwise. +
 **default:** false
 
 `quarkus.flyway.locations`::
@@ -166,6 +176,52 @@ public class MigrationService {
 
 <1> Inject the Flyway object if you want to use it directly
 
+== Multiple datasources
+
+Flyway can be configured for multiple datasources.
+The Flyway properties are prefixed exactly the same way as the named datasources, for example:
+
+[source,properties]
+--
+quarkus.datasource.driver=org.h2.Driver
+quarkus.datasource.url=jdbc:h2:tcp://localhost/mem:default
+quarkus.datasource.username=username-default
+quarkus.datasource.min-size=3
+quarkus.datasource.max-size=13
+
+quarkus.datasource.users.driver=org.h2.Driver
+quarkus.datasource.users.url=jdbc:h2:tcp://localhost/mem:users
+quarkus.datasource.users.username=username1
+quarkus.datasource.users.min-size=1
+quarkus.datasource.users.max-size=11
+
+quarkus.datasource.inventory.driver=org.h2.Driver
+quarkus.datasource.inventory.url=jdbc:h2:tcp://localhost/mem:inventory
+quarkus.datasource.inventory.username=username2
+quarkus.datasource.inventory.min-size=2
+quarkus.datasource.inventory.max-size=12
+
+# Flyway configuration for the default datasource
+quarkus.flyway.schemas=DEFAULT_TEST_SCHEMA
+quarkus.flyway.locations=db/default/location1,db/default/location2
+quarkus.flyway.migrate-at-start=true
+
+# Flyway configuration for the "users" datasource
+quarkus.flyway.users.schemas=USERS_TEST_SCHEMA
+quarkus.flyway.users.locations=db/users/location1,db/users/location2
+quarkus.flyway.users.migrate-at-start=true
+
+# Flyway configuration for the "inventory" datasource
+quarkus.flyway.inventory.schemas=INVENTORY_TEST_SCHEMA
+quarkus.flyway.inventory.locations=db/inventory/location1,db/inventory/location2
+quarkus.flyway.inventory.migrate-at-start=true
+--
+
+Notice there's an extra bit in the key.
+The syntax is as follows: `quarkus.flyway.[optional name.][datasource property]`.
+
+NOTE: Without configuration, Flyway is set up for every datasource using the default settings.
+
 == Using the Flyway object
 
 In case you are interested in using the `Flyway` object directly, you can inject it as follows:
@@ -181,9 +237,17 @@ public class MigrationService {
     @Inject
     Flyway flyway; <1>
 
+    @Inject
+    @FlywayDataSource("inventory") <2>
+    Flyway flywayForInventory;
+
+    @Inject
+    @Named("flyway_users") <3>
+    Flyway flywayForUsers;
+
     public void checkMigration() {
         // Use the flyway instance manually
-        flyway.clean(); <2>
+        flyway.clean(); <4>
         flyway.migrate();
         // This will print 1.0.0
         System.out.println(flyway.info().current().getVersion().toString());
@@ -192,5 +256,7 @@ public class MigrationService {
 --
 
 <1> Inject the Flyway object if you want to use it directly
-<2> Use the Flyway instance directly
+<2> Inject Flyway for named datasources using the Quarkus `FlywayDataSource` qualifier
+<3> Inject Flyway for named datasources
+<4> Use the Flyway instance directly
 

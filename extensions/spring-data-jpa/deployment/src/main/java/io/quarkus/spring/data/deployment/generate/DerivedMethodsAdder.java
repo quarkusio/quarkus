@@ -83,8 +83,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
             try (MethodCreator methodCreator = classCreator.getMethodCreator(method.name(), returnType.name().toString(),
                     parameterTypesStr)) {
-                ResultHandle paramsArray = methodCreator.newArray(Object.class,
-                        methodCreator.load(parseResult.getParamCount()));
+                ResultHandle paramsArray = methodCreator.newArray(Object.class, parseResult.getParamCount());
                 for (int i = 0; i < queryParameterIndexes.size(); i++) {
                     methodCreator.writeArrayValue(paramsArray, methodCreator.load(i),
                             methodCreator.getMethodParam(queryParameterIndexes.get(i)));

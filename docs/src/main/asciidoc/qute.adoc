@@ -1,0 +1,273 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Qute Templating Engine
+:extension-status: experimental
+
+include::./attributes.adoc[]
+
+Qute is a templating engine designed specifically to meet the Quarkus needs.
+The usage of reflection is minimized to reduce the size of native images.
+The API combines both the imperative and the non-blocking reactive style of coding.
+In the development mode, all files located in `src/main/resources/templates` are watched for changes and modifications are immediately visible.
+Furthermore, we try to detect most of the template problems at build time.
+In this guide, you will learn how to easily render templates in your application.
+
+include::./status-include.adoc[]
+
+== Hello World with JAX-RS
+
+If you want to use Qute in your JAX-RS application, you need to add the `quarkus-qute-resteasy` extension first.
+In your `pom.xml` file, add:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-qute</artifactId>
+</dependency>
+----
+
+We'll start with a very simple template:
+
+.hello.txt
+[source]
+----
+Hello {name}! <1>
+----
+<1> `{name}` is a value expression that is evaluated when the template is rendered.
+
+NOTE: By default, all files located in the `src/main/resources/templates` directory and its subdirectories are registered as templates. Templates are validated during startup and watched for changes in the development mode.
+
+Now let's inject the "compiled" template in the resource class.
+
+.HelloResource.java
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
+
+import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.Template;
+
+@Path("hello")
+public class HelloResource {
+
+    @Inject
+    Template hello; <1>
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public TemplateInstance get(@QueryParam("name") String name) {
+        return hello.data("name", name); <2> <3>
+    }
+}
+----
+<1> If there is no `@ResourcePath` qualifier provided, the field name is used to locate the template. In this particular case, we're injecting a template with path `templates/hello.txt`.
+<2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
+<3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
+
+If your application is running, you can request the endpoint:
+
+[source, shell]
+----
+$ curl -w "\n" http://localhost:8080/hello?name=Martin
+Hello Martin!
+----
+
+== Parameter Declarations and Template Extension Methods
+
+Qute has many useful features.
+In this example, we'll demonstrate two of them.
+If you declare a *parameter declaration* in a template then Qute attempts to validate all expressions that reference this parameter and if an incorrect expression is found the build fails.
+*Template extension methods* are used to extend the set of accessible properties of data objects.
+
+Let's suppose we have a simple class like this:
+
+.Item.java
+[source,java]
+----
+public class Item {
+    public String name;
+    public BigDecimal price;
+}
+----
+
+And we'd like to render a simple HTML page that contains the item name, price and also a discounted price.
+The discounted price is sometimes called a "computed property".
+We will implement a template extension method to render this property easily.
+Let's start again with the template:
+
+.item.html
+[source,html]
+----
+{@org.acme.Item item} <1>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>{item.name}</title> <2>
+</head>
+<body>
+    <h1>{item.name}</h1>
+    <div>Price: {item.price}</div> 
+    {#if item.price > 100} <3>
+    <div>Discounted Price: {item.discountedPrice}</div> <4>
+    {/if}
+</body>
+</html>
+----
+<1> Optional parameter declaration. Qute attempts to validate all expressions that reference the parameter `item`.
+<2> This expression is validated. Try to change the expression to `{item.nonSense}` and the build should fail.
+<3> `if` is a basic control flow section.
+<4> This expression is also validated against the `Item` class and obviously there is no such property declared. However, there is a template extension method declared on the `ItemResource` class - see below.
+
+Finally, let's create a resource class.
+
+.ItemResource.java
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.Template;
+
+@Path("item")
+public class ItemResource {
+
+    @Inject
+    ItemService service;
+
+    @Inject
+    Template item; <1>
+    
+    @GET
+    @Path("{id}")
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance get(@PathParam("id") Integer id) {
+        return item.data("item", service.findItem(id)); <2>
+    }
+
+    @TemplateExtension <3>
+    static BigDecimal discountedPrice(Item item) {
+        return item.price.multiply(new BigDecimal("0.9"));
+    }
+}
+----
+<1> Inject the template with path `templates/item.html`.
+<2> Make the `Item` object accessible in the template.
+<3> A static template extension method can be used to add "computed properties" to a data class. The class of the first parameter is used to match the base object and the method name is used to match the property name.
+
+== Rendering Periodic Reports
+
+Templating engine could be also very useful when rendering periodic reports.
+You'll need to add the `quarkus-scheduler` and `quarkus-qute` extensions first.
+In your `pom.xml` file, add:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-qute</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-scheduler</artifactId>
+</dependency>
+----
+
+Let's suppose the have a `SampleService` bean whose `get()` method returns a list of samples.
+
+.Sample.java
+[source,java]
+----
+public class Sample {
+    public boolean valid;
+    public String name;
+    public String data;
+}
+----
+
+The template is simple:
+
+.report.html
+[source,html]
+----
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Report {now}</title>
+</head>
+<body>
+    <h1>Report {now}</h1>
+    {#for sample in samples} <1>
+      <h2>{sample.name ?: 'Unknown'}</h2> <2>
+      <p>
+      {#if sample.valid}
+        {sample.data}
+      {#else}
+        <strong>Invalid sample found</strong>.
+      {/if}
+      </p>
+    {/for}
+</body>
+</html>
+----
+<1> The loop section makes it possible to iterate over iterables, maps and streams.
+<2> This value expression is using the https://en.wikipedia.org/wiki/Elvis_operator[elvis operator] - if the name is null the default value is used.
+
+[source,java]
+.ReportGenerator.java
+----
+package org.acme.quarkus.sample;
+
+import javax.inject.Inject;
+
+import io.quarkus.qute.Template;
+import io.quarkus.qute.api.ResourcePath;
+import io.quarkus.scheduler.Scheduled;
+
+public class ReportGenerator {
+
+    @Inject
+    SampleService service;
+
+    @ResourcePath("reports/v1/report_01") <1>
+    Template report;
+
+    @Scheduled(cron="0 30 * * * ?") <2>
+    void generate() {
+        String result = report
+            .data("samples", service.get())
+            .data("now", java.time.LocalDateTime.now())
+            .render(); <3>
+        // Write the result somewhere...
+    }
+}
+----
+<1> In this case, we use the `@ResourcePath` qualifier to specify the template path: `templates/reports/v1/report_01.html`.
+<2> Use the `@Scheduled` annotation to instruct Quarkus to execute this method on the half hour. For more information see the link:scheduler[Scheduler] guide.
+<3> The `TemplateInstance.render()` method triggers rendering. Note that this method blocks the current thread.
+
+== Qute Reference Guide
+
+To learn more about Qute, please refer to the link:qute-reference[Qute reference guide].
+
+[[qute-configuration-reference]]
+== Qute Configuration Reference
+
+include::{generated-dir}/config/quarkus-qute.adoc[leveloffset=+1, opts=optional]

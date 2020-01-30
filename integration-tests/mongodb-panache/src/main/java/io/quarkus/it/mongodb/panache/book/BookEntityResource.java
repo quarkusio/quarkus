@@ -70,9 +70,15 @@ public class BookEntityResource {
     }
 
     @GET
+    @Path("/optional/{id}")
+    public BookEntity getBookOptional(@PathParam("id") String id) {
+        return BookEntity.<BookEntity> findByIdOptional(new ObjectId(id)).orElseThrow(() -> new NotFoundException());
+    }
+
+    @GET
     @Path("/search/{author}")
-    public List<BookEntity> getBooksByAuthor(@PathParam("author") String author) {
-        return BookEntity.list("author", author);
+    public List<BookShortView> getBooksByAuthor(@PathParam("author") String author) {
+        return BookEntity.find("author", author).project(BookShortView.class).list();
     }
 
     @GET
@@ -86,7 +92,7 @@ public class BookEntityResource {
         return BookEntity
                 .find("{'creationDate': {$gte: ?1}, 'creationDate': {$lte: ?2}}", LocalDate.parse(dateFrom),
                         LocalDate.parse(dateTo))
-                .firstResult();
+                .<BookEntity> firstResultOptional().orElseThrow(() -> new NotFoundException());
     }
 
     @GET

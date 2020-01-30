@@ -40,6 +40,10 @@ public class CreationalContextImpl<T> implements CreationalContext<T> {
         dependentInstances.add(instanceHandle);
     }
 
+    public boolean hasDependentInstances() {
+        return !dependentInstances.isEmpty();
+    }
+
     void destroyDependentInstance(Object dependentInstance) {
         synchronized (dependentInstances) {
             for (Iterator<InstanceHandle<?>> iterator = dependentInstances.iterator(); iterator.hasNext();) {

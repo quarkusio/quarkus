@@ -61,7 +61,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
-import io.quarkus.scheduler.runtime.AbstractScheduledInvoker;
+import io.quarkus.scheduler.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
 import io.quarkus.scheduler.runtime.SchedulerConfig;
 import io.quarkus.scheduler.runtime.SchedulerRecorder;
@@ -127,12 +127,10 @@ public class SchedulerProcessor {
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
 
         // We need to collect all business methods annotated with @Scheduled first
-        for (BeanInfo bean : validationPhase.getContext().get(BuildExtension.Key.BEANS)) {
-            if (bean.isClassBean()) {
-                collectScheduledMethods(config, beanArchives.getIndex(), annotationStore, bean,
-                        bean.getTarget().get().asClass(),
-                        scheduledBusinessMethods, validationPhase.getContext());
-            }
+        for (BeanInfo bean : validationPhase.getContext().beans().classBeans()) {
+            collectScheduledMethods(config, beanArchives.getIndex(), annotationStore, bean,
+                    bean.getTarget().get().asClass(),
+                    scheduledBusinessMethods, validationPhase.getContext());
         }
     }
 
@@ -255,10 +253,11 @@ public class SchedulerProcessor {
                 + HashUtil.sha1(sigBuilder.toString());
 
         ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .superClass(AbstractScheduledInvoker.class)
+                .interfaces(ScheduledInvoker.class)
                 .build();
 
-        MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", void.class, ScheduledExecution.class);
+        // The descriptor is: void invokeBean(Object execution)
+        MethodCreator invoke = invokerCreator.getMethodCreator("invokeBean", void.class, Object.class);
         // InjectableBean<Foo: bean = Arc.container().bean("1");
         // InstanceHandle<Foo> handle = Arc.container().instance(bean);
         // handle.get().ping();

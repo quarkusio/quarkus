@@ -22,6 +22,7 @@ import org.apache.maven.shared.invoker.PrintStreamLogger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+@DisableForNative
 class GenerateConfigIT extends QuarkusPlatformAwareMojoTestBase {
 
     private static final String PROJECT_SOURCE_DIR = "projects/classic";
@@ -35,16 +36,16 @@ class GenerateConfigIT extends QuarkusPlatformAwareMojoTestBase {
         generateConfig("test.properties");
 
         String file = loadFile("test.properties");
-        Assertions.assertTrue(file.contains("#quarkus.log.file.enable"));
-        Assertions.assertTrue(file.contains("If file logging should be enabled"));
+        Assertions.assertTrue(file.contains("#quarkus.log.level"));
+        Assertions.assertTrue(file.contains("The default log level"));
         Assertions.assertTrue(file.contains("#quarkus.thread-pool.growth-resistance=0"));
         Assertions.assertTrue(file.contains("The executor growth resistance"));
 
         generateConfig("application.properties");
         //the existing file should not add properties that already exist
         file = loadFile("application.properties");
-        Assertions.assertTrue(file.contains("quarkus.log.file.enable=false"));
-        Assertions.assertFalse(file.contains("If file logging should be enabled"));
+        Assertions.assertTrue(file.contains("quarkus.log.level=INFO"));
+        Assertions.assertFalse(file.contains("The default log level"));
         Assertions.assertTrue(file.contains("#quarkus.thread-pool.growth-resistance=0"));
         Assertions.assertTrue(file.contains("The executor growth resistance"));
     }

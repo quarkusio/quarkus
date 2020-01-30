@@ -396,7 +396,7 @@ _will also_ be taken into account.
 
 NOTE: Environment variables names are following the conversion rules of link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[Eclipse MicroProfile]
 
-NOTE: The `config/application.properties` features is available in development mode as well. To make use of it, `config/application.properties` needs to be placed inside the build tool's output directory (`target` for Maven and `build` for Gradle).
+NOTE: The `config/application.properties` features is available in development mode as well. To make use of it, `config/application.properties` needs to be placed inside the build tool's output directory (`target` for Maven and `build/classes/java/main` for Gradle).
 Keep in mind however that any cleaning operation from the build tool like `mvn clean` or `gradle clean` will remove the `config` directory as well.
 
 === Configuration Profiles
@@ -433,6 +433,13 @@ quarkus.http.port=9090
 ----
 
 And then set the `QUARKUS_PROFILE` environment variable to `staging` to activate my profile.
+
+[NOTE]
+====
+The proper way to check the active profile programmatically is to use the `getActiveProfile` method of `io.quarkus.runtime.configuration.ProfileManager`.
+
+Using `@ConfigProperty("quarkus.profile")` will *not* work properly.
+====
 
 === Clearing properties
 
@@ -572,6 +579,94 @@ of 150, it will be used instead of a `MicroProfileCustomValueConverter` which ha
 priority of 100.
 
 NOTE: This new converter also needs to be listed in a service file, i.e. `META-INF/services/org.eclipse.microprofile.config.spi.Converter`.
+
+[[yaml]]
+== YAML for Configuration
+
+=== Add YAML Config Support
+
+You might want to use YAML over properties for configuration.
+Since link:https://github.com/smallrye/smallrye-config[SmallRye Config] brings support for YAML
+configuration, Quarkus supports this as well.
+
+First you will need to add the YAML extension to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-config-yaml</artifactId>
+</dependency>
+----
+
+Or you can alternatively run this command in the directory containing your Quarkus project:
+
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="config-yaml"
+----
+
+Now Quarkus can read YAML configuration files.
+The config directories and priorities are the same as before.
+
+NOTE: Quarkus will choose an `application.yaml` over an `application.properties`.
+YAML files are just an alternative way to configure your application.
+You should decide and keep one configuration type to avoid errors.
+
+==== Configuration Example
+[source,yaml]
+----
+# YAML supports comments
+quarkus:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/some-database
+    driver: org.postgresql.Driver
+    username: quarkus
+    password: quarkus
+----
+
+[NOTE]
+====
+Quarkus also supports using `application.yml` as the name of the YAML file. The same rules apply for this file as for `application.yaml`.
+====
+
+=== Profile dependent configuration
+
+Providing profile dependent configuration with YAML is done like with properties.
+Just add the `%profile` wrapped in quotation marks before defining the key-value pairs:
+
+[source,yaml]
+----
+"%dev":
+  quarkus:
+    datasource:
+      url: jdbc:postgresql://localhost:5432/some-database
+      driver: org.postgresql.Driver
+      username: quarkus
+      password: quarkus
+----
+
+=== Configuration key conflicts
+
+The MicroProfile Configuration specification defines configuration keys as an arbitrary `.`-delimited string.
+However, structured formats like YAML naively only support a subset of the possible configuration namespace.
+For example, consider the two configuration properties `quarkus.http.cors` and `quarkus.http.cors.methods`.
+One property is the prefix of another, so it may not be immediately evident how to specify both keys in your YAML configuration.
+
+This is solved by using a null key (normally represented by `~`) for any YAML property which is a prefix of another one.  Here's an example:
+
+.An example YAML configuration resolving prefix-related key name conflicts
+[source,yaml]
+----
+quarkus:
+  http:
+    cors:
+      ~: true
+      methods: GET,PUT,POST
+----
+
+In general, null YAML keys are not included in assembly of the configuration property name, allowing them to be used to
+any level for disambiguating configuration keys.
 
 == More info on how to configure
 

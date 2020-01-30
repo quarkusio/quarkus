@@ -1,13 +1,11 @@
 package io.quarkus.elytron.security.oauth2.deployment;
 
-import java.util.function.Supplier;
-
 import javax.enterprise.context.ApplicationScoped;
 
 import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.RuntimeBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -60,7 +58,7 @@ class OAuth2DeploymentProcessor {
      * @throws Exception - on any failure
      */
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     AdditionalBeanBuildItem configureOauth2RealmAuthConfig(OAuth2Recorder recorder,
             BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
         if (oauth2.enabled) {
@@ -81,11 +79,11 @@ class OAuth2DeploymentProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    RuntimeBeanBuildItem augmentor(OAuth2Recorder recorder) {
-        return RuntimeBeanBuildItem.builder(SecurityIdentityAugmentor.class)
-                .setScope(ApplicationScoped.class)
-                .setSupplier((Supplier) recorder.augmentor(oauth2))
-                .setRemovable(false)
-                .build();
+    SyntheticBeanBuildItem augmentor(OAuth2Recorder recorder) {
+        return SyntheticBeanBuildItem.configure(SecurityIdentityAugmentor.class)
+                .scope(ApplicationScoped.class)
+                .runtimeValue(recorder.augmentor(oauth2))
+                .unremovable()
+                .done();
     }
 }

@@ -57,7 +57,7 @@ class ConfigDoItemFinder {
             final int sectionLevel = 2;
             final List<ConfigDocItem> configDocItems = recursivelyFindConfigItems(element, configRootInfo.getName(),
                     configRootInfo.getConfigPhase(), false, sectionLevel);
-            holder.addToAllConfigItems(configRootInfo.getClazz().getQualifiedName().toString(), configDocItems);
+            holder.addConfigRootItems(configRootInfo.getClazz().getQualifiedName().toString(), configDocItems);
         }
 
         return holder;
@@ -167,14 +167,15 @@ class ConfigDoItemFinder {
             } else {
                 final ConfigDocKey configDocKey = new ConfigDocKey();
                 configDocKey.setWithinAMap(withinAMap);
-                boolean optional = false;
                 boolean list = false;
+                boolean optional = false;
                 if (!typeMirror.getKind().isPrimitive()) {
                     DeclaredType declaredType = (DeclaredType) typeMirror;
                     TypeElement typeElement = (TypeElement) declaredType.asElement();
                     Name qualifiedName = typeElement.getQualifiedName();
                     optional = qualifiedName.toString().startsWith(Optional.class.getName());
-                    list = qualifiedName.contentEquals(List.class.getName());
+                    list = qualifiedName.contentEquals(List.class.getName())
+                            || qualifiedName.contentEquals(Set.class.getName());
 
                     List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
                     if (!typeArguments.isEmpty()) {
@@ -186,8 +187,7 @@ class ConfigDoItemFinder {
                             if (configGroup != null) {
                                 name += String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, configDocMapKey);
                                 List<ConfigDocItem> groupConfigItems = recordConfigItemsFromConfigGroup(configPhase, name,
-                                        configGroup,
-                                        configSection, true, sectionLevel);
+                                        configGroup, configSection, true, sectionLevel);
                                 configDocItems.addAll(groupConfigItems);
                                 continue;
                             } else {
@@ -198,13 +198,36 @@ class ConfigDoItemFinder {
                         } else {
                             // FIXME: this is for Optional<T> and List<T>
                             TypeMirror realTypeMirror = typeArguments.get(0);
-                            if (optional && (realTypeMirror.toString().startsWith(List.class.getName())
-                                    || realTypeMirror.getKind() == TypeKind.ARRAY)) {
-                                list = true;
-                                DeclaredType declaredRealType = (DeclaredType) typeMirror;
-                                typeArguments = declaredRealType.getTypeArguments();
-                                if (!typeArguments.isEmpty()) {
-                                    realTypeMirror = typeArguments.get(0);
+                            String typeInString = realTypeMirror.toString();
+
+                            if (optional) {
+                                configGroup = configGroups.get(typeInString);
+                                if (configGroup != null) {
+                                    if (configSection == null) {
+                                        final JavaDocParser.SectionHolder sectionHolder = javaDocParser.parseConfigSection(
+                                                rawJavaDoc,
+                                                sectionLevel);
+                                        configSection = new ConfigDocSection();
+                                        configSection.setWithinAMap(withinAMap);
+                                        configSection.setConfigPhase(configPhase);
+                                        configSection.setSectionDetails(sectionHolder.details);
+                                        configSection.setSectionDetailsTitle(sectionHolder.title);
+                                        configSection.setName(parentName + Constants.DOT + hyphenatedFieldName);
+                                    }
+                                    configSection.setOptional(true);
+                                    List<ConfigDocItem> groupConfigItems = recordConfigItemsFromConfigGroup(configPhase, name,
+                                            configGroup, configSection, withinAMap, sectionLevel);
+                                    configDocItems.addAll(groupConfigItems);
+                                    continue;
+                                } else if ((typeInString.startsWith(List.class.getName())
+                                        || typeInString.startsWith(Set.class.getName())
+                                        || realTypeMirror.getKind() == TypeKind.ARRAY)) {
+                                    list = true;
+                                    DeclaredType declaredRealType = (DeclaredType) typeMirror;
+                                    typeArguments = declaredRealType.getTypeArguments();
+                                    if (!typeArguments.isEmpty()) {
+                                        realTypeMirror = typeArguments.get(0);
+                                    }
                                 }
                             }
 
@@ -227,6 +250,7 @@ class ConfigDoItemFinder {
                 configDocKey.setType(type);
                 configDocKey.setList(list);
                 configDocKey.setOptional(optional);
+                configDocKey.setWithinAConfigGroup(sectionLevel > 2);
                 configDocKey.setConfigPhase(configPhase);
                 configDocKey.setDefaultValue(defaultValue);
                 configDocKey.setDocMapKey(configDocMapKey);
@@ -244,19 +268,16 @@ class ConfigDoItemFinder {
 
     private List<ConfigDocItem> recordConfigItemsFromConfigGroup(ConfigPhase configPhase, String name, Element configGroup,
             ConfigDocSection configSection, boolean withinAMap, int sectionLevel) {
-        final List<ConfigDocItem> groupConfigItems;
         final List<ConfigDocItem> configDocItems = new ArrayList<>();
-
-        if (configSection != null) {
+        final List<ConfigDocItem> groupConfigItems = recursivelyFindConfigItems(configGroup, name, configPhase, withinAMap,
+                sectionLevel + 1);
+        if (configSection == null) {
+            configDocItems.addAll(groupConfigItems);
+        } else {
             final ConfigDocItem configDocItem = new ConfigDocItem();
             configDocItem.setConfigDocSection(configSection);
             configDocItems.add(configDocItem);
-            groupConfigItems = recursivelyFindConfigItems(configGroup, name, configPhase, withinAMap,
-                    sectionLevel + 1);
             configSection.addConfigDocItems(groupConfigItems);
-        } else {
-            groupConfigItems = recursivelyFindConfigItems(configGroup, name, configPhase, withinAMap, sectionLevel);
-            configDocItems.addAll(groupConfigItems);
         }
 
         String configGroupName = configGroup.asType().toString();

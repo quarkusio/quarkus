@@ -60,6 +60,7 @@ quarkus.mailer.port=465
 quarkus.mailer.ssl=true
 quarkus.mailer.username=....
 quarkus.mailer.password=....
+quarkus.mailer.mock=false
 ----
 
 [NOTE]
@@ -197,6 +198,33 @@ By spec, when you create the inline attachment, the content-id must be structure
 If you don't wrap your content-id between `<>`, it is automatically wrapped for you.
 When you want to reference your attachment, for instance in the `src` attribute, use `cid:id@domain` (without the `<` and `>`).
 
+== Message Body Based on Qute Templates
+
+It's also possible to inject a mail template, where the message body is created automatically using link:qute[Qute templates].
+
+[source, java]
+----
+@Inject
+MailTemplate hello; <1>
+
+@GET
+@Path("/mail")
+public CompletionStage<Response> send() {
+    return hello.to("to@acme.org") <2>
+       .subject("Hello from Qute template")
+       // the template looks like: Hello {name}!
+       .data("name", "John") <3>
+       .send() <4>
+       .thenApply(x -> Response.accepted().build());
+}
+----
+<1> If there is no `@ResourcePath` qualifier provided, the field name is used to locate the template. In this particular case, we will use the `hello.html` and `hello.txt` templates to create the message body.
+<2> Create a mail template instance and set the recipient.
+<3> Set the data used in the template.
+<4> `MailTemplate.send()` triggers the rendering and, once finished, sends the e-mail via a `Mailer` instance. 
+
+TIP: Injected mail templates are validated during build. If there is no matching template in `src/main/resources/templates` the build fails.
+
 == Testing email sending
 
 Because it is very inconvenient to send emails during development and testing, you can set the `quarkus.mailer.mock` boolean
@@ -283,7 +311,7 @@ By default both the mailer and Gmail default to `XOAUTH2` which requires registe
 == Using SSL with native executables
 
 Note that if you enable SSL for the mailer and you want to build a native executable, you will need to enable the SSL support.
-Please refer to the native-and-ssl[Using SSL With Native Executables] guide for more information.
+Please refer to the link:native-and-ssl[Using SSL With Native Executables] guide for more information.
 
 == Using the underlying Vert.x Mail Client
 

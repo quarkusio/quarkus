@@ -24,7 +24,8 @@ import io.restassured.RestAssured;
  */
 public class PrimitiveInjectionUnitTest {
     private static Class[] testClasses = {
-            PrimitiveInjectionEndpoint.class
+            PrimitiveInjectionEndpoint.class,
+            TokenUtils.class
     };
 
     /**
@@ -43,6 +44,9 @@ public class PrimitiveInjectionUnitTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
+                    .addAsResource("publicKey.pem")
+                    .addAsResource("privateKey.pem")
+                    .addAsResource("Token1.json")
                     .addAsResource("application.properties"));
 
     @BeforeEach

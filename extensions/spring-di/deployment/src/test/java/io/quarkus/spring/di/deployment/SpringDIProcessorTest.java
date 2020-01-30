@@ -161,7 +161,9 @@ class SpringDIProcessorTest {
         final Set<AnnotationInstance> expected = setOf(
                 AnnotationInstance.create(DotName.createSimple(Singleton.class.getName()), target,
                         Collections.emptyList()),
-                AnnotationInstance.create(DotNames.PRODUCES, target, Collections.emptyList()));
+                AnnotationInstance.create(DotNames.PRODUCES, target, Collections.emptyList()),
+                AnnotationInstance.create(DotName.createSimple(Named.class.getName()), target,
+                        Collections.singletonList(AnnotationValue.createStringValue("value", "singletonBean"))));
         assertEquals(expected, ret);
     }
 
@@ -178,7 +180,9 @@ class SpringDIProcessorTest {
         final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes, null);
 
         final Set<AnnotationInstance> expected = setOf(
-                AnnotationInstance.create(DotNames.PRODUCES, target, Collections.emptyList()));
+                AnnotationInstance.create(DotNames.PRODUCES, target, Collections.emptyList()),
+                AnnotationInstance.create(DotName.createSimple(Named.class.getName()), target,
+                        Collections.singletonList(AnnotationValue.createStringValue("value", "explicitSingletonBean"))));
         assertEquals(expected, ret);
     }
 
@@ -193,7 +197,9 @@ class SpringDIProcessorTest {
         final Set<AnnotationInstance> expected = setOf(
                 AnnotationInstance.create(DotName.createSimple(RequestScoped.class.getName()), target,
                         Collections.emptyList()),
-                AnnotationInstance.create(DotNames.PRODUCES, target, Collections.emptyList()));
+                AnnotationInstance.create(DotNames.PRODUCES, target, Collections.emptyList()),
+                AnnotationInstance.create(DotName.createSimple(Named.class.getName()), target,
+                        Collections.singletonList(AnnotationValue.createStringValue("value", "requestBean"))));
         assertEquals(expected, ret);
     }
 
@@ -207,7 +213,7 @@ class SpringDIProcessorTest {
                 throw new IllegalStateException("Failed to index: " + className, e);
             }
         }
-        return BeanArchives.buildBeanArchiveIndex(indexer.complete());
+        return BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(), indexer.complete());
     }
 
     @SafeVarargs

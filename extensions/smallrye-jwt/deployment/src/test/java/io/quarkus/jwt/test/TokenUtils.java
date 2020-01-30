@@ -1,13 +1,10 @@
 package io.quarkus.jwt.test;
 
-import static net.minidev.json.parser.JSONParser.DEFAULT_PERMISSIVE_MODE;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -15,7 +12,6 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
@@ -23,19 +19,15 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+
 import org.eclipse.microprofile.jwt.Claims;
 
-import com.nimbusds.jose.JOSEObjectType;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jose.crypto.RSASSASigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-
-import net.minidev.json.JSONObject;
-import net.minidev.json.parser.JSONParser;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.build.JwtClaimsBuilder;
+import io.smallrye.jwt.build.JwtSignatureBuilder;
 
 /**
  * Utilities for generating a JWT for testing
@@ -118,20 +110,12 @@ public class TokenUtils {
         if (invalidClaims == null) {
             invalidClaims = Collections.emptySet();
         }
-        InputStream contentIS = TokenUtils.class.getResourceAsStream(jsonResName);
-        if (contentIS == null) {
-            throw new IllegalStateException("Failed to find resource: " + jsonResName);
-        }
-        byte[] tmp = new byte[4096];
-        int length = contentIS.read(tmp);
-        byte[] content = new byte[length];
-        System.arraycopy(tmp, 0, content, 0, length);
 
-        JSONParser parser = new JSONParser(DEFAULT_PERMISSIVE_MODE);
-        JSONObject jwtContent = parser.parse(content, JSONObject.class);
+        JwtClaimsBuilder claims = Jwt.claims(jsonResName);
+
         // Change the issuer to INVALID_ISSUER for failure testing if requested
         if (invalidClaims.contains(InvalidClaims.ISSUER)) {
-            jwtContent.put(Claims.iss.name(), "INVALID_ISSUER");
+            claims.issuer("INVALID_ISSUER");
         }
         long currentTimeInSecs = currentTimeInSecs();
         long exp = currentTimeInSecs + 300;
@@ -148,11 +132,11 @@ public class TokenUtils {
             iat = exp - 5;
             authTime = exp - 5;
         }
-        jwtContent.put(Claims.iat.name(), iat);
-        jwtContent.put(Claims.auth_time.name(), authTime);
+        claims.issuedAt(iat);
+        claims.claim(Claims.auth_time.name(), authTime);
         // If the exp claim is not updated, it will be an old value that should be seen as expired
         if (!invalidClaims.contains(InvalidClaims.EXP)) {
-            jwtContent.put(Claims.exp.name(), exp);
+            claims.expiresAt(exp);
         }
         // Return the token time values if requested
         if (timeClaims != null) {
@@ -163,27 +147,18 @@ public class TokenUtils {
 
         if (invalidClaims.contains(InvalidClaims.SIGNER)) {
             // Generate a new random private key to sign with to test invalid signatures
-            KeyPair keyPair = generateKeyPair(2048);
-            pk = keyPair.getPrivate();
+            pk = generateKeyPair(2048).getPrivate();
         }
 
-        // Create RSA-signer with the private key
-        JWSSigner signer = new RSASSASigner(pk);
-        JWTClaimsSet claimsSet = JWTClaimsSet.parse(jwtContent);
-        JWSAlgorithm alg = JWSAlgorithm.RS256;
+        JwtSignatureBuilder jws = claims.jws().signatureKeyId(kid);
+
         if (invalidClaims.contains(InvalidClaims.ALG)) {
-            alg = JWSAlgorithm.HS256;
-            SecureRandom random = new SecureRandom();
-            BigInteger secret = BigInteger.probablePrime(256, random);
-            signer = new MACSigner(secret.toByteArray());
+            jws.signatureAlgorithm(SignatureAlgorithm.HS256);
+            SecretKey sk = KeyGenerator.getInstance("HMACSHA256").generateKey();
+            return jws.sign(sk);
+        } else {
+            return pk == null ? jws.sign() : jws.sign(pk);
         }
-        JWSHeader jwtHeader = new JWSHeader.Builder(alg)
-                .keyID(kid)
-                .type(JOSEObjectType.JWT)
-                .build();
-        SignedJWT signedJWT = new SignedJWT(jwtHeader, claimsSet);
-        signedJWT.sign(signer);
-        return signedJWT.serialize();
     }
 
     /**

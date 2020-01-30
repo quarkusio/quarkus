@@ -16,6 +16,7 @@ public class QuarkusExtension implements LoadableExtension {
         builder.observer(CreationalContextDestroyer.class);
         builder.observer(QuarkusBeforeAfterLifecycle.class);
         builder.observer(RequestContextLifecycle.class);
+        builder.observer(ClassLoaderExceptionTransformer.class);
     }
 
 }

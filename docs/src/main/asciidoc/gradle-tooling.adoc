@@ -98,7 +98,7 @@ or, if you use the Gradle Kotlin DSL:
 ----
 tasks.test {
     systemProperty("quarkus.test.profile", "foo") <1>
- }
+}
 ----
 
 <1> The `foo` configuration profile will be used to run the tests.
@@ -233,9 +233,9 @@ In IntelliJ:
 
 In a separated terminal or in the embedded terminal, run `./gradlew quarkusDev`. Enjoy!
 
-**Apache Netbeans**
+**Apache NetBeans**
 
-In Netbeans:
+In NetBeans:
 
 1. Select `File -> Open Project`
 2. Select the project root
@@ -309,6 +309,18 @@ The native executable would then be produced by executing:
 ./gradlew buildNative
 ----
 
+
+== Running native tests
+
+Run the native tests using:
+
+[source,shell]
+----
+./gradlew testNative
+----
+
+This task depends on `buildNative`, so it will generate the native image before running the tests.
+
 == Building Uber-Jars
 
 Quarkus Gradle plugin supports the generation of Uber-Jars by specifying an `--uber-jar` argument as follows:
@@ -329,8 +341,4 @@ The entries are relative to the root of the generated Uber-Jar. You can specify 
 
 == Building with `./gradlew build`
 
-By default, `./gradlew build` will build the native image also. To skip it, use
-```
-./gradlew build -x buildNative -x testNative
-```
-
+Starting from 1.1.0.Final, `./gradlew build` will no longer build the native image. Use the `buildNative` task explicitly as explained above if needed.

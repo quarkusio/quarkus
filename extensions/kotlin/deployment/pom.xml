@@ -19,6 +19,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-kotlin</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson-spi</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -27,7 +31,7 @@
 
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-compiler-embeddable</artifactId>
+            <artifactId>kotlin-compiler</artifactId>
         </dependency>
 
     </dependencies>

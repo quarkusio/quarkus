@@ -10,6 +10,7 @@ import io.quarkus.gizmo.ResultHandle;
 
 /**
  * Used as an integration point when extensions need to customize the security behavior of a bean
+ * The ResultHandle that is returned by function needs to be an instance of SecurityCheck
  */
 public final class AdditionalSecurityCheckBuildItem extends MultiBuildItem {
 

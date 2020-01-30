@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 
-import io.quarkus.deployment.test.TestScopeSetup;
+import io.quarkus.runtime.test.TestScopeSetup;
 
 public class TestScopeManager {
 
     private static final List<TestScopeSetup> SCOPE_MANAGERS = new ArrayList<>();
 
     static {
-        for (TestScopeSetup i : ServiceLoader.load(TestScopeSetup.class)) {
+        for (TestScopeSetup i : ServiceLoader.load(TestScopeSetup.class, Thread.currentThread().getContextClassLoader())) {
             SCOPE_MANAGERS.add(i);
         }
     }

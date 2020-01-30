@@ -32,7 +32,8 @@ stages:
 
           - task: CacheBeta@0
             inputs:
-              key: maven | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
+              # the number below is a cache version when we want to force a cache refresh
+              key: maven | "2" | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
               path: $(MAVEN_CACHE_FOLDER)
               securityNamespace: cache
               cacheHitVar: CACHE_RESTORED
@@ -42,9 +43,11 @@ stages:
             displayName: 'Maven Build'
             condition: and(ne(variables.CACHE_RESTORED, 'true'), succeeded())
             inputs:
-              goals: 'package'
+              goals: 'install'
               mavenOptions: $(MAVEN_OPTS)
               options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs'
+
+          - template: prepare-cache.yaml
 
       - job: Cache_Windows_Maven_Repo #windows has different line endings so the cache key is different
         displayName: 'Windows Maven Repo'
@@ -59,7 +62,8 @@ stages:
         steps:
           - task: CacheBeta@0
             inputs:
-              key: mavenWindows | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
+              # the number below is a cache version when we want to force a cache refresh
+              key: mavenWindows | "2" | bom/runtime/pom.xml   #if we attempt to use all poms then when they get copied to target everything breaks. This should be good enough, it does not need to be perfect
               path: $(MAVEN_CACHE_FOLDER)
               securityNamespace: cache
               cacheHitVar: CACHE_RESTORED
@@ -69,7 +73,7 @@ stages:
             displayName: 'Maven Build'
             condition: and(ne(variables.CACHE_RESTORED, 'true'), succeeded())
             inputs:
-              goals: 'package'
+              goals: 'install'
               mavenOptions: $(MAVEN_OPTS)
               options: '-B --settings azure-mvn-settings.xml -DskipTests=true -Dno-format -DskipDocs'     
 
@@ -81,7 +85,7 @@ stages:
       - job: Build_JDK8_Linux
         displayName: 'Build JDK8 Linux'
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
-        timeoutInMinutes: 60
+        timeoutInMinutes: 120
         pool:
           vmImage: 'Ubuntu 16.04'
 
@@ -90,8 +94,12 @@ stages:
 
         steps:
           - template: jvm-build-steps.yaml
+            parameters:
+              # we only generate the PDF documentation once for the initial JDK 8 build
+              extra: '-Ddocumentation-pdf'
           - publish: $(MAVEN_CACHE_FOLDER)
             artifact: $(Build.SourceVersion)-BuiltMavenRepo
+          - template: prepare-cache.yaml
 
   - stage: run_jvm_tests_stage${{parameters.expectUseVMs}}
     displayName: '${{parameters.displayPrefix}} Run JVM Tests'
@@ -100,12 +108,12 @@ stages:
       - job: Windows_Build
         displayName: 'Windows JVM Build'
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
-        timeoutInMinutes: 60
+        timeoutInMinutes: 120
         pool:
           # Always use hosted pool for windows
           vmImage: 'vs2017-win2016'
           MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
-          MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
+          MAVEN_OPTS: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER) -Xmx3072m'
         steps:
           - task: CacheBeta@0 #we know the very first job will have restored or created this, so this will never write built artifacts to the cache
             inputs:
@@ -122,7 +130,7 @@ stages:
               options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
 
       - job: Build_JDK11_Linux
-        timeoutInMinutes: 60
+        timeoutInMinutes: 120
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         displayName: 'Linux JDK11 Build'
         pool: ${{parameters.poolSettings}}
@@ -133,9 +141,10 @@ stages:
           - template: jvm-build-steps.yaml
             parameters:
               jdk: '1.11'
+          - template: prepare-cache.yaml
 
       - job: Build_JDK12_Linux
-        timeoutInMinutes: 60
+        timeoutInMinutes: 120
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         displayName: 'Linux JDK12 Build'
         pool: ${{parameters.poolSettings}}
@@ -147,6 +156,7 @@ stages:
           - template: jvm-build-steps.yaml
             parameters:
               jdk: '1.12'
+          - template: prepare-cache.yaml
 
       - job: Run_TCKs
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
@@ -175,8 +185,7 @@ stages:
               mavenOptions: $(MAVEN_OPTS)
               options: '-B --settings azure-mvn-settings.xml'
               mavenPomFile: 'tcks/pom.xml'
-
-
+          - template: prepare-cache.yaml
 
   - stage: run_native_tests_stage${{parameters.expectUseVMs}}
     displayName: '${{parameters.displayPrefix}} Native Tests'
@@ -194,7 +203,7 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 25
+          timeoutInMinutes: 30
           modules:
             - jpa-h2
             - jpa-mariadb
@@ -233,11 +242,12 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 20
+          timeoutInMinutes: 30
           modules:
             - artemis-core
             - artemis-jms
             - kafka
+            - kafka-streams
           name: messaging
 
       - template: native-build-steps.yaml
@@ -262,6 +272,7 @@ stages:
             - elytron-resteasy
             - oidc
             - oidc-code-flow
+            - oidc-tenancy
             - vault-app
             - keycloak-authorization
           name: security_2
@@ -289,26 +300,30 @@ stages:
             - mongodb-panache
             - neo4j
           name: data_4
+          neo4j: true
 
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 25
+          timeoutInMinutes: 30
           modules:
             - infinispan-cache-jpa
             - infinispan-client
-          name: infinispan
+            - infinispan-embedded
+            - cache
+          name: cache
 
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 25
+          timeoutInMinutes: 35
           modules:
             - resteasy-jackson
             - vertx
             - vertx-http
+            - vertx-graphql
             - virtual-http
           name: http
 
@@ -316,10 +331,12 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 25
+          timeoutInMinutes: 40
           modules:
+            - maven
             - jackson
             - jsonb
+            - jsch
             - jgit
           name: misc_1
 
@@ -327,21 +344,24 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 25
+          timeoutInMinutes: 30
           modules:
             - tika
             - hibernate-validator
             - test-extension
+            - logging-gelf
           name: misc_2
 
       - template: native-build-steps.yaml
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 25
+          timeoutInMinutes: 35
           modules:
             - kogito
             - kubernetes-client
+            - quartz
+            - qute
           name: misc_3
 
       - template: native-build-steps.yaml
@@ -353,6 +373,7 @@ stages:
             - spring-di
             - spring-web
             - spring-data-jpa
+            - spring-boot-properties
           name: spring
 
       - template: native-build-steps.yaml

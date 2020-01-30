@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 /**
- * Utility that dumps bytes from a class to a file - useful for debugging generated clases
+ * Utility that dumps bytes from a class to a file - useful for debugging generated classes
  */
 public final class ClassOutputUtil {
 

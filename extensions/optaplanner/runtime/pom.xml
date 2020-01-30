@@ -23,8 +23,18 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>org.optaplanner</groupId>
             <artifactId>optaplanner-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.optaplanner</groupId>
+            <artifactId>optaplanner-persistence-jackson</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
     <build>

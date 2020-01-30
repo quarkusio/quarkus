@@ -26,10 +26,13 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
 import io.quarkus.optaplanner.OptaPlannerBeanProvider;
 import io.quarkus.optaplanner.OptaPlannerRecorder;
 
 class OptaPlannerProcessor {
+
+    private static final String OPTAPLANNER_JACKSON_MODULE = "org.optaplanner.persistence.jackson.api.OptaPlannerJacksonModule";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -158,6 +161,16 @@ class OptaPlannerProcessor {
 
     // TODO health check
 
-    // TODO JSON & JPA customization for Score.class
+    @BuildStep
+    void registerOptaPlannerJacksonModule(BuildProducer<ClassPathJacksonModuleBuildItem> classPathJacksonModules) {
+        try {
+            Class.forName(OPTAPLANNER_JACKSON_MODULE, false, Thread.currentThread().getContextClassLoader());
+        } catch (Exception ignored) {
+            return;
+        }
+        classPathJacksonModules.produce(new ClassPathJacksonModuleBuildItem(OPTAPLANNER_JACKSON_MODULE));
+    }
+
+    // TODO JPA customization for Score.class
 
 }

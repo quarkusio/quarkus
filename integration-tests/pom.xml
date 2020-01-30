@@ -67,6 +67,7 @@
         <module>amazon-lambda-http-resteasy</module>
         <module>kogito</module>
         <module>kogito-maven</module>
+        <module>optaplanner</module>
         <module>kubernetes</module>
         <module>kubernetes-client</module>
         <module>tika</module>

@@ -517,6 +517,12 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-openapi</artifactId>
                 <version>${project.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.shrinkwrap</groupId>
+                        <artifactId>shrinkwrap-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>

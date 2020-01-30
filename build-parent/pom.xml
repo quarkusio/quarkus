@@ -35,7 +35,7 @@
         <graal-sdk.version-for-documentation>19.3.1</graal-sdk.version-for-documentation>
         <rest-assured.version>4.1.1</rest-assured.version>
         <axle-client.version>0.0.9</axle-client.version>
-        <vertx.version>3.8.4</vertx.version>
+        <vertx.version>3.8.5</vertx.version>
 
         <!-- Dev tools -->
         <freemarker.version>2.3.29</freemarker.version>

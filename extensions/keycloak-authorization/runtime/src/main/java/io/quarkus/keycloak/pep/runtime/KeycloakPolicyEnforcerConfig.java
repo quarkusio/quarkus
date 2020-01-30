@@ -148,13 +148,13 @@ public class KeycloakPolicyEnforcerConfig {
         public static class PathCacheConfig {
 
             /**
-             * Defines the time in milliseconds when the entry should be expired
+             * Defines the limit of entries that should be kept in the cache
              */
             @ConfigItem(defaultValue = "1000")
             public int maxEntries = 1000;
 
             /**
-             * Defines the limit of entries that should be kept in the cache
+             * Defines the time in milliseconds when the entry should be expired
              */
             @ConfigItem(defaultValue = "30000")
             public long lifespan = 30000;

@@ -2655,7 +2655,7 @@ See the code  example below:
 public ConfigGroupConfig configGroup;
 ----
 
-1. This will add a section documentation for the `confgiGroup` config item in the generated documentation.
+1. This will add a section documentation for the `configGroup` config item in the generated documentation.
 Section's title and introduction will be derived from the javadoc of the configuration item. The first sentence from the javadoc is considered as the section title and the remaining sentences used as section introduction.
 You can also use the `@asciidoclet` tag as shown above.
 

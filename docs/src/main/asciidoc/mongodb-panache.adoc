@@ -8,8 +8,9 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 include::./attributes.adoc[]
 :config-file: application.properties
 :extension-status: preview
+:mongodb-doc-root-url: https://mongodb.github.io/mongo-java-driver/3.11
 
-MongoDB is a well known NoSQL Database that is widely used, but using its raw API can be cumbersome as you need to express your entities and your queries as a MongoDB link:https://mongodb.github.io/mongo-java-driver/3.11/bson/documents/#document[`Document`].
+MongoDB is a well known NoSQL Database that is widely used, but using its raw API can be cumbersome as you need to express your entities and your queries as a MongoDB link:{mongodb-doc-root-url}/bson/documents/#document[`Document`].
 
 MongoDB with Panache provides active record style entities (and repositories) like you have in link:hibernate-orm-panache[Hibernate ORM with Panache] and focuses on making your entities trivial and fun to write in Quarkus.
 
@@ -131,7 +132,7 @@ public class Person extends PanacheMongoEntity {
 
 NOTE: annotating with `@MongoEntity` is optional, it allows you to configure the name of the collection and the name of the database. Here the entity will be stored in the `ThePerson` collection instead of the default `Person` collection.
 
-MongoDB with Panache uses the link:https://mongodb.github.io/mongo-java-driver/3.10/bson/pojos/[PojoCodecProvider] to map your entities to a MongoDB `Document`.
+MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos/[PojoCodecProvider] to map your entities to a MongoDB `Document`.
 
 You will be allowed to use the following annotations to customize this mapping:
 
@@ -528,7 +529,41 @@ you need to provide the value by yourself.
 ====
 
 `ObjectId` can be difficult to use if you want to expose its value in your REST service.
-So we created JSON-B and Jackson providers to serialize/deserialize them as a `String` which are are automatically registered if your project depends on one of the RESTEasy with JSON-B or RESTEasy with Jackson extensions.
+So we created JSON-B and Jackson providers to serialize/deserialize them as a `String` which are automatically registered if your project depends on either the RESTEasy JSON-B extension or the RESTEasy Jackson extension.
+
+== Working with Kotlin Data classes
+
+Kotlin data classes are a very convenient way of defining data carrier classes, making them a great match to define an entity class.
+
+But this type of class comes with some limitations: all fields needs to be initialized at construction time or be marked as nullable,
+and the generated constructor needs to have as parameters all the fields of the data class.
+
+MongoDB with Panache uses the `PojoCodec`, a MongoDB codec which mandates the presence of a parameterless constructor.
+
+Therefore, if you want to use a data class as an entity class, you need a way to make Kotlin generate an empty constructor.
+To do so, you need to provide default values for all the fields of your classes.
+The following sentence from the Kotlin documentation explains it:
+
+__On the JVM, if the generated class needs to have a parameterless constructor, default values for all properties have to be specified (see Constructors).__
+
+If for whatever reason, the aforementioned solution is deemed unacceptable, there are alternatives.
+
+First, you can create a BSON Codec which will be automatically registered by Quarkus and will be used instead of the `PojoCodec`.
+See this part of the documentation: link:mongodb#simplifying-mongodb-client-usage-using-bson-codec[Using BSON codec].
+
+Another option is to use the `@BsonCreator` annotation to tell the `PojoCodec` to use the Kotlin data class default constructor,
+in this case all constructor parameters have to be annotated with `@BsonProperty`: see link:{mongodb-doc-root-url}/bson/pojos/#supporting-pojos-without-no-args-constructors[Supporting pojos without no args constructor].
+
+An example of a `Person` class defined as a Kotlin data class would look like:
+
+[source,kotlin]
+----
+data class Person @BsonCreator constructor (
+    @BsonProperty("name") var name: String,
+    @BsonProperty("birth") var birth: LocalDate,
+    @BsonProperty("status") var status: Status
+): PanacheMongoEntity()
+----
 
 == How and why we simplify MongoDB API
 

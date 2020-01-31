@@ -13,9 +13,7 @@ import org.jboss.jandex.Indexer;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-//not a real test, but you can use it to
-//get all not implementation that need to be added for reflection
-@Disabled
+@Disabled("not a real test, but you can use it to get all not implementation that need to be added for reflection")
 public class HqlNodeScannerTestCase {
 
     @Test

@@ -118,13 +118,8 @@ public class RestClientTestCase {
         Assertions.assertEquals("javax.enterprise.context.Dependent", responseWithDefaultScope);
     }
 
-    /**
-     * Disabled by default as it establishes external connections.
-     * <p>
-     * Uncomment when you want to test SSL support.
-     */
     @Test
-    @Disabled
+    @Disabled("Disabled by default as it establishes external connections, uncomment when you want to test SSL support")
     public void testDegradedSslSupport() {
         RestAssured.when().get("/ssl").then()
                 .statusCode(500)

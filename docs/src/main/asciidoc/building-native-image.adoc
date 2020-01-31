@@ -266,7 +266,7 @@ with the `@DisabledOnNativeImage` annotation in order to only run them on the JV
 === Testing an existing native executable
 
 It is also possible to re-run the tests against a native executable that has already been built. To do this run
-`./mvnw failsafe:integration-test`. This will discover the existing native image and run the tests against it using
+`./mvnw test-compile failsafe:integration-test`. This will discover the existing native image and run the tests against it using
 failsafe.
 
 If the process cannot find the native image for some reason, or you want to test a native image that is no longer in the

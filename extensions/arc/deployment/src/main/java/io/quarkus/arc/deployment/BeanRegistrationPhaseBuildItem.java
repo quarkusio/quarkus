@@ -18,18 +18,19 @@ import io.quarkus.deployment.annotations.BuildProducer;
  * {@link ArcProcessor#validate(BeanRegistrationPhaseBuildItem, List, BuildProducer)}.
  * 
  * @see BeanConfiguratorBuildItem
+ * @see BeanRegistrar
  */
 public final class BeanRegistrationPhaseBuildItem extends SimpleBuildItem {
 
     private final BeanProcessor beanProcessor;
-    private final BeanRegistrar.RegistrationContext context;
+    private final RegistrationContext context;
 
     public BeanRegistrationPhaseBuildItem(RegistrationContext context, BeanProcessor beanProcessor) {
         this.context = context;
         this.beanProcessor = beanProcessor;
     }
 
-    public BeanRegistrar.RegistrationContext getContext() {
+    public RegistrationContext getContext() {
         return context;
     }
 

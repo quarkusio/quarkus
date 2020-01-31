@@ -37,6 +37,10 @@ public class ObserverValidationProcessor {
                 Collection<ObserverInfo> allObservers = context.get(Key.OBSERVERS);
                 // do the validation for each observer that can be found within application classes
                 for (ObserverInfo observer : allObservers) {
+                    if (observer.isSynthetic()) {
+                        // Skip synthetic observers
+                        continue;
+                    }
                     DotName declaringBeanDotName = observer.getDeclaringBean().getBeanClass();
                     AnnotationInstance instance = Annotations.getParameterAnnotation(observer.getObserverMethod(),
                             DotNames.INITIALIZED);

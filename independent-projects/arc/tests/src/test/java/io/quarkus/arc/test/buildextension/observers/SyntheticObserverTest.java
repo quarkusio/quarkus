@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.arc.processor.ObserverRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -23,10 +23,10 @@ public class SyntheticObserverTest {
 
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder().beanClasses(MyObserver.class, Named.class)
-            .beanRegistrars(new BeanRegistrar() {
+            .observerRegistrars(new ObserverRegistrar() {
                 @Override
                 public void register(RegistrationContext context) {
-                    context.configureObserver().observedType(String.class).notify(mc -> {
+                    context.configure().observedType(String.class).notify(mc -> {
                         ResultHandle eventContext = mc.getMethodParam(0);
                         ResultHandle event = mc.invokeInterfaceMethod(
                                 MethodDescriptor.ofMethod(EventContext.class, "getEvent", Object.class), eventContext);
@@ -36,7 +36,7 @@ public class SyntheticObserverTest {
                         mc.returnValue(null);
                     }).done();
 
-                    context.configureObserver().observedType(String.class).addQualifier().annotation(Named.class)
+                    context.configure().observedType(String.class).addQualifier().annotation(Named.class)
                             .addValue("value", "bla").done()
                             .notify(mc -> {
                                 ResultHandle events = mc

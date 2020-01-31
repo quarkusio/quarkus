@@ -56,6 +56,7 @@ public class BeanProcessor {
 
     private final List<BeanRegistrar> beanRegistrars;
     private final List<ContextRegistrar> contextRegistrars;
+    private final List<ObserverRegistrar> observerRegistrars;
     private final List<BeanDeploymentValidator> beanDeploymentValidators;
 
     private final BuildContextImpl buildContext;
@@ -73,6 +74,7 @@ public class BeanProcessor {
             List<ObserverTransformer> observerTransformers,
             Collection<DotName> resourceAnnotations,
             List<BeanRegistrar> beanRegistrars,
+            List<ObserverRegistrar> observerRegistrars,
             List<ContextRegistrar> contextRegistrars,
             List<BeanDeploymentValidator> beanDeploymentValidators,
             Predicate<DotName> applicationClassPredicate,
@@ -93,6 +95,7 @@ public class BeanProcessor {
         buildContext.putInternal(Key.INDEX.asString(), index);
 
         this.beanRegistrars = initAndSort(beanRegistrars, buildContext);
+        this.observerRegistrars = initAndSort(observerRegistrars, buildContext);
         this.contextRegistrars = initAndSort(contextRegistrars, buildContext);
         this.beanDeploymentValidators = initAndSort(beanDeploymentValidators, buildContext);
         this.beanDeployment = new BeanDeployment(index, additionalBeanDefiningAnnotations,
@@ -109,8 +112,18 @@ public class BeanProcessor {
         return beanDeployment.registerCustomContexts(contextRegistrars);
     }
 
+    /**
+     * Analyze the deployment and register all beans and observers declared on the classes. Furthermore, register all synthetic
+     * beans provided by bean registrars.
+     * 
+     * @return the context applied to {@link BeanRegistrar}
+     */
     public BeanRegistrar.RegistrationContext registerBeans() {
         return beanDeployment.registerBeans(beanRegistrars);
+    }
+
+    public ObserverRegistrar.RegistrationContext registerSyntheticObservers() {
+        return beanDeployment.registerSyntheticObservers(observerRegistrars);
     }
 
     public void initialize(Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
@@ -212,6 +225,7 @@ public class BeanProcessor {
     public BeanDeployment process() throws IOException {
         registerCustomContexts();
         registerBeans();
+        registerSyntheticObservers();
         initialize(new Consumer<BytecodeTransformer>() {
             @Override
             public void accept(BytecodeTransformer transformer) {
@@ -245,6 +259,7 @@ public class BeanProcessor {
         private final List<InjectionPointsTransformer> injectionPointTransformers = new ArrayList<>();
         private final List<ObserverTransformer> observerTransformers = new ArrayList<>();
         private final List<BeanRegistrar> beanRegistrars = new ArrayList<>();
+        private final List<ObserverRegistrar> observerRegistrars = new ArrayList<>();
         private final List<ContextRegistrar> contextRegistrars = new ArrayList<>();
         private final List<InterceptorBindingRegistrar> additionalInterceptorBindingRegistrars = new ArrayList<>();
         private final List<BeanDeploymentValidator> beanDeploymentValidators = new ArrayList<>();
@@ -330,6 +345,11 @@ public class BeanProcessor {
             return this;
         }
 
+        public Builder addObserverRegistrar(ObserverRegistrar registrar) {
+            this.observerRegistrars.add(registrar);
+            return this;
+        }
+
         public Builder addContextRegistrar(ContextRegistrar registrar) {
             this.contextRegistrars.add(registrar);
             return this;
@@ -391,7 +411,7 @@ public class BeanProcessor {
         public BeanProcessor build() {
             return new BeanProcessor(name, index, additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
                     reflectionRegistration, annotationTransformers, injectionPointTransformers, observerTransformers,
-                    resourceAnnotations, beanRegistrars, contextRegistrars, beanDeploymentValidators,
+                    resourceAnnotations, beanRegistrars, observerRegistrars, contextRegistrars, beanDeploymentValidators,
                     applicationClassPredicate, removeUnusedBeans, removalExclusions, additionalStereotypes,
                     additionalInterceptorBindingRegistrars, removeFinalForProxyableMethods, jtaCapabilities);
         }

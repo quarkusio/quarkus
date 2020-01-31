@@ -34,6 +34,8 @@ class OptaPlannerProcessor {
 
     private static final String OPTAPLANNER_JACKSON_MODULE = "org.optaplanner.persistence.jackson.api.OptaPlannerJacksonModule";
 
+    OptaPlannerQuarkusConfig optaPlannerQuarkusConfig;
+
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.OPTAPLANNER);
@@ -51,17 +53,17 @@ class OptaPlannerProcessor {
             CombinedIndexBuildItem combinedIndex,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        String solverConfigXML = null;
         SolverConfig solverConfig;
-        if (solverConfigXML != null) {
+        if (optaPlannerQuarkusConfig.solverConfigXml.isPresent()) {
+            String solverConfigXML = optaPlannerQuarkusConfig.solverConfigXml.get();
             if (classLoader.getResource(solverConfigXML) == null) {
                 throw new IllegalStateException("Invalid optaplanner.solverConfigXML property (" + solverConfigXML
                         + "): that classpath resource does not exist.");
             }
             solverConfig = SolverConfig.createFromXmlResource(solverConfigXML, classLoader);
-        } else if (classLoader.getResource(OptaPlannerProperties.DEFAULT_SOLVER_CONFIG_URL) != null) {
+        } else if (classLoader.getResource(OptaPlannerQuarkusConfig.DEFAULT_SOLVER_CONFIG_URL) != null) {
             solverConfig = SolverConfig.createFromXmlResource(
-                    OptaPlannerProperties.DEFAULT_SOLVER_CONFIG_URL, classLoader);
+                    OptaPlannerQuarkusConfig.DEFAULT_SOLVER_CONFIG_URL, classLoader);
         } else {
             solverConfig = new SolverConfig(classLoader);
         }

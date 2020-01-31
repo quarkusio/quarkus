@@ -24,7 +24,7 @@ public class OptaPlannerProcessorXMLPropertyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.optaplanner.solver-config-xml", "io/quarkus/optaplanner/customSolverConfig.xml")
+            .overrideConfigKey("quarkus.optaplanner.solverConfigXml", "io/quarkus/optaplanner/customSolverConfig.xml")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestdataPlanningEntity.class,
                             TestdataPlanningSolution.class, TestdataPlanningConstraintProvider.class)
@@ -35,9 +35,7 @@ public class OptaPlannerProcessorXMLPropertyTest {
     @Inject
     SolverFactory<TestdataPlanningSolution> solverFactory;
 
-    // TODO
     @Test
-    @Disabled("Missing feature: the solverConfigXml property isn't picked up yet")
     public void solverConfigXml_property() {
         assertNotNull(solverConfig);
         assertEquals(TestdataPlanningSolution.class, solverConfig.getSolutionClass());

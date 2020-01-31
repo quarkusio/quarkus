@@ -3,7 +3,6 @@ package io.quarkus.bootstrap.resolver.maven;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
-
 import org.sonatype.plexus.components.cipher.DefaultPlexusCipher;
 import org.sonatype.plexus.components.cipher.PlexusCipher;
 import org.sonatype.plexus.components.cipher.PlexusCipherException;
@@ -106,7 +105,6 @@ public class SecDispatcherImpl implements SecDispatcher {
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
             throw new SecDispatcherException(e);
         }
     }

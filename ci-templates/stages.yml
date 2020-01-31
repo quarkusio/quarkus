@@ -95,10 +95,27 @@ stages:
         steps:
           - template: jvm-build-steps.yaml
             parameters:
-              # we only generate the PDF documentation once for the initial JDK 8 build
-              extra: '-Ddocumentation-pdf'
+              # we only generate the PDF documentation and test coverage once for the initial JDK 8 build
+              extra: '-Ddocumentation-pdf -Ptest-coverage'
           - publish: $(MAVEN_CACHE_FOLDER)
             artifact: $(Build.SourceVersion)-BuiltMavenRepo
+
+          - task: Maven@3
+            displayName: 'Aggregate Code Coverage'
+            inputs:
+              mavenPomFile: 'coverage-report/pom.xml'
+              goals: 'install'
+              mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
+
+          - task: PublishCodeCoverageResults@1
+            inputs:
+              codeCoverageTool: 'JaCoCo'
+              summaryFileLocation: 'coverage-report/target/site/jacoco/jacoco.xml'
+              pathToSources: 'coverage-report/src/main/java'
+              reportDirectory: 'coverage-report/target/site/jacoco/'
+              failIfCoverageEmpty: true
+
           - template: prepare-cache.yaml
 
   - stage: run_jvm_tests_stage${{parameters.expectUseVMs}}

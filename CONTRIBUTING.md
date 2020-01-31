@@ -119,6 +119,15 @@ By default the build will use the native image server. This speeds up the build,
 not being invalidated correctly in some cases. To run a build with a new instance of the server you can use
 `./mvnw install -Dnative-image.new-server=true`.
 
+### Test Coverage
+
+Quarkus uses Jacoco to generate test coverage. If you would like to generate the report run `mvn install -Ptest-coverage`,
+then change into the `coverage-report` directory and run `mvn package`. The code coverage report will be generated in
+`target/site/jacoco/`.
+
+This currently does not work on Windows as it uses a shell script to copy all the classes and files into the code coverage
+module.
+
 ## The small print
 
 This project is an open source project, please act responsibly, be nice, polite and enjoy!

@@ -1,3 +1,4 @@
+
 package io.quarkus.arc.impl;
 
 import java.lang.reflect.Array;
@@ -11,17 +12,36 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 public final class Reflections {
+
+    private static final Set<String> noMethodOnClassCache = Collections.synchronizedSet(
+            Collections.newSetFromMap(
+                    new WeakHashMap<>()));
+
+    private static final Set<String> noFieldOnClassCache = Collections.synchronizedSet(
+            Collections.newSetFromMap(
+                    new WeakHashMap<>()));
 
     private Reflections() {
     }
 
     public static Field findField(Class<?> clazz, String fieldName) {
+        String key = null;
+        if (clazz.getSuperclass() != null) {
+            key = clazz.getName() + "." + fieldName;
+            if (noFieldOnClassCache.contains(key)) {
+                return findField(clazz.getSuperclass(), fieldName);
+            }
+        }
         try {
             return clazz.getDeclaredField(fieldName);
         } catch (NoSuchFieldException e) {
-            if (clazz.getSuperclass() != null) {
+            if (key != null) {
+                noFieldOnClassCache.add(key);
                 return findField(clazz.getSuperclass(), fieldName);
             }
             throw new IllegalArgumentException(e);
@@ -29,10 +49,18 @@ public final class Reflections {
     }
 
     public static Method findMethod(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
+        String key = null;
+        if (clazz.getSuperclass() != null) {
+            key = clazz.getName() + "." + methodName + "." + Arrays.toString(parameterTypes);
+            if (noMethodOnClassCache.contains(key)) {
+                return findMethod(clazz.getSuperclass(), methodName, parameterTypes);
+            }
+        }
         try {
             return clazz.getDeclaredMethod(methodName, parameterTypes);
         } catch (NoSuchMethodException e) {
-            if (clazz.getSuperclass() != null) {
+            if (key != null) {
+                noMethodOnClassCache.add(key);
                 return findMethod(clazz.getSuperclass(), methodName, parameterTypes);
             }
             throw new IllegalArgumentException(e);

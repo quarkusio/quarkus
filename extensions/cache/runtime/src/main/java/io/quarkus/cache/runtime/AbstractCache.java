@@ -10,14 +10,22 @@ public abstract class AbstractCache implements Cache {
 
     private Object defaultKey;
 
-    public abstract String getName();
-
     @Override
     public Object getDefaultKey() {
         if (defaultKey == null) {
             defaultKey = new DefaultCacheKey(getName());
         }
         return defaultKey;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends Cache> T asSpecializedCache(Class<T> type) {
+        if (type.isInstance(this)) {
+            return (T) this;
+        } else {
+            throw new IllegalStateException("This cache is not an instance of " + type.getName());
+        }
     }
 
     /**

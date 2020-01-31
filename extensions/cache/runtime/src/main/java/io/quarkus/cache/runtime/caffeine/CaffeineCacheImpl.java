@@ -1,7 +1,10 @@
 package io.quarkus.cache.runtime.caffeine;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -13,6 +16,7 @@ import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import io.quarkus.cache.CacheException;
+import io.quarkus.cache.CaffeineCache;
 import io.quarkus.cache.runtime.AbstractCache;
 import io.quarkus.cache.runtime.NullValueConverter;
 import io.smallrye.mutiny.Uni;
@@ -21,9 +25,9 @@ import io.smallrye.mutiny.Uni;
  * This class is an internal Quarkus cache implementation. Do not use it explicitly from your Quarkus application. The public
  * methods signatures may change without prior notice.
  */
-public class CaffeineCache extends AbstractCache {
+public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
-    private static final Logger LOGGER = Logger.getLogger(CaffeineCache.class);
+    private static final Logger LOGGER = Logger.getLogger(CaffeineCacheImpl.class);
 
     private AsyncCache<Object, Object> cache;
 
@@ -37,7 +41,7 @@ public class CaffeineCache extends AbstractCache {
 
     private Duration expireAfterAccess;
 
-    public CaffeineCache(CaffeineCacheInfo cacheInfo) {
+    public CaffeineCacheImpl(CaffeineCacheInfo cacheInfo) {
         this.name = cacheInfo.name;
         Caffeine<Object, Object> builder = Caffeine.newBuilder();
         if (cacheInfo.initialCapacity != null) {
@@ -165,6 +169,11 @@ public class CaffeineCache extends AbstractCache {
             });
             return null;
         });
+    }
+
+    @Override
+    public Set<Object> keySet() {
+        return Collections.unmodifiableSet(new HashSet<>(cache.asMap().keySet()));
     }
 
     // For testing purposes only.

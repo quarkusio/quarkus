@@ -11,6 +11,13 @@ import io.smallrye.mutiny.Uni;
 public interface Cache {
 
     /**
+     * Returns the cache name.
+     *
+     * @return cache name
+     */
+    String getName();
+
+    /**
      * Returns the unique and immutable default key for the current cache. This key is used by the annotations caching API when
      * a no-args method annotated with {@link CacheResult} or {@link CacheInvalidate} is invoked. It can also be used with the
      * programmatic caching API.
@@ -46,4 +53,12 @@ public interface Cache {
      * Removes all entries from the cache.
      */
     Uni<Void> invalidateAll();
+
+    /**
+     * Returns this cache as an instance of the provided type if possible.
+     *
+     * @return cache instance of the provided type
+     * @throws IllegalStateException if this cache is not an instance of {@code type}
+     */
+    <T extends Cache> T asSpecializedCache(Class<T> type);
 }

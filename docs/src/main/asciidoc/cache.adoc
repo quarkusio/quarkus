@@ -464,6 +464,35 @@ Before building a programmatic cache key, you need to know how cache keys are bu
 
 Now, if you want to retrieve or delete, using the programmatic API, a cache value that was stored using the annotations API, you just need to make sure the same key is used with both APIs.
 
+=== Retrieving all keys from a `CaffeineCache`
+
+The cache keys from a specific `CaffeineCache` can be retrieved as an unmodifiable `Set` as shown below.
+If the cache entries are modified while an iteration over the set is in progress, the set will remain unchanged.
+
+[source,java]
+----
+package org.acme.cache;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
+import io.quarkus.cache.CaffeineCache;
+
+import java.util.Set;
+
+@ApplicationScoped
+public class CacheKeysService {
+
+    @CacheName("my-cache")
+    Cache cache;
+
+    public Set<Object> getAllCacheKeys() {
+        return cache.asSpecializedCache(CaffeineCache.class).keySet();
+    }
+}
+----
+
 == Configuring the underlying caching provider
 
 This extension uses https://github.com/ben-manes/caffeine[Caffeine] as its underlying caching provider.

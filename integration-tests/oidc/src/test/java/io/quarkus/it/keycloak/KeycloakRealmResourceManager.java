@@ -123,4 +123,17 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                 .when()
                 .delete(KEYCLOAK_SERVER_URL + "/admin/realms/" + KEYCLOAK_REALM).then().statusCode(204);
     }
+
+    public static String getAccessToken(String userName) {
+        return RestAssured
+                .given()
+                .param("grant_type", "password")
+                .param("username", userName)
+                .param("password", userName)
+                .param("client_id", "quarkus-app")
+                .param("client_secret", "secret")
+                .when()
+                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
+                .as(AccessTokenResponse.class).getToken();
+    }
 }

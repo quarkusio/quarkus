@@ -190,8 +190,7 @@ public class VertxHttpRecorder {
         filterList.addAll(filters.getFilters());
 
         // Then, fire the resuming router
-        ResumingRouter resumingRouter = new ResumingRouter(router);
-        event.select(Router.class).fire(resumingRouter);
+        event.select(Router.class).fire(router);
 
         for (Filter filter : filterList) {
             if (filter.getHandler() != null) {
@@ -204,7 +203,7 @@ public class VertxHttpRecorder {
             defaultRouteHandler.accept(router.route().order(10_000));
         }
 
-        container.instance(RouterProducer.class).initialize(resumingRouter);
+        container.instance(RouterProducer.class).initialize(router);
         router.route().last().failureHandler(new QuarkusErrorHandler(launchMode.isDevOrTest()));
 
         if (requireBodyHandler) {
@@ -249,20 +248,39 @@ public class VertxHttpRecorder {
             });
         }
 
+        Handler<HttpServerRequest> root;
         if (rootPath.equals("/")) {
             if (hotReplacementHandler != null) {
                 router.route().order(-1).handler(hotReplacementHandler);
             }
-            rootHandler = router;
+            root = router;
         } else {
             Router mainRouter = Router.router(vertx.getValue());
             mainRouter.mountSubRouter(rootPath, router);
             if (hotReplacementHandler != null) {
                 mainRouter.route().order(-1).handler(hotReplacementHandler);
             }
-            rootHandler = mainRouter;
+            root = mainRouter;
         }
 
+        if (httpConfiguration.proxyAddressForwarding) {
+            Handler<HttpServerRequest> delegate = root;
+            root = new Handler<HttpServerRequest>() {
+                @Override
+                public void handle(HttpServerRequest event) {
+                    delegate.handle(new ForwardedServerRequestWrapper(event, httpConfiguration.allowForwarded));
+                }
+            };
+        }
+        Handler<HttpServerRequest> delegate = root;
+        root = new Handler<HttpServerRequest>() {
+            @Override
+            public void handle(HttpServerRequest event) {
+                delegate.handle(new ResumingRequestWrapper(event));
+            }
+        };
+
+        rootHandler = root;
     }
 
     private static void doServerStart(Vertx vertx, HttpConfiguration httpConfiguration, LaunchMode launchMode,
@@ -522,14 +540,11 @@ public class VertxHttpRecorder {
     }
 
     public void addRoute(RuntimeValue<Router> router, Function<Router, Route> route, Handler<RoutingContext> handler,
-            HandlerType blocking, boolean resume) {
+            HandlerType blocking) {
 
         Route vr = route.apply(router.getValue());
 
         Handler<RoutingContext> requestHandler = handler;
-        if (resume) {
-            requestHandler = new ResumeHandler(handler);
-        }
         if (blocking == HandlerType.BLOCKING) {
             vr.blockingHandler(requestHandler);
         } else if (blocking == HandlerType.FAILURE) {

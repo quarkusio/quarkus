@@ -34,7 +34,6 @@ import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
-import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.hibernate.loader.BatchFetchStyle;
 import org.hibernate.service.spi.ServiceContributor;
 import org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor;
@@ -155,7 +154,7 @@ public final class HibernateOrmProcessor {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_ORM));
 
-        List<ParsedPersistenceXmlDescriptor> explicitDescriptors = loadOriginalXMLParsedDescriptors();
+        List<ParsedPersistenceXmlDescriptor> explicitDescriptors = QuarkusPersistenceXmlParser.locatePersistenceUnits();
 
         // build a composite index with additional jpa model classes
         Indexer indexer = new Indexer();
@@ -735,11 +734,4 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    private static List<ParsedPersistenceXmlDescriptor> loadOriginalXMLParsedDescriptors() {
-        // Enforce the persistence.xml configuration to be interpreted literally without
-        // allowing runtime overrides;
-        // (check for the runtime provided properties to be empty as well)
-        Map<Object, Object> configurationOverrides = Collections.emptyMap();
-        return PersistenceXmlParser.locatePersistenceUnits(configurationOverrides);
-    }
 }

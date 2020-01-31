@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -31,7 +32,6 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.tika.TikaParseException;
 import io.quarkus.tika.runtime.TikaConfiguration;
-import io.quarkus.tika.runtime.TikaParserParameter;
 import io.quarkus.tika.runtime.TikaParserProducer;
 import io.quarkus.tika.runtime.TikaRecorder;
 
@@ -51,21 +51,9 @@ public class TikaProcessor {
             { "odf", "org.apache.tika.parser.odf.OpenDocumentParser" }
     }).collect(Collectors.toMap(kv -> kv[0], kv -> kv[1]));
 
-    private TikaConfiguration config;
-
     @BuildStep
     AdditionalBeanBuildItem beans() {
-        return AdditionalBeanBuildItem.builder().addBeanClasses(TikaParserProducer.class).build();
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    TikaParsersConfigBuildItem initializeTikaParser(BeanContainerBuildItem beanContainer, TikaRecorder recorder)
-            throws Exception {
-        Map<String, List<TikaParserParameter>> parsersConfig = getSupportedParserConfig(config.tikaConfigPath, config.parsers,
-                config.parserOptions, config.parser);
-        recorder.initTikaParser(beanContainer.getValue(), config, parsersConfig);
-        return new TikaParsersConfigBuildItem(parsersConfig);
+        return AdditionalBeanBuildItem.unremovableOf(TikaParserProducer.class);
     }
 
     @BuildStep
@@ -85,42 +73,48 @@ public class TikaProcessor {
     }
 
     @BuildStep
-    public void registerTikaCoreResources(BuildProducer<NativeImageResourceBuildItem> resource) throws Exception {
+    public void registerTikaCoreResources(BuildProducer<NativeImageResourceBuildItem> resource) {
         resource.produce(new NativeImageResourceBuildItem("org/apache/tika/mime/tika-mimetypes.xml"));
         resource.produce(new NativeImageResourceBuildItem("org/apache/tika/parser/external/tika-external-parsers.xml"));
     }
 
     @BuildStep
-    public void registerTikaParsersResources(BuildProducer<NativeImageResourceBuildItem> resource) throws Exception {
+    public void registerTikaParsersResources(BuildProducer<NativeImageResourceBuildItem> resource) {
         resource.produce(new NativeImageResourceBuildItem("org/apache/tika/parser/pdf/PDFParser.properties"));
     }
 
     @BuildStep
-    public void registerPdfBoxResources(BuildProducer<NativeImageResourceBuildItem> resource) throws Exception {
+    public void registerPdfBoxResources(BuildProducer<NativeImageResourceBuildItem> resource) {
         resource.produce(new NativeImageResourceBuildItem("org/apache/pdfbox/resources/glyphlist/additional.txt"));
         resource.produce(new NativeImageResourceBuildItem("org/apache/pdfbox/resources/glyphlist/glyphlist.txt"));
         resource.produce(new NativeImageResourceBuildItem("org/apache/pdfbox/resources/glyphlist/zapfdingbats.txt"));
     }
 
     @BuildStep
-    public void registerTikaProviders(BuildProducer<ServiceProviderBuildItem> serviceProvider,
-            TikaParsersConfigBuildItem parserConfigItem) throws Exception {
-        serviceProvider.produce(
-                new ServiceProviderBuildItem(Parser.class.getName(),
-                        new ArrayList<>(parserConfigItem.getConfiguration().keySet())));
-        serviceProvider.produce(
-                new ServiceProviderBuildItem(Detector.class.getName(), getProviderNames(Detector.class.getName())));
-        serviceProvider.produce(
-                new ServiceProviderBuildItem(EncodingDetector.class.getName(),
-                        getProviderNames(EncodingDetector.class.getName())));
+    @Record(ExecutionTime.STATIC_INIT)
+    void initializeTikaParser(BeanContainerBuildItem beanContainer, TikaRecorder recorder,
+            BuildProducer<ServiceProviderBuildItem> serviceProvider, TikaConfiguration configuration)
+            throws Exception {
+        Map<String, List<TikaParserParameter>> parsers = getSupportedParserConfig(configuration.tikaConfigPath,
+                configuration.parsers,
+                configuration.parserOptions, configuration.parser);
+        String tikaXmlConfiguration = generateTikaXmlConfiguration(parsers);
+
+        serviceProvider.produce(new ServiceProviderBuildItem(Parser.class.getName(), new ArrayList<>(parsers.keySet())));
+        serviceProvider
+                .produce(new ServiceProviderBuildItem(Detector.class.getName(), getProviderNames(Detector.class.getName())));
+        serviceProvider.produce(new ServiceProviderBuildItem(EncodingDetector.class.getName(),
+                getProviderNames(EncodingDetector.class.getName())));
+
+        recorder.initTikaParser(beanContainer.getValue(), configuration, tikaXmlConfiguration);
     }
 
-    static List<String> getProviderNames(String serviceProviderName) throws Exception {
+    private static List<String> getProviderNames(String serviceProviderName) throws Exception {
         return new ArrayList<>(ServiceUtil.classNamesNamedIn(TikaProcessor.class.getClassLoader(),
                 "META-INF/services/" + serviceProviderName));
     }
 
-    static Map<String, List<TikaParserParameter>> getSupportedParserConfig(Optional<String> tikaConfigPath,
+    public static Map<String, List<TikaParserParameter>> getSupportedParserConfig(Optional<String> tikaConfigPath,
             Optional<String> requiredParsers,
             Map<String, Map<String, String>> parserParamMaps,
             Map<String, String> parserAbbreviations) throws Exception {
@@ -134,14 +128,41 @@ public class TikaProcessor {
                     .collect(Collectors.toList());
             Map<String, String> fullNamesAndAbbreviations = abbreviations.stream()
                     .collect(Collectors.toMap(p -> getParserNameFromConfig(p, parserAbbreviations), Function.identity()));
-
             return providerNames.stream().filter(pred).filter(p -> fullNamesAndAbbreviations.containsKey(p))
                     .collect(Collectors.toMap(Function.identity(),
                             p -> getParserConfig(p, parserParamMaps.get(fullNamesAndAbbreviations.get(p)))));
         }
     }
 
-    static List<TikaParserParameter> getParserConfig(String parserName, Map<String, String> parserParamMap) {
+    private static String generateTikaXmlConfiguration(Map<String, List<TikaParserParameter>> parserConfig) {
+        StringBuilder tikaXmlConfigurationBuilder = new StringBuilder();
+        tikaXmlConfigurationBuilder.append("<properties>");
+        tikaXmlConfigurationBuilder.append("<parsers>");
+        for (Entry<String, List<TikaParserParameter>> parserEntry : parserConfig.entrySet()) {
+            tikaXmlConfigurationBuilder.append("<parser class=\"").append(parserEntry.getKey()).append("\">");
+            if (!parserEntry.getValue().isEmpty()) {
+                appendParserParameters(tikaXmlConfigurationBuilder, parserEntry.getValue());
+            }
+            tikaXmlConfigurationBuilder.append("</parser>");
+        }
+        tikaXmlConfigurationBuilder.append("</parsers>");
+        tikaXmlConfigurationBuilder.append("</properties>");
+        return tikaXmlConfigurationBuilder.toString();
+    }
+
+    private static void appendParserParameters(StringBuilder tikaXmlConfigurationBuilder,
+            List<TikaParserParameter> parserParams) {
+        tikaXmlConfigurationBuilder.append("<params>");
+        for (TikaParserParameter parserParam : parserParams) {
+            tikaXmlConfigurationBuilder.append("<param name=\"").append(parserParam.getName());
+            tikaXmlConfigurationBuilder.append("\" type=\"").append(parserParam.getType()).append("\">");
+            tikaXmlConfigurationBuilder.append(parserParam.getValue());
+            tikaXmlConfigurationBuilder.append("</param>");
+        }
+        tikaXmlConfigurationBuilder.append("</params>");
+    }
+
+    private static List<TikaParserParameter> getParserConfig(String parserName, Map<String, String> parserParamMap) {
         List<TikaParserParameter> parserParams = new LinkedList<>();
         if (parserParamMap != null) {
             for (Map.Entry<String, String> entry : parserParamMap.entrySet()) {
@@ -167,8 +188,8 @@ public class TikaProcessor {
                 + "quarkus.tika.parser-name." + abbreviation + " property");
     }
 
-    // Convert a property name such as "sort-by-position" to "sortByPosition"   
-    private static String unhyphenate(String paramName) {
+    // Convert a property name such as "sort-by-position" to "sortByPosition"
+    public static String unhyphenate(String paramName) {
         StringBuilder sb = new StringBuilder();
         String[] words = paramName.split("-");
         for (int i = 0; i < words.length; i++) {
@@ -209,6 +230,30 @@ public class TikaProcessor {
         } catch (Throwable t) {
             final String errorMessage = "Parser " + parserName + " has no " + paramName + " property";
             throw new TikaParseException(errorMessage);
+        }
+    }
+
+    public static class TikaParserParameter {
+        private String name;
+        private String value;
+        private String type;
+
+        public TikaParserParameter(String name, String value, String type) {
+            this.name = name;
+            this.value = value;
+            this.type = type;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public String getValue() {
+            return value;
         }
     }
 }

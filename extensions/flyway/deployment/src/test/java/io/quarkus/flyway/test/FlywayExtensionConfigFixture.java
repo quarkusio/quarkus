@@ -14,13 +14,11 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
-import org.junit.jupiter.api.Disabled;
 
 /**
  * This fixture provides access to read the expected and the actual configuration of flyway.
  * It also provides a method combining all assertions to be reused for multiple tests.
  */
-@Disabled
 @ApplicationScoped
 public class FlywayExtensionConfigFixture {
 

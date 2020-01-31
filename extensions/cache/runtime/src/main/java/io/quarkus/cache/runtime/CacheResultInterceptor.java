@@ -1,9 +1,6 @@
 package io.quarkus.cache.runtime;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.time.Duration;
 import java.util.function.Function;
 
 import javax.annotation.Priority;
@@ -13,7 +10,9 @@ import javax.interceptor.InvocationContext;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.cache.CacheException;
 import io.quarkus.cache.CacheResult;
+import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 
 @CacheResult(cacheName = "") // The `cacheName` attribute is @Nonbinding.
@@ -44,18 +43,18 @@ public class CacheResultInterceptor extends CacheInterceptor {
 
         try {
 
-            CompletableFuture<Object> cacheValue = cache.get(key, new Function<Object, Object>() {
+            Uni<Object> cacheValue = cache.get(key, new Function<Object, Object>() {
                 @Override
                 public Object apply(Object k) {
                     try {
                         if (Uni.class.isAssignableFrom(invocationContext.getMethod().getReturnType())) {
                             LOGGER.debugf("Adding %s entry with key [%s] into cache [%s]",
-                                    UnresolvedUniValue.class.getSimpleName(), key, cache.getName());
+                                    UnresolvedUniValue.class.getSimpleName(), key, binding.cacheName());
                             return UnresolvedUniValue.INSTANCE;
                         } else {
                             return invocationContext.proceed();
                         }
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         throw new CacheException(e);
                     }
                 }
@@ -63,14 +62,14 @@ public class CacheResultInterceptor extends CacheInterceptor {
 
             Object value;
             if (binding.lockTimeout() <= 0) {
-                value = cacheValue.get();
+                value = cacheValue.await().indefinitely();
             } else {
                 try {
                     /*
                      * If the current thread started the cache value computation, then the computation is already finished since
                      * it was done synchronously and the following call will never time out.
                      */
-                    value = cacheValue.get(binding.lockTimeout(), TimeUnit.MILLISECONDS);
+                    value = cacheValue.await().atMost(Duration.ofMillis(binding.lockTimeout()));
                 } catch (TimeoutException e) {
                     // TODO: Add statistics here to monitor the timeout.
                     return invocationContext.proceed();
@@ -83,26 +82,10 @@ public class CacheResultInterceptor extends CacheInterceptor {
                 return value;
             }
 
-        } catch (ExecutionException e) {
-            /*
-             * Any exception raised during a cache computation will be encapsulated into an ExecutionException because it is
-             * thrown during a CompletionStage execution.
-             */
-            if (e.getCause() instanceof CacheException) {
-                /*
-                 * The ExecutionException was caused by a CacheException (most likely case).
-                 * Let's throw the CacheException cause if possible or the CacheException itself otherwise.
-                 */
-                if (e.getCause().getCause() != null) {
-                    throw e.getCause().getCause();
-                } else {
-                    throw e.getCause();
-                }
-            } else if (e.getCause() != null) {
-                // The ExecutionException was caused by another type of Throwable (unlikely case).
+        } catch (CacheException e) {
+            if (e.getCause() != null) {
                 throw e.getCause();
             } else {
-                // The ExecutionException does not have a cause (very unlikely case).
                 throw e;
             }
         }

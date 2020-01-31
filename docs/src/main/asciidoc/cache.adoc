@@ -270,7 +270,8 @@ Congratulations! You just added application data caching to your Quarkus applica
 Do you want to learn more about the Quarkus application data caching abilities?
 The following sections will show you everything there is to know about it.
 
-== Caching annotations
+[#annotations-api]
+== Caching using annotations
 
 Quarkus offers a set of annotations that can be used in a CDI managed bean to enable caching abilities.
 
@@ -368,6 +369,129 @@ public class CachedService {
 <2> Calling this method WILL NOT invalidate values cached by the `load` method because the key elements order is different.
 <3> Calling this method WILL invalidate values cached by the `load` method because the key elements order is the same.
 <4> Calling this method WILL NOT invalidate values cached by the `load` method because the key elements order is different.
+
+[#programmatic-api]
+== Caching using the programmatic API
+
+Quarkus also offers a programmatic API which can be used to store, retrieve or delete values from any cache declared using the annotations API.
+All operations from the programmatic API are non-blocking and rely on https://smallrye.io/smallrye-mutiny/[Mutiny] under the hood.
+
+Before accessing programmatically the cached data, you need to retrieve an `io.quarkus.cache.Cache` instance.
+The following sections will show you how to do that.
+
+=== Injecting a `Cache` with the `@CacheName` annotation
+
+`io.quarkus.cache.CacheName` can be used on a field, a constructor parameter or a method parameter to inject a `Cache`:
+
+[source,java]
+----
+package org.acme.cache;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
+import io.smallrye.mutiny.Uni;
+
+@ApplicationScoped
+public class CachedExpensiveService {
+
+    @Inject //<1>
+    @CacheName("my-cache")
+    Cache cache;
+
+    public Uni<String> getNonBlockingExpensiveValue(Object key) { //<2>
+        return cache.get(key, k -> { //<3>
+            /*
+             * Put an expensive call here.
+             * It will be executed only if the key is not already associated with a value in the cache.
+             */
+        });
+    }
+
+    public String getBlockingExpensiveValue(Object key) {
+        return cache.get(key, k -> {
+            // Put an expensive call here.
+        }).await().indefinitely(); //<4>
+    }
+}
+----
+<1> This is optional.
+<2> This method returns the `Uni<String>` type which is non-blocking.
+<3> The `k` argument contains the cache key value.
+<4> If you don't need the call to be non-blocking, this is how you can retrieve the cache value in a blocking way.
+
+=== Retrieving a `Cache` from the `CacheManager`
+
+Another way to retrieve a `Cache` instance consists in injecting the `io.quarkus.cache.CacheManager` first and then retrieving the desired `Cache` from its name:
+
+[source,java]
+----
+package org.acme.cache;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheManager;
+
+import java.util.Optional;
+
+@ApplicationScoped
+public class CacheClearer {
+
+    @Inject
+    CacheManager cacheManager;
+
+    public void clearCache(String cacheName) {
+        Optional<Cache> cache = cacheManager.getCache(cacheName);
+        if (cache.isPresent()) {
+            cache.get().invalidateAll().await().indefinitely();
+        }
+    }
+}
+----
+
+=== Building a programmatic cache key
+
+Before building a programmatic cache key, you need to know how cache keys are built by the annotations API when an annotated method is invoked:
+
+* If the method has no arguments, then the cache key is an instance of `io.quarkus.cache.DefaultCacheKey` built from the cache name.
+* If the method has exactly one argument, then this argument is the cache key.
+* If the method has multiple arguments but only one annotated with `@CacheKey`, then this annotated argument is the cache key.
+* In all other cases, the cache key is an instance of `io.quarkus.cache.CompositeCacheKey` built from multiple method arguments (annotated with `@CacheKey` or not).
+
+Now, if you want to retrieve or delete, using the programmatic API, a cache value that was stored using the annotations API, you just need to make sure the same key is used with both APIs.
+
+=== Retrieving all keys from a `CaffeineCache`
+
+The cache keys from a specific `CaffeineCache` can be retrieved as an unmodifiable `Set` as shown below.
+If the cache entries are modified while an iteration over the set is in progress, the set will remain unchanged.
+
+[source,java]
+----
+package org.acme.cache;
+
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
+import io.quarkus.cache.CaffeineCache;
+
+import java.util.Set;
+
+@ApplicationScoped
+public class CacheKeysService {
+
+    @CacheName("my-cache")
+    Cache cache;
+
+    public Set<Object> getAllCacheKeys() {
+        return cache.as(CaffeineCache.class).keySet();
+    }
+}
+----
 
 == Configuring the underlying caching provider
 
@@ -523,6 +647,31 @@ public class CachedService {
 ----
 <1> This method can be used to force a refresh of the cache entry corresponding to the given key.
 <2> This method will invalidate all entries from the `foo` and `bar` caches with a single call.
+
+=== Clear all application caches
+
+[source,java]
+----
+package org.acme.cache;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
+import io.quarkus.cache.CacheManager;
+
+@ApplicationScoped
+public class CacheClearer {
+
+    @Inject
+    CacheManager cacheManager;
+
+    public void clearAllCaches() {
+        for (String cacheName : cacheManager.getCacheNames()) {
+            cacheManager.getCache(cacheName).get().invalidateAll().await().indefinitely();
+        }
+    }
+}
+----
 
 [#negative-cache]
 == Negative caching and nulls

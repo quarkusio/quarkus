@@ -1,16 +1,23 @@
 package io.quarkus.cache.runtime.caffeine;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
 import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import io.quarkus.cache.CacheException;
+import io.quarkus.cache.CaffeineCache;
 import io.quarkus.cache.runtime.AbstractCache;
-import io.quarkus.cache.runtime.CacheException;
 import io.quarkus.cache.runtime.NullValueConverter;
 import io.smallrye.mutiny.Uni;
 
@@ -18,9 +25,9 @@ import io.smallrye.mutiny.Uni;
  * This class is an internal Quarkus cache implementation. Do not use it explicitly from your Quarkus application. The public
  * methods signatures may change without prior notice.
  */
-public class CaffeineCache extends AbstractCache {
+public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
-    private static final Logger LOGGER = Logger.getLogger(CaffeineCache.class);
+    private static final Logger LOGGER = Logger.getLogger(CaffeineCacheImpl.class);
 
     private AsyncCache<Object, Object> cache;
 
@@ -34,7 +41,7 @@ public class CaffeineCache extends AbstractCache {
 
     private Duration expireAfterAccess;
 
-    public CaffeineCache(CaffeineCacheInfo cacheInfo) {
+    public CaffeineCacheImpl(CaffeineCacheInfo cacheInfo) {
         this.name = cacheInfo.name;
         Caffeine<Object, Object> builder = Caffeine.newBuilder();
         if (cacheInfo.initialCapacity != null) {
@@ -61,6 +68,23 @@ public class CaffeineCache extends AbstractCache {
         return name;
     }
 
+    @Override
+    public <K, V> Uni<V> get(K key, Function<K, V> valueLoader) {
+        Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
+        return Uni.createFrom().completionStage(
+                /*
+                 * Even if CompletionStage is eager, the Supplier used below guarantees that the cache value computation will be
+                 * delayed until subscription time. In other words, the cache value computation is done lazily.
+                 */
+                new Supplier<CompletionStage<V>>() {
+                    @Override
+                    public CompletionStage<V> get() {
+                        CompletionStage<Object> caffeineValue = getFromCaffeine(key, valueLoader);
+                        return cast(caffeineValue);
+                    }
+                });
+    }
+
     /**
      * Returns a {@link CompletableFuture} holding the cache value identified by {@code key}, obtaining that value from
      * {@code valueLoader} if necessary. The value computation is done synchronously on the calling thread and the
@@ -71,11 +95,7 @@ public class CaffeineCache extends AbstractCache {
      * @return a {@link CompletableFuture} holding the cache value
      * @throws CacheException if an exception is thrown during the cache value computation
      */
-    @Override
-    public CompletableFuture<Object> get(Object key, Function<Object, Object> valueLoader) {
-        if (key == null) {
-            throw new NullPointerException(NULL_KEYS_NOT_SUPPORTED_MSG);
-        }
+    private <K, V> CompletableFuture<Object> getFromCaffeine(K key, Function<K, V> valueLoader) {
         CompletableFuture<Object> newCacheValue = new CompletableFuture<>();
         CompletableFuture<Object> existingCacheValue = cache.asMap().putIfAbsent(key, newCacheValue);
         if (existingCacheValue == null) {
@@ -112,16 +132,26 @@ public class CaffeineCache extends AbstractCache {
     }
 
     @Override
-    public void invalidate(Object key) {
-        if (key == null) {
-            throw new NullPointerException(NULL_KEYS_NOT_SUPPORTED_MSG);
-        }
-        cache.synchronous().invalidate(key);
+    public Uni<Void> invalidate(Object key) {
+        Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
+        return Uni.createFrom().item(new Supplier<Void>() {
+            @Override
+            public Void get() {
+                cache.synchronous().invalidate(key);
+                return null;
+            }
+        });
     }
 
     @Override
-    public void invalidateAll() {
-        cache.synchronous().invalidateAll();
+    public Uni<Void> invalidateAll() {
+        return Uni.createFrom().item(new Supplier<Void>() {
+            @Override
+            public Void get() {
+                cache.synchronous().invalidateAll();
+                return null;
+            }
+        });
     }
 
     @Override
@@ -138,6 +168,11 @@ public class CaffeineCache extends AbstractCache {
             });
             return null;
         });
+    }
+
+    @Override
+    public Set<Object> keySet() {
+        return Collections.unmodifiableSet(new HashSet<>(cache.asMap().keySet()));
     }
 
     // For testing purposes only.
@@ -162,5 +197,15 @@ public class CaffeineCache extends AbstractCache {
 
     public long getSize() {
         return cache.synchronous().estimatedSize();
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T cast(Object value) {
+        try {
+            return (T) value;
+        } catch (ClassCastException e) {
+            throw new CacheException(
+                    "An existing cached value type does not match the type returned by the value loading function", e);
+        }
     }
 }

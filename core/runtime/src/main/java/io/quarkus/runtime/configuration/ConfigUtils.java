@@ -1,11 +1,22 @@
 package io.quarkus.runtime.configuration;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -15,6 +26,7 @@ import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
+import org.jboss.logging.Logger;
 
 import io.smallrye.config.PropertiesConfigSourceProvider;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -23,6 +35,8 @@ import io.smallrye.config.SmallRyeConfigBuilder;
  *
  */
 public final class ConfigUtils {
+    private static final Logger log = Logger.getLogger("io.quarkus.config");
+
     private ConfigUtils() {
     }
 
@@ -64,7 +78,7 @@ public final class ConfigUtils {
             sources.addAll(
                     new PropertiesConfigSourceProvider("WEB-INF/classes/META-INF/microprofile-config.properties", true,
                             classLoader).getConfigSources(classLoader));
-            sources.add(new EnvConfigSource(300));
+            sources.add(new DotEnvConfigSource());
             sources.add(new SysPropConfigSource());
             builder.withSources(sources.toArray(new ConfigSource[0]));
         }
@@ -86,17 +100,14 @@ public final class ConfigUtils {
         }
     }
 
-    static final class EnvConfigSource implements ConfigSource {
+    static class EnvConfigSource implements ConfigSource {
         static final Pattern REP_PATTERN = Pattern.compile("[^a-zA-Z0-9_]");
 
-        private final int ordinal;
-
-        EnvConfigSource(final int ordinal) {
-            this.ordinal = ordinal;
+        EnvConfigSource() {
         }
 
         public int getOrdinal() {
-            return ordinal;
+            return 300;
         }
 
         public Map<String, String> getProperties() {
@@ -104,11 +115,52 @@ public final class ConfigUtils {
         }
 
         public String getValue(final String propertyName) {
-            return System.getenv(REP_PATTERN.matcher(propertyName.toUpperCase(Locale.ROOT)).replaceAll("_"));
+            return getRawValue(REP_PATTERN.matcher(propertyName.toUpperCase(Locale.ROOT)).replaceAll("_"));
+        }
+
+        String getRawValue(final String name) {
+            return System.getenv(name);
         }
 
         public String getName() {
             return "System environment";
+        }
+    }
+
+    static class DotEnvConfigSource extends EnvConfigSource {
+        private final Map<String, String> values;
+
+        DotEnvConfigSource() {
+            this(Paths.get(System.getProperty("user.dir", "."), ".env"));
+        }
+
+        DotEnvConfigSource(Path path) {
+            Map<String, String> values = new HashMap<>();
+            try (InputStream is = Files.newInputStream(path)) {
+                try (InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+                    final Properties properties = new Properties();
+                    properties.load(isr);
+                    for (String name : properties.stringPropertyNames()) {
+                        values.put(name, properties.getProperty(name));
+                    }
+                }
+            } catch (FileNotFoundException | NoSuchFileException ignored) {
+            } catch (IOException e) {
+                log.debug("Failed to load `.env` file", e);
+            }
+            this.values = values;
+        }
+
+        public int getOrdinal() {
+            return 295;
+        }
+
+        String getRawValue(final String name) {
+            return values.get(name);
+        }
+
+        public String getName() {
+            return ".env";
         }
     }
 

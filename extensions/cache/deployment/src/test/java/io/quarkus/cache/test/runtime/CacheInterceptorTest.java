@@ -8,10 +8,10 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.cache.runtime.AbstractCache;
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CompositeCacheKey;
+import io.quarkus.cache.DefaultCacheKey;
 import io.quarkus.cache.runtime.CacheInterceptor;
-import io.quarkus.cache.runtime.CompositeCacheKey;
-import io.quarkus.cache.runtime.DefaultCacheKey;
 import io.quarkus.cache.runtime.caffeine.CaffeineCache;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheInfo;
 
@@ -66,7 +66,7 @@ public class CacheInterceptorTest {
         assertEquals(expectedKey, actualKey);
     }
 
-    private Object getCacheKey(AbstractCache cache, List<Short> cacheKeyParameterPositions, Object[] methodParameterValues) {
+    private Object getCacheKey(Cache cache, List<Short> cacheKeyParameterPositions, Object[] methodParameterValues) {
         return TEST_CACHE_INTERCEPTOR.getCacheKey(cache, cacheKeyParameterPositions, methodParameterValues);
     }
 
@@ -77,7 +77,7 @@ public class CacheInterceptorTest {
     // This inner class changes the CacheInterceptor#getCacheKey method visibility to public.
     private static class TestCacheInterceptor extends CacheInterceptor {
         @Override
-        public Object getCacheKey(AbstractCache cache, List<Short> cacheKeyParameterPositions, Object[] methodParameterValues) {
+        public Object getCacheKey(Cache cache, List<Short> cacheKeyParameterPositions, Object[] methodParameterValues) {
             return super.getCacheKey(cache, cacheKeyParameterPositions, methodParameterValues);
         }
     }

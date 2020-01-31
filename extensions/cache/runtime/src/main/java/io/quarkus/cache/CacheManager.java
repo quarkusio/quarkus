@@ -5,9 +5,9 @@ import java.util.Optional;
 
 /**
  * <p>
- * Use this interface to retrieve all existing {@link Cache} names and interact with any cache programmatically. It shares the
- * same cache collection the Quarkus caching annotations use. The {@link CacheName} annotation can also be used to inject and
- * access a specific cache from its name.
+ * Use this interface to retrieve all existing {@link Cache} names and interact with any cache programmatically e.g. store,
+ * retrieve or delete cache values. It shares the same caches collection the Quarkus caching annotations use. The
+ * {@link CacheName} annotation can also be used to inject and access a specific cache from its name.
  * </p>
  * <p>
  * Code example:
@@ -18,10 +18,11 @@ import java.util.Optional;
  * 
  *     {@literal @}Inject
  *     CacheManager cacheManager;
- *     
- *     void doSomething() {
+
+ *     String getExpensiveValue(Object key) {
  *         Cache cache = cacheManager.getCache("my-cache");
- *         // Interact with the cache.
+ *         {@code Uni<String>} cacheValue = cache.get(key, () -> expensiveService.getValue(key));
+ *         return cacheValue.await().indefinitely();
  *     }
  * }
  * </pre>

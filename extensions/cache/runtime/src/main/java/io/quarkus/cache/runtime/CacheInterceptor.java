@@ -15,8 +15,10 @@ import javax.interceptor.InvocationContext;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.InterceptorBindings;
+import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheManager;
+import io.quarkus.cache.CompositeCacheKey;
 
 public abstract class CacheInterceptor {
 
@@ -104,7 +106,7 @@ public abstract class CacheInterceptor {
         return (T) annotation;
     }
 
-    protected Object getCacheKey(AbstractCache cache, List<Short> cacheKeyParameterPositions, Object[] methodParameterValues) {
+    protected Object getCacheKey(Cache cache, List<Short> cacheKeyParameterPositions, Object[] methodParameterValues) {
         if (methodParameterValues == null || methodParameterValues.length == 0) {
             // If the intercepted method doesn't have any parameter, then the default cache key will be used.
             return cache.getDefaultKey();

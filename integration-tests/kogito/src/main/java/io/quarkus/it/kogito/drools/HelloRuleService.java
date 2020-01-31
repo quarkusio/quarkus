@@ -6,7 +6,7 @@ import javax.inject.Named;
 
 import org.kie.kogito.rules.RuleUnit;
 import org.kie.kogito.rules.RuleUnitInstance;
-import org.kie.kogito.rules.impl.SessionData;
+import org.kie.kogito.rules.units.SessionData;
 
 @ApplicationScoped
 public class HelloRuleService {

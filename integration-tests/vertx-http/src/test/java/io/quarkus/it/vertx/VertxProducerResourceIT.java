@@ -32,6 +32,7 @@ public class VertxProducerResourceIT extends VertxProducerResourceTest {
     }
 
     @Test
+    @Override
     public void testRouteRegistrationMTLS() {
         RequestSpecification spec = new RequestSpecBuilder()
                 .setBaseUri(String.format("%s://%s", url.getProtocol(), url.getHost()))

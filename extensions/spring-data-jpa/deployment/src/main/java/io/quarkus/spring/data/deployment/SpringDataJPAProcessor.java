@@ -123,7 +123,8 @@ public class SpringDataJPAProcessor {
                 compositeIndex, (n) -> {
                     // the implementation of fragments don't need to be beans themselves
                     additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(n));
-                }, (className -> {
+                },
+                (className -> {
                     // the generated classes that implement interfaces for holding custom query results need
                     // to be registered for reflection here since this is the only point where the generated class is known
                     reflectiveClasses.produce(new ReflectiveClassBuildItem(true, false, className));

@@ -35,7 +35,7 @@ public final class AuthenticationPluginLoader_Substitutions {
                 return new ClearPasswordPlugin();
             case DIALOG:
                 throw new UnsupportedOperationException("Authentication strategy 'dialog' is not supported in GraalVM");
-                //return new SendPamAuthPacket();
+            //return new SendPamAuthPacket();
             case GSSAPI_CLIENT:
                 return new SendGssApiAuthPacket();
             case MYSQL_ED25519_PASSWORD:

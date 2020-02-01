@@ -1,6 +1,7 @@
 package io.quarkus.gradle;
 
 import java.util.Collections;
+import java.util.function.Consumer;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
@@ -104,12 +105,15 @@ public class QuarkusPlugin implements Plugin<Project> {
                     Task testNative = tasks.create(TEST_NATIVE_TASK_NAME, QuarkusTestNative.class);
                     testNative.dependsOn(buildNative);
                     testNative.setShouldRunAfter(Collections.singletonList(tasks.findByName(JavaPlugin.TEST_TASK_NAME)));
-                    tasks.withType(Test.class).forEach(t -> {
+
+                    Consumer<Test> configureTestTask = t -> {
                         // Quarkus test configuration task which should be executed before any Quarkus test
                         t.dependsOn(quarkusTestConfig);
                         // also make each task use the JUnit platform since it's the only supported test environment
                         t.useJUnitPlatform();
-                    });
+                    };
+                    tasks.withType(Test.class).forEach(configureTestTask);
+                    tasks.withType(Test.class).whenTaskAdded(t -> configureTestTask.accept(t));
                 });
     }
 

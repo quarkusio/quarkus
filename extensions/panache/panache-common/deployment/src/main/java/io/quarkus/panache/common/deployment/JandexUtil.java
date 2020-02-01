@@ -187,4 +187,18 @@ public class JandexUtil {
     static Type toClassType(String type) {
         return Type.create(DotName.createSimple(type), Type.Kind.CLASS);
     }
+
+    public static boolean containsMethod(ClassInfo classInfo, MethodInfo methodInfo) {
+        if (classInfo.methods().contains(methodInfo)) {
+            return true;
+        }
+        // MethodInfo may not belong to the same declaring class. Check signature
+        for (MethodInfo classMethodInfo : classInfo.methods()) {
+            if (classMethodInfo.name().equals(methodInfo.name()) &&
+                    classMethodInfo.parameters().equals(methodInfo.parameters())) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

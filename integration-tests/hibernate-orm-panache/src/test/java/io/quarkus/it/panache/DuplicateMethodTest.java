@@ -7,6 +7,7 @@ import javax.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.panache.common.Parameters;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
@@ -25,5 +26,7 @@ public class DuplicateMethodTest {
         DuplicateEntity entity = DuplicateEntity.findById(1);
         assertThat(entity).isNotNull();
         assertThatCode(entity::persist).doesNotThrowAnyException();
+        assertThatCode(() -> DuplicateEntity.update("foo", Parameters.with("a", 1)))
+                .doesNotThrowAnyException();
     }
 }

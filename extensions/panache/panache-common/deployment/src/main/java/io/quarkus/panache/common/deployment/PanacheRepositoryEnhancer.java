@@ -106,7 +106,7 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
         public void visitEnd() {
             for (MethodInfo method : panacheRepositoryBaseClassInfo.methods()) {
                 // Do not generate a method that already exists
-                if (!daoClassInfo.methods().contains(method)) {
+                if (!JandexUtil.containsMethod(daoClassInfo, method)) {
                     AnnotationInstance bridge = method.annotation(JandexUtil.DOTNAME_GENERATE_BRIDGE);
                     if (bridge != null) {
                         generateMethod(method, bridge.value("targetReturnTypeErased"));

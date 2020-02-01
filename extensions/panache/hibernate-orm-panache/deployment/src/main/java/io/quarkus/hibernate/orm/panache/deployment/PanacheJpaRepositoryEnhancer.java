@@ -14,8 +14,8 @@ import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
 public class PanacheJpaRepositoryEnhancer extends PanacheRepositoryEnhancer {
 
-    private final static DotName PANACHE_REPOSITORY_BINARY_NAME = DotName.createSimple(PanacheRepository.class.getName());
-    private final static DotName PANACHE_REPOSITORY_BASE_BINARY_NAME = DotName
+    private static final DotName PANACHE_REPOSITORY_BINARY_NAME = DotName.createSimple(PanacheRepository.class.getName());
+    private static final DotName PANACHE_REPOSITORY_BASE_BINARY_NAME = DotName
             .createSimple(PanacheRepositoryBase.class.getName());
 
     public PanacheJpaRepositoryEnhancer(IndexView index) {

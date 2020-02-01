@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -20,7 +19,6 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,12 +28,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
-import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -188,23 +184,8 @@ public class QuarkusUnitTest
             }
             archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.toFile());
 
-            String exportPath = System.getProperty("quarkus.deploymentExportPath");
-            if (exportPath != null) {
-                File exportDir = new File(exportPath);
-                if (exportDir.exists()) {
-                    if (!exportDir.isDirectory()) {
-                        throw new IllegalStateException("Export path is not a directory: " + exportPath);
-                    }
-                    try (Stream<Path> stream = Files.walk(exportDir.toPath())) {
-                        stream.sorted(Comparator.reverseOrder()).map(Path::toFile)
-                                .forEach(File::delete);
-                    }
-                } else if (!exportDir.mkdirs()) {
-                    throw new IllegalStateException("Export path could not be created: " + exportPath);
-                }
-                File exportFile = new File(exportDir, archive.getName());
-                archive.as(ZipExporter.class).exportTo(exportFile);
-            }
+            //debugging code
+            ExportUtil.exportToQuarkusDeploymentPath(archive);
         } catch (Exception e) {
             throw new RuntimeException("Unable to create the archive", e);
         }

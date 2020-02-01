@@ -9,9 +9,9 @@ import org.hibernate.bytecode.spi.BytecodeProvider;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Opcodes;
 
 import io.quarkus.deployment.QuarkusClassWriter;
+import net.bytebuddy.utility.OpenedClassReader;
 
 /**
  * Used to transform bytecode by registering to
@@ -41,7 +41,7 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
         private final Enhancer enhancer;
 
         public HibernateEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor) {
-            super(Opcodes.ASM7, new QuarkusClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS));
+            super(OpenedClassReader.ASM_API, new QuarkusClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS));
             this.className = className;
             this.outputClassVisitor = outputClassVisitor;
             //note that as getLoadingClassLoader is resolved immediately this can't be created until transform time

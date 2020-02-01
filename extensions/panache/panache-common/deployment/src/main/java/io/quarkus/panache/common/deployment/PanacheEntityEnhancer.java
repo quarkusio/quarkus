@@ -19,6 +19,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.deployment.EntityField.EntityFieldAnnotation;
@@ -64,7 +65,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                 MetamodelInfo<? extends EntityModel<? extends EntityFieldType>> modelInfo,
                 ClassInfo panacheEntityBaseClassInfo,
                 ClassInfo entityInfo) {
-            super(Opcodes.ASM7, outputClassVisitor);
+            super(Gizmo.ASM_API_VERSION, outputClassVisitor);
             thisClass = Type.getType("L" + className.replace('.', '/') + ";");
             this.modelInfo = modelInfo;
             EntityModel<? extends EntityFieldType> entityModel = modelInfo.getEntityModel(className);
@@ -82,7 +83,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
             }
             ef.signature = signature;
             // if we have a mapped field, let's add some annotations
-            return new FieldVisitor(Opcodes.ASM7, superVisitor) {
+            return new FieldVisitor(Gizmo.ASM_API_VERSION, superVisitor) {
                 private Set<String> descriptors = new HashSet<>();
 
                 @Override

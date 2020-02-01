@@ -1,8 +1,8 @@
 package io.quarkus.panache.common.deployment;
 
 import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.Opcodes;
 
+import io.quarkus.gizmo.Gizmo;
 import io.quarkus.panache.common.deployment.EntityField.EntityFieldAnnotation;
 
 /**
@@ -14,7 +14,7 @@ public class PanacheMovingAnnotationVisitor extends AnnotationVisitor {
     private final EntityFieldAnnotation fieldAnno;
 
     public PanacheMovingAnnotationVisitor(EntityFieldAnnotation fieldAnno) {
-        super(Opcodes.ASM7);
+        super(Gizmo.ASM_API_VERSION);
         this.fieldAnno = fieldAnno;
     }
 

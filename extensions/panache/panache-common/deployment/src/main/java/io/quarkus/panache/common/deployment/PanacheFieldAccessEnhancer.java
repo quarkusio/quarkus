@@ -4,7 +4,8 @@ import java.util.function.BiFunction;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+
+import io.quarkus.gizmo.Gizmo;
 
 public class PanacheFieldAccessEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
@@ -25,7 +26,7 @@ public class PanacheFieldAccessEnhancer implements BiFunction<String, ClassVisit
         private MetamodelInfo<?> modelInfo;
 
         public FieldAccessClassVisitor(String className, ClassVisitor outputClassVisitor, MetamodelInfo<?> modelInfo) {
-            super(Opcodes.ASM7, outputClassVisitor);
+            super(Gizmo.ASM_API_VERSION, outputClassVisitor);
             this.modelInfo = modelInfo;
             this.classBinaryName = className.replace('.', '/');
         }

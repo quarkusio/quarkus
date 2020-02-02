@@ -100,7 +100,7 @@ public class QuartzProcessor {
             return HSQLDBDelegate.class.getName();
         }
 
-        if (resolvedDriver.contains("com.microsoft.sqlserver.jdbc.SQLServerResource")) {
+        if (resolvedDriver.contains("com.microsoft.sqlserver.jdbc.SQLServerDriver")) {
             return MSSQLDelegate.class.getName();
         }
 

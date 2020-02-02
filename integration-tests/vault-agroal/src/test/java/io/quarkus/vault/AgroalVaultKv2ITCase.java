@@ -19,7 +19,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.vault.test.VaultTestLifecycleManager;
 
-@DisabledOnOs(OS.WINDOWS)
+@DisabledOnOs(OS.WINDOWS) // https://github.com/quarkusio/quarkus/issues/3796
 @QuarkusTestResource(VaultTestLifecycleManager.class)
 public class AgroalVaultKv2ITCase {
 

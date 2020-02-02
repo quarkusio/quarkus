@@ -8,8 +8,8 @@ import io.quarkus.test.junit.NativeImageTest;
 import io.quarkus.vault.test.VaultTestLifecycleManager;
 
 @NativeImageTest
+@DisabledOnOs(OS.WINDOWS) // https://github.com/quarkusio/quarkus/issues/3796
 @QuarkusTestResource(VaultTestLifecycleManager.class)
-@DisabledOnOs(OS.WINDOWS)
 public class VaultInGraalITCase extends VaultTest {
 
 }

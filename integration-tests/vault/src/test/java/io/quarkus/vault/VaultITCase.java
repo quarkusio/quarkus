@@ -71,7 +71,7 @@ import io.quarkus.vault.test.client.TestVaultClient;
 import io.quarkus.vault.test.client.dto.VaultTransitHash;
 import io.quarkus.vault.test.client.dto.VaultTransitHashBody;
 
-@DisabledOnOs(OS.WINDOWS)
+@DisabledOnOs(OS.WINDOWS) // https://github.com/quarkusio/quarkus/issues/3796
 @QuarkusTestResource(VaultTestLifecycleManager.class)
 public class VaultITCase {
 

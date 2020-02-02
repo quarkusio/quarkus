@@ -134,6 +134,23 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
     }
 
     @Test
+    public void testProjectGenerationWithInvalidPackage() throws Exception {
+        testDir = initEmptyProject("projects/project-generation-invalid-package");
+        assertThat(testDir).isDirectory();
+        invoker = initInvoker(testDir);
+
+        Properties properties = new Properties();
+        properties.put("projectGroupId", "org.acme");
+        properties.put("projectArtifactId", "acme");
+        properties.put("className", "org.acme.invalid-package-name.MyResource");
+
+        InvocationResult result = setup(properties);
+
+        assertThat(result.getExitCode()).isNotZero();
+        assertThat(new File(testDir, "src/main/java/org/acme")).doesNotExist();
+    }
+
+    @Test
     public void testProjectGenerationFromMinimalPomWithResource() throws Exception {
         testDir = initProject("projects/simple-pom-it", "projects/project-generation-from-empty-pom-with-resource");
         assertThat(testDir).isDirectory();

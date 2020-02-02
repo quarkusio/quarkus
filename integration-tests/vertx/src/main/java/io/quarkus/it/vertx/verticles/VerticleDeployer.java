@@ -18,7 +18,7 @@ public class VerticleDeployer {
     Vertx vertx;
 
     public void init(@Observes StartupEvent ev) {
-        CountDownLatch latch = new CountDownLatch(4);
+        CountDownLatch latch = new CountDownLatch(5);
         vertx.deployVerticle(BareVerticle::new, new DeploymentOptions().setConfig(new JsonObject()
                 .put("id", "bare")))
                 .thenAccept(x -> latch.countDown());

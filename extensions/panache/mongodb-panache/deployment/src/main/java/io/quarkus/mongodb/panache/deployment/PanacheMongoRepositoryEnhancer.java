@@ -9,6 +9,7 @@ import org.objectweb.asm.Opcodes;
 
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.mongodb.panache.PanacheMongoRepositoryBase;
+import io.quarkus.panache.common.deployment.JandexUtil;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
 public class PanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhancer {
@@ -53,22 +54,26 @@ public class PanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhancer {
             // Bridge for findById, but only if we actually know the end entity (which we don't for intermediate
             // abstract repositories that haven't fixed their entity type yet
             if (!entitySignature.equals("Ljava/lang/Object;")) {
-                MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE,
-                        "findById",
-                        "(Ljava/lang/Object;)Ljava/lang/Object;",
-                        null,
-                        null);
-                mv.visitParameter("id", 0);
-                mv.visitCode();
-                mv.visitIntInsn(Opcodes.ALOAD, 0);
-                mv.visitIntInsn(Opcodes.ALOAD, 1);
-                mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
-                        daoBinaryName,
-                        "findById",
-                        "(Ljava/lang/Object;)" + entitySignature, false);
-                mv.visitInsn(Opcodes.ARETURN);
-                mv.visitMaxs(0, 0);
-                mv.visitEnd();
+                if (!JandexUtil.containsMethod(daoClassInfo, "findById",
+                        Object.class.getName(),
+                        Object.class.getName())) {
+                    MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE,
+                            "findById",
+                            "(Ljava/lang/Object;)Ljava/lang/Object;",
+                            null,
+                            null);
+                    mv.visitParameter("id", 0);
+                    mv.visitCode();
+                    mv.visitIntInsn(Opcodes.ALOAD, 0);
+                    mv.visitIntInsn(Opcodes.ALOAD, 1);
+                    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
+                            daoBinaryName,
+                            "findById",
+                            "(Ljava/lang/Object;)" + entitySignature, false);
+                    mv.visitInsn(Opcodes.ARETURN);
+                    mv.visitMaxs(0, 0);
+                    mv.visitEnd();
+                }
             }
 
             super.visitEnd();

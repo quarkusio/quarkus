@@ -1,9 +1,13 @@
 package io.quarkus.panache.common.deployment;
 
+import static java.util.stream.Collectors.toList;
+
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
 import org.jboss.jandex.ArrayType;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
@@ -159,4 +163,42 @@ public class JandexUtil {
         }
     }
 
+    /**
+     * Checks if the {@link ClassInfo} contains a method
+     *
+     * @param classInfo the {@link ClassInfo} instance
+     * @param methodName the method name to check
+     * @param parameters the parameter types, if any
+     * @return true if the {@link ClassInfo} parameter contains this method
+     */
+    public static boolean containsMethod(ClassInfo classInfo,
+            String methodName,
+            String returnType,
+            String... parameters) {
+        List<Type> types = Arrays.stream(parameters).map(JandexUtil::toClassType).collect(toList());
+        for (MethodInfo methodInfo : classInfo.methods()) {
+            if (methodInfo.name().equals(methodName) && methodInfo.parameters().equals(types)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static Type toClassType(String type) {
+        return Type.create(DotName.createSimple(type), Type.Kind.CLASS);
+    }
+
+    public static boolean containsMethod(ClassInfo classInfo, MethodInfo methodInfo) {
+        if (classInfo.methods().contains(methodInfo)) {
+            return true;
+        }
+        // MethodInfo may not belong to the same declaring class. Check signature
+        for (MethodInfo classMethodInfo : classInfo.methods()) {
+            if (classMethodInfo.name().equals(methodInfo.name()) &&
+                    classMethodInfo.parameters().equals(methodInfo.parameters())) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

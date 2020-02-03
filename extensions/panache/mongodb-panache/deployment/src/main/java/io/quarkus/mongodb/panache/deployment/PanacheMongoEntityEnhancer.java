@@ -35,14 +35,16 @@ public class PanacheMongoEntityEnhancer extends PanacheEntityEnhancer<MetamodelI
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new PanacheMongoEntityClassVisitor(className, outputClassVisitor, modelInfo, panacheEntityBaseClassInfo);
+        return new PanacheMongoEntityClassVisitor(className, outputClassVisitor, modelInfo, panacheEntityBaseClassInfo,
+                indexView.getClassByName(DotName.createSimple(className)));
     }
 
     static class PanacheMongoEntityClassVisitor extends PanacheEntityClassVisitor<EntityField> {
 
         public PanacheMongoEntityClassVisitor(String className, ClassVisitor outputClassVisitor,
-                MetamodelInfo<EntityModel<EntityField>> modelInfo, ClassInfo panacheEntityBaseClassInfo) {
-            super(className, outputClassVisitor, modelInfo, panacheEntityBaseClassInfo);
+                MetamodelInfo<EntityModel<EntityField>> modelInfo, ClassInfo panacheEntityBaseClassInfo,
+                ClassInfo entityInfo) {
+            super(className, outputClassVisitor, modelInfo, panacheEntityBaseClassInfo, entityInfo);
         }
 
         @Override

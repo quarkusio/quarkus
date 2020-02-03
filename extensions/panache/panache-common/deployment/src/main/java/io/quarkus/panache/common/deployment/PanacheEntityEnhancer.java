@@ -40,9 +40,11 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
 
     protected MetamodelType modelInfo;
     protected final ClassInfo panacheEntityBaseClassInfo;
+    protected final IndexView indexView;
 
     public PanacheEntityEnhancer(IndexView index, DotName panacheEntityBaseName) {
-        panacheEntityBaseClassInfo = index.getClassByName(panacheEntityBaseName);
+        this.panacheEntityBaseClassInfo = index.getClassByName(panacheEntityBaseName);
+        this.indexView = index;
     }
 
     @Override
@@ -56,24 +58,28 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
         private Set<String> methods = new HashSet<>();
         private MetamodelInfo<?> modelInfo;
         private ClassInfo panacheEntityBaseClassInfo;
+        protected ClassInfo entityInfo;
 
         public PanacheEntityClassVisitor(String className, ClassVisitor outputClassVisitor,
                 MetamodelInfo<? extends EntityModel<? extends EntityFieldType>> modelInfo,
-                ClassInfo panacheEntityBaseClassInfo) {
+                ClassInfo panacheEntityBaseClassInfo,
+                ClassInfo entityInfo) {
             super(Opcodes.ASM7, outputClassVisitor);
             thisClass = Type.getType("L" + className.replace('.', '/') + ";");
             this.modelInfo = modelInfo;
             EntityModel<? extends EntityFieldType> entityModel = modelInfo.getEntityModel(className);
             fields = entityModel != null ? entityModel.fields : null;
             this.panacheEntityBaseClassInfo = panacheEntityBaseClassInfo;
+            this.entityInfo = entityInfo;
         }
 
         @Override
         public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
             FieldVisitor superVisitor = super.visitField(access, name, descriptor, signature, value);
             EntityField ef = fields.get(name);
-            if (fields == null || ef == null)
+            if (ef == null) {
                 return superVisitor;
+            }
             ef.signature = signature;
             // if we have a mapped field, let's add some annotations
             return new FieldVisitor(Opcodes.ASM7, superVisitor) {
@@ -107,8 +113,9 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                 String[] exceptions) {
             if (methodName.startsWith("get")
                     || methodName.startsWith("set")
-                    || methodName.startsWith("is"))
+                    || methodName.startsWith("is")) {
                 methods.add(methodName + "/" + descriptor);
+            }
             MethodVisitor superVisitor = super.visitMethod(access, methodName, descriptor, signature, exceptions);
             return new PanacheFieldAccessMethodVisitor(superVisitor, thisClass.getInternalName(), methodName, descriptor,
                     modelInfo);
@@ -119,9 +126,13 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
             // FIXME: generate default constructor
 
             for (MethodInfo method : panacheEntityBaseClassInfo.methods()) {
-                AnnotationInstance bridge = method.annotation(JandexUtil.DOTNAME_GENERATE_BRIDGE);
-                if (bridge != null)
-                    generateMethod(method, bridge.value("targetReturnTypeErased"));
+                // Do not generate a method that already exists
+                if (!JandexUtil.containsMethod(entityInfo, method)) {
+                    AnnotationInstance bridge = method.annotation(JandexUtil.DOTNAME_GENERATE_BRIDGE);
+                    if (bridge != null) {
+                        generateMethod(method, bridge.value("targetReturnTypeErased"));
+                    }
+                }
             }
 
             generateAccessors();

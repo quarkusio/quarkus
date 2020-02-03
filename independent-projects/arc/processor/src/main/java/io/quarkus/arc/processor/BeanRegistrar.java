@@ -1,10 +1,9 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.InjectableBean;
 import org.jboss.jandex.DotName;
 
 /**
- * Allows a build-time extension to register synthetic {@link InjectableBean} implementations.
+ * Allows a build-time extension to register synthetic beans and observers.
  *
  * @author Martin Kouba
  */
@@ -19,6 +18,8 @@ public interface BeanRegistrar extends BuildExtension {
     interface RegistrationContext extends BuildContext {
 
         /**
+         * Configure a new synthetic bean. The bean is not added to the deployment unless the {@link BeanConfigurator#done()}
+         * method is called.
          *
          * @param beanClass
          * @return a new synthetic bean configurator
@@ -26,6 +27,8 @@ public interface BeanRegistrar extends BuildExtension {
         <T> BeanConfigurator<T> configure(DotName beanClassName);
 
         /**
+         * Configure a new synthetic bean. The bean is not added to the deployment unless the {@link BeanConfigurator#done()}
+         * method is called.
          * 
          * @param beanClass
          * @return a new synthetic bean configurator

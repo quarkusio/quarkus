@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.build.extension.interceptor.bindings;
+package io.quarkus.arc.test.buildextension.interceptor.bindings;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;

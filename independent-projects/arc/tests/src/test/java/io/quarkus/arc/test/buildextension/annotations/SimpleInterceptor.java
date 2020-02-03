@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.build.extension.annotations;
+package io.quarkus.arc.test.buildextension.annotations;
 
 import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;

@@ -310,20 +310,22 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             observersHandle = addObserversMethod.getMethodParam(1);
 
             String observerType = observerToGeneratedName.get(observer);
-            List<InjectionPointInfo> injectionPoints = observer.getInjection().injectionPoints.stream()
-                    .filter(ip -> !BuiltinBean.resolvesTo(ip))
-                    .collect(toList());
             List<ResultHandle> params = new ArrayList<>();
             List<String> paramTypes = new ArrayList<>();
 
-            // First param - declaring bean
-            params.add(addObserversMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                    beanIdToBeanHandle, addObserversMethod.load(observer.getDeclaringBean().getIdentifier())));
-            paramTypes.add(Type.getDescriptor(Supplier.class));
-            for (InjectionPointInfo injectionPoint : injectionPoints) {
+            if (!observer.isSynthetic()) {
+                List<InjectionPointInfo> injectionPoints = observer.getInjection().injectionPoints.stream()
+                        .filter(ip -> !BuiltinBean.resolvesTo(ip))
+                        .collect(toList());
+                // First param - declaring bean
                 params.add(addObserversMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                        beanIdToBeanHandle, addObserversMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
+                        beanIdToBeanHandle, addObserversMethod.load(observer.getDeclaringBean().getIdentifier())));
                 paramTypes.add(Type.getDescriptor(Supplier.class));
+                for (InjectionPointInfo injectionPoint : injectionPoints) {
+                    params.add(addObserversMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
+                            beanIdToBeanHandle, addObserversMethod.load(injectionPoint.getResolvedBean().getIdentifier())));
+                    paramTypes.add(Type.getDescriptor(Supplier.class));
+                }
             }
             ResultHandle observerInstance = addObserversMethod.newInstance(
                     MethodDescriptor.ofConstructor(observerType, paramTypes.toArray(new String[0])),

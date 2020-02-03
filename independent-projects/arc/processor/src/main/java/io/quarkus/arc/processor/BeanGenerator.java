@@ -73,8 +73,6 @@ public class BeanGenerator extends AbstractGenerator {
 
     static final String PRODUCER_FIELD_SUFFIX = "_ProducerField";
 
-    static final String SYNTHETIC_SUFFIX = "_Synthetic";
-
     protected static final String FIELD_NAME_DECLARING_PROVIDER_SUPPLIER = "declaringProviderSupplier";
     protected static final String FIELD_NAME_BEAN_TYPES = "types";
     protected static final String FIELD_NAME_QUALIFIERS = "qualifiers";
@@ -123,13 +121,14 @@ public class BeanGenerator extends AbstractGenerator {
 
         StringBuilder baseNameBuilder = new StringBuilder();
         if (bean.getImplClazz().enclosingClass() != null) {
-            baseNameBuilder.append(DotNames.simpleName(bean.getImplClazz().enclosingClass())).append("_")
+            baseNameBuilder.append(DotNames.simpleName(bean.getImplClazz().enclosingClass())).append(UNDERSCORE)
                     .append(DotNames.simpleName(bean.getImplClazz()));
         } else {
             baseNameBuilder.append(DotNames.simpleName(bean.getImplClazz()));
         }
-        baseNameBuilder.append("_");
+        baseNameBuilder.append(UNDERSCORE);
         baseNameBuilder.append(bean.getIdentifier());
+        baseNameBuilder.append(UNDERSCORE);
         baseNameBuilder.append(SYNTHETIC_SUFFIX);
         String baseName = baseNameBuilder.toString();
 
@@ -240,7 +239,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         String baseName;
         if (beanClass.enclosingClass() != null) {
-            baseName = DotNames.simpleName(beanClass.enclosingClass()) + "_" + DotNames.simpleName(beanClass);
+            baseName = DotNames.simpleName(beanClass.enclosingClass()) + UNDERSCORE + DotNames.simpleName(beanClass);
         } else {
             baseName = DotNames.simpleName(beanClass);
         }
@@ -323,7 +322,7 @@ public class BeanGenerator extends AbstractGenerator {
         ClassInfo declaringClass = producerMethod.declaringClass();
         String declaringClassBase;
         if (declaringClass.enclosingClass() != null) {
-            declaringClassBase = DotNames.simpleName(declaringClass.enclosingClass()) + "_"
+            declaringClassBase = DotNames.simpleName(declaringClass.enclosingClass()) + UNDERSCORE
                     + DotNames.simpleName(declaringClass);
         } else {
             declaringClassBase = DotNames.simpleName(declaringClass);
@@ -332,14 +331,14 @@ public class BeanGenerator extends AbstractGenerator {
         Type providerType = bean.getProviderType();
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(producerMethod.name())
-                .append("_")
+                .append(UNDERSCORE)
                 .append(producerMethod.returnType().name().toString());
 
         for (Type i : producerMethod.parameters()) {
             sigBuilder.append(i.name().toString());
         }
 
-        String baseName = declaringClassBase + PRODUCER_METHOD_SUFFIX + "_" + producerMethod.name() + "_"
+        String baseName = declaringClassBase + PRODUCER_METHOD_SUFFIX + UNDERSCORE + producerMethod.name() + UNDERSCORE
                 + Hashes.sha1(sigBuilder.toString());
         String providerTypeName = providerType.name().toString();
         String targetPackage = DotNames.packageName(declaringClass.name());
@@ -419,14 +418,14 @@ public class BeanGenerator extends AbstractGenerator {
         ClassInfo declaringClass = producerField.declaringClass();
         String declaringClassBase;
         if (declaringClass.enclosingClass() != null) {
-            declaringClassBase = DotNames.simpleName(declaringClass.enclosingClass()) + "_"
+            declaringClassBase = DotNames.simpleName(declaringClass.enclosingClass()) + UNDERSCORE
                     + DotNames.simpleName(declaringClass);
         } else {
             declaringClassBase = DotNames.simpleName(declaringClass);
         }
 
         Type providerType = bean.getProviderType();
-        String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + "_" + producerField.name();
+        String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + UNDERSCORE + producerField.name();
         String providerTypeName = providerType.name().toString();
         String targetPackage = DotNames.packageName(declaringClass.name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);

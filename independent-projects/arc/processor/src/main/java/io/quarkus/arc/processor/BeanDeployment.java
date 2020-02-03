@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import javax.enterprise.event.Reception;
 import javax.enterprise.inject.Model;
 import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.DeploymentException;
@@ -840,33 +841,34 @@ public class BeanDeployment {
     }
 
     private RegistrationContext registerSyntheticBeans(List<BeanRegistrar> beanRegistrars, BuildContext buildContext) {
-        RegistrationContext registrationContext = new RegistrationContext() {
-
-            @Override
-            public <T> BeanConfigurator<T> configure(DotName beanClassName) {
-                return new BeanConfigurator<T>(beanClassName, BeanDeployment.this, beans::add);
-            }
-
-            @Override
-            public <V> V get(Key<V> key) {
-                return buildContext.get(key);
-            }
-
-            @Override
-            public <V> V put(Key<V> key, V value) {
-                return buildContext.put(key, value);
-            }
-
-            @Override
-            public BeanStream beans() {
-                return new BeanStream(get(BuildExtension.Key.BEANS));
-            }
-
-        };
+        BeanRegistrationContextImpl context = new BeanRegistrationContextImpl(buildContext, this);
         for (BeanRegistrar registrar : beanRegistrars) {
-            registrar.register(registrationContext);
+            registrar.register(context);
         }
-        return registrationContext;
+        return context;
+    }
+
+    io.quarkus.arc.processor.ObserverRegistrar.RegistrationContext registerSyntheticObservers(
+            List<ObserverRegistrar> observerRegistrars) {
+        ObserverRegistrationContextImpl context = new ObserverRegistrationContextImpl(buildContext, this);
+        for (ObserverRegistrar registrar : observerRegistrars) {
+            context.extension = registrar;
+            registrar.register(context);
+            context.extension = null;
+        }
+        return context;
+    }
+
+    private void addSyntheticBean(BeanInfo bean) {
+        beans.add(bean);
+    }
+
+    private void addSyntheticObserver(ObserverConfigurator configurator) {
+        observers.add(ObserverInfo.create(this, configurator.beanClass, null, null, null, null, configurator.observedType,
+                configurator.observedQualifiers,
+                Reception.ALWAYS, configurator.transactionPhase, configurator.isAsync, configurator.priority,
+                observerTransformers, buildContext,
+                jtaCapabilities, configurator.notifyConsumer));
     }
 
     static void processErrors(List<Throwable> errors) {
@@ -990,6 +992,66 @@ public class BeanDeployment {
         @Override
         public BeanStream removedBeans() {
             return new BeanStream(get(BuildExtension.Key.REMOVED_BEANS));
+        }
+
+    }
+
+    private static class BeanRegistrationContextImpl extends RegistrationContextImpl implements RegistrationContext {
+
+        BeanRegistrationContextImpl(BuildContext buildContext, BeanDeployment beanDeployment) {
+            super(buildContext, beanDeployment);
+        }
+
+        @Override
+        public <T> BeanConfigurator<T> configure(DotName beanClassName) {
+            return new BeanConfigurator<T>(beanClassName, beanDeployment, beanDeployment::addSyntheticBean);
+        }
+
+    }
+
+    private static class ObserverRegistrationContextImpl extends RegistrationContextImpl
+            implements io.quarkus.arc.processor.ObserverRegistrar.RegistrationContext {
+
+        ObserverRegistrationContextImpl(BuildContext buildContext, BeanDeployment beanDeployment) {
+            super(buildContext, beanDeployment);
+        }
+
+        @Override
+        public ObserverConfigurator configure() {
+            return new ObserverConfigurator(DotName.createSimple(extension.getClass().getName()),
+                    beanDeployment::addSyntheticObserver);
+        }
+
+        @Override
+        public BeanStream beans() {
+            return new BeanStream(get(BuildExtension.Key.BEANS));
+        }
+
+    }
+
+    static abstract class RegistrationContextImpl implements BuildContext {
+
+        protected final BuildContext parent;
+        protected final BeanDeployment beanDeployment;
+        protected BuildExtension extension;
+
+        RegistrationContextImpl(BuildContext buildContext, BeanDeployment beanDeployment) {
+            this.parent = buildContext;
+            this.beanDeployment = beanDeployment;
+        }
+
+        @Override
+        public <V> V get(Key<V> key) {
+            return parent.get(key);
+        }
+
+        @Override
+        public <V> V put(Key<V> key, V value) {
+            return parent.put(key, value);
+        }
+
+        public BeanStream beans() {
+            return new BeanStream(get(BuildExtension.Key.BEANS));
         }
 
     }

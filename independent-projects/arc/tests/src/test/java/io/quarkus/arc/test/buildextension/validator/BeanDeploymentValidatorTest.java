@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.build.extension.validator;
+package io.quarkus.arc.test.buildextension.validator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

@@ -38,7 +38,7 @@ public interface ObserverTransformer extends BuildExtension {
 
         /**
          * 
-         * @return the corresponding observer method
+         * @return the corresponding observer method or null in case of synthetic observer
          */
         MethodInfo getMethod();
 
@@ -79,7 +79,7 @@ public interface ObserverTransformer extends BuildExtension {
          * The resulting set of annotations contains contains annotations that belong to the method itself
          * as well as to its parameters.
          *
-         * @return collection of all annotations
+         * @return collection of all annotations or an empty list in case of synthetic observer
          */
         Collection<AnnotationInstance> getAllAnnotations();
 

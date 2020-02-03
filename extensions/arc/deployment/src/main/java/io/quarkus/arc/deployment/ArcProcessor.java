@@ -26,6 +26,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
+import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
@@ -38,6 +39,7 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.BytecodeTransformer;
 import io.quarkus.arc.processor.ContextConfigurator;
 import io.quarkus.arc.processor.ContextRegistrar;
+import io.quarkus.arc.processor.ObserverConfigurator;
 import io.quarkus.arc.processor.ReflectionRegistration;
 import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.runtime.AdditionalBean;
@@ -103,6 +105,7 @@ public class ArcProcessor {
             List<ApplicationClassPredicateBuildItem> applicationClassPredicates,
             List<AdditionalBeanBuildItem> additionalBeans,
             List<BeanRegistrarBuildItem> beanRegistrars,
+            List<ObserverRegistrarBuildItem> observerRegistrars,
             List<ContextRegistrarBuildItem> contextRegistrars,
             List<BeanDeploymentValidatorBuildItem> beanDeploymentValidators,
             List<ResourceAnnotationBuildItem> resourceAnnotations,
@@ -192,6 +195,9 @@ public class ArcProcessor {
         for (BeanRegistrarBuildItem item : beanRegistrars) {
             builder.addBeanRegistrar(item.getBeanRegistrar());
         }
+        for (ObserverRegistrarBuildItem item : observerRegistrars) {
+            builder.addObserverRegistrar(item.getObserverRegistrar());
+        }
         for (ContextRegistrarBuildItem item : contextRegistrars) {
             builder.addContextRegistrar(item.getContextRegistrar());
         }
@@ -256,36 +262,42 @@ public class ArcProcessor {
                 contextRegistrationPhase.getBeanProcessor());
     }
 
-    // PHASE 3 - initialize and validate the bean deployment
+    // PHASE 3 - register synthetic observers
     @BuildStep
-    public ValidationPhaseBuildItem validate(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
-            List<BeanConfiguratorBuildItem> beanConfigurators,
-            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer) {
+    public ObserverRegistrationPhaseBuildItem registerSyntheticObservers(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+            List<BeanConfiguratorBuildItem> beanConfigurators) {
 
-        for (BeanConfiguratorBuildItem beanConfigurator : beanConfigurators) {
-            for (BeanConfigurator<?> value : beanConfigurator.getValues()) {
-                // Just make sure the configurator is processed
-                value.done();
-            }
+        for (BeanConfiguratorBuildItem configurator : beanConfigurators) {
+            // Just make sure the configurator is processed
+            configurator.getValues().forEach(BeanConfigurator::done);
         }
 
-        beanRegistrationPhase.getBeanProcessor().initialize(new Consumer<BytecodeTransformer>() {
+        return new ObserverRegistrationPhaseBuildItem(beanRegistrationPhase.getBeanProcessor().registerSyntheticObservers(),
+                beanRegistrationPhase.getBeanProcessor());
+    }
+
+    // PHASE 4 - initialize and validate the bean deployment
+    @BuildStep
+    public ValidationPhaseBuildItem validate(ObserverRegistrationPhaseBuildItem observerRegistrationPhase,
+            List<ObserverConfiguratorBuildItem> observerConfigurators,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer) {
+
+        for (ObserverConfiguratorBuildItem configurator : observerConfigurators) {
+            // Just make sure the configurator is processed
+            configurator.getValues().forEach(ObserverConfigurator::done);
+        }
+
+        observerRegistrationPhase.getBeanProcessor().initialize(new Consumer<BytecodeTransformer>() {
             @Override
             public void accept(BytecodeTransformer t) {
                 bytecodeTransformer.produce(new BytecodeTransformerBuildItem(t.getClassToTransform(), t.getVisitorFunction()));
             }
         });
-        return new ValidationPhaseBuildItem(beanRegistrationPhase.getBeanProcessor().validate(),
-                beanRegistrationPhase.getBeanProcessor());
+        return new ValidationPhaseBuildItem(observerRegistrationPhase.getBeanProcessor().validate(),
+                observerRegistrationPhase.getBeanProcessor());
     }
 
-    @BuildStep
-    List<AdditionalApplicationArchiveMarkerBuildItem> marker() {
-        return Arrays.asList(new AdditionalApplicationArchiveMarkerBuildItem("META-INF/beans.xml"),
-                new AdditionalApplicationArchiveMarkerBuildItem("META-INF/services/javax.enterprise.inject.spi.Extension"));
-    }
-
-    // PHASE 4 - generate resources and initialize the container
+    // PHASE 5 - generate resources and initialize the container
     @BuildStep
     @Record(STATIC_INIT)
     public BeanContainerBuildItem generateResources(ArcRecorder recorder, ShutdownContextBuildItem shutdown,
@@ -352,6 +364,12 @@ public class ArcProcessor {
 
         return new BeanContainerBuildItem(beanContainer);
 
+    }
+
+    @BuildStep
+    List<AdditionalApplicationArchiveMarkerBuildItem> marker() {
+        return Arrays.asList(new AdditionalApplicationArchiveMarkerBuildItem("META-INF/beans.xml"),
+                new AdditionalApplicationArchiveMarkerBuildItem("META-INF/services/javax.enterprise.inject.spi.Extension"));
     }
 
     @BuildStep

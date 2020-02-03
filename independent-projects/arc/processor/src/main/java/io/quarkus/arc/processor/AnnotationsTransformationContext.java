@@ -11,8 +11,8 @@ import org.jboss.jandex.AnnotationTarget;
  */
 abstract class AnnotationsTransformationContext<C extends Collection<AnnotationInstance>> implements BuildContext {
 
-    private final BuildContext buildContext;
-    private final AnnotationTarget target;
+    protected final BuildContext buildContext;
+    protected final AnnotationTarget target;
     private C annotations;
 
     /**

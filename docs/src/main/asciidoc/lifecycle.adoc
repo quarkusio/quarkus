@@ -102,6 +102,32 @@ See link:writing-extensions#bootstrap-three-phases[Three Phases of Bootstrap and
 
 NOTE: In CDI applications, an event with qualifier `@Initialized(ApplicationScoped.class)` is fired when the application context is initialized. See https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#application_context[the spec, window="_blank"] for more info.
 
+=== Using `@Startup` to initialize a CDI bean at application startup
+
+A bean represented by a class, producer method or field annotated with `@Startup` is initialized at application startup:
+
+[source,java]
+----
+package org.acme.events;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@Startup // <1> 
+@ApplicationScoped
+public class EagerAppBean {
+  
+   private final String name;
+
+   EagerAppBean(NameGenerator generator) { // <2>
+     this.name = generator.createName();
+   }
+}
+----
+1. For each bean annotated with `@Startup` a synthetic observer of `StartupEvent` is generated. The default priority is used.
+2. The bean constructor is called when the application starts and the resulting contextual instance is stored in the application context.
+
+NOTE: `@Dependent` beans are destroyed immediately afterwards to follow the behavior of observers declared on `@Dependent` beans.
+
 == Package and run the application
 
 Run the application with: `./mvnw compile quarkus:dev`, the logged message is printed.

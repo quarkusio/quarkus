@@ -93,6 +93,16 @@ public final class BeanStream implements Iterable<BeanInfo> {
 
     /**
      * 
+     * @return the new stream of beans
+     * @see BeanInfo#getTarget()
+     */
+    public BeanStream withTarget() {
+        stream = stream.filter(bean -> bean.getTarget().isPresent());
+        return this;
+    }
+
+    /**
+     * 
      * @param beanClass
      * @return the new stream of beans
      * @see BeanInfo#getBeanClass()

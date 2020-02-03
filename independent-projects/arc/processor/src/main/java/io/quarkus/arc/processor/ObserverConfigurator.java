@@ -20,7 +20,7 @@ public final class ObserverConfigurator implements Consumer<AnnotationInstance> 
 
     final Consumer<ObserverConfigurator> consumer;
 
-    final DotName beanClass;
+    DotName beanClass;
 
     Type observedType;
 
@@ -34,13 +34,17 @@ public final class ObserverConfigurator implements Consumer<AnnotationInstance> 
 
     Consumer<MethodCreator> notifyConsumer;
 
-    public ObserverConfigurator(DotName beanClass, Consumer<ObserverConfigurator> consumer) {
-        this.beanClass = beanClass;
+    public ObserverConfigurator(Consumer<ObserverConfigurator> consumer) {
         this.consumer = consumer;
         this.observedQualifiers = new HashSet<>();
         this.priority = ObserverMethod.DEFAULT_PRIORITY;
         this.isAsync = false;
         this.transactionPhase = TransactionPhase.IN_PROGRESS;
+    }
+
+    public ObserverConfigurator beanClass(DotName beanClass) {
+        this.beanClass = beanClass;
+        return this;
     }
 
     public ObserverConfigurator observedType(Class<?> observedType) {
@@ -91,6 +95,15 @@ public final class ObserverConfigurator implements Consumer<AnnotationInstance> 
     }
 
     public void done() {
+        if (beanClass == null) {
+            throw new IllegalStateException("Observer bean class must be set!");
+        }
+        if (observedType == null) {
+            throw new IllegalStateException("Observed type must be set!");
+        }
+        if (notifyConsumer == null) {
+            throw new IllegalStateException("Bytecode generator for notify() method must be set!");
+        }
         consumer.accept(this);
     }
 

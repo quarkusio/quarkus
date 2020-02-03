@@ -1018,8 +1018,12 @@ public class BeanDeployment {
 
         @Override
         public ObserverConfigurator configure() {
-            return new ObserverConfigurator(DotName.createSimple(extension.getClass().getName()),
-                    beanDeployment::addSyntheticObserver);
+            ObserverConfigurator configurator = new ObserverConfigurator(beanDeployment::addSyntheticObserver);
+            if (extension != null) {
+                // Extension may be null if called directly from the ObserverRegistrationPhaseBuildItem 
+                configurator.beanClass(DotName.createSimple(extension.getClass().getName()));
+            }
+            return configurator;
         }
 
         @Override

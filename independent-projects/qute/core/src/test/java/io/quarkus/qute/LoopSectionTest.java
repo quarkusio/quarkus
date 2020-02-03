@@ -102,4 +102,14 @@ public class LoopSectionTest {
                 engine.parse(template).render(data));
     }
 
+    @Test
+    public void testIntegerStream() {
+        Engine engine = Engine.builder()
+                .addSectionHelper(new LoopSectionHelper.Factory()).addDefaultValueResolvers()
+                .build();
+
+        assertEquals("1:2:3:",
+                engine.parse("{#for i in total}{i}:{/for}").data("total", 3).render());
+    }
+
 }

@@ -53,7 +53,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     @Test
     public void testThatResteasyWithoutUndertowCanRun() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic-no-undertow", "projects/project-classic-no-undertow-run");
-        run();
+        run(false);
 
         //make sure that a simple HTTP GET request always works
         IntStream.range(0, 10).forEach(i -> {
@@ -286,7 +286,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     @Test
     public void testSourceModificationBeforeFirstCallWorks() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-source-modification-before-first-call");
-        run();
+        run(true);
 
         File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
         // Edit the "Hello" message and provide a random string.
@@ -384,7 +384,7 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
                 .pollInterval(1, TimeUnit.SECONDS)
                 .until(configurationFile::isFile);
 
-        run();
+        run(true);
 
         // Wait until we get "uuid"
         await()

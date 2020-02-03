@@ -1,0 +1,9 @@
+---
+name: "Jib"
+metadata:
+  keywords:
+  - "jib"
+  guide: "https://quarkus.io/guides/jib"
+  categories:
+  - "cloud"
+  status: "preview"

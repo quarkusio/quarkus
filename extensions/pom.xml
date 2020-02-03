@@ -22,6 +22,9 @@
         <!-- Configuration -->
         <module>config-yaml</module>
 
+        <!-- Build Output -->
+        <module>jib</module>
+
         <!-- Formats -->
         <module>jackson</module>
         <module>jaxb</module>

@@ -20,6 +20,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
@@ -112,7 +113,8 @@ class VertxHttpProcessor {
             List<DefaultRouteBuildItem> defaultRoutes, List<FilterBuildItem> filters,
             VertxWebRouterBuildItem router, EventLoopCountBuildItem eventLoopCount,
             HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass, List<WebsocketSubProtocolsBuildItem> websocketSubProtocols,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            List<WebsocketSubProtocolsBuildItem> websocketSubProtocols,
             List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
             BodyHandlerBuildItem bodyHandlerBuildItem,
             CoreVertxBuildItem core // Injected to be sure that Vert.x has been produced before calling this method.
@@ -140,7 +142,8 @@ class VertxHttpProcessor {
 
         recorder.finalizeRouter(beanContainer.getValue(),
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
-                listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath, launchMode.getLaunchMode(),
+                listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath,
+                launchMode.getLaunchMode(),
                 !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, httpConfiguration);
 
         boolean startVirtual = requireVirtual.isPresent() || httpBuildTimeConfig.virtual;
@@ -157,5 +160,10 @@ class VertxHttpProcessor {
                         .collect(Collectors.joining(",")));
 
         return new ServiceStartBuildItem("vertx-http");
+    }
+
+    @BuildStep
+    RuntimeInitializedClassBuildItem configureNativeCompilation() {
+        return new RuntimeInitializedClassBuildItem("io.vertx.ext.web.handler.sockjs.impl.XhrTransport");
     }
 }

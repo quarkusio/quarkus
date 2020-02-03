@@ -20,7 +20,7 @@ public class MavenModelBuilder implements ModelBuilder {
     private final WorkspaceModelResolver modelResolver;
 
     public MavenModelBuilder(WorkspaceModelResolver wsModelResolver) {
-        builder = new BootstrapModelBuilderFactory().newInstance();
+        builder = new BootstrapModelBuilderFactory(wsModelResolver).newInstance();
         modelResolver = wsModelResolver;
     }
 

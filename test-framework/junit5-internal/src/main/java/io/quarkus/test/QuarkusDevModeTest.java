@@ -62,8 +62,6 @@ public class QuarkusDevModeTest
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
     }
 
-    private boolean started = false;
-
     private DevModeMain devModeMain;
     private Path deploymentDir;
     private Supplier<JavaArchive> archiveProducer;
@@ -98,7 +96,6 @@ public class QuarkusDevModeTest
         return this;
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
             throws TestInstantiationException {
         try {
@@ -153,10 +150,9 @@ public class QuarkusDevModeTest
             DevModeContext context = exportArchive(deploymentDir, projectSourceRoot);
             context.setTest(true);
             context.setAbortOnFailedStart(true);
-            context.setLocalProjectDiscovery(false);
+            context.setLocalProjectDiscovery(true);
             devModeMain = new DevModeMain(context);
             devModeMain.start();
-            started = true;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

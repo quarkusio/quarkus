@@ -34,6 +34,12 @@ import io.quarkus.maven.it.verifier.RunningInvoker;
 public class DevMojoIT extends RunAndCheckMojoTestBase {
 
     @Test
+    public void testPropertyOverridesTest() throws MavenInvocationException, IOException {
+        testDir = getTargetDir("projects/property-overrides");
+        runAndCheck("-Dlocal-dep.version=1.0-SNAPSHOT");
+    }
+
+    @Test
     public void testThatClassAppCanRun() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run");
         runAndCheck();

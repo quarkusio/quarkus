@@ -345,12 +345,7 @@ public class UndertowBuildStep {
                         recorder.addServletInitParam(sref, init.getParamName(), init.getParamValue());
                     }
                 }
-                if (servlet.getMultipartConfig() != null) {
-                    recorder.setMultipartConfig(sref, servlet.getMultipartConfig().getLocation(),
-                            servlet.getMultipartConfig().getMaxFileSize(), servlet.getMultipartConfig().getMaxRequestSize(),
-                            servlet.getMultipartConfig().getFileSizeThreshold());
-                }
-                // Map the @ServletSecurity annotations
+                // Map the webMetaData annotations
                 if (webMetaData.getAnnotations() != null) {
                     for (AnnotationMetaData amd : webMetaData.getAnnotations()) {
                         final ServletSecurityMetaData ssmd = amd.getServletSecurity();
@@ -376,12 +371,22 @@ public class UndertowBuildStep {
                             }
                             recorder.setSecurityInfo(sref, securityInfo);
                         }
-                        if (servlet.getSecurityRoleRefs() != null) {
-                            for (final SecurityRoleRefMetaData ref : servlet.getSecurityRoleRefs()) {
-                                recorder.addSecurityRoleRef(sref, ref.getRoleName(), ref.getRoleLink());
-                            }
+
+                        final MultipartConfigMetaData mcmd = amd.getMultipartConfig();
+                        if (mcmd != null && amd.getClassName().equals(servlet.getServletClass())) {
+                            servlet.setMultipartConfig(mcmd);
                         }
                     }
+                }
+                if (servlet.getSecurityRoleRefs() != null) {
+                    for (final SecurityRoleRefMetaData ref : servlet.getSecurityRoleRefs()) {
+                        recorder.addSecurityRoleRef(sref, ref.getRoleName(), ref.getRoleLink());
+                    }
+                }
+                if (servlet.getMultipartConfig() != null) {
+                    recorder.setMultipartConfig(sref, servlet.getMultipartConfig().getLocation(),
+                            servlet.getMultipartConfig().getMaxFileSize(), servlet.getMultipartConfig().getMaxRequestSize(),
+                            servlet.getMultipartConfig().getFileSizeThreshold());
                 }
             }
         }

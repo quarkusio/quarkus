@@ -15,7 +15,7 @@ public class KogitoDevModeIT extends RunAndCheckMojoTestBase {
     @Test
     public void testThatTheKogitoApplicationRuns() throws MavenInvocationException, IOException {
         testDir = getTargetDir("projects/simple-kogito");
-        run("-e");
+        run(false, "-e");
 
         await()
                 .pollDelay(1, TimeUnit.SECONDS)

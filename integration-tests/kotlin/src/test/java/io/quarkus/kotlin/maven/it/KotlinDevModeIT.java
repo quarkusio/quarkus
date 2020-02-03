@@ -19,7 +19,7 @@ public class KotlinDevModeIT extends RunAndCheckMojoTestBase {
     @Test
     public void testThatTheApplicationIsReloadedOnKotlinChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic-kotlin", "projects/project-classic-run-kotlin-change");
-        runAndCheck();
+        runAndCheck(false);
 
         // Edit the "Hello" message.
         File jaxRsResource = new File(testDir, "src/main/kotlin/org/acme/HelloResource.kt");

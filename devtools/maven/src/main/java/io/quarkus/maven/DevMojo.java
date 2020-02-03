@@ -100,6 +100,9 @@ public class DevMojo extends AbstractMojo {
     private static final String ORG_APACHE_MAVEN_PLUGINS = "org.apache.maven.plugins";
     private static final String MAVEN_COMPILER_PLUGIN = "maven-compiler-plugin";
 
+    private static final String ORG_JETBRAINS_KOTLIN = "org.jetbrains.kotlin";
+    private static final String KOTLIN_MAVEN_PLUGIN = "kotlin-maven-plugin";
+
     /**
      * The directory for compiled classes.
      */
@@ -234,6 +237,10 @@ public class DevMojo extends AbstractMojo {
     public void execute() throws MojoFailureException, MojoExecutionException {
 
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
+
+        //we always want to compile if needed, so if it is run from the parent it will compile dependent projects
+        handleAutoCompile();
+
         Plugin pluginDef = MojoUtils.checkProjectForMavenBuildPlugin(project);
 
         if (pluginDef == null) {
@@ -245,42 +252,6 @@ public class DevMojo extends AbstractMojo {
 
         if (!sourceDir.isDirectory()) {
             getLog().warn("The project's sources directory does not exist " + sourceDir);
-        }
-        //we check to see if there was a compile (or later) goal before this plugin
-        boolean compileNeeded = true;
-        for (String goal : session.getGoals()) {
-            if (POST_COMPILE_PHASES.contains(goal)) {
-                compileNeeded = false;
-                break;
-            }
-            if (goal.endsWith("quarkus:dev")) {
-                break;
-            }
-        }
-
-        //if the user did not compile we run it for them
-        if (compileNeeded) {
-            // Compile the project
-            final String key = ORG_APACHE_MAVEN_PLUGINS + ":" + MAVEN_COMPILER_PLUGIN;
-            final Plugin plugin = project.getPlugin(key);
-            if (plugin == null) {
-                throw new MojoExecutionException("Failed to locate " + key + " among the project plugins");
-            }
-            Xpp3Dom configuration = (Xpp3Dom) plugin.getConfiguration();
-            if (configuration == null) {
-                configuration = MojoExecutor.configuration();
-            }
-            MojoExecutor.executeMojo(
-                    MojoExecutor.plugin(
-                            MojoExecutor.groupId(ORG_APACHE_MAVEN_PLUGINS),
-                            MojoExecutor.artifactId(MAVEN_COMPILER_PLUGIN),
-                            MojoExecutor.version(plugin.getVersion())),
-                    MojoExecutor.goal("compile"),
-                    configuration,
-                    MojoExecutor.executionEnvironment(
-                            project,
-                            session,
-                            pluginManager));
         }
 
         try {
@@ -364,6 +335,56 @@ public class DevMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
+    }
+
+    private void handleAutoCompile() throws MojoExecutionException {
+        //we check to see if there was a compile (or later) goal before this plugin
+        boolean compileNeeded = true;
+        for (String goal : session.getGoals()) {
+            if (POST_COMPILE_PHASES.contains(goal)) {
+                compileNeeded = false;
+                break;
+            }
+            if (goal.endsWith("quarkus:dev")) {
+                break;
+            }
+        }
+
+        //if the user did not compile we run it for them
+        if (compileNeeded) {
+            // compile the Kotlin sources if needed
+            final String kotlinMavenPluginKey = ORG_JETBRAINS_KOTLIN + ":" + KOTLIN_MAVEN_PLUGIN;
+            final Plugin kotlinMavenPlugin = project.getPlugin(kotlinMavenPluginKey);
+            if (kotlinMavenPlugin != null) {
+                executeCompileGoal(kotlinMavenPlugin, ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN);
+            }
+
+            // Compile the Java sources if needed
+            final String compilerPluginKey = ORG_APACHE_MAVEN_PLUGINS + ":" + MAVEN_COMPILER_PLUGIN;
+            final Plugin compilerPlugin = project.getPlugin(compilerPluginKey);
+            if (compilerPlugin != null) {
+                executeCompileGoal(compilerPlugin, ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN);
+            }
+        }
+    }
+
+    private void executeCompileGoal(Plugin plugin, String groupId, String artifactId) throws MojoExecutionException {
+        Xpp3Dom configuration = (Xpp3Dom) plugin.getConfiguration();
+        if (configuration == null) {
+            configuration = MojoExecutor.configuration();
+        }
+        MojoExecutor.executeMojo(
+                MojoExecutor.plugin(
+                        MojoExecutor.groupId(groupId),
+                        MojoExecutor.artifactId(artifactId),
+                        MojoExecutor.version(plugin.getVersion()),
+                        plugin.getDependencies()),
+                MojoExecutor.goal("compile"),
+                configuration,
+                MojoExecutor.executionEnvironment(
+                        project,
+                        session,
+                        pluginManager));
     }
 
     private Map<Path, Long> readPomFileTimestamps(DevModeRunner runner) throws IOException {

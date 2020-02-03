@@ -40,61 +40,71 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     @Override
     public CompletionStage<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
-        return context.runBlocking(new Supplier<SecurityIdentity>() {
-            @Override
-            public SecurityIdentity get() {
-                CompletableFuture<SecurityIdentity> result = new CompletableFuture<>();
-                ContextAwareTokenCredential credential = (ContextAwareTokenCredential) request.getToken();
-                RoutingContext vertxContext = credential.getContext();
-                TenantConfigContext resolvedContext = tenantResolver.resolve(vertxContext);
-                OidcTenantConfig config = resolvedContext.oidcConfig;
+        ContextAwareTokenCredential credential = (ContextAwareTokenCredential) request.getToken();
+        RoutingContext vertxContext = credential.getContext();
 
-                resolvedContext.auth.decodeToken(request.getToken().getToken(),
-                        new Handler<AsyncResult<AccessToken>>() {
-                            @Override
-                            public void handle(AsyncResult<AccessToken> event) {
-                                if (event.failed()) {
-                                    result.completeExceptionally(new AuthenticationFailedException());
-                                    return;
-                                }
-                                AccessToken token = event.result();
-                                try {
-                                    OidcUtils.validateClaims(config.getToken(), token.accessToken());
-                                } catch (OIDCException e) {
-                                    result.completeExceptionally(new AuthenticationFailedException(e));
-                                    return;
-                                }
+        if (tenantResolver.isBlocking(vertxContext)) {
+            return context.runBlocking(new Supplier<SecurityIdentity>() {
+                @Override
+                public SecurityIdentity get() {
+                    return authenticate(request, vertxContext).join();
+                }
+            });
+        }
 
-                                QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
-                                builder.addCredential(request.getToken());
+        return authenticate(request, vertxContext);
+    }
 
-                                JsonWebToken jwtPrincipal;
-                                try {
-                                    JwtClaims jwtClaims = JwtClaims.parse(token.accessToken().encode());
-                                    jwtClaims.setClaim(Claims.raw_token.name(), credential.getToken());
-                                    jwtPrincipal = new OidcJwtCallerPrincipal(jwtClaims, request.getToken(),
-                                            config.token.principalClaim.isPresent() ? config.token.principalClaim.get() : null);
-                                } catch (InvalidJwtException e) {
-                                    result.completeExceptionally(new AuthenticationFailedException(e));
-                                    return;
-                                }
-                                builder.setPrincipal(jwtPrincipal);
-                                try {
-                                    String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
-                                    for (String role : OidcUtils.findRoles(clientId, config.getRoles(), token.accessToken())) {
-                                        builder.addRole(role);
-                                    }
-                                } catch (Exception e) {
-                                    result.completeExceptionally(new ForbiddenException(e));
-                                    return;
-                                }
+    private CompletableFuture<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
+            RoutingContext vertxContext) {
+        CompletableFuture<SecurityIdentity> result = new CompletableFuture<>();
+        TenantConfigContext resolvedContext = tenantResolver.resolve(vertxContext);
+        OidcTenantConfig config = resolvedContext.oidcConfig;
 
-                                result.complete(builder.build());
+        resolvedContext.auth.decodeToken(request.getToken().getToken(),
+                new Handler<AsyncResult<AccessToken>>() {
+                    @Override
+                    public void handle(AsyncResult<AccessToken> event) {
+                        if (event.failed()) {
+                            result.completeExceptionally(new AuthenticationFailedException());
+                            return;
+                        }
+                        AccessToken token = event.result();
+                        try {
+                            OidcUtils.validateClaims(config.getToken(), token.accessToken());
+                        } catch (OIDCException e) {
+                            result.completeExceptionally(new AuthenticationFailedException(e));
+                            return;
+                        }
+
+                        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
+                        builder.addCredential(request.getToken());
+
+                        JsonWebToken jwtPrincipal;
+                        try {
+                            JwtClaims jwtClaims = JwtClaims.parse(token.accessToken().encode());
+                            jwtClaims.setClaim(Claims.raw_token.name(), request.getToken().getToken());
+                            jwtPrincipal = new OidcJwtCallerPrincipal(jwtClaims, request.getToken(),
+                                    config.token.principalClaim.isPresent() ? config.token.principalClaim.get() : null);
+                        } catch (InvalidJwtException e) {
+                            result.completeExceptionally(new AuthenticationFailedException(e));
+                            return;
+                        }
+                        builder.setPrincipal(jwtPrincipal);
+                        try {
+                            String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
+                            for (String role : OidcUtils.findRoles(clientId, config.getRoles(), token.accessToken())) {
+                                builder.addRole(role);
                             }
-                        });
+                        } catch (Exception e) {
+                            result.completeExceptionally(new ForbiddenException(e));
+                            return;
+                        }
 
-                return result.join();
-            }
-        });
+                        result.complete(builder.build());
+                    }
+                });
+
+        return result;
     }
 }

@@ -233,6 +233,8 @@ public class DevMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
 
+        //we always want to compile if needed, so if it is run from the parent it will compile dependent projects
+        handleAutoCompile();
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
         Plugin pluginDef = MojoUtils.checkProjectForMavenBuildPlugin(project);
 
@@ -245,42 +247,6 @@ public class DevMojo extends AbstractMojo {
 
         if (!sourceDir.isDirectory()) {
             getLog().warn("The project's sources directory does not exist " + sourceDir);
-        }
-        //we check to see if there was a compile (or later) goal before this plugin
-        boolean compileNeeded = true;
-        for (String goal : session.getGoals()) {
-            if (POST_COMPILE_PHASES.contains(goal)) {
-                compileNeeded = false;
-                break;
-            }
-            if (goal.endsWith("quarkus:dev")) {
-                break;
-            }
-        }
-
-        //if the user did not compile we run it for them
-        if (compileNeeded) {
-            // Compile the project
-            final String key = ORG_APACHE_MAVEN_PLUGINS + ":" + MAVEN_COMPILER_PLUGIN;
-            final Plugin plugin = project.getPlugin(key);
-            if (plugin == null) {
-                throw new MojoExecutionException("Failed to locate " + key + " among the project plugins");
-            }
-            Xpp3Dom configuration = (Xpp3Dom) plugin.getConfiguration();
-            if (configuration == null) {
-                configuration = MojoExecutor.configuration();
-            }
-            MojoExecutor.executeMojo(
-                    MojoExecutor.plugin(
-                            MojoExecutor.groupId(ORG_APACHE_MAVEN_PLUGINS),
-                            MojoExecutor.artifactId(MAVEN_COMPILER_PLUGIN),
-                            MojoExecutor.version(plugin.getVersion())),
-                    MojoExecutor.goal("compile"),
-                    configuration,
-                    MojoExecutor.executionEnvironment(
-                            project,
-                            session,
-                            pluginManager));
         }
 
         try {
@@ -363,6 +329,45 @@ public class DevMojo extends AbstractMojo {
 
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
+        }
+    }
+
+    private void handleAutoCompile() throws MojoExecutionException {
+        //we check to see if there was a compile (or later) goal before this plugin
+        boolean compileNeeded = true;
+        for (String goal : session.getGoals()) {
+            if (POST_COMPILE_PHASES.contains(goal)) {
+                compileNeeded = false;
+                break;
+            }
+            if (goal.endsWith("quarkus:dev")) {
+                break;
+            }
+        }
+
+        //if the user did not compile we run it for them
+        if (compileNeeded) {
+            // Compile the project
+            final String key = ORG_APACHE_MAVEN_PLUGINS + ":" + MAVEN_COMPILER_PLUGIN;
+            final Plugin plugin = project.getPlugin(key);
+            if (plugin == null) {
+                throw new MojoExecutionException("Failed to locate " + key + " among the project plugins");
+            }
+            Xpp3Dom configuration = (Xpp3Dom) plugin.getConfiguration();
+            if (configuration == null) {
+                configuration = MojoExecutor.configuration();
+            }
+            MojoExecutor.executeMojo(
+                    MojoExecutor.plugin(
+                            MojoExecutor.groupId(ORG_APACHE_MAVEN_PLUGINS),
+                            MojoExecutor.artifactId(MAVEN_COMPILER_PLUGIN),
+                            MojoExecutor.version(plugin.getVersion())),
+                    MojoExecutor.goal("compile"),
+                    configuration,
+                    MojoExecutor.executionEnvironment(
+                            project,
+                            session,
+                            pluginManager));
         }
     }
 

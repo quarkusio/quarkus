@@ -201,9 +201,10 @@ public class MavenRepoInitializer {
         decrypt.setProxies(settings.getProxies());
         decrypt.setServers(settings.getServers());
         final SettingsDecryptionResult decrypted = new SettingsDecrypterImpl().decrypt(decrypt);
-        if(decrypted.getProblems().isEmpty()) {
+        if(!decrypted.getProblems().isEmpty() && log.isDebugEnabled()) {
+            // this is how maven handles these
             for(SettingsProblem p : decrypted.getProblems()) {
-                log.warn("Problem decrypting maven settings: " + p);
+                log.debug(p.getMessage(), p.getException());
             }
         }
 

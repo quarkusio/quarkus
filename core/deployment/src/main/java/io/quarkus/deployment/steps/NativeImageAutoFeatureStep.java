@@ -276,9 +276,10 @@ public class NativeImageAutoFeatureStep {
             } else if (!entry.getValue().ctorSet.isEmpty()) {
                 ResultHandle farray = tc.newArray(Constructor.class, tc.load(1));
                 for (ReflectiveMethodBuildItem ctor : entry.getValue().ctorSet) {
-                    ResultHandle paramArray = tc.newArray(Class.class, tc.load(ctor.getParams().length));
-                    for (int i = 0; i < ctor.getParams().length; ++i) {
-                        String type = ctor.getParams()[i];
+                    final List<String> params = ctor.getParams();
+                    ResultHandle paramArray = tc.newArray(Class.class, tc.load(params.size()));
+                    for (int i = 0; i < params.size(); ++i) {
+                        String type = params.get(i);
                         tc.writeArrayValue(paramArray, i, tc.loadClass(type));
                     }
                     ResultHandle fhandle = tc.invokeVirtualMethod(
@@ -297,9 +298,10 @@ public class NativeImageAutoFeatureStep {
             } else if (!entry.getValue().methodSet.isEmpty()) {
                 ResultHandle farray = tc.newArray(Method.class, tc.load(1));
                 for (ReflectiveMethodBuildItem method : entry.getValue().methodSet) {
-                    ResultHandle paramArray = tc.newArray(Class.class, tc.load(method.getParams().length));
-                    for (int i = 0; i < method.getParams().length; ++i) {
-                        String type = method.getParams()[i];
+                    final List<String> params = method.getParams();
+                    ResultHandle paramArray = tc.newArray(Class.class, tc.load(params.size()));
+                    for (int i = 0; i < params.size(); ++i) {
+                        String type = params.get(i);
                         tc.writeArrayValue(paramArray, i, tc.loadClass(type));
                     }
                     ResultHandle fhandle = tc.invokeVirtualMethod(

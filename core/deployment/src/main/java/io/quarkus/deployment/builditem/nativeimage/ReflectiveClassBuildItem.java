@@ -4,14 +4,24 @@ import static java.util.Arrays.stream;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.util.Comparators;
 
 /**
  * Used to register a class for reflection in native mode
  */
-public final class ReflectiveClassBuildItem extends MultiBuildItem {
+public final class ReflectiveClassBuildItem extends MultiBuildItem implements Comparable<ReflectiveClassBuildItem> {
+
+    private static final Comparator<ReflectiveClassBuildItem> COMPATOR = Comparator
+            .comparing(ReflectiveClassBuildItem::isMethods)
+            .thenComparing((ReflectiveClassBuildItem item) -> item.fields)
+            .thenComparing(item -> item.constructors)
+            .thenComparing(item -> item.finalFieldsWritable)
+            .thenComparing(item -> item.weak)
+            .thenComparing(item -> item.className, Comparators.forCollections());
 
     private final List<String> className;
     private final boolean methods;
@@ -153,5 +163,10 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         public ReflectiveClassBuildItem build() {
             return new ReflectiveClassBuildItem(constructors, methods, fields, finalFieldsWritable, false, className);
         }
+    }
+
+    @Override
+    public int compareTo(ReflectiveClassBuildItem other) {
+        return COMPATOR.compare(this, other);
     }
 }

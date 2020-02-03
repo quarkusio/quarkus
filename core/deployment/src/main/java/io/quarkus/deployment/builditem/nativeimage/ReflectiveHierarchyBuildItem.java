@@ -27,7 +27,7 @@ import io.quarkus.builder.item.MultiBuildItem;
  * This discovery is applied recursively, so any additional types that are registered will also have their dependencies
  * discovered
  */
-public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
+public final class ReflectiveHierarchyBuildItem extends MultiBuildItem implements Comparable<ReflectiveHierarchyBuildItem> {
 
     private final Type type;
     private IndexView index;
@@ -62,6 +62,11 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
 
     public Predicate<DotName> getIgnorePredicate() {
         return ignorePredicate;
+    }
+
+    @Override
+    public int compareTo(ReflectiveHierarchyBuildItem other) {
+        return type.name().compareTo(other.type.name());
     }
 
     private static class DefaultIgnorePredicate implements Predicate<DotName> {

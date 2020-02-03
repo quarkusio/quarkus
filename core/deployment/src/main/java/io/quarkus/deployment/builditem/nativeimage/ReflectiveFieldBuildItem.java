@@ -1,12 +1,17 @@
 package io.quarkus.deployment.builditem.nativeimage;
 
 import java.lang.reflect.Field;
+import java.util.Comparator;
 
 import org.jboss.jandex.FieldInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
-public final class ReflectiveFieldBuildItem extends MultiBuildItem {
+public final class ReflectiveFieldBuildItem extends MultiBuildItem implements Comparable<ReflectiveFieldBuildItem> {
+
+    private static final Comparator<ReflectiveFieldBuildItem> COMPARATOR = Comparator
+            .comparing((ReflectiveFieldBuildItem item) -> item.declaringClass)
+            .thenComparing(item -> item.name);
 
     final String declaringClass;
     final String name;
@@ -27,5 +32,10 @@ public final class ReflectiveFieldBuildItem extends MultiBuildItem {
 
     public String getName() {
         return name;
+    }
+
+    @Override
+    public int compareTo(ReflectiveFieldBuildItem other) {
+        return COMPARATOR.compare(this, other);
     }
 }

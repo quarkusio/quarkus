@@ -6,7 +6,8 @@ import io.quarkus.builder.item.MultiBuildItem;
  * A class that will be reinitialized at runtime in native mode. This will result in the static
  * initializer running twice.
  */
-public final class RuntimeReinitializedClassBuildItem extends MultiBuildItem {
+public final class RuntimeReinitializedClassBuildItem extends MultiBuildItem
+        implements Comparable<RuntimeReinitializedClassBuildItem> {
 
     private final String className;
 
@@ -17,4 +18,10 @@ public final class RuntimeReinitializedClassBuildItem extends MultiBuildItem {
     public String getClassName() {
         return className;
     }
+
+    @Override
+    public int compareTo(RuntimeReinitializedClassBuildItem other) {
+        return this.className.compareTo(other.className);
+    }
+
 }

@@ -1,10 +1,12 @@
 package io.quarkus.deployment.builditem.nativeimage;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.util.Comparators;
 
 /**
  * Represents a Service Provider registration.
@@ -12,9 +14,13 @@ import io.quarkus.builder.item.MultiBuildItem;
  * on a set of provider
  * classes.
  */
-public final class ServiceProviderBuildItem extends MultiBuildItem {
+public final class ServiceProviderBuildItem extends MultiBuildItem implements Comparable<ServiceProviderBuildItem> {
 
     public static final String SPI_ROOT = "META-INF/services/";
+    private static final Comparator<ServiceProviderBuildItem> COMPARATOR = Comparator
+            .comparing((ServiceProviderBuildItem item) -> item.serviceInterface)
+            .thenComparing(item -> item.providers, Comparators.forCollections());
+
     private final String serviceInterface;
     private final List<String> providers;
 
@@ -60,5 +66,10 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
 
     public String serviceDescriptorFile() {
         return SPI_ROOT + serviceInterface;
+    }
+
+    @Override
+    public int compareTo(ServiceProviderBuildItem other) {
+        return COMPARATOR.compare(this, other);
     }
 }

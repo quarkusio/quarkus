@@ -5,11 +5,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.util.Comparators;
 
 /**
  * A build item that indicates that a static resource should be included in the native image
  */
-public final class NativeImageResourceBuildItem extends MultiBuildItem {
+public final class NativeImageResourceBuildItem extends MultiBuildItem implements Comparable<NativeImageResourceBuildItem> {
 
     private final List<String> resources;
 
@@ -23,5 +24,10 @@ public final class NativeImageResourceBuildItem extends MultiBuildItem {
 
     public List<String> getResources() {
         return resources;
+    }
+
+    @Override
+    public int compareTo(NativeImageResourceBuildItem other) {
+        return Comparators.<String> forCollections().compare(this.resources, other.resources);
     }
 }

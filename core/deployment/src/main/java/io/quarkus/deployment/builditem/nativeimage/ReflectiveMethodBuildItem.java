@@ -1,23 +1,33 @@
 package io.quarkus.deployment.builditem.nativeimage;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.util.Comparators;
 
-public final class ReflectiveMethodBuildItem extends MultiBuildItem {
+public final class ReflectiveMethodBuildItem extends MultiBuildItem implements Comparable<ReflectiveMethodBuildItem> {
+
+    private static final Comparator<ReflectiveMethodBuildItem> COMPARATOR = Comparator
+            .comparing((ReflectiveMethodBuildItem item) -> item.declaringClass)
+            .thenComparing(item -> item.name)
+            .thenComparing(item -> item.params, Comparators.forCollections());
 
     final String declaringClass;
     final String name;
-    final String[] params;
+    final List<String> params;
 
     public ReflectiveMethodBuildItem(MethodInfo methodInfo) {
-        String[] params = new String[methodInfo.parameters().size()];
-        for (int i = 0; i < params.length; ++i) {
-            params[i] = methodInfo.parameters().get(i).name().toString();
+        final int len = methodInfo.parameters().size();
+        List<String> params = new ArrayList<>(len);
+        for (int i = 0; i < len; ++i) {
+            params.add(methodInfo.parameters().get(i).name().toString());
         }
         this.name = methodInfo.name();
         this.params = params;
@@ -25,9 +35,10 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
     }
 
     public ReflectiveMethodBuildItem(Method method) {
-        String[] params = new String[method.getParameterTypes().length];
-        for (int i = 0; i < params.length; ++i) {
-            params[i] = method.getParameterTypes()[i].getName();
+        final int len = method.getParameterTypes().length;
+        final List<String> params = new ArrayList<>(len);
+        for (int i = 0; i < len; ++i) {
+            params.add(method.getParameterTypes()[i].getName());
         }
         this.params = params;
         this.name = method.getName();
@@ -38,8 +49,8 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
         return name;
     }
 
-    public String[] getParams() {
-        return params;
+    public List<String> getParams() {
+        return Collections.unmodifiableList(params);
     }
 
     public String getDeclaringClass() {
@@ -55,14 +66,18 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
         ReflectiveMethodBuildItem that = (ReflectiveMethodBuildItem) o;
         return Objects.equals(declaringClass, that.declaringClass) &&
                 Objects.equals(name, that.name) &&
-                Arrays.equals(params, that.params);
+                Objects.equals(params, that.params);
     }
 
     @Override
     public int hashCode() {
 
-        int result = Objects.hash(declaringClass, name);
-        result = 31 * result + Arrays.hashCode(params);
+        int result = Objects.hash(declaringClass, name, params);
         return result;
+    }
+
+    @Override
+    public int compareTo(ReflectiveMethodBuildItem other) {
+        return COMPARATOR.compare(this, other);
     }
 }

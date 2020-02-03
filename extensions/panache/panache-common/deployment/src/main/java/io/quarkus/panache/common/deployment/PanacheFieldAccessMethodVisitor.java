@@ -4,6 +4,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
+import io.quarkus.gizmo.Gizmo;
 
 public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
 
@@ -15,7 +16,7 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
     public PanacheFieldAccessMethodVisitor(MethodVisitor methodVisitor, String owner,
             String methodName, String methodDescriptor,
             MetamodelInfo<?> modelInfo) {
-        super(Opcodes.ASM7, methodVisitor);
+        super(Gizmo.ASM_API_VERSION, methodVisitor);
         this.owner = owner;
         this.methodName = methodName;
         this.methodDescriptor = methodDescriptor;

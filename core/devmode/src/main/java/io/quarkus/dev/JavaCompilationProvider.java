@@ -21,7 +21,8 @@ import javax.tools.ToolProvider;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.Opcodes;
+
+import io.quarkus.gizmo.Gizmo;
 
 public class JavaCompilationProvider implements CompilationProvider {
 
@@ -88,7 +89,7 @@ public class JavaCompilationProvider implements CompilationProvider {
         private String sourceFile;
 
         public RuntimeUpdatesClassVisitor(Set<String> sourcePaths, String classesPath) {
-            super(Opcodes.ASM7);
+            super(Gizmo.ASM_API_VERSION);
             this.sourcePaths = sourcePaths;
             this.classesPath = classesPath;
         }

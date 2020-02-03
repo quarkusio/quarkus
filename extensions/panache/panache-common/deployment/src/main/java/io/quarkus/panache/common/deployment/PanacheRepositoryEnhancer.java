@@ -16,6 +16,8 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import io.quarkus.gizmo.Gizmo;
+
 public abstract class PanacheRepositoryEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
     private static final DotName OBJECT_DOT_NAME = DotName.createSimple(Object.class.getName());
 
@@ -42,7 +44,7 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
 
         public PanacheRepositoryClassVisitor(String className, ClassVisitor outputClassVisitor,
                 ClassInfo panacheRepositoryBaseClassInfo, IndexView indexView) {
-            super(Opcodes.ASM7, outputClassVisitor);
+            super(Gizmo.ASM_API_VERSION, outputClassVisitor);
             daoClassInfo = indexView.getClassByName(DotName.createSimple(className));
             daoBinaryName = className.replace('.', '/');
             this.panacheRepositoryBaseClassInfo = panacheRepositoryBaseClassInfo;

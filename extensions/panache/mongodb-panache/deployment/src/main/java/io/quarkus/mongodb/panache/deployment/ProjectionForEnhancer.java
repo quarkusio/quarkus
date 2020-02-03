@@ -9,7 +9,8 @@ import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+
+import io.quarkus.gizmo.Gizmo;
 
 public class ProjectionForEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
     private static final String BSONPROPERTY_BINARY_NAME = "org/bson/codecs/pojo/annotations/BsonProperty";
@@ -30,7 +31,7 @@ public class ProjectionForEnhancer implements BiFunction<String, ClassVisitor, C
         Map<String, String> propertyMapping;
 
         BsonPropertyClassVisitor(ClassVisitor outputClassVisitor, Map<String, String> propertyMapping) {
-            super(Opcodes.ASM7, outputClassVisitor);
+            super(Gizmo.ASM_API_VERSION, outputClassVisitor);
             this.propertyMapping = propertyMapping;
         }
 
@@ -38,7 +39,7 @@ public class ProjectionForEnhancer implements BiFunction<String, ClassVisitor, C
         public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
             FieldVisitor superVisitor = super.visitField(access, name, descriptor, signature, value);
             if (this.propertyMapping.containsKey(name)) {
-                return new FieldVisitor(Opcodes.ASM7, superVisitor) {
+                return new FieldVisitor(Gizmo.ASM_API_VERSION, superVisitor) {
                     private Set<String> descriptors = new HashSet<>();
 
                     @Override
@@ -65,7 +66,7 @@ public class ProjectionForEnhancer implements BiFunction<String, ClassVisitor, C
         public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
             MethodVisitor superVisitor = super.visitMethod(access, name, descriptor, signature, exceptions);
             if (this.propertyMapping.containsKey(name)) {
-                return new MethodVisitor(Opcodes.ASM7, superVisitor) {
+                return new MethodVisitor(Gizmo.ASM_API_VERSION, superVisitor) {
                     private Set<String> descriptors = new HashSet<>();
 
                     @Override

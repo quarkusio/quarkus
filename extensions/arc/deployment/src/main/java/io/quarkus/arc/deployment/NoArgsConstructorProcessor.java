@@ -27,6 +27,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.gizmo.Gizmo;
 
 public class NoArgsConstructorProcessor {
 
@@ -91,7 +92,7 @@ public class NoArgsConstructorProcessor {
                         new BiFunction<String, ClassVisitor, ClassVisitor>() {
                             @Override
                             public ClassVisitor apply(String className, ClassVisitor classVisitor) {
-                                ClassVisitor cv = new ClassVisitor(Opcodes.ASM7, classVisitor) {
+                                ClassVisitor cv = new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
 
                                     @Override
                                     public void visit(int version, int access, String name, String signature, String superName,

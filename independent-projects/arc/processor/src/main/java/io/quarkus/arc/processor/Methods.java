@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
 import io.quarkus.gizmo.DescriptorUtils;
+import io.quarkus.gizmo.Gizmo;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -163,7 +164,7 @@ final class Methods {
                     new BytecodeTransformer(classInfo.name().toString(), new BiFunction<String, ClassVisitor, ClassVisitor>() {
                         @Override
                         public ClassVisitor apply(String s, ClassVisitor classVisitor) {
-                            return new ClassVisitor(Opcodes.ASM7, classVisitor) {
+                            return new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
                                 @Override
                                 public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
                                         String[] exceptions) {

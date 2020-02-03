@@ -11,6 +11,8 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.gizmo.Gizmo;
+
 public class ConfigPropertyBuildItemCandidateUtil {
 
     /**
@@ -34,7 +36,7 @@ public class ConfigPropertyBuildItemCandidateUtil {
         private List<ConfigPropertyBuildItemCandidate> candidates;
 
         private ConfigClassVisitor(List<ConfigPropertyBuildItemCandidate> candidates) {
-            super(Opcodes.ASM7);
+            super(Gizmo.ASM_API_VERSION);
             this.candidates = candidates;
         }
 
@@ -54,7 +56,7 @@ public class ConfigPropertyBuildItemCandidateUtil {
 
         private ConfigClassConstructorVisitor(MethodVisitor superMethodVisitor,
                 List<ConfigPropertyBuildItemCandidate> candidates) {
-            super(Opcodes.ASM7, superMethodVisitor);
+            super(Gizmo.ASM_API_VERSION, superMethodVisitor);
             this.candidates = candidates;
         }
 

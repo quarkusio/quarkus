@@ -743,7 +743,7 @@ void createExecutor(
         @Weak BuildProducer<GeneratedClassBuildItem> classConsumer,
         BuildProducer<ExecutorClassBuildItem> executorClassConsumer
 ) {
-        ClassWriter cw = new ClassWriter(Opcodes.ASM7);
+        ClassWriter cw = new ClassWriter(Gizmo.ASM_API_VERSION);
         String className = generateClassThatCreatesExecutor(cw); // <1>
         classConsumer.produce(new GeneratedClassBuildItem(true, className, cw.toByteArray()));
         executorClassConsumer.produce(new ExecutorClassBuildItem(className));

@@ -68,8 +68,8 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=mongodb-panache-quickstart \
-    -DclassName="org.acme.mongodb.panache.FruitResource" \
-    -Dpath="/fruits" \
+    -DclassName="org.acme.mongodb.panache.PersonResource" \
+    -Dpath="/persons" \
     -Dextensions="resteasy-jsonb,mongodb-panache"
 cd mongodb-panache-quickstart
 ----
@@ -320,7 +320,7 @@ Here are some query examples:
 
 - `firstname = ?1 and status = ?2` will be mapped to `{'firstname': ?1, 'status': ?2}`
 - `amount > ?1 and firstname != ?2` will be mapped to `{'amount': {'$gt': ?1}, 'firstname': {'$ne': ?2}}`
-- `lastname like ?1` will be mapped to `{'lastname': {'$regex': ?1}}`. Be careful that this will be link:https://docs.mongodb.com/manual/reference/operator/query/regex/#op._S_regex[MongoDB regex] support and not SQL like pattern. 
+- `lastname like ?1` will be mapped to `{'lastname': {'$regex': ?1}}`. Be careful that this will be link:https://docs.mongodb.com/manual/reference/operator/query/regex/#op._S_regex[MongoDB regex] support and not SQL like pattern.
 - `lastname is not null` will be mapped to `{'lastname':{'$exists': true}}`
 
 We also handle some basic date type transformations: all fields of type `Date`, `LocalDate` or `LocalDateTime` will be mapped to the link:https://docs.mongodb.com/manual/reference/bson-types/#document-bson-type-date[BSON Date] using the `ISODate` type (UTC datetime).
@@ -598,7 +598,7 @@ That's all there is to it: with Panache, MongoDB has never looked so trim and ne
 == Defining entities in external projects or jars
 
 MongoDB with Panache relies on compile-time bytecode enhancements to your entities.
-If you define your entities in the same project where you build your Quarkus application, everything will work fine. 
+If you define your entities in the same project where you build your Quarkus application, everything will work fine.
 If the entities come from external projects or jars, you can make sure that your jar is treated like a Quarkus application library
 by indexing it via Jandex, see link:cdi-reference#how-to-generate-a-jandex-index[How to Generate a Jandex Index] in the CDI guide.
 This will allow Quarkus to index and enhance your entities as if they were inside the current project.

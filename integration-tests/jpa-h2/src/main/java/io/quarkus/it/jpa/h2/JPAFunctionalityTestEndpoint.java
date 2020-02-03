@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -17,6 +18,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.wildfly.common.Assert;
 
 /**
  * Basic test running JPA with the H2 database.
@@ -59,6 +62,26 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
         deleteAllPerson(entityManagerFactory);
 
+        //Test capability to load enhanced proxies:
+        verifyEnhancedProxies(entityManagerFactory);
+
+    }
+
+    private static void verifyEnhancedProxies(EntityManagerFactory emf) {
+        //Define the test data:
+        CompanyCustomer company = new CompanyCustomer();
+        company.companyname = "Quarked consulting, inc.";
+        Project project = new Project();
+        project.name = "Hibernate RX";
+        project.customer = company;
+
+        //Store the test model:
+        doAsUnit(emf, em -> em.persist(project));
+        final Integer testId = project.id;
+        Assert.assertNotNull(testId);
+
+        //Now try to load it, should trigger the use of enhanced proxies:
+        doAsUnit(emf, em -> em.find(Project.class, testId));
     }
 
     private static void verifyHqlFetch(EntityManagerFactory emf) {
@@ -171,6 +194,25 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         writer.append("\n\t");
         e.printStackTrace(writer);
         writer.append("\n\t");
+    }
+
+    private static void doAsUnit(EntityManagerFactory emf, Consumer<EntityManager> f) {
+        final EntityManager em = emf.createEntityManager();
+        try {
+            EntityTransaction transaction = em.getTransaction();
+            try {
+                transaction.begin();
+                f.accept(em);
+                transaction.commit();
+            } catch (Exception e) {
+                if (transaction.isActive()) {
+                    transaction.rollback();
+                }
+                throw e;
+            }
+        } finally {
+            em.close();
+        }
     }
 
 }

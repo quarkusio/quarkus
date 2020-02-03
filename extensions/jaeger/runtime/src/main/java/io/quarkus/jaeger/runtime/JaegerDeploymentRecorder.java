@@ -15,13 +15,6 @@ public class JaegerDeploymentRecorder {
     private static final Optional UNKNOWN_SERVICE_NAME = Optional.of("quarkus/unknown");
     private static final QuarkusJaegerTracer quarkusTracer = new QuarkusJaegerTracer();
 
-    static {
-        if (!GlobalTracer.isRegistered()) {
-            log.debugf("Registering tracer to GlobalTracer %s", quarkusTracer);
-            GlobalTracer.register(quarkusTracer);
-        }
-    }
-
     synchronized public void registerTracer(JaegerConfig jaeger, ApplicationConfig appConfig) {
         if (!jaeger.serviceName.isPresent()) {
             if (appConfig.name.isPresent()) {
@@ -32,6 +25,14 @@ public class JaegerDeploymentRecorder {
         }
         initTracerConfig(jaeger);
         quarkusTracer.reset();
+        // register Quarkus tracer to GlobalTracer.
+        // Usually the tracer will be registered only here, although consumers
+        // could register a different tracer in the code which runs before this class.
+        // This is also used in tests.
+        if (!GlobalTracer.isRegistered()) {
+            log.debugf("Registering tracer to GlobalTracer %s", quarkusTracer);
+            GlobalTracer.register(quarkusTracer);
+        }
     }
 
     private void initTracerConfig(JaegerConfig jaeger) {

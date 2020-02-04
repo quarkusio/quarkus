@@ -6,12 +6,12 @@ package io.quarkus.bootstrap;
  */
 public interface BootstrapConstants {
 
-    String SERIALIZED_APP_MODEL = "serialized-app-model.data";
+    String SERIALIZED_APP_MODEL = "quarkus-internal.serialized-app-model.path";
     String DESCRIPTOR_FILE_NAME = "quarkus-extension.properties";
-    
+
     @Deprecated
     String EXTENSION_PROPS_JSON_FILE_NAME = "quarkus-extension.json";
-    
+
     String QUARKUS_EXTENSION_FILE_NAME = "quarkus-extension.yaml";
 
     String META_INF = "META-INF";

@@ -2,6 +2,7 @@ package io.quarkus.qute.runtime;
 
 import static io.quarkus.qute.TemplateExtension.ANY;
 
+import java.util.List;
 import java.util.Map;
 
 import io.quarkus.qute.Results.Result;
@@ -39,6 +40,10 @@ public class BuiltinTemplateExtensions {
 
     static boolean containsKey(Map<?, ?> map, Object key) {
         return map.containsKey(key);
+    }
+
+    static Object get(List<?> list, int index) {
+        return list.get(index);
     }
 
 }

@@ -39,6 +39,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -169,6 +170,7 @@ public class QuteProcessor {
                 }
             };
         }).addLocator(new TemplateLocator() {
+
             @Override
             public Optional<TemplateLocation> locate(String id) {
                 TemplatePathBuildItem found = templatePaths.stream().filter(p -> p.getPath().equals(id)).findAny().orElse(null);
@@ -201,8 +203,7 @@ public class QuteProcessor {
                 analysis.add(new TemplateAnalysis(template.getGeneratedId(), template.getExpressions(), path));
             }
         }
-        LOGGER.debugf("Finished analysis of %s templates  in %s ms",
-                analysis.size(), System.currentTimeMillis() - start);
+        LOGGER.debugf("Finished analysis of %s templates  in %s ms", analysis.size(), System.currentTimeMillis() - start);
         return new TemplatesAnalysisBuildItem(analysis);
     }
 
@@ -263,7 +264,7 @@ public class QuteProcessor {
                                     name, match.clazz.toString(), expression.origin.getLine(),
                                     expression.origin.getTemplateId()));
                             break;
-                        } else {
+                        } else if (parts.hasNext()) {
                             match.type = resolveType(member, match, index);
                             if (match.type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE) {
                                 break;
@@ -406,13 +407,7 @@ public class QuteProcessor {
                                         expression.origin.getTemplateId()));
                                 break;
                             } else {
-                                if (member.kind() == Kind.FIELD) {
-                                    match.type = member.asField().type();
-                                } else if (member.kind() == Kind.METHOD) {
-                                    match.type = member.asMethod().returnType();
-                                } else {
-                                    throw new IllegalStateException("Unsupported member type: " + member);
-                                }
+                                match.type = resolveType(member, match, index);
                                 if (match.type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE) {
                                     break;
                                 }
@@ -680,13 +675,15 @@ public class QuteProcessor {
         } else {
             throw new IllegalStateException("Unsupported member type: " + member);
         }
-        if (matchType.kind() == org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE
-                || matchType.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE) {
+        // If needed attempt to resolve the type variables using the declaring type
+        if (Types.containsTypeVariable(matchType)) {
+            // First get the type closure of the current match type
             Set<Type> closure = Types.getTypeClosure(match.clazz, Types.buildResolvedMap(
-                    match.type.asParameterizedType().arguments(), match.clazz.typeParameters(),
+                    match.getParameterizedTypeArguments(), match.getTypeParameters(),
                     new HashMap<>(), index), index);
             DotName declaringClassName = member.kind() == Kind.METHOD ? member.asMethod().declaringClass().name()
                     : member.asField().declaringClass().name();
+            // Then find the declaring type with resolved type variables
             Type declaringType = closure.stream()
                     .filter(t -> t.name().equals(declaringClassName)).findAny()
                     .orElse(null);
@@ -713,7 +710,7 @@ public class QuteProcessor {
 
     void processLoopHint(Match match, IndexView index) {
         Set<Type> closure = Types.getTypeClosure(match.clazz, Types.buildResolvedMap(
-                match.type.asParameterizedType().arguments(), match.clazz.typeParameters(), new HashMap<>(), index), index);
+                match.getParameterizedTypeArguments(), match.getTypeParameters(), new HashMap<>(), index), index);
         Type matchType = null;
         Type iterableType = closure.stream().filter(t -> t.name().equals(ITERABLE)).findFirst().orElse(null);
         if (iterableType != null) {
@@ -747,6 +744,15 @@ public class QuteProcessor {
     static class Match {
         ClassInfo clazz;
         Type type;
+
+        List<Type> getParameterizedTypeArguments() {
+            return type.kind() == org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE ? type.asParameterizedType().arguments()
+                    : Collections.emptyList();
+        }
+
+        List<TypeVariable> getTypeParameters() {
+            return clazz.typeParameters();
+        }
     }
 
     private AnnotationTarget findTemplateExtensionMethod(String name, ClassInfo matchClass,

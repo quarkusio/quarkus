@@ -89,4 +89,21 @@ public final class Types {
         return typeParam;
     }
 
+    static boolean containsTypeVariable(Type type) {
+        if (type.kind() == Type.Kind.TYPE_VARIABLE) {
+            return true;
+        }
+        if (type instanceof ParameterizedType) {
+            for (Type t : type.asParameterizedType().arguments()) {
+                if (containsTypeVariable(t)) {
+                    return true;
+                }
+            }
+        }
+        if (type.kind() == Type.Kind.ARRAY) {
+            return containsTypeVariable(type.asArrayType().component());
+        }
+        return false;
+    }
+
 }

@@ -11,8 +11,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -48,6 +48,7 @@ import io.quarkus.spring.data.deployment.generate.SpringDataRepositoryCreator;
 public class SpringDataJPAProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(SpringDataJPAProcessor.class.getName());
+    private static final Pattern pattern = Pattern.compile("spring\\.jpa\\..*");
 
     @BuildStep
     FeatureBuildItem registerFeature() {
@@ -83,7 +84,7 @@ public class SpringDataJPAProcessor {
         Config config = ConfigProvider.getConfig();
         Map<String, String> springJpaToQuarkusOrmPropertiesMap = new HashMap<>();
         springJpaToQuarkusOrmPropertiesMap.put("spring.jpa.show-sql", "quarkus.hibernate-orm.log.sql");
-        springJpaToQuarkusOrmPropertiesMap.put("spring.jpa.properties.hibernate.dialect ", "quarkus.hibernate-orm.dialect");
+        springJpaToQuarkusOrmPropertiesMap.put("spring.jpa.properties.hibernate.dialect", "quarkus.hibernate-orm.dialect");
         springJpaToQuarkusOrmPropertiesMap.put("spring.jpa.properties.hibernate.dialect.storage_engine",
                 "quarkus.hibernate-orm.dialect.storage-engine");
         springJpaToQuarkusOrmPropertiesMap.put("spring.jpa.generate-ddl", "quarkus.hibernate-orm.database.generation");
@@ -91,20 +92,25 @@ public class SpringDataJPAProcessor {
         Iterable<String> iterablePropertyNames = config.getPropertyNames();
         List<String> propertyNames = new ArrayList<String>();
         iterablePropertyNames.forEach(propertyNames::add);
-        Pattern pattern = Pattern.compile("spring\\.jpa\\..*");
-        Matcher matcher = pattern.matcher("");
-        List<String> springProperties = propertyNames.stream().filter(s -> matcher.reset(s).matches()).collect(toList());
-        if (!springProperties.isEmpty()) {
-            String warningLog = "Quarkus does not support the ";
-            for (String springProperty : springProperties) {
-                String quarkusProperty = springJpaToQuarkusOrmPropertiesMap.get(springProperty);
-                if (quarkusProperty != null) {
-                    warningLog = warningLog + springProperty + " property " + "you may try to use the Quarkus equivalent one : "
-                            + quarkusProperty + ".";
-                }
-                LOGGER.warn(warningLog + springProperty + " property. ");
-            }
+        List<String> springProperties = propertyNames.stream().filter(s -> pattern.matcher(s).matches()).collect(toList());
 
+        if (!springProperties.isEmpty()) {
+            List<String> springWithQuarkusEquivalences = springProperties.stream()
+                    .filter(s -> springJpaToQuarkusOrmPropertiesMap.containsKey(s)).collect(Collectors.toList());
+
+            String notSupportedProperties = springWithQuarkusEquivalences.stream()
+                    .map(d -> "\t- " + d + " should be replaced by " + springJpaToQuarkusOrmPropertiesMap.get(d))
+                    .collect(Collectors.joining("\n"));
+
+            List<String> others = springProperties.stream().filter(s -> !springJpaToQuarkusOrmPropertiesMap.containsKey(s))
+                    .collect(Collectors.toList());
+
+            notSupportedProperties = notSupportedProperties + "\n"
+                    + others.stream().map(d -> "\t- " + d).collect(Collectors.joining("\n"));
+
+            LOGGER.warnf(
+                    "Quarkus does not support the following Spring Boot configuration properties :%n%s",
+                    notSupportedProperties);
         }
     }
 

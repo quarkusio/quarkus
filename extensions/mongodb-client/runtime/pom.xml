@@ -36,6 +36,10 @@
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver-reactivestreams</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-crypt</artifactId>
+        </dependency>
 
         <!-- Add the health extension as optional as we will produce the health check only if it's included -->
         <dependency>

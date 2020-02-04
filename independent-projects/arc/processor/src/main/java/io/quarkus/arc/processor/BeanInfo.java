@@ -153,6 +153,10 @@ public class BeanInfo implements InjectionTargetInfo {
         return identifier;
     }
 
+    /**
+     * 
+     * @return the annotation target or an empty optional in case of synthetic beans
+     */
     public Optional<AnnotationTarget> getTarget() {
         return target;
     }

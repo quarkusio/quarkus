@@ -231,7 +231,7 @@ A section helper that defines the logic of a section can "execute" any of the bl
 
 ===== Loop Section
 
-The loop section makes it possible to iterate over an instance of `Iterable`, `Map` 's entry set and `Stream`.
+The loop section makes it possible to iterate over an instance of `Iterable`, `Map` 's entry set, `Stream` and an Integer.
 It has two flavors.
 The first one is using the `each` name alias.
 
@@ -261,6 +261,22 @@ It's also possible to access the iteration metadata inside the loop:
 {/each}
 ----
 <1> `count` represents one-based index. Metadata also include zero-based `index`, `hasNext`, `odd`, `even`.
+
+The `for` statement also works with integers, starting from 1. In the example below, considering that `total = 3`:
+
+[source]
+----
+{#for i in total}
+  {i}:
+{/for}
+----
+
+The output will be:
+
+[source]
+----
+1:2:3:
+----
 
 ===== If Section
 

@@ -13,6 +13,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -43,6 +44,8 @@ public class LoopSectionHelper implements SectionHelper {
                 iterator = ((Map<?, ?>) it).entrySet().iterator();
             } else if (it instanceof Stream) {
                 iterator = ((Stream<?>) it).sequential().iterator();
+            } else if (it instanceof Integer) {
+                iterator = IntStream.rangeClosed(1, (Integer) it).iterator();
             } else {
                 throw new IllegalStateException("Cannot iterate over: " + it);
             }

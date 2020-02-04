@@ -27,9 +27,9 @@ import io.dekorate.kubernetes.config.ProbeBuilder;
 import io.dekorate.kubernetes.configurator.AddPort;
 import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
-import io.dekorate.kubernetes.decorator.AddRoleBindingDecorator;
-import io.dekorate.kubernetes.decorator.AddServiceAccountDecorator;
-import io.dekorate.kubernetes.decorator.ApplyServiceAccountDecorator;
+import io.dekorate.kubernetes.decorator.AddRoleBindingResourceDecorator;
+import io.dekorate.kubernetes.decorator.AddServiceAccountResourceDecorator;
+import io.dekorate.kubernetes.decorator.ApplyServiceAccountNamedDecorator;
 import io.dekorate.processor.SimpleFileWriter;
 import io.dekorate.project.BuildInfo;
 import io.dekorate.project.FileProjectFactory;
@@ -192,11 +192,10 @@ class KubernetesProcessor {
 
         //Handle RBAC
         if (!kubernetesPortBuildItems.isEmpty()) {
-            session.resources().decorate(new ApplyServiceAccountDecorator(applicationInfo.getName(),
-                    applicationInfo.getName()));
-            session.resources().decorate(new AddServiceAccountDecorator(session.resources()));
-            kubernetesRoleBuildItems.forEach(r -> session.resources()
-                    .decorate(new AddRoleBindingDecorator(session.resources(), r.getRole())));
+            session.resources().decorate(new ApplyServiceAccountNamedDecorator());
+            session.resources().decorate(new AddServiceAccountResourceDecorator());
+            kubernetesRoleBuildItems
+                    .forEach(r -> session.resources().decorate(new AddRoleBindingResourceDecorator(r.getRole())));
         }
 
         //Handle probes

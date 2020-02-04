@@ -22,13 +22,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
-import org.eclipse.aether.repository.RepositoryPolicy;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.CurationResult;
@@ -40,6 +38,7 @@ import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.resolver.update.DefaultUpdateDiscovery;
 import io.quarkus.bootstrap.resolver.update.DependenciesOrigin;
@@ -232,22 +231,25 @@ public class BootstrapAppModelFactory {
         if (!Files.isDirectory(appClasses)) {
             return createAppModelForJar(appClasses);
         }
-        //        final LocalProject localProject = localProjectsDiscovery || enableClasspathCache
-        //                ? LocalProject.loadWorkspace(appClasses)
-        //                : LocalProject.load(appClasses);
-        final LocalProject localProject = LocalProject.loadWorkspace(appClasses, false);
+
+        final LocalProject localProject = localProjectsDiscovery || enableClasspathCache
+                ? LocalProject.loadWorkspace(appClasses, false)
+                : LocalProject.load(appClasses, false);
+
         if (localProject == null) {
             log.warn("Unable to locate maven project, falling back to classpath discovery");
             return doClasspathDiscovery();
         }
+
+        final LocalWorkspace workspace = localProject.getWorkspace();
         try {
             Path cachedCpPath = null;
-            if (enableClasspathCache) {
+            if (workspace != null && enableClasspathCache) {
                 cachedCpPath = resolveCachedCpPath(localProject);
                 if (Files.exists(cachedCpPath)) {
                     try (DataInputStream reader = new DataInputStream(Files.newInputStream(cachedCpPath))) {
                         if (reader.readInt() == CP_CACHE_FORMAT_ID) {
-                            if (reader.readInt() == localProject.getWorkspace().getId()) {
+                            if (reader.readInt() == workspace.getId()) {
                                 ObjectInputStream in = new ObjectInputStream(reader);
                                 return new CurationResult((AppModel) in.readObject());
                             } else {
@@ -271,7 +273,7 @@ public class BootstrapAppModelFactory {
                 Files.createDirectories(cachedCpPath.getParent());
                 try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(cachedCpPath))) {
                     out.writeInt(CP_CACHE_FORMAT_ID);
-                    out.writeInt(localProject.getWorkspace().getId());
+                    out.writeInt(workspace.getId());
                     ObjectOutputStream obj = new ObjectOutputStream(out);
                     obj.writeObject(curationResult.getAppModel());
                 } catch (Exception e) {
@@ -492,14 +494,6 @@ public class BootstrapAppModelFactory {
 
     private static Path resolveCachedCpPath(LocalProject project) {
         return project.getOutputDir().resolve(QUARKUS).resolve(BOOTSTRAP).resolve(DEPLOYMENT_CP);
-    }
-
-    private static org.apache.maven.model.RepositoryPolicy toMavenRepoPolicy(RepositoryPolicy policy) {
-        final org.apache.maven.model.RepositoryPolicy mvnPolicy = new org.apache.maven.model.RepositoryPolicy();
-        mvnPolicy.setEnabled(policy.isEnabled());
-        mvnPolicy.setChecksumPolicy(policy.getChecksumPolicy());
-        mvnPolicy.setUpdatePolicy(policy.getUpdatePolicy());
-        return mvnPolicy;
     }
 
     private static void debug(String msg, Object... args) {

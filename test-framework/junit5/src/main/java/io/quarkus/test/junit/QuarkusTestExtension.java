@@ -125,7 +125,7 @@ public class QuarkusTestExtension
                 }
             }, "Quarkus Test Cleanup Shutdown task"));
             return new ExtensionState(testResourceManager, shutdownTask);
-        } catch (Exception e) {
+        } catch (java.util.ServiceConfigurationError | Exception e) {
             throw new RuntimeException(e);
         }
     }

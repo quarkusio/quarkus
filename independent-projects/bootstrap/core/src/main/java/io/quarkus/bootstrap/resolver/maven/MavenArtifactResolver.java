@@ -26,8 +26,6 @@ import org.eclipse.aether.collection.CollectResult;
 import org.eclipse.aether.collection.DependencyCollectionException;
 import org.eclipse.aether.graph.DefaultDependencyNode;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.graph.DependencyFilter;
-import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;

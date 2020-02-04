@@ -515,6 +515,8 @@ You can then point your browser to `http://localhost:8080/fruits.html` and use y
 [WARNING]
 ====
 Currently, Quarkus doesn't support the `mongodb+srv` protocol in native mode.
+
+link:https://docs.mongodb.com/manual/core/security-client-side-encryption/[Client-Side Field Level Encryption] is also not supported in native mode.
 ====
 
 == Conclusion

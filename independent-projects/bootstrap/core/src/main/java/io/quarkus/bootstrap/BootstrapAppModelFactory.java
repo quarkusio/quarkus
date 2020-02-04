@@ -45,6 +45,7 @@ import io.quarkus.bootstrap.resolver.update.DependenciesOrigin;
 import io.quarkus.bootstrap.resolver.update.UpdateDiscovery;
 import io.quarkus.bootstrap.resolver.update.VersionUpdate;
 import io.quarkus.bootstrap.resolver.update.VersionUpdateNumber;
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
 
 /**
@@ -215,13 +216,20 @@ public class BootstrapAppModelFactory {
         if (test || devMode) {
             //gradle tests and dev encode the result on the class path
 
-            try (InputStream existing = getClass().getClassLoader().getResourceAsStream(BootstrapConstants.SERIALIZED_APP_MODEL)){
-                if(existing != null ) {
-                    AppModel appModel = (AppModel) new ObjectInputStream(existing).readObject();
-                    return new CurationResult(appModel);
+            final String serializedModel = System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL);
+            if (serializedModel != null) {
+                final Path p = Paths.get(serializedModel);
+                if (Files.exists(p)) {
+                    try (InputStream existing = Files.newInputStream(Paths.get(serializedModel))) {
+                        AppModel appModel = (AppModel) new ObjectInputStream(existing).readObject();
+                        return new CurationResult(appModel);
+                    } catch (IOException | ClassNotFoundException e) {
+                        log.error("Failed to load serialized app mode", e);
+                    }
+                    IoUtils.recursiveDelete(p);
+                } else {
+                    log.error("Failed to locate serialized application model at " + serializedModel);
                 }
-            } catch (IOException | ClassNotFoundException e) {
-                log.error("Failed to load serialized app mode", e);
             }
         }
         if (appClasses == null) {

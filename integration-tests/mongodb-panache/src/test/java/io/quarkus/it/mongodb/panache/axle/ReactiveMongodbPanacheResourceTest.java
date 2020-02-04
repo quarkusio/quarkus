@@ -1,8 +1,10 @@
-package io.quarkus.it.mongodb.panache;
+package io.quarkus.it.mongodb.panache.axle;
 
 import static io.restassured.RestAssured.get;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -11,14 +13,23 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.sse.SseEventSource;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import io.quarkus.it.mongodb.panache.BookDTO;
+import io.quarkus.it.mongodb.panache.MongoTestResource;
 import io.quarkus.it.mongodb.panache.book.BookDetail;
 import io.quarkus.it.mongodb.panache.person.Person;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -31,42 +42,44 @@ import io.restassured.response.Response;
 
 @QuarkusTest
 @QuarkusTestResource(MongoTestResource.class)
-class MongodbPanacheResourceTest {
+class ReactiveMongodbPanacheResourceTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReactiveMongodbPanacheResourceTest.class);
     private static final TypeRef<List<BookDTO>> LIST_OF_BOOK_TYPE_REF = new TypeRef<List<BookDTO>>() {
     };
     private static final TypeRef<List<Person>> LIST_OF_PERSON_TYPE_REF = new TypeRef<List<Person>>() {
     };
 
     @Test
-    public void testBookEntity() {
-        callBookEndpoint("/books/entity");
+    public void testReactiveBookEntity() throws InterruptedException {
+        callReactiveBookEndpoint("/axle/books/entity");
     }
 
     @Test
-    public void testBookRepository() {
-        callBookEndpoint("/books/repository");
+    public void testReactiveBookRepository() throws InterruptedException {
+        callReactiveBookEndpoint("/axle/books/repository");
     }
 
     @Test
-    public void testPersonEntity() {
-        callPersonEndpoint("/persons/entity");
+    public void testReactivePersonEntity() {
+        callReactivePersonEndpoint("/axle/persons/entity");
     }
 
     @Test
-    public void testPersonRepository() {
-        callPersonEndpoint("/persons/repository");
+    public void testReactivePersonRepository() {
+        callReactivePersonEndpoint("/axle/persons/repository");
     }
 
-    private void callBookEndpoint(String endpoint) {
+    private void callReactiveBookEndpoint(String endpoint) throws InterruptedException {
         RestAssured.defaultParser = Parser.JSON;
+        ObjectMapper objectMapper = new ObjectMapper()
+                .registerModule(new Jdk8Module())
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         RestAssured.config
-                .objectMapperConfig(new ObjectMapperConfig().jackson2ObjectMapperFactory((type, s) -> new ObjectMapper()
-                        .registerModule(new Jdk8Module())
-                        .registerModule(new JavaTimeModule())
-                        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)));
+                .objectMapperConfig(new ObjectMapperConfig().jackson2ObjectMapperFactory((type, s) -> objectMapper));
 
         List<BookDTO> list = get(endpoint).as(LIST_OF_BOOK_TYPE_REF);
-        Assertions.assertEquals(0, list.size());
+        assertEquals(0, list.size());
 
         BookDTO book1 = new BookDTO().setAuthor("Victor Hugo").setTitle("Les Misérables")
                 .setCreationDate(yearToDate(1886))
@@ -78,7 +91,7 @@ class MongodbPanacheResourceTest {
                 .body(book1)
                 .post(endpoint)
                 .andReturn();
-        Assertions.assertEquals(201, response.statusCode());
+        assertEquals(201, response.statusCode());
         Assertions.assertTrue(response.header("Location").length() > 20);//Assert that id has been populated
 
         BookDTO book2 = new BookDTO().setAuthor("Victor Hugo").setTitle("Notre-Dame de Paris")
@@ -91,10 +104,10 @@ class MongodbPanacheResourceTest {
                 .body(book2)
                 .post(endpoint)
                 .andReturn();
-        Assertions.assertEquals(201, response.statusCode());
+        assertEquals(201, response.statusCode());
 
         list = get(endpoint).as(LIST_OF_BOOK_TYPE_REF);
-        Assertions.assertEquals(2, list.size());
+        assertEquals(2, list.size());
 
         BookDTO book3 = new BookDTO().setAuthor("Charles Baudelaire").setTitle("Les fleurs du mal")
                 .setCreationDate(yearToDate(1857))
@@ -106,7 +119,7 @@ class MongodbPanacheResourceTest {
                 .body(book3)
                 .post(endpoint)
                 .andReturn();
-        Assertions.assertEquals(201, response.statusCode());
+        assertEquals(201, response.statusCode());
 
         BookDTO book4 = new BookDTO().setAuthor("Charles Baudelaire").setTitle("Le Spleen de Paris")
                 .setCreationDate(yearToDate(1869))
@@ -119,38 +132,35 @@ class MongodbPanacheResourceTest {
                 .body(book4)
                 .patch(endpoint)
                 .andReturn();
-        Assertions.assertEquals(202, response.statusCode());
+        assertEquals(202, response.statusCode());
 
         list = get(endpoint).as(LIST_OF_BOOK_TYPE_REF);
-        Assertions.assertEquals(4, list.size());
+        assertEquals(4, list.size());
 
         //with sort
         list = get(endpoint + "?sort=author").as(LIST_OF_BOOK_TYPE_REF);
-        Assertions.assertEquals(4, list.size());
+        assertEquals(4, list.size());
 
         // magic query find("author", author)
         list = get(endpoint + "/search/Victor Hugo").as(LIST_OF_BOOK_TYPE_REF);
-        Assertions.assertEquals(2, list.size());
-        // we have a projection so we should not have the details field but we should have the title thanks to @BsonProperty
-        Assertions.assertNotNull(list.get(0).getTitle());
-        Assertions.assertNull(list.get(0).getDetails());
+        assertEquals(2, list.size());
 
         // magic query find("{'author':?1,'title':?1}", author, title)
         BookDTO book = get(endpoint + "/search?author=Victor Hugo&title=Notre-Dame de Paris").as(BookDTO.class);
-        Assertions.assertNotNull(book);
+        assertNotNull(book);
 
         // date
         book = get(endpoint + "/search?dateFrom=1885-01-01&dateTo=1887-01-01").as(BookDTO.class);
-        Assertions.assertNotNull(book);
+        assertNotNull(book);
 
         book = get(endpoint + "/search2?dateFrom=1885-01-01&dateTo=1887-01-01").as(BookDTO.class);
-        Assertions.assertNotNull(book);
+        assertNotNull(book);
 
         // magic query find("{'author'::author,'title'::title}", Parameters.with("author", author).and("title", title))
         book = get(endpoint + "/search2?author=Victor Hugo&title=Notre-Dame de Paris").as(BookDTO.class);
-        Assertions.assertNotNull(book);
-        Assertions.assertNotNull(book.getId());
-        Assertions.assertNotNull(book.getDetails());
+        assertNotNull(book);
+        assertNotNull(book.getId());
+        assertNotNull(book.getDetails());
 
         //update a book
         book.setTitle("Notre-Dame de Paris 2").setTransientDescription("should not be persisted");
@@ -160,31 +170,45 @@ class MongodbPanacheResourceTest {
                 .body(book)
                 .put(endpoint)
                 .andReturn();
-        Assertions.assertEquals(202, response.statusCode());
+        assertEquals(202, response.statusCode());
 
         //check that the title has been updated and the transient description ignored
         book = get(endpoint + "/" + book.getId().toString()).as(BookDTO.class);
-        Assertions.assertNotNull(book);
-        Assertions.assertEquals("Notre-Dame de Paris 2", book.getTitle());
+        assertEquals("Notre-Dame de Paris 2", book.getTitle());
         Assertions.assertNull(book.getTransientDescription());
-
-        //test findByIdOptional
-        book = get(endpoint + "/optional/" + book.getId().toString()).as(BookDTO.class);
-        Assertions.assertNotNull(book);
 
         //delete a book
         response = RestAssured
                 .given()
                 .delete(endpoint + "/" + book.getId().toString())
                 .andReturn();
-        Assertions.assertEquals(204, response.statusCode());
+        assertEquals(204, response.statusCode());
 
         list = get(endpoint).as(LIST_OF_BOOK_TYPE_REF);
-        Assertions.assertEquals(3, list.size());
+        assertEquals(3, list.size());
 
         //test some special characters
         list = get(endpoint + "/search/Victor'\\ Hugo").as(LIST_OF_BOOK_TYPE_REF);
-        Assertions.assertEquals(0, list.size());
+        assertEquals(0, list.size());
+
+        //test SSE : there is no JSON serialization for SSE so the test is not very elegant ...
+        Client client = ClientBuilder.newClient();
+        WebTarget target = client.target("http://localhost:8081" + endpoint + "/stream");
+        try (SseEventSource source = SseEventSource.target(target).build()) {
+            final IntegerAdder nbEvent = new IntegerAdder();
+            source.register((inboundSseEvent) -> {
+                try {
+                    BookDTO theBook = objectMapper.readValue(inboundSseEvent.readData(), BookDTO.class);
+                    assertNotNull(theBook);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                nbEvent.increment();
+            });
+            source.open();
+            Thread.sleep(100);//wait a little for the events to comes in
+            assertEquals(3, nbEvent.count());
+        }
 
         //delete all
         response = RestAssured
@@ -194,7 +218,7 @@ class MongodbPanacheResourceTest {
         Assertions.assertEquals(204, response.statusCode());
     }
 
-    private void callPersonEndpoint(String endpoint) {
+    private void callReactivePersonEndpoint(String endpoint) {
         RestAssured.defaultParser = Parser.JSON;
         RestAssured.config
                 .objectMapperConfig(new ObjectMapperConfig().jackson2ObjectMapperFactory((type, s) -> new ObjectMapper()
@@ -203,7 +227,7 @@ class MongodbPanacheResourceTest {
                         .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)));
 
         List<Person> list = get(endpoint).as(LIST_OF_PERSON_TYPE_REF);
-        Assertions.assertEquals(0, list.size());
+        assertEquals(0, list.size());
 
         Person person1 = new Person();
         person1.id = 1L;
@@ -215,7 +239,7 @@ class MongodbPanacheResourceTest {
                 .body(person1)
                 .post(endpoint)
                 .andReturn();
-        Assertions.assertEquals(201, response.statusCode());
+        assertEquals(201, response.statusCode());
 
         Person person2 = new Person();
         person2.id = 2L;
@@ -234,7 +258,7 @@ class MongodbPanacheResourceTest {
                 .body(persons)
                 .post(endpoint + "/multiple")
                 .andReturn();
-        Assertions.assertEquals(204, response.statusCode());
+        assertEquals(204, response.statusCode());
 
         Person person4 = new Person();
         person4.id = 4L;
@@ -246,25 +270,18 @@ class MongodbPanacheResourceTest {
                 .body(person4)
                 .patch(endpoint)
                 .andReturn();
-        Assertions.assertEquals(202, response.statusCode());
+        assertEquals(202, response.statusCode());
 
         list = get(endpoint).as(LIST_OF_PERSON_TYPE_REF);
-        Assertions.assertEquals(4, list.size());
+        assertEquals(4, list.size());
 
         //with sort
         list = get(endpoint + "?sort=firstname").as(LIST_OF_PERSON_TYPE_REF);
-        Assertions.assertEquals(4, list.size());
-
-        //with project
-        list = get(endpoint + "/search/Doe").as(LIST_OF_PERSON_TYPE_REF);
-        Assertions.assertEquals(2, list.size());
-        Assertions.assertNotNull(list.get(0).lastname);
-        //expected the firstname field to be null as we project on lastname only
-        Assertions.assertNull(list.get(0).firstname);
+        assertEquals(4, list.size());
 
         //count
         Long count = get(endpoint + "/count").as(Long.class);
-        Assertions.assertEquals(4, count);
+        assertEquals(4, count);
 
         //update a person
         person3.lastname = "Webster";
@@ -274,32 +291,32 @@ class MongodbPanacheResourceTest {
                 .body(person3)
                 .put(endpoint)
                 .andReturn();
-        Assertions.assertEquals(202, response.statusCode());
+        assertEquals(202, response.statusCode());
 
         //check that the title has been updated
         person3 = get(endpoint + "/" + person3.id.toString()).as(Person.class);
-        Assertions.assertEquals(3L, person3.id);
-        Assertions.assertEquals("Webster", person3.lastname);
+        assertEquals(3L, person3.id);
+        assertEquals("Webster", person3.lastname);
 
         //delete a person
         response = RestAssured
                 .given()
                 .delete(endpoint + "/" + person3.id.toString())
                 .andReturn();
-        Assertions.assertEquals(204, response.statusCode());
+        assertEquals(204, response.statusCode());
 
         count = get(endpoint + "/count").as(Long.class);
-        Assertions.assertEquals(3, count);
+        assertEquals(3, count);
 
         //delete all
         response = RestAssured
                 .given()
                 .delete(endpoint)
                 .andReturn();
-        Assertions.assertEquals(204, response.statusCode());
+        assertEquals(204, response.statusCode());
 
         count = get(endpoint + "/count").as(Long.class);
-        Assertions.assertEquals(0, count);
+        assertEquals(0, count);
     }
 
     private Date yearToDate(int year) {
@@ -308,25 +325,15 @@ class MongodbPanacheResourceTest {
         return cal.getTime();
     }
 
-    @Test
-    public void testBug5274() {
-        get("/bugs/5274").then().body(is("OK"));
-    }
+    private class IntegerAdder {
+        int cpt = 0;
 
-    @Test
-    public void testBug5885() {
-        get("/bugs/5885").then().body(is("OK"));
-    }
+        public void increment() {
+            cpt++;
+        }
 
-    @Test
-    public void testDatesFormat() {
-        get("/bugs/dates").then().statusCode(200);
-    }
-
-    @Test
-    public void testNeedReflection() {
-        get("/bugs/6324").then().statusCode(200);
-
-        get("/bugs/6324/abstract").then().statusCode(200);
+        public int count() {
+            return cpt;
+        }
     }
 }

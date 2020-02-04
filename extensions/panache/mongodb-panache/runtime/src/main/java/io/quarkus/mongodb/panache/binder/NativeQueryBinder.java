@@ -1,8 +1,8 @@
-package io.quarkus.mongodb.panache.runtime;
+package io.quarkus.mongodb.panache.binder;
 
 import java.util.Map;
 
-class NativeQueryBinder {
+public class NativeQueryBinder {
 
     public static String bindQuery(String query, Object[] params) {
         String bindQuery = query;

@@ -582,6 +582,109 @@ data class Person (
 ): PanacheMongoEntity()
 ----
 
+== Reactive Entities and Repositories
+
+MongoDB with Panache allows using reactive style implementation for both entities and repositories.
+For this, you need to use the Reactive variants when defining your entities : `ReactivePanacheMongoEntity` or `ReactivePanacheMongoEntityBase`,
+and when defining your repositories: `ReactivePanacheMongoRepository` or `ReactivePanacheMongoRepositoryBase`.
+
+The reactive variant of the `Person` class will be:
+
+[source,java]
+----
+public class ReactivePerson extends ReactivePanacheMongoEntity {
+    public String name;
+    public LocalDate birth;
+    public Status status;
+
+    // return name as uppercase in the model
+    public String getName(){
+        return name.toUpperCase();
+    }
+
+    // store all names in lowercase in the DB
+    public void setName(String name){
+        this.name = name.toLowerCase();
+    }
+}
+----
+
+You will have access to the same functionalities of the _imperative_ variant inside the reactive one: bson annotations, custom ID, PanacheQL, ...
+But the methods on your entities or repositories will all return reactive types.
+
+See the equivalent methods from the imperative example with the reactive variant:
+
+[source,java]
+----
+// creating a person
+ReactivePerson person = new ReactivePerson();
+person.name = "Loïc";
+person.birth = LocalDate.of(1910, Month.FEBRUARY, 1);
+person.status = Status.Alive;
+
+// persist it
+CompletionStage<Void> cs1 = person.persist();
+
+person.status = Status.Dead;
+
+// Your must call update() in order to send your entity modifications to MongoDB
+CompletionStage<Void> cs2 = person.update();
+
+// delete it
+CompletionStage<Void> cs3 = person.delete();
+
+// getting a list of all persons
+CompletionStage<List<ReactivePerson>> allPersons = ReactivePerson.listAll();
+
+// finding a specific person by ID
+CompletionStage<ReactivePerson> personById = ReactivePerson.findById(personId);
+
+// finding a specific person by ID via an Optional
+CompletionStage<Optional<ReactivePerson>> optional = ReactivePerson.findByIdOptional(personId);
+personById = optional.thenApply(o -> o.orElseThrow(() -> new NotFoundException()));
+
+// finding all living persons
+CompletionStage<List<ReactivePerson>> livingPersons = ReactivePerson.list("status", Status.Alive);
+
+// counting all persons
+CompletionStage<Long> countAll = ReactivePerson.count();
+
+// counting all living persons
+CompletionStage<Long> countAlive = ReactivePerson.count("status", Status.Alive);
+
+// delete all living persons
+CompletionStage<Long>  deleteCount = ReactivePerson.delete("status", Status.Alive);
+
+// delete all persons
+deleteCount = ReactivePerson.deleteAll();
+----
+
+TIP: If you use MongoDB with Panache in conjunction with RESTEasy, you can directly return a reactive type inside your JAX-RS resource endpoint as RESTEasy will handle it correctly.
+
+The same query facility exists for the reactive types, but the `stream()` methods act differently: they return a reactive stream `Publisher` instead of a `Stream`.
+
+It allows more advanced reactive use cases, for example you can use it to send server-sent events (SSE) via RESTEasy:
+
+[source,java]
+----
+import org.jboss.resteasy.annotations.SseElementType;
+import org.reactivestreams.Publisher;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+
+@GET
+@Path("/stream")
+@Produces(MediaType.SERVER_SENT_EVENTS)
+@SseElementType(MediaType.APPLICATION_JSON)
+public Publisher<ReactivePerson> streamPersons() {
+    return ReactivePerson.streamAll();
+}
+----
+
+TIP: `@SseElementType(MediaType.APPLICATION_JSON)` tells RESTEasy to serialize the object in JSON.
+
+
 == How and why we simplify MongoDB API
 
 When it comes to writing MongoDB entities, there are a number of annoying things that users have grown used to

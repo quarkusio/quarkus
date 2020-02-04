@@ -29,6 +29,8 @@ import com.mongodb.client.model.WriteModel;
 import io.quarkus.arc.Arc;
 import io.quarkus.mongodb.panache.MongoEntity;
 import io.quarkus.mongodb.panache.PanacheQuery;
+import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
+import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 

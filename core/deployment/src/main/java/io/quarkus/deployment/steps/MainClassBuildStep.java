@@ -5,15 +5,10 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.io.File;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
@@ -24,27 +19,21 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.MainBootstrapConfigBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.SslTrustStoreSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
-import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -54,7 +43,6 @@ import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.NativeImageRuntimePropertiesRecorder;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
 import io.quarkus.runtime.Timing;
@@ -69,11 +57,13 @@ class MainClassBuildStep {
     private static final String JAVA_LIBRARY_PATH = "java.library.path";
     private static final String JAVAX_NET_SSL_TRUST_STORE = "javax.net.ssl.trustStore";
 
+    private static final FieldDescriptor STARTUP_CONTEXT_FIELD = FieldDescriptor.of(APP_CLASS, STARTUP_CONTEXT,
+            StartupContext.class);
+
     @BuildStep
     MainClassBuildItem build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
             List<ObjectSubstitutionBuildItem> substitutions,
             List<MainBytecodeRecorderBuildItem> mainMethod,
-            List<MainBootstrapConfigBytecodeRecorderBuildItem> mainBootstrapConfig,
             List<SystemPropertyBuildItem> properties,
             List<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPaths,
             Optional<SslTrustStoreSystemPropertyBuildItem> sslTrustStoreSystemProperty,
@@ -82,24 +72,7 @@ class MainClassBuildStep {
             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             LaunchModeBuildItem launchMode,
-            ApplicationInfoBuildItem applicationInfo,
-            List<RunTimeConfigurationDefaultBuildItem> runTimeDefaults,
-            List<ConfigurationTypeBuildItem> typeItems,
-            ConfigurationBuildItem configItem) {
-
-        BuildTimeConfigurationReader.ReadResult readResult = configItem.getReadResult();
-        Map<String, String> defaults = new HashMap<>();
-        for (RunTimeConfigurationDefaultBuildItem item : runTimeDefaults) {
-            if (defaults.putIfAbsent(item.getKey(), item.getValue()) != null) {
-                throw new IllegalStateException("More than one default value for " + item.getKey() + " was produced");
-            }
-        }
-        List<Class<?>> additionalConfigTypes = typeItems.stream().map(ConfigurationTypeBuildItem::getValueType)
-                .collect(Collectors.toList());
-
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
-
-        RunTimeConfigurationGenerator.generate(readResult, classOutput, defaults, additionalConfigTypes);
+            ApplicationInfoBuildItem applicationInfo) {
 
         appClassNameProducer.produce(new ApplicationClassNameBuildItem(APP_CLASS));
 
@@ -113,8 +86,8 @@ class MainClassBuildStep {
         // LOG static field
         FieldCreator logField = file.getFieldCreator(LOG, Logger.class).setModifiers(Modifier.STATIC);
 
-        FieldCreator scField = file.getFieldCreator(STARTUP_CONTEXT, StartupContext.class);
-        scField.setModifiers(Modifier.STATIC);
+        FieldCreator scField = file.getFieldCreator(STARTUP_CONTEXT_FIELD);
+        scField.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
 
         MethodCreator mv = file.getMethodCreator("<clinit>", void.class);
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
@@ -143,10 +116,8 @@ class MainClassBuildStep {
         mv.writeStaticField(scField.getFieldDescriptor(), startupContext);
         TryBlock tryBlock = mv.tryBlock();
         for (StaticBytecodeRecorderBuildItem holder : staticInitTasks) {
-            final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
-            if (!recorder.isEmpty()) {
-                writeRecordedBytecode(recorder, substitutions, loaders, gizmoOutput, startupContext, tryBlock);
-            }
+            writeRecordedBytecode(holder.getBytecodeRecorder(), null, substitutions, loaders, gizmoOutput, startupContext,
+                    tryBlock);
         }
         tryBlock.returnValue(null);
 
@@ -207,62 +178,9 @@ class MainClassBuildStep {
 
         tryBlock = mv.tryBlock();
 
-        // Load the bootstrap configuration
-        ResultHandle generatedConfig = tryBlock.invokeStaticMethod(RunTimeConfigurationGenerator.C_CREATE_BOOTSTRAP_CONFIG);
-
-        if (mainBootstrapConfig.isEmpty()) {
-            tryBlock.invokeVirtualMethod(RunTimeConfigurationGenerator.C_READ_CONFIG, generatedConfig,
-                    tryBlock.invokeStaticMethod(ofMethod(Collections.class, "emptyList", List.class)));
-        } else {
-            /*
-             * This is not that great, since it is no by no means a general way of executing things before the main bytecode
-             * stuff executes.
-             * It's tailored made to support the bootstrap configuration stuff and would need to be rethought if we need
-             * a general mechanism of executing things before the main bytecode stuff
-             * (which would likely involve a new runtime phase)
-             *
-             * What this loop does is go through the MainBootstrapConfigBytecodeRecorderBuildItem objects which are guaranteed
-             * to be constructed from build steps that return RunTimeConfigurationSourceValueBuildItem - thus ensuring that
-             * the generated StartupTask will write its result (which is a RuntimeValue<ConfigSourceProvider>
-             * configSourcesValue) into the StartupContext.
-             * This value is then pulled out of the StartupContext by using the getLastValue method. All the
-             * ConfigSourceProvider objects are then collected and passed to Config.readConfig()
-             */
-            ResultHandle configSourcesProvidersList = tryBlock.newInstance(ofConstructor(ArrayList.class, int.class),
-                    tryBlock.load(mainBootstrapConfig.size()));
-            for (MainBootstrapConfigBytecodeRecorderBuildItem holder : mainBootstrapConfig) {
-                final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
-                if (!recorder.isEmpty()) {
-                    writeRecordedBytecode(recorder, substitutions, loaders, gizmoOutput, startupContext, tryBlock);
-
-                    // we now get the result of the recorder invocation
-                    ResultHandle isLastValueSet = tryBlock.invokeVirtualMethod(
-                            ofMethod(StartupContext.class, "isLastValueSet", boolean.class), startupContext);
-                    BytecodeCreator isLastValueSetTrue = tryBlock.ifNonZero(isLastValueSet).trueBranch();
-                    ResultHandle getLastValue = isLastValueSetTrue
-                            .invokeVirtualMethod(ofMethod(StartupContext.class, "getLastValue", Object.class), startupContext);
-                    BytecodeCreator lastValueNotNull = isLastValueSetTrue.ifNull(getLastValue).falseBranch();
-                    ResultHandle runtimeValue = lastValueNotNull.checkCast(getLastValue, RuntimeValue.class);
-                    ResultHandle getValue = lastValueNotNull
-                            .invokeVirtualMethod(MethodDescriptor.ofMethod(RuntimeValue.class, "getValue", Object.class),
-                                    runtimeValue);
-                    ResultHandle configSourceProvider = lastValueNotNull.checkCast(getValue, ConfigSourceProvider.class);
-                    lastValueNotNull.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(ArrayList.class, "add", boolean.class, Object.class),
-                            configSourcesProvidersList, configSourceProvider);
-                    lastValueNotNull.breakScope();
-                    isLastValueSetTrue.breakScope();
-                }
-            }
-            tryBlock.invokeVirtualMethod(RunTimeConfigurationGenerator.C_READ_CONFIG, generatedConfig,
-                    configSourcesProvidersList);
-        }
-
         for (MainBytecodeRecorderBuildItem holder : mainMethod) {
-            final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
-            if (!recorder.isEmpty()) {
-                writeRecordedBytecode(recorder, substitutions, loaders, gizmoOutput, startupContext, tryBlock);
-            }
+            writeRecordedBytecode(holder.getBytecodeRecorder(), holder.getGeneratedStartupContextClassName(), substitutions,
+                    loaders, gizmoOutput, startupContext, tryBlock);
         }
 
         // Startup log messages
@@ -325,18 +243,28 @@ class MainClassBuildStep {
         return new MainClassBuildItem(MAIN_CLASS);
     }
 
-    private void writeRecordedBytecode(BytecodeRecorderImpl recorder, List<ObjectSubstitutionBuildItem> substitutions,
+    private void writeRecordedBytecode(BytecodeRecorderImpl recorder, String fallbackGeneratedStartupTaskClassName,
+            List<ObjectSubstitutionBuildItem> substitutions,
             List<BytecodeRecorderObjectLoaderBuildItem> loaders, GeneratedClassGizmoAdaptor gizmoOutput,
             ResultHandle startupContext, BytecodeCreator bytecodeCreator) {
-        for (ObjectSubstitutionBuildItem sub : substitutions) {
-            ObjectSubstitutionBuildItem.Holder holder1 = sub.holder;
-            recorder.registerSubstitution(holder1.from, holder1.to, holder1.substitution);
+
+        if ((recorder == null || recorder.isEmpty()) && fallbackGeneratedStartupTaskClassName == null) {
+            return;
         }
-        for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
-            recorder.registerObjectLoader(item.getObjectLoader());
+
+        if ((recorder != null) && !recorder.isEmpty()) {
+            for (ObjectSubstitutionBuildItem sub : substitutions) {
+                ObjectSubstitutionBuildItem.Holder holder1 = sub.holder;
+                recorder.registerSubstitution(holder1.from, holder1.to, holder1.substitution);
+            }
+            for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
+                recorder.registerObjectLoader(item.getObjectLoader());
+            }
+            recorder.writeBytecode(gizmoOutput);
         }
-        recorder.writeBytecode(gizmoOutput);
-        ResultHandle dup = bytecodeCreator.newInstance(ofConstructor(recorder.getClassName()));
+
+        ResultHandle dup = bytecodeCreator
+                .newInstance(ofConstructor(recorder != null ? recorder.getClassName() : fallbackGeneratedStartupTaskClassName));
         bytecodeCreator.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup,
                 startupContext);
     }

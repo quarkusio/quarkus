@@ -62,14 +62,14 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.annotations.Weak;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
+import io.quarkus.deployment.builditem.BootstrapConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
-import io.quarkus.deployment.builditem.MainBootstrapConfigBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationProxyBuildItem;
-import io.quarkus.deployment.builditem.RunTimeConfigurationSourceValueBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
@@ -354,10 +354,8 @@ public final class ExtensionLoader {
                         if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
                             runTimeProxies.computeIfAbsent(parameterClass, readResult::requireRootObjectForClass);
                         }
-                    } else if (phase == ConfigPhase.BOOTSTRAP) {
-                        throw reportError(parameter, "Bootstrap configuration cannot be consumed here");
-                    } else if (phase == ConfigPhase.RUN_TIME) {
-                        throw reportError(parameter, "Run time configuration cannot be consumed here");
+                    } else if (phase.isReadAtMain()) {
+                        throw reportError(parameter, phase + " configuration cannot be consumed here");
                     } else {
                         throw reportError(parameterClass, "Unknown value for ConfigPhase");
                     }
@@ -471,10 +469,8 @@ public final class ExtensionLoader {
                     if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
                         runTimeProxies.computeIfAbsent(fieldClass, readResult::requireRootObjectForClass);
                     }
-                } else if (phase == ConfigPhase.BOOTSTRAP) {
-                    throw reportError(field, "Bootstrap configuration cannot be consumed here");
-                } else if (phase == ConfigPhase.RUN_TIME) {
-                    throw reportError(field, "Run time configuration cannot be consumed here");
+                } else if (phase.isReadAtMain()) {
+                    throw reportError(field, phase + " configuration cannot be consumed here");
                 } else {
                     throw reportError(fieldClass, "Unknown value for ConfigPhase");
                 }
@@ -545,10 +541,8 @@ public final class ExtensionLoader {
                                 final ConfigPhase phase = annotation.phase();
                                 if (phase.isAvailableAtBuild()) {
                                     paramSuppList.add(() -> readResult.requireRootObjectForClass(parameterClass));
-                                } else if (phase == ConfigPhase.BOOTSTRAP) {
-                                    throw reportError(parameter, "Bootstrap configuration cannot be consumed here");
-                                } else if (phase == ConfigPhase.RUN_TIME) {
-                                    throw reportError(parameter, "Run time configuration cannot be consumed here");
+                                } else if (phase.isReadAtMain()) {
+                                    throw reportError(parameter, phase + " configuration cannot be consumed here");
                                 } else {
                                     throw reportError(parameter,
                                             "Unsupported conditional class configuration build phase " + phase);
@@ -580,10 +574,8 @@ public final class ExtensionLoader {
                                 if (phase.isAvailableAtBuild()) {
                                     setup = setup.andThen(o -> ReflectUtil.setFieldVal(field, o,
                                             readResult.requireRootObjectForClass(fieldClass)));
-                                } else if (phase == ConfigPhase.BOOTSTRAP) {
-                                    throw reportError(field, "Bootstrap configuration cannot be consumed here");
-                                } else if (phase == ConfigPhase.RUN_TIME) {
-                                    throw reportError(field, "Run time configuration cannot be consumed here");
+                                } else if (phase.isReadAtMain()) {
+                                    throw reportError(field, phase + " configuration cannot be consumed here");
                                 } else {
                                     throw reportError(field,
                                             "Unsupported conditional class configuration build phase " + phase);
@@ -644,10 +636,9 @@ public final class ExtensionLoader {
                 assert recordAnnotation != null;
                 final ExecutionTime executionTime = recordAnnotation.value();
                 final boolean optional = recordAnnotation.optional();
-
                 methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(
                         executionTime == ExecutionTime.STATIC_INIT ? StaticBytecodeRecorderBuildItem.class
-                                : determineMainRecorderBuildItemType(method),
+                                : MainBytecodeRecorderBuildItem.class,
                         optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE));
             }
             EnumSet<ConfigPhase> methodConsumingConfigPhases = consumingConfigPhases.clone();
@@ -744,14 +735,8 @@ public final class ExtensionLoader {
                             if (isRecorder && phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
                                 runTimeProxies.computeIfAbsent(parameterClass, readResult::requireRootObjectForClass);
                             }
-                        } else if (phase == ConfigPhase.BOOTSTRAP || phase == ConfigPhase.RUN_TIME) {
+                        } else if (phase.isReadAtMain()) {
                             if (isRecorder) {
-                                if ((phase == ConfigPhase.BOOTSTRAP)
-                                        && !method.getReturnType().equals(RunTimeConfigurationSourceValueBuildItem.class)) {
-                                    throw reportError(parameter,
-                                            "Bootstrap configuration can only be used in a Build step that returns "
-                                                    + RunTimeConfigurationSourceValueBuildItem.class.getSimpleName());
-                                }
                                 methodParamFns.add((bc, bri) -> {
                                     final RunTimeConfigurationProxyBuildItem proxies = bc
                                             .consume(RunTimeConfigurationProxyBuildItem.class);
@@ -760,9 +745,7 @@ public final class ExtensionLoader {
                                 runTimeProxies.computeIfAbsent(parameterClass, ReflectUtil::newInstance);
                             } else {
                                 throw reportError(parameter,
-                                        String.format(
-                                                "%s configuration cannot be consumed here unless the method is a @Recorder",
-                                                phase == ConfigPhase.RUN_TIME ? "Run time" : "Bootstrap"));
+                                        phase + " configuration cannot be consumed here unless the method is a @Recorder");
                             }
                         } else {
                             throw reportError(parameterClass, "Unknown value for ConfigPhase");
@@ -797,12 +780,6 @@ public final class ExtensionLoader {
                 resultConsumer = Functions.discardingBiConsumer();
             } else if (rawTypeExtends(returnType, BuildItem.class)) {
                 final Class<? extends BuildItem> type = method.getReturnType().asSubclass(BuildItem.class);
-                if (type.equals(RunTimeConfigurationSourceValueBuildItem.class)
-                        && (!isRecorder || recordAnnotation.value() != ExecutionTime.RUNTIME_INIT)) {
-                    throw reportError(method,
-                            "A Build step that returns " + RunTimeConfigurationSourceValueBuildItem.class.getSimpleName()
-                                    + " must also be annotated with @Record(ExecutionTime.RUNTIME_INIT)");
-                }
                 if (overridable) {
                     if (weak) {
                         methodStepConfig = methodStepConfig
@@ -868,14 +845,20 @@ public final class ExtensionLoader {
                     throw reportError(method,
                             "Bytecode recorder is static but an injected config object is declared as run time");
                 }
+
                 methodStepConfig = methodStepConfig
                         .andThen(bsb -> bsb.consumes(RunTimeConfigurationProxyBuildItem.class));
+
+                if (methodConsumingConfigPhases.contains(ConfigPhase.BOOTSTRAP)) {
+                    methodStepConfig = methodStepConfig
+                            .andThen(bsb -> bsb.afterProduce(BootstrapConfigSetupCompleteBuildItem.class));
+                }
+                if (methodConsumingConfigPhases.contains(ConfigPhase.RUN_TIME)) {
+                    methodStepConfig = methodStepConfig
+                            .andThen(bsb -> bsb.afterProduce(RuntimeConfigSetupCompleteBuildItem.class));
+                }
             }
-            if (methodConsumingConfigPhases.contains(ConfigPhase.BOOTSTRAP)
-                    && methodConsumingConfigPhases.contains(ConfigPhase.RUN_TIME)) {
-                throw reportError(method,
-                        "Bootstrap configuration cannot be used together in a build step with run time configuration");
-            }
+
             if (methodConsumingConfigPhases.contains(ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
                     || methodConsumingConfigPhases.contains(ConfigPhase.BUILD_TIME)) {
                 methodStepConfig = methodStepConfig
@@ -965,14 +948,9 @@ public final class ExtensionLoader {
                                     if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
                                         bc.produce(new StaticBytecodeRecorderBuildItem(bri));
                                     } else {
-                                        Class<? extends BuildItem> buildItemClass = determineMainRecorderBuildItemType(method);
-                                        if (buildItemClass.equals(MainBytecodeRecorderBuildItem.class)) {
-                                            bc.produce(new MainBytecodeRecorderBuildItem(bri));
-                                        } else {
-                                            assert buildItemClass == MainBootstrapConfigBytecodeRecorderBuildItem.class;
-                                            bc.produce(new MainBootstrapConfigBytecodeRecorderBuildItem(bri));
-                                        }
+                                        bc.produce(new MainBytecodeRecorderBuildItem(bri));
                                     }
+
                                 }
                             }
 
@@ -987,12 +965,6 @@ public final class ExtensionLoader {
                     });
         }
         return chainConfig;
-    }
-
-    private static Class<? extends BuildItem> determineMainRecorderBuildItemType(Method method) {
-        return method.getReturnType().equals(RunTimeConfigurationSourceValueBuildItem.class)
-                ? MainBootstrapConfigBytecodeRecorderBuildItem.class
-                : MainBytecodeRecorderBuildItem.class;
     }
 
     private static BooleanSupplier and(BooleanSupplier a, BooleanSupplier b) {

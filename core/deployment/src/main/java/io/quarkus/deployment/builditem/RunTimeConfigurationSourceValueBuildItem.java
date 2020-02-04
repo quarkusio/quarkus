@@ -8,12 +8,11 @@ import io.quarkus.runtime.RuntimeValue;
 /**
  * This is a special build item that is intended to be used only to support bootstrap configuration in the following manner:
  *
- * A build step returns this build item (this is a limitation compared to other build items that can also be used with
- * BuildProducer)
- * containing a {@code RuntimeValue<ConfigSourceProvider>} that is obtained by calling a ({@code RUNTIME_INIT}) recorder.
+ * A build step produces this BuildItem with a {@code RuntimeValue&lt;ConfigSourceProvider&gt;} a payload that is obtained by
+ * calling
+ * a ({@code RUNTIME_INIT}) recorder.
  * The build step can optionally use a configuration object that uses the {@code BOOTSTRAP} config phase and pass this
- * configuration
- * to the recorder to allow the recorder at runtime to customize its behavior
+ * configuration to the recorder to allow the recorder at runtime to customize its behavior
  */
 public final class RunTimeConfigurationSourceValueBuildItem extends MultiBuildItem {
 

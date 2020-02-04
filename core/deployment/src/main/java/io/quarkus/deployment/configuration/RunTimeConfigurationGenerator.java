@@ -82,6 +82,8 @@ public final class RunTimeConfigurationGenerator {
 
     static final MethodDescriptor BTRTDVCS_NEW = MethodDescriptor.ofConstructor(BTRTDVCS_CLASS_NAME);
 
+    public static final FieldDescriptor C_INSTANCE = FieldDescriptor.of(CONFIG_CLASS_NAME, "INSTANCE",
+            CONFIG_CLASS_NAME);
     static final FieldDescriptor C_BUILD_TIME_CONFIG_SOURCE = FieldDescriptor.of(CONFIG_CLASS_NAME, "buildTimeConfigSource",
             ConfigSource.class);
     static final FieldDescriptor C_BUILD_TIME_RUN_TIME_DEFAULTS_CONFIG_SOURCE = FieldDescriptor.of(CONFIG_CLASS_NAME,
@@ -309,6 +311,10 @@ public final class RunTimeConfigurationGenerator {
             for (Map.Entry<String, String> entry : buildTimeRunTimeVisibleValues.entrySet()) {
                 clinit.invokeVirtualMethod(HM_PUT, buildTimeValues, clinit.load(entry.getKey()), clinit.load(entry.getValue()));
             }
+
+            // static field containing the instance of the class - is set when createBootstrapConfig is run
+            cc.getFieldCreator(C_INSTANCE)
+                    .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_VOLATILE);
 
             // the build time config source field, to feed into the run time config
             cc.getFieldCreator(C_BUILD_TIME_CONFIG_SOURCE)
@@ -671,6 +677,7 @@ public final class RunTimeConfigurationGenerator {
             try (MethodCreator mc = cc.getMethodCreator(C_CREATE_BOOTSTRAP_CONFIG)) {
                 mc.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
                 ResultHandle instance = mc.newInstance(MethodDescriptor.ofConstructor(CONFIG_CLASS_NAME));
+                mc.writeStaticField(C_INSTANCE, instance);
                 mc.invokeVirtualMethod(C_BOOTSTRAP_CONFIG, instance);
                 mc.returnValue(instance);
             }

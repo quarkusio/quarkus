@@ -1,5 +1,6 @@
 package io.quarkus.it.bootstrap.config.extension.deployment;
 
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
@@ -20,7 +21,8 @@ public class DummyBootstrapConfigBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public RunTimeConfigurationSourceValueBuildItem dummyRecorder2(DummyBootstrapRecorder2 recorder) {
-        return new RunTimeConfigurationSourceValueBuildItem(recorder.create());
+    public void dummyRecorder2(DummyBootstrapRecorder2 recorder,
+            BuildProducer<RunTimeConfigurationSourceValueBuildItem> producer) {
+        producer.produce(new RunTimeConfigurationSourceValueBuildItem(recorder.create()));
     }
 }

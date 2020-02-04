@@ -315,12 +315,15 @@ public class ArcContainerImpl implements ArcContainer {
                 LOGGER.warn("An error occurred during delivery of the @Destroyed(ApplicationScoped.class) event", e);
             }
             singletonContext.destroy();
+
             // Clear caches
+            Reflections.clearCaches();
             contexts.clear();
             beans.clear();
             resolved.clear();
             observers.clear();
             running.set(false);
+
             LOGGER.debugf("ArC DI container shut down");
         }
     }

@@ -438,6 +438,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-amazon-lambda-xray-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-amazon-lambda-resteasy-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>

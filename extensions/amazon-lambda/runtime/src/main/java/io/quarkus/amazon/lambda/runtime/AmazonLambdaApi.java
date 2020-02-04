@@ -9,6 +9,7 @@ import java.net.URL;
 public class AmazonLambdaApi {
 
     // Response Headers
+    public static final String LAMBDA_TRACE_HEADER_KEY = "Lambda-Runtime-Trace-Id";
     public static final String LAMBDA_RUNTIME_AWS_REQUEST_ID = "Lambda-Runtime-Aws-Request-Id";
     public static final String LAMBDA_RUNTIME_INVOKED_FUNCTION_ARN = "Lambda-Runtime-Invoked-Function-Arn";
     public static final String LAMBDA_RUNTIME_COGNITO_IDENTITY = "Lambda-Runtime-Cognito-Identity";

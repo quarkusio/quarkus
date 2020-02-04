@@ -1,0 +1,11 @@
+---
+name: "AWS Lambda X-Ray"
+metadata:
+  keywords:
+  - "lambda"
+  - "aws"
+  - "amazon"
+  - "xray"
+  categories:
+  - "cloud"
+  status: "preview"

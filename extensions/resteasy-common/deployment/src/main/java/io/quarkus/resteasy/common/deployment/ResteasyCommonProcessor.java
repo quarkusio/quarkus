@@ -268,6 +268,11 @@ public class ResteasyCommonProcessor {
                         return true;
                     }
                     if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister,
+                            categorizedContextResolvers, methodTarget, ResteasyDotNames.CONSUMES,
+                            providerDiscoverer.noConsumesDefaultsToAll())) {
+                        return true;
+                    }
+                    if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister,
                             categorizedContextResolvers, methodTarget, ResteasyDotNames.PRODUCES,
                             providerDiscoverer.noProducesDefaultsToAll())) {
                         return true;

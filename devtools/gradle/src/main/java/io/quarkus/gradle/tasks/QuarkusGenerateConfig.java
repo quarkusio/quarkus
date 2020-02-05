@@ -39,7 +39,7 @@ public class QuarkusGenerateConfig extends QuarkusTask {
         getLogger().lifecycle("generating example config");
 
         final AppArtifact appArtifact = extension().getAppArtifact();
-        final AppModelResolver modelResolver = extension().resolveAppModel();
+        final AppModelResolver modelResolver = extension().getAppModelResolver();
         if (extension().resourcesDir().isEmpty()) {
             throw new GradleException("No resources directory, cannot create application.properties");
         }

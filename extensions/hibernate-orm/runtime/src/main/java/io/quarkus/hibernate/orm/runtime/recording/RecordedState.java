@@ -10,6 +10,7 @@ import org.hibernate.service.internal.ProvidedService;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
+import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
 
 public final class RecordedState {
 
@@ -20,10 +21,12 @@ public final class RecordedState {
     private final Collection<Integrator> integrators;
     private final Collection<ProvidedService> providedServices;
     private final IntegrationSettings integrationSettings;
+    private final ProxyDefinitions proxyClassDefinitions;
 
     public RecordedState(Dialect dialect, JtaPlatform jtaPlatform, MetadataImplementor metadata,
             BuildTimeSettings settings, Collection<Integrator> integrators,
-            Collection<ProvidedService> providedServices, IntegrationSettings integrationSettings) {
+            Collection<ProvidedService> providedServices, IntegrationSettings integrationSettings,
+            ProxyDefinitions classDefinitions) {
         this.dialect = dialect;
         this.jtaPlatform = jtaPlatform;
         this.metadata = metadata;
@@ -31,6 +34,7 @@ public final class RecordedState {
         this.integrators = integrators;
         this.providedServices = providedServices;
         this.integrationSettings = integrationSettings;
+        this.proxyClassDefinitions = classDefinitions;
     }
 
     public Dialect getDialect() {
@@ -59,5 +63,9 @@ public final class RecordedState {
 
     public JtaPlatform getJtaPlatform() {
         return jtaPlatform;
+    }
+
+    public ProxyDefinitions getProxyClassDefinitions() {
+        return proxyClassDefinitions;
     }
 }

@@ -331,13 +331,12 @@ public class NativeImageBuildStep {
                 throw new RuntimeException("Image generation failed. Exit code: " + process.exitValue());
             }
             Path generatedImage = outputDir.resolve(executableName);
-            IoUtils.copy(generatedImage,
-                    outputTargetBuildItem.getOutputDirectory().resolve(executableName));
+            Path finalPath = outputTargetBuildItem.getOutputDirectory().resolve(executableName);
+            IoUtils.copy(generatedImage, finalPath);
             Files.delete(generatedImage);
-            String finalPath = outputTargetBuildItem.getBaseName();
-            System.setProperty("native.image.path", finalPath);
+            System.setProperty("native.image.path", finalPath.toAbsolutePath().toString());
 
-            return new NativeImageBuildItem(Paths.get(finalPath));
+            return new NativeImageBuildItem(finalPath);
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
         }

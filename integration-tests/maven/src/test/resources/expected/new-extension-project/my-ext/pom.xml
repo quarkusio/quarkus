@@ -11,8 +11,8 @@
 
     <packaging>pom</packaging>
     <properties>
-        <quarkus.version>999-SNAPSHOT</quarkus.version>
-        <compiler-plugin.version>3.8.1</compiler-plugin.version>
+        <quarkus.version>${project.version}</quarkus.version>
+        <compiler-plugin.version>${compiler-plugin.version}</compiler-plugin.version>
     </properties>
     <modules>
         <module>deployment</module>
@@ -35,7 +35,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${compiler-plugin.version}</version>
+                    <version>\${compiler-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

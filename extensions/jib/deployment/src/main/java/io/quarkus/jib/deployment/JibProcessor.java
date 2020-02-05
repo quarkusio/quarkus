@@ -13,13 +13,17 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
+import com.google.cloud.tools.jib.api.AbsoluteUnixPath;
 import com.google.cloud.tools.jib.api.Containerizer;
 import com.google.cloud.tools.jib.api.DockerDaemonImage;
+import com.google.cloud.tools.jib.api.FilePermissions;
 import com.google.cloud.tools.jib.api.ImageReference;
 import com.google.cloud.tools.jib.api.InvalidImageReferenceException;
 import com.google.cloud.tools.jib.api.JavaContainerBuilder;
+import com.google.cloud.tools.jib.api.Jib;
 import com.google.cloud.tools.jib.api.JibContainer;
 import com.google.cloud.tools.jib.api.JibContainerBuilder;
+import com.google.cloud.tools.jib.api.LayerConfiguration;
 import com.google.cloud.tools.jib.api.LogEvent;
 import com.google.cloud.tools.jib.api.RegistryImage;
 import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
@@ -32,7 +36,10 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
+import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.steps.JarBuild;
+import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 public class JibProcessor {
 
@@ -40,8 +47,8 @@ public class JibProcessor {
 
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
 
-    @BuildStep(onlyIf = IsNormal.class) // TODO: are we sure we only want it for normal execution?
-    public void build(
+    @BuildStep(onlyIf = { IsNormal.class, JarBuild.class, JibEnabled.class }) // TODO: are we sure we only want it for normal execution?
+    public void buildFromJar(
             // TODO: is this proper build item to consume?
             JarBuildItem sourceJarBuildItem,
             MainClassBuildItem mainClassBuildItem,
@@ -52,9 +59,32 @@ public class JibProcessor {
             log.debug("Jib container image build was disabled");
             return;
         }
-
-        JibContainerBuilder jibContainerBuilder = createContainerBuilder(sourceJarBuildItem, outputTargetBuildItem,
+        JibContainerBuilder jibContainerBuilder = createContainerBuilderFromJar(sourceJarBuildItem, outputTargetBuildItem,
                 mainClassBuildItem);
+        containerize(applicationInfo, jibConfig, jibContainerBuilder);
+        producer.produce(new ArtifactResultBuildItem(null, "containerImageFromJar", Collections.emptyMap()));
+    }
+
+    @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class, JibEnabled.class }) // TODO: are we sure we only want it for normal execution?
+    public void buildFromNative(
+            NativeImageBuildItem nativeImageBuildItem,
+            MainClassBuildItem mainClassBuildItem,
+            OutputTargetBuildItem outputTargetBuildItem, ApplicationInfoBuildItem applicationInfo, JibConfig jibConfig,
+            // TODO figure out the proper output
+            BuildProducer<ArtifactResultBuildItem> producer) {
+        if (!jibConfig.enabled) {
+            log.debug("Jib container image build was disabled");
+            return;
+        }
+        // TODO: we also need to make sure the native binary is a linux native binary
+        JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(nativeImageBuildItem, outputTargetBuildItem,
+                mainClassBuildItem);
+        containerize(applicationInfo, jibConfig, jibContainerBuilder);
+        producer.produce(new ArtifactResultBuildItem(null, "containerImageFromNative", Collections.emptyMap()));
+    }
+
+    private void containerize(ApplicationInfoBuildItem applicationInfo, JibConfig jibConfig,
+            JibContainerBuilder jibContainerBuilder) {
         Containerizer containerizer = createContainerizer(jibConfig, applicationInfo);
         try {
             log.info("Starting container image build");
@@ -64,8 +94,6 @@ public class JibProcessor {
         } catch (Exception e) {
             log.error("Unable to create container image", e);
         }
-
-        producer.produce(new ArtifactResultBuildItem(null, "containerImage", Collections.emptyMap()));
     }
 
     private Containerizer createContainerizer(JibConfig jibConfig, ApplicationInfoBuildItem applicationInfo) {
@@ -112,7 +140,7 @@ public class JibProcessor {
                 jibConfig.tag.orElse(applicationInfo.getVersion()));
     }
 
-    private JibContainerBuilder createContainerBuilder(JarBuildItem sourceJarBuildItem,
+    private JibContainerBuilder createContainerBuilderFromJar(JarBuildItem sourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem, MainClassBuildItem mainClassBuildItem) {
         try {
             // not ideal since this has been previously zipped - we would like to just reuse it
@@ -137,6 +165,24 @@ public class JibProcessor {
             return javaContainerBuilder.toContainerBuilder().setCreationTime(Instant.now());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        } catch (InvalidImageReferenceException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private JibContainerBuilder createContainerBuilderFromNative(NativeImageBuildItem nativeImageBuildItem,
+            OutputTargetBuildItem outputTargetBuildItem, MainClassBuildItem mainClassBuildItem) {
+        try {
+            AbsoluteUnixPath workDirInContainer = AbsoluteUnixPath.get("/work");
+            return Jib.from("registry.access.redhat.com/ubi8/ubi-minimal")
+                    .addLayer(LayerConfiguration.builder()
+                            .addEntry(nativeImageBuildItem.getPath(), workDirInContainer.resolve("application"),
+                                    FilePermissions.fromOctalString("775"))
+                            .build())
+                    //                    .addLayer(Collections.singletonList(nativeImageBuildItem.getPath()), workDirInContainer)
+                    .setWorkingDirectory(workDirInContainer)
+                    .setEntrypoint("./application", "-Dquarkus.http.host=0.0.0.0")
+                    .setCreationTime(Instant.now());
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);
         }

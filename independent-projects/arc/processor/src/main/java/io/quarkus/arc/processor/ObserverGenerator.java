@@ -141,7 +141,7 @@ public class ObserverGenerator extends AbstractGenerator {
 
         createProviderFields(observerCreator, observer, injectionPointToProviderField);
         createConstructor(classOutput, observerCreator, observer, baseName.toString(), injectionPointToProviderField,
-                annotationLiterals);
+                annotationLiterals, reflectionRegistration);
 
         implementGetObservedType(observerCreator, observedType.getFieldDescriptor());
         if (observedQualifiers != null) {
@@ -345,7 +345,8 @@ public class ObserverGenerator extends AbstractGenerator {
 
     protected void createConstructor(ClassOutput classOutput, ClassCreator observerCreator, ObserverInfo observer,
             String baseName,
-            Map<InjectionPointInfo, String> injectionPointToProviderField, AnnotationLiteralProcessor annotationLiterals) {
+            Map<InjectionPointInfo, String> injectionPointToProviderField, AnnotationLiteralProcessor annotationLiterals,
+            ReflectionRegistration reflectionRegistration) {
 
         MethodCreator constructor;
         if (observer.isSynthetic()) {
@@ -381,9 +382,9 @@ public class ObserverGenerator extends AbstractGenerator {
                 if (builtinBean != null) {
                     builtinBean.getGenerator()
                             .generate(new GeneratorContext(classOutput, observer.getDeclaringBean().getDeployment(),
-                                    injectionPoint,
-                                    observerCreator, constructor, injectionPointToProviderField.get(injectionPoint),
-                                    annotationLiterals, observer));
+                                    injectionPoint, observerCreator, constructor,
+                                    injectionPointToProviderField.get(injectionPoint),
+                                    annotationLiterals, observer, reflectionRegistration));
                 } else {
                     if (injectionPoint.getResolvedBean().getAllInjectionPoints().stream()
                             .anyMatch(ip -> BuiltinBean.INJECTION_POINT.hasRawTypeDotName(ip.getRequiredType().name()))) {
@@ -396,7 +397,8 @@ public class ObserverGenerator extends AbstractGenerator {
                         ResultHandle annotationsHandle = BeanGenerator.collectAnnotations(classOutput, observerCreator,
                                 observer.getDeclaringBean().getDeployment(), constructor,
                                 injectionPoint, annotationLiterals);
-                        ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(constructor, injectionPoint);
+                        ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(constructor, injectionPoint,
+                                reflectionRegistration);
 
                         // Wrap the constructor arg in a Supplier so we can pass it to CurrentInjectionPointProvider c'tor.
                         ResultHandle delegateSupplier = constructor.newInstance(

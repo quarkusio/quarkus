@@ -41,7 +41,8 @@ enum BuiltinBean {
         ResultHandle annotationsHandle = BeanGenerator.collectAnnotations(ctx.classOutput, ctx.clazzCreator, ctx.beanDeployment,
                 ctx.constructor,
                 ctx.injectionPoint, ctx.annotationLiterals);
-        ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint);
+        ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
+                ctx.reflectionRegistration);
         ResultHandle instanceProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(InstanceProvider.class, java.lang.reflect.Type.class, Set.class,
                         InjectableBean.class, Set.class, Member.class, int.class),
@@ -238,10 +239,12 @@ enum BuiltinBean {
         final String providerName;
         final AnnotationLiteralProcessor annotationLiterals;
         final InjectionTargetInfo targetInfo;
+        final ReflectionRegistration reflectionRegistration;
 
         public GeneratorContext(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint,
                 ClassCreator clazzCreator, MethodCreator constructor, String providerName,
-                AnnotationLiteralProcessor annotationLiterals, InjectionTargetInfo targetInfo) {
+                AnnotationLiteralProcessor annotationLiterals, InjectionTargetInfo targetInfo,
+                ReflectionRegistration reflectionRegistration) {
             this.classOutput = classOutput;
             this.beanDeployment = beanDeployment;
             this.injectionPoint = injectionPoint;
@@ -250,6 +253,7 @@ enum BuiltinBean {
             this.providerName = providerName;
             this.annotationLiterals = annotationLiterals;
             this.targetInfo = targetInfo;
+            this.reflectionRegistration = reflectionRegistration;
         }
     }
 

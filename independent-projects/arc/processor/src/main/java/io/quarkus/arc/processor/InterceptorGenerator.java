@@ -89,8 +89,7 @@ public class InterceptorGenerator extends BeanGenerator {
 
         createProviderFields(interceptorCreator, interceptor, injectionPointToProviderField, interceptorToProviderField);
         createConstructor(classOutput, interceptorCreator, interceptor, baseName, injectionPointToProviderField,
-                interceptorToProviderField,
-                bindings.getFieldDescriptor());
+                interceptorToProviderField, bindings.getFieldDescriptor(), reflectionRegistration);
 
         implementGetIdentifier(interceptor, interceptorCreator);
         implementSupplierGet(interceptorCreator);
@@ -116,11 +115,11 @@ public class InterceptorGenerator extends BeanGenerator {
     protected void createConstructor(ClassOutput classOutput, ClassCreator creator, InterceptorInfo interceptor,
             String baseName,
             Map<InjectionPointInfo, String> injectionPointToProviderField,
-            Map<InterceptorInfo, String> interceptorToProviderField, FieldDescriptor bindings) {
+            Map<InterceptorInfo, String> interceptorToProviderField, FieldDescriptor bindings,
+            ReflectionRegistration reflectionRegistration) {
 
         MethodCreator constructor = initConstructor(classOutput, creator, interceptor, baseName, injectionPointToProviderField,
-                interceptorToProviderField,
-                annotationLiterals);
+                interceptorToProviderField, annotationLiterals, reflectionRegistration);
 
         // Bindings
         // bindings = new HashSet<>()

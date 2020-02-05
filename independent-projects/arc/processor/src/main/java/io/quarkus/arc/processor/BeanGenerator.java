@@ -164,7 +164,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         MethodCreator constructor = initConstructor(classOutput, beanCreator, bean, baseName, Collections.emptyMap(),
                 Collections.emptyMap(),
-                annotationLiterals);
+                annotationLiterals, reflectionRegistration);
 
         FieldCreator params = beanCreator.getFieldCreator(FIELD_NAME_PARAMS, Map.class)
                 .setModifiers(ACC_PRIVATE | ACC_FINAL);
@@ -280,7 +280,7 @@ public class BeanGenerator extends AbstractGenerator {
         createProviderFields(beanCreator, bean, injectionPointToProviderSupplierField, interceptorToProviderSupplierField);
         createConstructor(classOutput, beanCreator, bean, baseName, injectionPointToProviderSupplierField,
                 interceptorToProviderSupplierField,
-                annotationLiterals);
+                annotationLiterals, reflectionRegistration);
 
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
@@ -375,7 +375,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         createProviderFields(beanCreator, bean, injectionPointToProviderField, Collections.emptyMap());
         createConstructor(classOutput, beanCreator, bean, baseName, injectionPointToProviderField, Collections.emptyMap(),
-                annotationLiterals);
+                annotationLiterals, reflectionRegistration);
 
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
@@ -457,7 +457,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         createProviderFields(beanCreator, bean, Collections.emptyMap(), Collections.emptyMap());
         createConstructor(classOutput, beanCreator, bean, baseName, Collections.emptyMap(), Collections.emptyMap(),
-                annotationLiterals);
+                annotationLiterals, reflectionRegistration);
 
         implementGetIdentifier(bean, beanCreator);
         implementSupplierGet(beanCreator);
@@ -530,16 +530,18 @@ public class BeanGenerator extends AbstractGenerator {
     protected void createConstructor(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean, String baseName,
             Map<InjectionPointInfo, String> injectionPointToProviderField,
             Map<InterceptorInfo, String> interceptorToProviderField,
-            AnnotationLiteralProcessor annotationLiterals) {
+            AnnotationLiteralProcessor annotationLiterals,
+            ReflectionRegistration reflectionRegistration) {
         initConstructor(classOutput, beanCreator, bean, baseName, injectionPointToProviderField, interceptorToProviderField,
-                annotationLiterals)
+                annotationLiterals, reflectionRegistration)
                         .returnValue(null);
     }
 
     protected MethodCreator initConstructor(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean, String baseName,
             Map<InjectionPointInfo, String> injectionPointToProviderField,
             Map<InterceptorInfo, String> interceptorToProviderField,
-            AnnotationLiteralProcessor annotationLiterals) {
+            AnnotationLiteralProcessor annotationLiterals,
+            ReflectionRegistration reflectionRegistration) {
 
         // First collect all param types
         List<String> parameterTypes = new ArrayList<>();
@@ -595,8 +597,8 @@ public class BeanGenerator extends AbstractGenerator {
             if (builtinBean != null) {
                 builtinBean.getGenerator()
                         .generate(new GeneratorContext(classOutput, bean.getDeployment(), injectionPoint, beanCreator,
-                                constructor,
-                                injectionPointToProviderField.get(injectionPoint), annotationLiterals, bean));
+                                constructor, injectionPointToProviderField.get(injectionPoint), annotationLiterals, bean,
+                                reflectionRegistration));
             } else {
 
                 if (BuiltinScope.DEPENDENT.is(injectionPoint.getResolvedBean().getScope()) && (injectionPoint.getResolvedBean()
@@ -606,7 +608,7 @@ public class BeanGenerator extends AbstractGenerator {
                     // Injection point resolves to a dependent bean that injects InjectionPoint metadata and so we need to wrap the injectable
                     // reference provider
                     ResultHandle wrapHandle = wrapCurrentInjectionPoint(classOutput, beanCreator, bean, constructor,
-                            injectionPoint, paramIdx++, tccl);
+                            injectionPoint, paramIdx++, tccl, reflectionRegistration);
                     ResultHandle wrapSupplierHandle = constructor.newInstance(
                             MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, wrapHandle);
                     constructor.writeInstanceField(
@@ -946,6 +948,7 @@ public class BeanGenerator extends AbstractGenerator {
                     paramsHandles[1] = paramsArray;
                     constructorHandle = create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
                             paramsHandles);
+                    reflectionRegistration.registerMethod(constructorInjection.get().target.asMethod());
                 } else {
                     // constructor = Reflections.findConstructor(Foo.class)
                     ResultHandle[] paramsHandles = new ResultHandle[2];
@@ -953,6 +956,8 @@ public class BeanGenerator extends AbstractGenerator {
                     paramsHandles[1] = create.newArray(Class.class, create.load(0));
                     constructorHandle = create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR,
                             paramsHandles);
+                    MethodInfo noArgsConstructor = bean.getTarget().get().asClass().method(Methods.INIT);
+                    reflectionRegistration.registerMethod(noArgsConstructor);
                 }
 
                 List<ResultHandle> providerHandles = newProviderHandles(bean, beanCreator, create,
@@ -1587,13 +1592,14 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     private ResultHandle wrapCurrentInjectionPoint(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean,
-            MethodCreator constructor, InjectionPointInfo injectionPoint, int paramIdx, ResultHandle tccl) {
+            MethodCreator constructor, InjectionPointInfo injectionPoint, int paramIdx, ResultHandle tccl,
+            ReflectionRegistration reflectionRegistration) {
         ResultHandle requiredQualifiersHandle = collectQualifiers(classOutput, beanCreator, bean.getDeployment(), constructor,
                 injectionPoint,
                 annotationLiterals);
         ResultHandle annotationsHandle = collectAnnotations(classOutput, beanCreator, bean.getDeployment(), constructor,
                 injectionPoint, annotationLiterals);
-        ResultHandle javaMemberHandle = getJavaMemberHandle(constructor, injectionPoint);
+        ResultHandle javaMemberHandle = getJavaMemberHandle(constructor, injectionPoint, reflectionRegistration);
 
         return constructor.newInstance(
                 MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class,
@@ -1605,17 +1611,19 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     static ResultHandle getJavaMemberHandle(MethodCreator constructor,
-            InjectionPointInfo injectionPoint) {
+            InjectionPointInfo injectionPoint, ReflectionRegistration reflectionRegistration) {
         ResultHandle javaMemberHandle;
         if (Kind.FIELD.equals(injectionPoint.getTarget().kind())) {
             FieldInfo field = injectionPoint.getTarget().asField();
             javaMemberHandle = constructor.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_FIELD,
                     constructor.loadClass(field.declaringClass().name().toString()),
                     constructor.load(field.name()));
+            reflectionRegistration.registerField(field);
         } else {
             MethodInfo method = injectionPoint.getTarget().asMethod();
+            reflectionRegistration.registerMethod(method);
             if (method.name().equals(Methods.INIT)) {
-                // Reflections.findConstructor(org.foo.SimpleBean.class,java.lang.String.class)                
+                // Reflections.findConstructor(org.foo.SimpleBean.class,java.lang.String.class)
                 ResultHandle[] paramsHandles = new ResultHandle[2];
                 paramsHandles[0] = constructor.loadClass(method.declaringClass().name().toString());
                 ResultHandle paramsArray = constructor.newArray(Class.class, constructor.load(method.parameters().size()));

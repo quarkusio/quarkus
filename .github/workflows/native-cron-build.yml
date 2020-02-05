@@ -62,7 +62,7 @@ jobs:
 
           # we need to install Java 8 because kscript doesn't yet work with Java 11: https://github.com/holgerbrandl/kscript/issues/239
           if [[ ${JAVA_VERSION} = 11 ]]; then
-            echo "y" | sdk install java 8.0.232-open
+            echo "y" | sdk install java $(sdk list java | grep open.*\s*8.0.* | awk '{print $8}')
             export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
           fi
 

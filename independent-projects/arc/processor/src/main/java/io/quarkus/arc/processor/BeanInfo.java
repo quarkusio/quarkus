@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -59,7 +60,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final DisposerInfo disposer;
 
-    private final Map<MethodInfo, InterceptionInfo> interceptedMethods;
+    private volatile Map<MethodInfo, InterceptionInfo> interceptedMethods;
+    private final Object lock = new Object();
 
     private final Map<InterceptionType, InterceptionInfo> lifecycleInterceptors;
 
@@ -135,7 +137,6 @@ public class BeanInfo implements InjectionTargetInfo {
         this.params = params;
         // Identifier must be unique for a specific deployment
         this.identifier = Hashes.sha1(toString());
-        this.interceptedMethods = new ConcurrentHashMap<>();
         this.lifecycleInterceptors = new ConcurrentHashMap<>();
     }
 
@@ -154,7 +155,7 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     /**
-     * 
+     *
      * @return the annotation target or an empty optional in case of synthetic beans
      */
     public Optional<AnnotationTarget> getTarget() {
@@ -423,7 +424,14 @@ public class BeanInfo implements InjectionTargetInfo {
         if (disposer != null) {
             disposer.init(errors);
         }
-        interceptedMethods.putAll(initInterceptedMethods(errors, bytecodeTransformerConsumer, removeFinalForProxyableMethods));
+
+        synchronized (lock) {
+            if (interceptedMethods != null) {
+                throw new IllegalStateException("Cannot init " + this.getClass().getName() + " twice");
+            }
+            interceptedMethods = initInterceptedMethods(errors, bytecodeTransformerConsumer, removeFinalForProxyableMethods);
+        }
+
         if (errors.isEmpty()) {
             lifecycleInterceptors.putAll(initLifecycleInterceptors());
         }
@@ -444,7 +452,7 @@ public class BeanInfo implements InjectionTargetInfo {
     private Map<MethodInfo, InterceptionInfo> initInterceptedMethods(List<Throwable> errors,
             Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean removeFinalForProxyableMethods) {
         if (!isInterceptor() && isClassBean()) {
-            Map<MethodInfo, InterceptionInfo> interceptedMethods = new HashMap<>();
+            Map<MethodInfo, InterceptionInfo> interceptedMethods = new LinkedHashMap<>();
             Map<MethodKey, Set<AnnotationInstance>> candidates = new HashMap<>();
 
             List<AnnotationInstance> classLevelBindings = new ArrayList<>();
@@ -471,7 +479,7 @@ public class BeanInfo implements InjectionTargetInfo {
                     interceptedMethods.put(entry.getKey().method, new InterceptionInfo(interceptors, entry.getValue()));
                 }
             }
-            return interceptedMethods;
+            return Collections.unmodifiableMap(interceptedMethods);
         } else {
             return Collections.emptyMap();
         }

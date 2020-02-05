@@ -16,8 +16,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -112,12 +112,12 @@ public class BeanDeployment {
             List<InterceptorBindingRegistrar> bindingRegistrars, boolean removeFinalForProxyableMethods,
             boolean jtaCapabilities) {
         this.buildContext = buildContext;
-        Set<BeanDefiningAnnotation> beanDefiningAnnotations = new HashSet<>();
+        Set<BeanDefiningAnnotation> beanDefiningAnnotations = new LinkedHashSet<>();
         if (additionalBeanDefiningAnnotations != null) {
             beanDefiningAnnotations.addAll(additionalBeanDefiningAnnotations);
         }
         this.beanDefiningAnnotations = beanDefiningAnnotations;
-        this.resourceAnnotations = new HashSet<>(resourceAnnotations);
+        this.resourceAnnotations = new LinkedHashSet<>(resourceAnnotations);
         this.index = index;
         this.annotationStore = new AnnotationStore(annotationTransformers, buildContext);
         if (buildContext != null) {
@@ -135,7 +135,7 @@ public class BeanDeployment {
         buildContextPut(Key.QUALIFIERS.asString(), Collections.unmodifiableMap(qualifiers));
 
         this.interceptorBindings = findInterceptorBindings(index);
-        this.nonBindingFields = new HashMap<>();
+        this.nonBindingFields = new LinkedHashMap<>();
         for (InterceptorBindingRegistrar registrar : bindingRegistrars) {
             for (Map.Entry<DotName, Set<String>> bindingEntry : registrar.registerAdditionalBindings().entrySet()) {
                 DotName dotName = bindingEntry.getKey();
@@ -155,7 +155,7 @@ public class BeanDeployment {
         buildContextPut(Key.STEREOTYPES.asString(), Collections.unmodifiableMap(stereotypes));
 
         this.transitiveInterceptorBindings = findTransitiveInterceptorBindigs(interceptorBindings.keySet(), index,
-                new HashMap<>(), interceptorBindings, annotationStore);
+                new LinkedHashMap<>(), interceptorBindings, annotationStore);
 
         this.injectionPoints = new CopyOnWriteArrayList<>();
         this.interceptors = new CopyOnWriteArrayList<>();
@@ -233,9 +233,9 @@ public class BeanDeployment {
 
         if (removeUnusedBeans) {
             long removalStart = System.currentTimeMillis();
-            Set<BeanInfo> removable = new HashSet<>();
-            Set<BeanInfo> unusedProducers = new HashSet<>();
-            Set<BeanInfo> unusedButDeclaresProducer = new HashSet<>();
+            Set<BeanInfo> removable = new LinkedHashSet<>();
+            Set<BeanInfo> unusedProducers = new LinkedHashSet<>();
+            Set<BeanInfo> unusedButDeclaresProducer = new LinkedHashSet<>();
             List<BeanInfo> producers = beans.stream().filter(b -> b.isProducerMethod() || b.isProducerField())
                     .collect(Collectors.toList());
             List<InjectionPointInfo> instanceInjectionPoints = injectionPoints.stream()
@@ -410,7 +410,7 @@ public class BeanDeployment {
     }
 
     private static Map<DotName, ClassInfo> findQualifiers(IndexView index) {
-        Map<DotName, ClassInfo> qualifiers = new HashMap<>();
+        Map<DotName, ClassInfo> qualifiers = new LinkedHashMap<>();
         for (AnnotationInstance qualifier : index.getAnnotations(DotNames.QUALIFIER)) {
             qualifiers.put(qualifier.target().asClass().name(), qualifier.target().asClass());
         }
@@ -418,7 +418,7 @@ public class BeanDeployment {
     }
 
     private static Map<DotName, ClassInfo> findInterceptorBindings(IndexView index) {
-        Map<DotName, ClassInfo> bindings = new HashMap<>();
+        Map<DotName, ClassInfo> bindings = new LinkedHashMap<>();
         // Note: doesn't use AnnotationStore, this will operate on classes without applying annotation transformers
         for (AnnotationInstance binding : index.getAnnotations(DotNames.INTERCEPTOR_BINDING)) {
             bindings.put(binding.target().asClass().name(), binding.target().asClass());
@@ -432,7 +432,7 @@ public class BeanDeployment {
             AnnotationStore annotationStore) {
         // for all known interceptor bindings
         for (DotName annotationName : initialBindings) {
-            Set<AnnotationInstance> transitiveBindings = new HashSet<>();
+            Set<AnnotationInstance> transitiveBindings = new LinkedHashSet<>();
             // for all annotations on them; use AnnotationStore to have up-to-date info
             for (AnnotationInstance bindingCandidate : annotationStore
                     .getAnnotations(interceptorBindings.get(annotationName))) {
@@ -444,7 +444,7 @@ public class BeanDeployment {
                 }
             }
             if (!transitiveBindings.isEmpty()) {
-                result.computeIfAbsent(annotationName, k -> new HashSet<>()).addAll(transitiveBindings);
+                result.computeIfAbsent(annotationName, k -> new LinkedHashSet<>()).addAll(transitiveBindings);
             }
         }
         // now iterate over all so we can put together list for arbitrary transitive depth
@@ -471,7 +471,7 @@ public class BeanDeployment {
             Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts,
             Map<DotName, Collection<AnnotationInstance>> additionalStereotypes, AnnotationStore annotationStore) {
 
-        Map<DotName, StereotypeInfo> stereotypes = new HashMap<>();
+        Map<DotName, StereotypeInfo> stereotypes = new LinkedHashMap<>();
         final List<AnnotationInstance> stereotypeAnnotations = new ArrayList<>(index.getAnnotations(DotNames.STEREOTYPE));
         for (final Collection<AnnotationInstance> annotations : additionalStereotypes.values()) {
             stereotypeAnnotations.addAll(annotations);
@@ -562,12 +562,12 @@ public class BeanDeployment {
     private List<BeanInfo> findBeans(Collection<DotName> beanDefiningAnnotations, List<ObserverInfo> observers,
             List<InjectionPointInfo> injectionPoints, boolean jtaCapabilities) {
 
-        Set<ClassInfo> beanClasses = new HashSet<>();
-        Set<MethodInfo> producerMethods = new HashSet<>();
-        Set<MethodInfo> disposerMethods = new HashSet<>();
-        Set<FieldInfo> producerFields = new HashSet<>();
-        Map<MethodInfo, Set<ClassInfo>> syncObserverMethods = new HashMap<>();
-        Map<MethodInfo, Set<ClassInfo>> asyncObserverMethods = new HashMap<>();
+        Set<ClassInfo> beanClasses = new LinkedHashSet<>();
+        Set<MethodInfo> producerMethods = new LinkedHashSet<>();
+        Set<MethodInfo> disposerMethods = new LinkedHashSet<>();
+        Set<FieldInfo> producerFields = new LinkedHashSet<>();
+        Map<MethodInfo, Set<ClassInfo>> syncObserverMethods = new LinkedHashMap<>();
+        Map<MethodInfo, Set<ClassInfo>> asyncObserverMethods = new LinkedHashMap<>();
 
         for (ClassInfo beanClass : index.getKnownClasses()) {
 
@@ -647,8 +647,8 @@ public class BeanDeployment {
 
             // inherited stuff
             ClassInfo aClass = beanClass;
-            Set<ClassInfo> scannedClasses = new HashSet<>();
-            Set<MethodInfo> methods = new HashSet<>();
+            Set<ClassInfo> scannedClasses = new LinkedHashSet<>();
+            Set<MethodInfo> methods = new LinkedHashSet<>();
             while (aClass != null) {
                 if (!scannedClasses.add(aClass)) {
                     continue;
@@ -662,7 +662,7 @@ public class BeanDeployment {
                         continue;
                     }
                     if (annotationStore.hasAnnotation(method, DotNames.OBSERVES)) {
-                        syncObserverMethods.computeIfAbsent(method, ignored -> new HashSet<>())
+                        syncObserverMethods.computeIfAbsent(method, ignored -> new LinkedHashSet<>())
                                 .add(beanClass);
                         if (!Modifier.isAbstract(beanClass.flags())) {
                             // add only concrete classes
@@ -673,7 +673,7 @@ public class BeanDeployment {
                             }
                         }
                     } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
-                        asyncObserverMethods.computeIfAbsent(method, ignored -> new HashSet<>())
+                        asyncObserverMethods.computeIfAbsent(method, ignored -> new LinkedHashSet<>())
                                 .add(beanClass);
                         if (!Modifier.isAbstract(beanClass.flags())) {
                             // add only concrete classes
@@ -709,7 +709,7 @@ public class BeanDeployment {
 
         // Build metadata for typesafe resolution
         List<BeanInfo> beans = new ArrayList<>();
-        Map<ClassInfo, BeanInfo> beanClassToBean = new HashMap<>();
+        Map<ClassInfo, BeanInfo> beanClassToBean = new LinkedHashMap<>();
         for (ClassInfo beanClass : beanClasses) {
             BeanInfo classBean = Beans.createClassBean(beanClass, this, injectionPointTransformer);
             beans.add(classBean);
@@ -826,7 +826,7 @@ public class BeanDeployment {
     // keep it public we need this method in quarkus integration
     public static Set<DotName> initBeanDefiningAnnotations(Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             Set<DotName> stereotypes) {
-        Set<DotName> beanDefiningAnnotations = new HashSet<>();
+        Set<DotName> beanDefiningAnnotations = new LinkedHashSet<>();
         for (BuiltinScope scope : BuiltinScope.values()) {
             beanDefiningAnnotations.add(scope.getInfo().getDotName());
         }
@@ -896,7 +896,7 @@ public class BeanDeployment {
     }
 
     private List<InterceptorInfo> findInterceptors(List<InjectionPointInfo> injectionPoints) {
-        Set<ClassInfo> interceptorClasses = new HashSet<>();
+        Set<ClassInfo> interceptorClasses = new LinkedHashSet<>();
         for (AnnotationInstance annotation : index.getAnnotations(DotNames.INTERCEPTOR)) {
             if (Kind.CLASS.equals(annotation.target().kind())) {
                 interceptorClasses.add(annotation.target().asClass());
@@ -919,7 +919,7 @@ public class BeanDeployment {
     }
 
     private void validateBeans(List<Throwable> errors, List<BeanDeploymentValidator> validators) {
-        Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
+        Map<String, List<BeanInfo>> namedBeans = new LinkedHashMap<>();
 
         for (BeanInfo bean : beans) {
             if (bean.getName() != null) {
@@ -1020,7 +1020,7 @@ public class BeanDeployment {
         public ObserverConfigurator configure() {
             ObserverConfigurator configurator = new ObserverConfigurator(beanDeployment::addSyntheticObserver);
             if (extension != null) {
-                // Extension may be null if called directly from the ObserverRegistrationPhaseBuildItem 
+                // Extension may be null if called directly from the ObserverRegistrationPhaseBuildItem
                 configurator.beanClass(DotName.createSimple(extension.getClass().getName()));
             }
             return configurator;

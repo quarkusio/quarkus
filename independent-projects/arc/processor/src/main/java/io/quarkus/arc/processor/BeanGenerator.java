@@ -38,6 +38,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -273,8 +275,8 @@ public class BeanGenerator extends AbstractGenerator {
             stereotypes = beanCreator.getFieldCreator(FIELD_NAME_STEREOTYPES, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
 
-        Map<InjectionPointInfo, String> injectionPointToProviderSupplierField = new HashMap<>();
-        Map<InterceptorInfo, String> interceptorToProviderSupplierField = new HashMap<>();
+        Map<InjectionPointInfo, String> injectionPointToProviderSupplierField = new LinkedHashMap<>();
+        Map<InterceptorInfo, String> interceptorToProviderSupplierField = new LinkedHashMap<>();
         initMaps(bean, injectionPointToProviderSupplierField, interceptorToProviderSupplierField);
 
         createProviderFields(beanCreator, bean, injectionPointToProviderSupplierField, interceptorToProviderSupplierField);
@@ -369,7 +371,7 @@ public class BeanGenerator extends AbstractGenerator {
             stereotypes = beanCreator.getFieldCreator(FIELD_NAME_STEREOTYPES, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
 
-        Map<InjectionPointInfo, String> injectionPointToProviderField = new HashMap<>();
+        Map<InjectionPointInfo, String> injectionPointToProviderField = new LinkedHashMap<>();
         // Producer methods are not intercepted
         initMaps(bean, injectionPointToProviderField, null);
 
@@ -848,7 +850,7 @@ public class BeanGenerator extends AbstractGenerator {
 
             ResultHandle postConstructsHandle = null;
             ResultHandle aroundConstructsHandle = null;
-            Map<InterceptorInfo, ResultHandle> interceptorToWrap = new HashMap<>();
+            Map<InterceptorInfo, ResultHandle> interceptorToWrap = new LinkedHashMap<>();
 
             if (bean.hasLifecycleInterceptors()) {
                 // Note that we must share the interceptors instances with the intercepted subclass, if present
@@ -856,13 +858,13 @@ public class BeanGenerator extends AbstractGenerator {
                 InterceptionInfo aroundConstructs = bean.getLifecycleInterceptors(InterceptionType.AROUND_CONSTRUCT);
 
                 // Wrap InjectableInterceptors using InitializedInterceptor
-                Set<InterceptorInfo> wraps = new HashSet<>();
+                Set<InterceptorInfo> wraps = new LinkedHashSet<>();
                 wraps.addAll(aroundConstructs.interceptors);
                 wraps.addAll(postConstructs.interceptors);
 
                 // instances of around/post construct interceptors also need to be shared
                 // build a map that links InterceptorInfo to ResultHandle and reuse that when creating wrappers
-                Map<InterceptorInfo, ResultHandle> interceptorToResultHandle = new HashMap<>();
+                Map<InterceptorInfo, ResultHandle> interceptorToResultHandle = new LinkedHashMap<>();
 
                 for (InterceptorInfo interceptor : wraps) {
                     ResultHandle interceptorProviderSupplier = create.readInstanceField(
@@ -1615,7 +1617,7 @@ public class BeanGenerator extends AbstractGenerator {
         } else {
             MethodInfo method = injectionPoint.getTarget().asMethod();
             if (method.name().equals(Methods.INIT)) {
-                // Reflections.findConstructor(org.foo.SimpleBean.class,java.lang.String.class)                
+                // Reflections.findConstructor(org.foo.SimpleBean.class,java.lang.String.class)
                 ResultHandle[] paramsHandles = new ResultHandle[2];
                 paramsHandles[0] = constructor.loadClass(method.declaringClass().name().toString());
                 ResultHandle paramsArray = constructor.newArray(Class.class, constructor.load(method.parameters().size()));

@@ -28,11 +28,13 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.security.deployment.JCAProviderBuildItem;
 import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism;
 import io.quarkus.smallrye.jwt.runtime.auth.JwtPrincipalProducer;
 import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.quarkus.smallrye.jwt.runtime.auth.RawOptionalClaimCreator;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
@@ -62,7 +64,8 @@ class SmallRyeJwtProcessor {
      * @param additionalBeans - producer for additional bean items
      */
     @BuildStep
-    void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         if (config.enabled) {
             AdditionalBeanBuildItem.Builder unremovable = AdditionalBeanBuildItem.builder().setUnremovable();
             unremovable.addBeanClass(MpJwtValidator.class);
@@ -78,6 +81,8 @@ class SmallRyeJwtProcessor {
         removable.addBeanClass(JwtPrincipalProducer.class);
         removable.addBeanClass(Claim.class);
         additionalBeans.produce(removable.build());
+
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, SignatureAlgorithm.class));
     }
 
     /**

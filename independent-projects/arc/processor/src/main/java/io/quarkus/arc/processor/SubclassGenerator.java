@@ -195,9 +195,16 @@ public class SubclassGenerator extends AbstractGenerator {
         // Init intercepted methods and interceptor chains
         // private final Map<String,SubclassMethodMetadata> metadata
         // metadata = new HashMap<>()
+        int metadataMapCapacity = bean.getInterceptedMethods().size();
+        if (metadataMapCapacity < 3) {
+            metadataMapCapacity++;
+        } else {
+            metadataMapCapacity = (int) ((float) metadataMapCapacity / 0.75F + 1.0F);
+        }
         FieldCreator metadataField = subclass.getFieldCreator(FIELD_NAME_METADATA, Map.class.getName())
                 .setModifiers(ACC_PRIVATE | ACC_FINAL);
-        ResultHandle metadataHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
+        ResultHandle metadataHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class, int.class),
+                constructor.load(metadataMapCapacity));
         constructor.writeInstanceField(metadataField.getFieldDescriptor(), constructor.getThis(),
                 metadataHandle);
 

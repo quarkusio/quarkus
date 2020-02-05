@@ -24,11 +24,11 @@ final class FieldDescriptors {
     static final FieldDescriptor ANNOTATION_LITERALS_EMPTY_LONG_ARRAY = FieldDescriptor.of(AnnotationLiterals.class,
             "EMPTY_LONG_ARRAY",
             long[].class);
-    
+
     static final FieldDescriptor ANNOTATION_LITERALS_EMPTY_INT_ARRAY = FieldDescriptor.of(AnnotationLiterals.class,
             "EMPTY_INT_ARRAY",
             int[].class);
-    
+
     private FieldDescriptors() {
     }
 

@@ -85,6 +85,13 @@
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
         <jacoco.version>0.8.5</jacoco.version>
+
+        <version.jar.plugin>3.2.0</version.jar.plugin><!-- This can be removed after jboss-parent 37 -->
+        <version.release.plugin>3.0.0-M1</version.release.plugin><!-- This can be removed after jboss-parent 37 -->
+
+        <!-- Reproducible builds see https://maven.apache.org/guides/mini/guide-reproducible-builds.html -->
+        <!-- project.build.outputTimestamp is updated by maven-release-plugin during release -->
+        <project.build.outputTimestamp>2020-01-23T09:06:00Z</project.build.outputTimestamp>
     </properties>
 
     <dependencyManagement>

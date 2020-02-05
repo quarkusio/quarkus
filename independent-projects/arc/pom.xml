@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>31</version>
+        <version>36</version>
     </parent>
     <groupId>io.quarkus.arc</groupId>
     <artifactId>arc-parent</artifactId>
@@ -46,6 +46,20 @@
         <version.gizmo>1.0.2.Final</version.gizmo>
         <version.jpa>2.2.3</version.jpa>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+
+                <version.jar.plugin>3.2.0</version.jar.plugin><!-- This can be removed after jboss-parent 37 -->
+        <version.release.plugin>3.0.0-M1</version.release.plugin><!-- This can be removed after jboss-parent 37 -->
+
+        <!-- Reproducible builds see https://maven.apache.org/guides/mini/guide-reproducible-builds.html -->
+        <!-- project.build.outputTimestamp is updated by maven-release-plugin during release -->
+        <project.build.outputTimestamp>2020-01-23T09:06:00Z</project.build.outputTimestamp>
+
+        <version.jar.plugin>3.2.0</version.jar.plugin><!-- This can be removed after jboss-parent 37 -->
+        <version.release.plugin>3.0.0-M1</version.release.plugin><!-- This can be removed after jboss-parent 37 -->
+
+        <!-- Reproducible builds see https://maven.apache.org/guides/mini/guide-reproducible-builds.html -->
+        <!-- project.build.outputTimestamp is updated by maven-release-plugin during release -->
+        <project.build.outputTimestamp>2020-01-23T09:06:00Z</project.build.outputTimestamp>
     </properties>
 
     <modules>

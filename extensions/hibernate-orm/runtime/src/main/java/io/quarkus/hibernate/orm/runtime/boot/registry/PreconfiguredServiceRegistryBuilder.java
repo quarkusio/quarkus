@@ -13,6 +13,7 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.boot.registry.selector.internal.StrategySelectorImpl;
+import org.hibernate.bytecode.internal.ProxyFactoryFactoryInitiator;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
 import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.ConnectionProviderInitiator;
@@ -34,6 +35,7 @@ import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitia
 import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
+import io.quarkus.hibernate.orm.runtime.customized.DisabledBytecodeProviderInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.service.CfgXmlAccessServiceInitiatorQuarkus;
@@ -134,6 +136,11 @@ public class PreconfiguredServiceRegistryBuilder {
      */
     private static List<StandardServiceInitiator> buildQuarkusServiceInitiatorList(RecordedState rs) {
         final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
+
+        //Enforces no bytecode enhancement will happen at runtime:
+        serviceInitiators.add(DisabledBytecodeProviderInitiator.INSTANCE);
+        //Use the default ProxyFactoryFactoryInitiator:
+        serviceInitiators.add(ProxyFactoryFactoryInitiator.INSTANCE);
 
         // Replaces org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator :
         // not used

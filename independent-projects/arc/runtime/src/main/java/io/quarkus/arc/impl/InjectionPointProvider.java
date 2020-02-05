@@ -26,8 +26,12 @@ public class InjectionPointProvider implements InjectableReferenceProvider<Injec
     static InjectionPoint set(InjectionPoint injectionPoint) {
         if (injectionPoint != null) {
             InjectionPoint prev = InjectionPointProvider.CURRENT.get();
-            InjectionPointProvider.CURRENT.set(injectionPoint);
-            return prev;
+            if (injectionPoint.equals(prev)) {
+                return injectionPoint;
+            } else {
+                InjectionPointProvider.CURRENT.set(injectionPoint);
+                return prev;
+            }
         } else {
             CURRENT.remove();
             return null;

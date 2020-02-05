@@ -70,7 +70,7 @@ public class NativeTestExtension
             } catch (Exception e) {
 
                 failedBoot = true;
-                throw new JUnitException("Quarkus native image start failed, original cause: " + e);
+                throw new JUnitException("Quarkus native image start failed, original cause: " + e, e);
             }
         }
     }

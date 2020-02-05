@@ -13,7 +13,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class InfinispanEmbeddedRuntimeConfig {
 
     /**
-     * The configured Infinispan embeddex xml file which is used by the managed EmbeddedCacheManager and its Caches
+     * The configured Infinispan embedded xml file which is used by the managed EmbeddedCacheManager and its Caches
      */
     @ConfigItem
     public Optional<String> xmlConfig;

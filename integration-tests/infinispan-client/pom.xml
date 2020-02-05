@@ -80,6 +80,11 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-component-annotations</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- We override these to satisfy Infinispan server -->
         <dependency>

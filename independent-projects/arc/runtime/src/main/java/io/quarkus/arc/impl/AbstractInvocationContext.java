@@ -5,6 +5,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ abstract class AbstractInvocationContext implements ArcInvocationContext, Suppli
 
     @Override
     public Set<Annotation> getInterceptorBindings() {
-        return interceptorBindings;
+        return Collections.unmodifiableSet(interceptorBindings);
     }
 
     @Override

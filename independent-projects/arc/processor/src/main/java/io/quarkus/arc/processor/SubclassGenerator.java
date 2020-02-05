@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -149,14 +150,14 @@ public class SubclassGenerator extends AbstractGenerator {
                         parameterTypes.subList(0, superParamsSize).toArray(new String[0])),
                 constructor.getThis(), superParams);
 
-        // We build a map for each interceptor instance created, so that they can be shared
-        // Map<String, Object> where InjectableInterceptor.getIdentifier() is key and Object is instance of the interceptor for this bean
-        ResultHandle interceptorInstanceMap = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-        // build a map that links InterceptorInfo to ResultHandle
-        Map<InterceptorInfo, ResultHandle> interceptorToResultHandle = new HashMap<>();
+        // First instantiate all interceptor instances, so that they can be shared
+        Map<String, ResultHandle> interceptorToResultHandle = new HashMap<>();
+        Map<String, ResultHandle> interceptorInstanceToResultHandle = new HashMap<>();
         for (int j = 0; j < boundInterceptors.size(); j++) {
+            InterceptorInfo interceptorInfo = boundInterceptors.get(j);
+
             ResultHandle constructorMethodParam = constructor.getMethodParam(j + superParamsSize + 1);
-            interceptorToResultHandle.put(boundInterceptors.get(j), constructorMethodParam);
+            interceptorToResultHandle.put(interceptorInfo.getIdentifier(), constructorMethodParam);
 
             // create instance of each interceptor -> InjectableInterceptor.get()
             ResultHandle creationalContext = constructor.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD,
@@ -164,12 +165,7 @@ public class SubclassGenerator extends AbstractGenerator {
             ResultHandle interceptorInstance = constructor.invokeInterfaceMethod(
                     MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, constructorMethodParam, creationalContext);
 
-            // get ID -> InjectableInterceptor.getIdentifier()
-            ResultHandle idResultHandle = constructor.invokeInterfaceMethod(MethodDescriptors.GET_IDENTIFIER,
-                    constructorMethodParam);
-            // then store it in the map -> Map.put(id, instance)
-            constructor.invokeInterfaceMethod(MethodDescriptors.MAP_PUT,
-                    interceptorInstanceMap, idResultHandle, interceptorInstance);
+            interceptorInstanceToResultHandle.put(interceptorInfo.getIdentifier(), interceptorInstance);
         }
 
         // PreDestroy interceptors
@@ -185,12 +181,10 @@ public class SubclassGenerator extends AbstractGenerator {
                     constructor.newInstance(MethodDescriptor.ofConstructor(ArrayList.class)));
             for (InterceptorInfo interceptor : preDestroys.interceptors) {
                 // preDestroys.add(InvocationContextImpl.InterceptorInvocation.preDestroy(provider1,interceptorInstanceMap.get(InjectableInterceptor.getIdentifier())))
-                ResultHandle interceptorInstance = constructor.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                        interceptorInstanceMap, constructor.invokeInterfaceMethod(MethodDescriptors.GET_IDENTIFIER,
-                                interceptorToResultHandle.get(interceptor)));
+                ResultHandle interceptorInstance = interceptorInstanceToResultHandle.get(interceptor.getIdentifier());
                 ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
                         MethodDescriptors.INTERCEPTOR_INVOCATION_PRE_DESTROY,
-                        interceptorToResultHandle.get(interceptor),
+                        interceptorToResultHandle.get(interceptor.getIdentifier()),
                         interceptorInstance);
                 constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD,
                         constructor.readInstanceField(preDestroysField.getFieldDescriptor(), constructor.getThis()),
@@ -207,28 +201,77 @@ public class SubclassGenerator extends AbstractGenerator {
         constructor.writeInstanceField(metadataField.getFieldDescriptor(), constructor.getThis(),
                 metadataHandle);
 
+        // Shared interceptor bindings literals
+        Map<BindingKey, ResultHandle> bindingsLiterals = new HashMap<>();
+        Function<BindingKey, ResultHandle> bindingsLiteralFun = new Function<SubclassGenerator.BindingKey, ResultHandle>() {
+            @Override
+            public ResultHandle apply(BindingKey key) {
+                // Create annotation literal if needed
+                ClassInfo bindingClass = bean.getDeployment()
+                        .getInterceptorBinding(key.annotation.name());
+                return annotationLiterals.process(constructor, classOutput, bindingClass, key.annotation,
+                        Types.getPackageName(subclass.getClassName()));
+            }
+        };
+        // Shared lists of interceptor bindings literals
+        Map<List<BindingKey>, ResultHandle> bindings = new HashMap<>();
+        Function<List<BindingKey>, ResultHandle> bindingsFun = new Function<List<BindingKey>, ResultHandle>() {
+            @Override
+            public ResultHandle apply(List<BindingKey> keys) {
+                if (keys.size() == 1) {
+                    return constructor.invokeStaticMethod(MethodDescriptors.COLLECTIONS_SINGLETON,
+                            bindingsLiterals.computeIfAbsent(keys.iterator().next(), bindingsLiteralFun));
+                } else {
+                    ResultHandle bindingsHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+                    for (BindingKey binding : keys) {
+                        constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
+                                bindingsLiterals.computeIfAbsent(binding, bindingsLiteralFun));
+                    }
+                    return bindingsHandle;
+                }
+            }
+        };
+        // Shared interceptor chains
+        Map<List<InterceptorInfo>, ResultHandle> interceptorChains = new HashMap<>();
+        Function<List<InterceptorInfo>, ResultHandle> interceptorChainsFun = new Function<List<InterceptorInfo>, ResultHandle>() {
+            @Override
+            public ResultHandle apply(List<InterceptorInfo> interceptors) {
+                if (interceptors.size() == 1) {
+                    // List<InvocationContextImpl.InterceptorInvocation> m1Chain = Collections.singletonList(...);
+                    InterceptorInfo interceptor = interceptors.get(0);
+                    ResultHandle interceptorInstance = interceptorInstanceToResultHandle.get(interceptor.getIdentifier());
+                    ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
+                            MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
+                            interceptorToResultHandle.get(interceptor.getIdentifier()), interceptorInstance);
+                    return constructor.invokeStaticMethod(MethodDescriptors.COLLECTIONS_SINGLETON_LIST,
+                            interceptionInvocation);
+                } else {
+                    // List<InvocationContextImpl.InterceptorInvocation> m1Chain = new ArrayList<>();
+                    ResultHandle chainHandle = constructor.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+                    for (InterceptorInfo interceptor : interceptors) {
+                        // m1Chain.add(InvocationContextImpl.InterceptorInvocation.aroundInvoke(p3,interceptorInstanceMap.get(InjectableInterceptor.getIdentifier())))
+                        ResultHandle interceptorInstance = interceptorInstanceToResultHandle.get(interceptor.getIdentifier());
+                        ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
+                                MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
+                                interceptorToResultHandle.get(interceptor.getIdentifier()), interceptorInstance);
+                        constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, chainHandle, interceptionInvocation);
+                    }
+                    return chainHandle;
+                }
+            }
+        };
+
         int methodIdx = 1;
         for (Entry<MethodInfo, InterceptionInfo> entry : bean.getInterceptedMethods().entrySet()) {
             String methodId = "m" + methodIdx++;
             MethodInfo method = entry.getKey();
             ResultHandle methodIdHandle = constructor.load(methodId);
-
-            // First create interceptor chains
-            // List<InvocationContextImpl.InterceptorInvocation> m1Chain = new ArrayList<>()
-            ResultHandle chainHandle = constructor.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
             InterceptionInfo interceptedMethod = entry.getValue();
-            for (InterceptorInfo interceptor : interceptedMethod.interceptors) {
-                // m1Chain.add(InvocationContextImpl.InterceptorInvocation.aroundInvoke(p3,interceptorInstanceMap.get(InjectableInterceptor.getIdentifier())))
-                ResultHandle interceptorInstance = constructor.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                        interceptorInstanceMap, constructor.invokeInterfaceMethod(MethodDescriptors.GET_IDENTIFIER,
-                                interceptorToResultHandle.get(interceptor)));
-                ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
-                        MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
-                        interceptorToResultHandle.get(interceptor), interceptorInstance);
-                constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, chainHandle, interceptionInvocation);
-            }
 
-            // Method method = Reflections.findMethod(org.jboss.weld.arc.test.interceptors.SimpleBean.class,"foo",java.lang.String.class)
+            // 1. Interceptor chain
+            ResultHandle chainHandle = interceptorChains.computeIfAbsent(interceptedMethod.interceptors, interceptorChainsFun);
+
+            // 2. Method method = Reflections.findMethod(org.jboss.weld.arc.test.interceptors.SimpleBean.class,"foo",java.lang.String.class)
             ResultHandle[] paramsHandles = new ResultHandle[3];
             paramsHandles[0] = constructor.loadClass(providerTypeName);
             paramsHandles[1] = constructor.load(method.name());
@@ -240,20 +283,17 @@ public class SubclassGenerator extends AbstractGenerator {
                 }
                 paramsHandles[2] = paramsArray;
             } else {
-                paramsHandles[2] = constructor.newArray(Class.class, constructor.load(0));
+                paramsHandles[2] = constructor.readStaticField(FieldDescriptors.ANNOTATION_LITERALS_EMPTY_CLASS_ARRAY);
             }
             ResultHandle methodHandle = constructor.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_METHOD,
                     paramsHandles);
 
-            ResultHandle bindingsHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-            for (AnnotationInstance binding : interceptedMethod.bindings) {
-                // Create annotation literals first
-                ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
-                constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
-                        annotationLiterals.process(constructor, classOutput, bindingClass, binding,
-                                Types.getPackageName(subclass.getClassName())));
-            }
+            // 3. Interceptor bindings
+            // Note that we use a shared list if possible
+            ResultHandle bindingsHandle = bindings.computeIfAbsent(
+                    interceptedMethod.bindings.stream().map(BindingKey::new).collect(Collectors.toList()), bindingsFun);
 
+            //Now create SubclassMethodMetadata for the given intercepted method
             ResultHandle methodMetadataHandle = constructor.newInstance(MethodDescriptors.SUBCLASS_METHOD_METADATA_CONSTRUCTOR,
                     chainHandle, methodHandle, bindingsHandle);
             // metadata.put("m1", new SubclassMethodMetadata(...))
@@ -408,6 +448,41 @@ public class SubclassGenerator extends AbstractGenerator {
             tryCatch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_PROCEED, invocationContext);
             destroy.returnValue(null);
         }
+    }
+
+    /**
+     * We cannot use {@link AnnotationInstance#equals(Object)} and {@link AnnotationInstance#hashCode()} because it includes the
+     * annotation target.
+     */
+    static class BindingKey {
+
+        final AnnotationInstance annotation;
+
+        public BindingKey(AnnotationInstance annotation) {
+            this.annotation = Objects.requireNonNull(annotation);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            BindingKey key = (BindingKey) o;
+            return annotation.name().equals(key.annotation.name()) && annotation.values().equals(key.annotation.values());
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + annotation.name().hashCode();
+            result = prime * result + annotation.values().hashCode();
+            return result;
+        }
+
     }
 
 }

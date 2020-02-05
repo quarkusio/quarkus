@@ -282,8 +282,8 @@
                                         <descriptor>assembly-pdf.xml</descriptor>
                                     </descriptors>
                                     <recompressZippedFiles>true</recompressZippedFiles>
-                                    <finalName>quarkus-documentation-pdf-${project.version}</finalName>
-                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <finalName>quarkus-documentation-${project.version}</finalName>
+                                    <appendAssemblyId>true</appendAssemblyId>
                                     <outputDirectory>target/</outputDirectory>
                                     <workDirectory>target/assembly-pdf/work</workDirectory>
                                     <tarLongFileMode>gnu</tarLongFileMode>

@@ -107,7 +107,7 @@ class KafkaStreamsProcessor {
 
     private void addSupportForRocksDbLib(BuildProducer<NativeImageResourceBuildItem> nativeLibs, NativeConfig nativeConfig) {
         // for RocksDB, either add linux64 native lib when targeting containers
-        if (nativeConfig.containerBuild) {
+        if (nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild) {
             nativeLibs.produce(new NativeImageResourceBuildItem("librocksdbjni-linux64.so"));
         }
         // otherwise the native lib of the platform this build runs on

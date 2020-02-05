@@ -252,8 +252,15 @@
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
                     <version>2.11.0</version>
+                    <dependencies>
+                        <dependency>
+                            <artifactId>quarkus-ide-config</artifactId>
+                            <groupId>io.quarkus</groupId>
+                            <version>${project.version}</version>
+                        </dependency>
+                      </dependencies>
                     <configuration>
-                        <configFile>${maven.multiModuleProjectDirectory}/ide-config/eclipse-format.xml</configFile>
+                        <configFile>eclipse-format.xml</configFile>
                         <skip>${format.skip}</skip>
                     </configuration>
                 </plugin>

@@ -344,7 +344,7 @@ public class QuarkusNative extends QuarkusTask {
         getLogger().lifecycle("building native image");
 
         final AppArtifact appArtifact = extension().getAppArtifact();
-        final AppModelResolver modelResolver = extension().resolveAppModel();
+        final AppModelResolver modelResolver = extension().getAppModelResolver();
         try {
             modelResolver.resolveModel(appArtifact);
         } catch (AppModelResolverException e) {

@@ -42,7 +42,7 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
         }
 
         return QuarkusJsonPlatformDescriptorResolver.newInstance()
-                .setArtifactResolver(extension().resolveAppModel())
+                .setArtifactResolver(extension().getAppModelResolver())
                 .setMessageWriter(msgWriter)
                 .resolveFromBom(
                         getRequiredProperty(props, "quarkusPlatformGroupId"),

@@ -54,7 +54,7 @@ public class QuarkusBuild extends QuarkusTask {
         getLogger().lifecycle("building quarkus runner");
 
         final AppArtifact appArtifact = extension().getAppArtifact();
-        final AppModelResolver modelResolver = extension().resolveAppModel();
+        final AppModelResolver modelResolver = extension().getAppModelResolver();
         try {
             // this needs to be done otherwise the app artifact doesn't get a proper path
             modelResolver.resolveModel(appArtifact);

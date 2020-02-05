@@ -11,6 +11,7 @@ import org.gradle.api.tasks.testing.Test;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.gradle.QuarkusPluginExtension;
+import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusTestConfig extends QuarkusTask {
 
@@ -22,7 +23,8 @@ public class QuarkusTestConfig extends QuarkusTask {
     public void setupTest() {
         final QuarkusPluginExtension quarkusExt = extension();
         try {
-            final AppModel deploymentDeps = quarkusExt.resolveAppModel().resolveModel(quarkusExt.getAppArtifact());
+            final AppModel deploymentDeps = quarkusExt.getAppModelResolver(LaunchMode.TEST)
+                    .resolveModel(quarkusExt.getAppArtifact());
             final String nativeRunner = getProject().getBuildDir().toPath().resolve(quarkusExt.finalName() + "-runner")
                     .toAbsolutePath()
                     .toString();

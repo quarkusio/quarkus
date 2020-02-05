@@ -188,7 +188,7 @@ public class CreateExtensionMojoTest {
         mojo.assumeManaged = null;
         mojo.execute();
         assertTreesMatch(
-                Paths.get("src/test/resources/expected/new-extension-project"),
+                Paths.get("target/test-classes/expected/new-extension-project"),
                 mojo.basedir.toPath());
     }
 

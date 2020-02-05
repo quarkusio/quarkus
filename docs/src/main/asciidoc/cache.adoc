@@ -324,8 +324,8 @@ Here's what your cache configuration could look like:
 [source,properties]
 ----
 quarkus.cache.caffeine."foo".initial-capacity=10 <1>
-quarkus.cache.caffeine."foo".maximum-size=20 <1>
-quarkus.cache.caffeine."foo".expire-after-write <1>
+quarkus.cache.caffeine."foo".maximum-size=20
+quarkus.cache.caffeine."foo".expire-after-write=60S
 quarkus.cache.caffeine."bar".maximum-size=1000 <2>
 ----
 <1> The `foo` cache is being configured.

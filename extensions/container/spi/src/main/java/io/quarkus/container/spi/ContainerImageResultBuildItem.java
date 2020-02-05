@@ -1,5 +1,4 @@
-
-package io.quarkus.deployment.pkg.builditem;
+package io.quarkus.container.spi;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
@@ -26,5 +25,4 @@ public final class ContainerImageResultBuildItem extends SimpleBuildItem {
     public String getTag() {
         return this.tag;
     }
-
 }

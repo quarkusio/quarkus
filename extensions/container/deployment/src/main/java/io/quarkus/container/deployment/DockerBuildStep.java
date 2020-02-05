@@ -8,22 +8,27 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import javax.inject.Inject;
+
 import org.jboss.logging.Logger;
 
+import io.quarkus.container.deployment.util.ImageUtil;
+import io.quarkus.container.spi.ContainerImageBuildItem;
+import io.quarkus.container.spi.ContainerImageResultBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
-import io.quarkus.deployment.pkg.builditem.ContainerImageBuildItem;
-import io.quarkus.deployment.pkg.builditem.ContainerImageResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.util.ExecUtil;
-import io.quarkus.deployment.util.ImageUtil;
 
 public class DockerBuildStep {
 
@@ -31,13 +36,14 @@ public class DockerBuildStep {
     private static final String DOCKERFILE_JVM = "Dockerfile.jvm";
     private static final String DOCKERFILE_NATIVE = "Dockerfile.native";
 
+    @Inject
+    BuildProducer<ArtifactResultBuildItem> artifact;
+
     @BuildStep(onlyIf = DockerBuild.class, onlyIfNot = NativeBuild.class)
     public ContainerImageResultBuildItem dockerBuildFromJar(ApplicationInfoBuildItem app,
             OutputTargetBuildItem out,
-            Optional<ContainerImageBuildItem> dockerImage,
-            JarBuildItem artifact) {
+            ContainerImageBuildItem containerImage, JarBuildItem jar) {
         log.info("Building docker image for jar.");
-        String image = dockerImage.map(d -> d.getImage()).orElse(app.getName() + ":" + app.getVersion());
         ImageIdReader reader = new ImageIdReader();
         Path dockerFile = extractDockerfile(DOCKERFILE_JVM);
         ExecUtil.exec(out.getOutputDirectory().toFile(),
@@ -45,19 +51,21 @@ public class DockerBuildStep {
                 "docker", "build",
                 "-f",
                 dockerFile.resolve(DOCKERFILE_JVM).toAbsolutePath().toString(),
-                "-t", image,
+                "-t", containerImage.getImage(),
                 out.getOutputDirectory().toAbsolutePath().toString());
 
-        return new ContainerImageResultBuildItem(reader.getImageId(), ImageUtil.getRepository(image), ImageUtil.getTag(image));
+        artifact.produce(new ArtifactResultBuildItem(null, "jar-container", new HashMap<String, Path>()));
+        return new ContainerImageResultBuildItem(reader.getImageId(), ImageUtil.getRepository(containerImage.getImage()),
+                ImageUtil.getTag(containerImage.getImage()));
     }
 
     @BuildStep(onlyIf = { DockerBuild.class, NativeBuild.class })
     public ContainerImageResultBuildItem dockerBuildFromNativeImage(ApplicationInfoBuildItem app,
+            ContainerImageBuildItem containerImage,
             OutputTargetBuildItem out,
             Optional<ContainerImageBuildItem> dockerImage,
             NativeImageBuildItem nativeImage) {
         log.info("Building docker image for native image.");
-        String image = dockerImage.map(d -> d.getImage()).orElse(app.getName() + ":" + app.getVersion() + "-native");
         Path dockerFile = extractDockerfile(DOCKERFILE_NATIVE);
         ImageIdReader reader = new ImageIdReader();
         ExecUtil.exec(out.getOutputDirectory().toFile(),
@@ -65,9 +73,11 @@ public class DockerBuildStep {
                 "docker", "build",
                 "-f",
                 dockerFile.resolve(DOCKERFILE_NATIVE).toAbsolutePath().toString(),
-                "-t", image,
+                "-t", containerImage.getImage(),
                 out.getOutputDirectory().toAbsolutePath().toString());
-        return new ContainerImageResultBuildItem(reader.getImageId(), ImageUtil.getRepository(image), ImageUtil.getTag(image));
+        artifact.produce(new ArtifactResultBuildItem(null, "native-container", new HashMap<String, Path>()));
+        return new ContainerImageResultBuildItem(reader.getImageId(), ImageUtil.getRepository(containerImage.getImage()),
+                ImageUtil.getTag(containerImage.getImage()));
     }
 
     private Path extractDockerfile(String resource) {
@@ -120,4 +130,5 @@ public class DockerBuildStep {
             };
         }
     }
+
 }

@@ -14,138 +14,139 @@ public class KubernetesClientBuildConfig {
      * Whether or not the client should trust a self signed certificate if so presented by the API server
      */
     @ConfigItem(defaultValue = "false")
-    boolean trustCerts;
+    public boolean trustCerts;
 
     /**
      * URL of the Kubernetes API server
      */
     @ConfigItem
-    Optional<String> masterUrl;
+    public Optional<String> masterUrl;
 
     /**
      * Default namespace to use
      */
     @ConfigItem
-    Optional<String> namespace;
+    public Optional<String> namespace;
 
     /**
      * CA certificate file
      */
     @ConfigItem
-    Optional<String> caCertFile;
+    public Optional<String> caCertFile;
 
     /**
      * CA certificate data
      */
     @ConfigItem
-    Optional<String> caCertData;
+    public Optional<String> caCertData;
 
     /**
      * Client certificate file
      */
     @ConfigItem
-    Optional<String> clientCertFile;
+    public Optional<String> clientCertFile;
 
     /**
      * Client certificate data
      */
     @ConfigItem
-    Optional<String> clientCertData;
+    public Optional<String> clientCertData;
 
     /**
      * Client key file
      */
     @ConfigItem
-    Optional<String> clientKeyFile;
+    public Optional<String> clientKeyFile;
 
     /**
      * Client key data
      */
     @ConfigItem
-    Optional<String> clientKeyData;
+    public Optional<String> clientKeyData;
 
     /**
      * Client key algorithm
      */
     @ConfigItem
-    Optional<String> clientKeyAlgo;
+    public Optional<String> clientKeyAlgo;
 
     /**
      * Client key passphrase
      */
     @ConfigItem
-    Optional<String> clientKeyPassphrase;
+    public Optional<String> clientKeyPassphrase;
 
     /**
      * Kubernetes auth username
      */
     @ConfigItem
-    Optional<String> username;
+    public Optional<String> username;
 
     /**
      * Kubernetes auth password
      */
     @ConfigItem
-    Optional<String> password;
+    public Optional<String> password;
 
     /**
      * Watch reconnect interval
      */
     @ConfigItem(defaultValue = "PT1S") // default lifted from Kubernetes Client
-    Duration watchReconnectInterval;
+    public Duration watchReconnectInterval;
 
     /**
      * Maximum reconnect attempts in case of watch failure
      * By default there is no limit to the number of reconnect attempts
      */
     @ConfigItem(defaultValue = "-1") // default lifted from Kubernetes Client
-    int watchReconnectLimit;
+    public int watchReconnectLimit;
 
     /**
      * Maximum amount of time to wait for a connection with the API server to be established
      */
     @ConfigItem(defaultValue = "PT10S") // default lifted from Kubernetes Client
-    Duration connectionTimeout;
+    public Duration connectionTimeout;
 
     /**
      * Maximum amount of time to wait for a request to the API server to be completed
      */
     @ConfigItem(defaultValue = "PT10S") // default lifted from Kubernetes Client
-    Duration requestTimeout;
+    public Duration requestTimeout;
 
     /**
      * Maximum amount of time in milliseconds to wait for a rollout to be completed
      */
     @ConfigItem(defaultValue = "PT15M") // default lifted from Kubernetes Client
-    Duration rollingTimeout;
+    public Duration rollingTimeout;
 
     /**
      * HTTP proxy used to access the Kubernetes API server
      */
     @ConfigItem
-    Optional<String> httpProxy;
+    public Optional<String> httpProxy;
 
     /**
      * HTTPS proxy used to access the Kubernetes API server
      */
     @ConfigItem
-    Optional<String> httpsProxy;
+    public Optional<String> httpsProxy;
 
     /**
      * Proxy username
      */
     @ConfigItem
-    Optional<String> proxyUsername;
+    public Optional<String> proxyUsername;
 
     /**
      * Proxy password
      */
     @ConfigItem
-    Optional<String> proxyPassword;
+    public Optional<String> proxyPassword;
 
     /**
      * IP addresses or hosts to exclude from proxying
      */
     @ConfigItem
-    Optional<String[]> noProxy;
+    public Optional<String[]> noProxy;
+
 }

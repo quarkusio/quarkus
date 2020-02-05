@@ -1,10 +1,36 @@
 
-package io.quarkus.deployment.util;
+package io.quarkus.container.deployment.util;
+
+import java.util.Optional;
 
 public class ImageUtil {
 
     private static final String SLASH = "/";
     private static final String COLN = ":";
+
+    /**
+     * Create an image from the individual parts.
+     * 
+     * @param registry The registry.
+     * @param repository The repository.
+     * @param name The name.
+     * @param tag The tag.
+     * @return The image.
+     */
+    public static String getImage(Optional<String> registry, String repository, String name, String tag) {
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("Docker image name cannot be null!");
+        }
+        if (tag == null || tag.isEmpty()) {
+            throw new IllegalArgumentException("Docker image tag cannot be null!");
+        }
+        StringBuilder sb = new StringBuilder();
+        registry.ifPresent(r -> sb.append(r).append(SLASH));
+        sb.append(repository).append(SLASH);
+
+        sb.append(name).append(COLN).append(tag);
+        return sb.toString();
+    }
 
     /**
      * Return the registry part of the docker image.

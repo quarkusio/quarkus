@@ -1,5 +1,5 @@
 
-package io.quarkus.deployment.pkg.builditem;
+package io.quarkus.container.spi;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 

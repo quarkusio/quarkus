@@ -478,7 +478,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-docker-spi</artifactId>
+                <artifactId>quarkus-container-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -489,6 +489,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kubernetes-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-kubernetes-client-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

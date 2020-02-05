@@ -1,4 +1,4 @@
-package io.quarkus.cache.runtime.augmented;
+package io.quarkus.cache.runtime;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -9,10 +9,16 @@ import javax.enterprise.util.Nonbinding;
 import javax.interceptor.InterceptorBinding;
 
 @InterceptorBinding
-@Retention(value = RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.METHOD })
-public @interface AugmentedCacheInvalidateAll {
+public @interface CacheResultInterceptorBinding {
 
     @Nonbinding
     String cacheName() default "";
+
+    @Nonbinding
+    short[] cacheKeyParameterPositions() default {};
+
+    @Nonbinding
+    long lockTimeout() default 0;
 }

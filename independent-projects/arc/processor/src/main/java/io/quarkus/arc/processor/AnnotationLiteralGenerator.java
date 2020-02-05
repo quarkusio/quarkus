@@ -200,6 +200,13 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                     valueMethod.writeArrayValue(retValue, i, valueMethod.load(stringArray[i]));
                 }
                 break;
+            case SHORT:
+                short[] shortArray = value.asShortArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(shortArray.length));
+                for (int i = 0; i < shortArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.load(shortArray[i]));
+                }
+                break;
             case INTEGER:
                 int[] intArray = value.asIntArray();
                 retValue = valueMethod.newArray(componentType(method), valueMethod.load(intArray.length));

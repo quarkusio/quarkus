@@ -12,7 +12,7 @@ import org.bson.codecs.pojo.annotations.BsonProperty;
 import io.quarkus.mongodb.panache.MongoEntity;
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
 
-@MongoEntity(collection = "TheBookEntity")
+@MongoEntity(collection = "TheBookEntity", clientName = "cl2")
 public class BookEntity extends PanacheMongoEntity {
     @BsonProperty("bookTitle")
     private String title;

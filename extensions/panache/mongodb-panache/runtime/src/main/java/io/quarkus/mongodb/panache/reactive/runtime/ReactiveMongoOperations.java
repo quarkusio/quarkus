@@ -5,8 +5,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import javax.enterprise.inject.spi.Bean;
 
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentWriter;
@@ -295,13 +298,25 @@ public class ReactiveMongoOperations {
     }
 
     private static ReactiveMongoDatabase mongoDatabase(MongoEntity entity) {
-        ReactiveMongoClient mongoClient = Arc.container().instance(ReactiveMongoClient.class).get();
+        ReactiveMongoClient mongoClient = mongoClient(entity);
         if (entity != null && !entity.database().isEmpty()) {
             return mongoClient.getDatabase(entity.database());
         }
         String databaseName = ConfigProvider.getConfig()
                 .getValue(MONGODB_DATABASE, String.class);
         return mongoClient.getDatabase(databaseName);
+    }
+
+    private static ReactiveMongoClient mongoClient(MongoEntity entity) {
+        if (entity != null && !entity.clientName().isEmpty()) {
+            Set<Bean<?>> beans = Arc.container().beanManager().getBeans(ReactiveMongoClient.class);
+            for (Bean<?> bean : beans) {
+                if (bean.getName() != null) {
+                    return (ReactiveMongoClient) Arc.container().instance(entity.clientName()).get();
+                }
+            }
+        }
+        return Arc.container().instance(ReactiveMongoClient.class).get();
     }
 
     //

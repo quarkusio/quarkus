@@ -27,7 +27,7 @@ public class CORSFilter implements Handler<RoutingContext> {
     }
 
     private void processRequestedHeaders(HttpServerResponse response, String allowHeadersValue) {
-        if (!corsConfig.headers.isPresent()) {
+        if (!corsConfig.headers.isPresent() || containsOnlyWildcard(corsConfig.headers)) {
             response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, allowHeadersValue);
         } else {
             List<String> requestedHeaders = new ArrayList<>();
@@ -49,7 +49,7 @@ public class CORSFilter implements Handler<RoutingContext> {
     }
 
     private void processMethods(HttpServerResponse response, String allowMethodsValue) {
-        if (!corsConfig.methods.isPresent()) {
+        if (!corsConfig.methods.isPresent() || containsOnlyWildcard(corsConfig.methods)) {
             response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, allowMethodsValue);
         } else {
             List<String> requestedMethods = new ArrayList<>();
@@ -58,9 +58,10 @@ public class CORSFilter implements Handler<RoutingContext> {
             }
 
             List<String> validRequestedMethods = new ArrayList<>();
-            for (HttpMethod configMethod : corsConfig.methods.get()) {
-                if (requestedMethods.contains(configMethod.name().toLowerCase())) {
-                    validRequestedMethods.add(configMethod.name());
+            for (String configMethod : corsConfig.methods.get()) {
+                String methodName = configMethod.trim();
+                if (requestedMethods.contains(methodName.toLowerCase())) {
+                    validRequestedMethods.add(methodName);
                 }
             }
 
@@ -91,7 +92,8 @@ public class CORSFilter implements Handler<RoutingContext> {
                 processRequestedHeaders(response, requestedHeaders);
             }
 
-            boolean allowsOrigin = !corsConfig.origins.isPresent() || corsConfig.origins.get().contains(origin);
+            boolean allowsOrigin = containsOnlyWildcard(corsConfig.origins)
+                    || corsConfig.origins.orElse(Collections.emptyList()).contains(origin);
 
             if (allowsOrigin) {
                 response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
@@ -99,22 +101,33 @@ public class CORSFilter implements Handler<RoutingContext> {
 
             response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
 
-            final Optional<List<String>> exposedHeaders = corsConfig.exposedHeaders;
+            if (corsConfig.exposedHeaders.isPresent()) {
+                List<String> exposedHeaders = corsConfig.exposedHeaders.orElse(Collections.emptyList());
+                if (exposedHeaders.contains("*") && exposedHeaders.size() > 1) {
+                    exposedHeaders.remove("*");
+                }
 
-            if (exposedHeaders.isPresent()) {
-                response.headers().set(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
-                        String.join(",", exposedHeaders.orElse(Collections.emptyList())));
+                response.headers().set(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, String.join(",", exposedHeaders));
             }
 
             if (request.method().equals(HttpMethod.OPTIONS)) {
                 if ((requestedHeaders != null || requestedMethods != null) && corsConfig.accessControlMaxAge.isPresent()) {
-                    response.putHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE,
-                            String.valueOf(corsConfig.accessControlMaxAge.get().getSeconds()));
+                    response.putHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE, String.valueOf(corsConfig.accessControlMaxAge.get()
+                            .getSeconds()));
                 }
                 response.end();
             } else {
                 event.next();
             }
         }
+    }
+
+    private boolean containsOnlyWildcard(Optional<List<String>> optionalList) {
+        if (!optionalList.isPresent()) {
+            return true;
+        }
+
+        List<String> list = optionalList.get();
+        return list.isEmpty() || list.size() == 1 && "*".equals(list.get(0));
     }
 }

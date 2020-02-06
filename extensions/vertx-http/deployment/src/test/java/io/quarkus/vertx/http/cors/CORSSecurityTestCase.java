@@ -18,7 +18,7 @@ import io.quarkus.vertx.http.security.PathHandler;
 import io.quarkus.vertx.http.security.TestIdentityController;
 import io.quarkus.vertx.http.security.TestIdentityProvider;
 
-public class CoresSecurityTestCase {
+public class CORSSecurityTestCase {
 
     private static final String APP_PROPS = "" +
             "quarkus.http.cors=true\n" +

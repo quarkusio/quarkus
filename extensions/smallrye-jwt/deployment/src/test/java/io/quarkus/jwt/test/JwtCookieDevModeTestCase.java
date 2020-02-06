@@ -1,7 +1,5 @@
 package io.quarkus.jwt.test;
 
-import java.net.HttpURLConnection;
-
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
@@ -9,10 +7,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
-public class JwtCookieUnitTest {
+public class JwtCookieDevModeTestCase {
+
     private static Class<?>[] testClasses = {
             DefaultGroupsEndpoint.class,
             TokenUtils.class
@@ -23,7 +22,7 @@ public class JwtCookieUnitTest {
     private String token;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusDevModeTest test = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
                     .addAsResource("publicKey.pem")
@@ -33,7 +32,7 @@ public class JwtCookieUnitTest {
 
     @BeforeEach
     public void generateToken() throws Exception {
-        token = TokenUtils.generateTokenString(null, "kid", "/TokenNoGroups.json", null, null);
+        token = TokenUtils.generateTokenString("/TokenNoGroups.json");
     }
 
     /**
@@ -42,14 +41,33 @@ public class JwtCookieUnitTest {
      * @throws Exception
      */
     @Test
-    public void echoGroups() throws Exception {
+    public void echoGroupsHotReplacement() throws Exception {
+        testOKResponse("cookie_a");
+        testBadResponse("cookie_b");
+
+        test.modifyResourceFile("application.properties", s -> s.replace("cookie_a", "cookie_b"));
+
+        testOKResponse("cookie_b");
+        testBadResponse("cookie_a");
+    }
+
+    private void testOKResponse(String cookieName) {
         io.restassured.response.Response response = RestAssured.given()
-                .header("Cookie", "cookie_a=" + token)
+                .header("Cookie", cookieName + "=" + token)
                 .get("/endp/echo").andReturn();
 
-        Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
+        Assertions.assertEquals(200, response.getStatusCode());
         String replyString = response.body().asString();
         // The missing 'groups' claim's default value, 'User' is expected
         Assertions.assertEquals("User", replyString);
     }
+
+    private void testBadResponse(String cookieName) {
+        io.restassured.response.Response response = RestAssured.given()
+                .header("Cookie", cookieName + "=" + token)
+                .get("/endp/echo").andReturn();
+
+        Assertions.assertEquals(401, response.getStatusCode());
+    }
+
 }

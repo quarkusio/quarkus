@@ -168,6 +168,12 @@ final class MethodDescriptors {
     static final MethodDescriptor COLLECTIONS_UNMODIFIABLE_SET = MethodDescriptor.ofMethod(Collections.class, "unmodifiableSet",
             Set.class, Set.class);
 
+    static final MethodDescriptor COLLECTIONS_SINGLETON = MethodDescriptor.ofMethod(Collections.class, "singleton",
+            Set.class, Object.class);
+
+    static final MethodDescriptor COLLECTIONS_SINGLETON_LIST = MethodDescriptor.ofMethod(Collections.class, "singletonList",
+            List.class, Object.class);
+
     static final MethodDescriptor COLLECTIONS_EMPTY_MAP = MethodDescriptor.ofMethod(Collections.class, "emptyMap",
             Map.class);
 

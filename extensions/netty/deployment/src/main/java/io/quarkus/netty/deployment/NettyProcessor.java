@@ -183,7 +183,6 @@ class NettyProcessor {
                 "io.quarkus.netty.runtime.graal.Holder_io_netty_util_concurrent_ScheduledFutureTask");
     }
 
-    // TODO: Remove this when netty.version is 4.1.43.Final or greater.
     @BuildStep
     public List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields() {
         return Arrays.asList(

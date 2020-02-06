@@ -11,6 +11,8 @@ import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 
 /**
+ * Context registration phase can be used to register custom CDI contexts.
+ * <p>
  * An extension that needs to produce other build items during the "context registration" phase should use this build item. The
  * build step should produce a {@link ContextConfiguratorBuildItem} or at least inject a {@link BuildProducer} for this build
  * item, otherwise it could be ignored or processed at the wrong time, e.g. after

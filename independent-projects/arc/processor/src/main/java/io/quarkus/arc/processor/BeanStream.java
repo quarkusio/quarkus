@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jboss.jandex.DotName;
@@ -162,6 +163,16 @@ public final class BeanStream implements Iterable<BeanInfo> {
 
     /**
      * 
+     * @return the new stream of beans
+     * @see BeanInfo#getName()
+     */
+    public BeanStream withName() {
+        stream = stream.filter(bean -> bean.getName() != null);
+        return this;
+    }
+
+    /**
+     * 
      * @param id
      * @return an {@link Optional} with the matching bean, or an empty {@link Optional} if no such bean is found
      * @see BeanInfo#getIdentifier()
@@ -288,6 +299,18 @@ public final class BeanStream implements Iterable<BeanInfo> {
      */
     public Optional<BeanInfo> firstResult() {
         return stream.findFirst();
+    }
+
+    /**
+     * Terminal operation.
+     * 
+     * @param <R>
+     * @param <A>
+     * @param collector
+     * @return the collected result
+     */
+    public <R, A> R collect(Collector<BeanInfo, A, R> collector) {
+        return stream.collect(collector);
     }
 
 }

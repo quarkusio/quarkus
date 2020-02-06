@@ -5,9 +5,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -59,7 +60,8 @@ public class JibProcessor {
             log.debug("Jib container image build was disabled");
             return;
         }
-        JibContainerBuilder jibContainerBuilder = createContainerBuilderFromJar(sourceJarBuildItem, outputTargetBuildItem,
+        JibContainerBuilder jibContainerBuilder = createContainerBuilderFromJar(jibConfig, sourceJarBuildItem,
+                outputTargetBuildItem,
                 mainClassBuildItem);
         containerize(applicationInfo, jibConfig, jibContainerBuilder);
         producer.produce(new ArtifactResultBuildItem(null, "containerImageFromJar", Collections.emptyMap()));
@@ -68,8 +70,7 @@ public class JibProcessor {
     @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class, JibEnabled.class }) // TODO: are we sure we only want it for normal execution?
     public void buildFromNative(
             NativeImageBuildItem nativeImageBuildItem,
-            MainClassBuildItem mainClassBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem, ApplicationInfoBuildItem applicationInfo, JibConfig jibConfig,
+            ApplicationInfoBuildItem applicationInfo, JibConfig jibConfig,
             // TODO figure out the proper output
             BuildProducer<ArtifactResultBuildItem> producer) {
         if (!jibConfig.enabled) {
@@ -77,8 +78,7 @@ public class JibProcessor {
             return;
         }
         // TODO: we also need to make sure the native binary is a linux native binary
-        JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(nativeImageBuildItem, outputTargetBuildItem,
-                mainClassBuildItem);
+        JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(jibConfig, nativeImageBuildItem);
         containerize(applicationInfo, jibConfig, jibContainerBuilder);
         producer.produce(new ArtifactResultBuildItem(null, "containerImageFromNative", Collections.emptyMap()));
     }
@@ -140,18 +140,17 @@ public class JibProcessor {
                 jibConfig.tag.orElse(applicationInfo.getVersion()));
     }
 
-    private JibContainerBuilder createContainerBuilderFromJar(JarBuildItem sourceJarBuildItem,
+    private JibContainerBuilder createContainerBuilderFromJar(JibConfig jibConfig, JarBuildItem sourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem, MainClassBuildItem mainClassBuildItem) {
         try {
             // not ideal since this has been previously zipped - we would like to just reuse it
             Path classesDir = outputTargetBuildItem.getOutputDirectory().resolve("jib");
             ZipUtils.unzip(sourceJarBuildItem.getPath(), classesDir);
             JavaContainerBuilder javaContainerBuilder = JavaContainerBuilder
-                    .from("fabric8/java-alpine-openjdk8-jre") // this is what we suggest in our Dockerfile.jvm
+                    .from(jibConfig.baseJvmImage)
                     .addResources(classesDir, IS_CLASS_PREDICATE.negate())
                     .addClasses(classesDir, IS_CLASS_PREDICATE)
-                    .addJvmFlags(Arrays.asList("-Dquarkus.http.host=0.0.0.0", // these also come from Dockerfile.jvm
-                            "-Djava.util.logging.manager=org.jboss.logmanager.LogManager"))
+                    .addJvmFlags(jibConfig.jvmArguments)
                     .setMainClass(mainClassBuildItem.getClassName());
             if (sourceJarBuildItem.getLibraryDir() != null) {
                 javaContainerBuilder
@@ -162,7 +161,9 @@ public class JibProcessor {
                                         .collect(Collectors.toList()));
             }
 
-            return javaContainerBuilder.toContainerBuilder().setCreationTime(Instant.now());
+            return javaContainerBuilder.toContainerBuilder()
+                    .setEnvironment(jibConfig.environmentVariables.orElse(Collections.emptyMap()))
+                    .setCreationTime(Instant.now());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (InvalidImageReferenceException e) {
@@ -170,18 +171,21 @@ public class JibProcessor {
         }
     }
 
-    private JibContainerBuilder createContainerBuilderFromNative(NativeImageBuildItem nativeImageBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem, MainClassBuildItem mainClassBuildItem) {
+    private JibContainerBuilder createContainerBuilderFromNative(JibConfig jibConfig,
+            NativeImageBuildItem nativeImageBuildItem) {
+        final List<String> entrypoint = new ArrayList<>(jibConfig.nativeArguments.size() + 1);
+        entrypoint.add("./application");
+        entrypoint.addAll(jibConfig.nativeArguments);
         try {
             AbsoluteUnixPath workDirInContainer = AbsoluteUnixPath.get("/work");
-            return Jib.from("registry.access.redhat.com/ubi8/ubi-minimal")
+            return Jib.from(jibConfig.baseNativeImage)
                     .addLayer(LayerConfiguration.builder()
                             .addEntry(nativeImageBuildItem.getPath(), workDirInContainer.resolve("application"),
                                     FilePermissions.fromOctalString("775"))
                             .build())
-                    //                    .addLayer(Collections.singletonList(nativeImageBuildItem.getPath()), workDirInContainer)
                     .setWorkingDirectory(workDirInContainer)
-                    .setEntrypoint("./application", "-Dquarkus.http.host=0.0.0.0")
+                    .setEntrypoint(entrypoint)
+                    .setEnvironment(jibConfig.environmentVariables.orElse(Collections.emptyMap()))
                     .setCreationTime(Instant.now());
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);

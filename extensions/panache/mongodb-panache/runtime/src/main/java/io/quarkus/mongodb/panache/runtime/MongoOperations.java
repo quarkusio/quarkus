@@ -5,8 +5,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import javax.enterprise.inject.spi.Bean;
 
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentWriter;
@@ -38,6 +41,7 @@ public class MongoOperations {
     private static final Logger LOGGER = Logger.getLogger(MongoOperations.class);
     public static final String ID = "_id";
     public static final String MONGODB_DATABASE = "quarkus.mongodb.database";
+
     //
     // Instance methods
 
@@ -268,13 +272,25 @@ public class MongoOperations {
     }
 
     private static MongoDatabase mongoDatabase(MongoEntity entity) {
-        MongoClient mongoClient = Arc.container().instance(MongoClient.class).get();
+        MongoClient mongoClient = mongoClient(entity);
         if (entity != null && !entity.database().isEmpty()) {
             return mongoClient.getDatabase(entity.database());
         }
         String databaseName = ConfigProvider.getConfig()
                 .getValue(MONGODB_DATABASE, String.class);
         return mongoClient.getDatabase(databaseName);
+    }
+
+    private static MongoClient mongoClient(MongoEntity entity) {
+        if (entity != null && !entity.clientName().isEmpty()) {
+            Set<Bean<?>> beans = Arc.container().beanManager().getBeans(MongoClient.class);
+            for (Bean<?> bean : beans) {
+                if (bean.getName() != null) {
+                    return (MongoClient) Arc.container().instance(entity.clientName()).get();
+                }
+            }
+        }
+        return Arc.container().instance(MongoClient.class).get();
     }
 
     //

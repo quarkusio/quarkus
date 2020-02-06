@@ -98,7 +98,7 @@ To get started:
 
 * add your settings in `{config-file}`
 * Make your entities extend `PanacheMongoEntity` (optional if you are using the repository pattern)
-* Use the `@MongoEntity` annotation to specify the name of the database and the name of the collection (it will default to the name of your entity).
+* Optionally, use the `@MongoEntity` annotation to specify the name of the collection, the name of the database or the name of the client.
 
 Then add the relevant configuration properties in `{config-file}`.
 
@@ -110,7 +110,13 @@ quarkus.mongodb.connection-string = mongodb://mongo1:27017,mongo2:27017
 quarkus.mongodb.database = person
 ----
 
-The `quarkus.mongodb.database` property will be used by MongoDB with Panache to determine the name of the database where your entities will be persisted.
+The `quarkus.mongodb.database` property will be used by MongoDB with Panache to determine the name of the database where your entities will be persisted (if not overridden by `@MongoEntity`).
+
+The `@MongoEntity` annotation allows configuring:
+
+* the name of the client for multi-tenant application, see link:mongodb#multiple-mongodb-clients[Multiple MongoDB Clients]. Otherwise, the default client will be used.
+* the name of the database, otherwise, the `quarkus.mongodb.database` property will be used.
+* the name of the collection, otherwise the simple name of the class will be used.
 
 For advanced configuration of the MongoDB client, you can follow the link:mongodb#configuring-the-mongodb-database[Configuring the MongoDB database guide].
 
@@ -119,7 +125,7 @@ For advanced configuration of the MongoDB client, you can follow the link:mongod
 === Defining your entity
 
 To define a Panache entity, simply extend `PanacheMongoEntity` and add your columns as public fields.
-You can add the `@MongoEntity` annotation to your entity if you need to customize the name of the collection and/or the database.
+You can add the `@MongoEntity` annotation to your entity if you need to customize the name of the collection, the database, or the client.
 
 [source,java]
 ----
@@ -135,8 +141,7 @@ public class Person extends PanacheMongoEntity {
 }
 ----
 
-NOTE: annotating with `@MongoEntity` is optional, it allows you to configure the name of the collection and the name of the database.
-Here the entity will be stored in the `ThePerson` collection instead of the default `Person` collection.
+NOTE: Annotating with `@MongoEntity` is optional. Here the entity will be stored in the `ThePerson` collection instead of the default `Person` collection.
 
 MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos/[PojoCodecProvider] to map your entities to a MongoDB `Document`.
 
@@ -264,7 +269,7 @@ public class Person extends PanacheMongoEntity {
 === Defining your entity
 
 You can define your entity as regular POJO.
-You can add the `@MongoEntity` annotation to your entity if you need to customize the name of the collection and/or the database.
+You can add the `@MongoEntity` annotation to your entity if you need to customize the name of the collection, the database, or the client.
 
 [source,java]
 ----
@@ -277,8 +282,7 @@ public class Person  {
 }
 ----
 
-NOTE: annotating with `@MongoEntity` is optional, it allows you to configure the name of the collection and the name of the database.
-Here the entity will be stored in the `ThePerson` collection instead of the default `Person` collection.
+NOTE: Annotating with `@MongoEntity` is optional. Here the entity will be stored in the `ThePerson` collection instead of the default `Person` collection.
 
 MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos/[PojoCodecProvider] to map your entities to a MongoDB `Document`.
 

@@ -18,6 +18,7 @@ import io.vertx.ext.auth.PubSecKeyOptions;
 import io.vertx.ext.auth.oauth2.OAuth2Auth;
 import io.vertx.ext.auth.oauth2.OAuth2ClientOptions;
 import io.vertx.ext.auth.oauth2.providers.KeycloakAuth;
+import io.vertx.ext.jwt.JWTOptions;
 
 @Recorder
 public class OidcRecorder {
@@ -77,6 +78,12 @@ public class OidcRecorder {
         }
         if (oidcConfig.getToken().issuer.isPresent()) {
             options.setValidateIssuer(false);
+        }
+
+        if (oidcConfig.getToken().getExpirationGrace().isPresent()) {
+            JWTOptions jwtOptions = new JWTOptions();
+            jwtOptions.setLeeway(oidcConfig.getToken().getExpirationGrace().get());
+            options.setJWTOptions(jwtOptions);
         }
 
         final long connectionDelayInSecs = oidcConfig.getConnectionDelay().isPresent()

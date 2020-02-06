@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -181,6 +182,7 @@ public class OidcTenantConfig {
         /**
          * Path to the claim containing an array of groups. It starts from the top level JWT JSON object and
          * can contain multiple segments where each segment represents a JSON object name only, example: "realm/groups".
+         * Use double quotes with the namespace qualified claim names.
          * This property can be used if a token has no 'groups' claim but has the groups set in a different claim.
          */
         @ConfigItem
@@ -217,20 +219,34 @@ public class OidcTenantConfig {
     @ConfigGroup
     public static class Authentication {
         /**
-         * Relative path for calculating a "redirect_uri" parameter.
-         * It set it will be appended to the request URI's host and port, otherwise the complete request URI will be used.
-         * It has to start from the forward slash, for example: "/service"
-         *
+         * Relative path for calculating a "redirect_uri" query parameter.
+         * It has to start from a forward slash and will be appended to the request URI's host and port.
+         * For example, if the current request URI is 'https://localhost:8080/service' then a 'redirect_uri' parameter
+         * will be set to 'https://localhost:8080/' if this property is set to '/' and be the same as the request URI
+         * if this property has not been configured.
+         * Note the original request URI will be restored after the user has authenticated.
          */
         @ConfigItem
         public Optional<String> redirectPath = Optional.empty();
 
         /**
+         * If this property is set to 'true' then the original request URI which was used before
+         * the authentication will be restored after the user has been redirected back to the application.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean restorePathAfterRedirect;
+
+        /**
          * List of scopes
-         *
          */
         @ConfigItem
         public Optional<List<String>> scopes = Optional.empty();
+
+        /**
+         * Additional properties which will be added as the query parameters to the authentication redirect URI.
+         */
+        @ConfigItem
+        public Map<String, String> extraParams;
 
         public Optional<String> getRedirectPath() {
             return redirectPath;
@@ -246,6 +262,22 @@ public class OidcTenantConfig {
 
         public void setScopes(Optional<List<String>> scopes) {
             this.scopes = scopes;
+        }
+
+        public Map<String, String> getExtraParams() {
+            return extraParams;
+        }
+
+        public void setExtraParams(Map<String, String> extraParams) {
+            this.extraParams = extraParams;
+        }
+
+        public boolean isRestorePathAfterRedirect() {
+            return restorePathAfterRedirect;
+        }
+
+        public void setRestorePathAfterRedirect(boolean restorePathAfterRedirect) {
+            this.restorePathAfterRedirect = restorePathAfterRedirect;
         }
     }
 
@@ -267,16 +299,23 @@ public class OidcTenantConfig {
         }
 
         /**
-         * Expected issuer 'iss' claim value
+         * Expected issuer 'iss' claim value.
          */
         @ConfigItem
         public Optional<String> issuer = Optional.empty();
 
         /**
-         * Expected audience `aud` claim value which may be a string or an array of strings
+         * Expected audience 'aud' claim value which may be a string or an array of strings.
          */
         @ConfigItem
         public Optional<List<String>> audience = Optional.empty();
+
+        /**
+         * Expiration grace period in seconds. A token expiration time will be reduced by
+         * the value of this property before being compared to the current time.
+         */
+        @ConfigItem
+        public Optional<Integer> expirationGrace = Optional.empty();
 
         /**
          * Name of the claim which contains a principal name. By default, the 'upn', 'preferred_username' and `sub` claims are
@@ -299,6 +338,14 @@ public class OidcTenantConfig {
 
         public void setAudience(List<String> audience) {
             this.audience = Optional.of(audience);
+        }
+
+        public Optional<Integer> getExpirationGrace() {
+            return expirationGrace;
+        }
+
+        public void setExpirationGrace(int expirationGrace) {
+            this.expirationGrace = Optional.of(expirationGrace);
         }
 
         public Optional<String> getPrincipalClaim() {

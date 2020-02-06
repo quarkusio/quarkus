@@ -42,6 +42,12 @@ public class ProtectedResource {
     }
 
     @GET
+    @Path("callback")
+    public String getNameCallback() {
+        return "callback:" + getName();
+    }
+
+    @GET
     @Path("access")
     public String getAccessToken() {
         if (!accessTokenCredential.getToken().equals(accessToken.getRawToken())) {

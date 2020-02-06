@@ -13,7 +13,11 @@
             "roles": [
                 "r1",
                 "r2"
-            ]
+            ],
+            "https://custom/roles": [
+                "r3",
+                "r4"
+             ]
        }
   }
 }

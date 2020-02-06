@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.jwt.Claims;
 
@@ -13,6 +14,11 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public final class OidcUtils {
+    /**
+     * This pattern uses a positive lookahead to split an expression around the forward slashes
+     * ignoring those which are located inside a pair of the double quotes.
+     */
+    private static final Pattern CLAIM_PATH_PATTERN = Pattern.compile("\\/(?=(?:(?:[^\"]*\"){2})*[^\"]*$)");
 
     private OidcUtils() {
 
@@ -66,7 +72,7 @@ public final class OidcUtils {
 
     private static List<String> findClaimWithRoles(OidcTenantConfig.Roles rolesConfig, String claimPath,
             JsonObject json, boolean mustExist) {
-        Object claimValue = findClaimValue(claimPath, json, claimPath.split("/"), 0, mustExist);
+        Object claimValue = findClaimValue(claimPath, json, splitClaimPath(claimPath), 0, mustExist);
 
         if (claimValue instanceof JsonArray) {
             return convertJsonArrayToList((JsonArray) claimValue);
@@ -78,8 +84,12 @@ public final class OidcUtils {
         }
     }
 
+    private static String[] splitClaimPath(String claimPath) {
+        return claimPath.indexOf('/') > 0 ? CLAIM_PATH_PATTERN.split(claimPath) : new String[] { claimPath };
+    }
+
     private static Object findClaimValue(String claimPath, JsonObject json, String[] pathArray, int step, boolean mustExist) {
-        Object claimValue = json.getValue(pathArray[step]);
+        Object claimValue = json.getValue(pathArray[step].replace("\"", ""));
         if (claimValue == null) {
             if (mustExist) {
                 throw new OIDCException("No claim exists at the path " + claimPath + " at the path segment " + pathArray[step]);

@@ -4,6 +4,7 @@ import java.net.URI;
 import java.security.Permission;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -17,6 +18,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.RefreshToken;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -86,24 +88,37 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     @Override
     public CompletionStage<ChallengeData> getChallenge(RoutingContext context) {
         removeCookie(context, SESSION_COOKIE_NAME);
+
         ChallengeData challenge;
         JsonObject params = new JsonObject();
 
+        TenantConfigContext configContext = tenantConfigResolver.resolve(context);
+
+        // scope
         List<Object> scopes = new ArrayList<>();
-
         scopes.add("openid");
-        tenantConfigResolver.resolve(context).oidcConfig.getAuthentication().scopes.ifPresent(scopes::addAll);
-
+        configContext.oidcConfig.getAuthentication().scopes.ifPresent(scopes::addAll);
         params.put("scopes", new JsonArray(scopes));
 
+        // redirect_uri
         URI absoluteUri = URI.create(context.request().absoluteURI());
-        String dynamicPath = getDynamicPath(context, absoluteUri);
-        params.put("redirect_uri", buildCodeRedirectUri(context, absoluteUri, dynamicPath));
+        String redirectPath = getRedirectPath(context, absoluteUri);
+        String redirectUriParam = buildRedirectUri(context, absoluteUri, redirectPath);
+        LOG.debugf("Authentication request redirect_uri parameter: %s", redirectUriParam);
+        params.put("redirect_uri", redirectUriParam);
 
-        params.put("state", generateState(context, dynamicPath));
+        // state
+        params.put("state", generateState(context, absoluteUri, redirectPath));
+
+        // extra redirect parameters, see https://openid.net/specs/openid-connect-core-1_0.html#AuthRequests
+        if (configContext.oidcConfig.authentication.getExtraParams() != null) {
+            for (Map.Entry<String, String> entry : configContext.oidcConfig.authentication.getExtraParams().entrySet()) {
+                params.put(entry.getKey(), entry.getValue());
+            }
+        }
 
         challenge = new ChallengeData(HttpResponseStatus.FOUND.code(), HttpHeaders.LOCATION,
-                tenantConfigResolver.resolve(context).auth.authorizeURL(params));
+                configContext.auth.authorizeURL(params));
 
         return CompletableFuture.completedFuture(challenge);
     }
@@ -143,13 +158,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         extraQuery += ("&" + absoluteUri.getRawQuery());
                     }
 
-                    String localRedirectUri = buildLocalRedirectUri(context, absoluteUri, extraPath + extraQuery);
-                    LOG.debug("Local redirectUri: " + localRedirectUri);
+                    String localRedirectUri = buildRedirectUri(context, absoluteUri, extraPath + extraQuery);
+                    LOG.debugf("Local redirect URI: %s", localRedirectUri);
 
                     cf.completeExceptionally(new AuthenticationRedirectException(localRedirectUri));
                     return cf;
                 }
-                // The redirect path matches the original request path, the state cookie is no longer needed
+                // The original request path does not have to be restored, the state cookie is no longer needed
                 removeCookie(context, STATE_COOKIE_NAME);
             } else {
                 // Local redirect restoring the original request path, the state cookie is no longer needed
@@ -162,7 +177,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
 
         params.put("code", code);
-        params.put("redirect_uri", buildCodeRedirectUri(context, absoluteUri, getDynamicPath(context, absoluteUri)));
+        String redirectPath = getRedirectPath(context, absoluteUri);
+        String redirectUriParam = buildRedirectUri(context, absoluteUri, redirectPath);
+        LOG.debugf("Token request redirect_uri parameter: %s", redirectUriParam);
+        params.put("redirect_uri", redirectUriParam);
 
         tenantConfigResolver.resolve(context).auth.authenticate(params, userAsyncResult -> {
             if (userAsyncResult.failed()) {
@@ -203,23 +221,18 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 result.opaqueRefreshToken(), context));
     }
 
-    private String getDynamicPath(RoutingContext context, URI absoluteUri) {
-        OidcTenantConfig config = tenantConfigResolver.resolve(context).oidcConfig;
-        if (config.getAuthentication().redirectPath.isPresent()) {
-            String redirectPath = config.getAuthentication().redirectPath.get();
-            String requestPath = absoluteUri.getRawPath();
-            if (requestPath.startsWith(redirectPath) && requestPath.length() > redirectPath.length()) {
-                return requestPath.substring(redirectPath.length());
-            }
-        }
-        return null;
+    private String getRedirectPath(RoutingContext context, URI absoluteUri) {
+        Authentication auth = tenantConfigResolver.resolve(context).oidcConfig.getAuthentication();
+        return auth.getRedirectPath().isPresent() ? auth.getRedirectPath().get() : absoluteUri.getRawPath();
     }
 
-    private String generateState(RoutingContext context, String dynamicPath) {
+    private String generateState(RoutingContext context, URI absoluteUri, String redirectPath) {
         String uuid = UUID.randomUUID().toString();
         String cookieValue = uuid;
-        if (dynamicPath != null) {
-            cookieValue += (COOKIE_DELIM + dynamicPath);
+
+        Authentication auth = tenantConfigResolver.resolve(context).oidcConfig.getAuthentication();
+        if (auth.isRestorePathAfterRedirect() && !redirectPath.equals(absoluteUri.getRawPath())) {
+            cookieValue += (COOKIE_DELIM + absoluteUri.getRawPath());
         }
 
         CookieImpl cookie = new CookieImpl(STATE_COOKIE_NAME, cookieValue);
@@ -233,22 +246,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return uuid;
     }
 
-    private String buildCodeRedirectUri(RoutingContext context, URI absoluteUri, String dynamicPath) {
-        StringBuilder builder = new StringBuilder(context.request().scheme()).append("://")
-                .append(absoluteUri.getAuthority());
-
-        String path = dynamicPath != null
-                ? tenantConfigResolver.resolve(context).oidcConfig.getAuthentication().redirectPath.get()
-                : absoluteUri.getRawPath();
-
-        return builder.append(path).toString();
-    }
-
-    private String buildLocalRedirectUri(RoutingContext context, URI absoluteUri, String extraPath) {
+    private String buildRedirectUri(RoutingContext context, URI absoluteUri, String path) {
         return new StringBuilder(context.request().scheme()).append("://")
                 .append(absoluteUri.getAuthority())
-                .append(absoluteUri.getRawPath())
-                .append(extraPath)
+                .append(path)
                 .toString();
     }
 

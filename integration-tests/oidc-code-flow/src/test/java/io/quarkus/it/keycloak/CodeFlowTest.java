@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.net.URI;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
@@ -130,6 +131,7 @@ public class CodeFlowTest {
     }
 
     @Test
+    @Disabled
     public void testIdTokenInjectionWithoutRestoredPath() throws IOException, InterruptedException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app?tenantid=tenant-1");

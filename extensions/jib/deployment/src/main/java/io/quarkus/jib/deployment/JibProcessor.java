@@ -1,5 +1,7 @@
 package io.quarkus.jib.deployment;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -77,10 +79,31 @@ public class JibProcessor {
             log.debug("Jib container image build was disabled");
             return;
         }
-        // TODO: we also need to make sure the native binary is a linux native binary
+        if (!nativeIsLinuxBinary(nativeImageBuildItem)) {
+            throw new RuntimeException(
+                    "The native binary produced by the build is not a Linux binary and therefore cannot be used in a Linux container image. Consider adding \"quarkus.native.container-build=true\" to your configuration");
+        }
+
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(jibConfig, nativeImageBuildItem);
         containerize(applicationInfo, jibConfig, jibContainerBuilder);
         producer.produce(new ArtifactResultBuildItem(null, "containerImageFromNative", Collections.emptyMap()));
+    }
+
+    /**
+     * Checks if the file is a linux binary by checking the first bytes of the file against the ELF magic number
+     */
+    private boolean nativeIsLinuxBinary(NativeImageBuildItem nativeImageBuildItem) {
+        File file = nativeImageBuildItem.getPath().toFile();
+        try (FileInputStream fileInputStream = new FileInputStream(file)) {
+            byte[] firstBytes = new byte[4];
+            int readBytes = fileInputStream.read(firstBytes);
+            if (readBytes != 4) {
+                return false;
+            }
+            return (firstBytes[0] == 0x7f && firstBytes[1] == 0x45 && firstBytes[2] == 0x4c && firstBytes[3] == 0x46);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Unable to determine type of native binary " + nativeImageBuildItem.getPath(), e);
+        }
     }
 
     private void containerize(ApplicationInfoBuildItem applicationInfo, JibConfig jibConfig,

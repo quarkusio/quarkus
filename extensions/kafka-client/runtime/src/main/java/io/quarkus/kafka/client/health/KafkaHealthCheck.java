@@ -20,7 +20,7 @@ import org.eclipse.microprofile.health.Readiness;
 @ApplicationScoped
 public class KafkaHealthCheck implements HealthCheck {
 
-    @ConfigProperty(name = "quarkus.kafka.bootstrap-servers", defaultValue = "localhost:9092")
+    @ConfigProperty(name = "kafka.bootstrap.servers", defaultValue = "localhost:9092")
     private String bootstrapServers;
 
     private AdminClient client;

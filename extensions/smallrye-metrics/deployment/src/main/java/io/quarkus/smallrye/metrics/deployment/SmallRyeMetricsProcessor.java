@@ -59,6 +59,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -226,6 +227,21 @@ public class SmallRyeMetricsProcessor {
                 }
             }
         }));
+    }
+
+    /**
+     * Methods with a @Gauge annotation need to be registered for reflection because
+     * gauges are registered at runtime and the registering interceptor must be able to see
+     * the annotation.
+     */
+    @BuildStep
+    void reflectiveMethodsWithGauges(BeanArchiveIndexBuildItem beanArchiveIndex,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
+        for (AnnotationInstance annotation : beanArchiveIndex.getIndex().getAnnotations(GAUGE)) {
+            if (annotation.target().kind().equals(AnnotationTarget.Kind.METHOD)) {
+                reflectiveMethods.produce(new ReflectiveMethodBuildItem(annotation.target().asMethod()));
+            }
+        }
     }
 
     @BuildStep

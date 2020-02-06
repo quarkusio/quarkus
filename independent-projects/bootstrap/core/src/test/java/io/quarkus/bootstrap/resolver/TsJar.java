@@ -6,6 +6,7 @@ import java.io.StringWriter;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -116,10 +117,11 @@ public class TsJar implements TsArtifact.ContentProvider {
     }
 
     private FileSystem openZip() throws IOException {
+        final Instant buildTime = Instant.parse("2006-12-03T10:15:25.35Z");
         if(Files.exists(target)) {
             return ZipUtils.newFileSystem(target);
         }
         Files.createDirectories(target.getParent());
-        return ZipUtils.newZip(target);
+        return ZipUtils.newZip(target, buildTime);
     }
 }

@@ -1,5 +1,6 @@
 package io.quarkus.runtime;
 
+import java.time.Instant;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -22,4 +23,12 @@ public class ApplicationConfig {
      */
     @ConfigItem
     public Optional<String> version;
+
+    /**
+     * An {@link Instant} to use as a build time. It does not necessarily have to be the clock time at the time when the
+     * application is built. This can also be some stable value for the sake of reproducibility.
+     */
+    @ConfigItem
+    public Optional<Instant> buildTime;
+
 }

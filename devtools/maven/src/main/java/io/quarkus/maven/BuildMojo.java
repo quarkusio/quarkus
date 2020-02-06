@@ -1,12 +1,15 @@
 package io.quarkus.maven;
 
 import java.io.File;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Properties;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -119,6 +122,14 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private boolean skip = false;
 
+    /**
+     * A time stamp in ISO format, e.g. {@code 2019-10-02T08:04:00Z} to use when creating ZIP entries of the runner JAR.
+     * You should prefer setting the {@code project.build.outputTimestamp} property rather than this one, because that
+     * one is used by {@code maven-jar-plugin} too.
+     */
+    @Parameter(defaultValue = "${project.build.outputTimestamp}")
+    private String outputTimestamp;
+
     public BuildMojo() {
         MojoLogger.logSupplier = this::getLog;
     }
@@ -138,19 +149,11 @@ public class BuildMojo extends AbstractMojo {
         boolean clear = false;
         try {
 
-            final Properties projectProperties = project.getProperties();
-            final Properties realProperties = new Properties();
-            for (String name : projectProperties.stringPropertyNames()) {
-                if (name.startsWith("quarkus.")) {
-                    realProperties.setProperty(name, projectProperties.getProperty(name));
-                }
-            }
             if (uberJar && System.getProperty(QUARKUS_PACKAGE_UBER_JAR) == null) {
                 System.setProperty(QUARKUS_PACKAGE_UBER_JAR, "true");
                 clear = true;
             }
-            realProperties.putIfAbsent("quarkus.application.name", project.getArtifactId());
-            realProperties.putIfAbsent("quarkus.application.version", project.getVersion());
+            final Properties realProperties = filterProperties(project, outputTimestamp);
 
             MavenArtifactResolver resolver = MavenArtifactResolver.builder()
                     .setRepositorySystem(repoSystem)
@@ -188,6 +191,29 @@ public class BuildMojo extends AbstractMojo {
                 System.clearProperty(QUARKUS_PACKAGE_UBER_JAR);
             }
         }
+    }
+
+    static Properties filterProperties(final MavenProject project, String outputTimestamp) throws MojoFailureException {
+        final Properties realProperties = new Properties();
+        final Properties projectProperties = project.getProperties();
+        for (String name : projectProperties.stringPropertyNames()) {
+            if (name.startsWith("quarkus.")) {
+                realProperties.setProperty(name, projectProperties.getProperty(name));
+            }
+        }
+        realProperties.putIfAbsent("quarkus.application.name", project.getArtifactId());
+        realProperties.putIfAbsent("quarkus.application.version", project.getVersion());
+
+        if (outputTimestamp != null) {
+            try {
+                Instant.parse(outputTimestamp);
+            } catch (DateTimeParseException e) {
+                throw new MojoFailureException("Cannot parse the outputTimestamp '" + outputTimestamp
+                        + "'; expected something like 2019-10-02T08:04:00Z", e);
+            }
+            realProperties.putIfAbsent("quarkus.application.build-time", outputTimestamp);
+        }
+        return realProperties;
     }
 
 }

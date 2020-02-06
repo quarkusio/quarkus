@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -181,14 +182,14 @@ public class JarResultBuildStep {
                 .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
         Files.deleteIfExists(runnerJar);
 
-        try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
+        try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar, applicationInfo.getBuildTime())) {
 
             log.info("Building fat jar: " + runnerJar);
 
             final Map<String, String> seen = new HashMap<>();
             final Map<String, Set<AppDependency>> duplicateCatcher = new HashMap<>();
             final StringBuilder classPath = new StringBuilder();
-            final Map<String, List<byte[]>> services = new HashMap<>();
+            final Map<String, List<byte[]>> services = new TreeMap<>(); // TreeMap for reproducibility
             Set<String> finalIgnoredEntries = new HashSet<>(IGNORED_ENTRIES);
             packageConfig.userConfiguredIgnoredEntries.ifPresent(finalIgnoredEntries::addAll);
 
@@ -306,7 +307,7 @@ public class JarResultBuildStep {
         IoUtils.recursiveDelete(libDir);
         Files.createDirectories(libDir);
 
-        try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
+        try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar, applicationInfo.getBuildTime())) {
 
             log.info("Building thin jar: " + runnerJar);
 
@@ -360,7 +361,7 @@ public class JarResultBuildStep {
         allClasses.addAll(nativeImageResources.stream()
                 .map((s) -> new GeneratedClassBuildItem(true, s.getName(), s.getClassData())).collect(Collectors.toList()));
 
-        try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
+        try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar, applicationInfo.getBuildTime())) {
 
             log.info("Building native image source jar: " + runnerJar);
 
@@ -635,38 +636,40 @@ public class JarResultBuildStep {
      */
     private void copyFiles(Path dir, FileSystem fs, Map<String, List<byte[]>> services) throws IOException {
         try (Stream<Path> fileTreeElements = Files.walk(dir)) {
-            fileTreeElements.forEach(new Consumer<Path>() {
-                @Override
-                public void accept(Path path) {
-                    final Path file = dir.relativize(path);
-                    final String relativePath = toUri(file);
-                    if (relativePath.isEmpty()) {
-                        return;
-                    }
-                    try {
-                        if (Files.isDirectory(path)) {
-                            addDir(fs, relativePath);
-                        } else {
-                            if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
-                                final byte[] content;
-                                try {
-                                    content = Files.readAllBytes(path);
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
+            fileTreeElements
+                    .sorted() // To get a reproducible ZIP
+                    .forEach(new Consumer<Path>() {
+                        @Override
+                        public void accept(Path path) {
+                            final Path file = dir.relativize(path);
+                            final String relativePath = toUri(file);
+                            if (relativePath.isEmpty()) {
+                                return;
+                            }
+                            try {
+                                if (Files.isDirectory(path)) {
+                                    addDir(fs, relativePath);
+                                } else {
+                                    if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
+                                        final byte[] content;
+                                        try {
+                                            content = Files.readAllBytes(path);
+                                        } catch (IOException e) {
+                                            throw new RuntimeException(e);
+                                        }
+                                        services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(content);
+                                    } else {
+                                        Path target = fs.getPath(relativePath);
+                                        if (!Files.exists(target)) {
+                                            Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
+                                        }
+                                    }
                                 }
-                                services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(content);
-                            } else {
-                                Path target = fs.getPath(relativePath);
-                                if (!Files.exists(target)) {
-                                    Files.copy(path, target, StandardCopyOption.REPLACE_EXISTING);
-                                }
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
                             }
                         }
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
+                    });
         } catch (RuntimeException re) {
             final Throwable cause = re.getCause();
             if (cause instanceof IOException) {

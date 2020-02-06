@@ -167,6 +167,14 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(required = false, property = "quarkus.appArtifact")
     private String appArtifact;
 
+    /**
+     * A time stamp in ISO format, e.g. {@code 2019-10-02T08:04:00Z} to use when creating ZIP entries of the runner JAR.
+     * You should prefer setting the {@code project.build.outputTimestamp} property rather than this one, because that
+     * one is used by {@code maven-jar-plugin} too.
+     */
+    @Parameter(defaultValue = "${project.build.outputTimestamp}")
+    private String outputTimestamp;
+
     @Component
     private RepositorySystem repoSystem;
 
@@ -255,15 +263,7 @@ public class NativeImageMojo extends AbstractMojo {
         }
         try {
 
-            final Properties projectProperties = project.getProperties();
-            final Properties realProperties = new Properties();
-            for (String name : projectProperties.stringPropertyNames()) {
-                if (name.startsWith("quarkus.")) {
-                    realProperties.setProperty(name, projectProperties.getProperty(name));
-                }
-            }
-            realProperties.putIfAbsent("quarkus.application.name", project.getArtifactId());
-            realProperties.putIfAbsent("quarkus.application.version", project.getVersion());
+            final Properties realProperties = BuildMojo.filterProperties(project, outputTimestamp);
 
             Map<String, String> config = createCustomConfig();
             Map<String, String> old = new HashMap<>();

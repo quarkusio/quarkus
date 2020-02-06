@@ -46,6 +46,11 @@ public class StartupBuildSteps {
             "destroy", void.class, Object.class, CreationalContext.class);
 
     @BuildStep
+    BeanDefiningAnnotationBuildItem beanDefiningAnnotation() {
+        return new BeanDefiningAnnotationBuildItem(STARTUP_NAME);
+    }
+
+    @BuildStep
     UnremovableBeanBuildItem unremovableBeans() {
         // Make all classes annotated with @Startup unremovable
         return new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {

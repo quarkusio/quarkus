@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.util.SortedProperties;
 
 /**
  * Generates Quarkus extension descriptor for the runtime artifact.
@@ -117,7 +118,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         prettyPrinter = new DefaultPrettyPrinter();
         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
 
-        final Properties props = new Properties();
+        final Properties props = new SortedProperties();
         props.setProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment);
         final Path output = outputDirectory.toPath().resolve(BootstrapConstants.META_INF);
 
@@ -273,7 +274,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
     /**
      * parse yaml or json and then return jackson JSonNode for furhter processing
-     * 
+     *
      ***/
     private ObjectNode processPlatformArtifact(Path descriptor, ObjectMapper mapper)
             throws IOException {

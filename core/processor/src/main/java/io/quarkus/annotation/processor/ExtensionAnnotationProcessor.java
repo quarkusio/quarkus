@@ -152,7 +152,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         }
         Collection<String> bscListClasses = new TreeSet<>();
         Collection<String> crListClasses = new TreeSet<>();
-        Properties javaDocProperties = new Properties();
+        Properties javaDocProperties = new SortedProperties();
 
         try {
             Files.walkFileTree(path, new FileVisitor<Path>() {

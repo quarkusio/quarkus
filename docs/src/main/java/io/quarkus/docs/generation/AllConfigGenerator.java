@@ -175,7 +175,8 @@ public class AllConfigGenerator {
         }
 
         // write our docs
-        ConfigDocGeneratedOutput allConfigGeneratedOutput = new ConfigDocGeneratedOutput("all-config.adoc", true, allItems,
+        ConfigDocGeneratedOutput allConfigGeneratedOutput = new ConfigDocGeneratedOutput("quarkus-all-config.adoc", true,
+                allItems,
                 false);
         configDocWriter.writeAllExtensionConfigDocumentation(allConfigGeneratedOutput);
     }

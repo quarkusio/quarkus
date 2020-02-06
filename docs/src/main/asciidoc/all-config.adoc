@@ -10,4 +10,4 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-include::{generated-dir}/config/all-config.adoc[opts=optional]
+include::{generated-dir}/config/quarkus-all-config.adoc[opts=optional]

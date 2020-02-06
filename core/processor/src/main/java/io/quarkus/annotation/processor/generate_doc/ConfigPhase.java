@@ -5,9 +5,9 @@ import java.util.Comparator;
 import io.quarkus.annotation.processor.Constants;
 
 public enum ConfigPhase implements Comparable<ConfigPhase> {
-    RUN_TIME("The configuration is overridable at runtime", Constants.CONFIG_PHASE_RUNTIME_ILLUSTRATION, "RunTime"),
+    RUN_TIME("The configuration is overridable at runtime", "", "RunTime"),
     BOOTSTRAP("The configuration is used to bootstrap runtime Config Sources and is overridable at runtime",
-            Constants.CONFIG_PHASE_BOOTSTRAP_ILLUSTRATION, "Bootstrap"),
+            "", "Bootstrap"),
     BUILD_TIME("The configuration is not overridable at runtime", Constants.CONFIG_PHASE_BUILD_TIME_ILLUSTRATION, "BuildTime"),
     BUILD_AND_RUN_TIME_FIXED("The configuration is not overridable at runtime", Constants.CONFIG_PHASE_BUILD_TIME_ILLUSTRATION,
             "BuildTime");

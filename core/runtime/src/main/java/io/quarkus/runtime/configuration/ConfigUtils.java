@@ -79,6 +79,7 @@ public final class ConfigUtils {
                     new PropertiesConfigSourceProvider("WEB-INF/classes/META-INF/microprofile-config.properties", true,
                             classLoader).getConfigSources(classLoader));
             sources.add(new DotEnvConfigSource());
+            sources.add(new EnvConfigSource());
             sources.add(new SysPropConfigSource());
             builder.withSources(sources.toArray(new ConfigSource[0]));
         }

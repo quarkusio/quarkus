@@ -4,16 +4,13 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import javax.persistence.EntityManager;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
-import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
@@ -39,8 +36,7 @@ public final class PanacheResourceProcessor {
     static final DotName DOTNAME_PANACHE_ENTITY_BASE = DotName.createSimple(PanacheEntityBase.class.getName());
     private static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
 
-    private static final Set<DotName> UNREMOVABLE_BEANS = Collections.singleton(
-            DotName.createSimple(EntityManager.class.getName()));
+    private static final DotName DOTNAME_ENTITY_MANAGER = DotName.createSimple(EntityManager.class.getName());
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
@@ -57,18 +53,7 @@ public final class PanacheResourceProcessor {
 
     @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
-        return new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
-            @Override
-            public boolean test(BeanInfo beanInfo) {
-                for (Type t : beanInfo.getTypes()) {
-                    if (UNREMOVABLE_BEANS.contains(t.name())) {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        });
+        return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypeExclusion(DOTNAME_ENTITY_MANAGER));
     }
 
     @BuildStep

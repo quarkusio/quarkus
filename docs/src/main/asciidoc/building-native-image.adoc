@@ -61,7 +61,7 @@ Version {graalvm-version} is required. Using the community edition is enough.
 
 1. Install GraalVM if you haven't already. You have a few options for this:
 ** Use platform-specific install tools like https://github.com/graalvm/homebrew-tap[homebrew] or https://sdkman.io/jdks#Oracle[sdkman].
-** Download the appropriate Community Edition archive from <https://github.com/oracle/graal/releases>, and unpack it like you would any other JDK.
+** Download the appropriate Community Edition archive from <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
 2. Configure the runtime environment. Set `GRAALVM_HOME` environment variable to the GraalVM installation directory, for example:
 +
 [source,shell]

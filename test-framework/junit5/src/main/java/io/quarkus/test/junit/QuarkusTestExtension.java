@@ -80,7 +80,7 @@ public class QuarkusTestExtension
             testClassLocation = getTestClassesLocation(context.getRequiredTestClass());
 
             if (!appClassLocation.equals(testClassLocation)) {
-                runnerBuilder.addAdditionalApplicationArchive(new AdditionalDependency(testClassLocation, false, true));
+                runnerBuilder.addAdditionalApplicationArchive(new AdditionalDependency(testClassLocation, false, true, true));
             }
             CuratedApplication curatedApplication = runnerBuilder
                     .setTest(true)
@@ -171,7 +171,7 @@ public class QuarkusTestExtension
         ExtensionContext root = extensionContext.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
-        if (state == null) {
+        if (state == null && !failedBoot) {
             PropertyTestUtil.setLogFileProperty();
             TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
             try {
@@ -261,6 +261,9 @@ public class QuarkusTestExtension
             Thread.currentThread().setContextClassLoader(old);
         }
         ExtensionState state = ensureStarted(extensionContext);
+        if (failedBoot) {
+            return invocation.proceed();
+        }
         initTestState(extensionContext, state);
         return result;
     }

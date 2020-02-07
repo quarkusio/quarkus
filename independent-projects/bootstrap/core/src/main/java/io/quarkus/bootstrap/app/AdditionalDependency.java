@@ -30,10 +30,21 @@ public class AdditionalDependency implements Serializable {
      */
     private final boolean forceApplicationArchive;
 
+    /**
+     * If this dep is the test classes directory. If so then this will have precedence over the application
+     */
+    private final boolean testClassRoot;
+
     public AdditionalDependency(Path archivePath, boolean hotReloadable, boolean forceApplicationArchive) {
+        this(archivePath, hotReloadable, forceApplicationArchive, false);
+    }
+
+    public AdditionalDependency(Path archivePath, boolean hotReloadable, boolean forceApplicationArchive,
+            boolean testClassRoot) {
         this.archivePath = archivePath;
         this.hotReloadable = hotReloadable;
         this.forceApplicationArchive = forceApplicationArchive;
+        this.testClassRoot = testClassRoot;
     }
 
     public Path getArchivePath() {
@@ -46,5 +57,9 @@ public class AdditionalDependency implements Serializable {
 
     public boolean isForceApplicationArchive() {
         return forceApplicationArchive;
+    }
+
+    public boolean isTestClassRoot() {
+        return testClassRoot;
     }
 }

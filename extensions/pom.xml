@@ -22,7 +22,8 @@
         <!-- Configuration -->
         <module>config-yaml</module>
 
-        <!-- Build Output -->
+        <!-- Container image -->
+        <module>container-image</module>
         <module>jib</module>
 
         <!-- Formats -->

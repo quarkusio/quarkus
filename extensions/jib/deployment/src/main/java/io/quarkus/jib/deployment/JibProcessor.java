@@ -32,6 +32,9 @@ import com.google.cloud.tools.jib.api.RegistryImage;
 import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
 
 import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.container.image.deployment.ContainerImageBuildEnabled;
+import io.quarkus.container.image.deployment.ContainerImageConfig;
+import io.quarkus.container.image.spi.ContainerImageBuiltBuildItem;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -50,43 +53,43 @@ public class JibProcessor {
 
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
 
-    @BuildStep(onlyIf = { IsNormal.class, JarBuild.class, JibEnabled.class }) // TODO: are we sure we only want it for normal execution?
+    @BuildStep(onlyIf = { IsNormal.class, JarBuild.class, ContainerImageBuildEnabled.class })
     public void buildFromJar(
-            // TODO: is this proper build item to consume?
             JarBuildItem sourceJarBuildItem,
             MainClassBuildItem mainClassBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem, ApplicationInfoBuildItem applicationInfo, JibConfig jibConfig,
-            // TODO figure out the proper output
-            BuildProducer<ArtifactResultBuildItem> producer) {
-        if (!jibConfig.enabled) {
-            log.debug("Jib container image build was disabled");
-            return;
-        }
-        JibContainerBuilder jibContainerBuilder = createContainerBuilderFromJar(jibConfig, sourceJarBuildItem,
+            OutputTargetBuildItem outputTargetBuildItem, ApplicationInfoBuildItem applicationInfo,
+            ContainerImageConfig containerImageConfig, JibConfig jibConfig,
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuiltBuildItem> containerImageBuiltProducer) {
+
+        JibContainerBuilder jibContainerBuilder = createContainerBuilderFromJar(containerImageConfig, jibConfig,
+                sourceJarBuildItem,
                 outputTargetBuildItem,
                 mainClassBuildItem);
-        containerize(applicationInfo, jibConfig, jibContainerBuilder);
-        producer.produce(new ArtifactResultBuildItem(null, "containerImageFromJar", Collections.emptyMap()));
+        JibContainer container = containerize(applicationInfo, containerImageConfig, jibConfig, jibContainerBuilder);
+
+        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "containerImageFromJar", Collections.emptyMap()));
+        containerImageBuiltProducer.produce(new ContainerImageBuiltBuildItem(container.getTargetImage().toString()));
+
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class, JibEnabled.class }) // TODO: are we sure we only want it for normal execution?
+    @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class, ContainerImageBuildEnabled.class })
     public void buildFromNative(
             NativeImageBuildItem nativeImageBuildItem,
-            ApplicationInfoBuildItem applicationInfo, JibConfig jibConfig,
-            // TODO figure out the proper output
-            BuildProducer<ArtifactResultBuildItem> producer) {
-        if (!jibConfig.enabled) {
-            log.debug("Jib container image build was disabled");
-            return;
-        }
+            ApplicationInfoBuildItem applicationInfo,
+            ContainerImageConfig containerImageConfig, JibConfig jibConfig,
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
+            BuildProducer<ContainerImageBuiltBuildItem> containerImageBuiltProducer) {
         if (!nativeIsLinuxBinary(nativeImageBuildItem)) {
             throw new RuntimeException(
                     "The native binary produced by the build is not a Linux binary and therefore cannot be used in a Linux container image. Consider adding \"quarkus.native.container-build=true\" to your configuration");
         }
 
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(jibConfig, nativeImageBuildItem);
-        containerize(applicationInfo, jibConfig, jibContainerBuilder);
-        producer.produce(new ArtifactResultBuildItem(null, "containerImageFromNative", Collections.emptyMap()));
+        JibContainer container = containerize(applicationInfo, containerImageConfig, jibConfig, jibContainerBuilder);
+
+        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "containerImageFromNative", Collections.emptyMap()));
+        containerImageBuiltProducer.produce(new ContainerImageBuiltBuildItem(container.getTargetImage().toString()));
     }
 
     /**
@@ -106,23 +109,27 @@ public class JibProcessor {
         }
     }
 
-    private void containerize(ApplicationInfoBuildItem applicationInfo, JibConfig jibConfig,
+    private JibContainer containerize(ApplicationInfoBuildItem applicationInfo, ContainerImageConfig containerImageConfig,
+            JibConfig jibConfig,
             JibContainerBuilder jibContainerBuilder) {
-        Containerizer containerizer = createContainerizer(jibConfig, applicationInfo);
+        Containerizer containerizer = createContainerizer(containerImageConfig, jibConfig, applicationInfo);
         try {
             log.info("Starting container image build");
             JibContainer container = jibContainerBuilder.containerize(containerizer);
-            log.infof("%s container image %s (%s)\n", jibConfig.push ? "Pushed" : "Created", container.getTargetImage(),
+            log.infof("%s container image %s (%s)\n", containerImageConfig.push ? "Pushed" : "Created",
+                    container.getTargetImage(),
                     container.getDigest());
+            return container;
         } catch (Exception e) {
-            log.error("Unable to create container image", e);
+            throw new RuntimeException("Unable to create container image", e);
         }
     }
 
-    private Containerizer createContainerizer(JibConfig jibConfig, ApplicationInfoBuildItem applicationInfo) {
+    private Containerizer createContainerizer(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
+            ApplicationInfoBuildItem applicationInfo) {
         Containerizer containerizer;
-        ImageReference imageReference = getImageReference(jibConfig, applicationInfo);
-        if (jibConfig.push) {
+        ImageReference imageReference = getImageReference(containerImageConfig, applicationInfo);
+        if (containerImageConfig.push) {
             CredentialRetrieverFactory credentialRetrieverFactory = CredentialRetrieverFactory.forImage(imageReference,
                     log::info);
             RegistryImage registryImage = RegistryImage.named(imageReference);
@@ -158,12 +165,15 @@ public class JibProcessor {
         }
     }
 
-    private ImageReference getImageReference(JibConfig jibConfig, ApplicationInfoBuildItem applicationInfo) {
-        return ImageReference.of(jibConfig.registry, jibConfig.group + "/" + jibConfig.name.orElse(applicationInfo.getName()),
-                jibConfig.tag.orElse(applicationInfo.getVersion()));
+    private ImageReference getImageReference(ContainerImageConfig containerImageConfig,
+            ApplicationInfoBuildItem applicationInfo) {
+        return ImageReference.of(containerImageConfig.registry.orElse(null),
+                containerImageConfig.group + "/" + containerImageConfig.name.orElse(applicationInfo.getName()),
+                containerImageConfig.tag.orElse(applicationInfo.getVersion()));
     }
 
-    private JibContainerBuilder createContainerBuilderFromJar(JibConfig jibConfig, JarBuildItem sourceJarBuildItem,
+    private JibContainerBuilder createContainerBuilderFromJar(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
+            JarBuildItem sourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem, MainClassBuildItem mainClassBuildItem) {
         try {
             // not ideal since this has been previously zipped - we would like to just reuse it
@@ -196,7 +206,7 @@ public class JibProcessor {
 
     private JibContainerBuilder createContainerBuilderFromNative(JibConfig jibConfig,
             NativeImageBuildItem nativeImageBuildItem) {
-        final List<String> entrypoint = new ArrayList<>(jibConfig.nativeArguments.size() + 1);
+        List<String> entrypoint = new ArrayList<>(jibConfig.nativeArguments.size() + 1);
         entrypoint.add("./application");
         entrypoint.addAll(jibConfig.nativeArguments);
         try {

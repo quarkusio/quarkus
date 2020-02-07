@@ -8,7 +8,6 @@ import java.util.function.Consumer;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.ObserverMethod;
@@ -89,7 +88,7 @@ public class StartupAnnotationTest {
 
     // This component should be started first
     @Startup(ObserverMethod.DEFAULT_PRIORITY - 1)
-    @ApplicationScoped
+    // @ApplicationScoped is added automatically
     static class StartMe {
 
         public StartMe() {

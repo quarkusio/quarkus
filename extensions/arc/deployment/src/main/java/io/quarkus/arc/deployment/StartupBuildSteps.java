@@ -2,12 +2,14 @@ package io.quarkus.arc.deployment;
 
 import java.util.function.Predicate;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -17,6 +19,8 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.processor.AnnotationStore;
+import io.quarkus.arc.processor.Annotations;
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -44,6 +48,31 @@ public class StartupBuildSteps {
             "create", Object.class, CreationalContext.class);
     static final MethodDescriptor CONTEXTUAL_DESTROY = MethodDescriptor.ofMethod(Contextual.class,
             "destroy", void.class, Object.class, CreationalContext.class);
+
+    private static final Logger LOGGER = Logger.getLogger(StartupBuildSteps.class);
+
+    @BuildStep
+    AnnotationsTransformerBuildItem annotationTransformer() {
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+
+            @Override
+            public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
+                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext context) {
+                if (context.isClass() && !BuiltinScope.isDeclaredOn(context.getTarget().asClass())) {
+                    // Class with no built-in scope annotation but with @Scheduled method
+                    if (Annotations.contains(context.getTarget().asClass().classAnnotations(), STARTUP_NAME)) {
+                        LOGGER.debugf("Found @Startup on a class %s with no scope annotations - adding @ApplicationScoped",
+                                context.getTarget());
+                        context.transform().add(ApplicationScoped.class).done();
+                    }
+                }
+            }
+        });
+    }
 
     @BuildStep
     UnremovableBeanBuildItem unremovableBeans() {

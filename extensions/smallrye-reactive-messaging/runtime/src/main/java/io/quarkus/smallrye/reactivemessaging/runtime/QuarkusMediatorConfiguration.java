@@ -1,6 +1,8 @@
 package io.quarkus.smallrye.reactivemessaging.runtime;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.enterprise.inject.spi.Bean;
 
@@ -24,7 +26,7 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     private Shape shape;
 
-    private String incoming;
+    private List<String> incomings = new ArrayList<>();
 
     private String outgoing;
 
@@ -95,12 +97,12 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
     }
 
     @Override
-    public String getIncoming() {
-        return incoming;
+    public List<String> getIncoming() {
+        return incomings;
     }
 
-    public void setIncoming(String incoming) {
-        this.incoming = incoming;
+    public void setIncomings(List<String> incomings) {
+        this.incomings = incomings;
     }
 
     @Override

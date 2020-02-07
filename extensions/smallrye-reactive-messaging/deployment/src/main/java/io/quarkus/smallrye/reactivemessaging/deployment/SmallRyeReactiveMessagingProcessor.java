@@ -12,7 +12,9 @@ import java.util.Optional;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.DeploymentException;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -38,6 +40,7 @@ import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -54,10 +57,11 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
+import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLifecycle;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder;
 import io.smallrye.reactive.messaging.Invoker;
-import io.smallrye.reactive.messaging.annotations.Stream;
+import io.smallrye.reactive.messaging.metrics.MetricDecorator;
 
 /**
  * @author Martin Kouba
@@ -76,8 +80,9 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem beans() {
-        // We add the connector and stream qualifiers to make them part of the index.
-        return new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class, Connector.class, Stream.class);
+        // We add the connector and channel qualifiers to make them part of the index.
+        return new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class, Connector.class,
+                Channel.class, io.smallrye.reactive.messaging.annotations.Channel.class);
     }
 
     @BuildStep
@@ -97,7 +102,8 @@ public class SmallRyeReactiveMessagingProcessor {
                     ClassInfo clazz = ctx.getTarget().asClass();
                     Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
                     if (annotations.containsKey(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.INCOMING)
-                            || annotations.containsKey(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OUTGOING)) {
+                            || annotations
+                                    .containsKey(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OUTGOING)) {
                         LOGGER.debugf(
                                 "Found reactive messaging annotations on a class %s with no scope defined - adding @Dependent",
                                 ctx.getTarget());
@@ -143,44 +149,78 @@ public class SmallRyeReactiveMessagingProcessor {
 
         for (InjectionPointInfo injectionPoint : validationPhase.getContext()
                 .get(BuildExtension.Key.INJECTION_POINTS)) {
-            if (injectionPoint.getRequiredType().name()
-                    .equals(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.EMITTER)) {
+            // New emitter
+            if (injectionPoint.getRequiredType().name().equals(
+                    io.quarkus.smallrye.reactivemessaging.deployment.DotNames.EMITTER)) {
                 AnnotationInstance instance = injectionPoint
                         .getRequiredQualifier(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.CHANNEL);
                 if (instance == null) {
-                    instance = injectionPoint
-                            .getRequiredQualifier(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.STREAM); //@Channel is the replacement of deprecated @Stream
-                }
-                if (instance != null) {
-                    // Stream.value() is mandatory
-                    String name = instance.value().asString();
-                    Optional<AnnotationInstance> maybeOverflow = annotationStore.getAnnotations(injectionPoint.getTarget())
+                    validationPhase.getContext().addDeploymentProblem(
+                            new DeploymentException(
+                                    "Invalid emitter injection - @Channel is required for " + injectionPoint
+                                            .getTargetInfo()));
+                } else {
+                    String channelName = instance.value().asString();
+                    Optional<AnnotationInstance> overflow = annotationStore.getAnnotations(injectionPoint.getTarget())
                             .stream()
                             .filter(ai -> io.quarkus.smallrye.reactivemessaging.deployment.DotNames.ON_OVERFLOW
                                     .equals(ai.name()))
                             .filter(ai -> {
-                                if (ai.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER && injectionPoint.isParam()) {
+                                if (ai.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER && injectionPoint
+                                        .isParam()) {
                                     return ai.target().asMethodParameter().position() == injectionPoint.getPosition();
                                 }
                                 return true;
                             })
                             .findAny();
-                    LOGGER.debugf("Emitter injection point '%s' detected, stream name: '%s'",
-                            injectionPoint.getTargetInfo(), name);
-
-                    if (maybeOverflow.isPresent()) {
-                        AnnotationInstance annotation = maybeOverflow.get();
-                        AnnotationValue maybeBufferSize = annotation.value("bufferSize");
-                        int bufferSize = maybeBufferSize != null ? maybeBufferSize.asInt() : 0;
-                        emitters.produce(
-                                EmitterBuildItem.of(name,
-                                        annotation.value().asString(),
-                                        bufferSize));
-                    } else {
-                        emitters.produce(EmitterBuildItem.of(name));
-                    }
+                    createEmitter(emitters, injectionPoint, channelName, overflow);
                 }
             }
+
+            // Old Emitter
+            if (injectionPoint.getRequiredType().name()
+                    .equals(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OLD_EMITTER)) {
+                AnnotationInstance instance = injectionPoint
+                        .getRequiredQualifier(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OLD_CHANNEL);
+                if (instance == null) {
+                    validationPhase.getContext().addDeploymentProblem(
+                            new DeploymentException(
+                                    "Invalid emitter injection - @Channel is required for " + injectionPoint
+                                            .getTargetInfo()));
+                } else {
+                    String channelName = instance.value().asString();
+                    Optional<AnnotationInstance> overflow = annotationStore.getAnnotations(injectionPoint.getTarget())
+                            .stream()
+                            .filter(ai -> io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OLD_ON_OVERFLOW
+                                    .equals(ai.name()))
+                            .filter(ai -> {
+                                if (ai.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER && injectionPoint
+                                        .isParam()) {
+                                    return ai.target().asMethodParameter().position() == injectionPoint.getPosition();
+                                }
+                                return true;
+                            })
+                            .findAny();
+                    createEmitter(emitters, injectionPoint, channelName, overflow);
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private void createEmitter(BuildProducer<EmitterBuildItem> emitters, InjectionPointInfo injectionPoint,
+            String channelName,
+            Optional<AnnotationInstance> overflow) {
+        LOGGER.debugf("Emitter injection point '%s' detected, channel name: '%s'",
+                injectionPoint.getTargetInfo(), channelName);
+        if (overflow.isPresent()) {
+            AnnotationInstance annotation = overflow.get();
+            AnnotationValue maybeBufferSize = annotation.value("bufferSize");
+            int bufferSize = maybeBufferSize != null ? maybeBufferSize.asInt() : 0;
+            emitters.produce(
+                    EmitterBuildItem.of(channelName, annotation.value().asString(), bufferSize));
+        } else {
+            emitters.produce(EmitterBuildItem.of(channelName));
         }
     }
 
@@ -188,9 +228,18 @@ public class SmallRyeReactiveMessagingProcessor {
     public List<UnremovableBeanBuildItem> removalExclusions() {
         return Arrays.asList(
                 new UnremovableBeanBuildItem(
-                        new BeanClassAnnotationExclusion(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.INCOMING)),
+                        new BeanClassAnnotationExclusion(
+                                io.quarkus.smallrye.reactivemessaging.deployment.DotNames.INCOMING)),
                 new UnremovableBeanBuildItem(
-                        new BeanClassAnnotationExclusion(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OUTGOING)));
+                        new BeanClassAnnotationExclusion(
+                                io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OUTGOING)));
+    }
+
+    @BuildStep
+    public void enableMetrics(Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> beans) {
+        if (capabilities.isCapabilityPresent(Capabilities.METRICS)) {
+            beans.produce(new AdditionalBeanBuildItem(MetricDecorator.class.getName()));
+        }
     }
 
     @BuildStep(loadsApplicationClasses = true)
@@ -200,7 +249,8 @@ public class SmallRyeReactiveMessagingProcessor {
             List<MediatorBuildItem> mediatorMethods,
             List<EmitterBuildItem> emitterFields,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            ReactiveMessagingConfiguration conf) {
 
         List<QuarkusMediatorConfiguration> configurations = new ArrayList<>(mediatorMethods.size());
 
@@ -223,8 +273,10 @@ public class SmallRyeReactiveMessagingProcessor {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
 
             try {
-                QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil.create(methodInfo, bean,
-                        generatedInvokerName, recorderContext, Thread.currentThread().getContextClassLoader());
+                QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil
+                        .create(methodInfo, bean,
+                                generatedInvokerName, recorderContext,
+                                Thread.currentThread().getContextClassLoader(), conf.strict);
                 configurations.add(mediatorConfiguration);
             } catch (IllegalArgumentException e) {
                 throw new DeploymentException(e); // needed to pass the TCK
@@ -234,10 +286,14 @@ public class SmallRyeReactiveMessagingProcessor {
         recorder.registerMediators(configurations, beanContainer.getValue());
 
         for (EmitterBuildItem it : emitterFields) {
-            int defaultBufferSize = ConfigProvider.getConfig()
-                    .getOptionalValue("smallrye.messaging.emitter.default-buffer-size", Integer.class).orElse(127);
+            Config config = ConfigProvider.getConfig();
+            int defaultBufferSize = config.getOptionalValue("mp.messaging.emitter.default-buffer-size", Integer.class)
+                    .orElseGet(() -> config
+                            .getOptionalValue("smallrye.messaging.emitter.default-buffer-size", Integer.class)
+                            .orElse(127));
             if (it.getOverflow() != null) {
-                recorder.configureEmitter(beanContainer.getValue(), it.getName(), it.getOverflow(), it.getBufferSize(),
+                recorder.configureEmitter(beanContainer.getValue(), it.getName(), it.getOverflow(),
+                        it.getBufferSize(),
                         defaultBufferSize);
             } else {
                 recorder.configureEmitter(beanContainer.getValue(), it.getName(), null, 0, defaultBufferSize);
@@ -247,7 +303,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
     /**
      * Generates an invoker class that looks like the following:
-     * 
+     *
      * <pre>
      * public class SomeName implements Invoker {
      *     private Object beanInstance;
@@ -283,7 +339,8 @@ public class SmallRyeReactiveMessagingProcessor {
                 .interfaces(Invoker.class)
                 .build()) {
 
-            FieldDescriptor beanInstanceField = invoker.getFieldCreator("beanInstance", Object.class).getFieldDescriptor();
+            FieldDescriptor beanInstanceField = invoker.getFieldCreator("beanInstance", Object.class)
+                    .getFieldDescriptor();
 
             // generate a constructor that bean instance an argument
             try (MethodCreator ctor = invoker.getMethodCreator("<init>", void.class, Object.class)) {

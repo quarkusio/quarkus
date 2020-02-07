@@ -15,7 +15,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -31,7 +30,6 @@ public class DotEnvTestCase {
 
     static ClassLoader classLoader;
     static ConfigProviderResolver cpr;
-    Config config;
 
     @BeforeAll
     public static void initConfig() {
@@ -67,7 +65,6 @@ public class DotEnvTestCase {
         final SmallRyeConfig config = builder.build();
         Files.delete(dotEnv);
         cpr.registerConfig(config, classLoader);
-        this.config = config;
         return config;
     }
 

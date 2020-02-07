@@ -4,7 +4,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -70,7 +70,7 @@ public class QuarkusAugmentor {
     QuarkusAugmentor(Builder builder) {
         this.classLoader = builder.classLoader;
         this.root = builder.root;
-        this.finalResults = new HashSet<>(builder.finalResults);
+        this.finalResults = new LinkedHashSet<>(builder.finalResults);
         this.buildChainCustomizers = new ArrayList<>(builder.buildChainCustomizers);
         this.launchMode = builder.launchMode;
         this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
@@ -219,7 +219,7 @@ public class QuarkusAugmentor {
         ClassLoader classLoader;
         PathCollection root;
         Path targetDir;
-        Set<Class<? extends BuildItem>> finalResults = new HashSet<>();
+        Set<Class<? extends BuildItem>> finalResults = new LinkedHashSet<>();
         private final List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
         LaunchMode launchMode = LaunchMode.NORMAL;
         LiveReloadBuildItem liveReloadState = new LiveReloadBuildItem();

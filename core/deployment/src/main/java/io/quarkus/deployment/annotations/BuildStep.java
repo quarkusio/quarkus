@@ -120,4 +120,12 @@ public @interface BuildStep {
      * @return <code>true</code> if this build step wants to load deployment classes
      */
     boolean loadsApplicationClasses() default false;
+
+    /**
+     * If this is set to true, then a build step doesn't need to actually produce a build item
+     * that some other build step will use in order for this build step to run
+     *
+     * @return <code>true</code> if this build step will run regardless whether or not it produces a build item
+     */
+    boolean runRegardlessOfOutput() default false;
 }

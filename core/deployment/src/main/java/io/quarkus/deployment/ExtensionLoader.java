@@ -72,6 +72,7 @@ import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.recording.ObjectLoader;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -630,6 +631,9 @@ public final class ExtensionLoader {
                 }).produces(CapabilityBuildItem.class).buildIf(finalAddStep));
             }
 
+            if (buildStep.runRegardlessOfOutput()) {
+                methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(ArtifactResultBuildItem.class));
+            }
             if (isRecorder) {
                 assert recordAnnotation != null;
                 final ExecutionTime executionTime = recordAnnotation.value();

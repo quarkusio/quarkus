@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.net.URI;
 
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
@@ -131,10 +130,9 @@ public class CodeFlowTest {
     }
 
     @Test
-    @Disabled
     public void testIdTokenInjectionWithoutRestoredPath() throws IOException, InterruptedException {
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/web-app?tenantid=tenant-1");
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-before-redirect");
             assertNotNull(getStateCookieStateParam(webClient));
             assertNull(getStateCookieSavedPath(webClient));
 
@@ -148,7 +146,6 @@ public class CodeFlowTest {
             page = loginForm.getInputByName("login").click();
 
             assertEquals("callback:alice", page.getBody().asText());
-            // Clear the 'tokenid' cookie
             webClient.getCookieManager().clearCookies();
             // The same code path which successfully clears the cookie for all the other tests is not effective here.
             // The most likely reason is that the state cookie was created in response to "http://localhost:8081/web-app"

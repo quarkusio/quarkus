@@ -172,6 +172,7 @@
         <spring-security.version>5.2.0.RELEASE</spring-security.version>
         <spring-boot.version>2.1.10.RELEASE</spring-boot.version>
         <mvel2.version>2.4.4.Final</mvel2.version>
+        <htmlunit.version>2.36.0</htmlunit.version>
         <mockito.version>3.2.4</mockito.version>
         <jna.version>5.3.1</jna.version>
         <antlr.version>4.7.2</antlr.version>
@@ -2089,6 +2090,21 @@
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
                 <version>${mockito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.sourceforge.htmlunit</groupId>
+                <artifactId>htmlunit</artifactId>
+                <version>${htmlunit.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.httpcomponents</groupId>
+                        <artifactId>httpmime</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>

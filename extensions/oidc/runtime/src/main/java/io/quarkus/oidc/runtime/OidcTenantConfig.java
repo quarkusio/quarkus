@@ -13,6 +13,19 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class OidcTenantConfig {
 
     /**
+     * A unique tenant identifier. It must be set by {@code TenantConfigResolver} providers which
+     * resolve the tenant configuration dynamically and is optional in all other cases.
+     */
+    @ConfigItem
+    Optional<String> tenantId = Optional.empty();
+
+    /**
+     * The application type, which can be one of the following values from enum {@link ApplicationType}.
+     */
+    @ConfigItem(defaultValue = "service")
+    public ApplicationType applicationType;
+
+    /**
      * The maximum amount of time the adapter will try connecting to the currently unavailable OIDC server for.
      * For example, setting it to '20S' will let the adapter keep requesting the connection for up to 20 seconds.
      */
@@ -145,6 +158,14 @@ public class OidcTenantConfig {
 
     public void setAuthentication(Authentication authentication) {
         this.authentication = authentication;
+    }
+
+    public Optional<String> getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = Optional.of(tenantId);
     }
 
     @ConfigGroup
@@ -355,5 +376,21 @@ public class OidcTenantConfig {
         public void setPrincipalClaim(String principalClaim) {
             this.principalClaim = Optional.of(principalClaim);
         }
+    }
+
+    public static enum ApplicationType {
+        /**
+         * A {@code WEB_APP} is a client that server pages, usually a frontend application. For this type of client the
+         * Authorization Code Flow is
+         * defined as the preferred method for authenticating users.
+         */
+        WEB_APP,
+
+        /**
+         * A {@code SERVICE} is a client that has a set of protected HTTP resources, usually a backend application following the
+         * RESTful Architectural Design. For this type of client, the Bearer Authorization method is defined as the preferred
+         * method for authenticating and authorizing users.
+         */
+        SERVICE
     }
 }

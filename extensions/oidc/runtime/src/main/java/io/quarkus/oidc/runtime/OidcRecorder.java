@@ -30,6 +30,14 @@ public class OidcRecorder {
         Map<String, TenantConfigContext> tenantsConfig = new HashMap<>();
 
         for (Map.Entry<String, OidcTenantConfig> tenant : config.namedTenants.entrySet()) {
+            if (config.defaultTenant.getTenantId().isPresent()
+                    && tenant.getKey().equals(config.defaultTenant.getTenantId().get())) {
+                throw new OIDCException("tenant-id '" + tenant.getKey() + "' duplicates the default tenant-id");
+            }
+            if (tenant.getValue().getTenantId().isPresent() && !tenant.getKey().equals(tenant.getValue().getTenantId().get())) {
+                throw new OIDCException("Configuration has 2 different tenant-id values: '"
+                        + tenant.getKey() + "' and '" + tenant.getValue().getTenantId().get() + "'");
+            }
             tenantsConfig.put(tenant.getKey(), createTenantContext(vertxValue, tenant.getValue()));
         }
 

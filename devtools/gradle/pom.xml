@@ -141,5 +141,16 @@
                 <gradle.task>assemble</gradle.task>
             </properties>
         </profile>
+        <profile>
+            <id>basic-test-suite</id>
+            <activation>
+                <property>
+                    <name>basicTests</name>
+                </property>
+            </activation>
+            <properties>
+                <gradle.task>assemble</gradle.task>
+            </properties>
+        </profile>
     </profiles>
 </project>

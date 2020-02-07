@@ -199,5 +199,16 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>basic-test-suite</id>
+            <activation>
+                <property>
+                    <name>basicTests</name>
+                </property>
+            </activation>
+            <properties>
+                <maven.test.skip>true</maven.test.skip>
+            </properties>
+        </profile>
     </profiles>
 </project>

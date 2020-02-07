@@ -86,4 +86,28 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>basic-test-suite</id>
+            <activation>
+                <property>
+                    <name>basicTests</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-invoker-plugin</artifactId>
+                        <configuration>
+                            <skipInvocation>true</skipInvocation>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+            <properties>
+                <maven.test.skip>true</maven.test.skip>
+            </properties>
+        </profile>
+    </profiles>
 </project>

@@ -236,8 +236,9 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     @BuildStep
-    public void enableMetrics(Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> beans) {
-        if (capabilities.isCapabilityPresent(Capabilities.METRICS)) {
+    public void enableMetrics(Capabilities capabilities, ReactiveMessagingConfiguration configuration,
+            BuildProducer<AdditionalBeanBuildItem> beans) {
+        if (capabilities.isCapabilityPresent(Capabilities.METRICS) && configuration.metricsEnabled) {
             beans.produce(new AdditionalBeanBuildItem(MetricDecorator.class.getName()));
         }
     }

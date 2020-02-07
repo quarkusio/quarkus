@@ -329,7 +329,11 @@ package org.acme.rest.json;
 
 
 import javax.inject.Inject;
-import javax.ws.rs.*;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -369,7 +373,11 @@ package org.acme.rest.json.codec;
 
 import com.mongodb.MongoClientSettings;
 import org.acme.rest.json.Fruit;
-import org.bson.*;
+import org.bson.Document;
+import org.bson.BsonWriter;
+import org.bson.BsonValue;
+import org.bson.BsonReader;
+import org.bson.BsonString;
 import org.bson.codecs.Codec;
 import org.bson.codecs.CollectibleCodec;
 import org.bson.codecs.DecoderContext;

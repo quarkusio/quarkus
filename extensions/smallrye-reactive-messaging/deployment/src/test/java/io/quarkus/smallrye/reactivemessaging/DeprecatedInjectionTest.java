@@ -13,22 +13,22 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class LegacyInjectionTest {
+public class DeprecatedInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(SimpleBean.class, OldChannelConsumer.class, OldEmitterExample.class));
+                    .addClasses(SimpleBean.class, DeprecatedChannelConsumer.class, DeprecatedEmitterExample.class));
 
     @Inject
-    OldChannelConsumer oldChannelConsumer;
+    DeprecatedChannelConsumer deprecatedChannelConsumer;
 
     @Inject
-    OldEmitterExample oldEmitterExample;
+    DeprecatedEmitterExample deprecatedEmitterExample;
 
     @Test
     public void testOldChannelInjection() {
-        List<String> consumed = oldChannelConsumer.consume();
+        List<String> consumed = deprecatedChannelConsumer.consume();
         assertEquals(5, consumed.size());
         assertEquals("hello", consumed.get(0));
         assertEquals("with", consumed.get(1));
@@ -39,8 +39,8 @@ public class LegacyInjectionTest {
 
     @Test
     public void testOldEmitter() {
-        oldEmitterExample.run();
-        List<String> list = oldEmitterExample.list();
+        deprecatedEmitterExample.run();
+        List<String> list = deprecatedEmitterExample.list();
         assertEquals(3, list.size());
         assertEquals("a", list.get(0));
         assertEquals("b", list.get(1));

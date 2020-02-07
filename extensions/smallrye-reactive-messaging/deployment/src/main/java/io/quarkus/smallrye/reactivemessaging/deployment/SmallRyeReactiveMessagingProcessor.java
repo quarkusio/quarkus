@@ -149,7 +149,7 @@ public class SmallRyeReactiveMessagingProcessor {
 
         for (InjectionPointInfo injectionPoint : validationPhase.getContext()
                 .get(BuildExtension.Key.INJECTION_POINTS)) {
-            // New emitter
+            // New emitter from the spec.
             if (injectionPoint.getRequiredType().name().equals(
                     io.quarkus.smallrye.reactivemessaging.deployment.DotNames.EMITTER)) {
                 AnnotationInstance instance = injectionPoint
@@ -177,11 +177,11 @@ public class SmallRyeReactiveMessagingProcessor {
                 }
             }
 
-            // Old Emitter
+            // Deprecated Emitter from SmallRye (emitter, channel and on overflow have been added to the spec)
             if (injectionPoint.getRequiredType().name()
-                    .equals(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OLD_EMITTER)) {
+                    .equals(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.DEPRECATED_EMITTER)) {
                 AnnotationInstance instance = injectionPoint
-                        .getRequiredQualifier(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OLD_CHANNEL);
+                        .getRequiredQualifier(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.DEPRECATED_CHANNEL);
                 if (instance == null) {
                     validationPhase.getContext().addDeploymentProblem(
                             new DeploymentException(
@@ -191,7 +191,7 @@ public class SmallRyeReactiveMessagingProcessor {
                     String channelName = instance.value().asString();
                     Optional<AnnotationInstance> overflow = annotationStore.getAnnotations(injectionPoint.getTarget())
                             .stream()
-                            .filter(ai -> io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OLD_ON_OVERFLOW
+                            .filter(ai -> io.quarkus.smallrye.reactivemessaging.deployment.DotNames.DEPRECATED_ON_OVERFLOW
                                     .equals(ai.name()))
                             .filter(ai -> {
                                 if (ai.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER && injectionPoint

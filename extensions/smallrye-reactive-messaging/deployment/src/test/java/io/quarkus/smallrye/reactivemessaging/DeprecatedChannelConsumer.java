@@ -11,7 +11,7 @@ import io.reactivex.Flowable;
 import io.smallrye.reactive.messaging.annotations.Channel;
 
 @ApplicationScoped
-public class OldChannelConsumer {
+public class DeprecatedChannelConsumer {
 
     @Inject
     @Channel("source")

@@ -55,7 +55,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
@@ -145,14 +144,13 @@ public class JarResultBuildStep {
             PackageConfig packageConfig,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
-            List<UberJarRequiredBuildItem> uberJarRequired,
-            List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources) throws Exception {
+            List<UberJarRequiredBuildItem> uberJarRequired) throws Exception {
         if (!uberJarRequired.isEmpty() || packageConfig.uberJar) {
             return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
-                    packageConfig, applicationInfo, generatedClasses, generatedResources, generatedFileSystemResources);
+                    packageConfig, applicationInfo, generatedClasses, generatedResources);
         } else {
             return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
-                    packageConfig, applicationInfo, generatedClasses, generatedResources, generatedFileSystemResources);
+                    packageConfig, applicationInfo, generatedClasses, generatedResources);
         }
     }
 
@@ -163,8 +161,7 @@ public class JarResultBuildStep {
             PackageConfig packageConfig,
             ApplicationInfoBuildItem applicationInfo,
             List<GeneratedClassBuildItem> generatedClasses,
-            List<GeneratedResourceBuildItem> generatedResources,
-            List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources) throws Exception {
+            List<GeneratedResourceBuildItem> generatedResources) throws Exception {
 
         //for uberjars we move the original jar, so there is only a single jar in the output directory
         Path standardJar = outputTargetBuildItem.getOutputDirectory().resolve(outputTargetBuildItem.getBaseName() + ".jar");
@@ -284,8 +281,6 @@ public class JarResultBuildStep {
 
         runnerJar.toFile().setReadable(true, false);
 
-        generateFileSystemResources(outputTargetBuildItem, generatedFileSystemResources);
-
         return new JarBuildItem(runnerJar, originalJar, null);
     }
 
@@ -296,8 +291,7 @@ public class JarResultBuildStep {
             PackageConfig packageConfig,
             ApplicationInfoBuildItem applicationInfo,
             List<GeneratedClassBuildItem> generatedClasses,
-            List<GeneratedResourceBuildItem> generatedResources,
-            List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources) throws Exception {
+            List<GeneratedResourceBuildItem> generatedResources) throws Exception {
 
         Path runnerJar = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
@@ -315,20 +309,7 @@ public class JarResultBuildStep {
         }
         runnerJar.toFile().setReadable(true, false);
 
-        generateFileSystemResources(outputTargetBuildItem, generatedFileSystemResources);
-
         return new JarBuildItem(runnerJar, null, libDir);
-    }
-
-    private void generateFileSystemResources(OutputTargetBuildItem outputTargetBuildItem,
-            List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources) throws IOException {
-        for (GeneratedFileSystemResourceBuildItem generatedFileSystemResource : generatedFileSystemResources) {
-            Path outputPath = outputTargetBuildItem.getOutputDirectory().resolve(generatedFileSystemResource.getName());
-            Files.createDirectories(outputPath.getParent());
-            try (OutputStream out = Files.newOutputStream(outputPath)) {
-                out.write(generatedFileSystemResource.getData());
-            }
-        }
     }
 
     /**

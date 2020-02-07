@@ -103,7 +103,7 @@ class EvaluatorImpl implements Evaluator {
         }
     }
 
-    class EvalContextImpl implements EvalContext {
+    static class EvalContextImpl implements EvalContext {
 
         final boolean tryParent;
         final Object base;

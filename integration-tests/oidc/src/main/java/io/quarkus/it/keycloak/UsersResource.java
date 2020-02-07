@@ -36,7 +36,7 @@ public class UsersResource {
         return new User(((JsonWebToken) identity).getClaim("preferred_username"));
     }
 
-    public class User {
+    public static class User {
 
         private final String userName;
 

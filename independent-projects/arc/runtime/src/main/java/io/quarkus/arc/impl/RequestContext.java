@@ -177,7 +177,7 @@ class RequestContext implements ManagedContext {
                 ArcContainerImpl.instance());
     }
 
-    class RequestContextState implements ContextState {
+    static class RequestContextState implements ContextState {
 
         private final ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value;
 

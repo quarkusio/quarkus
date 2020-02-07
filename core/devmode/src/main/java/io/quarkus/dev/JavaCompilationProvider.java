@@ -83,7 +83,7 @@ public class JavaCompilationProvider implements CompilationProvider {
         return sourceFilePath;
     }
 
-    class RuntimeUpdatesClassVisitor extends ClassVisitor {
+    static class RuntimeUpdatesClassVisitor extends ClassVisitor {
         private Set<String> sourcePaths;
         private String classesPath;
         private String sourceFile;

@@ -224,7 +224,7 @@ public class GradleBuildFile extends BuildFile {
         return getModel().getBuildContent();
     }
 
-    private class Model {
+    private static class Model {
         private String settingsContent;
         private String buildContent;
         private Properties propertiesContent;

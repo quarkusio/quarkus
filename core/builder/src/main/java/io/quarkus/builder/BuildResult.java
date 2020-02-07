@@ -19,13 +19,13 @@ import io.quarkus.builder.item.SimpleBuildItem;
  */
 public final class BuildResult {
     private final ConcurrentHashMap<ItemId, BuildItem> simpleItems;
-    private final ConcurrentHashMap<ItemId, List<BuildItem>> multiItems;
+    private final MultiBuildItems multiItems;
     private final List<Diagnostic> diagnostics;
     private final long nanos;
     private final BuildMetrics metrics;
 
     BuildResult(final ConcurrentHashMap<ItemId, BuildItem> simpleItems,
-            final ConcurrentHashMap<ItemId, List<BuildItem>> multiItems, final Set<ItemId> finalIds,
+            final MultiBuildItems multiItems, final Set<ItemId> finalIds,
             final List<Diagnostic> diagnostics, final long nanos, BuildMetrics metrics) {
         this.simpleItems = simpleItems;
         this.multiItems = multiItems;
@@ -123,15 +123,6 @@ public final class BuildResult {
                     Messages.msg.closeFailed(obj, e);
                 }
         }
-        for (List<? extends BuildItem> list : multiItems.values()) {
-            for (BuildItem obj : list) {
-                if (obj instanceof AutoCloseable)
-                    try {
-                        ((AutoCloseable) obj).close();
-                    } catch (Exception e) {
-                        Messages.msg.closeFailed(obj, e);
-                    }
-            }
-        }
+        multiItems.closeAll();
     }
 }

@@ -6,15 +6,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
-
-import io.smallrye.reactive.messaging.annotations.Channel;
-import io.smallrye.reactive.messaging.annotations.Emitter;
-import io.smallrye.reactive.messaging.annotations.OnOverflow;
-import io.smallrye.reactive.messaging.annotations.Stream;
+import org.eclipse.microprofile.reactive.messaging.OnOverflow;
 
 @ApplicationScoped
-public class StreamEmitterWithOverflow {
+public class ChannelEmitterWithOverflow {
 
     @Inject
     @Channel("sink")
@@ -25,8 +23,8 @@ public class StreamEmitterWithOverflow {
     private Emitter<String> emitterForSink1;
 
     @Inject
-    public void setEmitter(@Stream("sink-1") Emitter<String> sink1,
-            @Stream("sink-2") @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 2) Emitter<String> sink2) {
+    public void setEmitter(@Channel("sink-1") Emitter<String> sink1,
+            @Channel("sink-2") @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 4) Emitter<String> sink2) {
         this.emitterForSink1 = sink1;
         this.emitterForSink2 = sink2;
     }
@@ -36,9 +34,18 @@ public class StreamEmitterWithOverflow {
     private List<String> sink2 = new CopyOnWriteArrayList<>();
 
     public void run() {
-        emitter.send("a").send("b").send("c").complete();
-        emitterForSink1.send("a1").send("b1").send("c1").complete();
-        emitterForSink2.send("a2").send("b2").send("c2").complete();
+        emitter.send("a");
+        emitter.send("b");
+        emitter.send("c").toCompletableFuture().join();
+        emitter.complete();
+        emitterForSink1.send("a1");
+        emitterForSink1.send("b1").toCompletableFuture().join();
+        emitterForSink1.send("c1");
+        emitterForSink1.complete();
+        emitterForSink2.send("a2").toCompletableFuture().join();
+        emitterForSink2.send("b2");
+        emitterForSink2.send("c2");
+        emitterForSink2.complete();
     }
 
     @Incoming("sink")

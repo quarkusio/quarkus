@@ -12,7 +12,7 @@ import io.smallrye.reactive.messaging.annotations.Channel;
 import io.smallrye.reactive.messaging.annotations.Emitter;
 
 @ApplicationScoped
-public class StreamEmitter {
+public class OldEmitterExample {
 
     @Inject
     @Channel("sink")

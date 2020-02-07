@@ -1,7 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
@@ -14,31 +13,22 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class SimpleTest {
+public class LegacyInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(SimpleBean.class, StreamConsumer.class, StreamEmitter.class));
+                    .addClasses(SimpleBean.class, OldChannelConsumer.class, OldEmitterExample.class));
 
     @Inject
-    StreamConsumer streamConsumer;
+    OldChannelConsumer oldChannelConsumer;
 
     @Inject
-    StreamEmitter streamEmitter;
+    OldEmitterExample oldEmitterExample;
 
     @Test
-    public void testSimpleBean() {
-        assertEquals(4, SimpleBean.RESULT.size());
-        assertTrue(SimpleBean.RESULT.contains("HELLO"));
-        assertTrue(SimpleBean.RESULT.contains("SMALLRYE"));
-        assertTrue(SimpleBean.RESULT.contains("REACTIVE"));
-        assertTrue(SimpleBean.RESULT.contains("MESSAGE"));
-    }
-
-    @Test
-    public void testStreamInject() {
-        List<String> consumed = streamConsumer.consume();
+    public void testOldChannelInjection() {
+        List<String> consumed = oldChannelConsumer.consume();
         assertEquals(5, consumed.size());
         assertEquals("hello", consumed.get(0));
         assertEquals("with", consumed.get(1));
@@ -48,9 +38,9 @@ public class SimpleTest {
     }
 
     @Test
-    public void testStreamEmitter() {
-        streamEmitter.run();
-        List<String> list = streamEmitter.list();
+    public void testOldEmitter() {
+        oldEmitterExample.run();
+        List<String> list = oldEmitterExample.list();
         assertEquals(3, list.size());
         assertEquals("a", list.get(0));
         assertEquals("b", list.get(1));

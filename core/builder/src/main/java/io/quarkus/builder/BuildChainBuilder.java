@@ -12,6 +12,8 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -22,6 +24,7 @@ import java.util.regex.Pattern;
 import org.wildfly.common.Assert;
 
 import io.quarkus.builder.item.BuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A build chain builder.
@@ -34,9 +37,9 @@ public final class BuildChainBuilder {
 
     private final BuildStepBuilder finalStep;
     private final List<BuildProvider> providers = new ArrayList<>();
-    private final Map<BuildStepBuilder, StackTraceElement[]> steps = new HashMap<BuildStepBuilder, StackTraceElement[]>();
+    private final Map<BuildStepBuilder, StackTraceElement[]> steps = new LinkedHashMap<BuildStepBuilder, StackTraceElement[]>();
     private final Set<ItemId> initialIds = new HashSet<>();
-    private final Set<ItemId> finalIds = new HashSet<>();
+    private final Set<ItemId> finalIds = new LinkedHashSet<>();
 
     BuildChainBuilder() {
         finalStep = addBuildStep(new FinalStep());
@@ -186,7 +189,7 @@ public final class BuildChainBuilder {
                 list.add(toBeAdded);
             }
         }
-        final Set<BuildStepBuilder> included = new HashSet<>();
+        final Set<BuildStepBuilder> included = new LinkedHashSet<>();
         // now begin to wire dependencies
         final Set<ItemId> finalIds = this.finalIds;
         final ArrayDeque<BuildStepBuilder> toAdd = new ArrayDeque<>();
@@ -196,7 +199,7 @@ public final class BuildChainBuilder {
         }
         // now recursively add producers of consumed items
         BuildStepBuilder stepBuilder;
-        Map<BuildStepBuilder, Set<Produce>> dependencies = new HashMap<>();
+        Map<BuildStepBuilder, Set<Produce>> dependencies = new LinkedHashMap<>();
         while ((stepBuilder = toAdd.pollFirst()) != null) {
             for (Map.Entry<ItemId, Consume> entry : stepBuilder.getConsumes().entrySet()) {
                 final Consume consume = entry.getValue();
@@ -207,15 +210,15 @@ public final class BuildChainBuilder {
                     }
                 }
                 // add every producer
-                addOne(allProduces, included, toAdd, id, dependencies.computeIfAbsent(stepBuilder, x -> new HashSet<>()));
+                addOne(allProduces, included, toAdd, id, dependencies.computeIfAbsent(stepBuilder, x -> new LinkedHashSet<>()));
             }
         }
         // calculate dependents
-        Map<BuildStepBuilder, Set<BuildStepBuilder>> dependents = new HashMap<>();
+        Map<BuildStepBuilder, Set<BuildStepBuilder>> dependents = new LinkedHashMap<>();
         for (Map.Entry<BuildStepBuilder, Set<Produce>> entry : dependencies.entrySet()) {
             final BuildStepBuilder dependent = entry.getKey();
             for (Produce produce : entry.getValue()) {
-                dependents.computeIfAbsent(produce.getStepBuilder(), x -> new HashSet<>()).add(dependent);
+                dependents.computeIfAbsent(produce.getStepBuilder(), x -> new LinkedHashSet<>()).add(dependent);
             }
         }
         // detect cycles
@@ -223,8 +226,11 @@ public final class BuildChainBuilder {
         // recursively build all
         final Set<StepInfo> startSteps = new HashSet<>();
         final Set<StepInfo> endSteps = new HashSet<>();
+        final int[] ordinal = new int[] { included.size() };
+        final Map<ItemId, int[]> producingOrdinals = new HashMap<>();
         for (BuildStepBuilder builder : included) {
-            buildOne(builder, included, mappedSteps, dependents, dependencies, startSteps, endSteps);
+            buildOne(builder, included, mappedSteps, dependents, dependencies, startSteps, endSteps, ordinal,
+                    producingOrdinals);
         }
         if (GRAPH_OUTPUT != null && !GRAPH_OUTPUT.isEmpty()) {
             try (FileOutputStream fos = new FileOutputStream(GRAPH_OUTPUT)) {
@@ -266,7 +272,7 @@ public final class BuildChainBuilder {
                 throw new RuntimeException("Failed to write debug graph output", ioe);
             }
         }
-        return new BuildChain(initialSingleCount, initialMultiCount, startSteps, consumed, this, endSteps.size());
+        return new BuildChain(initialSingleCount, startSteps, consumed, this, endSteps.size(), producingOrdinals);
     }
 
     private static void writeStep(final BufferedWriter writer, final HashSet<StepInfo> printed, final StepInfo step)
@@ -396,16 +402,17 @@ public final class BuildChainBuilder {
 
     private StepInfo buildOne(BuildStepBuilder toBuild, Set<BuildStepBuilder> included, Map<BuildStepBuilder, StepInfo> mapped,
             Map<BuildStepBuilder, Set<BuildStepBuilder>> dependents, Map<BuildStepBuilder, Set<Produce>> dependencies,
-            final Set<StepInfo> startSteps, final Set<StepInfo> endSteps) {
+            final Set<StepInfo> startSteps, final Set<StepInfo> endSteps, int[] ordinal, Map<ItemId, int[]> producingOrdinals) {
         if (mapped.containsKey(toBuild)) {
             return mapped.get(toBuild);
         }
-        Set<StepInfo> dependentStepInfos = new HashSet<>();
+        Set<StepInfo> dependentStepInfos = new LinkedHashSet<>();
         final Set<BuildStepBuilder> dependentsOfThis = dependents.getOrDefault(toBuild, Collections.emptySet());
         for (BuildStepBuilder dependentBuilder : dependentsOfThis) {
             if (included.contains(dependentBuilder)) {
                 dependentStepInfos
-                        .add(buildOne(dependentBuilder, included, mapped, dependents, dependencies, startSteps, endSteps));
+                        .add(buildOne(dependentBuilder, included, mapped, dependents, dependencies, startSteps, endSteps,
+                                ordinal, producingOrdinals));
             }
         }
         final Set<Produce> dependenciesOfThis = dependencies.getOrDefault(toBuild, Collections.emptySet());
@@ -423,7 +430,28 @@ public final class BuildChainBuilder {
                 includedDependents++;
             }
         }
-        final StepInfo stepInfo = new StepInfo(toBuild, includedDependencies, dependentStepInfos);
+        final Set<ItemId> realProduces = toBuild.getRealProduces();
+        final int ord = --ordinal[0];
+        for (ItemId itemId : realProduces) {
+            if (MultiBuildItem.class.isAssignableFrom(itemId.getType())) {
+                int[] ordinals = producingOrdinals.get(itemId);
+                if (ordinals == null) {
+                    producingOrdinals.put(itemId, new int[] { ord });
+                } else {
+                    int oldLen = ordinals.length;
+                    int[] newOrdinals = new int[oldLen + 1];
+                    newOrdinals[0] = ord;
+                    System.arraycopy(ordinals, 0, newOrdinals, 1, oldLen);
+                    producingOrdinals.put(itemId, newOrdinals);
+                }
+            }
+        }
+
+        final StepInfo stepInfo = new StepInfo(
+                toBuild.getBuildStep(),
+                toBuild.getRealConsumes(),
+                realProduces,
+                includedDependencies, dependentStepInfos, ord);
         mapped.put(toBuild, stepInfo);
         if (includedDependencies == 0) {
             // it's a start step!

@@ -1,6 +1,6 @@
 package io.quarkus.builder;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -16,8 +16,8 @@ import io.quarkus.builder.item.EmptyBuildItem;
  */
 public final class BuildStepBuilder {
     private final BuildChainBuilder buildChainBuilder;
-    private final Map<ItemId, Consume> consumes = new HashMap<>();
-    private final Map<ItemId, Produce> produces = new HashMap<>();
+    private final Map<ItemId, Consume> consumes = new LinkedHashMap<>();
+    private final Map<ItemId, Produce> produces = new LinkedHashMap<>();
     private BuildStep buildStep;
 
     BuildStepBuilder(final BuildChainBuilder buildChainBuilder) {
@@ -232,13 +232,13 @@ public final class BuildStepBuilder {
     }
 
     Set<ItemId> getRealConsumes() {
-        final HashMap<ItemId, Consume> map = new HashMap<>(consumes);
+        final LinkedHashMap<ItemId, Consume> map = new LinkedHashMap<>(consumes);
         map.entrySet().removeIf(e -> e.getValue().getConstraint() == Constraint.ORDER_ONLY);
         return map.keySet();
     }
 
     Set<ItemId> getRealProduces() {
-        final HashMap<ItemId, Produce> map = new HashMap<>(produces);
+        final LinkedHashMap<ItemId, Produce> map = new LinkedHashMap<>(produces);
         map.entrySet().removeIf(e -> e.getValue().getConstraint() == Constraint.ORDER_ONLY);
         return map.keySet();
     }

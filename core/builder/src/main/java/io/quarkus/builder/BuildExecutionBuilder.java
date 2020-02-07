@@ -1,14 +1,12 @@
 package io.quarkus.builder;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.wildfly.common.Assert;
 
 import io.quarkus.builder.item.BuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * A builder for a deployer execution.
@@ -19,13 +17,13 @@ public final class BuildExecutionBuilder {
     private final BuildChain buildChain;
     private final String buildTargetName;
     private final Map<ItemId, BuildItem> initialSingle;
-    private final Map<ItemId, ArrayList<BuildItem>> initialMulti;
+    private final Multis multis;
 
     BuildExecutionBuilder(final BuildChain buildChain, final String buildTargetName) {
         this.buildChain = buildChain;
         this.buildTargetName = buildTargetName;
         initialSingle = new HashMap<>(buildChain.getInitialSingleCount());
-        initialMulti = new HashMap<>(buildChain.getInitialMultiCount());
+        multis = new Multis(buildChain.getProducingOrdinals());
     }
 
     /**
@@ -86,15 +84,7 @@ public final class BuildExecutionBuilder {
             throw Messages.msg.undeclaredItem(id);
         }
         if (id.isMulti()) {
-            final List<BuildItem> list = initialMulti.computeIfAbsent(id, x -> new ArrayList<>());
-            if (Comparable.class.isAssignableFrom(id.getType())) {
-                int pos = Collections.binarySearch((List) list, value);
-                if (pos < 0)
-                    pos = -(pos + 1);
-                list.add(pos, value);
-            } else {
-                list.add(value);
-            }
+            multis.putInitial(id, (MultiBuildItem) value);
         } else {
             if (initialSingle.putIfAbsent(id, value) != null) {
                 throw Messages.msg.cannotMulti(id);
@@ -106,8 +96,8 @@ public final class BuildExecutionBuilder {
         return initialSingle;
     }
 
-    Map<ItemId, ArrayList<BuildItem>> getInitialMulti() {
-        return initialMulti;
+    Multis getMultis() {
+        return multis;
     }
 
     BuildChain getChain() {

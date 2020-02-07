@@ -3,6 +3,7 @@ package io.quarkus.builder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
@@ -16,23 +17,24 @@ import org.wildfly.common.Assert;
 public final class BuildChain {
     private final Set<ItemId> initialIds;
     private final int initialSingleCount;
-    private final int initialMultiCount;
     private final Set<ItemId> finalIds;
-    private final List<StepInfo> startSteps;
+    private final Set<StepInfo> startSteps;
     private final Set<ItemId> consumed;
     private final List<BuildProvider> providers;
     private final int endStepCount;
+    private final Map<ItemId, int[]> producingOrdinals;
 
-    BuildChain(final int initialSingleCount, final int initialMultiCount, final Set<StepInfo> startSteps,
-            final Set<ItemId> consumed, BuildChainBuilder builder, final int endStepCount) {
+    BuildChain(final int initialSingleCount, final Set<StepInfo> startSteps,
+            final Set<ItemId> consumed, BuildChainBuilder builder, final int endStepCount,
+            Map<ItemId, int[]> producingOrdinals) {
         providers = builder.getProviders();
         initialIds = builder.getInitialIds();
         finalIds = builder.getFinalIds();
         this.initialSingleCount = initialSingleCount;
-        this.initialMultiCount = initialMultiCount;
-        this.startSteps = new ArrayList<>(startSteps);
+        this.startSteps = startSteps;
         this.consumed = consumed;
         this.endStepCount = endStepCount;
+        this.producingOrdinals = producingOrdinals;
     }
 
     /**
@@ -98,11 +100,7 @@ public final class BuildChain {
         return initialSingleCount;
     }
 
-    int getInitialMultiCount() {
-        return initialMultiCount;
-    }
-
-    List<StepInfo> getStartSteps() {
+    Set<StepInfo> getStartSteps() {
         return startSteps;
     }
 
@@ -116,5 +114,15 @@ public final class BuildChain {
 
     int getEndStepCount() {
         return endStepCount;
+    }
+
+    /**
+     * Returns a map from {@link ItemId} to an array of ordinals of the {@link BuildStep}s producing the given
+     * {@link ItemId}. The ordinals array is sorted in the ascending order.
+     *
+     * @return the map
+     */
+    Map<ItemId, int[]> getProducingOrdinals() {
+        return producingOrdinals;
     }
 }

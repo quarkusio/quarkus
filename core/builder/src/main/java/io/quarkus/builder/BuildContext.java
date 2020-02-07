@@ -2,8 +2,6 @@ package io.quarkus.builder;
 
 import static io.quarkus.builder.Execution.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -133,7 +131,7 @@ public final class BuildContext {
         if (!stepInfo.getConsumes().contains(id)) {
             throw Messages.msg.undeclaredItem(id);
         }
-        return new ArrayList<>((List<T>) (List) execution.getMultis().getOrDefault(id, Collections.emptyList()));
+        return execution.getMultis().get(id);
     }
 
     /**
@@ -150,20 +148,6 @@ public final class BuildContext {
         final List<T> result = consumeMulti(type);
         result.sort(comparator);
         return result;
-    }
-
-    /**
-     * Determine if a item was produced and is therefore available to be {@linkplain #consume(Class) consumed}.
-     *
-     * @param type the item type (must not be {@code null})
-     * @return {@code true} if the item was produced and is available, {@code false} if it was not or if this deployer does
-     *         not consume the named item
-     */
-    public boolean isAvailableToConsume(Class<? extends BuildItem> type) {
-        final ItemId id = new ItemId(type);
-        return stepInfo.getConsumes().contains(id) && id.isMulti()
-                ? !execution.getMultis().getOrDefault(id, Collections.emptyList()).isEmpty()
-                : execution.getSingles().containsKey(id);
     }
 
     /**
@@ -240,17 +224,7 @@ public final class BuildContext {
             throw Messages.msg.undeclaredItem(id);
         }
         if (id.isMulti()) {
-            final List<BuildItem> list = execution.getMultis().computeIfAbsent(id, x -> new ArrayList<>());
-            synchronized (list) {
-                if (Comparable.class.isAssignableFrom(id.getType())) {
-                    int pos = Collections.binarySearch((List) list, value);
-                    if (pos < 0)
-                        pos = -(pos + 1);
-                    list.add(pos, value);
-                } else {
-                    list.add(value);
-                }
-            }
+            execution.getMultis().put(stepInfo.getOrdinal(), id, (MultiBuildItem) value);
         } else {
             if (execution.getSingles().putIfAbsent(id, value) != null) {
                 throw Messages.msg.cannotMulti(id);

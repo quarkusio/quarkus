@@ -208,7 +208,7 @@ You can for example modify your `Dockerfile.native` as follows to copy the requi
 
 [source, subs=attributes+]
 ----
-FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-version} as nativebuilder
+FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-version}-java8 as nativebuilder
 RUN mkdir -p /tmp/ssl-libs/lib \
   && cp /opt/graalvm/jre/lib/security/cacerts /tmp/ssl-libs \
   && cp /opt/graalvm/jre/lib/amd64/libsunec.so /tmp/ssl-libs/lib/

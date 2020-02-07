@@ -128,6 +128,8 @@ public class EagerAppBean {
 
 NOTE: `@Dependent` beans are destroyed immediately afterwards to follow the behavior of observers declared on `@Dependent` beans.
 
+TIP: If a class is annotated with `@Startup` but with no scope annotation then `@ApplicationScoped` is added automatically.
+
 == Package and run the application
 
 Run the application with: `./mvnw compile quarkus:dev`, the logged message is printed.

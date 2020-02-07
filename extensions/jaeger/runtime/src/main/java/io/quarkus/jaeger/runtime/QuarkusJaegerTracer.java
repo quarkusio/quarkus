@@ -1,6 +1,7 @@
 package io.quarkus.jaeger.runtime;
 
 import io.jaegertracing.Configuration;
+import io.jaegertracing.internal.JaegerTracer;
 import io.opentracing.ScopeManager;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
@@ -10,17 +11,29 @@ import io.opentracing.util.ThreadLocalScopeManager;
 
 public class QuarkusJaegerTracer implements Tracer {
 
-    static final String LOG_TRACE_CONTEXT = "JAEGER_LOG_TRACE_CONTEXT";
-    private static volatile Tracer tracer;
+    private volatile JaegerTracer tracer;
+
+    private boolean logTraceContext;
+
+    void setLogTraceContext(boolean logTraceContext) {
+        this.logTraceContext = logTraceContext;
+    }
 
     @Override
     public String toString() {
         return tracer().toString();
     }
 
-    private static Tracer tracer() {
+    synchronized void reset() {
+        if (tracer != null) {
+            tracer.close();
+        }
+        tracer = null;
+    }
+
+    private Tracer tracer() {
         if (tracer == null) {
-            synchronized (QuarkusJaegerTracer.class) {
+            synchronized (this) {
                 if (tracer == null) {
                     tracer = Configuration.fromEnv()
                             .withMetricsFactory(new QuarkusJaegerMetricsFactory())
@@ -33,10 +46,9 @@ public class QuarkusJaegerTracer implements Tracer {
         return tracer;
     }
 
-    private static ScopeManager getScopeManager() {
+    private ScopeManager getScopeManager() {
         ScopeManager scopeManager = new ThreadLocalScopeManager();
-        String logTraceContext = System.getProperty(LOG_TRACE_CONTEXT);
-        if ("true".equals(logTraceContext)) {
+        if (logTraceContext) {
             scopeManager = new MDCScopeManager(scopeManager);
         }
         return scopeManager;

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
+import io.opentracing.util.GlobalTracer;
 import io.opentracing.util.GlobalTracerTestUtil;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
@@ -27,12 +28,14 @@ public class TracingTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(TestResource.class)
-                    .addClass(TracerRegistrar.class)
                     .addClass(Service.class)
                     .addClass(RestService.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     static MockTracer mockTracer = new MockTracer();
+    static {
+        GlobalTracer.register(mockTracer);
+    }
 
     @AfterEach
     public void after() {

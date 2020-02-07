@@ -1,45 +1,38 @@
 package io.quarkus.jaeger.runtime;
 
-import static io.jaegertracing.Configuration.JAEGER_SERVICE_NAME;
-
 import java.util.Optional;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.opentracing.util.GlobalTracer;
+import io.quarkus.runtime.ApplicationConfig;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class JaegerDeploymentRecorder {
-    private static volatile boolean registered;
-
     private static final Logger log = Logger.getLogger(JaegerDeploymentRecorder.class);
+    private static final Optional UNKNOWN_SERVICE_NAME = Optional.of("quarkus/unknown");
+    private static final QuarkusJaegerTracer quarkusTracer = new QuarkusJaegerTracer();
 
-    public void registerTracer(JaegerConfig jaeger) {
-        if (!registered) {
-            if (isValidConfig(jaeger)) {
-                initTracerConfig(jaeger);
-                QuarkusJaegerTracer quarkusJaegerTracer = new QuarkusJaegerTracer();
-                log.debugf("Registering tracer to GlobalTracer %s", quarkusJaegerTracer);
-                GlobalTracer.register(quarkusJaegerTracer);
+    synchronized public void registerTracer(JaegerConfig jaeger, ApplicationConfig appConfig) {
+        if (!jaeger.serviceName.isPresent()) {
+            if (appConfig.name.isPresent()) {
+                jaeger.serviceName = appConfig.name;
+            } else {
+                jaeger.serviceName = UNKNOWN_SERVICE_NAME;
             }
-            registered = true;
         }
-    }
-
-    private boolean isValidConfig(JaegerConfig jaeger) {
-        Config mpconfig = ConfigProvider.getConfig();
-        Optional<String> serviceName = mpconfig.getOptionalValue(JAEGER_SERVICE_NAME, String.class);
-        if (!jaeger.serviceName.isPresent() && !serviceName.isPresent()) {
-            log.warn(
-                    "Jaeger service name has not been defined, either as 'quarkus.jaeger.service-name' application property or JAEGER_SERVICE_NAME environment variable/system property");
-        } else {
-            return true;
+        initTracerConfig(jaeger);
+        quarkusTracer.reset();
+        // register Quarkus tracer to GlobalTracer.
+        // Usually the tracer will be registered only here, although consumers
+        // could register a different tracer in the code which runs before this class.
+        // This is also used in tests.
+        if (!GlobalTracer.isRegistered()) {
+            log.debugf("Registering tracer to GlobalTracer %s", quarkusTracer);
+            GlobalTracer.register(quarkusTracer);
         }
-        return false;
     }
 
     private void initTracerConfig(JaegerConfig jaeger) {
@@ -60,8 +53,7 @@ public class JaegerDeploymentRecorder {
         initTracerProperty("JAEGER_TAGS", jaeger.tags, tags -> tags.toString());
         initTracerProperty("JAEGER_PROPAGATION", jaeger.propagation, format -> format.toString());
         initTracerProperty("JAEGER_SENDER_FACTORY", jaeger.senderFactory, sender -> sender);
-        initTracerProperty(QuarkusJaegerTracer.LOG_TRACE_CONTEXT, Optional.of(jaeger.logTraceContext),
-                logTraceContext -> logTraceContext.toString());
+        quarkusTracer.setLogTraceContext(jaeger.logTraceContext);
     }
 
     private <T> void initTracerProperty(String property, Optional<T> value, Function<T, String> accessor) {

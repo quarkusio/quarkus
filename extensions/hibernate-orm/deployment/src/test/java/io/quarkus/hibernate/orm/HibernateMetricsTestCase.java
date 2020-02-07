@@ -37,10 +37,6 @@ public class HibernateMetricsTestCase {
         @Id
         private Long number;
 
-        public DummyEntity(Long number) {
-            this.number = number;
-        }
-
         public Long getNumber() {
             return number;
         }
@@ -64,7 +60,8 @@ public class HibernateMetricsTestCase {
         assertEquals(0L, getCounterValueOrNull("hibernate-orm.entities.inserted"));
         Arc.container().requestContext().activate();
         try {
-            DummyEntity entity = new DummyEntity(12345L);
+            DummyEntity entity = new DummyEntity();
+            entity.number = 12345L;
             em.persist(entity);
             em.flush();
             em.createQuery("from DummyEntity e").getResultList();

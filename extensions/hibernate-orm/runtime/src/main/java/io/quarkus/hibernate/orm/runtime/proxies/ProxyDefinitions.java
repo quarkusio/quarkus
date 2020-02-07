@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.hibernate.HibernateException;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl;
 import org.hibernate.internal.util.ReflectHelper;
@@ -13,7 +14,6 @@ import org.hibernate.internal.util.collections.ArrayHelper;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.proxy.pojo.ProxyFactoryHelper;
 import org.hibernate.proxy.pojo.bytebuddy.ByteBuddyProxyHelper;
-import org.jboss.logging.Logger;
 
 /**
  * Runtime proxies are used by Hibernate ORM to handle a number of corner cases;
@@ -27,8 +27,6 @@ import org.jboss.logging.Logger;
  * required enhanced proxies.
  */
 public final class ProxyDefinitions {
-
-    private static final Logger LOGGER = Logger.getLogger(ProxyDefinitions.class.getName());
 
     private final Map<Class<?>, ProxyClassDetailsHolder> proxyDefinitionMap;
 
@@ -52,8 +50,9 @@ public final class ProxyDefinitions {
                             proxyDefinitionMap.put(mappedClass,
                                     new ProxyClassDetailsHolder(overridesEquals, proxyClassDefinition.getConstructor()));
                         } catch (NoSuchMethodException e) {
-                            LOGGER.warn("Failed to generate Enhanced Proxy as default constructor lookup failed for entity '"
-                                    + mappedClass.getName() + "'");
+                            throw new HibernateException(
+                                    "Failed to generate Enhanced Proxy: default constructor is missing for entity '"
+                                            + mappedClass.getName() + "'. Please add a default constructor explicitly.");
                         }
                     }
                 }

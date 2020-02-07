@@ -3,7 +3,6 @@ package io.quarkus.builder;
 import static io.quarkus.builder.Execution.log;
 
 import java.time.LocalTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -136,7 +135,7 @@ public final class BuildContext {
         if (!stepInfo.getConsumes().contains(id)) {
             throw Messages.msg.undeclaredItem(id);
         }
-        return new ArrayList<>((List<T>) (List) execution.getMultis().getOrDefault(id, Collections.emptyList()));
+        return Collections.unmodifiableList(execution.getMultis().get(id));
     }
 
     /**
@@ -211,17 +210,7 @@ public final class BuildContext {
             throw Messages.msg.undeclaredItem(id);
         }
         if (id.isMulti()) {
-            final List<BuildItem> list = execution.getMultis().computeIfAbsent(id, x -> new ArrayList<>());
-            synchronized (list) {
-                if (Comparable.class.isAssignableFrom(id.getType())) {
-                    int pos = Collections.binarySearch((List) list, value);
-                    if (pos < 0)
-                        pos = -(pos + 1);
-                    list.add(pos, value);
-                } else {
-                    list.add(value);
-                }
-            }
+            execution.getMultis().put(stepInfo.getOrdinal(), id, (MultiBuildItem) value);
         } else {
             if (execution.getSingles().putIfAbsent(id, value) != null) {
                 throw Messages.msg.cannotMulti(id);

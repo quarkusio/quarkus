@@ -6,11 +6,9 @@ import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -21,9 +19,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -53,8 +48,7 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 //todo: share common core with QuarkusUnitTest
 public class QuarkusTestExtension
-        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor,
-        AfterAllCallback {
+        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor {
 
     protected static final String TEST_LOCATION = "test-location";
     private static boolean failedBoot;
@@ -210,30 +204,6 @@ public class QuarkusTestExtension
         }
     }
 
-    private void invokeQuarkusMethod(Class<? extends Annotation> annotation, Class<?> testClass) {
-        Class c = testClass;
-        while (c != Object.class && c != null) {
-            for (Method m : c.getDeclaredMethods()) {
-                boolean invoke = false;
-                for (Annotation i : m.getAnnotations()) {
-                    if (i.annotationType().getName().equals(annotation.getName())) {
-                        invoke = true;
-                        break;
-                    }
-                }
-                if (invoke) {
-                    m.setAccessible(true);
-                    try {
-                        m.invoke(Modifier.isStatic(m.getModifiers()) ? null : actualTestInstance);
-                    } catch (IllegalAccessException | InvocationTargetException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-            c = c.getSuperclass();
-        }
-    }
-
     @Override
     public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
             ExtensionContext extensionContext) throws Throwable {
@@ -271,7 +241,6 @@ public class QuarkusTestExtension
                     Thread.currentThread().getContextClassLoader());
 
             actualTestInstance = runningQuarkusApplication.instance(actualTestClass);
-            invokeQuarkusMethod(BeforeAll.class, actualTestClass);
 
             Class<?> resM = Thread.currentThread().getContextClassLoader().loadClass(TestHTTPResourceManager.class.getName());
             resM.getDeclaredMethod("inject", Object.class).invoke(null, actualTestInstance);
@@ -344,12 +313,14 @@ public class QuarkusTestExtension
                     Thread.currentThread().getContextClassLoader());
             ;
             while (c != Object.class) {
-                try {
-                    newMethod = c.getDeclaredMethod(invocationContext.getExecutable().getName(),
-                            invocationContext.getExecutable().getParameterTypes());
-                    break;
-                } catch (NoSuchMethodException e) {
-                    //ignore
+                if (c.getName().equals(invocationContext.getExecutable().getDeclaringClass().getName())) {
+                    try {
+                        newMethod = c.getDeclaredMethod(invocationContext.getExecutable().getName(),
+                                invocationContext.getExecutable().getParameterTypes());
+                        break;
+                    } catch (NoSuchMethodException e) {
+                        //ignore
+                    }
                 }
                 c = c.getSuperclass();
             }
@@ -366,11 +337,6 @@ public class QuarkusTestExtension
         } catch (IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public void afterAll(ExtensionContext context) throws Exception {
-        invokeQuarkusMethod(AfterAll.class, actualTestClass);
     }
 
     class ExtensionState implements ExtensionContext.Store.CloseableResource {

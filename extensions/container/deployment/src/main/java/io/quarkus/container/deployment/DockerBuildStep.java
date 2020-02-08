@@ -7,8 +7,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
+import java.nio.file.Paths;
+import java.util.AbstractMap;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -40,66 +42,65 @@ public class DockerBuildStep {
     BuildProducer<ArtifactResultBuildItem> artifact;
 
     @BuildStep(onlyIf = DockerBuild.class, onlyIfNot = NativeBuild.class)
-    public ContainerImageResultBuildItem dockerBuildFromJar(ApplicationInfoBuildItem app,
+    public ContainerImageResultBuildItem dockerBuildFromJar(DockerConfig dockerConfig, ApplicationInfoBuildItem app,
             OutputTargetBuildItem out,
             ContainerImageBuildItem containerImage, JarBuildItem jar) {
         log.info("Building docker image for jar.");
         ImageIdReader reader = new ImageIdReader();
-        Path dockerFile = extractDockerfile(DOCKERFILE_JVM);
-        ExecUtil.exec(out.getOutputDirectory().toFile(),
-                reader,
-                "docker", "build",
-                "-f",
-                dockerFile.resolve(DOCKERFILE_JVM).toAbsolutePath().toString(),
-                "-t", containerImage.getImage(),
-                out.getOutputDirectory().toAbsolutePath().toString());
-
-        artifact.produce(new ArtifactResultBuildItem(null, "jar-container", new HashMap<String, Path>()));
+        buildContainerImage(dockerConfig, containerImage, out, reader, false);
+        artifact.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
         return new ContainerImageResultBuildItem(reader.getImageId(), ImageUtil.getRepository(containerImage.getImage()),
                 ImageUtil.getTag(containerImage.getImage()));
     }
 
     @BuildStep(onlyIf = { DockerBuild.class, NativeBuild.class })
-    public ContainerImageResultBuildItem dockerBuildFromNativeImage(ApplicationInfoBuildItem app,
+    public ContainerImageResultBuildItem dockerBuildFromNativeImage(DockerConfig dockerConfig, ApplicationInfoBuildItem app,
             ContainerImageBuildItem containerImage,
             OutputTargetBuildItem out,
             Optional<ContainerImageBuildItem> dockerImage,
             NativeImageBuildItem nativeImage) {
         log.info("Building docker image for native image.");
-        Path dockerFile = extractDockerfile(DOCKERFILE_NATIVE);
         ImageIdReader reader = new ImageIdReader();
-        ExecUtil.exec(out.getOutputDirectory().toFile(),
-                reader,
-                "docker", "build",
-                "-f",
-                dockerFile.resolve(DOCKERFILE_NATIVE).toAbsolutePath().toString(),
-                "-t", containerImage.getImage(),
-                out.getOutputDirectory().toAbsolutePath().toString());
-        artifact.produce(new ArtifactResultBuildItem(null, "native-container", new HashMap<String, Path>()));
+        buildContainerImage(dockerConfig, containerImage, out, reader, true);
+        artifact.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
         return new ContainerImageResultBuildItem(reader.getImageId(), ImageUtil.getRepository(containerImage.getImage()),
                 ImageUtil.getTag(containerImage.getImage()));
     }
 
-    private Path extractDockerfile(String resource) {
-        final Path path;
-        try {
-            path = Files.createTempDirectory("quarkus-docker");
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to setup environment for generating docker resources", e);
-        }
+    private void buildContainerImage(DockerConfig dockerConfig, ContainerImageBuildItem containerImage,
+            OutputTargetBuildItem out, ImageIdReader reader, boolean forNative) {
+        DockerfilePaths dockerfilePaths = getDockerfilePaths(dockerConfig, forNative, out);
+        ExecUtil.exec(out.getOutputDirectory().toFile(),
+                reader,
+                "docker", "build",
+                "-f",
+                dockerfilePaths.getDockerfilePath().toAbsolutePath().toString(),
+                "-t", containerImage.getImage(),
+                dockerfilePaths.getDockerExecutionPath().toAbsolutePath().toString());
+    }
 
-        try (InputStream jvm = getClass().getClassLoader().getResource(resource).openStream()) {
-            Files.copy(jvm, path.resolve(resource), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to extract docker resource: " + resource, e);
+    private DockerfilePaths getDockerfilePaths(DockerConfig dockerConfig, boolean forNative,
+            OutputTargetBuildItem outputTargetBuildItem) {
+        Path outputDirectory = outputTargetBuildItem.getOutputDirectory();
+        if (forNative) {
+            if (dockerConfig.dockerfileNativePath.isPresent()) {
+                return ProvidedDockerfile.get(Paths.get(dockerConfig.dockerfileNativePath.get()), outputDirectory);
+            } else {
+                return DockerfileDetectionResult.detect(DOCKERFILE_NATIVE, outputDirectory);
+            }
+        } else {
+            if (dockerConfig.dockerfileJvmPath.isPresent()) {
+                return ProvidedDockerfile.get(Paths.get(dockerConfig.dockerfileJvmPath.get()), outputDirectory);
+            } else {
+                return DockerfileDetectionResult.detect(DOCKERFILE_JVM, outputDirectory);
+            }
         }
-        return path;
     }
 
     /**
      * A function that creates a command output reader, that reads and holds the image id from the docker build output.
      */
-    private class ImageIdReader implements Function<InputStream, Runnable> {
+    private static class ImageIdReader implements Function<InputStream, Runnable> {
 
         private final AtomicReference<String> id = new AtomicReference<>();
 
@@ -129,6 +130,113 @@ public class DockerBuildStep {
                 }
             };
         }
+    }
+
+    private interface DockerfilePaths {
+        Path getDockerfilePath();
+
+        Path getDockerExecutionPath();
+    }
+
+    private static class DockerfileDetectionResult implements DockerfilePaths {
+        private final Path dockerfilePath;
+        private final Path dockerExecutionPath;
+
+        private DockerfileDetectionResult(Path dockerfilePath, Path dockerExecutionPath) {
+            this.dockerfilePath = dockerfilePath;
+            this.dockerExecutionPath = dockerExecutionPath;
+        }
+
+        public Path getDockerfilePath() {
+            return dockerfilePath;
+        }
+
+        public Path getDockerExecutionPath() {
+            return dockerExecutionPath;
+        }
+
+        static DockerfileDetectionResult detect(String resource, Path outputDirectory) {
+            Map.Entry<Path, Path> dockerfileToExecutionRoot = findDockerfileRoot(outputDirectory);
+            if (dockerfileToExecutionRoot == null) {
+                throw new IllegalStateException(
+                        "Unable to find root of Dockerfile files. Consider adding 'src/main/docker/' to your project root");
+            }
+            Path dockerFilePath = dockerfileToExecutionRoot.getKey().resolve(resource);
+            if (!Files.exists(dockerFilePath)) {
+                throw new IllegalStateException(
+                        "Unable to find Dockerfile " + resource + " in "
+                                + dockerfileToExecutionRoot.getKey().toAbsolutePath());
+            }
+            return new DockerfileDetectionResult(dockerFilePath, dockerfileToExecutionRoot.getValue());
+        }
+
+        private static Map.Entry<Path, Path> findDockerfileRoot(Path outputDirectory) {
+            Map.Entry<Path, Path> mainSourcesRoot = findMainSourcesRoot(outputDirectory);
+            if (mainSourcesRoot == null) {
+                return null;
+            }
+            Path dockerfilesRoot = mainSourcesRoot.getKey().resolve("docker");
+            if (!dockerfilesRoot.toFile().exists()) {
+                return null;
+            }
+            return new AbstractMap.SimpleEntry<>(dockerfilesRoot, mainSourcesRoot.getValue());
+        }
+
+    }
+
+    private static class ProvidedDockerfile implements DockerfilePaths {
+        private final Path dockerfilePath;
+        private final Path dockerExecutionPath;
+
+        private ProvidedDockerfile(Path dockerfilePath, Path dockerExecutionPath) {
+            this.dockerfilePath = dockerfilePath;
+            this.dockerExecutionPath = dockerExecutionPath;
+        }
+
+        public static ProvidedDockerfile get(Path dockerfilePath, Path outputDirectory) {
+            AbstractMap.SimpleEntry<Path, Path> mainSourcesRoot = findMainSourcesRoot(outputDirectory);
+            if (mainSourcesRoot == null) {
+                throw new IllegalStateException("Unable to determine project root");
+            }
+            Path effectiveDockerfilePath = dockerfilePath.isAbsolute() ? dockerfilePath
+                    : mainSourcesRoot.getValue().resolve(dockerfilePath);
+            if (!dockerfilePath.toFile().exists()) {
+                throw new IllegalArgumentException(
+                        "Specified Dockerfile path " + effectiveDockerfilePath.toAbsolutePath().toString() + " does not exist");
+            }
+            return new ProvidedDockerfile(
+                    effectiveDockerfilePath,
+                    mainSourcesRoot.getValue());
+        }
+
+        @Override
+        public Path getDockerfilePath() {
+            return dockerfilePath;
+        }
+
+        @Override
+        public Path getDockerExecutionPath() {
+            return dockerExecutionPath;
+        }
+    }
+
+    /**
+     * Return a Map.Entry (which is used as a Tuple) containing the main sources root as the key
+     * and the project root as the valyue
+     */
+    private static AbstractMap.SimpleEntry<Path, Path> findMainSourcesRoot(Path outputDirectory) {
+        Path currentPath = outputDirectory;
+        do {
+            Path toCheck = currentPath.resolve(Paths.get("src", "main"));
+            if (toCheck.toFile().exists()) {
+                return new AbstractMap.SimpleEntry<>(toCheck, currentPath);
+            }
+            if (Files.exists(currentPath.getParent())) {
+                currentPath = currentPath.getParent();
+            } else {
+                return null;
+            }
+        } while (true);
     }
 
 }

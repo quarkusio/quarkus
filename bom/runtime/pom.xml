@@ -125,7 +125,9 @@
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <test-containers.version>1.12.4</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
-        <axle-client.version>0.0.10</axle-client.version>
+        <mutiny.version>0.3.1</mutiny.version>
+        <axle-client.version>0.0.12</axle-client.version>
+        <mutiny-client.version>0.0.12</mutiny-client.version>
         <kafka-clients.version>2.3.1</kafka-clients.version>
         <kafka2.version>2.3.1</kafka2.version>
         <debezium.version>1.0.0.Final</debezium.version>
@@ -953,6 +955,16 @@
                 <groupId>io.agroal</groupId>
                 <artifactId>agroal-pool</artifactId>
                 <version>${agroal.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>mutiny</artifactId>
+                <version>${mutiny.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-mutiny</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.reactivex.rxjava2</groupId>
@@ -2109,8 +2121,43 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-mutiny-generator</artifactId>
+                <version>${mutiny-client.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-databind</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-core</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-mutiny-vertx-core</artifactId>
+                <version>${mutiny-client.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-databind</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-core</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-axle-web-client</artifactId>
                 <version>${axle-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
+                <version>${mutiny-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.vertx</groupId>
@@ -2129,8 +2176,18 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-mutiny-vertx-sql-client</artifactId>
+                <version>${mutiny-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-axle-mysql-client</artifactId>
                 <version>${axle-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-mutiny-vertx-mysql-client</artifactId>
+                <version>${mutiny-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
@@ -2139,8 +2196,18 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-mutiny-vertx-pg-client</artifactId>
+                <version>${mutiny-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-axle-mail-client</artifactId>
                 <version>${axle-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-mutiny-vertx-mail-client</artifactId>
+                <version>${mutiny-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.vertx</groupId>

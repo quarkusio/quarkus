@@ -4,8 +4,10 @@ import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.ServiceLoader;
 
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
@@ -73,6 +75,8 @@ public abstract class AbstractDataSourceProducer {
             log.warn("Datasource " + dataSourceName + " not started: driver and/or url are not defined.");
             return null;
         }
+        // we first make sure that all available JDBC drivers are loaded in the current TCCL
+        loadDriversInTCCL();
 
         DataSourceRuntimeConfig dataSourceRuntimeConfig = dataSourceRuntimeConfigOptional.get();
 
@@ -241,6 +245,24 @@ public abstract class AbstractDataSourceProducer {
         if (runtimeConfig == null) {
             throw new IllegalStateException(
                     "The datasources are not ready to be consumed: the runtime configuration has not been injected yet");
+        }
+    }
+
+    /**
+     * Uses the {@link ServiceLoader#load(Class) ServiceLoader to load the JDBC drivers} in context
+     * of the current {@link Thread#getContextClassLoader() TCCL}
+     */
+    private static void loadDriversInTCCL() {
+        // load JDBC drivers in the current TCCL
+        final ServiceLoader<Driver> drivers = ServiceLoader.load(Driver.class);
+        final Iterator<Driver> iterator = drivers.iterator();
+        while (iterator.hasNext()) {
+            try {
+                // load the driver
+                iterator.next();
+            } catch (Throwable t) {
+                // ignore
+            }
         }
     }
 

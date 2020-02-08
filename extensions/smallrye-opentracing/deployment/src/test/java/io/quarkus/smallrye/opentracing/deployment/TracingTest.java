@@ -8,8 +8,8 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -30,6 +30,9 @@ public class TracingTest {
                     .addClass(TestResource.class)
                     .addClass(Service.class)
                     .addClass(RestService.class)
+                    .addClass(Fruit.class)
+                    .addAsResource("application.properties")
+                    .addAsResource("import.sql")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     static MockTracer mockTracer = new MockTracer();
@@ -37,7 +40,7 @@ public class TracingTest {
         GlobalTracer.register(mockTracer);
     }
 
-    @AfterEach
+    @BeforeEach
     public void after() {
         mockTracer.reset();
     }

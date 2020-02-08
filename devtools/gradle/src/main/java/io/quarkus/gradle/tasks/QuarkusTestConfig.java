@@ -1,7 +1,5 @@
 package io.quarkus.gradle.tasks;
 
-import java.io.ObjectOutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -29,10 +27,7 @@ public class QuarkusTestConfig extends QuarkusTask {
                     .toAbsolutePath()
                     .toString();
 
-            final Path serializedModel = Files.createTempFile("quarkus-", "-gradle-test");
-            try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(serializedModel))) {
-                out.writeObject(deploymentDeps);
-            }
+            final Path serializedModel = QuarkusGradleUtils.serializeAppModel(deploymentDeps);
 
             for (Test test : getProject().getTasks().withType(Test.class)) {
                 final Map<String, Object> props = test.getSystemProperties();

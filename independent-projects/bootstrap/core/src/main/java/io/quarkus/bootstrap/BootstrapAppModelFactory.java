@@ -221,7 +221,7 @@ public class BootstrapAppModelFactory {
                 final Path p = Paths.get(serializedModel);
                 if (Files.exists(p)) {
                     try (InputStream existing = Files.newInputStream(Paths.get(serializedModel))) {
-                        AppModel appModel = (AppModel) new ObjectInputStream(existing).readObject();
+                        final AppModel appModel = (AppModel) new ObjectInputStream(existing).readObject();
                         return new CurationResult(appModel);
                     } catch (IOException | ClassNotFoundException e) {
                         log.error("Failed to load serialized app mode", e);

@@ -29,6 +29,10 @@
                     <dependenciesToScan>
                         <dependency>org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-tck</dependency>
                     </dependenciesToScan>
+                    <excludes>
+                        <!-- There tests have been corrected in the next version of the TCK, some signatures are now considered invalid -->
+                        <exclude>org.eclipse.microprofile.reactive.messaging.tck.invalid.InvalidConfigurationTest</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
@@ -46,6 +50,10 @@
             <groupId>org.eclipse.microprofile.reactive.messaging</groupId>
             <artifactId>microprofile-reactive-messaging-tck</artifactId>
             <version>${microprofile-reactive-messaging-api.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-metrics</artifactId>
         </dependency>
     </dependencies>
 </project>

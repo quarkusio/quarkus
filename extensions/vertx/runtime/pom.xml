@@ -55,6 +55,14 @@
             <groupId>io.vertx</groupId>
             <artifactId>vertx-rx-java2</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mutiny</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-mutiny-vertx-core</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>

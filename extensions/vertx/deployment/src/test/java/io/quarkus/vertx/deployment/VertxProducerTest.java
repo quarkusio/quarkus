@@ -25,10 +25,14 @@ public class VertxProducerTest {
                     .addAsResource(new File("src/test/resources/lorem.txt"), "files/lorem.txt")
                     .addClasses(BeanUsingBareVertx.class)
                     .addClasses(BeanUsingAxleVertx.class)
-                    .addClasses(BeanUsingRXVertx.class));
+                    .addClasses(BeanUsingRXVertx.class)
+                    .addClasses(BeanUsingMutinyVertx.class));
 
     @Inject
     BeanUsingBareVertx beanUsingVertx;
+
+    @Inject
+    BeanUsingBareVertx beanUsingMutiny;
 
     @Inject
     BeanUsingAxleVertx beanUsingAxle;
@@ -88,6 +92,22 @@ public class VertxProducerTest {
             CountDownLatch latch = new CountDownLatch(1);
             vertx.fileSystem().rxReadFile("src/test/resources/lorem.txt")
                     .subscribe(buffer -> latch.countDown());
+            latch.await(5, TimeUnit.SECONDS);
+        }
+
+    }
+
+    @ApplicationScoped
+    static class BeanUsingMutinyVertx {
+
+        @Inject
+        io.vertx.mutiny.core.Vertx vertx;
+
+        public void verify() throws Exception {
+            CountDownLatch latch = new CountDownLatch(1);
+            CompletionStage<io.vertx.mutiny.core.buffer.Buffer> stage = vertx.fileSystem().readFile("files/lorem.txt")
+                    .subscribeAsCompletionStage();
+            stage.thenAccept(buffer -> latch.countDown());
             latch.await(5, TimeUnit.SECONDS);
         }
 

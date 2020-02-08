@@ -13,18 +13,26 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.vertx.axle.core.Vertx;
-import io.vertx.axle.core.eventbus.Message;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.eventbus.Message;
 
-public class CodecTest {
+public class EventBusCodecTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap
-                    .create(JavaArchive.class).addClasses(MyBean.class, MyPetCodec.class, Person.class, Pet.class));
+                    .create(JavaArchive.class).addClasses(MyBean.class, MyNonLocalBean.class,
+                            MyPetCodec.class, Person.class, Pet.class));
 
     @Inject
     MyBean bean;
+
+    /**
+     * Bean setting the consumption to be non-local.
+     * So, the user must configure the codec explicitly.
+     */
+    @Inject
+    MyNonLocalBean nonLocalBean;
 
     @Inject
     Vertx vertx;
@@ -32,17 +40,25 @@ public class CodecTest {
     @Test
     public void testWithGenericCodec() {
         Greeting hello = vertx.eventBus().<Greeting> request("person", new Person("bob", "morane"))
-                .thenApply(Message::body)
-                .toCompletableFuture().join();
+                .onItem().apply(Message::body)
+                .await().indefinitely();
         assertThat(hello.getMessage()).isEqualTo("Hello bob morane");
     }
 
     @Test
     public void testWithUserCodec() {
         Greeting hello = vertx.eventBus().<Greeting> request("pet", new Pet("neo", "rabbit"))
-                .thenApply(Message::body)
-                .toCompletableFuture().join();
+                .onItem().apply(Message::body)
+                .await().indefinitely();
         assertThat(hello.getMessage()).isEqualTo("Hello NEO");
+    }
+
+    @Test
+    public void testWithUserCodecNonLocal() {
+        Greeting hello = vertx.eventBus().<Greeting> request("nl-pet", new Pet("neo", "rabbit"))
+                .onItem().apply(Message::body)
+                .await().indefinitely();
+        assertThat(hello.getMessage()).isEqualTo("Non Local Hello NEO");
     }
 
     static class Greeting {
@@ -69,5 +85,11 @@ public class CodecTest {
         }
     }
 
-    // TODO Test with local set to false
+    static class MyNonLocalBean {
+        @ConsumeEvent(value = "nl-pet", codec = MyPetCodec.class, local = false)
+        public CompletionStage<Greeting> hello(Pet p) {
+            return CompletableFuture.completedFuture(new Greeting("Non Local Hello " + p.getName()));
+        }
+    }
+
 }

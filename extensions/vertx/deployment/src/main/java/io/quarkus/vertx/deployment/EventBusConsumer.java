@@ -10,6 +10,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -19,7 +20,16 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.util.HashUtil;
-import io.quarkus.gizmo.*;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.CatchBlockCreator;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FunctionCreator;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -54,6 +64,9 @@ class EventBusConsumer {
     private static final MethodDescriptor AXLE_MESSAGE_NEW_INSTANCE = MethodDescriptor.ofMethod(
             io.vertx.axle.core.eventbus.Message.class,
             "newInstance", io.vertx.axle.core.eventbus.Message.class, Message.class);
+    private static final MethodDescriptor MUTINY_MESSAGE_NEW_INSTANCE = MethodDescriptor.ofMethod(
+            io.vertx.mutiny.core.eventbus.Message.class,
+            "newInstance", io.vertx.mutiny.core.eventbus.Message.class, Message.class);
     private static final MethodDescriptor MESSAGE_REPLY = MethodDescriptor.ofMethod(Message.class, "reply", void.class,
             Object.class);
     private static final MethodDescriptor MESSAGE_BODY = MethodDescriptor.ofMethod(Message.class, "body", Object.class);
@@ -119,6 +132,31 @@ class EventBusConsumer {
         return generatedName.replace('/', '.');
     }
 
+    /**
+     * This method generates the following code:
+     * {@code
+     * Logger.getLogger(EventBusConsumer.class.getName()).warn(...);
+     * }
+     * It prints a deprecation method if the method annotated with {@link io.quarkus.vertx.ConsumeEvent} uses a
+     * deprecated type.
+     *
+     * @param invoke the invoker
+     * @param method the method using the deprecated type
+     * @param deprecatedClass the deprecated type
+     */
+    private static void logDeprecation(BytecodeCreator invoke, MethodInfo method, String deprecatedClass) {
+        String msg = String.format("The `%s.%s` method is using the deprecated `%s` class. It is recommended to switch to `%s`",
+                method.declaringClass().name(), method.name(), deprecatedClass,
+                io.vertx.mutiny.core.eventbus.Message.class.getName());
+        ResultHandle loggerName = invoke.load(EventBusConsumer.class.getName());
+        ResultHandle message = invoke.load(msg);
+        MethodDescriptor getLoggerMethod = MethodDescriptor.ofMethod(Logger.class, "getLogger", Logger.class, String.class);
+        ResultHandle logger = invoke
+                .invokeStaticMethod(getLoggerMethod, loggerName);
+        MethodDescriptor warnMethod = MethodDescriptor.ofMethod(Logger.class, "warn", Void.TYPE, Object.class);
+        invoke.invokeVirtualMethod(warnMethod, logger, message);
+    }
+
     private static void invoke(BeanInfo bean, MethodInfo method, ResultHandle messageHandle, BytecodeCreator invoke) {
         ResultHandle containerHandle = invoke.invokeStaticMethod(ARC_CONTAINER);
         ResultHandle beanHandle = invoke.invokeInterfaceMethod(ARC_CONTAINER_BEAN, containerHandle,
@@ -137,6 +175,7 @@ class EventBusConsumer {
                     beanInstanceHandle, messageHandle);
         } else if (paramType.name().equals(RX_MESSAGE)) {
             // io.vertx.reactivex.core.eventbus.Message
+            logDeprecation(invoke, method, RX_MESSAGE.toString());
             ResultHandle rxMessageHandle = invoke.invokeStaticMethod(RX_MESSAGE_NEW_INSTANCE, messageHandle);
             invoke.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class,
@@ -144,11 +183,19 @@ class EventBusConsumer {
                     beanInstanceHandle, rxMessageHandle);
         } else if (paramType.name().equals(AXLE_MESSAGE)) {
             // io.vertx.axle.core.eventbus.Message
+            logDeprecation(invoke, method, AXLE_MESSAGE.toString());
             ResultHandle axleMessageHandle = invoke.invokeStaticMethod(AXLE_MESSAGE_NEW_INSTANCE, messageHandle);
             invoke.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class,
                             io.vertx.axle.core.eventbus.Message.class),
                     beanInstanceHandle, axleMessageHandle);
+        } else if (paramType.name().equals(MUTINY_MESSAGE)) {
+            // io.vertx.mutiny.core.eventbus.Message
+            ResultHandle mutinyMessageHandle = invoke.invokeStaticMethod(MUTINY_MESSAGE_NEW_INSTANCE, messageHandle);
+            invoke.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class,
+                            io.vertx.mutiny.core.eventbus.Message.class),
+                    beanInstanceHandle, mutinyMessageHandle);
         } else {
             // Parameter is payload
             ResultHandle bodyHandle = invoke.invokeInterfaceMethod(MESSAGE_BODY, messageHandle);

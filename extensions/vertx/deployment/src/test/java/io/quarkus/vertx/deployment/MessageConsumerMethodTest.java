@@ -152,6 +152,16 @@ public class MessageConsumerMethodTest {
         assertTrue(SimpleBean.MESSAGES.contains("HELLO"));
     }
 
+    @Test
+    public void testPublishMutiny() throws InterruptedException {
+        SimpleBean.MESSAGES.clear();
+        EventBus eventBus = Arc.container().instance(EventBus.class).get();
+        SimpleBean.latch = new CountDownLatch(1);
+        eventBus.publish("pub-mutiny", "Hello");
+        SimpleBean.latch.await(2, TimeUnit.SECONDS);
+        assertTrue(SimpleBean.MESSAGES.contains("HELLO"));
+    }
+
     static class SimpleBean {
 
         static volatile CountDownLatch latch;
@@ -202,6 +212,12 @@ public class MessageConsumerMethodTest {
 
         @ConsumeEvent("pub-rx")
         void consume(io.vertx.reactivex.core.eventbus.Message<String> message) {
+            MESSAGES.add(message.body().toUpperCase());
+            latch.countDown();
+        }
+
+        @ConsumeEvent("pub-mutiny")
+        void consume(io.vertx.mutiny.core.eventbus.Message<String> message) {
             MESSAGES.add(message.body().toUpperCase());
             latch.countDown();
         }

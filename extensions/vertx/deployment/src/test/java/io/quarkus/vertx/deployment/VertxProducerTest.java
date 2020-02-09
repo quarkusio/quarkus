@@ -32,7 +32,7 @@ public class VertxProducerTest {
     BeanUsingBareVertx beanUsingVertx;
 
     @Inject
-    BeanUsingBareVertx beanUsingMutiny;
+    BeanUsingMutinyVertx beanUsingMutiny;
 
     @Inject
     BeanUsingAxleVertx beanUsingAxle;
@@ -45,6 +45,7 @@ public class VertxProducerTest {
         beanUsingVertx.verify();
         beanUsingAxle.verify();
         beanUsingRx.verify();
+        beanUsingMutiny.verify();
     }
 
     @ApplicationScoped

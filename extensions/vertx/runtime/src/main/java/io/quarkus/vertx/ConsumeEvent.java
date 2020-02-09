@@ -54,6 +54,14 @@ public @interface ConsumeEvent {
     int FAILURE_CODE = 0x1FF9;
 
     /**
+     * Failure code used when a message consumer explicitly fails an asynchronous processing.
+     *
+     * This status is used when the method annotated with {@link ConsumeEvent} returns a failed
+     * {@link java.util.concurrent.CompletionStage} or {@link io.smallrye.mutiny.Uni}.
+     */
+    int EXPLICIT_FAILURE_CODE = 0x1FFF;
+
+    /**
      * The address the consumer will be registered to. By default, the fully qualified name of the declaring bean class is
      * assumed.
      *

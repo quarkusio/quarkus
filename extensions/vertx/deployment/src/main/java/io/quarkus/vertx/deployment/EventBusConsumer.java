@@ -3,8 +3,9 @@ package io.quarkus.vertx.deployment;
 import static io.quarkus.vertx.deployment.VertxConstants.*;
 
 import java.lang.annotation.Annotation;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -21,6 +22,7 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -30,7 +32,9 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -69,10 +73,18 @@ class EventBusConsumer {
             "newInstance", io.vertx.mutiny.core.eventbus.Message.class, Message.class);
     private static final MethodDescriptor MESSAGE_REPLY = MethodDescriptor.ofMethod(Message.class, "reply", void.class,
             Object.class);
+    private static final MethodDescriptor MESSAGE_FAIL = MethodDescriptor.ofMethod(Message.class, "fail", void.class,
+            Integer.TYPE, String.class);
     private static final MethodDescriptor MESSAGE_BODY = MethodDescriptor.ofMethod(Message.class, "body", Object.class);
     private static final MethodDescriptor INSTANCE_HANDLE_DESTROY = MethodDescriptor
             .ofMethod(InstanceHandle.class, "destroy",
                     void.class);
+    protected static final MethodDescriptor WHEN_COMPLETE = MethodDescriptor.ofMethod(CompletionStage.class,
+            "whenComplete", CompletionStage.class, BiConsumer.class);
+    protected static final MethodDescriptor SUBSCRIBE_AS_COMPLETION_STAGE = MethodDescriptor
+            .ofMethod(Uni.class, "subscribeAsCompletionStage", CompletableFuture.class);
+    protected static final MethodDescriptor THROWABLE_GET_MESSAGE = MethodDescriptor
+            .ofMethod(Throwable.class, "getMessage", String.class);
 
     static String generateInvoker(BeanInfo bean, MethodInfo method,
             AnnotationInstance consumeEvent,
@@ -145,12 +157,14 @@ class EventBusConsumer {
      * @param deprecatedClass the deprecated type
      */
     private static void logDeprecation(BytecodeCreator invoke, MethodInfo method, String deprecatedClass) {
-        String msg = String.format("The `%s.%s` method is using the deprecated `%s` class. It is recommended to switch to `%s`",
-                method.declaringClass().name(), method.name(), deprecatedClass,
-                io.vertx.mutiny.core.eventbus.Message.class.getName());
+        String msg = String
+                .format("The `%s.%s` method is using the deprecated `%s` class. It is recommended to switch to `%s`",
+                        method.declaringClass().name(), method.name(), deprecatedClass,
+                        io.vertx.mutiny.core.eventbus.Message.class.getName());
         ResultHandle loggerName = invoke.load(EventBusConsumer.class.getName());
         ResultHandle message = invoke.load(msg);
-        MethodDescriptor getLoggerMethod = MethodDescriptor.ofMethod(Logger.class, "getLogger", Logger.class, String.class);
+        MethodDescriptor getLoggerMethod = MethodDescriptor
+                .ofMethod(Logger.class, "getLogger", Logger.class, String.class);
         ResultHandle logger = invoke
                 .invokeStaticMethod(getLoggerMethod, loggerName);
         MethodDescriptor warnMethod = MethodDescriptor.ofMethod(Logger.class, "warn", Void.TYPE, Object.class);
@@ -205,19 +219,17 @@ class EventBusConsumer {
                     beanInstanceHandle, bodyHandle);
             if (replyHandle != null) {
                 if (method.returnType().name().equals(COMPLETION_STAGE)) {
-                    // If the return type is CompletionStage use thenAccept()
-                    FunctionCreator func = invoke.createFunction(Consumer.class);
-                    BytecodeCreator funcBytecode = func.getBytecode();
-                    funcBytecode.invokeInterfaceMethod(
-                            MESSAGE_REPLY,
-                            messageHandle,
-                            funcBytecode.getMethodParam(0));
-                    funcBytecode.returnValue(null);
-                    // returnValue.thenAccept(reply -> Message.reply(reply))
+                    FunctionCreator handler = generateWhenCompleteHandler(messageHandle, invoke);
                     invoke.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(CompletionStage.class, "thenAccept", CompletionStage.class,
-                                    Consumer.class),
-                            replyHandle, func.getInstance());
+                            WHEN_COMPLETE,
+                            replyHandle, handler.getInstance());
+                } else if (method.returnType().name().equals(UNI)) {
+                    // If the return type is Uni use uni.subscribeAsCompletionStage().whenComplete(...)
+                    FunctionCreator handler = generateWhenCompleteHandler(messageHandle, invoke);
+                    ResultHandle subscribedCompletionStage = invoke.invokeInterfaceMethod(SUBSCRIBE_AS_COMPLETION_STAGE,
+                            replyHandle);
+                    invoke.invokeInterfaceMethod(WHEN_COMPLETE,
+                            subscribedCompletionStage, handler.getInstance());
                 } else {
                     // Message.reply(returnValue)
                     invoke.invokeInterfaceMethod(MESSAGE_REPLY, messageHandle, replyHandle);
@@ -229,6 +241,58 @@ class EventBusConsumer {
         if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
             invoke.invokeInterfaceMethod(INSTANCE_HANDLE_DESTROY, instanceHandle);
         }
+    }
+
+    /**
+     * If the return type is CompletionStage use:
+     * <code><pre>
+     * cs.whenComplete((whenResult, whenFailure) -> {
+     *  if (failure != null) {
+     *         message.fail(status, whenFailure.getMessage());
+     *  } else {
+     *         message.reply(whenResult);
+     *  }
+     * })
+     * </pre></code>
+     *
+     * @param messageHandle the message variable
+     * @param invoke the bytecode creator
+     * @return the function
+     */
+    private static FunctionCreator generateWhenCompleteHandler(ResultHandle messageHandle, BytecodeCreator invoke) {
+        FunctionCreator handler = invoke.createFunction(BiConsumer.class);
+        BytecodeCreator bytecode = handler.getBytecode();
+
+        // This avoid having to check cast in the branches
+        AssignableResultHandle whenResult = bytecode.createVariable(Object.class);
+        bytecode.assign(whenResult, bytecode.getMethodParam(0));
+        AssignableResultHandle whenFailure = bytecode.createVariable(Exception.class);
+        bytecode.assign(whenFailure, bytecode.getMethodParam(1));
+        AssignableResultHandle message = bytecode.createVariable(Message.class);
+        bytecode.assign(message, messageHandle);
+
+        BranchResult ifFailureIfNull = bytecode.ifNull(whenFailure);
+        // failure is not null branch - message.fail(failureStatus, failure.getMessage())
+        // In this branch we use the EXPLICIT FAILURE CODE
+        BytecodeCreator failureIsNotNull = ifFailureIfNull.falseBranch();
+        ResultHandle failureStatus = failureIsNotNull.load(ConsumeEvent.EXPLICIT_FAILURE_CODE);
+        ResultHandle failureMessage = failureIsNotNull
+                .invokeVirtualMethod(THROWABLE_GET_MESSAGE, whenFailure);
+        failureIsNotNull.invokeInterfaceMethod(
+                MESSAGE_FAIL,
+                message,
+                failureStatus,
+                failureMessage);
+
+        // failure is null branch - message.reply(reply))
+        BytecodeCreator failureIsNull = ifFailureIfNull.trueBranch();
+        failureIsNull.invokeInterfaceMethod(
+                MESSAGE_REPLY,
+                messageHandle,
+                whenResult);
+
+        bytecode.returnValue(null);
+        return handler;
     }
 
     private EventBusConsumer() {

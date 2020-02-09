@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.ConsumeEvent;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
@@ -71,6 +72,24 @@ public class MessageConsumerMethodTest {
             }
         });
         assertEquals("olleh", synchronizer.poll(2, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testSendAsyncUni() throws InterruptedException {
+        EventBus eventBus = Arc.container().instance(EventBus.class).get();
+        BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
+        eventBus.request("foo-async-uni", "hello-uni", ar -> {
+            if (ar.succeeded()) {
+                try {
+                    synchronizer.put(ar.result().body());
+                } catch (InterruptedException e) {
+                    fail(e);
+                }
+            } else {
+                fail(ar.cause());
+            }
+        });
+        assertEquals("inu-olleh", synchronizer.poll(2, TimeUnit.SECONDS));
     }
 
     @Test
@@ -196,6 +215,11 @@ public class MessageConsumerMethodTest {
         @ConsumeEvent("foo-async")
         CompletionStage<String> replyAsync(String message) {
             return CompletableFuture.completedFuture(new StringBuilder(message).reverse().toString());
+        }
+
+        @ConsumeEvent("foo-async-uni")
+        Uni<String> replyAsyncUni(String message) {
+            return Uni.createFrom().item(new StringBuilder(message).reverse().toString());
         }
 
         @ConsumeEvent(value = "blocking", blocking = true)

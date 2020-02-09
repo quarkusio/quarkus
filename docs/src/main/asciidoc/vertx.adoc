@@ -10,10 +10,12 @@ include::./attributes.adoc[]
 Eclipse https://vertx.io[Vert.x] is a toolkit for building reactive applications.
 It is designed to be lightweight and embeddable.
 Vert.x defines a reactive execution model and provides a large ecosystem.
-Quarkus integrates Vert.x to implement different reactive features, such as asynchronous message passing, and non-blocking HTTP client.
-Basically, Quarkus uses Vert.x as its reactive engine.
+
+Quarkus is based on Vert.x, and almost all network-related features rely on Vert.x.
 While lots of reactive features from Quarkus don't _show_ Vert.x, it's used underneath.
-But you can also access the managed Vert.x instance and benefit from the Vert.x ecosystem.
+Quarkus also integrates smoothly with the Vert.x event bus (to enable asynchronous messaging passing between application components) and some reactive clients.
+You can also use various Vert.x APIs in your Quarkus application, such as deploying _verticles_, instantiating clients...
+
 
 == Installing
 
@@ -57,9 +59,9 @@ Once the extension has been added, you can access the _managed_ Vert.x instance 
 ----
 
 If you are familiar with Vert.x, you know that Vert.x provides different API models.
-For instance _bare_ Vert.x uses callbacks, the RX Java 2 version uses `Single`, `Maybe`, `Completable`, `Observable` and `Flowable`.
+For instance _bare_ Vert.x uses callbacks, the Mutiny variants uses `Uni` and `Multi`, the RX Java 2 version uses `Single`, `Maybe`, `Completable`, `Observable` and `Flowable`...
 
-Quarkus provides 3 Vert.x APIs:
+Quarkus provides 4 Vert.x APIs:
 
 [options="header"]
 |===
@@ -68,22 +70,25 @@ Quarkus provides 3 Vert.x APIs:
 
 | _bare_ | `@Inject io.vertx.core.Vertx vertx` | _bare_ Vert.x instance, the API uses callbacks.
 
-| RX Java 2 | `@Inject io.vertx.reactivex.core.Vertx vertx` | RX Java 2 Vert.x, the API uses RX Java 2 types.
+| https://smallrye.io/smallrye-mutiny/[Mutiny] | `@Inject io.vertx.mutiny.core.Vertx vertx` | The Mutiny API for Vert.x.
 
-| _Axle_ | `@Inject io.vertx.axle.core.Vertx vertx` | Axle Vert.x, the API uses `CompletionStage` and `Reactive Streams`.
+| RX Java 2 | `@Inject io.vertx.reactivex.core.Vertx vertx` | RX Java 2 Vert.x, the API uses RX Java 2 types (deprecated).
+
+| _Axle_ | `@Inject io.vertx.axle.core.Vertx vertx` | Axle Vert.x, the API uses `CompletionStage` and `Reactive Streams` (deprecated).
 
 |===
 
-TIP: You may inject any of the 3 flavors of `Vertx` as well as the `EventBus` in your Quarkus application beans: `bare`, `Axle`, `RxJava2`.
+TIP: You may inject any of the 4 flavors of `Vertx` as well as the `EventBus` in your Quarkus application beans: `bare`, `Mutiny`, `Axle`, `RxJava2`.
 They are just shims and rely on a single _managed_ Vert.x instance.
 
 You will pick one or the other depending on your use cases.
 
 - `bare`: for advanced usage or if you have existing Vert.x code you want to reuse in your Quarkus application
-- `Axle`: works well with Quarkus and MicroProfile APIs (`CompletionStage` for single results and `Publisher` for streams)
-- `Rx Java 2`: when you need support for a wide range of data transformation operators on your streams
+- `mutiny`: Mutiny is an event-driven reactive programming API. It uses 2 types: `Uni` and `Multi`. This is the recommended API.
+- `Axle`: works well with Quarkus and MicroProfile APIs (`CompletionStage` for single results and `Publisher` for streams) - deprecated, it is recommended to switch to Mutiny
+- `Rx Java 2`: when you need support for a wide range of data transformation operators on your streams - deprecated, it is recommended to switch to Mutiny
 
-The following snippets illustrate the difference between these 3 APIs:
+The following snippets illustrate the difference between these 4 APIs:
 
 [source, java]
 ----
@@ -95,6 +100,14 @@ vertx.fileSystem().readFile("lorem-ipsum.txt", ar -> {
         System.out.println("Cannot read the file: " + ar.cause().getMessage());
     }
 });
+
+// Mutiny Vert.x:
+vertx.fileSystem().readFile("lorem-ipsum.txt")
+    .onItem().apply(buffer -> buffer.toString("UTF-8"))
+    .subscribe(
+            content -> System.out.println("Content: " + content),
+            err -> System.out.println("Cannot read the file: " + err.getMessage())
+    );
 
 // Rx Java 2 Vert.x
 vertx.fileSystem().rxReadFile("lorem-ipsum.txt")
@@ -355,6 +368,12 @@ Depending on the API model you want to use you need to add the right dependency 
 <dependency>
   <groupId>io.vertx</groupId>
   <artifactId>vertx-web-client</artifactId>
+</dependency>
+
+<!-- Mutiny API -->
+<dependency>
+  <groupId>io.smallrye.reactive</groupId>
+  <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
 </dependency>
 
 <!-- Axle API -->

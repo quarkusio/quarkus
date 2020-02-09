@@ -8,10 +8,9 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 include::./attributes.adoc[]
 :experimental:
 
-
 This guide covers:
 
-* The deployment of the application to Kubernetes
+The deployment of a serverless application to Kubernetes using https://knative.dev[Knative].
 
 This guide takes as input the application developed in the link:building-native-image[native application guide].
 So, you should have been able to package your application as a binary executable, copied it in a Docker image and run this image.
@@ -24,121 +23,107 @@ The OpenShift section leverages OpenShift build and route features which are not
 For this guide you need:
 
 * roughly 20 minutes
-* having access to a Kubernetes and/or OpenShift cluster. Minikube and Minishift are valid options.
-* having deployed Knative components on https://knative.dev/docs/install/knative-with-minikube/[Minikube]
-or https://knative.dev/v0.6-docs/install/knative-with-minishift/[Minishift]
-
-
+* having access to a Kubernetes cluster. Minikube is a valid option.
+* having deployed Knative components on https://knative.dev/docs/install/knative-with-minikube/[minikube]
+* having https://https://skaffold.dev/[Skaffold] CLI on your PATH
 
 == Solution
 
-We recommend to follow the instructions in the next sections and build the application step by step.
-However, you can go right to the completed example.
+We recommend to follow the instructions in the next sections and build the application step by step. However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
 The solution is located in the `getting-started-knative` directory.
 
-== Deploying the application in Knative
+== Set up Kubernetes Cluster
 
-Before we deploy the application to Knative in Minikube or Minishift we need to create the following Kubernetes objects:
+The following script will start minikube and deploy Knative.
 
-- https://github.com/knative/docs/blob/master/docs/serving/deploying-with-private-registry.md#provide-container-registry-credentials-to-knative[Container registry secrets] :-
-This is required to for the built container image to be pushed to the container registry of your choice
-- https://developer.github.com/v3/guides/managing-deploy-keys/#deploy-keys[Deploy Key] :-
-This is required only if you are going to pull the sources from private repository.
-- https://github.com/knative/docs/tree/master/serving/samples/build-private-repo-go#setting-up-our-build-service-account[Build Service Account] :-
-The Kubernetes Service Account that will have access to Container Registry secret and Deploy Key secret
+[source,bash]
+----
+./bin/start-minikube.sh
+eval $(minikube docker-env) #<1>
+----
+
+<1> Make the current Docker context to be that of minikube
+
+== Set up Nexus(Optional)
+
+Nexus is used for caching maven artifacts so that Apache Maven builds are faster.
+
+[source,bash]
+----
+kubectl apply -f k8s/nexus.yaml
+----
+
+Wait for some time to have Nexus initialize and run. You can watch the status via `kubectl get pods -w`, use kbd:[Ctrl+c] to terminate the watch.
+
+== Why Skaffold ?
+
+As vanilla Kubernetes does not have an easy and developer friendly way to build and deploy application to a local cluster like minikube, without the need to push the image to external container registry. We will be using Skaffold to help us build and deploy the Quarkus application onto Kubernetes.
+
+== Build and deploy application
+
+[IMPORTANT]
+====
+The container image will not be pushed to a remote container registry, and hence the container image url has to be `dev.local`, to make Knative deploy it without trying to pull it from external container registry.
+====
+
+To run Knative Quarkus applications, we need to use the multi stage docker build; to build the Quarkus application container image and use it in Kubernetes application deployment.
+
+The following command start a one time deployment of Quarkus application and runs starts the Knative service after successful container image build.
 
 [NOTE]
 ====
-If you are not using private GitHub repo then you dont need the `Deploy Key` created and added to the Build Service Account
+If you want to deploy a Quarkus JVM image (using HotSpot), then run the following command before running Skaffold:
+
+[source,bash]
+----
+cp src/main/docker/Dockerfile.jvm Dockerfile
+----
+
+If you want to deploy a Quarkus Native executable image (using GraalVM), then run the following command before running Skaffold:
+
+[source,bash]
+----
+cp src/main/docker/Dockerfile.native Dockerfile
+----
+
+It is very important to note that the Dockerfile in `src/main/docker` folder has been modified Dockerfiles to support multi stage Docker build.The multi stage Docker build helps in building and containerization of application with single Dockerfile.
 ====
 
-Run the following commands to kick start https://github.com/knative/build[Knative Build] which will build the quarkus application container image
-using Dockerfile and https://github.com/GoogleContainerTools/kaniko[Kaniko].  After a successful build you will have the
-Knative serving application deployed with the built container image.  You can watch the application build pods using the
-command `kubectl get pods -w`. You can terminate the watch using the command kbd:[CTRL + c]
-
-Since there are some parameters that you need to pass to the builds, which are right now configurable via maven properties,
-you need to run the following maven command to make them passed to the Knative resource yamls.
-
-.Maven Parameters
-|===
-|Name |Use |Example
-
-| github.deploy.key
-| the base64 encoded private key that is configured to be used as the GitHub private repo Deploy key
-| `cat ~/.ssh/quarkus-quickstarts \| base64 -w 0`
-
-| github.keyscan
-| the base64 encoded value of `ssh-keyscan github.com`
-| `ssh-keyscan github.com \| base64 -w 0`
-
-| container.registry.url
-| the container registry url, NOTE: this should be a v2 container registry
-| https://index.docker.io/v1/
-
-| container.registry.user
-| The user name to authenticate with the container registry
-|
-
-| container.registry.password
-| The user password to authenticate with the container registry
-|
-
-| git.source.revision
-| The revision of the source to checkout from GitHub
-| master
-
-| git.source.repo.url
-| The GitHub repo url
-| {quickstarts-clone-url}
-
-| app.container.image
-| The fully qualified name of the container image that will be pushed to the container registry after build
-| docker.io/demo/quarkus-knative-quickstart
-|===
-
-
-The following is the example command to generate the need knative resource files
-
-[source, shell, subs="attributes+"]
+[source,bash]
 ----
-mvn -Dgithub.deploy.key=$(cat ~/.ssh/quarkus-quickstarts | base64 -w 0) \
-    -Dgithub.keyscan=$(ssh-keyscan github.com | base64 -w 0) \
-    -Dcontainer.registry.url='https://quay.io/v2' \
-    -Dcontainer.registry.user='demo' \
-    -Dcontainer.registry.password='password' \
-    -Dgit.source.revision='master' \
-    -Dgit.source.repo.url='{quickstarts-clone-url}' \ #<1>
-    -Dapp.container.image='docker.io/demo/getting-started-knative' \
-    clean process-resources
-----
-<1> If your are using a private repo then you might need to use git ssh url
-
-The above command will apply the property values to the Knative resources found in `${project.basedir}/src/main/knative`
-and copy them to `${project.build.directory}/knative`
-
-Run the following command to create the Knative resources:
-
-[source,shell]
-----
-kubectl apply --recursive --filename target/knative
+skaffold run
 ----
 
-== Accessing your application
+As it will take a few minutes for the build and deployment to be completed you can watch the status using:
 
-The application is now exposed as an internal service. If you are using `minikube` or `minishift`, you can access it using:
-
-[source,shell]
+[source,bash]
 ----
-INGRESSGATEWAY=istio-ingressgateway
-IP_ADDRESS="$(minikube ip):$(kubectl get svc $INGRESSGATEWAY --namespace istio-system --output 'jsonpath={.spec.ports[?(@.port==80)].nodePort}')" #<1>
-
-curl -v -H 'Host: getting-started-knative.example.com' $IP_ADDRESS/hello/greeting/redhat
+watch kubectl get pods 
 ----
-<1> you can replace `minikube ip` with `minishift ip` if you are using OpenShift
+
+A successful Knative service deployment will show the following pods in the current namespace:
+
+[source,bash]
+----
+NAME                                     READY   STATUS    AGE
+greeter-deployment-5749cc98fc-gs6zr      2/2     Running   10s
+----
+
+NOTE: The deployment name could differ in your environment.
+
+Once the Knative service is successfully running, you can call it using the script `./bin/call.sh`, which should return a response like `hello`. Allowing it to idle for approximately 60-65 seconds - that is without any further requests -, you will see it automatically scales down to zero pods.
+
+=== Cleanup 
+
+To delete the application:
+
+[source,bash]
+----
+skaffold delete
+----
 
 == Going further
 

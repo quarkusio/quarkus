@@ -90,6 +90,36 @@ void consumeBlocking(String message) {
 ----
 ====
 
+Asynchronous processing is also possible by returning either an `io.smallrye.mutiny.Uni` or a `java.util.concurrent.CompletionStage`:
+
+[source,java]
+----
+package org.acme.vertx;
+
+import io.quarkus.vertx.ConsumeEvent;
+
+import javax.enterprise.context.ApplicationScoped;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import io.smallrye.mutiny.Uni;
+
+@ApplicationScoped
+public class GreetingService {
+
+    @ConsumeEvent
+    public CompletionStage<String> consume(String name) {
+        // return a CompletionStage completed when the processing is finished.
+        // You can also fail the CompletionStage explicitly
+    }
+
+    @ConsumeEvent
+    public Uni<String> process(String name) {
+        // return an Uni completed when the processing is finished.
+        // You can also fail the Uni explicitly
+    }
+}
+----
+
 === Configuring the address
 
 The `@ConsumeEvent` annotation can be configured to set the address:
@@ -116,15 +146,24 @@ public String consume(String name) {
 }
 ----
 
-You can also return a `CompletionStage<T>` to handle asynchronous reply:
+You can also return a `Uni<T>` or a `CompletionStage<T>` to handle asynchronous reply:
 
 [source, java]
 ----
 @ConsumeEvent("greeting")
-public CompletionStage<String> consume2(String name) {
-    return CompletableFuture.supplyAsync(name::toUpperCase, executor);
+public Uni<String> consume2(String name) {
+    return Uni.createFrom().item(() -> name.toUpperCase()).emitOn(executor);
 }
 ----
+
+[NOTE]
+====
+You can inject an `executor` if you use the Context Propagation extension:
+[source, code]
+----
+@Inject Executor executor;
+----
+====
 
 === Implementing fire and forget interactions
 
@@ -311,4 +350,3 @@ You can also compile it as a native executable with:
 ----
 ./mvnw clean package -Pnative
 ----
-

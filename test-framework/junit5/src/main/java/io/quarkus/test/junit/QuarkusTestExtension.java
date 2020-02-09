@@ -19,6 +19,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -48,7 +49,7 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 //todo: share common core with QuarkusUnitTest
 public class QuarkusTestExtension
-        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor {
+        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor, AfterAllCallback {
 
     protected static final String TEST_LOCATION = "test-location";
     private static boolean failedBoot;
@@ -199,6 +200,9 @@ public class QuarkusTestExtension
             return;
         }
         ensureStarted(context);
+        if (runningQuarkusApplication != null) {
+            setCCL(runningQuarkusApplication.getClassLoader());
+        }
         if (failedBoot) {
             throw new TestAbortedException("Not running test as boot failed");
         }
@@ -339,6 +343,13 @@ public class QuarkusTestExtension
             throw new RuntimeException(e.getCause());
         } catch (IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) throws Exception {
+        if (originalCl != null) {
+            setCCL(originalCl);
         }
     }
 

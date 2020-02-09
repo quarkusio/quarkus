@@ -53,7 +53,10 @@ class TemplateImpl implements Template {
                 Object timeoutAttr = getAttribute(TIMEOUT);
                 long timeout = timeoutAttr != null ? Long.parseLong(timeoutAttr.toString()) : 10000;
                 return renderAsync().toCompletableFuture().get(timeout, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            } catch (ExecutionException | TimeoutException e) {
                 throw new IllegalStateException(e);
             }
         }

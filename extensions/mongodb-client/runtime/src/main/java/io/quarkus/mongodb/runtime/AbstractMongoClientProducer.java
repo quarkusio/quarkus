@@ -22,6 +22,7 @@ import javax.annotation.PreDestroy;
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.ClassModel;
 import org.bson.codecs.pojo.Conventions;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.jboss.logging.Logger;
@@ -54,6 +55,7 @@ public abstract class AbstractMongoClientProducer {
     private MongodbConfig mongodbConfig;
     private boolean disableSslSupport = false;
     private List<String> codecProviders;
+    private List<String> bsonDiscriminators;
     private Map<String, MongoClient> mongoclients = new HashMap<>();
     private Map<String, ReactiveMongoClient> reactiveMongoClients = new HashMap<>();
 
@@ -217,11 +219,21 @@ public abstract class AbstractMongoClientProducer {
         }
         // add pojo codec provider with automatic capabilities
         // it always needs to be the last codec provided
-        CodecProvider pojoCodecProvider = PojoCodecProvider.builder()
+        PojoCodecProvider.Builder pojoCodecProviderBuilder = PojoCodecProvider.builder()
                 .automatic(true)
-                .conventions(Conventions.DEFAULT_CONVENTIONS)
-                .build();
-        providers.add(pojoCodecProvider);
+                .conventions(Conventions.DEFAULT_CONVENTIONS);
+        // register bson discriminators
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        for (String bsonDiscriminator : bsonDiscriminators) {
+            try {
+                pojoCodecProviderBuilder
+                        .register(ClassModel.builder(Class.forName(bsonDiscriminator, true, classLoader))
+                                .enableDiscriminator(true).build());
+            } catch (ClassNotFoundException e) {
+                // Ignore
+            }
+        }
+        providers.add(pojoCodecProviderBuilder.build());
         CodecRegistry registry = CodecRegistries.fromRegistries(defaultCodecRegistry,
                 CodecRegistries.fromProviders(providers));
         settings.codecRegistry(registry);
@@ -365,6 +377,10 @@ public abstract class AbstractMongoClientProducer {
 
     public void setCodecs(List<String> codecs) {
         this.codecProviders = codecs;
+    }
+
+    public void setBsonDiscriminators(List<String> bsonDiscriminators) {
+        this.bsonDiscriminators = bsonDiscriminators;
     }
 
     public void disableSslSupport() {

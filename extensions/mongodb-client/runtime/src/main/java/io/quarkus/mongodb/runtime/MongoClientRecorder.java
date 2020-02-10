@@ -30,7 +30,7 @@ public class MongoClientRecorder {
         };
     }
 
-    public void configureRuntimeProperties(List<String> codecs, MongodbConfig config) {
+    public void configureRuntimeProperties(List<String> codecs, List<String> bsonDiscriminators, MongodbConfig config) {
         // TODO @dmlloyd
         // Same here, the map is entirely empty (obviously, I didn't expect the values
         // that were not properly injected but at least the config objects present in
@@ -38,6 +38,7 @@ public class MongoClientRecorder {
         // The elements from the default mongoClient are there
         AbstractMongoClientProducer producer = Arc.container().instance(AbstractMongoClientProducer.class).get();
         producer.setCodecs(codecs);
+        producer.setBsonDiscriminators(bsonDiscriminators);
         producer.setConfig(config);
     }
 

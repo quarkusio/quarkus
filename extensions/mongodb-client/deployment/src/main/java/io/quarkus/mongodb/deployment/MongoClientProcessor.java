@@ -3,6 +3,7 @@ package io.quarkus.mongodb.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +16,7 @@ import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
 
 import org.bson.codecs.configuration.CodecProvider;
+import org.bson.codecs.pojo.annotations.BsonDiscriminator;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -72,8 +74,10 @@ public class MongoClientProcessor {
     @BuildStep
     void configureRuntimeProperties(MongoClientRecorder recorder,
             CodecProviderBuildItem codecProvider,
+            BsonDiscriminatorBuildItem bsonDiscriminator,
             MongodbConfig config) {
-        recorder.configureRuntimeProperties(codecProvider.getCodecProviderClassNames(), config);
+        recorder.configureRuntimeProperties(codecProvider.getCodecProviderClassNames(),
+                bsonDiscriminator.getBsonDisciminatorClassNames(), config);
     }
 
     @BuildStep
@@ -85,8 +89,23 @@ public class MongoClientProcessor {
     }
 
     @BuildStep
-    List<ReflectiveClassBuildItem> addCodecsToNative(CodecProviderBuildItem providers) {
-        return providers.getCodecProviderClassNames().stream()
+    BsonDiscriminatorBuildItem collectBsonDiscriminators(CombinedIndexBuildItem indexBuildItem) {
+        List<String> names = new ArrayList<>();
+        DotName bsonDiscriminatorName = DotName.createSimple(BsonDiscriminator.class.getName());
+        for (AnnotationInstance annotationInstance : indexBuildItem.getIndex().getAnnotations(bsonDiscriminatorName)) {
+            names.add(annotationInstance.target().asClass().name().toString());
+        }
+        return new BsonDiscriminatorBuildItem(names);
+    }
+
+    @BuildStep
+    List<ReflectiveClassBuildItem> addCodecsAndDiscriminatorsToNative(CodecProviderBuildItem codecProviders,
+            BsonDiscriminatorBuildItem bsonDiscriminators) {
+        List<String> reflectiveClassNames = new ArrayList<>();
+        reflectiveClassNames.addAll(codecProviders.getCodecProviderClassNames());
+        reflectiveClassNames.addAll(bsonDiscriminators.getBsonDisciminatorClassNames());
+
+        return reflectiveClassNames.stream()
                 .map(s -> new ReflectiveClassBuildItem(true, true, false, s))
                 .collect(Collectors.toList());
     }

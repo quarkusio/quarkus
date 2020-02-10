@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 /**
  * A class path element that represents a file on the file system
  */
-public class DirectoryClassPathElement implements ClassPathElement {
+public class DirectoryClassPathElement extends AbstractClassPathElement {
 
     private final Path root;
 

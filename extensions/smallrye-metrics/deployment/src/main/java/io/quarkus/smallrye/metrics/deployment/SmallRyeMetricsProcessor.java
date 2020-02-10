@@ -284,9 +284,21 @@ public class SmallRyeMetricsProcessor {
         if (config.micrometerCompatibility) {
             metrics.registerMicrometerJvmMetrics(shutdown);
         } else {
-            metrics.registerBaseMetrics(shutdown);
-            metrics.registerVendorMetrics(shutdown);
+            metrics.registerBaseMetrics();
+            metrics.registerVendorMetrics();
         }
+    }
+
+    /**
+     * When shutting down, drop all metric registries. Specifically in dev mode,
+     * this is to ensure all metrics start from zero after a reload, and that extensions
+     * don't have to deregister their own metrics manually.
+     */
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void dropRegistriesAtShutdown(SmallRyeMetricsRecorder recorder,
+            ShutdownContextBuildItem shutdown) {
+        recorder.dropRegistriesAtShutdown(shutdown);
     }
 
     @BuildStep
@@ -427,7 +439,6 @@ public class SmallRyeMetricsProcessor {
     @Record(STATIC_INIT)
     void extensionMetrics(SmallRyeMetricsRecorder recorder,
             List<MetricBuildItem> additionalMetrics,
-            ShutdownContextBuildItem shutdown,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         if (metrics.extensionsEnabled) {
             if (!additionalMetrics.isEmpty()) {
@@ -444,8 +455,7 @@ public class SmallRyeMetricsProcessor {
                     recorder.registerMetric(MetricRegistry.Type.VENDOR,
                             MetadataHolder.from(additionalMetric.getMetadata()),
                             tags,
-                            additionalMetric.getImplementor(),
-                            shutdown);
+                            additionalMetric.getImplementor());
                 }
             }
         }

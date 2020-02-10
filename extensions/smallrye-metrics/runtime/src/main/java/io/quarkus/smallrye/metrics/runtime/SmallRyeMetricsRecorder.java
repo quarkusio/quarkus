@@ -10,7 +10,6 @@ import java.lang.management.MemoryType;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -98,59 +97,31 @@ public class SmallRyeMetricsRecorder {
         return handler;
     }
 
-    public void registerVendorMetrics(ShutdownContext shutdown) {
+    public void registerVendorMetrics() {
         MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.VENDOR);
-        List<String> names = new ArrayList<>();
-
-        memoryPoolMetrics(registry, names);
-        vendorSpecificMemoryMetrics(registry, names);
-        vendorOperatingSystemMetrics(registry, names);
-
-        if (!names.isEmpty()) {
-            shutdown.addShutdownTask(() -> {
-                for (String i : names) {
-                    registry.remove(i);
-                }
-            });
-        }
+        memoryPoolMetrics(registry);
+        vendorSpecificMemoryMetrics(registry);
+        vendorOperatingSystemMetrics(registry);
     }
 
-    public void registerBaseMetrics(ShutdownContext shutdown) {
+    public void registerBaseMetrics() {
         MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.BASE);
-        List<String> names = new ArrayList<>();
 
-        garbageCollectionMetrics(registry, names);
-        classLoadingMetrics(registry, names);
-        baseOperatingSystemMetrics(registry, names);
-        threadingMetrics(registry, names);
-        runtimeMetrics(registry, names);
-        baseMemoryMetrics(registry, names);
-
-        if (!names.isEmpty()) {
-            shutdown.addShutdownTask(() -> {
-                for (String i : names) {
-                    registry.remove(i);
-                }
-            });
-        }
+        garbageCollectionMetrics(registry);
+        classLoadingMetrics(registry);
+        baseOperatingSystemMetrics(registry);
+        threadingMetrics(registry);
+        runtimeMetrics(registry);
+        baseMemoryMetrics(registry);
     }
 
     public void registerMicrometerJvmMetrics(ShutdownContext shutdown) {
         MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.BASE);
-        List<String> names = new ArrayList<>();
 
-        micrometerJvmGcMetrics(registry, names, shutdown);
-        micrometerJvmThreadMetrics(registry, names);
-        micrometerJvmMemoryMetrics(registry, names);
-        micrometerJvmClassLoaderMetrics(registry, names);
-
-        if (!names.isEmpty()) {
-            shutdown.addShutdownTask(() -> {
-                for (String i : names) {
-                    registry.remove(i);
-                }
-            });
-        }
+        micrometerJvmGcMetrics(registry, shutdown);
+        micrometerJvmThreadMetrics(registry);
+        micrometerJvmMemoryMetrics(registry);
+        micrometerJvmClassLoaderMetrics(registry);
     }
 
     public void registerMetrics(BeanInfo beanInfo, MemberInfo memberInfo) {
@@ -184,8 +155,7 @@ public class SmallRyeMetricsRecorder {
     public void registerMetric(MetricRegistry.Type scope,
             MetadataHolder metadataHolder,
             TagHolder[] tagHolders,
-            Object implementor,
-            ShutdownContext shutdown) {
+            Object implementor) {
         Metadata metadata = metadataHolder.toMetadata();
         Tag[] tags = Arrays.stream(tagHolders).map(TagHolder::toTag).toArray(Tag[]::new);
         MetricRegistry registry = MetricRegistries.get(scope);
@@ -234,7 +204,6 @@ public class SmallRyeMetricsRecorder {
             default:
                 break;
         }
-        shutdown.addShutdownTask(() -> registry.remove(metadata.getName()));
     }
 
     public void createRegistries(BeanContainer container) {
@@ -248,7 +217,11 @@ public class SmallRyeMetricsRecorder {
         container.instance(MetricRegistries.class).getApplicationRegistry();
     }
 
-    private void garbageCollectionMetrics(MetricRegistry registry, List<String> names) {
+    public void dropRegistriesAtShutdown(ShutdownContext shutdownContext) {
+        shutdownContext.addShutdownTask(MetricRegistries::dropAll);
+    }
+
+    private void garbageCollectionMetrics(MetricRegistry registry) {
         List<GarbageCollectorMXBean> gcs = ManagementFactory.getGarbageCollectorMXBeans();
         if (gcs.isEmpty()) {
             return;
@@ -275,14 +248,11 @@ public class SmallRyeMetricsRecorder {
                 .build();
         for (GarbageCollectorMXBean gc : gcs) {
             registry.register(countMetadata, new LambdaCounter(() -> gc.getCollectionCount()), new Tag("name", gc.getName()));
-            names.add(countMetadata.getName());
-
             registry.register(timeMetadata, new LambdaCounter(() -> gc.getCollectionTime()), new Tag("name", gc.getName()));
-            names.add(timeMetadata.getName());
         }
     }
 
-    private void classLoadingMetrics(MetricRegistry registry, List<String> names) {
+    private void classLoadingMetrics(MetricRegistry registry) {
         ClassLoadingMXBean classLoadingMXBean = ManagementFactory.getClassLoadingMXBean();
 
         Metadata meta = Metadata.builder()
@@ -293,7 +263,6 @@ public class SmallRyeMetricsRecorder {
                         "Displays the total number of classes that have been loaded since the Java virtual machine has started execution.")
                 .build();
         registry.register(meta, new LambdaCounter(() -> classLoadingMXBean.getTotalLoadedClassCount()));
-        names.add(TOTAL_LOADED_CLASS_COUNT);
 
         meta = Metadata.builder()
                 .withName(TOTAL_UNLOADED_CLASS_COUNT)
@@ -303,7 +272,6 @@ public class SmallRyeMetricsRecorder {
                         "Displays the total number of classes unloaded since the Java virtual machine has started execution.")
                 .build();
         registry.register(meta, new LambdaCounter(() -> classLoadingMXBean.getUnloadedClassCount()));
-        names.add(TOTAL_UNLOADED_CLASS_COUNT);
 
         meta = Metadata.builder()
                 .withName(CURRENT_LOADED_CLASS_COUNT)
@@ -312,10 +280,9 @@ public class SmallRyeMetricsRecorder {
                 .withDescription("Displays the number of classes that are currently loaded in the Java virtual machine.")
                 .build();
         registry.register(meta, new LambdaGauge(() -> (long) classLoadingMXBean.getLoadedClassCount()));
-        names.add(CURRENT_LOADED_CLASS_COUNT);
     }
 
-    private void baseOperatingSystemMetrics(MetricRegistry registry, List<String> names) {
+    private void baseOperatingSystemMetrics(MetricRegistry registry) {
         OperatingSystemMXBean operatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();
 
         Metadata meta = Metadata.builder()
@@ -331,7 +298,6 @@ public class SmallRyeMetricsRecorder {
                         "The load average may be unavailable on some platforms where it is expensive to implement this method.")
                 .build();
         registry.register(meta, new LambdaGauge(() -> operatingSystemMXBean.getSystemLoadAverage()));
-        names.add(SYSTEM_LOAD_AVERAGE);
 
         meta = Metadata.builder()
                 .withName(CPU_AVAILABLE_PROCESSORS)
@@ -343,7 +309,6 @@ public class SmallRyeMetricsRecorder {
                                 "a particular invocation of the virtual machine.")
                 .build();
         registry.register(meta, new LambdaGauge(() -> operatingSystemMXBean.getAvailableProcessors()));
-        names.add(CPU_AVAILABLE_PROCESSORS);
 
         // some metrics are only available in jdk internal class 'com.sun.management.OperatingSystemMXBean': cast to it.
         // com.sun.management.OperatingSystemMXBean is not available in SubstratVM
@@ -368,7 +333,6 @@ public class SmallRyeMetricsRecorder {
                                 "If the Java Virtual Machine recent CPU usage is not available, the method returns a negative value.")
                         .build();
                 registry.register(meta, new LambdaGauge(() -> internalOperatingSystemMXBean.getProcessCpuLoad()));
-                names.add(PROCESS_CPU_LOAD);
             } catch (ClassCastException cce) {
                 // this should never occurs
                 log.debug("Unable to cast the OperatingSystemMXBean to com.sun.management.OperatingSystemMXBean, " +
@@ -377,7 +341,7 @@ public class SmallRyeMetricsRecorder {
         }
     }
 
-    private void vendorOperatingSystemMetrics(MetricRegistry registry, List<String> names) {
+    private void vendorOperatingSystemMetrics(MetricRegistry registry) {
         OperatingSystemMXBean operatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();
 
         // some metrics are only available in jdk internal class 'com.sun.management.OperatingSystemMXBean': cast to it.
@@ -400,7 +364,6 @@ public class SmallRyeMetricsRecorder {
                                 "system. If the system recent cpu usage is not available, the method returns a negative value.")
                         .build();
                 registry.register(meta, new LambdaGauge(() -> internalOperatingSystemMXBean.getSystemCpuLoad()));
-                names.add(SYSTEM_CPU_LOAD);
 
                 meta = Metadata.builder()
                         .withName(PROCESS_CPU_TIME)
@@ -414,7 +377,6 @@ public class SmallRyeMetricsRecorder {
                                         "this operation.")
                         .build();
                 registry.register(meta, new LambdaGauge(() -> internalOperatingSystemMXBean.getProcessCpuTime()));
-                names.add(PROCESS_CPU_TIME);
 
                 meta = Metadata.builder()
                         .withName(FREE_PHYSICAL_MEM_SIZE)
@@ -424,7 +386,6 @@ public class SmallRyeMetricsRecorder {
                         .withDescription("Displays the amount of free physical memory in bytes.")
                         .build();
                 registry.register(meta, new LambdaGauge(() -> internalOperatingSystemMXBean.getFreePhysicalMemorySize()));
-                names.add(FREE_PHYSICAL_MEM_SIZE);
 
                 meta = Metadata.builder()
                         .withName(FREE_SWAP_SIZE)
@@ -434,16 +395,15 @@ public class SmallRyeMetricsRecorder {
                         .withDescription("Displays the amount of free swap space in bytes.")
                         .build();
                 registry.register(meta, new LambdaGauge(() -> internalOperatingSystemMXBean.getFreePhysicalMemorySize()));
-                names.add(FREE_SWAP_SIZE);
             } catch (ClassCastException cce) {
-                // this should never occurs
+                // this should never occur
                 log.debug("Unable to cast the OperatingSystemMXBean to com.sun.management.OperatingSystemMXBean, " +
                         "not registering extended operating system metrics", cce);
             }
         }
     }
 
-    private void threadingMetrics(MetricRegistry registry, List<String> names) {
+    private void threadingMetrics(MetricRegistry registry) {
         ThreadMXBean thread = ManagementFactory.getThreadMXBean();
 
         Metadata meta = Metadata.builder()
@@ -453,7 +413,6 @@ public class SmallRyeMetricsRecorder {
                 .withDescription("Displays the current number of live threads including both daemon and non-daemon threads")
                 .build();
         registry.register(meta, new LambdaGauge(() -> (long) thread.getThreadCount()));
-        names.add(THREAD_COUNT);
 
         meta = Metadata.builder()
                 .withName(THREAD_DAEMON_COUNT)
@@ -462,7 +421,6 @@ public class SmallRyeMetricsRecorder {
                 .withDescription("Displays the current number of live daemon threads.")
                 .build();
         registry.register(meta, new LambdaGauge(() -> (long) thread.getDaemonThreadCount()));
-        names.add(THREAD_DAEMON_COUNT);
 
         meta = Metadata.builder()
                 .withName(THREAD_MAX_COUNT)
@@ -472,10 +430,9 @@ public class SmallRyeMetricsRecorder {
                         "reset. This includes daemon and non-daemon threads.")
                 .build();
         registry.register(meta, new LambdaGauge(() -> (long) thread.getPeakThreadCount()));
-        names.add(THREAD_MAX_COUNT);
     }
 
-    private void runtimeMetrics(MetricRegistry registry, List<String> names) {
+    private void runtimeMetrics(MetricRegistry registry) {
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
 
         Metadata meta = Metadata.builder()
@@ -486,10 +443,9 @@ public class SmallRyeMetricsRecorder {
                 .withDescription("Displays the time from the start of the Java virtual machine in milliseconds.")
                 .build();
         registry.register(meta, new LambdaGauge(() -> runtimeMXBean.getUptime()));
-        names.add(JVM_UPTIME);
     }
 
-    private void baseMemoryMetrics(MetricRegistry registry, List<String> names) {
+    private void baseMemoryMetrics(MetricRegistry registry) {
         MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
         Metadata meta = Metadata.builder()
                 .withName(MEMORY_COMMITTED_HEAP)
@@ -501,7 +457,6 @@ public class SmallRyeMetricsRecorder {
                                 "This amount of memory is guaranteed for the Java virtual machine to use.")
                 .build();
         registry.register(meta, new LambdaGauge(() -> memoryMXBean.getHeapMemoryUsage().getCommitted()));
-        names.add(MEMORY_COMMITTED_HEAP);
 
         meta = Metadata.builder()
                 .withName(MEMORY_MAX_HEAP)
@@ -518,7 +473,6 @@ public class SmallRyeMetricsRecorder {
                         "not exceed this maximum size.")
                 .build();
         registry.register(meta, new LambdaGauge(() -> memoryMXBean.getHeapMemoryUsage().getMax()));
-        names.add(MEMORY_MAX_HEAP);
 
         meta = Metadata.builder()
                 .withName(MEMORY_USED_HEAP)
@@ -528,10 +482,9 @@ public class SmallRyeMetricsRecorder {
                 .withDescription("Displays the amount of used heap memory in bytes.")
                 .build();
         registry.register(meta, new LambdaGauge(() -> memoryMXBean.getHeapMemoryUsage().getUsed()));
-        names.add(MEMORY_USED_HEAP);
     }
 
-    private void vendorSpecificMemoryMetrics(MetricRegistry registry, List<String> names) {
+    private void vendorSpecificMemoryMetrics(MetricRegistry registry) {
         MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
 
         Metadata meta = Metadata.builder()
@@ -543,7 +496,6 @@ public class SmallRyeMetricsRecorder {
                         "Displays the amount of non heap memory in bytes that is committed for the Java virtual machine to use.")
                 .build();
         registry.register(meta, new LambdaGauge(() -> memoryMXBean.getNonHeapMemoryUsage().getCommitted()));
-        names.add(MEMORY_COMMITTED_NON_HEAP);
 
         meta = Metadata.builder()
                 .withName(MEMORY_MAX_NON_HEAP)
@@ -553,7 +505,6 @@ public class SmallRyeMetricsRecorder {
                 .withDescription("Displays the maximum amount of used non-heap memory in bytes.")
                 .build();
         registry.register(meta, new LambdaGauge(() -> memoryMXBean.getNonHeapMemoryUsage().getMax()));
-        names.add(MEMORY_MAX_NON_HEAP);
 
         meta = Metadata.builder()
                 .withName(MEMORY_USED_NON_HEAP)
@@ -563,10 +514,9 @@ public class SmallRyeMetricsRecorder {
                 .withDescription("Displays the amount of used non-heap memory in bytes.")
                 .build();
         registry.register(meta, new LambdaGauge(() -> memoryMXBean.getNonHeapMemoryUsage().getUsed()));
-        names.add(MEMORY_USED_NON_HEAP);
     }
 
-    private void memoryPoolMetrics(MetricRegistry registry, List<String> names) {
+    private void memoryPoolMetrics(MetricRegistry registry) {
         // MemoryPoolMXBean doesn't work in native mode
         if (!ImageInfo.inImageCode()) {
             List<MemoryPoolMXBean> mps = ManagementFactory.getMemoryPoolMXBeans();
@@ -589,26 +539,22 @@ public class SmallRyeMetricsRecorder {
                     // this will be the case for the heap memory pools
                     registry.register(usageMetadata, new LambdaGauge(() -> mp.getCollectionUsage().getUsed()),
                             new Tag("name", mp.getName()));
-                    names.add(usageMetadata.getName());
 
                     registry.register(maxMetadata, new LambdaGauge(() -> mp.getPeakUsage().getUsed()),
                             new Tag("name", mp.getName()));
-                    names.add(maxMetadata.getName());
                 } else if (mp.getUsage() != null && mp.getPeakUsage() != null) {
                     // this will be the case for the non-heap memory pools
                     registry.register(usageMetadata, new LambdaGauge(() -> mp.getUsage().getUsed()),
                             new Tag("name", mp.getName()));
-                    names.add(usageMetadata.getName());
 
                     registry.register(maxMetadata, new LambdaGauge(() -> mp.getPeakUsage().getUsed()),
                             new Tag("name", mp.getName()));
-                    names.add(maxMetadata.getName());
                 }
             }
         }
     }
 
-    private void micrometerJvmGcMetrics(MetricRegistry registry, List<String> names, ShutdownContext shutdown) {
+    private void micrometerJvmGcMetrics(MetricRegistry registry, ShutdownContext shutdownContext) {
         if (!ImageInfo.inImageCode()) {
             MicrometerGCMetrics gcMetrics = new MicrometerGCMetrics();
 
@@ -617,36 +563,32 @@ public class SmallRyeMetricsRecorder {
                     MetricUnits.BYTES,
                     "Max size of old generation memory pool",
                     true), new LambdaGauge(gcMetrics::getMaxDataSize));
-            names.add("jvm.gc.max.data.size");
             registry.register(new ExtendedMetadata("jvm.gc.live.data.size",
                     MetricType.GAUGE,
                     MetricUnits.BYTES,
                     "Size of old generation memory pool after a full GC",
                     true), new LambdaGauge(gcMetrics::getLiveDataSize));
-            names.add("jvm.gc.live.data.size");
             registry.register(new ExtendedMetadata("jvm.gc.memory.promoted",
                     MetricType.COUNTER,
                     MetricUnits.BYTES,
                     "Count of positive increases in the size of the old generation memory pool before GC to after GC",
                     true,
                     "jvm_gc_memory_promoted_bytes_total"), new LambdaCounter(gcMetrics::getPromotedBytes));
-            names.add("jvm.gc.memory.promoted");
             registry.register(new ExtendedMetadata("jvm.gc.memory.allocated",
                     MetricType.COUNTER,
                     MetricUnits.BYTES,
                     "Incremented for an increase in the size of the young generation memory pool after one GC to before the next",
                     true,
                     "jvm_gc_memory_allocated_bytes_total"), new LambdaCounter(gcMetrics::getAllocatedBytes));
-            names.add("jvm.gc.memory.allocated");
 
             // start updating the metric values in a listener for GC events
             // Metrics that mimic the jvm.gc.pause timer will be registered lazily as GC events occur
             gcMetrics.startWatchingNotifications();
-            shutdown.addShutdownTask(gcMetrics::cleanUp);
+            shutdownContext.addShutdownTask(gcMetrics::cleanUp);
         }
     }
 
-    private void micrometerJvmThreadMetrics(MetricRegistry registry, List<String> names) {
+    private void micrometerJvmThreadMetrics(MetricRegistry registry) {
         ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
 
         registry.register(
@@ -656,7 +598,6 @@ public class SmallRyeMetricsRecorder {
                         "The peak live thread count since the Java virtual machine started or peak was reset",
                         true),
                 new LambdaGauge(threadBean::getPeakThreadCount));
-        names.add("jvm.threads.peak");
         registry.register(
                 new ExtendedMetadata("jvm.threads.daemon",
                         MetricType.GAUGE,
@@ -664,7 +605,6 @@ public class SmallRyeMetricsRecorder {
                         "The current number of live daemon threads",
                         true),
                 new LambdaGauge(threadBean::getDaemonThreadCount));
-        names.add("jvm.threads.daemon");
         registry.register(
                 new ExtendedMetadata("jvm.threads.live",
                         MetricType.GAUGE,
@@ -672,7 +612,6 @@ public class SmallRyeMetricsRecorder {
                         "The current number of live threads including both daemon and non-daemon threads",
                         true),
                 new LambdaGauge(threadBean::getThreadCount));
-        names.add("jvm.threads.live");
 
         if (!ImageInfo.inImageCode()) {
             ExtendedMetadata threadStatesMetadata = new ExtendedMetadata("jvm.threads.states",
@@ -684,12 +623,11 @@ public class SmallRyeMetricsRecorder {
                 registry.register(threadStatesMetadata,
                         new LambdaGauge(() -> getThreadStateCount(threadBean, state)),
                         new Tag("state", state.name().toLowerCase().replace("_", "-")));
-                names.add("jvm.threads.states");
             }
         }
     }
 
-    private void micrometerJvmMemoryMetrics(MetricRegistry registry, List<String> names) {
+    private void micrometerJvmMemoryMetrics(MetricRegistry registry) {
         if (!ImageInfo.inImageCode()) {
             for (MemoryPoolMXBean memoryPoolMXBean : ManagementFactory.getMemoryPoolMXBeans()) {
                 String area = MemoryType.HEAP.equals(memoryPoolMXBean.getType()) ? "heap" : "nonheap";
@@ -704,7 +642,6 @@ public class SmallRyeMetricsRecorder {
                                 true),
                         new LambdaGauge(() -> memoryPoolMXBean.getUsage().getUsed()),
                         tags);
-                names.add("jvm.memory.used");
 
                 registry.register(
                         new ExtendedMetadata("jvm.memory.committed",
@@ -714,7 +651,6 @@ public class SmallRyeMetricsRecorder {
                                 true),
                         new LambdaGauge(() -> memoryPoolMXBean.getUsage().getCommitted()),
                         tags);
-                names.add("jvm.memory.committed");
 
                 registry.register(
                         new ExtendedMetadata("jvm.memory.max",
@@ -724,7 +660,6 @@ public class SmallRyeMetricsRecorder {
                                 true),
                         new LambdaGauge(() -> memoryPoolMXBean.getUsage().getMax()),
                         tags);
-                names.add("jvm.memory.max");
             }
 
             for (BufferPoolMXBean bufferPoolBean : ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class)) {
@@ -738,7 +673,6 @@ public class SmallRyeMetricsRecorder {
                                 true),
                         new LambdaGauge(() -> bufferPoolBean.getCount()),
                         tag);
-                names.add("jvm.buffer.count");
 
                 registry.register(
                         new ExtendedMetadata("jvm.buffer.memory.used",
@@ -748,7 +682,6 @@ public class SmallRyeMetricsRecorder {
                                 true),
                         new LambdaGauge(() -> bufferPoolBean.getMemoryUsed()),
                         tag);
-                names.add("jvm.buffer.memory.used");
 
                 registry.register(
                         new ExtendedMetadata("jvm.buffer.total.capacity",
@@ -758,13 +691,12 @@ public class SmallRyeMetricsRecorder {
                                 true),
                         new LambdaGauge(() -> bufferPoolBean.getTotalCapacity()),
                         tag);
-                names.add("jvm.buffer.total.capacity");
             }
 
         }
     }
 
-    private void micrometerJvmClassLoaderMetrics(MetricRegistry registry, List<String> names) {
+    private void micrometerJvmClassLoaderMetrics(MetricRegistry registry) {
         // The ClassLoadingMXBean can be used in native mode, but it only returns zeroes, so there's no point in including such metrics.
         if (!ImageInfo.inImageCode()) {
             ClassLoadingMXBean classLoadingBean = ManagementFactory.getClassLoadingMXBean();
@@ -777,7 +709,6 @@ public class SmallRyeMetricsRecorder {
                             true,
                             "jvm_classes_loaded_classes"),
                     new LambdaGauge(() -> classLoadingBean.getLoadedClassCount()));
-            names.add("jvm.classes.loaded");
 
             registry.register(
                     new ExtendedMetadata("jvm.classes.unloaded",
@@ -787,7 +718,6 @@ public class SmallRyeMetricsRecorder {
                             true,
                             "jvm_classes_unloaded_classes_total"),
                     new LambdaCounter(() -> classLoadingBean.getUnloadedClassCount()));
-            names.add("jvm.classes.unloaded");
         }
     }
 

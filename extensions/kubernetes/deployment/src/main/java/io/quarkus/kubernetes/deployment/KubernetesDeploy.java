@@ -14,8 +14,7 @@ import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.container.deployment.ContainerConfig;
-import io.quarkus.container.deployment.DockerBuild.OutputFilter;
+import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.deployment.util.ExecUtil;
 
 public class KubernetesDeploy implements BooleanSupplier {
@@ -23,16 +22,17 @@ public class KubernetesDeploy implements BooleanSupplier {
     private final Logger LOGGER = Logger.getLogger(KubernetesDeploy.class);
 
     private KubernetesConfig kubernetesConfig;
-    private ContainerConfig containerConfig;
+    private ContainerImageConfig containerImageConfig;
 
-    KubernetesDeploy(ContainerConfig containerConfig, KubernetesConfig kubernetesConfig) {
-        this.containerConfig = containerConfig;
+    KubernetesDeploy(ContainerImageConfig containerImageConfig, KubernetesConfig kubernetesConfig) {
+        this.containerImageConfig = containerImageConfig;
         this.kubernetesConfig = kubernetesConfig;
     }
 
     @Override
     public boolean getAsBoolean() {
-        if (containerConfig.deploy) {
+        // TODO: I think this is wrong for s2i
+        if (containerImageConfig.execution == ContainerImageConfig.Execution.PUSH) {
             OutputFilter filter = new OutputFilter();
             try {
                 if (kubernetesConfig.getDeploymentTarget().contains(DeploymentTarget.OPENSHIFT)) {

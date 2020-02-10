@@ -130,7 +130,7 @@
         <module>scala</module>
 
         <!-- Kubernetes -->
-        <module>container</module>
+        <module>container-image</module>
         <module>kubernetes</module>
         <module>kubernetes-client</module>
 

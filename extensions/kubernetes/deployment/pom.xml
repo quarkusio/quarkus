@@ -15,11 +15,11 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-container-deployment</artifactId>
+            <artifactId>quarkus-container-image-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-container-spi</artifactId>
+            <artifactId>quarkus-container-image-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -2150,6 +2150,10 @@
                         <artifactId>jackson-core</artifactId>
                     </exclusion>
                     <exclusion>
+                        <groupId>com.fasterxml.jackson.module</groupId>
+                        <artifactId>jackson-module-scala_2.12</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>org.scala-lang</groupId>
                         <artifactId>scala-reflect</artifactId>
                     </exclusion>

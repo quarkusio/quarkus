@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.it.mongodb.discriminator.Car;
+import io.quarkus.it.mongodb.discriminator.Moto;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -121,6 +123,26 @@ public class BookResourceTest {
                 .body("status", is("UP"),
                         "checks.status", containsInAnyOrder("UP"),
                         "checks.name", containsInAnyOrder("MongoDB connection health check"));
+    }
+
+    @Test
+    public void testVehicleEndpoint() {
+        Car car = new Car();
+        car.name = "Renault Clio";
+        car.type = "CAR";
+        car.seatNumber = 5;
+        RestAssured.given().header("Content-Type", "application/json").body(car)
+                .when().post("/vehicles")
+                .then().statusCode(201);
+
+        Moto moto = new Moto();
+        moto.name = "Harley Davidson Sportster";
+        moto.type = "MOTO";
+        RestAssured.given().header("Content-Type", "application/json").body(moto)
+                .when().post("/vehicles")
+                .then().statusCode(201);
+
+        get("/vehicles").then().statusCode(200).body("size()", is(2));
     }
 
 }

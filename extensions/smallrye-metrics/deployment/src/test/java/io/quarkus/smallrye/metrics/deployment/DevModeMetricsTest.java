@@ -9,10 +9,10 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 
+import org.eclipse.microprofile.metrics.Counter;
 import org.eclipse.microprofile.metrics.MetricID;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.annotation.Counted;
-import org.hamcrest.CoreMatchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,12 @@ public class DevModeMetricsTest {
         @Path("/getvalue/{name}")
         @Produces("text/plain")
         public Long getCounterValue(@PathParam("name") String name) {
-            return metricRegistry.getCounters().get(new MetricID(name)).getCount();
+            Counter counter = metricRegistry.getCounters().get(new MetricID(name));
+            if (counter != null) {
+                return counter.getCount();
+            } else {
+                return null;
+            }
         }
 
     }
@@ -80,8 +85,7 @@ public class DevModeMetricsTest {
 
         // verify that mycounter2 no longer exists
         when().get("/getvalue/mycounter2").then()
-                .statusCode(500)
-                .body(CoreMatchers.containsString("NullPointerException"));
+                .statusCode(204);
     }
 
 }

@@ -81,7 +81,7 @@ public final class ConfigUtils {
             sources.add(new DotEnvConfigSource());
             sources.add(new EnvConfigSource());
             sources.add(new SysPropConfigSource());
-            builder.withSources(sources.toArray(new ConfigSource[0]));
+            builder.withSources(sources);
         }
         builder.addDiscoveredSources();
         builder.addDiscoveredConverters();

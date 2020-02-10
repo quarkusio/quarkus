@@ -6,7 +6,6 @@ import static io.quarkus.cache.runtime.NullValueConverter.toCacheValue;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -31,11 +30,7 @@ public class CaffeineCache {
     public CaffeineCache(CaffeineCacheInfo cacheInfo) {
         this.name = cacheInfo.name;
         Caffeine<Object, Object> builder = Caffeine.newBuilder();
-        /*
-         * The following line is a workaround for a GraalVM issue: https://github.com/oracle/graal/issues/1524
-         * TODO: Remove it as soon as a Quarkus release depends on GraalVM 19.3.0 or higher.
-         */
-        builder.executor(task -> ForkJoinPool.commonPool().execute(task));
+
         if (cacheInfo.initialCapacity != null) {
             this.initialCapacity = cacheInfo.initialCapacity;
             builder.initialCapacity(cacheInfo.initialCapacity);

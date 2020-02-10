@@ -6,28 +6,23 @@
 
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-kubernetes-parent</artifactId>
+        <artifactId>quarkus-kubernetes-client-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-kubernetes</artifactId>
-    <name>Quarkus - Kubernetes - Runtime</name>
-    <description>Generate Kubernetes resources from annotations</description>
-
+    <artifactId>quarkus-kubernetes-client-internal</artifactId>
+    <name>Quarkus - Kubernetes Client - Runtime - Internal</name>
+    <description>This module only exists as a separate module to house the configuration that needs to be present on the runtime classpath when the kubernetes extension is used</description>
+    
     <dependencies>
-        <!-- We need the config to be on the runtime classpath because it's referenced from the config generation -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kubernetes-client-internal</artifactId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
-            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>

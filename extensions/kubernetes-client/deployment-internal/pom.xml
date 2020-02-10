@@ -2,32 +2,38 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
+        <artifactId>quarkus-kubernetes-client-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-kubernetes-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-kubernetes</artifactId>
-    <name>Quarkus - Kubernetes - Runtime</name>
-    <description>Generate Kubernetes resources from annotations</description>
+    <artifactId>quarkus-kubernetes-client-deployment-internal</artifactId>
+    <name>Quarkus - Kubernetes Client - Deployment - Internal</name>
+    <description>This module only exists as a separate module to so the kubernetes extension can share code with the kubernetes-client extension</description>
 
     <dependencies>
-        <!-- We need the config to be on the runtime classpath because it's referenced from the config generation -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kubernetes-client-internal</artifactId>
+            <artifactId>quarkus-arc-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes-client-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes-spi</artifactId>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
-            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
@@ -42,6 +48,4 @@
             </plugin>
         </plugins>
     </build>
-
-
 </project>

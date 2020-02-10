@@ -54,7 +54,8 @@ public class VertxProducer {
     public synchronized io.vertx.axle.core.Vertx axle() {
         if (axleVertx == null) {
             LOGGER.warn(
-                    "`io.vertx.axle.core.Vertx` is deprecated - it is recommended to switch to `io.vertx.mutiny.core.Vertx`");
+                    "`io.vertx.axle.core.Vertx` is deprecated and will be removed in a future version - it is "
+                            + "recommended to switch to `io.vertx.mutiny.core.Vertx`");
             axleVertx = io.vertx.axle.core.Vertx.newInstance(vertx);
         }
         return axleVertx;
@@ -66,7 +67,8 @@ public class VertxProducer {
     public io.vertx.reactivex.core.Vertx rx() {
         if (rxVertx == null) {
             LOGGER.warn(
-                    "`io.vertx.reactivex.core.Vertx` is deprecated - it is recommended to switch to `io.vertx.mutiny.core.eventbus.Vertx`");
+                    "`io.vertx.reactivex.core.Vertx` is deprecated  and will be removed in a future version - it is "
+                            + "recommended to switch to `io.vertx.mutiny.core.eventbus.Vertx`");
             rxVertx = io.vertx.reactivex.core.Vertx.newInstance(vertx);
         }
         return rxVertx;
@@ -77,7 +79,8 @@ public class VertxProducer {
     @Deprecated
     public io.vertx.axle.core.eventbus.EventBus axleEventBus() {
         LOGGER.warn(
-                "`io.vertx.axle.core.eventbus.EventBus` is deprecated - it is recommended to switch to `io.vertx.mutiny.core.eventbus.EventBus`");
+                "`io.vertx.axle.core.eventbus.EventBus` is deprecated and will be removed in a future version - it is "
+                        + "recommended to switch to `io.vertx.mutiny.core.eventbus.EventBus`");
         return axle().eventBus();
     }
 
@@ -86,7 +89,8 @@ public class VertxProducer {
     @Deprecated
     public synchronized io.vertx.reactivex.core.eventbus.EventBus rxEventBus() {
         LOGGER.warn(
-                "`io.vertx.reactivex.core.eventbus.EventBus` is deprecated - it is recommended to switch to `io.vertx.mutiny.core.eventbus.EventBus`");
+                "`io.vertx.reactivex.core.eventbus.EventBus` is deprecated and will be removed in a future version - it "
+                        + "is recommended to switch to `io.vertx.mutiny.core.eventbus.EventBus`");
         return rx().eventBus();
     }
 

@@ -158,7 +158,8 @@ class EventBusConsumer {
      */
     private static void logDeprecation(BytecodeCreator invoke, MethodInfo method, String deprecatedClass) {
         String msg = String
-                .format("The `%s.%s` method is using the deprecated `%s` class. It is recommended to switch to `%s`",
+                .format("The `%s.%s` method is using the deprecated `%s` class. This class will be removed in a "
+                        + "future version. It is recommended to switch to `%s`",
                         method.declaringClass().name(), method.name(), deprecatedClass,
                         io.vertx.mutiny.core.eventbus.Message.class.getName());
         ResultHandle loggerName = invoke.load(EventBusConsumer.class.getName());

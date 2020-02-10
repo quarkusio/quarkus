@@ -67,12 +67,19 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     private final LoadedConfig aggregatedCfgXml;
 
     public RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry) {
-        this(bootstrapServiceRegistry, LoadedConfig.baseline());
+        this(bootstrapServiceRegistry, initialProperties(), LoadedConfig.baseline());
     }
 
-    public RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry, LoadedConfig loadedConfigBaseline) {
-        this.settings = new HashMap();
-        this.settings.putAll(QuarkusEnvironment.getInitialProperties());
+    private static Map initialProperties() {
+        HashMap map = new HashMap();
+        map.putAll(QuarkusEnvironment.getInitialProperties());
+        return map;
+    }
+
+    private RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry, Map properties,
+            LoadedConfig loadedConfigBaseline) {
+        super(bootstrapServiceRegistry, properties, loadedConfigBaseline);
+        this.settings = properties;
         this.bootstrapServiceRegistry = bootstrapServiceRegistry;
         this.configLoader = new ConfigLoader(bootstrapServiceRegistry);
         this.aggregatedCfgXml = loadedConfigBaseline;

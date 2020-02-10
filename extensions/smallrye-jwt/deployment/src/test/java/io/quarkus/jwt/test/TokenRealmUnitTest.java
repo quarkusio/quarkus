@@ -29,9 +29,7 @@ public class TokenRealmUnitTest {
         KeyPair keyPair = generateKeyPair();
         PublicKey pk1 = keyPair.getPublic();
         PrivateKey pk1Priv = keyPair.getPrivate();
-        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
-        contextInfo.setSignerKey((RSAPublicKey) pk1);
-        contextInfo.setIssuedBy("https://server.example.com");
+        JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) pk1, "https://server.example.com");
         MpJwtValidator jwtValidator = new MpJwtValidator(contextInfo);
         QuarkusIdentityProviderManagerImpl authenticator = QuarkusIdentityProviderManagerImpl.builder()
                 .addProvider(new AnonymousIdentityProvider())

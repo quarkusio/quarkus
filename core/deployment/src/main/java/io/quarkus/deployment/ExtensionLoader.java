@@ -62,12 +62,14 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.annotations.Weak;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
+import io.quarkus.deployment.builditem.BootstrapConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationProxyBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
@@ -352,8 +354,8 @@ public final class ExtensionLoader {
                         if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
                             runTimeProxies.computeIfAbsent(parameterClass, readResult::requireRootObjectForClass);
                         }
-                    } else if (phase == ConfigPhase.RUN_TIME) {
-                        throw reportError(parameter, "Run time configuration cannot be consumed here");
+                    } else if (phase.isReadAtMain()) {
+                        throw reportError(parameter, phase + " configuration cannot be consumed here");
                     } else {
                         throw reportError(parameterClass, "Unknown value for ConfigPhase");
                     }
@@ -467,8 +469,8 @@ public final class ExtensionLoader {
                     if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
                         runTimeProxies.computeIfAbsent(fieldClass, readResult::requireRootObjectForClass);
                     }
-                } else if (phase == ConfigPhase.RUN_TIME) {
-                    throw reportError(field, "Run time configuration cannot be consumed here");
+                } else if (phase.isReadAtMain()) {
+                    throw reportError(field, phase + " configuration cannot be consumed here");
                 } else {
                     throw reportError(fieldClass, "Unknown value for ConfigPhase");
                 }
@@ -539,8 +541,8 @@ public final class ExtensionLoader {
                                 final ConfigPhase phase = annotation.phase();
                                 if (phase.isAvailableAtBuild()) {
                                     paramSuppList.add(() -> readResult.requireRootObjectForClass(parameterClass));
-                                } else if (phase == ConfigPhase.RUN_TIME) {
-                                    throw reportError(parameter, "Run time configuration cannot be consumed here");
+                                } else if (phase.isReadAtMain()) {
+                                    throw reportError(parameter, phase + " configuration cannot be consumed here");
                                 } else {
                                     throw reportError(parameter,
                                             "Unsupported conditional class configuration build phase " + phase);
@@ -572,8 +574,8 @@ public final class ExtensionLoader {
                                 if (phase.isAvailableAtBuild()) {
                                     setup = setup.andThen(o -> ReflectUtil.setFieldVal(field, o,
                                             readResult.requireRootObjectForClass(fieldClass)));
-                                } else if (phase == ConfigPhase.RUN_TIME) {
-                                    throw reportError(field, "Run time configuration cannot be consumed here");
+                                } else if (phase.isReadAtMain()) {
+                                    throw reportError(field, phase + " configuration cannot be consumed here");
                                 } else {
                                     throw reportError(field,
                                             "Unsupported conditional class configuration build phase " + phase);
@@ -733,7 +735,7 @@ public final class ExtensionLoader {
                             if (isRecorder && phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
                                 runTimeProxies.computeIfAbsent(parameterClass, readResult::requireRootObjectForClass);
                             }
-                        } else if (phase == ConfigPhase.RUN_TIME) {
+                        } else if (phase.isReadAtMain()) {
                             if (isRecorder) {
                                 methodParamFns.add((bc, bri) -> {
                                     final RunTimeConfigurationProxyBuildItem proxies = bc
@@ -743,7 +745,7 @@ public final class ExtensionLoader {
                                 runTimeProxies.computeIfAbsent(parameterClass, ReflectUtil::newInstance);
                             } else {
                                 throw reportError(parameter,
-                                        "Run time configuration cannot be consumed here unless the method is a @Recorder");
+                                        phase + " configuration cannot be consumed here unless the method is a @Recorder");
                             }
                         } else {
                             throw reportError(parameterClass, "Unknown value for ConfigPhase");
@@ -837,14 +839,26 @@ public final class ExtensionLoader {
                 throw reportError(method, "Unsupported method return type " + returnType);
             }
 
-            if (methodConsumingConfigPhases.contains(ConfigPhase.RUN_TIME)) {
+            if (methodConsumingConfigPhases.contains(ConfigPhase.BOOTSTRAP)
+                    || methodConsumingConfigPhases.contains(ConfigPhase.RUN_TIME)) {
                 if (isRecorder && recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
                     throw reportError(method,
                             "Bytecode recorder is static but an injected config object is declared as run time");
                 }
+
                 methodStepConfig = methodStepConfig
                         .andThen(bsb -> bsb.consumes(RunTimeConfigurationProxyBuildItem.class));
+
+                if (methodConsumingConfigPhases.contains(ConfigPhase.BOOTSTRAP)) {
+                    methodStepConfig = methodStepConfig
+                            .andThen(bsb -> bsb.afterProduce(BootstrapConfigSetupCompleteBuildItem.class));
+                }
+                if (methodConsumingConfigPhases.contains(ConfigPhase.RUN_TIME)) {
+                    methodStepConfig = methodStepConfig
+                            .andThen(bsb -> bsb.afterProduce(RuntimeConfigSetupCompleteBuildItem.class));
+                }
             }
+
             if (methodConsumingConfigPhases.contains(ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
                     || methodConsumingConfigPhases.contains(ConfigPhase.BUILD_TIME)) {
                 methodStepConfig = methodStepConfig

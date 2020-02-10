@@ -34,6 +34,7 @@ public class ConfigDescriptionBuildStep {
         List<ConfigDescriptionBuildItem> ret = new ArrayList<>();
         processConfig(config.getReadResult().getBuildTimePatternMap(), ret, javadoc);
         processConfig(config.getReadResult().getBuildTimeRunTimePatternMap(), ret, javadoc);
+        processConfig(config.getReadResult().getBootstrapPatternMap(), ret, javadoc);
         processConfig(config.getReadResult().getRunTimePatternMap(), ret, javadoc);
         return ret;
     }

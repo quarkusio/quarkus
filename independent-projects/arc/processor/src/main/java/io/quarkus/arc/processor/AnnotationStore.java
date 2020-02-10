@@ -129,7 +129,7 @@ public class AnnotationStore {
         return found;
     }
 
-    class TransformationContextImpl extends AnnotationsTransformationContext<Collection<AnnotationInstance>>
+    static class TransformationContextImpl extends AnnotationsTransformationContext<Collection<AnnotationInstance>>
             implements TransformationContext {
 
         public TransformationContextImpl(BuildContext buildContext, AnnotationTarget target,

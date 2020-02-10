@@ -21,7 +21,7 @@ public class UsersResource {
         return new User(keycloakSecurityContext);
     }
 
-    public class User {
+    public static class User {
 
         private final String userName;
 

@@ -97,7 +97,7 @@ public class SecDispatcherImpl implements SecDispatcher {
                 if( dispatcher == null )
                     throw new SecDispatcherException( "no dispatcher for hint "+type );
 
-                String pass = attr == null ? bare : strip( bare );
+                String pass = strip( bare );
 
                 return dispatcher.decrypt( pass, attr, conf );
             }

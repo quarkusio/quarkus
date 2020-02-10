@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 final class ApplicationNameAndVersionTestUtil {
 
@@ -24,7 +25,8 @@ final class ApplicationNameAndVersionTestUtil {
             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
                 failApplicationPropertiesSetCorrectly();
             }
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
                 String output = br.readLine();
                 assertThat(output).isEqualTo("acme/1.0-SNAPSHOT");
             }

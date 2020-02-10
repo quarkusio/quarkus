@@ -106,7 +106,6 @@ public class PanacheResourceProcessor {
     @BuildStep
     void unremovableProducers(BuildProducer<UnremovableBeanBuildItem> unremovable,
             BeanArchiveIndexBuildItem beanArchiveIndex) {
-        Type type = Type.create(MONGOCLIENT_INTERFACE, Type.Kind.CLASS);
         unremovable.produce(
                 new UnremovableBeanBuildItem(
                         new UnremovableBeanBuildItem.BeanClassNameExclusion(

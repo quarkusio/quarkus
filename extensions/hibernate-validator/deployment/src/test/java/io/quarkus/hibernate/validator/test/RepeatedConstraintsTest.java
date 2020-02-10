@@ -99,7 +99,7 @@ public class RepeatedConstraintsTest {
     }
 
     @ApplicationScoped
-    public class MyConstraintValidator implements ConstraintValidator<MyConstraint, String> {
+    public static class MyConstraintValidator implements ConstraintValidator<MyConstraint, String> {
 
         @Override
         public boolean isValid(String value, ConstraintValidatorContext context) {

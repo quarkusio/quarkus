@@ -175,7 +175,7 @@ public class InjectionEnricher implements TestEnricher {
         }
     }
 
-    public class CreationContextHolder implements Closeable {
+    public static class CreationContextHolder implements Closeable {
 
         final Closeable closeable;
         final Object creationalContext;

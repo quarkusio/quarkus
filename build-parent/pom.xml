@@ -276,6 +276,9 @@
                                             <exclude>org.slf4j:slf4j-log4j12</exclude>
                                             <exclude>org.slf4j:slf4j-log4j13</exclude>
                                             <exclude>org.osgi:org.osgi.annotation.versioning</exclude>
+                                            <!-- Ban findbugs and spotbugs, annotation jars for static analysis -->
+                                            <exclude>com.google.code.findbugs:jsr305</exclude>
+                                            <exclude>com.github.spotbugs:spotbugs-annotations</exclude>
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->

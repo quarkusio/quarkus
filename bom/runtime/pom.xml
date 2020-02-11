@@ -906,6 +906,12 @@
                 <groupId>com.github.tomakehurst</groupId>
                 <artifactId>wiremock-jre8</artifactId>
                 <version>${wiremock.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.code.findbugs</groupId>
+                        <artifactId>jsr305</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
@@ -1108,6 +1114,11 @@
                     <exclusion>
                         <groupId>org.apache.cxf</groupId>
                         <artifactId>cxf-rt-rs-client</artifactId>
+                    </exclusion>
+
+                    <exclusion>
+                        <groupId>com.google.code.findbugs</groupId>
+                        <artifactId>jsr305</artifactId>
                     </exclusion>
                 </exclusions>
                 <version>${tika.version}</version>
@@ -1405,6 +1416,12 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka-clients.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.code.findbugs</groupId>
+                        <artifactId>jsr305</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.kafka</groupId>
@@ -1415,6 +1432,16 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka_2.12</artifactId>
                 <version>${kafka2.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.code.findbugs</groupId>
+                        <artifactId>jsr305</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs-annotations</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.zookeeper</groupId>
@@ -1502,6 +1529,12 @@
                 <groupId>org.subethamail</groupId>
                 <artifactId>subethasmtp</artifactId>
                 <version>${subethasmtp.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.code.findbugs</groupId>
+                        <artifactId>jsr305</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>
@@ -1798,6 +1831,12 @@
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-jackson2-provider</artifactId>
                 <version>${resteasy.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.google.code.findbugs</groupId>
+                        <artifactId>jsr305</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>
@@ -2185,6 +2224,10 @@
                     <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.github.spotbugs</groupId>
+                        <artifactId>spotbugs-annotations</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

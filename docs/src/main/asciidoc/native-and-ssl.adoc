@@ -158,15 +158,13 @@ And let's build the native executable again:
 ./mvnw clean install -Pnative
 ```
 
-== The SunEC library and friends
+== The TrustStore path
 
 You haven't noticed anything but, while building the image,
-Quarkus has automatically set `java.library.path` to point to the GraalVM library folder (the one containing the SunEC library).
-
-It has also set `javax.net.ssl.trustStore` to point to the `cacerts` file bundled in the GraalVM distribution.
+Quarkus has automatically set `javax.net.ssl.trustStore` to point to the `cacerts` file bundled in the GraalVM distribution.
 This file contains the root certificates.
 
-This is useful when running tests but, obviously, it is not portable as these paths are hardcoded.
+This is useful when running tests but, obviously, it is not portable as this path is hardcoded.
 
 You can check that pretty easily:
 
@@ -174,13 +172,12 @@ You can check that pretty easily:
  * run the native executable `./target/rest-client-1.0-SNAPSHOT-runner`
  * in a browser, go to `http://localhost:8080/country/name/greece`
  * you will have an Internal Server Error
- * in your terminal, you should have a warning `WARNING: The sunec native library, required by the SunEC provider, could not be loaded.`
-   and an exception too: `java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty`
+ * in your terminal, you should have an exception: `java.security.InvalidAlgorithmParameterException: the trustAnchors parameter must be non-empty`
  * hit `Ctrl+C` to stop the application
 
-To make it work, you need to manually set `java.library.path` and `javax.net.ssl.trustStore` to point to the new GraalVM home:
+To make it work, you need to manually set `javax.net.ssl.trustStore` to point to the new GraalVM home:
 ```
-./target/rest-client-1.0-SNAPSHOT-runner -Djava.library.path=<new-graalvm-home>/jre/lib/amd64 -Djavax.net.ssl.trustStore=<new-graalvm-home>/jre/lib/security/cacerts
+./target/rest-client-1.0-SNAPSHOT-runner -Djavax.net.ssl.trustStore=<new-graalvm-home>/jre/lib/security/cacerts
 ```
 
 Now, the application should work as expected:

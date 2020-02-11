@@ -1,13 +1,11 @@
 package io.quarkus.deployment.steps;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -35,8 +33,6 @@ import io.quarkus.runtime.ssl.SslContextConfigurationRecorder;
 class NativeImageConfigBuildStep {
 
     private static final Logger log = Logger.getLogger(NativeImageConfigBuildStep.class);
-
-    private static final String LIB_SUN_EC = "libsunec.so";
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
@@ -74,50 +70,18 @@ class NativeImageConfigBuildStep {
             }
         }
 
-        Boolean sslNativeEnabled = isSslNativeEnabled(sslNativeConfig, extensionSslNativeSupport);
-
         // For now, we enable SSL native if it hasn't been explicitly disabled
         // it's probably overly conservative but it's a first step in the right direction
         sslContextConfigurationRecorder.setSslNativeEnabled(!sslNativeConfig.isExplicitlyDisabled());
 
+        Boolean sslNativeEnabled = isSslNativeEnabled(sslNativeConfig, extensionSslNativeSupport);
         if (sslNativeEnabled) {
-            // This is an ugly hack but for now it's the only way to make the SunEC library
-            // available to the native image.
             // This makes the native image dependent on the local path used to build it.
-            // If you want to push your native image to a different environment, you will
-            // need to put libsunec.so aside the native image or override java.library.path.
-
             String graalVmHome = System.getenv("GRAALVM_HOME");
-
             if (graalVmHome != null) {
-                Path graalVmLibDirectory = Paths.get(graalVmHome, "jre", "lib");
-                Path linuxLibDirectory = graalVmLibDirectory.resolve("amd64");
-                Path linuxPath = linuxLibDirectory.resolve(LIB_SUN_EC);
-
-                // We add . as it might be useful in a containerized world
-                javaLibraryPathAdditionalPath.produce(new JavaLibraryPathAdditionalPathBuildItem("."));
-                if (Files.exists(linuxPath)) {
-                    // On Linux, the SunEC library is in jre/lib/amd64/
-                    // This is useful for testing or if you have a similar environment in production
-                    javaLibraryPathAdditionalPath
-                            .produce(new JavaLibraryPathAdditionalPathBuildItem(linuxLibDirectory.toString()));
-                } else {
-                    // On MacOS, the SunEC library is directly in jre/lib/
-                    // This is useful for testing or if you have a similar environment in production
-                    javaLibraryPathAdditionalPath
-                            .produce(new JavaLibraryPathAdditionalPathBuildItem(graalVmLibDirectory.toString()));
-                }
-
+                Path graalVmCacertsPath = Paths.get(graalVmHome, "jre", "lib", "security", "cacerts");
                 // This is useful for testing but the user will have to override it.
-                sslTrustStoreSystemProperty.produce(
-                        new SslTrustStoreSystemPropertyBuildItem(
-                                graalVmLibDirectory.resolve(Paths.get("security", "cacerts")).toString()));
-            } else {
-                // only warn if we're building a native image
-                if (ImageInfo.inImageBuildtimeCode()) {
-                    log.warn(
-                            "SSL is enabled but the GRAALVM_HOME environment variable is not set. The java.library.path property has not been set and will need to be set manually.");
-                }
+                sslTrustStoreSystemProperty.produce(new SslTrustStoreSystemPropertyBuildItem(graalVmCacertsPath.toString()));
             }
         }
         nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));

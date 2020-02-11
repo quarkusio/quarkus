@@ -175,7 +175,7 @@ stages:
               jdk: '1.12'
           - template: prepare-cache.yaml
 
-      - job: Run_TCKs
+      - job: Run_JDK8_TCKs
         condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded()) 
         timeoutInMinutes: 60
         pool: ${{parameters.poolSettings}}
@@ -200,6 +200,37 @@ stages:
             inputs:
               goals: 'verify'
               mavenOptions: $(MAVEN_OPTS)
+              options: '-B --settings azure-mvn-settings.xml'
+              mavenPomFile: 'tcks/pom.xml'
+          - template: prepare-cache.yaml
+
+      - job: Run_JDK11_TCKs
+        condition: and(eq(variables.LINUX_USE_VMS, ${{parameters.expectUseVMs}}),succeeded())
+        timeoutInMinutes: 60
+        pool: ${{parameters.poolSettings}}
+        workspace:
+          clean: all
+
+        steps:
+          - task: CacheBeta@0 #we know the very first job will have restored or created this, so this will never write built artifacts to the cache
+            displayName: Restore Maven Cache
+            inputs:
+              key: maven | bom/runtime/pom.xml
+              path: $(Pipeline.Workspace)/.m2/repository/
+              securityNamespace: cache
+          - task: Maven@3
+            displayName: 'Maven Install'
+            inputs:
+              goals: 'install'
+              mavenOptions: $(MAVEN_OPTS)
+              jdkVersionOption: '1.11'
+              options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks'
+          - task: Maven@3
+            displayName: 'Maven Verify'
+            inputs:
+              goals: 'verify'
+              mavenOptions: $(MAVEN_OPTS)
+              jdkVersionOption: '1.11'
               options: '-B --settings azure-mvn-settings.xml'
               mavenPomFile: 'tcks/pom.xml'
           - template: prepare-cache.yaml

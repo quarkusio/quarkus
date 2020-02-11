@@ -18,13 +18,17 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
+
+import org.jboss.logging.Logger;
 
 /**
  * A class path element that represents a file on the file system
  */
 public class JarClassPathElement implements ClassPathElement {
 
+    private static final Logger log = Logger.getLogger(JarClassPathElement.class);
     private final File file;
     private final URL jarPath;
     private JarFile jarFile;
@@ -129,6 +133,16 @@ public class JarClassPathElement implements ClassPathElement {
         CodeSource codesource = new CodeSource(url, (Certificate[]) null);
         ProtectionDomain protectionDomain = new ProtectionDomain(codesource, null, classLoader, null);
         return protectionDomain;
+    }
+
+    @Override
+    public Manifest getManifest() {
+        try {
+            return jarFile.getManifest();
+        } catch (IOException e) {
+            log.warnf("Failed to parse manifest for %s", jarPath);
+            return null;
+        }
     }
 
     @Override

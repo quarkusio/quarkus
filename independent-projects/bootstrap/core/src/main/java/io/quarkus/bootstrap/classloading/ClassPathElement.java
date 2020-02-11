@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.security.ProtectionDomain;
 import java.util.Collections;
 import java.util.Set;
+import java.util.jar.Manifest;
 
 /**
  * Represents an element on the virtual classpath, such as a jar file or classes
@@ -35,6 +36,8 @@ public interface ClassPathElement extends Closeable {
      */
     ProtectionDomain getProtectionDomain(ClassLoader classLoader);
 
+    Manifest getManifest();
+
     /**
      * Creates an element from a file system path
      */
@@ -59,6 +62,11 @@ public interface ClassPathElement extends Closeable {
 
         @Override
         public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
+            return null;
+        }
+
+        @Override
+        public Manifest getManifest() {
             return null;
         }
 

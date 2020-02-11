@@ -12,8 +12,10 @@ import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.Map;
 import java.util.Set;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
-public class MemoryClassPathElement implements ClassPathElement {
+public class MemoryClassPathElement extends AbstractClassPathElement {
 
     private volatile Map<String, byte[]> resources;
 
@@ -78,6 +80,7 @@ public class MemoryClassPathElement implements ClassPathElement {
         ProtectionDomain protectionDomain = new ProtectionDomain(codesource, null, classLoader, null);
         return protectionDomain;
     }
+
 
     @Override
     public void close() throws IOException {

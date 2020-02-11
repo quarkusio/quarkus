@@ -203,26 +203,27 @@ public class ValueResolverGenerator {
                 if (methodParams.isEmpty()) {
 
                     LOGGER.debugf("Method added %s", method);
-                    BytecodeCreator matchScope = createMatchScope(resolve, method.name(), methodParams.size(), name, params,
-                            paramsCount);
+                    try (BytecodeCreator matchScope = createMatchScope(resolve, method.name(), methodParams.size(), name,
+                            params, paramsCount)) {
 
-                    // Invoke the method - no params
-                    ResultHandle ret;
-                    boolean hasCompletionStage = !skipMemberType(method.returnType())
-                            && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
+                        // Invoke the method - no params
+                        ResultHandle ret;
+                        boolean hasCompletionStage = !skipMemberType(method.returnType())
+                                && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
 
-                    ResultHandle invokeRet;
-                    if (Modifier.isInterface(clazz.flags())) {
-                        invokeRet = matchScope.invokeInterfaceMethod(MethodDescriptor.of(method), base);
-                    } else {
-                        invokeRet = matchScope.invokeVirtualMethod(MethodDescriptor.of(method), base);
+                        ResultHandle invokeRet;
+                        if (Modifier.isInterface(clazz.flags())) {
+                            invokeRet = matchScope.invokeInterfaceMethod(MethodDescriptor.of(method), base);
+                        } else {
+                            invokeRet = matchScope.invokeVirtualMethod(MethodDescriptor.of(method), base);
+                        }
+                        if (hasCompletionStage) {
+                            ret = invokeRet;
+                        } else {
+                            ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, invokeRet);
+                        }
+                        matchScope.returnValue(ret);
                     }
-                    if (hasCompletionStage) {
-                        ret = invokeRet;
-                    } else {
-                        ret = matchScope.invokeStaticMethod(Descriptors.COMPLETED_FUTURE, invokeRet);
-                    }
-                    matchScope.returnValue(ret);
 
                 } else {
                     // Collect methods with params
@@ -395,58 +396,60 @@ public class ValueResolverGenerator {
 
                     for (MethodInfo method : entry.getValue()) {
                         // Try to match parameter types
-                        BytecodeCreator paramMatchScope = success.createScope();
-                        int idx = 0;
-                        for (Type paramType : method.parameters()) {
-                            ResultHandle paramHandleClass = paramMatchScope.readArrayValue(paramClasses, idx++);
-                            ResultHandle testClass = loadParamType(paramMatchScope, paramType);
-                            ResultHandle baseClassTest = paramMatchScope.invokeVirtualMethod(Descriptors.IS_ASSIGNABLE_FROM,
-                                    testClass,
-                                    paramHandleClass);
-                            paramMatchScope.ifNonZero(baseClassTest).falseBranch().breakScope(paramMatchScope);
-                        }
-                        boolean hasCompletionStage = !skipMemberType(method.returnType())
-                                && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
+                        try (BytecodeCreator paramMatchScope = success.createScope()) {
+                            int idx = 0;
+                            for (Type paramType : method.parameters()) {
+                                ResultHandle paramHandleClass = paramMatchScope.readArrayValue(paramClasses, idx++);
+                                ResultHandle testClass = loadParamType(paramMatchScope, paramType);
+                                ResultHandle baseClassTest = paramMatchScope.invokeVirtualMethod(Descriptors.IS_ASSIGNABLE_FROM,
+                                        testClass,
+                                        paramHandleClass);
+                                paramMatchScope.ifNonZero(baseClassTest).falseBranch().breakScope(paramMatchScope);
+                            }
+                            boolean hasCompletionStage = !skipMemberType(method.returnType())
+                                    && hasCompletionStageInTypeClosure(index.getClassByName(method.returnType().name()), index);
 
-                        AssignableResultHandle invokeRet = paramMatchScope.createVariable(Object.class);
-                        // try
-                        TryBlock tryCatch = paramMatchScope.tryBlock();
-                        // catch (Throwable e)
-                        CatchBlockCreator exception = tryCatch.addCatch(Throwable.class);
-                        // CompletableFuture.completeExceptionally(Throwable)
-                        exception.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
-                                exception.getCaughtException());
+                            AssignableResultHandle invokeRet = paramMatchScope.createVariable(Object.class);
+                            // try
+                            TryBlock tryCatch = paramMatchScope.tryBlock();
+                            // catch (Throwable e)
+                            CatchBlockCreator exception = tryCatch.addCatch(Throwable.class);
+                            // CompletableFuture.completeExceptionally(Throwable)
+                            exception.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
+                                    exception.getCaughtException());
 
-                        if (Modifier.isInterface(clazz.flags())) {
-                            tryCatch.assign(invokeRet,
-                                    tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
-                        } else {
-                            tryCatch.assign(invokeRet,
-                                    tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
-                        }
+                            if (Modifier.isInterface(clazz.flags())) {
+                                tryCatch.assign(invokeRet,
+                                        tryCatch.invokeInterfaceMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+                            } else {
+                                tryCatch.assign(invokeRet,
+                                        tryCatch.invokeVirtualMethod(MethodDescriptor.of(method), whenBase, paramsHandle));
+                            }
 
-                        if (hasCompletionStage) {
-                            FunctionCreator invokeWhenCompleteFun = tryCatch.createFunction(BiConsumer.class);
-                            tryCatch.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, invokeRet,
-                                    invokeWhenCompleteFun.getInstance());
-                            BytecodeCreator invokeWhenComplete = invokeWhenCompleteFun.getBytecode();
+                            if (hasCompletionStage) {
+                                FunctionCreator invokeWhenCompleteFun = tryCatch.createFunction(BiConsumer.class);
+                                tryCatch.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, invokeRet,
+                                        invokeWhenCompleteFun.getInstance());
+                                BytecodeCreator invokeWhenComplete = invokeWhenCompleteFun.getBytecode();
 
-                            // TODO workaround for https://github.com/quarkusio/gizmo/issues/6
-                            AssignableResultHandle invokeWhenRet = invokeWhenComplete.createVariable(CompletableFuture.class);
-                            invokeWhenComplete.assign(invokeWhenRet, whenRet);
+                                // TODO workaround for https://github.com/quarkusio/gizmo/issues/6
+                                AssignableResultHandle invokeWhenRet = invokeWhenComplete
+                                        .createVariable(CompletableFuture.class);
+                                invokeWhenComplete.assign(invokeWhenRet, whenRet);
 
-                            BranchResult invokeThrowableIsNull = invokeWhenComplete
-                                    .ifNull(invokeWhenComplete.getMethodParam(1));
-                            BytecodeCreator invokeSuccess = invokeThrowableIsNull.trueBranch();
-                            invokeSuccess.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, invokeWhenRet,
-                                    invokeWhenComplete.getMethodParam(0));
-                            BytecodeCreator invokeFailure = invokeThrowableIsNull.falseBranch();
-                            invokeFailure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
-                                    invokeWhenRet,
-                                    invokeWhenComplete.getMethodParam(1));
-                            invokeWhenComplete.returnValue(null);
-                        } else {
-                            tryCatch.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
+                                BranchResult invokeThrowableIsNull = invokeWhenComplete
+                                        .ifNull(invokeWhenComplete.getMethodParam(1));
+                                BytecodeCreator invokeSuccess = invokeThrowableIsNull.trueBranch();
+                                invokeSuccess.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, invokeWhenRet,
+                                        invokeWhenComplete.getMethodParam(0));
+                                BytecodeCreator invokeFailure = invokeThrowableIsNull.falseBranch();
+                                invokeFailure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY,
+                                        invokeWhenRet,
+                                        invokeWhenComplete.getMethodParam(1));
+                                invokeWhenComplete.returnValue(null);
+                            } else {
+                                tryCatch.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
+                            }
                         }
                     }
 

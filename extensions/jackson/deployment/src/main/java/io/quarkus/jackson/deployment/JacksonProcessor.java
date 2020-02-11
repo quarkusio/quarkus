@@ -232,6 +232,11 @@ public class JacksonProcessor {
 
                 customize.returnValue(null);
             }
+
+            // ensure that the things we auto-register have the lower priority - this ensures that user registered modules take priority
+            try (MethodCreator priority = classCreator.getMethodCreator("priority", int.class)) {
+                priority.returnValue(priority.load(ObjectMapperCustomizer.MINIMUM_PRIORITY));
+            }
         }
     }
 }

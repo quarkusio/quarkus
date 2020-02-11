@@ -1,5 +1,9 @@
 package io.quarkus.jackson;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
@@ -17,9 +21,20 @@ public class ObjectMapperProducer {
     @Produces
     public ObjectMapper objectMapper(Instance<ObjectMapperCustomizer> customizers) {
         ObjectMapper objectMapper = new ObjectMapper();
-        for (ObjectMapperCustomizer customizer : customizers) {
+        List<ObjectMapperCustomizer> sortedCustomizers = sortCustomizersInDescendingPriorityOrder(customizers);
+        for (ObjectMapperCustomizer customizer : sortedCustomizers) {
             customizer.customize(objectMapper);
         }
         return objectMapper;
+    }
+
+    private List<ObjectMapperCustomizer> sortCustomizersInDescendingPriorityOrder(
+            Instance<ObjectMapperCustomizer> customizers) {
+        List<ObjectMapperCustomizer> sortedCustomizers = new ArrayList<>();
+        for (ObjectMapperCustomizer customizer : customizers) {
+            sortedCustomizers.add(customizer);
+        }
+        Collections.sort(sortedCustomizers);
+        return sortedCustomizers;
     }
 }

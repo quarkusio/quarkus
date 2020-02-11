@@ -2,7 +2,6 @@ package io.quarkus.utilities.depchecker;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -34,16 +33,8 @@ import io.quarkus.utilities.depchecker.DependencyOutputHandler.MavenModule;
 
 public class DependencyChecker {
 
-	private static Path REPO_ROOT;
-	
 	public static void main(String args[]) {
 		try {
-			REPO_ROOT = Paths.get(".").toAbsolutePath();
-			while (!REPO_ROOT.getFileName().toString().equals("quarkus")) {
-				REPO_ROOT = REPO_ROOT.getParent();
-				if (REPO_ROOT == null)
-					throw new FileNotFoundException("Unable to find root of Quarkus repo");
-			}
 			if (args == null || args.length < 2)
 				throw new IllegalArgumentException("Two arguments are required: <sha1> and <sha2>");
 			new DependencyChecker(args[0], args[1]).run();
@@ -52,17 +43,27 @@ public class DependencyChecker {
 		}
 	}
 	
+	private static final Map<Path,MavenModule> parsedModules = new HashMap<>();
+	public static final MavenModule ALL_MODULES = new MavenModule("ALL_MODULES");
+	
 	private final String sha1;
 	private final String sha2;
-	private Map<String,MavenModule> depsMap;
+	private final Path REPO_ROOT;
 	
 	public DependencyChecker(String sha1, String sha2) {
 		this.sha1 = sha1;
 		this.sha2 = sha2;
+		Path root = Paths.get(".").toAbsolutePath();
+		while (!root.getFileName().toString().equals("quarkus")) {
+			root = root.getParent();
+			if (root == null)
+				throw new IllegalStateException("Unable to find root of Quarkus repo");
+		}
+		REPO_ROOT = root;
 	}
 
 	public void run() throws Exception {
-		depsMap = getMvnDependencies();
+		Map<String,MavenModule> depsMap = getMvnDependencies();
 		// Validate module dependencies map to known modules
 		for (MavenModule module : depsMap.values()) {
 			for (String dependsOn : module.dependsOn())
@@ -70,15 +71,13 @@ public class DependencyChecker {
 					System.out.println("WARN: Module " + module.name + " depended on an unknown module " + dependsOn);
 		}
 		
-//		Set<String> modifiedFiles = getModifiedFiles();
-		// hardcode modified files for testing
-		Set<String> modifiedFiles = Collections.singleton("extensions/panache/panache-common/deployment/src/main/java/io/quarkus/panache/common/deployment/JandexUtil.java");
+		Set<String> modifiedFiles = getModifiedFiles();
 		if (modifiedFiles.isEmpty())
 			throw new IllegalStateException("No modified files detected");
 		System.out.println("Modified files: ");
 		modifiedFiles.stream().forEach(f -> System.out.println("  " + f));
 		
-		Set<MavenModule> modifiedModules = getModifiedModules(modifiedFiles);
+		Set<MavenModule> modifiedModules = getModifiedModules(depsMap, modifiedFiles);
 		if (modifiedModules.isEmpty())
 			throw new IllegalStateException("No modified maven modules detected");
 		System.out.println("\nModified modules: ");
@@ -100,6 +99,7 @@ public class DependencyChecker {
 				}
 			}
 		}
+		// @AGG LEFTOFF split this out into a separate method
 		System.out.println("\nFinal affected modules: ");
 		affectedModules.stream().forEach(m -> System.out.println("  " + m.name));
 		
@@ -112,8 +112,13 @@ public class DependencyChecker {
 			.map(m -> m.name)
 			.map(name -> name.substring(name.indexOf("-integration-test-") + 18))
 			.collect(Collectors.joining(","));
-		System.out.println("Writing tests to run argument:");
-		System.out.println(testsToRun);
+		if (affectedModules.size() == 0) {
+			testsToRun = "";
+			System.out.println("No native image tests will be run.");
+		} else {
+			System.out.println("Writing tests to run argument:");
+			System.out.println(testsToRun);
+		}
 		
 		Path outputFile = Paths.get("target", "tests-to-run.txt");
 		Files.deleteIfExists(outputFile);
@@ -121,7 +126,7 @@ public class DependencyChecker {
 		Files.write(outputFile, testsToRun.getBytes());
 	}
 	
-	public Map<String,MavenModule> getMvnDependencies() throws MavenInvocationException, CommandLineException {
+	private Map<String,MavenModule> getMvnDependencies() throws MavenInvocationException, CommandLineException {
 		InvocationRequest request = new DefaultInvocationRequest();
 		File rootPom = REPO_ROOT.resolve("pom.xml").toFile();
 		if (!rootPom.exists())
@@ -151,16 +156,28 @@ public class DependencyChecker {
 		return dependencyOutput.mavenModules;
 	}
 	
-	public Set<MavenModule> getModifiedModules(Set<String> modifiedFiles) {
+	public Set<MavenModule> getModifiedModules(Map<String,MavenModule> depsMap, Set<String> modifiedFiles) {
 		Set<MavenModule> modifiedModules = new HashSet<>();
-		Map<Path,MavenModule> parsedModules = new HashMap<>();
 		for (String modifiedFile : modifiedFiles) {
-			modifiedModules.add(getModule(modifiedFile, parsedModules));
+			// Changes to the BOM have the ability to impact any other
+			// project without further source code changes
+			if (modifiedFile.startsWith("bom/"))
+				return Collections.singleton(ALL_MODULES);
+			modifiedModules.add(getModule(depsMap, modifiedFile));
 		}
+		
+		// If only the parent module was modified, assume any child module could be impacted
+		if (modifiedModules.size() == 1 && 
+			"io.quarkus:quarkus-parent".equals(modifiedModules.iterator().next().name))
+			return Collections.singleton(ALL_MODULES);
 		return modifiedModules;
 	}
 	
-	private MavenModule getModule(String filePath, Map<Path,MavenModule> parsedModules) {
+	private String getTestsToRun() {
+		
+	}
+	
+	private MavenModule getModule(Map<String,MavenModule> depsMap, String filePath) {
 		Path p = REPO_ROOT.resolve(filePath);
 		Path pomXml = findPom(p);
 		// Don't parse the same pom multiple times

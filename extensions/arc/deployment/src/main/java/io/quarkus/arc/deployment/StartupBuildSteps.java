@@ -52,7 +52,7 @@ public class StartupBuildSteps {
     private static final Logger LOGGER = Logger.getLogger(StartupBuildSteps.class);
 
     @BuildStep
-    AnnotationsTransformerBuildItem annotationTransformer() {
+    AnnotationsTransformerBuildItem annotationTransformer(CustomScopeAnnotationsBuildItem customScopes) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
 
             @Override
@@ -62,7 +62,7 @@ public class StartupBuildSteps {
 
             @Override
             public void transform(TransformationContext context) {
-                if (context.isClass() && !BuiltinScope.isDeclaredOn(context.getTarget().asClass())) {
+                if (context.isClass() && !customScopes.isScopeDeclaredOn(context.getTarget().asClass())) {
                     // Class with no built-in scope annotation but with @Scheduled method
                     if (Annotations.contains(context.getTarget().asClass().classAnnotations(), STARTUP_NAME)) {
                         LOGGER.debugf("Found @Startup on a class %s with no scope annotations - adding @ApplicationScoped",

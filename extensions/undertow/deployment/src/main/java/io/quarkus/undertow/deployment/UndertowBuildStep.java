@@ -190,7 +190,7 @@ public class UndertowBuildStep {
             public void register(RegistrationContext registrationContext) {
                 registrationContext.configure(SessionScoped.class).normal().contextClass(HttpSessionContext.class).done();
             }
-        }));
+        }, SessionScoped.class));
         listeners.produce(new ListenerBuildItem(HttpSessionContext.class.getName()));
     }
 

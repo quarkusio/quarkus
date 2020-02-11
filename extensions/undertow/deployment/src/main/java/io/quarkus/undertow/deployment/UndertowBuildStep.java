@@ -12,10 +12,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -329,16 +327,11 @@ public class UndertowBuildStep {
         if (webMetaData.getServlets() != null) {
             for (ServletMetaData servlet : webMetaData.getServlets()) {
                 reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, servlet.getServletClass()));
-                Map<String, String> params = new HashMap<>();
-                for (Map.Entry<String, String> i : params.entrySet()) {
-                    params.put(i.getKey(), i.getValue());
-                }
                 RuntimeValue<ServletInfo> sref = recorder.registerServlet(deployment, servlet.getServletName(),
                         context.classProxy(servlet.getServletClass()),
                         servlet.isAsyncSupported(),
                         servlet.getLoadOnStartupInt(),
                         bc.getValue(),
-                        params,
                         null);
                 if (servlet.getInitParam() != null) {
                     for (ParamValueMetaData init : servlet.getInitParam()) {
@@ -402,16 +395,12 @@ public class UndertowBuildStep {
         if (webMetaData.getFilters() != null) {
             for (FilterMetaData filter : webMetaData.getFilters()) {
                 reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, filter.getFilterClass()));
-                Map<String, String> params = new HashMap<>();
-                for (Map.Entry<String, String> i : params.entrySet()) {
-                    params.put(i.getKey(), i.getValue());
-                }
                 RuntimeValue<FilterInfo> sref = recorder.registerFilter(deployment,
                         filter.getFilterName(),
                         context.classProxy(filter.getFilterClass()),
                         filter.isAsyncSupported(),
                         bc.getValue(),
-                        params, null);
+                        null);
                 if (filter.getInitParam() != null) {
                     for (ParamValueMetaData init : filter.getInitParam()) {
                         recorder.addFilterInitParam(sref, init.getParamName(), init.getParamValue());
@@ -487,7 +476,7 @@ public class UndertowBuildStep {
                 reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, servlet.getServletClass()));
             }
             recorder.registerServlet(deployment, servlet.getName(), context.classProxy(servletClass),
-                    servlet.isAsyncSupported(), servlet.getLoadOnStartup(), bc.getValue(), servlet.getInitParams(),
+                    servlet.isAsyncSupported(), servlet.getLoadOnStartup(), bc.getValue(),
                     servlet.getInstanceFactory());
 
             for (String m : servlet.getMappings()) {
@@ -499,7 +488,7 @@ public class UndertowBuildStep {
             String filterClass = filter.getFilterClass();
             reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, filterClass));
             recorder.registerFilter(deployment, filter.getName(), context.classProxy(filterClass), filter.isAsyncSupported(),
-                    bc.getValue(), filter.getInitParams(), filter.getInstanceFactory());
+                    bc.getValue(), filter.getInstanceFactory());
             for (FilterBuildItem.FilterMappingInfo m : filter.getMappings()) {
                 if (m.getMappingType() == FilterBuildItem.FilterMappingInfo.MappingType.URL) {
                     recorder.addFilterURLMapping(deployment, filter.getName(), m.getMapping(), m.getDispatcher());

@@ -5,14 +5,11 @@ import static java.util.stream.Collectors.toList;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -49,6 +46,14 @@ public class SpringDataJPAProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(SpringDataJPAProcessor.class.getName());
     private static final Pattern pattern = Pattern.compile("spring\\.jpa\\..*");
+    public static final String SPRING_JPA_SHOW_SQL = "spring.jpa.show-sql";
+    public static final String SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT = "spring.jpa.properties.hibernate.dialect";
+    public static final String SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT_STORAGE_ENGINE = "spring.jpa.properties.hibernate.dialect.storage_engine";
+    public static final String SPRING_JPA_GENERATE_DDL = "spring.jpa.generate-ddl";
+    public static final String QUARKUS_HIBERNATE_ORM_DIALECT = "quarkus.hibernate-orm.dialect";
+    public static final String QUARKUS_HIBERNATE_ORM_LOG_SQL = "quarkus.hibernate-orm.log.sql";
+    public static final String QUARKUS_HIBERNATE_ORM_DIALECT_STORAGE_ENGINE = "quarkus.hibernate-orm.dialect.storage-engine";
+    public static final String QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION = "quarkus.hibernate-orm.database.generation";
 
     @BuildStep
     FeatureBuildItem registerFeature() {
@@ -82,34 +87,40 @@ public class SpringDataJPAProcessor {
 
     private void detectAndLogSpecificSpringPropertiesIfExist() {
         Config config = ConfigProvider.getConfig();
-        Map<String, String> springJpaToQuarkusOrmPropertiesMap = new HashMap<>();
-        springJpaToQuarkusOrmPropertiesMap.put("spring.jpa.show-sql", "quarkus.hibernate-orm.log.sql");
-        springJpaToQuarkusOrmPropertiesMap.put("spring.jpa.properties.hibernate.dialect", "quarkus.hibernate-orm.dialect");
-        springJpaToQuarkusOrmPropertiesMap.put("spring.jpa.properties.hibernate.dialect.storage_engine",
-                "quarkus.hibernate-orm.dialect.storage-engine");
-        springJpaToQuarkusOrmPropertiesMap.put("spring.jpa.generate-ddl", "quarkus.hibernate-orm.database.generation");
 
         Iterable<String> iterablePropertyNames = config.getPropertyNames();
         List<String> propertyNames = new ArrayList<String>();
         iterablePropertyNames.forEach(propertyNames::add);
         List<String> springProperties = propertyNames.stream().filter(s -> pattern.matcher(s).matches()).collect(toList());
+        String notSupportedProperties = "";
 
         if (!springProperties.isEmpty()) {
-            List<String> springWithQuarkusEquivalences = springProperties.stream()
-                    .filter(s -> springJpaToQuarkusOrmPropertiesMap.containsKey(s)).collect(Collectors.toList());
-
-            String notSupportedProperties = springWithQuarkusEquivalences.stream()
-                    .map(d -> "\t- " + d + " should be replaced by " + springJpaToQuarkusOrmPropertiesMap.get(d))
-                    .collect(Collectors.joining("\n"));
-
-            List<String> others = springProperties.stream().filter(s -> !springJpaToQuarkusOrmPropertiesMap.containsKey(s))
-                    .collect(Collectors.toList());
-
-            notSupportedProperties = notSupportedProperties + "\n"
-                    + others.stream().map(d -> "\t- " + d).collect(Collectors.joining("\n"));
-
+            for (String sp : springProperties) {
+                switch (sp) {
+                    case SPRING_JPA_SHOW_SQL:
+                        notSupportedProperties = notSupportedProperties + "\t- " + SPRING_JPA_SHOW_SQL
+                                + " should be replaced by " + QUARKUS_HIBERNATE_ORM_LOG_SQL + "\n";
+                        break;
+                    case SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT:
+                        notSupportedProperties = notSupportedProperties + "\t- " + SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
+                                + " should be replaced by " + QUARKUS_HIBERNATE_ORM_DIALECT + "\n";
+                        break;
+                    case SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT_STORAGE_ENGINE:
+                        notSupportedProperties = notSupportedProperties + "\t- "
+                                + SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT_STORAGE_ENGINE + " should be replaced by "
+                                + QUARKUS_HIBERNATE_ORM_DIALECT_STORAGE_ENGINE + "\n";
+                        break;
+                    case SPRING_JPA_GENERATE_DDL:
+                        notSupportedProperties = notSupportedProperties + "\t- " + SPRING_JPA_GENERATE_DDL
+                                + " should be replaced by " + QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION + "\n";
+                        break;
+                    default:
+                        notSupportedProperties = notSupportedProperties + "\t- " + sp + "\n";
+                        break;
+                }
+            }
             LOGGER.warnf(
-                    "Quarkus does not support the following Spring Boot configuration properties :%n%s",
+                    "Quarkus does not support the following Spring Boot configuration properties: %n%s",
                     notSupportedProperties);
         }
     }

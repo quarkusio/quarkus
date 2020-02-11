@@ -377,23 +377,6 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     }
 
     /**
-     * Temporarily exposed since Configuration is still around and much code still
-     * uses Configuration. This allows code to configure the builder and access that
-     * to configure Configuration object (used from HEM atm).
-     *
-     * @return The settings map.
-     *
-     * @deprecated Temporarily exposed since Configuration is still around and much
-     *             code still uses Configuration. This allows code to configure the
-     *             builder and access that to configure Configuration object.
-     */
-    @Override
-    @Deprecated
-    public Map getSettings() {
-        return settings;
-    }
-
-    /**
      * Destroy a service registry. Applications should only destroy registries they
      * have explicitly created.
      *

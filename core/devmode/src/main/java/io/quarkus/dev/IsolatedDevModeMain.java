@@ -247,7 +247,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                     synchronized (DevModeMain.class) {
                         if (runner != null) {
                             try {
-                                stop();
+                                close();
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }

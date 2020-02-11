@@ -119,6 +119,21 @@ By default the build will use the native image server. This speeds up the build,
 not being invalidated correctly in some cases. To run a build with a new instance of the server you can use
 `./mvnw install -Dnative-image.new-server=true`.
 
+### MicroProfile TCK's
+
+Quarkus has a TCK module in `tcks` where all the MicroProfile TCK's are set up for you to run if you wish. These 
+includes tests to areas like Config, JWT Authentication, Fault Tolerance, Health Checks, Metrics, OpenAPI, OpenTracing, 
+REST Client, Reactive Messaging and Context Propagation.
+
+The TCK module is not part of the main Maven reactor build, but you can enable it and run the TCK tests by activating 
+the Maven Profile `-Ptcks`. If your work is related to any of these areas, running the TCK's is highly recommended to 
+make sure you are not breaking the project. The TCK's will also run on any Pull Request.
+
+You can either run all of the TCK's or just a subset by executing `mvn verify` in the `tcks` module root or each of 
+the submodules. If you wish to run a particular test, you can use Maven `-Dtest=` property with the fully qualified 
+name of the test class and optionally the method name by using 
+`mvn verify -Dtest=fully.qualified.test.class.name#methodName`.
+
 ### Test Coverage
 
 Quarkus uses Jacoco to generate test coverage. If you would like to generate the report run `mvn install -Ptest-coverage`,

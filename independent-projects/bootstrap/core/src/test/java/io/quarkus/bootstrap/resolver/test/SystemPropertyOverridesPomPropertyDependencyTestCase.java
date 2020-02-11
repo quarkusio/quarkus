@@ -29,7 +29,7 @@ public class SystemPropertyOverridesPomPropertyDependencyTestCase extends Collec
         addDep(new TsArtifact("x", "${x.version}"));
 
         // the system property of x.version is 3
-        System.setProperty("x.version", "3");
+        setSystemProperty("x.version", "3");
 
         // it is expected that the system property will dominate
         addCollectedDep(x13);

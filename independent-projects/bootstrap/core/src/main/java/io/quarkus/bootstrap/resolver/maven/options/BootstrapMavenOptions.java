@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +27,8 @@ import io.quarkus.bootstrap.util.PropertyUtils;
  * lib directory.
  */
 public class BootstrapMavenOptions {
+
+    private static final String ACTIVATE_PROFILES = "P";
 
     public static Map<String, Object> parse(String cmdLine) {
         if (cmdLine == null) {
@@ -77,6 +80,8 @@ public class BootstrapMavenOptions {
     }
 
     private final Map<String, Object> options;
+    private List<String> activeProfileIds;
+    private List<String> inactiveProfileIds;
 
     private BootstrapMavenOptions(Map<String, Object> options) {
         this.options = options;
@@ -104,6 +109,50 @@ public class BootstrapMavenOptions {
 
     public boolean isEmpty() {
         return options.isEmpty();
+    }
+
+    public List<String> getActiveProfileIds() {
+        if(activeProfileIds == null) {
+            parseProfileArgs();
+        }
+        return activeProfileIds;
+    }
+
+    public List<String> getInactiveProfileIds() {
+        if(inactiveProfileIds == null) {
+            parseProfileArgs();
+        }
+        return inactiveProfileIds;
+    }
+
+    private void parseProfileArgs() {
+        final String[] profileOptionValues = getOptionValues(ACTIVATE_PROFILES);
+        if (profileOptionValues != null && profileOptionValues.length > 0) {
+            final List<String> activeProfiles = new ArrayList<>(0);
+            final List<String> inactiveProfiles = new ArrayList<>(0);
+            for (String profileOptionValue : profileOptionValues) {
+                final StringTokenizer profileTokens = new StringTokenizer(profileOptionValue, ",");
+                while (profileTokens.hasMoreTokens()) {
+                    final String profileAction = profileTokens.nextToken().trim();
+                    if (profileAction.isEmpty()) {
+                        continue;
+                    }
+                    final char c = profileAction.charAt(0);
+                    if (c == '-' || c == '!') {
+                        inactiveProfiles.add(profileAction.substring(1));
+                    } else if (c == '+') {
+                        activeProfiles.add(profileAction.substring(1));
+                    } else {
+                        activeProfiles.add(profileAction);
+                    }
+                }
+            }
+            this.activeProfileIds = activeProfiles;
+            this.inactiveProfileIds = inactiveProfiles;
+        } else {
+            activeProfileIds = Collections.emptyList();
+            inactiveProfileIds = Collections.emptyList();
+        }
     }
 
     @SuppressWarnings("unchecked")

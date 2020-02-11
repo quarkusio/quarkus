@@ -1,12 +1,13 @@
 package io.quarkus.bootstrap.resolver.update;
 
 import java.nio.file.Path;
-
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.resolver.ResolverSetupCleanup;
 import io.quarkus.bootstrap.resolver.TsArtifact;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
@@ -20,10 +21,14 @@ public abstract class CreatorOutcomeTestBase extends ResolverSetupCleanup {
         this.createWorkspace = true;
     }
 
-    @Test
-    public void test() throws Exception {
+    @BeforeEach
+    public void initAppModel() throws Exception {
         appJar = modelApp();
         appJar.install(repo);
+    }
+
+    @Test
+    public void test() throws Exception {
         rebuild();
     }
 
@@ -44,6 +49,7 @@ public abstract class CreatorOutcomeTestBase extends ResolverSetupCleanup {
             ModelUtils.persistModel(ws.resolve("pom.xml"), appJar.getPomModel());
             bootstrap.setProjectRoot(ws);
             bootstrap.setLocalProjectDiscovery(true);
+            bootstrap.setAppModelResolver(initResolver(LocalProject.loadWorkspace(classesDir).getWorkspace()));
         }
 
         initProps(bootstrap);

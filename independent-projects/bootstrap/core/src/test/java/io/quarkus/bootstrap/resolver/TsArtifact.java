@@ -9,6 +9,7 @@ import java.util.Properties;
 
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Profile;
 
 import io.quarkus.bootstrap.model.AppArtifact;
 
@@ -62,26 +63,7 @@ public class TsArtifact {
     protected ContentProvider content;
 
     protected Properties pomProps;
-
-    public String getGroupId() {
-        return groupId;
-    }
-
-    public String getArtifactId() {
-        return artifactId;
-    }
-
-    public String getClassifier() {
-        return classifier;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public String getVersion() {
-        return version;
-    }
+    protected List<Profile> pomProfiles = Collections.emptyList();
 
     public TsArtifact(String artifactId) {
         this(artifactId, DEFAULT_VERSION);
@@ -101,6 +83,26 @@ public class TsArtifact {
         this.classifier = classifier;
         this.type = type;
         this.version = version;
+    }
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public String getArtifactId() {
+        return artifactId;
+    }
+
+    public String getClassifier() {
+        return classifier;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getVersion() {
+        return version;
     }
 
     public TsArtifact setContent(ContentProvider content) {
@@ -133,6 +135,14 @@ public class TsArtifact {
             managedDeps = new ArrayList<>();
         }
         managedDeps.add(dep);
+        return this;
+    }
+
+    public TsArtifact addProfile(Profile profile) {
+        if(pomProfiles.isEmpty()) {
+            pomProfiles = new ArrayList<>(1);
+        }
+        pomProfiles.add(profile);
         return this;
     }
 
@@ -185,6 +195,9 @@ public class TsArtifact {
             }
         }
 
+        if(!pomProfiles.isEmpty()) {
+            model.setProfiles(pomProfiles);
+        }
         return model;
     }
 

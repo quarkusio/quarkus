@@ -273,10 +273,9 @@ public class BootstrapAppModelFactory {
                     }
                 }
             }
-
             AppModelResolver appModelResolver = getAppModelResolver();
             CurationResult curationResult = new CurationResult(appModelResolver
-                    .resolveManagedModel(localProject.getAppArtifact(), Collections.emptyList(), managingProject != null ? managingProject : localProject.getAppArtifact()));
+                    .resolveManagedModel(localProject.getAppArtifact(), Collections.emptyList(), managingProject));
             if (cachedCpPath != null) {
                 Files.createDirectories(cachedCpPath.getParent());
                 try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(cachedCpPath))) {

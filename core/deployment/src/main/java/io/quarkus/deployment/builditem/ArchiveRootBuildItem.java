@@ -31,14 +31,6 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Deprecated in favor of getArchiveLocation()
-     */
-    @Deprecated
-    public Path getPath() {
-        return getArchiveLocation();
-    }
-
-    /**
      * If this archive is a jar file it will return the path to the jar file on the file system,
      * otherwise it will return the directory that this corresponds to.
      */

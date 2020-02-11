@@ -201,6 +201,7 @@ class JaxbProcessor {
         addReflectiveClass(true, false, "com.sun.xml.internal.bind.v2.ContextFactory");
 
         addReflectiveClass(true, false, "com.sun.xml.internal.stream.XMLInputFactoryImpl");
+        addReflectiveClass(true, false, "com.sun.xml.internal.stream.XMLOutputFactoryImpl");
         addReflectiveClass(true, false, "com.sun.org.apache.xpath.internal.functions.FuncNot");
         addReflectiveClass(true, false, "com.sun.org.apache.xerces.internal.impl.dv.xs.SchemaDVFactoryImpl");
 

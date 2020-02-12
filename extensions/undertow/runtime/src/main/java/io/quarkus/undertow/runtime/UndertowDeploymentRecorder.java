@@ -8,7 +8,6 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -221,16 +220,13 @@ public class UndertowDeploymentRecorder {
             Class<?> servletClass,
             boolean asyncSupported,
             int loadOnStartup,
-            BeanContainer beanContainer, Map<String, String> initParams,
+            BeanContainer beanContainer,
             InstanceFactory<? extends Servlet> instanceFactory) throws Exception {
 
         InstanceFactory<? extends Servlet> factory = instanceFactory != null ? instanceFactory
                 : new QuarkusInstanceFactory(beanContainer.instanceFactory(servletClass));
         ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass,
                 factory);
-        for (Map.Entry<String, String> e : initParams.entrySet()) {
-            servletInfo.addInitParam(e.getKey(), e.getValue());
-        }
         deploymentInfo.getValue().addServlet(servletInfo);
         servletInfo.setAsyncSupported(asyncSupported);
         if (loadOnStartup > 0) {
@@ -277,16 +273,11 @@ public class UndertowDeploymentRecorder {
             String name, Class<?> filterClass,
             boolean asyncSupported,
             BeanContainer beanContainer,
-            Map<String, String> initParams,
             InstanceFactory<? extends Filter> instanceFactory) throws Exception {
 
         InstanceFactory<? extends Filter> factory = instanceFactory != null ? instanceFactory
                 : new QuarkusInstanceFactory(beanContainer.instanceFactory(filterClass));
         FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass, factory);
-
-        for (Map.Entry<String, String> e : initParams.entrySet()) {
-            filterInfo.addInitParam(e.getKey(), e.getValue());
-        }
         info.getValue().addFilter(filterInfo);
         filterInfo.setAsyncSupported(asyncSupported);
         return new RuntimeValue<>(filterInfo);

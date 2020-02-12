@@ -626,20 +626,20 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition) {
         // @Context uses proxies for interface injection
         for (AnnotationInstance annotation : index.getAnnotations(ResteasyDotNames.CONTEXT)) {
-            DotName typeName = null;
+            Type annotatedType = null;
             if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                 MethodInfo method = annotation.target().asMethod();
                 if (method.parameters().size() == 1) {
-                    typeName = method.parameters().get(0).name();
+                    annotatedType = method.parameters().get(0);
                 }
             } else if (annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
-                typeName = annotation.target().asField().type().name();
+                annotatedType = annotation.target().asField().type();
             } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
                 int pos = annotation.target().asMethodParameter().position();
-                typeName = annotation.target().asMethodParameter().method().parameters().get(pos).name();
+                annotatedType = annotation.target().asMethodParameter().method().parameters().get(pos);
             }
-            if (typeName != null) {
-                ClassInfo type = index.getClassByName(typeName);
+            if (annotatedType != null && annotatedType.kind() != Type.Kind.PRIMITIVE) {
+                ClassInfo type = index.getClassByName(annotatedType.name());
                 if (type != null) {
                     if (Modifier.isInterface(type.flags())) {
                         proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(type.toString()));
@@ -647,9 +647,9 @@ public class ResteasyServerCommonProcessor {
                 } else {
                     //might be a framework class, which should be loadable
                     try {
-                        Class<?> typeClass = Class.forName(typeName.toString());
+                        Class<?> typeClass = Class.forName(annotatedType.name().toString());
                         if (typeClass.isInterface()) {
-                            proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(typeName.toString()));
+                            proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(annotatedType.name().toString()));
                         }
                     } catch (Exception e) {
                         //ignore

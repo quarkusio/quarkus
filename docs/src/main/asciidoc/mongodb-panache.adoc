@@ -530,6 +530,21 @@ you need to provide the value by yourself.
 `ObjectId` can be difficult to use if you want to expose its value in your REST service.
 So we created JSON-B and Jackson providers to serialize/deserialize them as a `String` which are are automatically registered if your project depends on one of the RESTEasy with JSON-B or RESTEasy with Jackson extensions.
 
+The last option is to the use the link:https://kotlinlang.org/docs/reference/compiler-plugins.html#no-arg-compiler-plugin[no-arg] compiler plugin.
+This plugin is configured with a list of annotations, and the end result is the generation of no-args constructor for each class annotated with them.
+
+For MongoDB with Panache, you could use the `@MongoEntity` annotation on your data class for this:
+
+[source,kotlin]
+----
+@MongoEntity
+data class Person (
+    var name: String,
+    var birth: LocalDate,
+    var status: Status
+): PanacheMongoEntity()
+----
+
 == How and why we simplify MongoDB API
 
 When it comes to writing MongoDB entities, there are a number of annoying things that users have grown used to

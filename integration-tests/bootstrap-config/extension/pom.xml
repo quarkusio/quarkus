@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>quarkus-integration-test-bootstrap-config-extension-parent</artifactId>
+    <name>Quarkus - Integration Tests - Bootstrap Config - Extension</name>
     <packaging>pom</packaging>
 
     <modules>

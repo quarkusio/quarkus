@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>quarkus-integration-test-bootstrap-config-application</artifactId>
+    <name>Quarkus - Integration Tests - Bootstrap Config - Application</name>
 
     <dependencies>
         <dependency>

@@ -16,11 +16,22 @@ public class MetricResource {
     @RegistryType(type = MetricRegistry.Type.VENDOR)
     MetricRegistry vendorRegistry;
 
+    @Inject
+    @RegistryType(type = MetricRegistry.Type.BASE)
+    MetricRegistry baseRegistry;
+
     @GET
     @Path("/get-counters")
     @Produces("application/json")
-    public String[] getRegisteredCounters() {
+    public String[] getRegisteredCountersInVendorRegistryType() {
         return vendorRegistry.getCounters().keySet().stream().map(MetricID::getName).toArray(String[]::new);
+    }
+
+    @GET
+    @Path("/get-counters-base")
+    @Produces("application/json")
+    public String[] getRegisteredCountersInBaseRegistryType() {
+        return baseRegistry.getCounters().keySet().stream().map(MetricID::getName).toArray(String[]::new);
     }
 
     public void countMePlease() {
@@ -30,4 +41,9 @@ public class MetricResource {
     private void countMePlease2() {
 
     }
+
+    public void countMeInBaseScope() {
+
+    }
+
 }

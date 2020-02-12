@@ -5,6 +5,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import java.util.function.Consumer;
 
 import org.eclipse.microprofile.metrics.Metadata;
+import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.MetricType;
 import org.hamcrest.Matchers;
 import org.jboss.jandex.ClassInfo;
@@ -22,8 +23,9 @@ import io.restassured.RestAssured;
 
 /**
  * Test the metric registration mechanism for other Quarkus extensions.
- * The test simulates an extension that registers a counter for every method
- * whose name starts with "countMePlease".
+ * The test simulates an extension that registers a counter in VENDOR registry for every method
+ * whose name starts with "countMePlease", and a counter in BASE registry for every method
+ * whose name starts with "countMeInBaseScope"
  */
 public class MetricsFromExtensionTestCase {
 
@@ -47,7 +49,22 @@ public class MetricsFromExtensionTestCase {
                                         .withType(MetricType.COUNTER)
                                         .withName(clazz.name().toString() + "." + method.name())
                                         .build();
-                                context.produce(new MetricBuildItem(metricMetadata, true, null));
+                                MetricBuildItem buildItem = new MetricBuildItem.Builder()
+                                        .metadata(metricMetadata)
+                                        .enabled(true)
+                                        .build();
+                                context.produce(buildItem);
+                            } else if (method.name().startsWith("countMeInBaseScope")) {
+                                Metadata metricMetadata = Metadata.builder()
+                                        .withType(MetricType.COUNTER)
+                                        .withName(clazz.name().toString() + "." + method.name())
+                                        .build();
+                                MetricBuildItem buildItem = new MetricBuildItem.Builder()
+                                        .metadata(metricMetadata)
+                                        .registryType(MetricRegistry.Type.BASE)
+                                        .enabled(true)
+                                        .build();
+                                context.produce(buildItem);
                             }
                         }
                     }
@@ -59,11 +76,17 @@ public class MetricsFromExtensionTestCase {
     }
 
     @Test
-    public void test() {
+    public void testVendorRegistryType() {
         String[] metricNames = RestAssured.when().get("/get-counters").then().extract().as(String[].class);
         assertThat(metricNames, Matchers.arrayContainingInAnyOrder(
                 "io.quarkus.smallrye.metrics.test.MetricResource.countMePlease",
                 "io.quarkus.smallrye.metrics.test.MetricResource.countMePlease2"));
+    }
+
+    @Test
+    public void testBaseRegistryType() {
+        String[] metricNames = RestAssured.when().get("/get-counters-base").then().extract().as(String[].class);
+        assertThat(metricNames, Matchers.hasItemInArray("io.quarkus.smallrye.metrics.test.MetricResource.countMeInBaseScope"));
     }
 
 }

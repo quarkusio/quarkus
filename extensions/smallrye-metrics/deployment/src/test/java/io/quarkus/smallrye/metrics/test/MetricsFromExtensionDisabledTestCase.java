@@ -1,8 +1,10 @@
 package io.quarkus.smallrye.metrics.test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.emptyArray;
+import static org.hamcrest.Matchers.hasItemInArray;
+import static org.hamcrest.Matchers.not;
 
-import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -29,9 +31,17 @@ public class MetricsFromExtensionDisabledTestCase extends MetricsFromExtensionTe
             .addBuildChainCustomizer(buildCustomizer());
 
     @Test
-    public void test() {
+    public void testBaseRegistryType() {
+        String[] metricNames = RestAssured.when().get("/get-counters-base").then().extract().as(String[].class);
+        assertThat(metricNames,
+                not(hasItemInArray("io.quarkus.smallrye.metrics.test.MetricResource.countMeInBaseScope")));
+        assertThat(metricNames, not(emptyArray())); // regular base metrics should still be present
+    }
+
+    @Test
+    public void testVendorRegistryType() {
         String[] metricNames = RestAssured.when().get("/get-counters").then().extract().as(String[].class);
-        assertThat(metricNames, Matchers.emptyArray());
+        assertThat(metricNames, emptyArray());
     }
 
 }

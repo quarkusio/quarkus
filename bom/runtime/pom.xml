@@ -34,7 +34,7 @@
         <smallrye-config.version>1.6.1</smallrye-config.version>
         <smallrye-health.version>2.1.0</smallrye-health.version>
         <smallrye-metrics.version>2.3.3</smallrye-metrics.version>
-        <smallrye-open-api.version>1.1.20</smallrye-open-api.version>
+        <smallrye-open-api.version>1.2.0</smallrye-open-api.version>
         <smallrye-opentracing.version>1.3.3</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>4.0.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>2.0.13</smallrye-jwt.version>
@@ -1220,10 +1220,6 @@
                 <artifactId>smallrye-open-api</artifactId>
                 <version>${smallrye-open-api.version}</version>
                 <exclusions>
-                    <exclusion>
-                        <groupId>javax</groupId>
-                        <artifactId>javaee-api</artifactId>
-                    </exclusion>
                     <exclusion>
                         <groupId>org.osgi</groupId>
                         <artifactId>org.osgi.annotation.versioning</artifactId>

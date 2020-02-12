@@ -150,7 +150,6 @@ public class QuarkusDevModeTest
             DevModeContext context = exportArchive(deploymentDir, projectSourceRoot);
             context.setTest(true);
             context.setAbortOnFailedStart(true);
-            context.setLocalProjectDiscovery(true);
             devModeMain = new DevModeMain(context);
             devModeMain.start();
         } catch (Exception e) {

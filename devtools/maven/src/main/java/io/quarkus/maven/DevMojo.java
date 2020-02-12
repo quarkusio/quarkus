@@ -48,16 +48,17 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.WorkspaceReader;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResult;
+import org.eclipse.aether.util.artifact.JavaScopes;
 import org.twdata.maven.mojoexecutor.MojoExecutor;
 
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.MavenRepoInitializer;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
@@ -561,33 +562,27 @@ public class DevMojo extends AbstractMojo {
             } else {
                 localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
                 for (LocalProject project : localProject.getSelfWithLocalDeps()) {
-                    if (project.getClassesDir() != null) {
-                        //if this project also contains Quarkus extensions we do no want to include these in the discovery
-                        //a bit of an edge case, but if you try and include a sample project with your extension you will
-                        //run into problems without this
-                        if (Files.exists(project.getClassesDir().resolve("META-INF/quarkus-extension.properties")) ||
-                                Files.exists(project.getClassesDir().resolve("META-INF/quarkus-build-steps.list"))) {
-                            continue;
-                        }
+                    if (project.getClassesDir() != null &&
+                    //if this project also contains Quarkus extensions we do no want to include these in the discovery
+                    //a bit of an edge case, but if you try and include a sample project with your extension you will
+                    //run into problems without this
+                            (Files.exists(project.getClassesDir().resolve("META-INF/quarkus-extension.properties")) ||
+                                    Files.exists(project.getClassesDir().resolve("META-INF/quarkus-build-steps.list")))) {
+                        continue;
                     }
                     addProject(devModeContext, project);
                     pomFiles.add(project.getDir().resolve("pom.xml"));
                 }
-                repoSystem = MavenRepoInitializer.getRepositorySystem(repoSession.isOffline(), localProject.getWorkspace());
             }
-            DefaultArtifact bootstrap = new DefaultArtifact("io.quarkus", "quarkus-development-mode", "jar",
-                    pluginDef.getVersion());
-            MavenArtifactResolver mavenArtifactResolver = MavenArtifactResolver.builder()
-                    .setRepositorySystem(repoSystem)
-                    .setRepositorySystemSession(repoSession)
-                    .setRemoteRepositories(repos)
-                    .build();
-            DependencyResult cpRes = mavenArtifactResolver.resolveDependencies(
-                    bootstrap,
-                    Collections.emptyList(), Collections.emptyList());
 
-            addToClassPaths(classPathManifest, devModeContext,
-                    mavenArtifactResolver.resolve(bootstrap).getArtifact().getFile());
+            final DefaultArtifact devModeJar = new DefaultArtifact("io.quarkus", "quarkus-development-mode", "jar",
+                    pluginDef.getVersion());
+            final DependencyResult cpRes = repoSystem.resolveDependencies(repoSession,
+                    new DependencyRequest()
+                            .setCollectRequest(
+                                    new CollectRequest()
+                                            .setRoot(new org.eclipse.aether.graph.Dependency(devModeJar, JavaScopes.RUNTIME))
+                                            .setRepositories(repos)));
 
             for (ArtifactResult appDep : cpRes.getArtifactResults()) {
                 addToClassPaths(classPathManifest, devModeContext, appDep.getArtifact().getFile());

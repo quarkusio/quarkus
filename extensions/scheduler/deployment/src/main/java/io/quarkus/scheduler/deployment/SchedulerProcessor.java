@@ -188,7 +188,7 @@ public class SchedulerProcessor {
         DotName superClassName = beanClass.superName();
         if (superClassName != null) {
             ClassInfo superClass = index.getClassByName(superClassName);
-            if (superClassName != null) {
+            if (superClass != null) {
                 collectScheduledMethods(config, index, annotationStore, bean, superClass, scheduledBusinessMethods,
                         validationContext);
             }

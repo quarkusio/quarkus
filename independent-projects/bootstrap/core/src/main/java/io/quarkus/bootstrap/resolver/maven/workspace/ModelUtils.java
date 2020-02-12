@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.resolver.maven.workspace;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -210,10 +211,14 @@ public class ModelUtils {
     }
 
     public static Model readModel(final Path pomXml) throws IOException {
-        try(BufferedReader reader = Files.newBufferedReader(pomXml)) {
-            return new MavenXpp3Reader().read(reader);
+        return readModel(Files.newInputStream(pomXml));
+    }
+
+    public static Model readModel(InputStream stream) throws IOException {
+        try(InputStream is = stream) {
+            return new MavenXpp3Reader().read(stream);
         } catch (XmlPullParserException e) {
-            throw new IOException("Failed to parse application POM model", e);
+            throw new IOException("Failed to parse POM", e);
         }
     }
 

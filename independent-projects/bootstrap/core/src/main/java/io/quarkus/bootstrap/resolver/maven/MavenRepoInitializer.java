@@ -9,8 +9,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.StringTokenizer;
-
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelProblemCollector;
 import org.apache.maven.model.building.ModelProblemCollectorRequest;
@@ -92,7 +90,6 @@ public class MavenRepoInitializer {
     private static final String UPDATE_SNAPSHOTS = "U";
     private static final String CHECKSUM_FAILURE_POLICY = "C";
     private static final String CHECKSUM_WARNING_POLICY = "c";
-    private static final String ACTIVATE_PROFILES = "P";
 
     private static final BootstrapMavenOptions mvnArgs;
 
@@ -141,6 +138,16 @@ public class MavenRepoInitializer {
 
     public static RepositorySystem getRepositorySystem() {
         return getRepositorySystem(false, null);
+    }
+
+    /**
+     * Parsed Maven command line options obtained from the value of MAVEN_CMD_LINE_ARGS environment
+     * variable which is usually set by the Maven CLI.
+     *
+     * @return  parsed Maven command line arguments
+     */
+    public static BootstrapMavenOptions getBootstrapMavenOptions() {
+        return mvnArgs;
     }
 
     public static RepositorySystem getRepositorySystem(boolean offline, WorkspaceModelResolver wsModelResolver) {
@@ -266,28 +273,8 @@ public class MavenRepoInitializer {
                 modelProfiles.add(SettingsUtils.convertFromSettingsProfile(profile));
             }
 
-            final List<String> activeProfiles = new ArrayList<>(0);
-            final List<String> inactiveProfiles = new ArrayList<>(0);
-            final String[] profileOptionValues = mvnArgs.getOptionValues(ACTIVATE_PROFILES);
-            if (profileOptionValues != null && profileOptionValues.length > 0) {
-                for (String profileOptionValue : profileOptionValues) {
-                    final StringTokenizer profileTokens = new StringTokenizer(profileOptionValue, ",");
-                    while (profileTokens.hasMoreTokens()) {
-                        final String profileAction = profileTokens.nextToken().trim();
-                        if (profileAction.isEmpty()) {
-                            continue;
-                        }
-                        final char c = profileAction.charAt(0);
-                        if (c == '-' || c == '!') {
-                            inactiveProfiles.add(profileAction.substring(1));
-                        } else if (c == '+') {
-                            activeProfiles.add(profileAction.substring(1));
-                        } else {
-                            activeProfiles.add(profileAction);
-                        }
-                    }
-                }
-            }
+            final List<String> activeProfiles = mvnArgs.getActiveProfileIds();
+            final List<String> inactiveProfiles = mvnArgs.getInactiveProfileIds();
 
             final String basedir = PropertyUtils.getProperty(BASEDIR);
             final DefaultProfileActivationContext context = new DefaultProfileActivationContext()

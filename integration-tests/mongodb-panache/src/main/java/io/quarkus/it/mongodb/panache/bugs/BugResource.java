@@ -1,5 +1,11 @@
 package io.quarkus.it.mongodb.panache.bugs;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -49,5 +55,28 @@ public class BugResource {
     @Path("6324/abstract")
     public Response testNeedReflectionAndAbstract() {
         return Response.ok(bug6324ConcreteRepository.listAll()).build();
+    }
+
+    @GET
+    @Path("dates")
+    public Response testDatesFormat() {
+        DateEntity dateEntity = new DateEntity();
+        dateEntity.persist();
+
+        // search on all possible fields
+        long millisInDay = 1000 * 60 * 60 * 24;
+        Date dateTomorrow = new Date(System.currentTimeMillis() + 1000 * millisInDay);
+        LocalDate localDateTomorrow = LocalDate.now().plus(1, ChronoUnit.DAYS);
+        LocalDateTime localDateTimeTomorrow = LocalDateTime.now().plus(1, ChronoUnit.DAYS);
+        Instant instantTomorrow = Instant.now().plus(1, ChronoUnit.DAYS);
+        DateEntity result = DateEntity
+                .find("dateDate < ?1 and localDate < ?2 and localDateTime < ?3 and instant < ?4",
+                        dateTomorrow, localDateTomorrow, localDateTimeTomorrow, instantTomorrow)
+                .firstResult();
+
+        if (result == null) {
+            return Response.status(404).build();
+        }
+        return Response.ok().build();
     }
 }

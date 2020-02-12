@@ -48,15 +48,15 @@ class MongoOperationsTest {
         assertEquals("{'field':ISODate('2019-03-04')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field", new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01')}", query);
+        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field",
                 new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC) });
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01')}", query);
+        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field",
                 new Object[] { toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1)) });
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000')}", query);
+        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         //test field replacement
         query = MongoOperations.bindQuery(DemoObj.class, "property", new Object[] { "a value" });
@@ -64,7 +64,7 @@ class MongoOperationsTest {
     }
 
     private Object toDate(LocalDateTime of) {
-        return Date.from(of.atZone(ZoneId.systemDefault()).toInstant());
+        return Date.from(of.atZone(ZoneId.of("UTC")).toInstant());
     }
 
     @Test
@@ -85,15 +85,15 @@ class MongoOperationsTest {
 
         query = MongoOperations.bindQuery(Object.class, "{'field': ?1}",
                 new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
-        assertEquals("{'field': ISODate('2019-03-04T01:01:01')}", query);
+        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "{'field': ?1}",
                 new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC) });
-        assertEquals("{'field': ISODate('2019-03-04T01:01:01')}", query);
+        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "{'field': ?1}",
                 new Object[] { toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1)) });
-        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000')}", query);
+        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "{'field': ?1, 'isOk': ?2}", new Object[] { "a value", true });
         assertEquals("{'field': 'a value', 'isOk': true}", query);
@@ -120,15 +120,15 @@ class MongoOperationsTest {
 
         query = MongoOperations.bindQuery(Object.class, "{'field': :field}",
                 Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1)).map());
-        assertEquals("{'field': ISODate('2019-03-04T01:01:01')}", query);
+        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "{'field': :field}",
                 Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC)).map());
-        assertEquals("{'field': ISODate('2019-03-04T01:01:01')}", query);
+        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "{'field': :field}",
                 Parameters.with("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))).map());
-        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000')}", query);
+        assertEquals("{'field': ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "{'field': :field, 'isOk': :isOk}",
                 Parameters.with("field", "a value").and("isOk", true).map());
@@ -152,15 +152,15 @@ class MongoOperationsTest {
         assertEquals("{'field':ISODate('2019-03-04')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field = ?1", new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01')}", query);
+        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field = ?1",
                 new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC) });
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01')}", query);
+        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field = ?1",
                 new Object[] { toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1)) });
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000')}", query);
+        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field = ?1 and isOk = ?2", new Object[] { "a value", true });
         assertEquals("{'field':'a value','isOk':true}", query);
@@ -209,15 +209,15 @@ class MongoOperationsTest {
 
         query = MongoOperations.bindQuery(Object.class, "field = :field",
                 Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1)).map());
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01')}", query);
+        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field = :field",
                 Parameters.with("field", LocalDateTime.of(2019, 3, 4, 1, 1, 1).toInstant(ZoneOffset.UTC)).map());
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01')}", query);
+        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field = :field",
                 Parameters.with("field", toDate(LocalDateTime.of(2019, 3, 4, 1, 1, 1))).map());
-        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000')}", query);
+        assertEquals("{'field':ISODate('2019-03-04T01:01:01.000Z')}", query);
 
         query = MongoOperations.bindQuery(Object.class, "field = :field and isOk = :isOk",
                 Parameters.with("field", "a value").and("isOk", true).map());

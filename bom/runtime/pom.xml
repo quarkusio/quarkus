@@ -170,10 +170,10 @@
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <wiremock.version>2.24.1</wiremock.version>
-        <spring.version>5.1.8.RELEASE</spring.version>
-        <spring-data.version>2.1.9.RELEASE</spring-data.version>
-        <spring-security.version>5.2.0.RELEASE</spring-security.version>
-        <spring-boot.version>2.1.10.RELEASE</spring-boot.version>
+        <quarkus-spring-api.version>5.2.Alpha3</quarkus-spring-api.version>
+        <quarkus-spring-data-api.version>2.2.Alpha3</quarkus-spring-data-api.version>
+        <quarkus-spring-security-api.version>5.2.Alpha1</quarkus-spring-security-api.version>
+        <quarkus-spring-boot-api.version>2.1.Alpha1</quarkus-spring-boot-api.version>
         <mvel2.version>2.4.4.Final</mvel2.version>
         <htmlunit.version>2.36.0</htmlunit.version>
         <mockito.version>3.3.0</mockito.version>
@@ -2782,81 +2782,49 @@
 
             <!-- Spring -->
             <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-context</artifactId>
-                <version>${spring.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-jcl</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-core-api</artifactId>
+                <version>${quarkus-spring-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-web</artifactId>
-                <version>${spring.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-jcl</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-context-api</artifactId>
+                <version>${quarkus-spring-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.springframework.data</groupId>
-                <artifactId>spring-data-jpa</artifactId>
-                <version>${spring-data.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-jcl</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-beans-api</artifactId>
+                <version>${quarkus-spring-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-core</artifactId>
-                <version>${spring-security.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-core</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-beans</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-expression</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-aop</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-context</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-data-jpa-api</artifactId>
+                <version>${quarkus-spring-data-api.version}</version>
             </dependency>
-
-            <!-- Spring Boot -->
             <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot</artifactId>
-                <version>${spring-boot.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-core</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-context</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-data-commons-api</artifactId>
+                <version>${quarkus-spring-data-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-web-api</artifactId>
+                <version>${quarkus-spring-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-webmvc-api</artifactId>
+                <version>${quarkus-spring-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-security-core-api</artifactId>
+                <version>${quarkus-spring-security-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-boot-api</artifactId>
+                <version>${quarkus-spring-boot-api.version}</version>
             </dependency>
 
             <!-- Keycloak -->

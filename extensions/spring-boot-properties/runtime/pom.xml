@@ -15,8 +15,12 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-spring-boot-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-spring-core-api</artifactId>
         </dependency>
     </dependencies>
 

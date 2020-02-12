@@ -34,8 +34,8 @@
 
         <!-- only needed because of @RequestScope is utilized in the tests -->
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-spring-web-api</artifactId>
         </dependency>
 
         <dependency>

@@ -368,9 +368,10 @@ stages:
         parameters:
           poolSettings: ${{parameters.poolSettings}}
           expectUseVMs: ${{parameters.expectUseVMs}}
-          timeoutInMinutes: 35
+          timeoutInMinutes: 55
           modules:
             - resteasy-jackson
+            - resteasy-mutiny
             - vertx
             - vertx-http
             - vertx-graphql

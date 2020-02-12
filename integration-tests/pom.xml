@@ -76,6 +76,7 @@
         <module>jackson</module>
         <module>jsonb</module>
         <module>resteasy-jackson</module>
+        <module>resteasy-mutiny</module>
         <module>jgit</module>
         <module>jsch</module>
         <module>virtual-http</module>

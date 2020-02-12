@@ -14,22 +14,29 @@ import io.quarkus.arc.Arc;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.test.QuarkusUnitTest;
 import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.EventBus;
 
 public class VertxInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyBean.class));
+                    .addClasses(MyBeanUsingVertx.class));
 
     @Test
-    public void test() {
-        MyBean bean = Arc.container().instance(MyBean.class).get();
-        Assertions.assertTrue(bean.isOk());
+    public void testVertxInjectionOnStartup() {
+        MyBeanUsingVertx bean = Arc.container().instance(MyBeanUsingVertx.class).get();
+        Assertions.assertTrue(bean.verify());
+    }
+
+    @Test
+    public void testEventBusInjectionOnStartup() {
+        MyBeanUsingEventBus bean = Arc.container().instance(MyBeanUsingEventBus.class).get();
+        Assertions.assertTrue(bean.verify());
     }
 
     @ApplicationScoped
-    public static class MyBean {
+    public static class MyBeanUsingVertx {
 
         @Inject
         Vertx vertx;
@@ -40,9 +47,12 @@ public class VertxInjectionTest {
         @Inject
         io.vertx.reactivex.core.Vertx rx;
 
+        @Inject
+        io.vertx.mutiny.core.Vertx mutiny;
+
         boolean ok;
 
-        public boolean isOk() {
+        public boolean verify() {
             return ok;
         }
 
@@ -50,6 +60,37 @@ public class VertxInjectionTest {
             Assertions.assertNotNull(vertx);
             Assertions.assertNotNull(axle);
             Assertions.assertNotNull(rx);
+            Assertions.assertNotNull(mutiny);
+            ok = true;
+        }
+    }
+
+    @ApplicationScoped
+    public static class MyBeanUsingEventBus {
+
+        @Inject
+        EventBus vertx;
+
+        @Inject
+        io.vertx.axle.core.eventbus.EventBus axle;
+
+        @Inject
+        io.vertx.reactivex.core.eventbus.EventBus rx;
+
+        @Inject
+        io.vertx.mutiny.core.eventbus.EventBus mutiny;
+
+        boolean ok;
+
+        public boolean verify() {
+            return ok;
+        }
+
+        public void init(@Observes StartupEvent ev) {
+            Assertions.assertNotNull(vertx);
+            Assertions.assertNotNull(axle);
+            Assertions.assertNotNull(rx);
+            Assertions.assertNotNull(mutiny);
             ok = true;
         }
     }

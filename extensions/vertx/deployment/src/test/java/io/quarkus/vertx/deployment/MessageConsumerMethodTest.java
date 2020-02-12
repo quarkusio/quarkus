@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.ConsumeEvent;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
@@ -71,6 +72,24 @@ public class MessageConsumerMethodTest {
             }
         });
         assertEquals("olleh", synchronizer.poll(2, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testSendAsyncUni() throws InterruptedException {
+        EventBus eventBus = Arc.container().instance(EventBus.class).get();
+        BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
+        eventBus.request("foo-async-uni", "hello-uni", ar -> {
+            if (ar.succeeded()) {
+                try {
+                    synchronizer.put(ar.result().body());
+                } catch (InterruptedException e) {
+                    fail(e);
+                }
+            } else {
+                fail(ar.cause());
+            }
+        });
+        assertEquals("inu-olleh", synchronizer.poll(2, TimeUnit.SECONDS));
     }
 
     @Test
@@ -152,6 +171,16 @@ public class MessageConsumerMethodTest {
         assertTrue(SimpleBean.MESSAGES.contains("HELLO"));
     }
 
+    @Test
+    public void testPublishMutiny() throws InterruptedException {
+        SimpleBean.MESSAGES.clear();
+        EventBus eventBus = Arc.container().instance(EventBus.class).get();
+        SimpleBean.latch = new CountDownLatch(1);
+        eventBus.publish("pub-mutiny", "Hello");
+        SimpleBean.latch.await(2, TimeUnit.SECONDS);
+        assertTrue(SimpleBean.MESSAGES.contains("HELLO"));
+    }
+
     static class SimpleBean {
 
         static volatile CountDownLatch latch;
@@ -188,6 +217,11 @@ public class MessageConsumerMethodTest {
             return CompletableFuture.completedFuture(new StringBuilder(message).reverse().toString());
         }
 
+        @ConsumeEvent("foo-async-uni")
+        Uni<String> replyAsyncUni(String message) {
+            return Uni.createFrom().item(new StringBuilder(message).reverse().toString());
+        }
+
         @ConsumeEvent(value = "blocking", blocking = true)
         void consumeBlocking(String message) {
             MESSAGES.add(message.toLowerCase() + "::" + Context.isOnWorkerThread());
@@ -202,6 +236,12 @@ public class MessageConsumerMethodTest {
 
         @ConsumeEvent("pub-rx")
         void consume(io.vertx.reactivex.core.eventbus.Message<String> message) {
+            MESSAGES.add(message.body().toUpperCase());
+            latch.countDown();
+        }
+
+        @ConsumeEvent("pub-mutiny")
+        void consume(io.vertx.mutiny.core.eventbus.Message<String> message) {
             MESSAGES.add(message.body().toUpperCase());
             latch.countDown();
         }

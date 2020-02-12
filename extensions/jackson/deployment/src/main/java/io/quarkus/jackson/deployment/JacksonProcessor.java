@@ -106,12 +106,11 @@ public class JacksonProcessor {
                         addReflectiveHierarchyClass(builderClassName);
                     }
                 }
-            } else if (FIELD.equals(annotationTarget.kind()) || METHOD.equals(annotationTarget.kind())) {
-                AnnotationValue usingValue = deserializeInstance.value("using");
-                if (usingValue != null) {
-                    // the Deserializers are constructed internally by Jackson using a no-args constructor
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().toString()));
-                }
+            }
+            AnnotationValue usingValue = deserializeInstance.value("using");
+            if (usingValue != null) {
+                // the Deserializers are constructed internally by Jackson using a no-args constructor
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().toString()));
             }
         }
 

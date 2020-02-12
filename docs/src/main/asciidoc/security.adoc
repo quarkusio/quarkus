@@ -22,6 +22,9 @@ in order for Quarkus to know how to find the authentication information to check
 |link:security-properties[quarkus-elytron-security-properties-file]
 |Provides support for simple properties files that can be used for testing security. This supports both embedding user info in `application.properties` and standalone properties files.
 
+|link:security-jpa[quarkus-security-jpa]
+|Provides support for authenticating via JPA.
+
 |link:security-jdbc[quarkus-elytron-security-jdbc]
 |Provides support for authenticating via JDBC.
 

@@ -45,6 +45,7 @@ import io.quarkus.mongodb.panache.PanacheMongoRecorder;
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.mongodb.panache.PanacheMongoRepositoryBase;
 import io.quarkus.mongodb.panache.ProjectionFor;
+import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
@@ -118,7 +119,8 @@ public class PanacheResourceProcessor {
             ApplicationIndexBuildItem applicationIndex,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass) throws Exception {
+            BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
+            BuildProducer<PanacheEntityClassesBuildItem> entityClasses) throws Exception {
 
         PanacheMongoRepositoryEnhancer daoEnhancer = new PanacheMongoRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
@@ -176,6 +178,9 @@ public class PanacheResourceProcessor {
 
             // Register for building the property mapping cache
             propertyMappingClass.produce(new PropertyMappingClassBuildStep(modelClass));
+        }
+        if (!modelClasses.isEmpty()) {
+            entityClasses.produce(new PanacheEntityClassesBuildItem(modelClasses));
         }
 
         if (!modelEnhancer.entities.isEmpty()) {

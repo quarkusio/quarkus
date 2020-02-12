@@ -12,8 +12,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.elytron.security.runtime.DefaultRoleDecoder;
 import io.quarkus.elytron.security.runtime.ElytronPasswordIdentityProvider;
 import io.quarkus.elytron.security.runtime.ElytronRecorder;
@@ -39,19 +37,6 @@ import io.quarkus.runtime.RuntimeValue;
  */
 class ElytronDeploymentProcessor {
     private static final Logger log = Logger.getLogger(ElytronDeploymentProcessor.class.getName());
-
-    /**
-     * Register the Elytron-provided password factory SPI implementation
-     *
-     * @param classes producer factory for ReflectiveClassBuildItems
-     */
-    @BuildStep
-    void services(BuildProducer<ReflectiveClassBuildItem> classes) {
-        String[] allClasses = {
-                "org.wildfly.security.password.impl.PasswordFactorySpiImpl",
-        };
-        classes.produce(new ReflectiveClassBuildItem(true, false, allClasses));
-    }
 
     @BuildStep
     void addBeans(BuildProducer<AdditionalBeanBuildItem> beans, List<ElytronPasswordMarkerBuildItem> pw,
@@ -97,12 +82,6 @@ class ElytronDeploymentProcessor {
             return new SecurityDomainBuildItem(securityDomain);
         }
         return null;
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void registerPasswordProvider(ElytronRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem) {
-        recorder.registerPasswordProvider(shutdownContextBuildItem);
     }
 
     @BuildStep

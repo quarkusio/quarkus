@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.tika.io.TikaInputStream;
-import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.HttpHeaders;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.RecursiveParserWrapper;
@@ -78,7 +78,7 @@ public class TikaParser {
 
             org.apache.tika.metadata.Metadata tikaMetadata = new org.apache.tika.metadata.Metadata();
             if (contentType != null) {
-                tikaMetadata.set(Metadata.CONTENT_TYPE, contentType);
+                tikaMetadata.set(HttpHeaders.CONTENT_TYPE, contentType);
             }
 
             try (InputStream tikaStream = TikaInputStream.get(entityStream)) {

@@ -208,7 +208,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                 }
                 defaultName = buf.toString();
                 getLog().warn("Extension name has not been provided for " + extObject.get(GROUP_ID).asText("") + ":"
-                        + extObject.get("artifact-id").asText("") + "! Using '" + defaultName
+                        + extObject.get(ARTIFACT_ID).asText("") + "! Using '" + defaultName
                         + "' as the default one.");
                 extObject.put("name", defaultName);
             }

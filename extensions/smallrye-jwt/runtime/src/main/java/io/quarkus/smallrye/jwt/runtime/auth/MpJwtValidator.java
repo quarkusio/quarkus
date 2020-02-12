@@ -66,7 +66,7 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
             return CompletableFuture
                     .completedFuture(QuarkusSecurityIdentity.builder().setPrincipal(principal)
                             .addRoles(new HashSet<>(claims.getStringListClaimValue("groups")))
-                            .addAttribute(QuarkusSecurityIdentity.USER_ATTRIBUTE, principal).build());
+                            .addAttribute(SecurityIdentity.USER_ATTRIBUTE, principal).build());
 
         } catch (ParseException | MalformedClaimException e) {
             log.debug("Authentication failed", e);

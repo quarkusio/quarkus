@@ -1,10 +1,10 @@
 package io.quarkus.security.test.cdi;
 
-import static io.quarkus.security.test.cdi.SecurityTestUtils.assertFailureFor;
-import static io.quarkus.security.test.cdi.SecurityTestUtils.assertSuccess;
 import static io.quarkus.security.test.utils.IdentityMock.ADMIN;
 import static io.quarkus.security.test.utils.IdentityMock.ANONYMOUS;
 import static io.quarkus.security.test.utils.IdentityMock.USER;
+import static io.quarkus.security.test.utils.SecurityTestUtils.assertFailureFor;
+import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -22,6 +22,7 @@ import io.quarkus.security.test.cdi.app.SubclassWithPermitAll;
 import io.quarkus.security.test.cdi.app.SubclassWithoutAnnotations;
 import io.quarkus.security.test.utils.AuthData;
 import io.quarkus.security.test.utils.IdentityMock;
+import io.quarkus.security.test.utils.SecurityTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**

@@ -109,54 +109,60 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         connection.sendMessage(requestContent);
         AwsProxyResponse responseBuilder = new AwsProxyResponse();
         ByteArrayOutputStream baos = null;
-        for (;;) {
-            // todo should we timeout? have a timeout config?
-            //log.info("waiting for message");
-            Object msg = connection.queue().poll(100, TimeUnit.MILLISECONDS);
-            try {
-                if (msg == null)
-                    continue;
-                //log.info("Got message: " + msg.getClass().getName());
+        try {
+            for (;;) {
+                // todo should we timeout? have a timeout config?
+                //log.info("waiting for message");
+                Object msg = connection.queue().poll(100, TimeUnit.MILLISECONDS);
+                try {
+                    if (msg == null)
+                        continue;
+                    //log.info("Got message: " + msg.getClass().getName());
 
-                if (msg instanceof HttpResponse) {
-                    HttpResponse res = (HttpResponse) msg;
-                    responseBuilder.setStatusCode(res.status().code());
+                    if (msg instanceof HttpResponse) {
+                        HttpResponse res = (HttpResponse) msg;
+                        responseBuilder.setStatusCode(res.status().code());
 
-                    if (request.getRequestSource() == AwsProxyRequest.RequestSource.ALB) {
-                        responseBuilder.setStatusDescription(res.status().reasonPhrase());
-                    }
-                    responseBuilder.setMultiValueHeaders(new Headers());
-                    for (String name : res.headers().names()) {
-                        for (String v : res.headers().getAll(name)) {
-                            responseBuilder.getMultiValueHeaders().add(name, v);
+                        if (request.getRequestSource() == AwsProxyRequest.RequestSource.ALB) {
+                            responseBuilder.setStatusDescription(res.status().reasonPhrase());
+                        }
+                        responseBuilder.setMultiValueHeaders(new Headers());
+                        for (String name : res.headers().names()) {
+                            for (String v : res.headers().getAll(name)) {
+                                responseBuilder.getMultiValueHeaders().add(name, v);
+                            }
                         }
                     }
-                }
-                if (msg instanceof HttpContent) {
-                    HttpContent content = (HttpContent) msg;
-                    int readable = content.content().readableBytes();
-                    if (baos == null && readable > 0) {
-                        // todo what is right size?
-                        baos = new ByteArrayOutputStream(500);
-                    }
-                    for (int i = 0; i < readable; i++) {
-                        baos.write(content.content().readByte());
-                    }
-                }
-                if (msg instanceof LastHttpContent) {
-                    if (baos != null) {
-                        if (isBinary(responseBuilder.getMultiValueHeaders().getFirst("Content-Type"))) {
-                            responseBuilder.setBase64Encoded(true);
-                            responseBuilder.setBody(Base64.getMimeEncoder().encodeToString(baos.toByteArray()));
-                        } else {
-                            responseBuilder.setBody(new String(baos.toByteArray(), "UTF-8"));
+                    if (msg instanceof HttpContent) {
+                        HttpContent content = (HttpContent) msg;
+                        int readable = content.content().readableBytes();
+                        if (baos == null && readable > 0) {
+                            // todo what is right size?
+                            baos = new ByteArrayOutputStream(500);
+                        }
+                        for (int i = 0; i < readable; i++) {
+                            baos.write(content.content().readByte());
                         }
                     }
-                    return responseBuilder;
+                    if (msg instanceof LastHttpContent) {
+                        if (baos != null) {
+                            if (isBinary(responseBuilder.getMultiValueHeaders().getFirst("Content-Type"))) {
+                                responseBuilder.setBase64Encoded(true);
+                                responseBuilder.setBody(Base64.getMimeEncoder().encodeToString(baos.toByteArray()));
+                            } else {
+                                responseBuilder.setBody(new String(baos.toByteArray(), "UTF-8"));
+                            }
+                        }
+                        return responseBuilder;
+                    }
+                } finally {
+                    if (msg != null)
+                        ReferenceCountUtil.release(msg);
                 }
-            } finally {
-                if (msg != null)
-                    ReferenceCountUtil.release(msg);
+            }
+        } finally {
+            if (baos != null) {
+                baos.close();
             }
         }
     }

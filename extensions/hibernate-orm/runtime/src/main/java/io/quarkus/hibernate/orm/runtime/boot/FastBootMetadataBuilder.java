@@ -55,7 +55,6 @@ import org.hibernate.boot.spi.MetadataBuilderImplementor;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.cache.internal.CollectionCacheInvalidator;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.Environment;
 import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
@@ -239,9 +238,9 @@ public class FastBootMetadataBuilder {
 
         // unsupported FLUSH_BEFORE_COMPLETION
 
-        if (readBooleanConfigurationValue(cfg, Environment.FLUSH_BEFORE_COMPLETION)) {
-            cfg.put(Environment.FLUSH_BEFORE_COMPLETION, "false");
-            LOG.definingFlushBeforeCompletionIgnoredInHem(Environment.FLUSH_BEFORE_COMPLETION);
+        if (readBooleanConfigurationValue(cfg, AvailableSettings.FLUSH_BEFORE_COMPLETION)) {
+            cfg.put(AvailableSettings.FLUSH_BEFORE_COMPLETION, "false");
+            LOG.definingFlushBeforeCompletionIgnoredInHem(AvailableSettings.FLUSH_BEFORE_COMPLETION);
         }
 
         // Quarkus specific

@@ -152,8 +152,7 @@ public class JarClassPathElement implements ClassPathElement {
     }
 
     public static byte[] readStreamContents(InputStream inputStream) throws IOException {
-        try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             byte[] buf = new byte[10000];
             int r;
             while ((r = inputStream.read(buf)) > 0) {

@@ -96,40 +96,46 @@ public class BaseFunction {
         connection.sendMessage(requestContent);
         HttpResponseMessage.Builder responseBuilder = null;
         ByteArrayOutputStream baos = null;
-        for (;;) {
-            // todo should we timeout? have a timeout config?
-            //log.info("waiting for message");
-            Object msg = connection.queue().poll(100, TimeUnit.MILLISECONDS);
-            try {
-                if (msg == null)
-                    continue;
-                //log.info("Got message: " + msg.getClass().getName());
+        try {
+            for (;;) {
+                // todo should we timeout? have a timeout config?
+                //log.info("waiting for message");
+                Object msg = connection.queue().poll(100, TimeUnit.MILLISECONDS);
+                try {
+                    if (msg == null)
+                        continue;
+                    //log.info("Got message: " + msg.getClass().getName());
 
-                if (msg instanceof HttpResponse) {
-                    HttpResponse res = (HttpResponse) msg;
-                    responseBuilder = request.createResponseBuilder(HttpStatus.valueOf(res.status().code()));
-                    for (Map.Entry<String, String> entry : res.headers()) {
-                        responseBuilder.header(entry.getKey(), entry.getValue());
+                    if (msg instanceof HttpResponse) {
+                        HttpResponse res = (HttpResponse) msg;
+                        responseBuilder = request.createResponseBuilder(HttpStatus.valueOf(res.status().code()));
+                        for (Map.Entry<String, String> entry : res.headers()) {
+                            responseBuilder.header(entry.getKey(), entry.getValue());
+                        }
                     }
-                }
-                if (msg instanceof HttpContent) {
-                    HttpContent content = (HttpContent) msg;
-                    if (baos == null) {
-                        // todo what is right size?
-                        baos = new ByteArrayOutputStream(500);
+                    if (msg instanceof HttpContent) {
+                        HttpContent content = (HttpContent) msg;
+                        if (baos == null) {
+                            // todo what is right size?
+                            baos = new ByteArrayOutputStream(500);
+                        }
+                        int readable = content.content().readableBytes();
+                        for (int i = 0; i < readable; i++) {
+                            baos.write(content.content().readByte());
+                        }
                     }
-                    int readable = content.content().readableBytes();
-                    for (int i = 0; i < readable; i++) {
-                        baos.write(content.content().readByte());
+                    if (msg instanceof LastHttpContent) {
+                        responseBuilder.body(baos.toByteArray());
+                        return responseBuilder.build();
                     }
+                } finally {
+                    if (msg != null)
+                        ReferenceCountUtil.release(msg);
                 }
-                if (msg instanceof LastHttpContent) {
-                    responseBuilder.body(baos.toByteArray());
-                    return responseBuilder.build();
-                }
-            } finally {
-                if (msg != null)
-                    ReferenceCountUtil.release(msg);
+            }
+        } finally {
+            if (baos != null) {
+                baos.close();
             }
         }
     }

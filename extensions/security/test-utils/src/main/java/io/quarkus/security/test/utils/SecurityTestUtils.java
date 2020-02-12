@@ -1,4 +1,4 @@
-package io.quarkus.security.test.cdi;
+package io.quarkus.security.test.utils;
 
 import static io.quarkus.security.test.utils.IdentityMock.setUpAuth;
 
@@ -6,8 +6,6 @@ import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.function.Executable;
-
-import io.quarkus.security.test.utils.AuthData;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com

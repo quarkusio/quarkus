@@ -31,6 +31,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.CurationResult;
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
@@ -445,7 +446,7 @@ public class BootstrapAppModelFactory {
         final Iterator<AppDependency> depsI = appDeps.iterator();
         while (depsI.hasNext()) {
             final AppArtifact appDep = depsI.next().getArtifact();
-            if (!appDep.getType().equals(AppArtifact.TYPE_JAR)) {
+            if (!appDep.getType().equals(AppArtifactCoords.TYPE_JAR)) {
                 depsI.remove();
                 continue;
             }

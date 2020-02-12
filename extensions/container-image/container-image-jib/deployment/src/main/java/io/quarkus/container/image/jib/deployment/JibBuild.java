@@ -14,6 +14,6 @@ public class JibBuild implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
-        return containerImageConfig.execution != ContainerImageConfig.Execution.NONE;
+        return true;
     }
 }

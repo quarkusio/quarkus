@@ -27,27 +27,24 @@ public class DockerBuild implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
-        if (containerImageConfig.execution != ContainerImageConfig.Execution.NONE) {
-            //No need to perform the check multiple times.
-            if (daemonFound) {
+        // No need to perform the check multiple times.
+        if (daemonFound) {
+            return true;
+        }
+        try {
+            OutputFilter filter = new OutputFilter();
+            if (ExecUtil.exec(new File("."), filter, "docker", "version", "--format", "'{{.Server.Version}}'")) {
+                LOGGER.info("Docker daemon found! Version:" + filter.getOutput());
+                daemonFound = true;
                 return true;
-            }
-            try {
-                OutputFilter filter = new OutputFilter();
-                if (ExecUtil.exec(new File("."), filter, "docker", "version", "--format", "'{{.Server.Version}}'")) {
-                    LOGGER.info("Docker daemon found! Version:" + filter.getOutput());
-                    daemonFound = true;
-                    return true;
-                } else {
-                    LOGGER.warn("Could not connect to docker daemon!");
-                    return false;
-                }
-            } catch (Exception e) {
+            } else {
                 LOGGER.warn("Could not connect to docker daemon!");
                 return false;
             }
+        } catch (Exception e) {
+            LOGGER.warn("Could not connect to docker daemon!");
+            return false;
         }
-        return false;
     }
 
     public static class OutputFilter implements Function<InputStream, Runnable> {

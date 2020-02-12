@@ -37,7 +37,7 @@ import io.dekorate.project.FileProjectFactory;
 import io.dekorate.project.Project;
 import io.dekorate.utils.Maps;
 import io.dekorate.utils.Strings;
-import io.quarkus.container.spi.ContainerImageBuildItem;
+import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -79,7 +79,7 @@ class KubernetesProcessor {
             PackageConfig packageConfig,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
-            Optional<ContainerImageBuildItem> containerImageBuildItem,
+            Optional<ContainerImageInfoBuildItem> containerImageBuildItem,
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem)
             throws UnsupportedEncodingException {
@@ -187,11 +187,11 @@ class KubernetesProcessor {
     private void applyBuildItems(Session session, ApplicationInfoBuildItem applicationInfo,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
-            Optional<ContainerImageBuildItem> containerImageResultItem,
+            Optional<ContainerImageInfoBuildItem> containerImageBuildItem,
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem) {
 
-        containerImageResultItem.ifPresent(c -> session.resources()
+        containerImageBuildItem.ifPresent(c -> session.resources()
                 .decorate(new ApplyImageDecorator(applicationInfo.getName(), c.getImage())));
         //Handle ports
         final Map<String, Integer> ports = verifyPorts(kubernetesPortBuildItems);

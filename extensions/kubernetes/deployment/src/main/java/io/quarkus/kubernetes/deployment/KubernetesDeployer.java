@@ -36,7 +36,7 @@ public class KubernetesDeployer {
             BuildProducer<DeploymentResultBuildItem> deploymentResult) {
 
         return kubernetesConfig.getDeploymentTarget().stream().findFirst().map(d -> {
-            String namespace = Optional.of(kubernetesClient.getClient().getNamespace()).orElse("default");
+            String namespace = Optional.ofNullable(kubernetesClient.getClient().getNamespace()).orElse("default");
 
             LOG.info("Deploying to " + d.name().toLowerCase() + "in namespace:" + namespace + ".");
             File manifest = outputTarget.getOutputDirectory().resolve("kubernetes").resolve(d.name().toLowerCase() + ".yml")

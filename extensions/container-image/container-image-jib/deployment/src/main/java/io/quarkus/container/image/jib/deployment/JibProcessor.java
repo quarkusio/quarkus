@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -31,7 +32,10 @@ import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
 
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
+import io.quarkus.container.image.deployment.ContainerImageConfig.Execution;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
+import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
+import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageResultBuildItem;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -56,14 +60,21 @@ public class JibProcessor {
             JarBuildItem sourceJarBuildItem,
             MainClassBuildItem mainClassBuildItem,
             OutputTargetBuildItem outputTargetBuildItem, ApplicationInfoBuildItem applicationInfo,
+            Optional<ContainerImageBuildRequestBuildItem> buildRequest,
+            Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer) {
+
+        if (containerImageConfig.execution == Execution.NONE && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+            return;
+        }
 
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromJar(jibConfig,
                 sourceJarBuildItem,
                 outputTargetBuildItem,
                 mainClassBuildItem);
-        JibContainer container = containerize(applicationInfo, containerImageConfig, jibConfig, jibContainerBuilder);
+        JibContainer container = containerize(applicationInfo, containerImageConfig, jibConfig, jibContainerBuilder,
+                pushRequest.isPresent());
 
         ImageReference targetImage = container.getTargetImage();
         containerImageResultProducer.produce(new ContainerImageResultBuildItem(container.getImageId().getHash(),
@@ -75,8 +86,14 @@ public class JibProcessor {
     public void buildFromNative(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
             NativeImageBuildItem nativeImageBuildItem,
             ApplicationInfoBuildItem applicationInfo,
+            Optional<ContainerImageBuildRequestBuildItem> buildRequest,
+            Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer) {
+
+        if (containerImageConfig.execution == Execution.NONE && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+            return;
+        }
 
         if (!NativeBinaryUtil.nativeIsLinuxBinary(nativeImageBuildItem)) {
             throw new RuntimeException(
@@ -84,7 +101,8 @@ public class JibProcessor {
         }
 
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(jibConfig, nativeImageBuildItem);
-        JibContainer container = containerize(applicationInfo, containerImageConfig, jibConfig, jibContainerBuilder);
+        JibContainer container = containerize(applicationInfo, containerImageConfig, jibConfig, jibContainerBuilder,
+                pushRequest.isPresent());
 
         ImageReference targetImage = container.getTargetImage();
         containerImageResultProducer.produce(new ContainerImageResultBuildItem(container.getImageId().getHash(),
@@ -94,8 +112,8 @@ public class JibProcessor {
 
     private JibContainer containerize(ApplicationInfoBuildItem applicationInfo, ContainerImageConfig containerImageConfig,
             JibConfig jibConfig,
-            JibContainerBuilder jibContainerBuilder) {
-        Containerizer containerizer = createContainerizer(containerImageConfig, jibConfig, applicationInfo);
+            JibContainerBuilder jibContainerBuilder, boolean pushRequested) {
+        Containerizer containerizer = createContainerizer(containerImageConfig, jibConfig, applicationInfo, pushRequested);
         try {
             log.info("Starting container image build");
             JibContainer container = jibContainerBuilder.containerize(containerizer);
@@ -110,10 +128,11 @@ public class JibProcessor {
     }
 
     private Containerizer createContainerizer(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
-            ApplicationInfoBuildItem applicationInfo) {
+            ApplicationInfoBuildItem applicationInfo, boolean pushRequested) {
         Containerizer containerizer;
         ImageReference imageReference = getImageReference(containerImageConfig, applicationInfo);
-        if (containerImageConfig.execution == ContainerImageConfig.Execution.PUSH) {
+
+        if (pushRequested || containerImageConfig.execution == ContainerImageConfig.Execution.PUSH) {
             CredentialRetrieverFactory credentialRetrieverFactory = CredentialRetrieverFactory.forImage(imageReference,
                     log::info);
             RegistryImage registryImage = RegistryImage.named(imageReference);

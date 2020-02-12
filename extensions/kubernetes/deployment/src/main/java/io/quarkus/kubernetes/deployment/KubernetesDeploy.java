@@ -31,25 +31,22 @@ public class KubernetesDeploy implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
-        // TODO: I think this is wrong for s2i
-        if (containerImageConfig.execution == ContainerImageConfig.Execution.PUSH) {
-            OutputFilter filter = new OutputFilter();
-            try {
-                if (kubernetesConfig.getDeploymentTarget().contains(DeploymentTarget.OPENSHIFT)) {
-                    if (ExecUtil.exec(new File("."), filter, "oc", "version")) {
-                        Optional<String> version = getServerVersionFromOc(filter.getLines());
-                        version.ifPresent(v -> LOGGER.info("Found Kubernetes version:" + v));
-                        return true;
-                    }
-                }
-                if (ExecUtil.exec(new File("."), filter, "kubectl", "version")) {
-                    Optional<String> version = getServerVersionFromKubectl(filter.getLines());
+        OutputFilter filter = new OutputFilter();
+        try {
+            if (kubernetesConfig.getDeploymentTarget().contains(DeploymentTarget.OPENSHIFT)) {
+                if (ExecUtil.exec(new File("."), filter, "oc", "version")) {
+                    Optional<String> version = getServerVersionFromOc(filter.getLines());
                     version.ifPresent(v -> LOGGER.info("Found Kubernetes version:" + v));
                     return true;
                 }
-            } catch (Exception e) {
-                return false;
             }
+            if (ExecUtil.exec(new File("."), filter, "kubectl", "version")) {
+                Optional<String> version = getServerVersionFromKubectl(filter.getLines());
+                version.ifPresent(v -> LOGGER.info("Found Kubernetes version:" + v));
+                return true;
+            }
+        } catch (Exception e) {
+            return false;
         }
         return false;
     }

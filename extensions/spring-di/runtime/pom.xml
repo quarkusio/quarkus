@@ -16,8 +16,16 @@
     <description>Define your dependency injection with Spring DI</description>
     <dependencies>
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-spring-core-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-spring-context-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-spring-beans-api</artifactId>
         </dependency>
     </dependencies>
     <build>

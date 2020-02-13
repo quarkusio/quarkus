@@ -358,9 +358,14 @@ public class CreateExtensionMojo extends AbstractMojo {
      * These are the template files you may want to provide under your custom {@link #templatesUriBase}:
      * <ul>
      * <li>{@code deployment-pom.xml}</li>
+     * <li>{@code integration-test-application.properties}</li>
+     * <li>{@code integration-test-pom.xml}</li>
+     * <li>{@code IT.java}</li>
      * <li>{@code parent-pom.xml}</li>
-     * <li>{@code runtime-pom.xml}</li>
      * <li>{@code Processor.java}</li>
+     * <li>{@code runtime-pom.xml}</li>
+     * <li>{@code Test.java}</li>
+     * <li>{@code TestResource.java}</li>
      * </ul>
      * Note that you do not need to provide all of them. Files not available in your custom {@link #templatesUriBase}
      * will be looked up in the default URI base {@value #DEFAULT_TEMPLATES_URI_BASE}. The default templates are
@@ -884,6 +889,8 @@ public class CreateExtensionMojo extends AbstractMojo {
 
             final Path itestDir = itestParentAbsPath.getParent().resolve(model.artifactIdBase);
             evalTemplate(cfg, "integration-test-pom.xml", itestDir.resolve("pom.xml"), model);
+            evalTemplate(cfg, "integration-test-application.properties",
+                    itestDir.resolve("src/main/resources/application.properties"), model);
 
             final Path testResourcePath = itestDir.resolve("src/main/java/" + model.javaPackageBase.replace('.', '/')
                     + "/it/" + model.artifactIdBaseCamelCase + "Resource.java");

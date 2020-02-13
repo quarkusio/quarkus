@@ -26,4 +26,8 @@ public class Dog extends PanacheEntityBase {
         this.name = name;
         this.race = race;
     }
+
+    public Dog() {
+    }
+
 }

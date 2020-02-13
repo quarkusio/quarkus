@@ -63,6 +63,7 @@ public class WebXmlParsingBuildStep {
             Set<String> additionalBeans = new HashSet<>();
 
             final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+            inputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
             MetaDataElementParser.DTDInfo dtdInfo = new MetaDataElementParser.DTDInfo();
             inputFactory.setXMLResolver(dtdInfo);
             try (InputStream in = Files.newInputStream(webXml)) {
@@ -113,6 +114,7 @@ public class WebXmlParsingBuildStep {
             if (webFragment != null && Files.isRegularFile(webFragment)) {
                 try (InputStream is = Files.newInputStream(webFragment)) {
                     final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+                    inputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
                     inputFactory.setXMLResolver(NoopXMLResolver.create());
                     XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(is);
 

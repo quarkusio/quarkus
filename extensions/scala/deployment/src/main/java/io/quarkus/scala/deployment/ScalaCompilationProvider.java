@@ -25,12 +25,13 @@ public class ScalaCompilationProvider implements CompilationProvider {
                 .forEach(f -> settings.classpath().append(f));
         settings.outputDirs().add(context.getSourceDirectory().getAbsolutePath(),
                 context.getOutputDirectory().getAbsolutePath());
-        Global g = new Global(settings);
-        Global.Run run = g.new Run();
-        Set<String> fileSet = files.stream()
-                .map(File::getAbsolutePath)
-                .collect(Collectors.toSet());
-        run.compile(JavaConverters.asScalaSet(fileSet).toList());
+        try (Global g = new Global(settings)) {
+            Global.Run run = g.new Run();
+            Set<String> fileSet = files.stream()
+                    .map(File::getAbsolutePath)
+                    .collect(Collectors.toSet());
+            run.compile(JavaConverters.asScalaSet(fileSet).toList());
+        }
     }
 
     @Override

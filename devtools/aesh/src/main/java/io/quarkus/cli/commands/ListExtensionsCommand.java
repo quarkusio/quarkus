@@ -43,15 +43,15 @@ public class ListExtensionsCommand implements Command<CommandInvocation> {
         } else {
             try {
                 BuildFile buildFile = null;
-                FileProjectWriter writer = null;
                 if (path != null) {
                     File projectDirectory = new File(path.getAbsolutePath());
-                    writer = new FileProjectWriter(projectDirectory);
-                    if (new File(projectDirectory, "build.gradle").exists()
-                            || new File(projectDirectory, "build.gradle.kts").exists()) {
-                        buildFile = new GradleBuildFile(writer);
-                    } else {
-                        buildFile = new MavenBuildFile(writer);
+                    try (FileProjectWriter writer = new FileProjectWriter(projectDirectory)) {
+                        if (new File(projectDirectory, "build.gradle").exists()
+                                || new File(projectDirectory, "build.gradle.kts").exists()) {
+                            buildFile = new GradleBuildFile(writer);
+                        } else {
+                            buildFile = new MavenBuildFile(writer);
+                        }
                     }
                 }
                 new ListExtensions(buildFile).listExtensions(all, format, searchPattern);

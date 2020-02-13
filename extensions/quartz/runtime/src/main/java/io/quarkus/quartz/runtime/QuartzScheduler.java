@@ -115,6 +115,7 @@ public class QuartzScheduler implements Scheduler {
                                         break;
                                     case CRON4J:
                                         cron = CronMapper.fromCron4jToQuartz().map(cronExpr).asString();
+                                        break;
                                     default:
                                         break;
                                 }

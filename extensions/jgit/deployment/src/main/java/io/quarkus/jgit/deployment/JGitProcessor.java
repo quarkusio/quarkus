@@ -34,7 +34,8 @@ class JGitProcessor {
                 "org.eclipse.jgit.lib.CoreConfig$EOL",
                 "org.eclipse.jgit.lib.CoreConfig$EolStreamType",
                 "org.eclipse.jgit.lib.CoreConfig$HideDotFiles",
-                "org.eclipse.jgit.lib.CoreConfig$SymLinks");
+                "org.eclipse.jgit.lib.CoreConfig$SymLinks",
+                "org.eclipse.jgit.lib.CoreConfig$LogRefUpdates");
     }
 
     @BuildStep

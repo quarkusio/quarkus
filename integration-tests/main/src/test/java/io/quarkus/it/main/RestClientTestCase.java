@@ -1,5 +1,7 @@
 package io.quarkus.it.main;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.*;
 
 import java.util.List;
@@ -116,6 +118,16 @@ public class RestClientTestCase {
 
         Assertions.assertEquals("javax.inject.Singleton", responseWithSingletonScope);
         Assertions.assertEquals("javax.enterprise.context.Dependent", responseWithDefaultScope);
+    }
+
+    @Test
+    void testJaxrsClientWithFilters() {
+        given()
+                .when().get("/client/jaxrs-client")
+                .then()
+                .statusCode(200)
+                .body(containsString("hello"))
+                .body(containsString("2020-02-13"));
     }
 
     @Test

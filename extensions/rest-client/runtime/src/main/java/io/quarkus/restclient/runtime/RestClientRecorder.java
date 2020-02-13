@@ -23,6 +23,7 @@ public class RestClientRecorder {
     }
 
     public void setSslEnabled(boolean sslEnabled) {
+        SSL_ENABLED = sslEnabled;
         RestClientBuilderImpl.setSslEnabled(sslEnabled);
     }
 

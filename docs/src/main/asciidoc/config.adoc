@@ -613,7 +613,7 @@ NOTE: Quarkus will choose an `application.yaml` over an `application.properties`
 YAML files are just an alternative way to configure your application.
 You should decide and keep one configuration type to avoid errors.
 
-==== Configuration Example
+==== Configuration Examples
 [source,yaml]
 ----
 # YAML supports comments
@@ -623,6 +623,19 @@ quarkus:
     driver: org.postgresql.Driver
     username: quarkus
     password: quarkus
+
+# REST Client configuration property
+org:
+  acme:
+    restclient:
+      CountriesService/mp-rest/url: https://restcountries.eu/rest
+
+# For configuration property names that use quotes, do not split the string inside the quotes.
+quarkus:
+  log:
+    category:
+      "io.quarkus.category":
+        level: INFO
 ----
 
 [NOTE]

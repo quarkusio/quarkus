@@ -434,9 +434,9 @@ public class CreateExtensionMojo extends AbstractMojo {
     List<String> additionalRuntimeDependencies;
 
     /**
-     * A path relative to {@link #basedir} pointing at a {@code pom.xml} file that should serve as a parent for the
-     * integration test Maven module this mojo generates. If {@link #itestParentPath} is not set, the integration test
-     * module will not be generated.
+     * An absolute path or a path relative to {@link #basedir} pointing at a {@code pom.xml} file that should serve as
+     * a parent for the integration test Maven module this mojo generates. If {@link #itestParentPath} is not set,
+     * the integration test module will not be generated.
      *
      * @since 0.22.0
      */
@@ -1025,10 +1025,10 @@ public class CreateExtensionMojo extends AbstractMojo {
                             defaultLoader //
                     });
         } else if (templatesUriBase.startsWith(FILE_PREFIX)) {
+            final Path resolvedTemplatesDir = basedir.toPath().resolve(templatesUriBase.substring(FILE_PREFIX.length()));
             return new MultiTemplateLoader( //
                     new TemplateLoader[] { //
-                            new FileTemplateLoader(
-                                    new File(basedir, templatesUriBase.substring(FILE_PREFIX.length()))), //
+                            new FileTemplateLoader(resolvedTemplatesDir.toFile()),
                             defaultLoader //
                     });
         } else {

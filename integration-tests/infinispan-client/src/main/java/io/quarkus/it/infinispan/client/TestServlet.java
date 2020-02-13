@@ -52,9 +52,8 @@ import io.quarkus.runtime.StartupEvent;
 public class TestServlet {
     private static final Log log = LogFactory.getLog(TestServlet.class);
 
-    @SuppressWarnings("deprecation")
     @Inject
-    @io.quarkus.infinispan.client.runtime.Remote("default")
+    @Remote("default")
     RemoteCache<String, Book> cache;
 
     @Inject

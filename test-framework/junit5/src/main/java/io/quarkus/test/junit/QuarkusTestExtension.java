@@ -131,8 +131,7 @@ public class QuarkusTestExtension
             return;
         }
         if (!failedBoot) {
-            boolean nativeImageTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class)
-                    || isNativeTest(context);
+            boolean nativeImageTest = isNativeTest(context);
             runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
                     .getDeclaredMethod("clearURL").invoke(null);
             runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
@@ -141,8 +140,7 @@ public class QuarkusTestExtension
     }
 
     private boolean isNativeTest(ExtensionContext context) {
-        return context.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class)
-                | context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
+        return context.getRequiredTestClass().isAnnotationPresent(NativeImageTest.class);
     }
 
     @Override
@@ -151,8 +149,7 @@ public class QuarkusTestExtension
             return;
         }
         if (!failedBoot) {
-            boolean nativeImageTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class)
-                    || isNativeTest(context);
+            boolean nativeImageTest = isNativeTest(context);
             if (runningQuarkusApplication != null) {
                 runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
                         .getDeclaredMethod("setURL", boolean.class).invoke(null, false);

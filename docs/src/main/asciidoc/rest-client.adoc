@@ -234,7 +234,9 @@ The code above uses link:http://rest-assured.io/[REST Assured]'s link:https://gi
 
 
 == Async Support
-The rest client supports asynchronous rest calls. Let's see it in action by adding a `getByNameAsync` method in our `CountriesService` REST interface. The code should look like:
+The rest client supports asynchronous rest calls.
+Async support comes in 2 flavors: you can return a `CompletionStage` or a `Uni` (requires the `quarkus-resteasy-mutiny` extension).
+Let's see it in action by adding a `getByNameAsync` method in our `CountriesService` REST interface. The code should look like:
 
 [source, java]
 ----
@@ -322,6 +324,70 @@ public void testCountryNameAsyncEndpoint() {
              "[0].currencies[0].name", is("Euro")
         );
     }
+----
+
+The `Uni` version is very similar:
+
+[source, java]
+----
+package org.acme.restclient;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import java.util.concurrent.CompletionStage;
+import java.util.Set;
+
+@Path("/v2")
+@RegisterRestClient
+public interface CountriesService {
+
+    // ...
+
+    @GET
+    @Path("/name/{name}")
+    @Produces("application/json")
+    Uni<Set<Country>> getByNameAsUni(@PathParam String name);
+}
+----
+
+The `CountriesResource` becomes:
+
+[source,java]
+----
+package org.acme.restclient;
+
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import java.util.concurrent.CompletionStage;
+import java.util.Set;
+
+@Path("/country")
+public class CountriesResource {
+
+    @Inject
+    @RestClient
+    CountriesService countriesService;
+
+
+    // ...
+
+    @GET
+    @Path("/name-uni/{name}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Uni<Set<Country>> nameAsync(@PathParam String name) {
+        return countriesService.getByNameAsUni(name);
+    }
+}
 ----
 
 == Package and run the application

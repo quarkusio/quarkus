@@ -445,16 +445,14 @@ NOTE: Before running the application, don't forget to stop the hot reload mode (
 
 == Async
 
-The resource can also use `CompletionStage` as return type to handle asynchronous actions:
+The resource can also use `CompletionStage` or `Uni` (requires the `quarkus-resteasy-mutiny` extension) as return type to handle asynchronous actions:
 
 [source,java]
 ----
 @GET
 @Produces(MediaType.TEXT_PLAIN)
-public CompletionStage<String> hello() {
-    return CompletableFuture.supplyAsync(() -> {
-        return "hello";
-    });
+public Uni<String> hello() {
+    return Uni.createFrom().item(() -> "hello");
 }
 ----
 

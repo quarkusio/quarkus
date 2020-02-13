@@ -199,29 +199,32 @@ Sending and publishing messages use the Vert.x event bus:
 
 [source, java]
 ----
-package org.acme;
+package org.acme.vertx;
 
-import io.vertx.axle.core.eventbus.EventBus;
-import io.vertx.axle.core.eventbus.Message;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.eventbus.EventBus;
+import io.vertx.mutiny.core.eventbus.Message;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import java.util.concurrent.CompletionStage;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
 @Path("/async")
 public class EventResource {
 
-  @Inject
-  EventBus bus;                                                        // <1>
+    @Inject
+    EventBus bus;                                       // <1>
 
-  @GET
-  @Path("/{name}")
-  public CompletionStage<String> hello(String name) {
-      return bus.<String>request("greeting", name)                             // <2>
-              .thenApply(Message::body);
-  }
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("{name}")
+    public Uni<String> greeting(@PathParam String name) {
+        return bus.<String>request("greeting", name)        // <2>
+                .onItem().apply(Message::body);
+    }
 }
 ----
 <1> Inject the Event bus
@@ -236,13 +239,12 @@ The `EventBus` object provides methods to:
 [source, java]
 ----
 // Case 1
-bus.request("address", "hello");
+bus.sendAndForget("greeting", name)
 // Case 2
-bus.publish("address", "hello");
+bus.publish("greeting", name)
 // Case 3
-bus.request("address", "hello, how are you?").thenAccept(message -> {
-    // response
-});
+Uni<String> response = bus.<String>request("address", "hello, how are you?")
+        .onItem().apply(Message::body);
 ----
 
 == Putting things together - bridging HTTP and messages
@@ -272,30 +274,34 @@ Then, creates a new JAX-RS resource with the following content:
 ----
 package org.acme.vertx;
 
-import io.vertx.axle.core.eventbus.EventBus;
-import io.vertx.axle.core.eventbus.Message;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.eventbus.EventBus;
+import io.vertx.mutiny.core.eventbus.Message;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import java.util.concurrent.CompletionStage;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
-@Path("/hello")
+@Path("/async")
 public class EventResource {
 
-    @Inject EventBus bus;
+    @Inject
+    EventBus bus;
 
     @GET
-    @Path("/async/{name}")
-    public CompletionStage<String> hello(@PathParam("name") String name) {
-        return bus.<String>request("greeting", name)                        // <1>
-                .thenApply(Message::body);                                  // <2>
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("{name}")
+    public Uni<String> greeting(@PathParam String name) {
+        return bus.<String>request("greeting", name)            // <1>
+                .onItem().apply(Message::body);            // <2>
     }
 }
 ----
-<1> send the `name` to the `greeting` address
-<2> when we get the reply, extract the body and send this as response to the user
+<1> send the `name` to the `greeting` address and request a response
+<2> when we get the response, extract the body and send it to the user
 
 If you call this endpoint, you will wait and get a timeout. Indeed, no one is listening.
 So, we need a consumer listening on the `greeting` address. Create a `GreetingService` bean with the following content:

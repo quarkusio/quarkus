@@ -4,15 +4,10 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
 import org.eclipse.aether.RepositoryException;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -174,9 +169,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             resolvedDeps = mvn.resolveManagedDependencies(toAetherArtifact(appArtifact),
                     directMvnDeps, managedDeps, managedRepos, excludedScopes.toArray(new String[0])).getRoot();
         } else {
-            //if there is no main artifact we assume we already have all the deps we need
-            //we just turn them into a DependencyNode
-            resolvedDeps = mvn.toDependencyTree(directMvnDeps, managedRepos).getRoot();
+            throw new IllegalArgumentException("Application artifact is null");
         }
 
         final TreeDependencyVisitor visitor = new TreeDependencyVisitor(new DependencyVisitor() {
@@ -199,13 +192,10 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         for (DependencyNode child : resolvedDeps.getChildren()) {
             child.accept(visitor);
         }
-        List<RemoteRepository> repos;
-        if (appArtifact != null) {
-            repos = mvn.aggregateRepositories(managedRepos,
+
+        final List<RemoteRepository> repos = mvn.aggregateRepositories(managedRepos,
                     mvn.newResolutionRepositories(mvn.resolveDescriptor(toAetherArtifact(appArtifact)).getRepositories()));
-        } else {
-            repos = managedRepos;
-        }
+
         final DeploymentInjectingDependencyVisitor deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn,
                 managedDeps, repos, appBuilder);
         try {

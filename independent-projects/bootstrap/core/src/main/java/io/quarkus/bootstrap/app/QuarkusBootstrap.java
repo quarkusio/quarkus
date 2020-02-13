@@ -61,7 +61,7 @@ public class QuarkusBootstrap implements Serializable {
     private final Mode mode;
     private final boolean offline;
     private final boolean test;
-    private final boolean localProjectDiscovery;
+    private final Boolean localProjectDiscovery;
 
     private final ClassLoader baseClassLoader;
     private final AppModelResolver appModelResolver;
@@ -204,7 +204,7 @@ public class QuarkusBootstrap implements Serializable {
         Mode mode = Mode.PROD;
         boolean offline;
         boolean test;
-        boolean localProjectDiscovery;
+        Boolean localProjectDiscovery;
         Path targetDirectory;
         AppModelResolver appModelResolver;
         VersionUpdateNumber versionUpdateNumber = VersionUpdateNumber.MICRO;

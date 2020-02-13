@@ -369,9 +369,19 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void executeCompileGoal(Plugin plugin, String groupId, String artifactId) throws MojoExecutionException {
-        Xpp3Dom configuration = (Xpp3Dom) plugin.getConfiguration();
-        if (configuration == null) {
-            configuration = MojoExecutor.configuration();
+        Xpp3Dom configuration = MojoExecutor.configuration();
+        Xpp3Dom configured = (Xpp3Dom) plugin.getConfiguration();
+        if (configured != null) {
+            Xpp3Dom[] children = configured.getChildren();
+            if (children != null) {
+                for (Xpp3Dom child : children) {
+                    if (!child.getName().startsWith("test")) {
+                        Xpp3Dom xpp3Dom = new Xpp3Dom(child.getName());
+                        xpp3Dom.setValue(child.getValue());
+                        configuration.addChild(xpp3Dom);
+                    }
+                }
+            }
         }
         MojoExecutor.executeMojo(
                 MojoExecutor.plugin(

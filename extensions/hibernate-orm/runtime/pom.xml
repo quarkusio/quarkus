@@ -72,6 +72,18 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <!--
+        Pull in the optional GraalVM Feature of Hibernate ORM as it contains the static list of classes
+        that any application using the ORM will need.
+        This list needs to be extended by Quarkus to include additional dynamic needs, but it's still
+        useful as it helps to keep it shorter; also this should allow us to have slightly more flexibility
+        in experimenting with different version of Hibernate ORM -->
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-graalvm</artifactId>
+        </dependency>
+
         <!-- We need XML mapping support to support Hibernate Envers -->
         <dependency>
             <groupId>org.glassfish.jaxb</groupId>

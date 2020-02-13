@@ -70,11 +70,10 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
         final MessageWriter log = new MojoMessageWriter(getLog());
 
         BuildFile buildFile = null;
-        try {
+        try (FileProjectWriter fileProjectWriter = new FileProjectWriter(project.getBasedir())) {
             if (project.getFile() != null) {
                 // Maven project
-                @SuppressWarnings("resource")
-                final MavenBuildFile mvnBuild = new MavenBuildFile(new FileProjectWriter(project.getBasedir()));
+                final MavenBuildFile mvnBuild = new MavenBuildFile(fileProjectWriter);
                 buildFile = mvnBuild;
 
                 if (QuarkusPlatformConfig.hasGlobalDefault()) {
@@ -124,7 +123,7 @@ public abstract class BuildFileMojoBase extends AbstractMojo {
             } else if (new File(project.getBasedir(), "build.gradle").exists()
                     || new File(project.getBasedir(), "build.gradle.kts").exists()) {
                 // Gradle project
-                buildFile = new GradleBuildFile(new FileProjectWriter(project.getBasedir()));
+                buildFile = new GradleBuildFile(fileProjectWriter);
             }
 
             if (!QuarkusPlatformConfig.hasGlobalDefault()) {

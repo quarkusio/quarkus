@@ -229,6 +229,10 @@ public class SmallRyeMetricsRecorder {
                     registry.register(metadata, (Metered) implementor, tags);
                 }
                 break;
+            case INVALID:
+                break;
+            default:
+                break;
         }
         shutdown.addShutdownTask(() -> registry.remove(metadata.getName()));
     }

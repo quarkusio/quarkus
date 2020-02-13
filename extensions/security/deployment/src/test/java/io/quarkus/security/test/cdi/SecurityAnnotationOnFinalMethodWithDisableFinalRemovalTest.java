@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.AuthData;
 import io.quarkus.security.test.utils.IdentityMock;
+import io.quarkus.security.test.utils.SecurityTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class SecurityAnnotationOnFinalMethodWithDisableFinalRemovalTest {

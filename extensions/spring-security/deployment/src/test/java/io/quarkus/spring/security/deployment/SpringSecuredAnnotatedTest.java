@@ -1,8 +1,8 @@
 package io.quarkus.spring.security.deployment;
 
-import static io.quarkus.security.test.cdi.SecurityTestUtils.assertFailureFor;
-import static io.quarkus.security.test.cdi.SecurityTestUtils.assertSuccess;
 import static io.quarkus.security.test.utils.IdentityMock.*;
+import static io.quarkus.security.test.utils.SecurityTestUtils.assertFailureFor;
+import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -14,9 +14,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
-import io.quarkus.security.test.cdi.SecurityTestUtils;
 import io.quarkus.security.test.utils.AuthData;
 import io.quarkus.security.test.utils.IdentityMock;
+import io.quarkus.security.test.utils.SecurityTestUtils;
 import io.quarkus.spring.security.deployment.app.BeanWithSpringSecurityAnnotations;
 import io.quarkus.spring.security.deployment.app.BeanWithSpringSecurityMethodAnnotations;
 import io.quarkus.spring.security.deployment.app.SpringSecuredSubClass;

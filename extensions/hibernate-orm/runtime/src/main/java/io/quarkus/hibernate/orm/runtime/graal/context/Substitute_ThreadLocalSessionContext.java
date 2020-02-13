@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.runtime.graal.context;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
-import org.hibernate.cfg.Environment;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 
 import com.oracle.svm.core.annotate.Substitute;
@@ -15,7 +15,7 @@ public final class Substitute_ThreadLocalSessionContext {
     public Substitute_ThreadLocalSessionContext(SessionFactoryImplementor factory) {
         throw new UnsupportedOperationException(
                 "This build of Hibernate ORM doesn't support 'thread' value for configuration property"
-                        + Environment.CURRENT_SESSION_CONTEXT_CLASS);
+                        + AvailableSettings.CURRENT_SESSION_CONTEXT_CLASS);
     }
 
     @Substitute

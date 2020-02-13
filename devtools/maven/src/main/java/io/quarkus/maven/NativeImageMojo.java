@@ -312,7 +312,7 @@ public class NativeImageMojo extends AbstractMojo {
 
     private Map<String, String> createCustomConfig() {
         Map<String, String> configs = new HashMap<>();
-        configs.put("quarkus.package.type", "native");
+        configs.put(QUARKUS_PACKAGE_TYPE, "native");
         if (addAllCharsets != null) {
             configs.put("quarkus.native.add-all-charsets", addAllCharsets.toString());
         }

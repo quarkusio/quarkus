@@ -222,16 +222,16 @@ public final class HibernateOrmProcessor {
         recorderContext.registerNonDefaultConstructor(ParsedPersistenceXmlDescriptor.class.getDeclaredConstructor(URL.class),
                 (i) -> Collections.singletonList(i.getPersistenceUnitRootUrl()));
 
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         // inspect service files for additional integrators
         Collection<Class<? extends Integrator>> integratorClasses = new LinkedHashSet<>();
-        for (String integratorClassName : ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+        for (String integratorClassName : ServiceUtil.classNamesNamedIn(classLoader,
                 "META-INF/services/org.hibernate.integrator.spi.Integrator")) {
             integratorClasses.add((Class<? extends Integrator>) recorderContext.classProxy(integratorClassName));
         }
-
         // inspect service files for service contributors
         Collection<Class<? extends ServiceContributor>> serviceContributorClasses = new LinkedHashSet<>();
-        for (String serviceContributorClassName : ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+        for (String serviceContributorClassName : ServiceUtil.classNamesNamedIn(classLoader,
                 "META-INF/services/org.hibernate.service.spi.ServiceContributor")) {
             serviceContributorClasses
                     .add((Class<? extends ServiceContributor>) recorderContext.classProxy(serviceContributorClassName));

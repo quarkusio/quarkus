@@ -16,6 +16,7 @@
     <modules>
         <module>api</module>
         <module>rest</module>
+        <module>optional</module>
     </modules>
 
 </project>

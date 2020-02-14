@@ -1,22 +1,17 @@
 package io.quarkus.deployment.util;
 
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Member;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.UndeclaredThrowableException;
+import io.quarkus.deployment.annotations.BuildProducer;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import java.lang.reflect.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-import io.quarkus.deployment.annotations.BuildProducer;
+import java.util.stream.Stream;
 
 /**
  */
@@ -78,6 +73,19 @@ public final class ReflectUtil {
         } else {
             throw new IllegalArgumentException("Type has no raw type class: " + type);
         }
+    }
+
+    public static Stream<Class> getAllClassesFromPackage(String packageName, Class... baseClasses) {
+        if (StringUtils.isBlank(packageName) || ArrayUtils.isEmpty(baseClasses)) {
+            return new ArrayList<Class>().stream();
+        }
+
+        org.reflections.Reflections reflections = new org.reflections.Reflections(packageName);
+
+        return (Stream<Class>) Arrays.stream(baseClasses)
+                .flatMap(aClass -> reflections.getSubTypesOf(aClass).stream())
+                .filter(aClass -> !((Class) aClass).isInterface())
+                .filter(aClass -> ((Class) aClass).getPackage().getName().equals(packageName));
     }
 
     private static final Class<?>[] NO_CLASSES = new Class[0];

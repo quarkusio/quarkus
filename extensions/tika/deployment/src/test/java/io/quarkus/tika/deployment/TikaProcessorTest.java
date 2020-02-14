@@ -1,19 +1,16 @@
 package io.quarkus.tika.deployment;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
+import io.quarkus.deployment.util.ReflectUtil;
+import io.quarkus.test.QuarkusUnitTest;
+import org.apache.xmlbeans.XmlObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.DocumentDocumentImpl;
 
-import io.quarkus.test.QuarkusUnitTest;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TikaProcessorTest {
 
@@ -91,6 +88,14 @@ public class TikaProcessorTest {
     public void testUnhyphenation() {
         assertEquals("sortByPosition", TikaProcessor.unhyphenate("sort-by-position"));
         assertEquals("position", TikaProcessor.unhyphenate("position"));
+    }
+
+    @Test
+    public void testReflection() {
+        List<Class> types = ReflectUtil
+                .getAllClassesFromPackage(DocumentDocumentImpl.class.getPackage().getName(), XmlObject.class)
+                .collect(Collectors.toList());
+        assertTrue(types.size() > 0);
     }
 
     private Set<String> getParserNames(String tikaConfigPath, String parsers) throws Exception {

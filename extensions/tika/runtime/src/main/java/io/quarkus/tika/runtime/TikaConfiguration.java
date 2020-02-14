@@ -1,11 +1,11 @@
 package io.quarkus.tika.runtime;
 
-import java.util.Map;
-import java.util.Optional;
-
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Tika parser configuration
@@ -53,6 +53,22 @@ public class TikaConfiguration {
      */
     @ConfigItem
     public Map<String, Map<String, String>> parserOptions;
+
+    /**
+     * Configuration of supporting file format for the individual parsers.
+     * Currently is used only for ooxml parser, because the higher number of
+     * supported formats there leads to OOM error during the native build.
+     *
+     * Example:
+     *
+     * <pre>
+     * quarkus.tika.parsers = ooxml
+     * quarkus.tika.parser-file-format-support.ooxml.docx = true
+     * quarkus.tika.parser-file-format-support.ooxml.pptx = false
+     * quarkus.tika.parser-file-format-support.ooxml.xlsx = true
+     */
+    @ConfigItem
+    public Map<String, Map<String, String>> parserFileFormatSupport;
 
     /**
      * Full parser class name for a given parser abbreviation.

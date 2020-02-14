@@ -1,27 +1,28 @@
 package io.quarkus.it.tika;
 
-import java.io.InputStream;
+import io.quarkus.tika.TikaContent;
+import io.quarkus.tika.TikaMetadata;
+import io.quarkus.tika.TikaParser;
+import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.RecursiveParserWrapper;
+import org.apache.tika.parser.microsoft.OfficeParser;
+import org.apache.tika.parser.microsoft.ooxml.OOXMLParser;
+import org.apache.tika.parser.pdf.PDFParser;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-
-import org.apache.tika.parser.AutoDetectParser;
-import org.apache.tika.parser.RecursiveParserWrapper;
-import org.apache.tika.parser.microsoft.OfficeParser;
-import org.apache.tika.parser.pdf.PDFParser;
-
-import io.quarkus.tika.TikaContent;
-import io.quarkus.tika.TikaParser;
+import java.io.InputStream;
 
 @Path("/embedded")
 public class TikaEmdeddedContentResource {
 
     // Avoiding the injection, otherwise the recorded tika-config.xml intended for TikaPdfInvoiceTest is used
     TikaParser parser = new TikaParser(new RecursiveParserWrapper(
-            new AutoDetectParser(new OfficeParser(), new PDFParser()), true), false);
+            new AutoDetectParser(new OfficeParser(), new PDFParser(), new OOXMLParser()), true), false);
 
     @POST
     @Path("/outerText")
@@ -39,5 +40,13 @@ public class TikaEmdeddedContentResource {
     public String extractInnerText(InputStream stream) {
         TikaContent content = parser.parse(stream);
         return content.getEmbeddedContent().get(0).getText();
+    }
+
+    @POST
+    @Path("/contentType")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String contentType(InputStream stream) {
+        TikaMetadata metadata = parser.getMetadata(stream);
+        return metadata.getSingleValue(HttpHeaders.CONTENT_TYPE);
     }
 }

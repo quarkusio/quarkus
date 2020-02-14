@@ -33,7 +33,11 @@
             <exclusions>
                 <exclusion>
                     <groupId>com.zaxxer</groupId>
-                    <artifactId>HikariCP-java6</artifactId>
+                    <artifactId>HikariCP</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.zaxxer</groupId>
+                    <artifactId>HikariCP-java7</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>com.mchange</groupId>

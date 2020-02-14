@@ -70,7 +70,7 @@ class CacheProcessor {
                 }
             }
         }
-        return new ValidationErrorBuildItem(throwables.toArray(new Throwable[throwables.size()]));
+        return new ValidationErrorBuildItem(throwables.toArray(new Throwable[0]));
     }
 
     @BuildStep

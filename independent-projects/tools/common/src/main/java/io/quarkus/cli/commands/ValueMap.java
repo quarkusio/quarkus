@@ -28,10 +28,10 @@ public class ValueMap<V extends ValueMap<V>> {
     @SuppressWarnings("unchecked")
     public <T> T getValue(String name, T defaultValue) {
         final Object value = values.getOrDefault(name, NOT_SET);
-        if(value == NOT_SET) {
+        if (value == NOT_SET) {
             return defaultValue;
         }
-        if(value == null) {
+        if (value == null) {
             return null;
         }
         return (T) value;

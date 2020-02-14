@@ -2,7 +2,6 @@ package io.quarkus.bootstrap.resolver.maven;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.maven.settings.Proxy;
 import org.apache.maven.settings.Server;
 import org.apache.maven.settings.building.DefaultSettingsProblem;
@@ -23,64 +22,51 @@ public class SettingsDecrypterImpl implements SettingsDecrypter {
     }
 
     @Override
-    public SettingsDecryptionResult decrypt( SettingsDecryptionRequest request )
-    {
+    public SettingsDecryptionResult decrypt(SettingsDecryptionRequest request) {
         List<SettingsProblem> problems = new ArrayList<>();
 
         List<Server> servers = new ArrayList<>();
 
-        for ( Server server : request.getServers() )
-        {
+        for (Server server : request.getServers()) {
             server = server.clone();
 
-            servers.add( server );
+            servers.add(server);
 
-            try
-            {
-                server.setPassword( decrypt( server.getPassword() ) );
-            }
-            catch ( SecDispatcherException e )
-            {
-                problems.add( new DefaultSettingsProblem( "Failed to decrypt password for server " + server.getId()
-                    + ": " + e.getMessage(), Severity.ERROR, "server: " + server.getId(), -1, -1, e ) );
+            try {
+                server.setPassword(decrypt(server.getPassword()));
+            } catch (SecDispatcherException e) {
+                problems.add(new DefaultSettingsProblem("Failed to decrypt password for server " + server.getId()
+                        + ": " + e.getMessage(), Severity.ERROR, "server: " + server.getId(), -1, -1, e));
             }
 
-            try
-            {
-                server.setPassphrase( decrypt( server.getPassphrase() ) );
-            }
-            catch ( SecDispatcherException e )
-            {
-                problems.add( new DefaultSettingsProblem( "Failed to decrypt passphrase for server " + server.getId()
-                    + ": " + e.getMessage(), Severity.ERROR, "server: " + server.getId(), -1, -1, e ) );
+            try {
+                server.setPassphrase(decrypt(server.getPassphrase()));
+            } catch (SecDispatcherException e) {
+                problems.add(new DefaultSettingsProblem("Failed to decrypt passphrase for server " + server.getId()
+                        + ": " + e.getMessage(), Severity.ERROR, "server: " + server.getId(), -1, -1, e));
             }
         }
 
         List<Proxy> proxies = new ArrayList<>();
 
-        for ( Proxy proxy : request.getProxies() )
-        {
+        for (Proxy proxy : request.getProxies()) {
             proxy = proxy.clone();
 
-            proxies.add( proxy );
+            proxies.add(proxy);
 
-            try
-            {
-                proxy.setPassword( decrypt( proxy.getPassword() ) );
-            }
-            catch ( SecDispatcherException e )
-            {
-                problems.add( new DefaultSettingsProblem( "Failed to decrypt password for proxy " + proxy.getId()
-                    + ": " + e.getMessage(), Severity.ERROR, "proxy: " + proxy.getId(), -1, -1, e ) );
+            try {
+                proxy.setPassword(decrypt(proxy.getPassword()));
+            } catch (SecDispatcherException e) {
+                problems.add(new DefaultSettingsProblem("Failed to decrypt password for proxy " + proxy.getId()
+                        + ": " + e.getMessage(), Severity.ERROR, "proxy: " + proxy.getId(), -1, -1, e));
             }
         }
 
-        return new SettingsDecryptionResultImpl( servers, proxies, problems );
+        return new SettingsDecryptionResultImpl(servers, proxies, problems);
     }
 
-    private String decrypt( String str )
-        throws SecDispatcherException
-    {
-        return ( str == null ) ? null : securityDispatcher.decrypt( str );
+    private String decrypt(String str)
+            throws SecDispatcherException {
+        return (str == null) ? null : securityDispatcher.decrypt(str);
     }
 }

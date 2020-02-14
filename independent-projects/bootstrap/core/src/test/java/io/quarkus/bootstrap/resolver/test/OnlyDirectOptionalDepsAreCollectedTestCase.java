@@ -18,8 +18,8 @@ public class OnlyDirectOptionalDepsAreCollectedTestCase extends CollectDependenc
         installAsDep(
                 new TsDependency(
                         new TsArtifact("optional-dep")
-                        .addDependency(new TsDependency(new TsArtifact("common", "1"), true))
-                        .addDependency(new TsDependency(new TsArtifact("other", "1"), true)),
+                                .addDependency(new TsDependency(new TsArtifact("common", "1"), true))
+                                .addDependency(new TsDependency(new TsArtifact("other", "1"), true)),
                         true),
                 true);
 

@@ -1,11 +1,10 @@
 package io.quarkus.platform.descriptor.loader.json;
 
+import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
 
 public class DirectoryResourceLoader implements ResourceLoader {
 

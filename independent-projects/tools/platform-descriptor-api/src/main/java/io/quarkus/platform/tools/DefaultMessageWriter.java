@@ -37,7 +37,7 @@ public class DefaultMessageWriter implements MessageWriter {
 
     @Override
     public void debug(String msg) {
-        if(!isDebugEnabled()) {
+        if (!isDebugEnabled()) {
             return;
         }
         out.println("DEBUG: " + msg);

@@ -2,7 +2,6 @@ package io.quarkus.bootstrap.resolver.maven.options;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.ParseException;
 import org.apache.maven.cli.CLIManager;
@@ -39,19 +38,19 @@ public class BootstrapMavenOptionsParser {
     }
 
     private static void putBoolean(CommandLine cmdLine, Map<String, Object> map, char name) {
-        if(cmdLine.hasOption(name)) {
+        if (cmdLine.hasOption(name)) {
             map.put(String.valueOf(name), Boolean.TRUE.toString());
         }
     }
 
     private static void putBoolean(CommandLine cmdLine, Map<String, Object> map, String name) {
-        if(cmdLine.hasOption(name)) {
+        if (cmdLine.hasOption(name)) {
             map.put(name, Boolean.TRUE.toString());
         }
     }
 
     private static void put(Map<String, Object> map, String name, final Object value) {
-        if(value != null) {
+        if (value != null) {
             map.put(name, value);
         }
     }

@@ -8,7 +8,7 @@ public class BootstrapWagonProvider implements WagonProvider {
     @Override
     public Wagon lookup(String roleHint) throws Exception {
         String impl = null;
-        switch(roleHint) {
+        switch (roleHint) {
             case "https":
             case "http":
                 impl = "org.apache.maven.wagon.providers.http.HttpWagon";
@@ -35,7 +35,7 @@ public class BootstrapWagonProvider implements WagonProvider {
         final Object wagon;
         try {
             wagon = cls.newInstance();
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             throw new IllegalStateException("Failed to instantiate Wagon impl " + impl, t);
         }
         return Wagon.class.cast(wagon);
@@ -51,12 +51,12 @@ public class BootstrapWagonProvider implements WagonProvider {
         } catch (ClassNotFoundException e) {
             final StringBuilder buf = new StringBuilder();
             buf.append("Failed to locate Wagon implementation ")
-            .append(name)
-            .append(" on the classpath for protocol ")
-            .append(protocol)
-            .append(", please add the ");
+                    .append(name)
+                    .append(" on the classpath for protocol ")
+                    .append(protocol)
+                    .append(", please add the ");
             final String defaultWagonGA = getDefaultWagonGA(protocol);
-            if(defaultWagonGA == null) {
+            if (defaultWagonGA == null) {
                 buf.append("corresponding classpath dependency to your project");
             } else {
                 buf.append("desired version of ").append(defaultWagonGA).append(" as a classpath dependency to your project");
@@ -66,7 +66,7 @@ public class BootstrapWagonProvider implements WagonProvider {
     }
 
     private static String getDefaultWagonGA(String protocol) {
-        switch(protocol) {
+        switch (protocol) {
             case "https":
             case "http":
                 return "org.apache.maven.wagon:wagon-http or org.apache.maven.wagon:wagon-http-lightweight";

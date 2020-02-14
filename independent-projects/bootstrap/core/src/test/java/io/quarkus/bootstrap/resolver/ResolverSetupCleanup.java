@@ -1,13 +1,12 @@
 package io.quarkus.bootstrap.resolver;
 
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.bootstrap.util.IoUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.UUID;
-
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
-import io.quarkus.bootstrap.util.IoUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -34,16 +33,16 @@ public class ResolverSetupCleanup {
 
     @AfterEach
     public void cleanup() {
-        if(cleanWorkDir() && workDir != null) {
+        if (cleanWorkDir() && workDir != null) {
             IoUtils.recursiveDelete(workDir);
         }
-        if(originalProps != null) {
+        if (originalProps != null) {
             System.setProperties(originalProps);
         }
     }
 
     protected void setSystemProperty(String name, String value) {
-        if(originalProps == null) {
+        if (originalProps == null) {
             originalProps = new Properties(System.getProperties());
         }
         System.setProperty(name, value);

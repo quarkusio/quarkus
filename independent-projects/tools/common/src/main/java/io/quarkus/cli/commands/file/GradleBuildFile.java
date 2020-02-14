@@ -1,5 +1,10 @@
 package io.quarkus.cli.commands.file;
 
+import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.dependencies.Extension;
+import io.quarkus.generators.BuildTool;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.tools.ToolsUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -9,13 +14,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.function.Consumer;
-
 import org.apache.maven.model.Dependency;
-import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.dependencies.Extension;
-import io.quarkus.generators.BuildTool;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.tools.ToolsUtils;
 
 public class GradleBuildFile extends BuildFile {
 
@@ -40,13 +39,15 @@ public class GradleBuildFile extends BuildFile {
     }
 
     @Override
-    public void completeFile(String groupId, String artifactId, String version, QuarkusPlatformDescriptor platform, Properties props) throws IOException {
+    public void completeFile(String groupId, String artifactId, String version, QuarkusPlatformDescriptor platform,
+            Properties props) throws IOException {
         completeSettingsContent(artifactId);
         completeBuildContent(groupId, version, platform, props);
         completeProperties(platform);
     }
 
-    private void completeBuildContent(String groupId, String version, QuarkusPlatformDescriptor platform, Properties props) throws IOException {
+    private void completeBuildContent(String groupId, String version, QuarkusPlatformDescriptor platform, Properties props)
+            throws IOException {
         final String buildContent = getModel().getBuildContent();
         StringBuilder res = new StringBuilder(buildContent);
         if (!buildContent.contains("id 'io.quarkus'")) {
@@ -58,7 +59,8 @@ public class GradleBuildFile extends BuildFile {
         if (!containsBOM(platform.getBomGroupId(), platform.getBomArtifactId())) {
             res.append(System.lineSeparator());
             res.append("dependencies {").append(System.lineSeparator());
-            res.append("    implementation enforcedPlatform(\"${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}\")")
+            res.append(
+                    "    implementation enforcedPlatform(\"${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}\")")
                     .append(System.lineSeparator());
             res.append("    implementation 'io.quarkus:quarkus-resteasy'").append(System.lineSeparator());
             res.append("    testImplementation 'io.quarkus:quarkus-junit5'").append(System.lineSeparator());
@@ -108,13 +110,13 @@ public class GradleBuildFile extends BuildFile {
         if (props.getProperty("quarkusPluginVersion") == null) {
             props.setProperty("quarkusPluginVersion", ToolsUtils.getPluginVersion(ToolsUtils.readQuarkusProperties(platform)));
         }
-        if(props.getProperty("quarkusPlatformGroupId") == null) {
+        if (props.getProperty("quarkusPlatformGroupId") == null) {
             props.setProperty("quarkusPlatformGroupId", platform.getBomGroupId());
         }
-        if(props.getProperty("quarkusPlatformArtifactId") == null) {
+        if (props.getProperty("quarkusPlatformArtifactId") == null) {
             props.setProperty("quarkusPlatformArtifactId", platform.getBomArtifactId());
         }
-        if(props.getProperty("quarkusPlatformVersion") == null) {
+        if (props.getProperty("quarkusPlatformVersion") == null) {
             props.setProperty("quarkusPlatformVersion", platform.getBomVersion());
         }
     }
@@ -127,7 +129,8 @@ public class GradleBuildFile extends BuildFile {
     }
 
     private void readLineByLine(String content, Consumer<String> lineConsumer) {
-        try (Scanner scanner = new Scanner(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8.name())) {
+        try (Scanner scanner = new Scanner(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)),
+                StandardCharsets.UTF_8.name())) {
             while (scanner.hasNextLine()) {
                 String currentLine = scanner.nextLine();
                 lineConsumer.accept(currentLine);

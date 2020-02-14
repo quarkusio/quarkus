@@ -3,18 +3,16 @@
  */
 package io.quarkus.bootstrap.workspace.test;
 
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.bootstrap.util.IoUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
-
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
-import io.quarkus.bootstrap.util.IoUtils;
 
 public class MvnProjectBuilder {
 
@@ -90,7 +88,7 @@ public class MvnProjectBuilder {
     public MvnProjectBuilder addModule(String path, String artifactId, boolean initParent) {
         model.addModule(path);
         final MvnProjectBuilder module = new MvnProjectBuilder(artifactId, this);
-        if(initParent) {
+        if (initParent) {
             final Parent parentModel = new Parent();
             module.model.setParent(parentModel);
             parentModel.setGroupId(model.getGroupId());
@@ -98,7 +96,7 @@ public class MvnProjectBuilder {
             parentModel.setVersion(model.getVersion());
             final Path rootDir = Paths.get("").toAbsolutePath();
             final Path moduleDir = rootDir.resolve(path).normalize();
-            if(!moduleDir.getParent().equals(rootDir)) {
+            if (!moduleDir.getParent().equals(rootDir)) {
                 parentModel.setRelativePath(moduleDir.relativize(rootDir).toString());
             }
         }
@@ -109,9 +107,9 @@ public class MvnProjectBuilder {
     public void build(Path projectDir) {
         //System.out.println("build " + model.getArtifactId() + " " + projectDir);
         IoUtils.mkdirs(projectDir);
-        if(!modules.isEmpty()) {
+        if (!modules.isEmpty()) {
             model.setPackaging("pom");
-            for(int i = 0; i < modules.size(); ++i) {
+            for (int i = 0; i < modules.size(); ++i) {
                 modules.get(i).build(projectDir.resolve(model.getModules().get(i)));
             }
         } else {

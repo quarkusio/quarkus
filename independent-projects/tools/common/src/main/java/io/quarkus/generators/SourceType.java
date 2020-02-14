@@ -1,9 +1,8 @@
 package io.quarkus.generators;
 
+import io.quarkus.maven.utilities.MojoUtils;
 import java.util.Arrays;
 import java.util.Optional;
-
-import io.quarkus.maven.utilities.MojoUtils;
 
 public enum SourceType {
     JAVA(MojoUtils.JAVA_FILE_EXTENSION, MojoUtils.JAVA_EXTENSION_NAME),

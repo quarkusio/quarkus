@@ -2,9 +2,6 @@ package io.quarkus.generators.rest;
 
 import static java.lang.String.format;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.Map.Entry;
 import io.quarkus.cli.commands.QuarkusCommandInvocation;
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
@@ -12,6 +9,9 @@ import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.ProjectGenerator;
 import io.quarkus.generators.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.Map.Entry;
 
 public class BasicRestProjectGenerator implements ProjectGenerator {
 
@@ -61,7 +61,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
         @SuppressWarnings("unchecked")
         private <T> T get(final String key, final T defaultValue) {
             Object value = invocation.getValue(key);
-            if(value == null) {
+            if (value == null) {
                 value = invocation.getProperty(key);
             }
             return value == null ? defaultValue : (T) value;
@@ -171,7 +171,7 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
             BuildTool buildTool = getBuildTool();
             switch (buildTool) {
                 case MAVEN:
-                    generate("templates/README.maven.ftl", invocation, readme,"read me");
+                    generate("templates/README.maven.ftl", invocation, readme, "read me");
                     break;
                 case GRADLE:
                     generate("templates/README.gradle.ftl", invocation, readme, "read me");

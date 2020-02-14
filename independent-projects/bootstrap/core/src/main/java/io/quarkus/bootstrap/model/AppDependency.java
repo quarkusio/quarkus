@@ -73,7 +73,7 @@ public class AppDependency implements Serializable {
     public String toString() {
         final StringBuilder buf = new StringBuilder();
         artifact.append(buf).append('(').append(scope);
-        if(optional) {
+        if (optional) {
             buf.append(" optional");
         }
         return buf.append(')').toString();

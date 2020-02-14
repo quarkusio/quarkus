@@ -1,5 +1,13 @@
 package io.quarkus.cli.commands;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.contentOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import io.quarkus.cli.commands.file.GradleBuildFile;
+import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.cli.commands.writer.ZipProjectWriter;
+import io.quarkus.maven.utilities.MojoUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -24,20 +32,11 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-
-import io.quarkus.cli.commands.file.GradleBuildFile;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.cli.commands.writer.ZipProjectWriter;
-import io.quarkus.maven.utilities.MojoUtils;
 import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.contentOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CreateProjectTest extends PlatformAwareTestBase {
     @Test
@@ -265,10 +264,10 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         properties.put("extensions", "commons-io:commons-io:2.5");
 
         assertTrue(new CreateProject(new FileProjectWriter(testDir)).groupId("org.acme")
-                                      .artifactId("acme")
-                                      .version("1.0.0-SNAPSHOT")
-                                      .className("org.acme.MyResource")
-                                      .doCreateProject(properties));
+                .artifactId("acme")
+                .version("1.0.0-SNAPSHOT")
+                .className("org.acme.MyResource")
+                .doCreateProject(properties));
 
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
@@ -336,8 +335,8 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         file.mkdirs();
         File zipFile = new File(file, "project.zip");
         try (FileOutputStream fos = new FileOutputStream(zipFile);
-             ZipOutputStream zos = new ZipOutputStream(fos);
-             ZipProjectWriter zipWriter = new ZipProjectWriter(zos)) {
+                ZipOutputStream zos = new ZipOutputStream(fos);
+                ZipProjectWriter zipWriter = new ZipProjectWriter(zos)) {
             final CreateProject createProject = new CreateProject(zipWriter).groupId("io.quarkus")
                     .artifactId("basic-rest")
                     .version("1.0.0-SNAPSHOT");

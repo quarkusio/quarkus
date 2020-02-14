@@ -1,15 +1,14 @@
 package io.quarkus.platform.tools;
 
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.io.IOException;
 import java.util.Properties;
-
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
 public class ToolsUtils {
 
     public static String requireProperty(String name) {
         final String value = getProperty(name);
-        if(value == null) {
+        if (value == null) {
             throw new IllegalStateException("Failed to resolve required property " + name);
         }
         return value;
@@ -28,16 +27,16 @@ public class ToolsUtils {
     }
 
     public static String dotJoin(String... parts) {
-        if(parts.length == 0) {
+        if (parts.length == 0) {
             return null;
         }
-        if(parts.length == 1) {
+        if (parts.length == 1) {
             return parts[0];
         }
         final StringBuilder buf = new StringBuilder();
         buf.append(parts[0]);
         int i = 1;
-        while(i < parts.length) {
+        while (i < parts.length) {
             buf.append('.').append(parts[i++]);
         }
         return buf.toString();

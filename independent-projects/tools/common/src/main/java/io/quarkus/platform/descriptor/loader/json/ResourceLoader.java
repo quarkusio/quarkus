@@ -1,7 +1,7 @@
 package io.quarkus.platform.descriptor.loader.json;
 
-import java.io.IOException;
 import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
+import java.io.IOException;
 
 public interface ResourceLoader {
 

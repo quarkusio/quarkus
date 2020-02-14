@@ -1,5 +1,7 @@
 package io.quarkus.bootstrap.resolver;
 
+import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.bootstrap.util.ZipUtils;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -11,9 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
-
-import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.bootstrap.util.ZipUtils;
 
 /**
  *
@@ -36,7 +35,7 @@ public class TsJar implements TsArtifact.ContentProvider {
     public Path getPath(Path workDir) throws IOException {
         if (target == null) {
             target = workDir.resolve(UUID.randomUUID().toString());
-        } else if(Files.exists(target)) {
+        } else if (Files.exists(target)) {
             return target;
         }
         try (FileSystem zip = openZip()) {
@@ -49,7 +48,7 @@ public class TsJar implements TsArtifact.ContentProvider {
                     }
                 }
             }
-            if(!paths.isEmpty()) {
+            if (!paths.isEmpty()) {
                 for (Map.Entry<String, Path> entry : paths.entrySet()) {
                     final Path p = zip.getPath(entry.getKey());
                     Files.createDirectories(p.getParent());
@@ -63,26 +62,26 @@ public class TsJar implements TsArtifact.ContentProvider {
     }
 
     private String getKey(String... path) {
-        if(path.length == 1) {
+        if (path.length == 1) {
             return path[0];
         }
         final StringBuilder buf = new StringBuilder();
         buf.append(path[0]);
-        for(int i = 1; i < path.length; ++i) {
+        for (int i = 1; i < path.length; ++i) {
             buf.append('/').append(path[i]);
         }
         return buf.toString();
     }
 
     private void addContent(String content, String... path) {
-        if(this.content.isEmpty()) {
+        if (this.content.isEmpty()) {
             this.content = new HashMap<>(1);
         }
         this.content.put(getKey(path), content);
     }
 
     public TsJar addEntry(Path content, String... path) {
-        if(paths.isEmpty()) {
+        if (paths.isEmpty()) {
             paths = new HashMap<>(1);
         }
         paths.put(getKey(path), content);
@@ -98,7 +97,7 @@ public class TsJar implements TsArtifact.ContentProvider {
         final StringWriter writer = new StringWriter();
         try {
             props.store(writer, "Written by TsJarBuilder");
-        } catch(IOException e) {
+        } catch (IOException e) {
             throw new IllegalStateException("Failed to serialize properties", e);
         }
         addContent(writer.getBuffer().toString(), path);
@@ -116,7 +115,7 @@ public class TsJar implements TsArtifact.ContentProvider {
     }
 
     private FileSystem openZip() throws IOException {
-        if(Files.exists(target)) {
+        if (Files.exists(target)) {
             return ZipUtils.newFileSystem(target);
         }
         Files.createDirectories(target.getParent());

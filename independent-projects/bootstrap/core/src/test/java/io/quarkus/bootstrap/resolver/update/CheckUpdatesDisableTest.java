@@ -3,15 +3,14 @@ package io.quarkus.bootstrap.resolver.update;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.util.Arrays;
-import java.util.Collections;
-
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
+import java.util.Arrays;
+import java.util.Collections;
 
 public class CheckUpdatesDisableTest extends CreatorOutcomeTestBase {
 

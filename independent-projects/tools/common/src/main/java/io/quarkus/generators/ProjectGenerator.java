@@ -1,11 +1,10 @@
 package io.quarkus.generators;
 
-import java.io.IOException;
-import java.util.Map;
-
 import io.quarkus.cli.commands.QuarkusCommandInvocation;
 import io.quarkus.cli.commands.legacy.LegacyQuarkusCommandInvocation;
 import io.quarkus.cli.commands.writer.ProjectWriter;
+import java.io.IOException;
+import java.util.Map;
 
 public interface ProjectGenerator {
     String BOM_GROUP_ID = "bom_groupId";

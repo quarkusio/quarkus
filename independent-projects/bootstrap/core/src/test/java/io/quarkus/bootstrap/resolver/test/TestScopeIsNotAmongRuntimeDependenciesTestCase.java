@@ -18,16 +18,15 @@ public class TestScopeIsNotAmongRuntimeDependenciesTestCase extends CollectDepen
         installAsDep(
                 new TsDependency(
                         new TsArtifact("direct-test-dep")
-                        .addDependency(new TsArtifact("common", "1")
-                        .addDependency(new TsDependency(new TsArtifact("not-collected"), "test"))),
+                                .addDependency(new TsArtifact("common", "1")
+                                        .addDependency(new TsDependency(new TsArtifact("not-collected"), "test"))),
                         "test"),
                 false);
-
 
         final TsArtifact common = install(new TsArtifact("common", "2"), true);
         installAsDep(
                 new TsArtifact("required-dep-c")
-                .addDependency(common),
+                        .addDependency(common),
                 true);
     }
 }

@@ -1,14 +1,5 @@
 package io.quarkus.cli.commands;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-import java.util.stream.Collectors;
-
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.legacy.LegacyQuarkusCommandInvocation;
@@ -17,6 +8,14 @@ import io.quarkus.dependencies.Extension;
 import io.quarkus.generators.BuildTool;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
 
 public class AddExtensions implements QuarkusCommand {
 
@@ -115,7 +114,7 @@ public class AddExtensions implements QuarkusCommand {
     private static boolean matchLabels(Pattern pattern, List<String> labels) {
         boolean matches = false;
         // if any label match it's ok
-        for(String label : labels) {
+        for (String label : labels) {
             matches = matches || pattern.matcher(label.toLowerCase()).matches();
         }
         return matches;

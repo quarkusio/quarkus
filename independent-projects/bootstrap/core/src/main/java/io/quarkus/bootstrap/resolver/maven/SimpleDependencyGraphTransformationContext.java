@@ -2,7 +2,6 @@ package io.quarkus.bootstrap.resolver.maven;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.collection.DependencyGraphTransformationContext;
 

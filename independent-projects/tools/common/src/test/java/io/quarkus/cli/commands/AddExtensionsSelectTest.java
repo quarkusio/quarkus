@@ -2,13 +2,11 @@ package io.quarkus.cli.commands;
 
 import static java.util.Arrays.asList;
 
+import io.quarkus.dependencies.Extension;
 import java.util.Collections;
 import java.util.List;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import io.quarkus.dependencies.Extension;
 
 class AddExtensionsSelectTest {
 
@@ -125,7 +123,7 @@ class AddExtensionsSelectTest {
                 .setName("some complex seo unaware name")
                 .setShortName("foo")
                 .setKeywords(new String[] { "foo", "bar" }).addMetadata("unlisted", "true");
-        
+
         Extension e2 = new Extension("org.acme", "quarkus-foo-bar", "1.0")
                 .setName("some foo bar")
                 .setKeywords(new String[] { "foo", "bar", "baz" }).addMetadata("unlisted", "false");
@@ -142,6 +140,5 @@ class AddExtensionsSelectTest {
         Assertions.assertEquals(1, matches.getExtensions().size());
 
     }
-    
-    
+
 }

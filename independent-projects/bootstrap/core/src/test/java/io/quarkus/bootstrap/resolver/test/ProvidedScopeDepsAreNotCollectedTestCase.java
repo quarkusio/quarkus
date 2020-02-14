@@ -19,8 +19,7 @@ public class ProvidedScopeDepsAreNotCollectedTestCase extends CollectDependencie
         final TsArtifact common1 = new TsArtifact("common", "1")
                 .addDependency(
                         new TsDependency(
-                                notCollected, "provided")
-                        );
+                                notCollected, "provided"));
         install(common1, true);
 
         installAsDep(new TsArtifact("required-dep")
@@ -30,9 +29,8 @@ public class ProvidedScopeDepsAreNotCollectedTestCase extends CollectDependencie
         installAsDep(
                 new TsDependency(
                         new TsArtifact("provided-dep")
-                        .addDependency(
-                                new TsArtifact("common", "2")
-                                ),
+                                .addDependency(
+                                        new TsArtifact("common", "2")),
                         "provided"),
                 false);
     }

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.bson.Document;
+import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
@@ -57,6 +58,11 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     @Override
     public MongoNamespace getNamespace() {
         return collection.getNamespace();
+    }
+
+    @Override
+    public CodecRegistry getCodecRegistry() {
+        return collection.getCodecRegistry();
     }
 
     @Override

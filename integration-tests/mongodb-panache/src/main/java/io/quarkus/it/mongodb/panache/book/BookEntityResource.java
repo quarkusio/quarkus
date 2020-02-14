@@ -108,4 +108,9 @@ public class BookEntityResource {
                 Parameters.with("dateFrom", LocalDate.parse(dateFrom)).and("dateTo", LocalDate.parse(dateTo))).firstResult();
     }
 
+    @DELETE
+    public void deleteAll() {
+        BookEntity.deleteAll();
+    }
+
 }

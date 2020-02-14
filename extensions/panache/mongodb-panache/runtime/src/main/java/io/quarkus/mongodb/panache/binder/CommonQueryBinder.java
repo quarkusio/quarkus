@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.panache.runtime;
+package io.quarkus.mongodb.panache.binder;
 
 import java.text.SimpleDateFormat;
 import java.time.Instant;

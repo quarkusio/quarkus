@@ -23,7 +23,7 @@ public final class MongoPropertyUtil {
         replacementCache = newReplacementCache;
     }
 
-    static Map<String, String> getReplacementMap(Class<?> clazz) {
+    public static Map<String, String> getReplacementMap(Class<?> clazz) {
         return replacementCache.computeIfAbsent(clazz.getName(), s -> buildWithReflection(clazz));
     }
 

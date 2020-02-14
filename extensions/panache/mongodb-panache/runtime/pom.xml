@@ -24,11 +24,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-panacheql</artifactId>
+            <artifactId>quarkus-mongodb-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-mongodb-client</artifactId>
+            <artifactId>quarkus-panacheql</artifactId>
         </dependency>
         <!-- This is optional to avoid pulling libraries if jax-rs/jsonb is not on the path-->
         <!-- But needed to provides default serializer/deserializer for JsonB -->
@@ -74,19 +74,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <fileSets>
-                        <fileSet>
-                            <directory>${project.build.directory}/classes</directory>
-                            <excludes>
-                                <!-- We avoid indexing it as it needs to be included in the apps only if jaxrs and jsonb are. -->
-                                <exclude>**/PanacheMongoJsonbContextResolver.class</exclude>
-                                <!-- We avoid indexing it as it needs to be included in the apps only if jackson is. -->
-                                <exclude>**/ObjectMapperProducer.class</exclude>
-                            </excludes>
-                        </fileSet>
-                    </fileSets>
-                </configuration>
             </plugin>
         </plugins>
     </build>

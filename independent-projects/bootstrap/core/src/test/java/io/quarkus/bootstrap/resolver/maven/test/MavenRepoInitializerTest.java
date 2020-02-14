@@ -1,10 +1,16 @@
 package io.quarkus.bootstrap.resolver.maven.test;
 
-import java.util.Arrays;
-import java.util.List;
+import static org.eclipse.aether.repository.RepositoryPolicy.CHECKSUM_POLICY_WARN;
+import static org.eclipse.aether.repository.RepositoryPolicy.UPDATE_POLICY_DAILY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.MavenRepoInitializer;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.maven.settings.Mirror;
 import org.apache.maven.settings.Profile;
 import org.apache.maven.settings.Proxy;
@@ -14,13 +20,6 @@ import org.apache.maven.settings.Settings;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import static org.eclipse.aether.repository.RepositoryPolicy.CHECKSUM_POLICY_WARN;
-import static org.eclipse.aether.repository.RepositoryPolicy.UPDATE_POLICY_DAILY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MavenRepoInitializerTest {
     private static Mirror mirrorA;
@@ -140,7 +139,7 @@ class MavenRepoInitializerTest {
         assertNotNull(repos.get(0).getMirroredRepositories());
 
         final RemoteRepository centralRepo = repos.get(repos.size() - 1);
-        assertEquals("mirror-A", centralRepo.getId(),"Central repo must be substitute by mirror");
+        assertEquals("mirror-A", centralRepo.getId(), "Central repo must be substitute by mirror");
         assertNotNull(centralRepo.getProxy());
         assertEquals(3, centralRepo.getMirroredRepositories().size());
         final List<String> mirrored = Arrays.asList("central", "jboss-public-repository", "spring-public-repository");

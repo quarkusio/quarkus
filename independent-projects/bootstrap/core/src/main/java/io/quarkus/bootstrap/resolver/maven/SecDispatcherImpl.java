@@ -21,7 +21,7 @@ public class SecDispatcherImpl implements SecDispatcher {
 
     public static final char ATTR_START = '[';
 
-    public static final char ATTR_STOP  = ']';
+    public static final char ATTR_STOP = ']';
 
     /**
      * DefaultHandler
@@ -52,118 +52,104 @@ public class SecDispatcherImpl implements SecDispatcher {
     }
 
     // ---------------------------------------------------------------
-    public String decrypt( String str )
-        throws SecDispatcherException
-    {
-        if( ! isEncryptedString( str ) )
+    public String decrypt(String str)
+            throws SecDispatcherException {
+        if (!isEncryptedString(str))
             return str;
 
         String bare = null;
 
-        try
-        {
-            bare = _cipher.unDecorate( str );
-        }
-        catch ( PlexusCipherException e1 )
-        {
-            throw new SecDispatcherException( e1 );
+        try {
+            bare = _cipher.unDecorate(str);
+        } catch (PlexusCipherException e1) {
+            throw new SecDispatcherException(e1);
         }
 
-        try
-        {
-            Map attr = stripAttributes( bare );
+        try {
+            Map attr = stripAttributes(bare);
 
             String res = null;
 
             SettingsSecurity sec = getSec();
 
-            if( attr == null || attr.get( "type" ) == null )
-            {
-                String master = getMaster( sec );
+            if (attr == null || attr.get("type") == null) {
+                String master = getMaster(sec);
 
-                res = _cipher.decrypt( bare, master );
-            }
-            else
-            {
-                String type = (String) attr.get( TYPE_ATTR );
+                res = _cipher.decrypt(bare, master);
+            } else {
+                String type = (String) attr.get(TYPE_ATTR);
 
-                if( _decryptors == null )
-                    throw new SecDispatcherException( "plexus container did not supply any required dispatchers - cannot lookup "+type );
+                if (_decryptors == null)
+                    throw new SecDispatcherException(
+                            "plexus container did not supply any required dispatchers - cannot lookup " + type);
 
-                Map conf = SecUtil.getConfig( sec, type );
+                Map conf = SecUtil.getConfig(sec, type);
 
-                PasswordDecryptor dispatcher = (PasswordDecryptor) _decryptors.get( type );
+                PasswordDecryptor dispatcher = (PasswordDecryptor) _decryptors.get(type);
 
-                if( dispatcher == null )
-                    throw new SecDispatcherException( "no dispatcher for hint "+type );
+                if (dispatcher == null)
+                    throw new SecDispatcherException("no dispatcher for hint " + type);
 
-                String pass = strip( bare );
+                String pass = strip(bare);
 
-                return dispatcher.decrypt( pass, attr, conf );
+                return dispatcher.decrypt(pass, attr, conf);
             }
             return res;
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             throw new SecDispatcherException(e);
         }
     }
 
-    private String strip( String str )
-    {
-        int pos = str.indexOf( ATTR_STOP );
+    private String strip(String str) {
+        int pos = str.indexOf(ATTR_STOP);
 
-        if( pos == str.length() )
+        if (pos == str.length())
             return null;
 
-        if( pos != -1 )
-            return str.substring( pos+1 );
+        if (pos != -1)
+            return str.substring(pos + 1);
 
         return str;
     }
 
     @SuppressWarnings("unchecked")
-    private Map stripAttributes( String str )
-    {
-        int start = str.indexOf( ATTR_START );
-        int stop = str.indexOf( ATTR_STOP );
-        if ( start != -1 && stop != -1 && stop > start )
-        {
-            if( stop == start+1 )
+    private Map stripAttributes(String str) {
+        int start = str.indexOf(ATTR_START);
+        int stop = str.indexOf(ATTR_STOP);
+        if (start != -1 && stop != -1 && stop > start) {
+            if (stop == start + 1)
                 return null;
 
-            String attrs = str.substring( start+1, stop ).trim();
+            String attrs = str.substring(start + 1, stop).trim();
 
-            if( attrs == null || attrs.length() < 1 )
+            if (attrs == null || attrs.length() < 1)
                 return null;
 
             Map res = null;
 
-            StringTokenizer st = new StringTokenizer( attrs, ", " );
+            StringTokenizer st = new StringTokenizer(attrs, ", ");
 
-            while( st.hasMoreTokens() )
-            {
-                if( res == null )
-                    res = new HashMap( st.countTokens() );
+            while (st.hasMoreTokens()) {
+                if (res == null)
+                    res = new HashMap(st.countTokens());
 
                 String pair = st.nextToken();
 
-                int pos = pair.indexOf( '=' );
+                int pos = pair.indexOf('=');
 
-                if( pos == -1 )
+                if (pos == -1)
                     continue;
 
-                String key = pair.substring( 0, pos ).trim();
+                String key = pair.substring(0, pos).trim();
 
-                if( pos == pair.length() )
-                {
-                    res.put( key, null );
+                if (pos == pair.length()) {
+                    res.put(key, null);
                     continue;
                 }
 
-                String val = pair.substring( pos+1 );
+                String val = pair.substring(pos + 1);
 
-                res.put(  key, val.trim() );
+                res.put(key, val.trim());
             }
 
             return res;
@@ -171,59 +157,53 @@ public class SecDispatcherImpl implements SecDispatcher {
 
         return null;
     }
+
     //----------------------------------------------------------------------------
-    private boolean isEncryptedString( String str )
-    {
-        if( str == null )
+    private boolean isEncryptedString(String str) {
+        if (str == null)
             return false;
 
-        return _cipher.isEncryptedString( str );
+        return _cipher.isEncryptedString(str);
     }
+
     //----------------------------------------------------------------------------
     private SettingsSecurity getSec()
-    throws SecDispatcherException
-    {
-        String location = System.getProperty( SYSTEM_PROPERTY_SEC_LOCATION
-                                              , getConfigurationFile()
-                                            );
-        String realLocation = location.charAt( 0 ) == '~'
-            ? System.getProperty( "user.home" ) + location.substring( 1 )
-            : location
-            ;
+            throws SecDispatcherException {
+        String location = System.getProperty(SYSTEM_PROPERTY_SEC_LOCATION, getConfigurationFile());
+        String realLocation = location.charAt(0) == '~'
+                ? System.getProperty("user.home") + location.substring(1)
+                : location;
 
-        SettingsSecurity sec = SecUtil.read( realLocation, true );
+        SettingsSecurity sec = SecUtil.read(realLocation, true);
 
-        if( sec == null )
-            throw new SecDispatcherException( "cannot retrieve master password. Please check that "+realLocation+" exists and has data" );
+        if (sec == null)
+            throw new SecDispatcherException(
+                    "cannot retrieve master password. Please check that " + realLocation + " exists and has data");
 
         return sec;
     }
+
     //----------------------------------------------------------------------------
-    private String getMaster( SettingsSecurity sec )
-    throws SecDispatcherException
-    {
+    private String getMaster(SettingsSecurity sec)
+            throws SecDispatcherException {
         String master = sec.getMaster();
 
-        if( master == null )
-            throw new SecDispatcherException( "master password is not set" );
+        if (master == null)
+            throw new SecDispatcherException("master password is not set");
 
-        try
-        {
-            return _cipher.decryptDecorated( master, SYSTEM_PROPERTY_SEC_LOCATION );
-        }
-        catch ( PlexusCipherException e )
-        {
+        try {
+            return _cipher.decryptDecorated(master, SYSTEM_PROPERTY_SEC_LOCATION);
+        } catch (PlexusCipherException e) {
             throw new SecDispatcherException(e);
         }
     }
+
     //---------------------------------------------------------------
-    public String getConfigurationFile()
-    {
+    public String getConfigurationFile() {
         return _configurationFile;
     }
 
-    public void setConfigurationFile( String file )
-    {
+    public void setConfigurationFile(String file) {
         _configurationFile = file;
     }
 }

@@ -17,7 +17,7 @@ public interface MessageWriter {
     boolean isDebugEnabled();
 
     default void debug(String format, Object... args) {
-        if(!isDebugEnabled()) {
+        if (!isDebugEnabled()) {
             return;
         }
         debug(String.format(format, args));

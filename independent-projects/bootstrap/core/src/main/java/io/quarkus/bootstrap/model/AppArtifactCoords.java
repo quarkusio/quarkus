@@ -1,8 +1,7 @@
 package io.quarkus.bootstrap.model;
 
-import java.io.Serializable;
-
 import io.quarkus.bootstrap.BootstrapConstants;
+import java.io.Serializable;
 
 /**
  * GroupId, artifactId, classifier, type, version
@@ -20,7 +19,7 @@ public class AppArtifactCoords implements Serializable {
 
     protected static String[] split(String str, String[] parts) {
         final int versionSep = str.lastIndexOf(':');
-        if(versionSep <= 0 || versionSep == str.length() - 1) {
+        if (versionSep <= 0 || versionSep == str.length() - 1) {
             throw new IllegalArgumentException("One of type, version or separating them ':' is missing from '" + str + "'");
         }
         parts[4] = str.substring(versionSep + 1);
@@ -142,7 +141,7 @@ public class AppArtifactCoords implements Serializable {
 
     protected StringBuilder append(final StringBuilder buf) {
         buf.append(groupId).append(':').append(artifactId).append(':');
-        if(!classifier.isEmpty()) {
+        if (!classifier.isEmpty()) {
             buf.append(classifier);
         }
         return buf.append(':').append(type).append(':').append(version);

@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.maven.model.Dependency;
 
 /**
@@ -47,8 +46,6 @@ public class Extension {
 
     private String simplifiedArtifactId;
     private static final Pattern QUARKUS_PREFIX = Pattern.compile("^quarkus-");
-
-
 
     private Map<String, Object> metadata = new HashMap<String, Object>(3);
 
@@ -298,29 +295,29 @@ public class Extension {
 
     public boolean isUnlisted() {
         Object val = getMetadata().get(MD_UNLISTED);
-        if (val==null) {
+        if (val == null) {
             return false;
         } else if (val instanceof Boolean) {
             return ((Boolean) val).booleanValue();
         } else if (val instanceof String) {
-            return Boolean.valueOf((String)val);
+            return Boolean.valueOf((String) val);
         }
-        
+
         return false;
-     }
+    }
 
     public void setUnlisted(boolean unlisted) {
         getMetadata().put(MD_UNLISTED, Boolean.valueOf(unlisted));
     }
 
     public Extension addMetadata(String key, Object value) {
-       getMetadata().put(key,value);
-       return this;
-        
+        getMetadata().put(key, value);
+        return this;
+
     }
-    
+
     public Extension removeMetadata(String key) {
         getMetadata().remove(key);
         return this;
-     }
+    }
 }

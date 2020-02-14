@@ -11,7 +11,6 @@ public interface RunningQuarkusApplication extends AutoCloseable {
 
     <T> Optional<T> getConfigValue(String key, Class<T> type);
 
-
     Iterable<String> getConfigKeys();
 
     /**

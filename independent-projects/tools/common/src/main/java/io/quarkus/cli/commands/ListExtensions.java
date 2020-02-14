@@ -1,5 +1,11 @@
 package io.quarkus.cli.commands;
 
+import io.quarkus.cli.commands.file.BuildFile;
+import io.quarkus.cli.commands.file.GradleBuildFile;
+import io.quarkus.cli.commands.legacy.LegacyQuarkusCommandInvocation;
+import io.quarkus.dependencies.Extension;
+import io.quarkus.platform.tools.ToolsConstants;
+import io.quarkus.platform.tools.ToolsUtils;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -9,15 +15,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.maven.model.Dependency;
-
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.file.GradleBuildFile;
-import io.quarkus.cli.commands.legacy.LegacyQuarkusCommandInvocation;
-import io.quarkus.dependencies.Extension;
-import io.quarkus.platform.tools.ToolsConstants;
-import io.quarkus.platform.tools.ToolsUtils;
 
 public class ListExtensions implements QuarkusCommand {
     public static final String NAME = "list-extensions";
@@ -93,20 +91,19 @@ public class ListExtensions implements QuarkusCommand {
             loadedExtensions.forEach(extension -> display(extension, installed, all, currentFormatter));
 
             if ("concise".equalsIgnoreCase(format)) {
-            	if (this.buildFile instanceof GradleBuildFile) {
-            		System.out.println("\nTo get more information, append --format=full to your command line.");
-            	}
-            	else {
-            		System.out.println("\nTo get more information, append -Dquarkus.extension.format=full to your command line.");
-            	}
+                if (this.buildFile instanceof GradleBuildFile) {
+                    System.out.println("\nTo get more information, append --format=full to your command line.");
+                } else {
+                    System.out
+                            .println("\nTo get more information, append -Dquarkus.extension.format=full to your command line.");
+                }
             }
 
             if (this.buildFile instanceof GradleBuildFile) {
-            	System.out.println("\nAdd an extension to your project by adding the dependency to your " +
+                System.out.println("\nAdd an extension to your project by adding the dependency to your " +
                         "build.gradle or use `./gradlew addExtension --extensions=\"artifactId\"`");
-            }
-            else {
-            	System.out.println("\nAdd an extension to your project by adding the dependency to your " +
+            } else {
+                System.out.println("\nAdd an extension to your project by adding the dependency to your " +
                         "pom.xml or use `./mvnw quarkus:add-extension -Dextensions=\"artifactId\"`");
             }
         }
@@ -165,7 +162,7 @@ public class ListExtensions implements QuarkusCommand {
 
         String[] result = new String[] { label, extension.getName(), extension.getArtifactId(), version, extension.getGuide() };
 
-        for(int i=0;i<result.length;i++) {
+        for (int i = 0; i < result.length; i++) {
             result[i] = Objects.toString(result[i], "");
         }
 

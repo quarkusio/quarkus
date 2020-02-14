@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.resolver.maven.options;
 
+import io.quarkus.bootstrap.util.PropertyUtils;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -16,8 +17,6 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import io.quarkus.bootstrap.util.PropertyUtils;
 
 /**
  * This class resolves relevant Maven command line options in case it's called
@@ -112,14 +111,14 @@ public class BootstrapMavenOptions {
     }
 
     public List<String> getActiveProfileIds() {
-        if(activeProfileIds == null) {
+        if (activeProfileIds == null) {
             parseProfileArgs();
         }
         return activeProfileIds;
     }
 
     public List<String> getInactiveProfileIds() {
-        if(inactiveProfileIds == null) {
+        if (inactiveProfileIds == null) {
             parseProfileArgs();
         }
         return inactiveProfileIds;

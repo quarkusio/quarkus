@@ -1,17 +1,5 @@
 package io.quarkus.bootstrap.app;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Supplier;
-
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Exclusion;
-import org.apache.maven.model.Model;
-import org.jboss.logging.Logger;
-
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
@@ -19,6 +7,15 @@ import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Exclusion;
+import org.apache.maven.model.Model;
+import org.jboss.logging.Logger;
 
 public class CurationResult {
 
@@ -36,7 +33,7 @@ public class CurationResult {
     }
 
     public CurationResult(AppModel appModel, List<AppDependency> updatedDependencies, boolean fromState,
-                          AppArtifact appArtifact, AppArtifact stateArtifact) {
+            AppArtifact appArtifact, AppArtifact stateArtifact) {
         this.appModel = appModel;
         this.updatedDependencies = updatedDependencies;
         this.fromState = fromState;

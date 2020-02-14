@@ -1,11 +1,10 @@
 package io.quarkus.platform.descriptor.loader.json;
 
-import java.io.InputStream;
-import java.util.function.Function;
-
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
 import io.quarkus.platform.tools.DefaultMessageWriter;
 import io.quarkus.platform.tools.MessageWriter;
+import java.io.InputStream;
+import java.util.function.Function;
 
 public abstract class QuarkusJsonPlatformDescriptorLoaderContext implements QuarkusPlatformDescriptorLoaderContext {
 
@@ -21,7 +20,8 @@ public abstract class QuarkusJsonPlatformDescriptorLoaderContext implements Quar
         this(artifactResolver, new ClassPathResourceLoader(Thread.currentThread().getContextClassLoader()), log);
     }
 
-    public QuarkusJsonPlatformDescriptorLoaderContext(ArtifactResolver artifactResolver, ResourceLoader resourceLoader, MessageWriter log) {
+    public QuarkusJsonPlatformDescriptorLoaderContext(ArtifactResolver artifactResolver, ResourceLoader resourceLoader,
+            MessageWriter log) {
         this.log = log;
         this.artifactResolver = artifactResolver;
         this.resourceLoader = resourceLoader;

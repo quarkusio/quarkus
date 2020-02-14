@@ -3,17 +3,15 @@
  */
 package io.quarkus.bootstrap.resolver.maven;
 
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.resolution.ArtifactRequest;
-
-import io.quarkus.bootstrap.model.AppArtifactKey;
 
 public class BuildDependencyGraphVisitor {
 
@@ -32,11 +30,10 @@ public class BuildDependencyGraphVisitor {
     private final List<DependencyNode> deploymentDepNodes = new ArrayList<>();
     private final List<ArtifactRequest> requests = new ArrayList<>();
 
-
     public BuildDependencyGraphVisitor(Set<AppArtifactKey> appDeps, Consumer<String> buildTreeConsumer) {
         this.appDeps = appDeps;
         this.buildTreeConsumer = buildTreeConsumer;
-        if(buildTreeConsumer == null) {
+        if (buildTreeConsumer == null) {
             buf = null;
             depth = null;
         } else {
@@ -54,7 +51,7 @@ public class BuildDependencyGraphVisitor {
     }
 
     public void visit(DependencyNode node) {
-        if(depth != null) {
+        if (depth != null) {
             buf.setLength(0);
             if (!depth.isEmpty()) {
                 for (int i = 0; i < depth.size() - 1; ++i) {
@@ -74,9 +71,9 @@ public class BuildDependencyGraphVisitor {
                 }
             }
             buf.append(node.getArtifact());
-            if(!depth.isEmpty()) {
+            if (!depth.isEmpty()) {
                 buf.append(" (").append(node.getDependency().getScope());
-                if(node.getDependency().isOptional()) {
+                if (node.getDependency().isOptional()) {
                     buf.append(" optional");
                 }
                 buf.append(')');
@@ -85,30 +82,30 @@ public class BuildDependencyGraphVisitor {
         }
         visitEnter(node);
         final List<DependencyNode> children = node.getChildren();
-        if(!children.isEmpty()) {
+        if (!children.isEmpty()) {
             final int childrenTotal = children.size();
-            if(childrenTotal == 1) {
-                if(depth != null) {
+            if (childrenTotal == 1) {
+                if (depth != null) {
                     depth.add(false);
                 }
                 visit(children.get(0));
             } else {
-                if(depth != null) {
+                if (depth != null) {
                     depth.add(true);
                 }
                 int i = 0;
-                while(true) {
+                while (true) {
                     visit(children.get(i++));
-                    if(i < childrenTotal - 1) {
+                    if (i < childrenTotal - 1) {
                         continue;
-                    } else if(i == childrenTotal) {
+                    } else if (i == childrenTotal) {
                         break;
-                    } else if(depth != null) {
+                    } else if (depth != null) {
                         depth.set(depth.size() - 1, false);
                     }
                 }
             }
-            if(depth != null) {
+            if (depth != null) {
                 depth.remove(depth.size() - 1);
             }
         }
@@ -129,7 +126,7 @@ public class BuildDependencyGraphVisitor {
 
     private void visitLeave(DependencyNode node) {
         final Dependency dep = node.getDependency();
-        if(dep == null) {
+        if (dep == null) {
             return;
         }
         final Artifact artifact = dep.getArtifact();

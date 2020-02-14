@@ -12,8 +12,6 @@ import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.Map;
 import java.util.Set;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 
 public class MemoryClassPathElement extends AbstractClassPathElement {
 
@@ -80,7 +78,6 @@ public class MemoryClassPathElement extends AbstractClassPathElement {
         ProtectionDomain protectionDomain = new ProtectionDomain(codesource, null, classLoader, null);
         return protectionDomain;
     }
-
 
     @Override
     public void close() throws IOException {

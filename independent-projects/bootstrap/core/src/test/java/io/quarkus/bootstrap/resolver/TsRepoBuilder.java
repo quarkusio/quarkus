@@ -1,14 +1,12 @@
 package io.quarkus.bootstrap.resolver;
 
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
-
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 
 /**
  *
@@ -42,7 +40,7 @@ public class TsRepoBuilder {
 
     public void install(TsArtifact artifact, Path p) {
         final Path pomXml = workDir.resolve(artifact.getArtifactFileName() + ".pom");
-        if(Files.exists(pomXml)) {
+        if (Files.exists(pomXml)) {
             // assume it's already installed
             return;
         }
@@ -52,8 +50,8 @@ public class TsRepoBuilder {
             error("Failed to persist pom.xml for " + artifact, e);
         }
         install(artifact.toPomArtifact().toAppArtifact(), pomXml);
-        if(p == null) {
-            switch(artifact.type) {
+        if (p == null) {
+            switch (artifact.type) {
                 case TsArtifact.TYPE_JAR:
                     try {
                         p = newJar()
@@ -67,7 +65,7 @@ public class TsRepoBuilder {
                     p = newTxt(artifact);
                     break;
                 case TsArtifact.TYPE_POM:
-                break;
+                    break;
                 default:
                     throw new IllegalStateException("Unsupported artifact type " + artifact.type);
             }
@@ -87,10 +85,10 @@ public class TsRepoBuilder {
 
     protected Path newTxt(TsArtifact artifact) {
         final Path tmpFile = workDir.resolve(artifact.getArtifactFileName());
-        if(Files.exists(tmpFile)) {
+        if (Files.exists(tmpFile)) {
             throw new IllegalStateException("File already exists " + tmpFile);
         }
-        try(BufferedWriter writer = Files.newBufferedWriter(tmpFile)) {
+        try (BufferedWriter writer = Files.newBufferedWriter(tmpFile)) {
             writer.write(tmpFile.getFileName().toString());
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create file " + tmpFile, e);

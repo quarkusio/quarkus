@@ -1,11 +1,10 @@
 package io.quarkus.cli.commands;
 
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.tools.MessageWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.tools.MessageWriter;
 
 public class QuarkusCommandInvocation extends ValueMap<QuarkusCommandInvocation> {
 
@@ -17,7 +16,8 @@ public class QuarkusCommandInvocation extends ValueMap<QuarkusCommandInvocation>
         this(platformDescr, log, new HashMap<>(), new Properties(System.getProperties()));
     }
 
-    public QuarkusCommandInvocation(QuarkusPlatformDescriptor platformDescr, MessageWriter log, Map<String, Object> values, Properties props) {
+    public QuarkusCommandInvocation(QuarkusPlatformDescriptor platformDescr, MessageWriter log, Map<String, Object> values,
+            Properties props) {
         super(values);
         this.platformDescr = platformDescr;
         this.log = log;

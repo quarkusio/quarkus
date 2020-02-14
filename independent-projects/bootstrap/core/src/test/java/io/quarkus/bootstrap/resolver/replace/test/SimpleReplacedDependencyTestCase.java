@@ -20,8 +20,9 @@ public class SimpleReplacedDependencyTestCase extends CollectDependenciesBase {
         installAsDep(
                 extension,
                 newJar().addEntry(
-                        PropsBuilder.build(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment.toString()), BootstrapConstants.DESCRIPTOR_PATH)
-                .getPath(workDir),
+                        PropsBuilder.build(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT, deployment.toString()),
+                        BootstrapConstants.DESCRIPTOR_PATH)
+                        .getPath(workDir),
                 true);
 
         install(deployment, true);

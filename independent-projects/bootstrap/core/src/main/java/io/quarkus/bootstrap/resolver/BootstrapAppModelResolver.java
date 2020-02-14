@@ -1,5 +1,14 @@
 package io.quarkus.bootstrap.resolver;
 
+import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.resolver.maven.BuildDependencyGraphVisitor;
+import io.quarkus.bootstrap.resolver.maven.DeploymentInjectingDependencyVisitor;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.SimpleDependencyGraphTransformationContext;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,16 +33,6 @@ import org.eclipse.aether.util.graph.transformer.ConflictIdSorter;
 import org.eclipse.aether.util.graph.transformer.ConflictMarker;
 import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 import org.eclipse.aether.version.Version;
-
-import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.model.AppModel;
-import io.quarkus.bootstrap.resolver.maven.BuildDependencyGraphVisitor;
-import io.quarkus.bootstrap.resolver.maven.DeploymentInjectingDependencyVisitor;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.SimpleDependencyGraphTransformationContext;
 
 /**
  *
@@ -194,7 +193,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         }
 
         final List<RemoteRepository> repos = mvn.aggregateRepositories(managedRepos,
-                    mvn.newResolutionRepositories(mvn.resolveDescriptor(toAetherArtifact(appArtifact)).getRepositories()));
+                mvn.newResolutionRepositories(mvn.resolveDescriptor(toAetherArtifact(appArtifact)).getRepositories()));
 
         final DeploymentInjectingDependencyVisitor deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn,
                 managedDeps, repos, appBuilder);

@@ -12,13 +12,6 @@ import static io.quarkus.generators.ProjectGenerator.PROJECT_GROUP_ID;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_VERSION;
 import static io.quarkus.generators.ProjectGenerator.QUARKUS_VERSION;
 import static io.quarkus.generators.ProjectGenerator.SOURCE_TYPE;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-
-import org.apache.maven.model.Model;
 
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.file.MavenBuildFile;
@@ -29,6 +22,12 @@ import io.quarkus.generators.ProjectGeneratorRegistry;
 import io.quarkus.generators.SourceType;
 import io.quarkus.generators.rest.BasicRestProjectGenerator;
 import io.quarkus.platform.tools.ToolsUtils;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
+import org.apache.maven.model.Model;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>

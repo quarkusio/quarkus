@@ -39,16 +39,20 @@ public class MojoUtils {
     public static final String TEMPLATE_PROPERTY_QUARKUS_VERSION_VALUE = toPropExpr(TEMPLATE_PROPERTY_QUARKUS_VERSION_NAME);
 
     public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_GROUP_ID_NAME = "quarkus.platform.group-id";
-    public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_GROUP_ID_VALUE = toPropExpr(TEMPLATE_PROPERTY_QUARKUS_PLATFORM_GROUP_ID_NAME);
+    public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_GROUP_ID_VALUE = toPropExpr(
+            TEMPLATE_PROPERTY_QUARKUS_PLATFORM_GROUP_ID_NAME);
 
     public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_NAME = "quarkus.platform.artifact-id";
-    public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE = toPropExpr(TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_NAME);
+    public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_VALUE = toPropExpr(
+            TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_NAME);
 
     public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME = "quarkus.platform.version";
-    public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE = toPropExpr(TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME);
+    public static final String TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_VALUE = toPropExpr(
+            TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME);
 
     public static final String TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_NAME = "quarkus-plugin.version";
-    public static final String TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE = toPropExpr(TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_NAME);
+    public static final String TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE = toPropExpr(
+            TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_NAME);
 
     private static String toPropExpr(String name) {
         return "${" + name + "}";

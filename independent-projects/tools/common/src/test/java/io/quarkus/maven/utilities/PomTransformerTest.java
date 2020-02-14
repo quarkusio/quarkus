@@ -1,10 +1,11 @@
 package io.quarkus.maven.utilities;
 
+import io.quarkus.maven.utilities.PomTransformer.Gavtcs;
+import io.quarkus.maven.utilities.PomTransformer.Transformation;
 import java.io.StringReader;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
-
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -13,13 +14,9 @@ import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Node;
-
-import io.quarkus.maven.utilities.PomTransformer.Gavtcs;
-import io.quarkus.maven.utilities.PomTransformer.Transformation;
 
 public class PomTransformerTest {
 

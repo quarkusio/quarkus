@@ -1,23 +1,5 @@
 package io.quarkus.bootstrap;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Model;
-import org.jboss.logging.Logger;
-
 import io.quarkus.bootstrap.app.CurationResult;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactCoords;
@@ -37,6 +19,23 @@ import io.quarkus.bootstrap.resolver.update.VersionUpdate;
 import io.quarkus.bootstrap.resolver.update.VersionUpdateNumber;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.bootstrap.util.ZipUtils;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Model;
+import org.jboss.logging.Logger;
 
 /**
  * The factory that creates the application dependency model.
@@ -163,7 +162,7 @@ public class BootstrapAppModelFactory {
                     }
                     final LocalProject localProject = isWorkspaceDiscoveryEnabled()
                             ? LocalProject.loadWorkspace(Paths.get("").normalize().toAbsolutePath(), false)
-                                    : null;
+                            : null;
                     if (localProject != null) {
                         mvnBuilder.setWorkspace(localProject.getWorkspace());
                         if (managingProject == null) {
@@ -185,7 +184,7 @@ public class BootstrapAppModelFactory {
                 final MavenArtifactResolver.Builder builder = MavenArtifactResolver.builder();
                 final LocalProject localProject = isWorkspaceDiscoveryEnabled()
                         ? loadAppClassesWorkspace()
-                                : null;
+                        : null;
                 if (localProject != null) {
                     builder.setWorkspace(localProject.getWorkspace());
                 }
@@ -231,19 +230,19 @@ public class BootstrapAppModelFactory {
 
         final LocalProject localProject = isWorkspaceDiscoveryEnabled() || enableClasspathCache
                 ? loadAppClassesWorkspace()
-                        : LocalProject.load(appClasses, false);
+                : LocalProject.load(appClasses, false);
         LocalWorkspace workspace = null;
         AppArtifact appArtifact = this.appArtifact;
         if (localProject == null) {
             log.warn("Unable to locate maven project, falling back to classpath discovery");
-            if(appArtifact == null) {
+            if (appArtifact == null) {
                 throw new BootstrapException("Failed to determine the Maven artifact associated with the application");
             }
         } else {
             workspace = localProject.getWorkspace();
-            if(appArtifact == null) {
+            if (appArtifact == null) {
                 appArtifact = localProject.getAppArtifact();
-            } else if(!appArtifact.equals(localProject.getAppArtifact())) {
+            } else if (!appArtifact.equals(localProject.getAppArtifact())) {
                 log.warn("Provided application artifact attributes " + appArtifact +
                         " do not match the actual project loaded from the disk " + localProject.getAppArtifact());
             }

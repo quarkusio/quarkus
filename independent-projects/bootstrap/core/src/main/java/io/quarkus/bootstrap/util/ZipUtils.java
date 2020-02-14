@@ -65,20 +65,22 @@ public class ZipUtils {
                 new SimpleFileVisitor<Path>() {
                     @Override
                     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                        throws IOException {
+                            throws IOException {
                         final Path targetDir = target.resolve(source.relativize(dir).toString());
                         try {
                             Files.copy(dir, targetDir);
                         } catch (FileAlreadyExistsException e) {
-                             if (!Files.isDirectory(targetDir))
-                                 throw e;
+                            if (!Files.isDirectory(targetDir))
+                                throw e;
                         }
                         return FileVisitResult.CONTINUE;
                     }
+
                     @Override
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                        throws IOException {
-                        Files.copy(file, target.resolve(source.relativize(file).toString()), StandardCopyOption.REPLACE_EXISTING);
+                            throws IOException {
+                        Files.copy(file, target.resolve(source.relativize(file).toString()),
+                                StandardCopyOption.REPLACE_EXISTING);
                         return FileVisitResult.CONTINUE;
                     }
                 });
@@ -86,9 +88,9 @@ public class ZipUtils {
 
     public static void zip(Path src, Path zipFile) throws IOException {
         try (FileSystem zipfs = newZip(zipFile)) {
-            if(Files.isDirectory(src)) {
+            if (Files.isDirectory(src)) {
                 try (DirectoryStream<Path> stream = Files.newDirectoryStream(src)) {
-                    for(Path srcPath : stream) {
+                    for (Path srcPath : stream) {
                         copyToZip(src, srcPath, zipfs);
                     }
                 }
@@ -119,21 +121,23 @@ public class ZipUtils {
                 new SimpleFileVisitor<Path>() {
                     @Override
                     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                        throws IOException {
+                            throws IOException {
                         final Path targetDir = zipfs.getPath(srcRoot.relativize(dir).toString());
                         try {
                             Files.copy(dir, targetDir);
                         } catch (FileAlreadyExistsException e) {
-                             if (!Files.isDirectory(targetDir)) {
-                                 throw e;
-                             }
+                            if (!Files.isDirectory(targetDir)) {
+                                throw e;
+                            }
                         }
                         return FileVisitResult.CONTINUE;
                     }
+
                     @Override
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                        throws IOException {
-                        Files.copy(file, zipfs.getPath(srcRoot.relativize(file).toString()), StandardCopyOption.REPLACE_EXISTING);
+                            throws IOException {
+                        Files.copy(file, zipfs.getPath(srcRoot.relativize(file).toString()),
+                                StandardCopyOption.REPLACE_EXISTING);
                         return FileVisitResult.CONTINUE;
                     }
                 });
@@ -142,10 +146,11 @@ public class ZipUtils {
     /**
      * This call is not thread safe, a single of FileSystem can be created for the
      * profided uri until it is closed.
+     * 
      * @param uri The uri to the zip file.
      * @param env Env map.
      * @return A new FileSystem.
-     * @throws IOException  in case of a failure
+     * @throws IOException in case of a failure
      */
     public static FileSystem newFileSystem(URI uri, Map<String, ?> env) throws IOException {
         // If Multi threading required, logic should be added to wrap this fs
@@ -165,22 +170,23 @@ public class ZipUtils {
 
     /**
      * This call is thread safe, a new FS is created for each invocation.
+     * 
      * @param path The zip file.
      * @return A new FileSystem instance
-     * @throws IOException  in case of a failure
+     * @throws IOException in case of a failure
      */
-     public static FileSystem newFileSystem(final Path path) throws IOException {
-         try {
-             return FileSystems.newFileSystem(path, (ClassLoader) null);
-         } catch (IOException | ZipError ioe) {
-             // TODO: (at a later date) Get rid of the ZipError catching (and instead only catch IOException)
-             //  since it's a JDK bug which threw the undeclared ZipError instead of an IOException.
-             //  Java 9 fixes it https://bugs.openjdk.java.net/browse/JDK-8062754
+    public static FileSystem newFileSystem(final Path path) throws IOException {
+        try {
+            return FileSystems.newFileSystem(path, (ClassLoader) null);
+        } catch (IOException | ZipError ioe) {
+            // TODO: (at a later date) Get rid of the ZipError catching (and instead only catch IOException)
+            //  since it's a JDK bug which threw the undeclared ZipError instead of an IOException.
+            //  Java 9 fixes it https://bugs.openjdk.java.net/browse/JDK-8062754
 
-             // include the path for which the filesystem creation failed
-             throw new IOException("Failed to create a new filesystem for " + path, ioe);
-         }
-     }
+            // include the path for which the filesystem creation failed
+            throw new IOException("Failed to create a new filesystem for " + path, ioe);
+        }
+    }
 
     /**
      * This is a hack to get past the <a href="https://bugs.openjdk.java.net/browse/JDK-8232879">JDK-8232879</a>
@@ -188,7 +194,7 @@ public class ZipUtils {
      * TODO: Get rid of this method as soon as JDK-8232879 gets fixed and released in a public version
      *
      * @param original The original outputstream which will be wrapped into a new outputstream
-     *                 that delegates to this one.
+     *        that delegates to this one.
      * @return
      */
     public static OutputStream wrapForJDK8232879(final OutputStream original) {

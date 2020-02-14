@@ -1,17 +1,15 @@
 package io.quarkus.bootstrap.resolver;
 
+import io.quarkus.bootstrap.model.AppArtifact;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Profile;
-
-import io.quarkus.bootstrap.model.AppArtifact;
 
 /**
  *
@@ -115,7 +113,7 @@ public class TsArtifact {
     }
 
     public TsArtifact addDependency(TsQuarkusExt dep) {
-        if(extDeps.isEmpty()) {
+        if (extDeps.isEmpty()) {
             extDeps = new ArrayList<>(1);
         }
         extDeps.add(dep);
@@ -123,7 +121,7 @@ public class TsArtifact {
     }
 
     public TsArtifact addDependency(TsDependency dep) {
-        if(deps.isEmpty()) {
+        if (deps.isEmpty()) {
             deps = new ArrayList<>();
         }
         deps.add(dep);
@@ -139,7 +137,7 @@ public class TsArtifact {
     }
 
     public TsArtifact addProfile(Profile profile) {
-        if(pomProfiles.isEmpty()) {
+        if (pomProfiles.isEmpty()) {
             pomProfiles = new ArrayList<>(1);
         }
         pomProfiles.add(profile);
@@ -147,18 +145,18 @@ public class TsArtifact {
     }
 
     public String getArtifactFileName() {
-        if(artifactId == null) {
+        if (artifactId == null) {
             throw new IllegalArgumentException("artifactId is missing");
         }
-        if(version == null) {
+        if (version == null) {
             throw new IllegalArgumentException("version is missing");
         }
-        if(type == null) {
+        if (type == null) {
             throw new IllegalArgumentException("type is missing");
         }
         final StringBuilder fileName = new StringBuilder();
         fileName.append(artifactId).append('-').append(version);
-        if(classifier != null && !classifier.isEmpty()) {
+        if (classifier != null && !classifier.isEmpty()) {
             fileName.append('-').append(classifier);
         }
         fileName.append('.').append(type);
@@ -178,11 +176,11 @@ public class TsArtifact {
         model.setPackaging(type);
         model.setVersion(version);
 
-        if(pomProps != null) {
+        if (pomProps != null) {
             model.setProperties(pomProps);
         }
 
-        if(!deps.isEmpty()) {
+        if (!deps.isEmpty()) {
             for (TsDependency dep : deps) {
                 model.addDependency(dep.toPomDependency());
             }
@@ -195,7 +193,7 @@ public class TsArtifact {
             }
         }
 
-        if(!pomProfiles.isEmpty()) {
+        if (!pomProfiles.isEmpty()) {
             model.setProfiles(pomProfiles);
         }
         return model;
@@ -211,15 +209,15 @@ public class TsArtifact {
      * @param repoBuilder
      */
     public void install(TsRepoBuilder repoBuilder) {
-        if(!deps.isEmpty()) {
-            for(TsDependency dep : deps) {
-                if(dep.artifact.getVersion() != null) {
+        if (!deps.isEmpty()) {
+            for (TsDependency dep : deps) {
+                if (dep.artifact.getVersion() != null) {
                     dep.artifact.install(repoBuilder);
                 }
             }
         }
-        if(!extDeps.isEmpty()) {
-            for(TsQuarkusExt ext : extDeps) {
+        if (!extDeps.isEmpty()) {
+            for (TsQuarkusExt ext : extDeps) {
                 ext.deployment.install(repoBuilder);
             }
         }
@@ -231,7 +229,7 @@ public class TsArtifact {
     }
 
     public void setPomProperty(String name, String value) {
-        if(pomProps == null) {
+        if (pomProps == null) {
             pomProps = new Properties();
         }
         pomProps.setProperty(name, value);
@@ -240,7 +238,8 @@ public class TsArtifact {
     @Override
     public String toString() {
         final StringBuilder buf = new StringBuilder(128);
-        buf.append(groupId).append(':').append(artifactId).append(':').append(classifier).append(':').append(type).append(':').append(version);
+        buf.append(groupId).append(':').append(artifactId).append(':').append(classifier).append(':').append(type).append(':')
+                .append(version);
         return buf.toString();
     }
 }

@@ -16,6 +16,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableMap;
+import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.cli.commands.PlatformAwareTestBase;
+import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.generators.SourceType;
+import io.quarkus.maven.utilities.MojoUtils;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.HashMap;
@@ -27,19 +34,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-
-import com.google.common.collect.ImmutableMap;
-
-import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.cli.commands.PlatformAwareTestBase;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.generators.SourceType;
-import io.quarkus.maven.utilities.MojoUtils;
 
 class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
 
@@ -100,7 +97,9 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
                 argThat(argument -> argument.contains("<groupId>org.example</groupId>")
                         && argument.contains("<artifactId>quarkus-app</artifactId")
                         && argument.contains("<version>0.0.1-SNAPSHOT</version>")
-                        && argument.contains("<" + MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME + ">" + getPluginVersion() + "</" + MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME + ">")));
+                        && argument.contains(
+                                "<" + MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME + ">" + getPluginVersion()
+                                        + "</" + MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_VERSION_NAME + ">")));
         verify(mockWriter, times(1)).write(eq("src/main/java/org/example/ExampleResource.java"),
                 argThat(argument -> argument.contains("@Path(\"/hello\")")));
         verify(mockWriter, times(1)).write(eq("src/test/java/org/example/ExampleResourceTest.java"), anyString());

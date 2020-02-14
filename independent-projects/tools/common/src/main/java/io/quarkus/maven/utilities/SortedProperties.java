@@ -9,8 +9,7 @@ class SortedProperties extends Properties {
     private static final long serialVersionUID = 1L;
 
     @Override
-    public Set<Object> keySet()
-    {
-       return new TreeSet<Object>(super.keySet());
+    public Set<Object> keySet() {
+        return new TreeSet<Object>(super.keySet());
     }
 }

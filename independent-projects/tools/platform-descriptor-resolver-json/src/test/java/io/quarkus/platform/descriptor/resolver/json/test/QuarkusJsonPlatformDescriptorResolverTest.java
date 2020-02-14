@@ -1,18 +1,11 @@
 package io.quarkus.platform.descriptor.resolver.json.test;
 
-import static io.quarkus.platform.tools.ToolsConstants.IO_QUARKUS;
-import static io.quarkus.platform.tools.ToolsConstants.QUARKUS_CORE_ARTIFACT_ID;
 import static io.quarkus.platform.tools.ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID;
 import static io.quarkus.platform.tools.ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID;
-
+import static io.quarkus.platform.tools.ToolsConstants.IO_QUARKUS;
+import static io.quarkus.platform.tools.ToolsConstants.QUARKUS_CORE_ARTIFACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-import java.nio.file.Path;
-
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.ResolverSetupCleanup;
@@ -24,6 +17,10 @@ import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescripto
 import io.quarkus.platform.tools.DefaultMessageWriter;
 import io.quarkus.platform.tools.MessageWriter;
 import io.quarkus.platform.tools.ToolsConstants;
+import java.nio.file.Path;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupCleanup {
 
@@ -34,7 +31,7 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
     @BeforeEach
     @Override
     public void setup() throws Exception {
-        if(workDir != null) {
+        if (workDir != null) {
             return;
         }
         super.setup();
@@ -49,7 +46,7 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
 
     @AfterAll
     public static void afterAll() throws Exception {
-        if(testDir != null) {
+        if (testDir != null) {
             IoUtils.recursiveDelete(testDir);
         }
     }
@@ -59,7 +56,8 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
         final TsArtifact quarkusCore = new TsArtifact(IO_QUARKUS, QUARKUS_CORE_ARTIFACT_ID, null, "jar", "1.0.0.CR50");
         install(quarkusCore, newJar().getPath(workDir));
 
-        final TsArtifact quarkusPlatformDescriptorJson = new TsArtifact(IO_QUARKUS, "quarkus-platform-descriptor-json", null, "jar", "1.0.0.CR50");
+        final TsArtifact quarkusPlatformDescriptorJson = new TsArtifact(IO_QUARKUS, "quarkus-platform-descriptor-json", null,
+                "jar", "1.0.0.CR50");
         install(quarkusPlatformDescriptorJson, newJar().getPath(workDir));
 
         // install a few universe versions with the default GA
@@ -71,8 +69,9 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
         TsArtifact universeBom = new TsArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, "other-universe", null, "pom", "1.0.0.CR80")
                 .addManagedDependency(new TsDependency(quarkusCore));
         install(universeBom);
-        final TsArtifact universeJson = new TsArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, "other-universe" + "-descriptor-json", null, "json", "1.0.0.CR80")
-                .setContent(new TestPlatformJsonDescriptorProvider(universeBom));
+        final TsArtifact universeJson = new TsArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, "other-universe" + "-descriptor-json",
+                null, "json", "1.0.0.CR80")
+                        .setContent(new TestPlatformJsonDescriptorProvider(universeBom));
         install(universeJson);
     }
 
@@ -92,14 +91,16 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
 
     @Test
     public void testResolveFromJsonVersion() throws Exception {
-        final QuarkusPlatformDescriptor platform = newResolver().resolveFromJson(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, "1.0.0.CR60");
+        final QuarkusPlatformDescriptor platform = newResolver().resolveFromJson(DEFAULT_PLATFORM_BOM_GROUP_ID,
+                DEFAULT_PLATFORM_BOM_ARTIFACT_ID, "1.0.0.CR60");
         assertDefaultPlatform(platform, "1.0.0.CR60");
         assertEquals("1.0.0.CR50", platform.getQuarkusVersion());
     }
 
     @Test
     public void testResolveFromJsonFile() throws Exception {
-        final Path jsonPath = resolver.resolve(new AppArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null, "json", "1.0.0.CR50"));
+        final Path jsonPath = resolver.resolve(
+                new AppArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null, "json", "1.0.0.CR50"));
         final QuarkusPlatformDescriptor platform = newResolver().resolveFromJson(jsonPath);
         assertDefaultPlatform(platform, "1.0.0.CR50");
         assertEquals("1.0.0.CR50", platform.getQuarkusVersion());
@@ -107,7 +108,8 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
 
     @Test
     public void testResolveFromBomWithDescriptorJsonPrefix() throws Exception {
-        final QuarkusPlatformDescriptor platform = newResolver().resolveFromBom(DEFAULT_PLATFORM_BOM_GROUP_ID, "other-universe", "1.0.0.CR80");
+        final QuarkusPlatformDescriptor platform = newResolver().resolveFromBom(DEFAULT_PLATFORM_BOM_GROUP_ID, "other-universe",
+                "1.0.0.CR80");
         assertNotNull(platform);
         assertEquals(ToolsConstants.IO_QUARKUS, platform.getBomGroupId());
         assertEquals("other-universe", platform.getBomArtifactId());
@@ -117,7 +119,8 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
 
     @Test
     public void testResolveFromJsonWithDescriptorJsonPrefix() throws Exception {
-        final QuarkusPlatformDescriptor platform = newResolver().resolveLatestFromJson(DEFAULT_PLATFORM_BOM_GROUP_ID, "other-universe" + "-descriptor-json", null);
+        final QuarkusPlatformDescriptor platform = newResolver().resolveLatestFromJson(DEFAULT_PLATFORM_BOM_GROUP_ID,
+                "other-universe" + "-descriptor-json", null);
         assertNotNull(platform);
         assertEquals(ToolsConstants.IO_QUARKUS, platform.getBomGroupId());
         assertEquals("other-universe", platform.getBomArtifactId());
@@ -127,38 +130,44 @@ public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupClea
 
     @Test
     public void testResolveFromLatestJson() throws Exception {
-        final QuarkusPlatformDescriptor platform = newResolver().resolveLatestFromJson(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null);
+        final QuarkusPlatformDescriptor platform = newResolver().resolveLatestFromJson(DEFAULT_PLATFORM_BOM_GROUP_ID,
+                DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null);
         assertDefaultPlatform(platform, "1.0.0.CR70");
         assertEquals("1.0.0.CR50", platform.getQuarkusVersion());
     }
 
     @Test
     public void testResolveFromLatestJsonWithRange() throws Exception {
-        final QuarkusPlatformDescriptor platform = newResolver().resolveLatestFromJson(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, "[0,1.0.0.CR60]");
+        final QuarkusPlatformDescriptor platform = newResolver().resolveLatestFromJson(DEFAULT_PLATFORM_BOM_GROUP_ID,
+                DEFAULT_PLATFORM_BOM_ARTIFACT_ID, "[0,1.0.0.CR60]");
         assertDefaultPlatform(platform, "1.0.0.CR60");
         assertEquals("1.0.0.CR50", platform.getQuarkusVersion());
     }
 
     @Test
     public void testResolveFromLatestBom() throws Exception {
-        final QuarkusPlatformDescriptor platform = newResolver().resolveLatestFromBom(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null);
+        final QuarkusPlatformDescriptor platform = newResolver().resolveLatestFromBom(DEFAULT_PLATFORM_BOM_GROUP_ID,
+                DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null);
         assertDefaultPlatform(platform, "1.0.0.CR70");
         assertEquals("1.0.0.CR50", platform.getQuarkusVersion());
     }
 
     @Test
     public void testResolveFromLatestBomWithRange() throws Exception {
-        final QuarkusPlatformDescriptor platform = newResolver().resolveLatestFromJson(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, "[0,1.0.0.CR60]");
+        final QuarkusPlatformDescriptor platform = newResolver().resolveLatestFromJson(DEFAULT_PLATFORM_BOM_GROUP_ID,
+                DEFAULT_PLATFORM_BOM_ARTIFACT_ID, "[0,1.0.0.CR60]");
         assertDefaultPlatform(platform, "1.0.0.CR60");
         assertEquals("1.0.0.CR50", platform.getQuarkusVersion());
     }
 
     private void installDefaultUniverse(final TsArtifact quarkusCore, String platformVersion) {
-        final TsArtifact universeBom = new TsArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null, "pom", platformVersion)
-                .addManagedDependency(new TsDependency(quarkusCore));
+        final TsArtifact universeBom = new TsArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null,
+                "pom", platformVersion)
+                        .addManagedDependency(new TsDependency(quarkusCore));
         install(universeBom);
-        final TsArtifact universeJson = new TsArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null, "json", platformVersion)
-                .setContent(new TestPlatformJsonDescriptorProvider(universeBom));
+        final TsArtifact universeJson = new TsArtifact(DEFAULT_PLATFORM_BOM_GROUP_ID, DEFAULT_PLATFORM_BOM_ARTIFACT_ID, null,
+                "json", platformVersion)
+                        .setContent(new TestPlatformJsonDescriptorProvider(universeBom));
         install(universeJson);
     }
 

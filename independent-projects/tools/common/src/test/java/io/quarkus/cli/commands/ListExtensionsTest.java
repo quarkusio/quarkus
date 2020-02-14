@@ -5,6 +5,10 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.quarkus.cli.commands.file.MavenBuildFile;
+import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -16,11 +20,6 @@ import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import io.quarkus.cli.commands.file.MavenBuildFile;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
 public class ListExtensionsTest extends PlatformAwareTestBase {
 
@@ -66,7 +65,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         FileProjectWriter writer = new FileProjectWriter(pomFile.getParentFile());
 
         new CreateProject(writer)
-        .groupId("org.acme")
+                .groupId("org.acme")
                 .artifactId("add-extension-test")
                 .version("0.0.1-SNAPSHOT")
                 .doCreateProject(context);
@@ -196,7 +195,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         FileProjectWriter writer = new FileProjectWriter(pomFile.getParentFile());
 
         new CreateProject(writer)
-        .groupId("org.acme")
+                .groupId("org.acme")
                 .artifactId("add-extension-test")
                 .version("0.0.1-SNAPSHOT")
                 .doCreateProject(context);

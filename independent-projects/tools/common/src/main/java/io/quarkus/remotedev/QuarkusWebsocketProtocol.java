@@ -4,7 +4,6 @@ import java.io.DataOutputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.zip.DeflaterOutputStream;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;

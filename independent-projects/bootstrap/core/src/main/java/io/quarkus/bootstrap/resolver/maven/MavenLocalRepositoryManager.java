@@ -1,9 +1,9 @@
 package io.quarkus.bootstrap.resolver.maven;
 
+import io.quarkus.bootstrap.util.IoUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.metadata.Metadata;
@@ -16,7 +16,6 @@ import org.eclipse.aether.repository.LocalMetadataResult;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.LocalRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
-import io.quarkus.bootstrap.util.IoUtils;
 
 /**
  *
@@ -77,15 +76,16 @@ public class MavenLocalRepositoryManager implements LocalRepositoryManager {
     @Override
     public LocalArtifactResult find(RepositorySystemSession session, LocalArtifactRequest request) {
         final LocalArtifactResult result = delegate.find(session, request);
-        if(result.isAvailable()) {
+        if (result.isAvailable()) {
             return result;
         }
         final Artifact artifact = request.getArtifact();
-        final Path userRepoPath = getLocalPath(userLocalRepo, artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier(), artifact.getExtension(), artifact.getVersion());
-        if(!Files.exists(userRepoPath)) {
+        final Path userRepoPath = getLocalPath(userLocalRepo, artifact.getGroupId(), artifact.getArtifactId(),
+                artifact.getClassifier(), artifact.getExtension(), artifact.getVersion());
+        if (!Files.exists(userRepoPath)) {
             return result;
         }
-        if(relinkResolvedArtifacts) {
+        if (relinkResolvedArtifacts) {
             final Path creatorRepoPath = getLocalPath(appCreatorRepo, artifact.getGroupId(), artifact.getArtifactId(),
                     artifact.getClassifier(), artifact.getExtension(), artifact.getVersion());
             try {
@@ -110,12 +110,13 @@ public class MavenLocalRepositoryManager implements LocalRepositoryManager {
     @Override
     public LocalMetadataResult find(RepositorySystemSession session, LocalMetadataRequest request) {
         final LocalMetadataResult result = delegate.find(session, request);
-        if(result.getFile() != null && result.getFile().exists()) {
+        if (result.getFile() != null && result.getFile().exists()) {
             return result;
         }
         final Metadata metadata = request.getMetadata();
-        final Path userRepoPath = getMetadataPath(userLocalRepo, metadata.getGroupId(), metadata.getArtifactId(), metadata.getType(), metadata.getVersion());
-        if(!Files.exists(userRepoPath)) {
+        final Path userRepoPath = getMetadataPath(userLocalRepo, metadata.getGroupId(), metadata.getArtifactId(),
+                metadata.getType(), metadata.getVersion());
+        if (!Files.exists(userRepoPath)) {
             return result;
         }
         if (relinkResolvedArtifacts) {
@@ -145,16 +146,17 @@ public class MavenLocalRepositoryManager implements LocalRepositoryManager {
         for (String part : groupParts) {
             p = p.resolve(part);
         }
-        if(artifactId != null) {
+        if (artifactId != null) {
             p = p.resolve(artifactId);
         }
-        if(version != null) {
+        if (version != null) {
             p = p.resolve(version);
         }
         return p.resolve("maven-metadata-local.xml");
     }
 
-    private Path getLocalPath(Path repoHome, String groupId, String artifactId, String classifier, String type, String version) {
+    private Path getLocalPath(Path repoHome, String groupId, String artifactId, String classifier, String type,
+            String version) {
         Path p = repoHome;
         final String[] groupParts = groupId.split("\\.");
         for (String part : groupParts) {

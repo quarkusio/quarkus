@@ -1,8 +1,9 @@
 package io.quarkus.bootstrap.resolver.maven;
 
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import java.io.File;
 import java.io.IOException;
-
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelBuildingException;
@@ -11,9 +12,6 @@ import org.apache.maven.model.building.ModelBuildingResult;
 import org.apache.maven.model.building.Result;
 import org.apache.maven.model.resolution.UnresolvableModelException;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
-
-import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 
 /**
  *
@@ -53,7 +51,7 @@ public class MavenModelBuilder implements ModelBuilder {
                 try {
                     requestModel = ModelUtils.readModel(request.getModelSource().getInputStream());
                     request.setRawModel(requestModel);
-                    if(request.getPomFile() != null) {
+                    if (request.getPomFile() != null) {
                         requestModel.setPomFile(request.getPomFile());
                     }
                 } catch (IOException e) {

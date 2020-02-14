@@ -1,11 +1,10 @@
 package io.quarkus.generators;
 
-import java.io.IOException;
-
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.file.GradleBuildFile;
 import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
+import java.io.IOException;
 
 /**
  * An enum of build tools, such as Maven and Gradle.
@@ -19,8 +18,8 @@ public enum BuildTool {
 
     /** Gradle build tool */
     GRADLE("\n# Gradle\n.gradle/\nbuild/",
-           "build",
-           new String[] { "build.gradle", "settings.gradle", "gradle.properties" });
+            "build",
+            new String[] { "build.gradle", "settings.gradle", "gradle.properties" });
 
     private final String gitIgnoreEntries;
 

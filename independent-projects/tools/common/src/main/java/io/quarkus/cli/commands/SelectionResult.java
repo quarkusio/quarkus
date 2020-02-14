@@ -1,10 +1,9 @@
 package io.quarkus.cli.commands;
 
+import io.quarkus.dependencies.Extension;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
-
-import io.quarkus.dependencies.Extension;
 
 public class SelectionResult implements Iterable<Extension> {
 

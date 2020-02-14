@@ -1,10 +1,9 @@
 package io.quarkus.cli.commands;
 
-import java.io.IOException;
-import java.util.Properties;
-
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
+import java.io.IOException;
+import java.util.Properties;
 
 public class PlatformAwareTestBase {
 
@@ -20,7 +19,7 @@ public class PlatformAwareTestBase {
     }
 
     private Properties getQuarkusProperties() {
-        if(quarkusProps == null) {
+        if (quarkusProps == null) {
             try {
                 quarkusProps = getPlatformDescriptor().loadResource("quarkus.properties", is -> {
                     final Properties props = new Properties();
@@ -39,7 +38,8 @@ public class PlatformAwareTestBase {
     }
 
     protected String getPluginArtifactId() {
-        return pluginArtifactId == null ? pluginArtifactId = getQuarkusProperties().getProperty("plugin-artifactId") : pluginArtifactId;
+        return pluginArtifactId == null ? pluginArtifactId = getQuarkusProperties().getProperty("plugin-artifactId")
+                : pluginArtifactId;
     }
 
     protected String getPluginVersion() {

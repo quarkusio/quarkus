@@ -68,6 +68,7 @@ labelPRBasedOnFilePath:
         - integration-tests/amazon-lambda-http-resteasy/**/*
     area/arc:
         - extensions/arc/**/*
+        - independent-projects/arc/**/*
     area/artemis:
         - extensions/artemis-core/**/*
         - extensions/artemis-jms/**/*
@@ -86,6 +87,10 @@ labelPRBasedOnFilePath:
         - .dependabot/config.yml
         - bom/**/*
         - build-parent/**/*
+    area/devtools:
+        - devtools/**/*
+        - independent-projects/bootstrap/**/*
+        - independent-projects/tools/**/*
     area/documentation:
         - docs/**/*
     area/gradle:
@@ -120,6 +125,11 @@ labelPRBasedOnFilePath:
         - integration-tests/infinispan-cache-jpa/**/*
         - integration-tests/infinispan-client/**/*
         - integration-tests/infinispan-embedded/**/*
+     area/infra-automation:
+        - .github/**/*
+        - azure-mvn-settings.xml
+        - azure-pipelines.yml
+        - ci-templates/**/*
     area/jaeger:
         - extensions/jaeger/**/*
     area/jaxb:

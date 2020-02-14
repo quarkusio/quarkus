@@ -254,10 +254,12 @@ labelPRBasedOnFilePath:
         - extensions/smallrye-reactive-messaging-kafka/**/*
         - extensions/smallrye-reactive-messaging-mqtt/**/*
     area/spring:
+        - extensions/spring-cloud-config-client/**/*
         - extensions/spring-data-jpa/**/*
         - extensions/spring-di/**/*
         - extensions/spring-security/**/*
         - extensions/spring-web/**/*
+        - integration-tests/spring-cloud-config-client/**/*
         - integration-tests/spring-data-jpa/**/*
         - integration-tests/spring-di/**/*
         - integration-tests/spring-web/**/*

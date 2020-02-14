@@ -1,0 +1,11 @@
+---
+name: "Quarkus Extension for Spring Cloud Config Client"
+metadata:
+  keywords:
+  - "spring-cloud-config-client"
+  - "spring"
+  - "config"
+  - "configuration"
+  categories:
+  - "compatibility"
+  status: "preview"

@@ -95,6 +95,7 @@
         <module>spring-data-jpa</module>
         <module>spring-security</module>
         <module>spring-boot-properties</module>
+        <module>spring-cloud-config-client</module>
 
         <!-- Security -->
         <module>security</module>

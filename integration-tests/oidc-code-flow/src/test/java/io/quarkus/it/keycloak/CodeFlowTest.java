@@ -20,13 +20,12 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
 
 import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-@QuarkusTest
+//@QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
 public class CodeFlowTest {
 

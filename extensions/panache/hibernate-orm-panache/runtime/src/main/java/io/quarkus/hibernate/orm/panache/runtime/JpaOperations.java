@@ -10,6 +10,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 import javax.persistence.PersistenceException;
 import javax.persistence.Query;
+import javax.persistence.criteria.CriteriaQuery;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
@@ -266,6 +267,13 @@ public class JpaOperations {
         Query jpaQuery = em.createQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
         bindParameters(jpaQuery, params);
         return new PanacheQueryImpl(em, jpaQuery, findQuery, params);
+    }
+    
+    @SuppressWarnings("rawtypes")
+    public static PanacheQuery<?> findAll(Class<?> entityClass, CriteriaQuery<?> criteriaQuery) {
+        String query = "FROM " + getEntityName(entityClass);
+        EntityManager em = getEntityManager();
+        return new PanacheQueryImpl(em, em.createQuery(criteriaQuery), query, null);
     }
 
     public static PanacheQuery<?> find(Class<?> entityClass, String query, Parameters params) {

@@ -241,7 +241,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
     public default PanacheQuery<Entity> find(String query, Sort sort, Parameters params) {
         throw JpaOperations.implementationInjectionMissing();
     }
-    
+
     /**
      * Find all entities of this type, in the given criteria.
      * 

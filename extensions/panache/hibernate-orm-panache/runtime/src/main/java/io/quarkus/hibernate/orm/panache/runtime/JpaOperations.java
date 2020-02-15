@@ -268,7 +268,7 @@ public class JpaOperations {
         bindParameters(jpaQuery, params);
         return new PanacheQueryImpl(em, jpaQuery, findQuery, params);
     }
-    
+
     @SuppressWarnings("rawtypes")
     public static PanacheQuery<?> findAll(Class<?> entityClass, CriteriaQuery<?> criteriaQuery) {
         String query = "FROM " + getEntityName(entityClass);

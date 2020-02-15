@@ -257,7 +257,7 @@ public abstract class PanacheEntityBase {
     public static <T extends PanacheEntityBase> PanacheQuery<T> findAll() {
         throw JpaOperations.implementationInjectionMissing();
     }
-    
+
     /**
      * Find all entities of this type, in the given criteria.
      *

@@ -18,6 +18,9 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class RestClientRecorder {
+
+    public static ResteasyProviderFactory providerFactory;
+
     public void setRestClientBuilderResolver() {
         RestClientBuilderResolver.setInstance(new BuilderResolver());
     }
@@ -58,6 +61,7 @@ public class RestClientRecorder {
         }
 
         RestClientBuilderImpl.setProviderFactory(clientProviderFactory);
+        providerFactory = clientProviderFactory;
     }
 
     private static void registerProviders(ResteasyProviderFactory clientProviderFactory, Set<String> providersToRegister,

@@ -59,6 +59,7 @@ public class QuarkusTestExtension
     private static ClassLoader originalCl;
     private static RunningQuarkusApplication runningQuarkusApplication;
     private static Path testClassLocation;
+    private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
 
@@ -156,6 +157,14 @@ public class QuarkusTestExtension
                 runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
                         .getDeclaredMethod("setup", boolean.class).invoke(null, nativeImageTest);
             }
+        } else {
+            if (firstException != null) {
+                Throwable throwable = firstException;
+                firstException = null;
+                throw new RuntimeException(throwable);
+            } else {
+                throw new TestAbortedException("Boot failed");
+            }
         }
     }
 
@@ -178,7 +187,7 @@ public class QuarkusTestExtension
                     e.addSuppressed(ex);
                 }
                 failedBoot = true;
-                throw e;
+                firstException = e;
             }
         }
         return state;
@@ -199,9 +208,6 @@ public class QuarkusTestExtension
         ensureStarted(context);
         if (runningQuarkusApplication != null) {
             setCCL(runningQuarkusApplication.getClassLoader());
-        }
-        if (failedBoot) {
-            throw new TestAbortedException("Not running test as boot failed");
         }
     }
 
@@ -233,7 +239,7 @@ public class QuarkusTestExtension
         }
         ExtensionState state = ensureStarted(extensionContext);
         if (failedBoot) {
-            return invocation.proceed();
+            return result;
         }
         initTestState(extensionContext, state);
         return result;

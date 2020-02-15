@@ -249,7 +249,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @return a new {@link PanacheQuery} instance to find all entities of this type.
      */
     @GenerateBridge
-    public default PanacheQuery<Entity> findAll(CriteriaQuery<Entity> criteriaQuery) {
+    public default PanacheQuery<Entity> findAll(CriteriaQuery<Entity> criteria) {
         throw JpaOperations.implementationInjectionMissing();
     }
 

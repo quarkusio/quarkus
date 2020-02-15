@@ -265,7 +265,7 @@ public abstract class PanacheEntityBase {
      * @return a new {@link PanacheQuery} instance to find all entities of this type.
      */
     @GenerateBridge
-    public static <T extends PanacheEntityBase> PanacheQuery<T> findAll(CriteriaQuery<T> criteriaQuery) {
+    public static <T extends PanacheEntityBase> PanacheQuery<T> findAll(CriteriaQuery<T> criteria) {
         throw JpaOperations.implementationInjectionMissing();
     }
 

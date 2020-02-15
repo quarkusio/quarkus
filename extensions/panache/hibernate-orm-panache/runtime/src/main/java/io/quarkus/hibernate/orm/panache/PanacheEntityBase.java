@@ -263,6 +263,7 @@ public abstract class PanacheEntityBase {
      *
      * @param criteria to use
      * @return a new {@link PanacheQuery} instance to find all entities of this type.
+     * @see #findAll()
      */
     @GenerateBridge
     public static <T extends PanacheEntityBase> PanacheQuery<T> findAll(CriteriaQuery<T> criteria) {

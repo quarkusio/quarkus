@@ -247,6 +247,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * 
      * @param criteria to use
      * @return a new {@link PanacheQuery} instance to find all entities of this type.
+     * @see #findAll()
      */
     @GenerateBridge
     public default PanacheQuery<Entity> findAll(CriteriaQuery<Entity> criteria) {

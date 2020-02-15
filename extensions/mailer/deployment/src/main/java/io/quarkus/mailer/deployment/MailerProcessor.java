@@ -30,6 +30,7 @@ import io.quarkus.mailer.runtime.MailConfig;
 import io.quarkus.mailer.runtime.MailConfigRecorder;
 import io.quarkus.mailer.runtime.MailTemplateProducer;
 import io.quarkus.mailer.runtime.MockMailboxImpl;
+import io.quarkus.mailer.runtime.MutinyMailerImpl;
 import io.quarkus.mailer.runtime.ReactiveMailerImpl;
 import io.quarkus.qute.deployment.QuteProcessor;
 import io.quarkus.qute.deployment.TemplatePathBuildItem;
@@ -49,8 +50,8 @@ public class MailerProcessor {
     @BuildStep
     AdditionalBeanBuildItem registerMailers() {
         return AdditionalBeanBuildItem.builder()
-                .addBeanClasses(ReactiveMailerImpl.class, BlockingMailerImpl.class, MockMailboxImpl.class,
-                        MailTemplateProducer.class)
+                .addBeanClasses(ReactiveMailerImpl.class, MutinyMailerImpl.class, BlockingMailerImpl.class,
+                        MockMailboxImpl.class, MailTemplateProducer.class)
                 .build();
     }
 
@@ -93,7 +94,7 @@ public class MailerProcessor {
             List<TemplatePathBuildItem> templatePaths, ValidationPhaseBuildItem validationPhase,
             BuildProducer<ValidationErrorBuildItem> validationErrors) {
 
-        Set<String> filePaths = new HashSet<String>();
+        Set<String> filePaths = new HashSet<>();
         for (TemplatePathBuildItem templatePath : templatePaths) {
             String filePath = templatePath.getPath();
             if (File.separatorChar != '/') {

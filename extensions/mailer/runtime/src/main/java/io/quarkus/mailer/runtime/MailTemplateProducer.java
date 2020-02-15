@@ -14,7 +14,6 @@ import javax.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.quarkus.mailer.MailTemplate;
-import io.quarkus.mailer.ReactiveMailer;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.api.VariantTemplate;
 
@@ -24,7 +23,7 @@ public class MailTemplateProducer {
     private static final Logger LOGGER = Logger.getLogger(MailTemplateProducer.class);
 
     @Inject
-    ReactiveMailer mailer;
+    MutinyMailerImpl mailer;
 
     @Any
     Instance<VariantTemplate> template;
@@ -66,7 +65,7 @@ public class MailTemplateProducer {
             }
         }
         if (path == null || path.value().isEmpty()) {
-            throw new IllegalStateException("No template reource path specified");
+            throw new IllegalStateException("No template resource path specified");
         }
         final String name = path.value();
         return new MailTemplate() {

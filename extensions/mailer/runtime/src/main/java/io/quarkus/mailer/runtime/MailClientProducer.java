@@ -4,6 +4,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
+import org.jboss.logging.Logger;
+
 import io.vertx.ext.mail.MailClient;
 
 /**
@@ -12,31 +14,53 @@ import io.vertx.ext.mail.MailClient;
 @ApplicationScoped
 public class MailClientProducer {
 
-    private volatile io.vertx.axle.ext.mail.MailClient axleMailClient;
-    private volatile io.vertx.reactivex.ext.mail.MailClient rxMailClient;
-    private volatile MailClient client;
+    private static final Logger LOGGER = Logger.getLogger(MailClientProducer.class);
 
-    void initialize(MailClient client) {
+    private io.vertx.axle.ext.mail.MailClient axleMailClient;
+    private io.vertx.reactivex.ext.mail.MailClient rxMailClient;
+    private io.vertx.mutiny.ext.mail.MailClient mutinyClient;
+    private MailClient client;
+
+    synchronized void initialize(MailClient client) {
         this.client = client;
-        this.axleMailClient = io.vertx.axle.ext.mail.MailClient.newInstance(client);
-        this.rxMailClient = io.vertx.reactivex.ext.mail.MailClient.newInstance(client);
+        this.mutinyClient = io.vertx.mutiny.ext.mail.MailClient.newInstance(client);
     }
 
     @Singleton
     @Produces
-    public MailClient mailClient() {
+    public synchronized MailClient mailClient() {
         return client;
     }
 
     @Singleton
     @Produces
-    public io.vertx.axle.ext.mail.MailClient axleMailClient() {
+    public synchronized io.vertx.mutiny.ext.mail.MailClient mutinyClient() {
+        return mutinyClient;
+    }
+
+    @Singleton
+    @Produces
+    @Deprecated
+    public synchronized io.vertx.axle.ext.mail.MailClient axleMailClient() {
+        if (axleMailClient == null) {
+            LOGGER.warn(
+                    "`io.vertx.axle.ext.mail.MailClient` is deprecated and will be removed in a future version - it is "
+                            + "recommended to switch to `io.vertx.mutiny.ext.mail.MailClient`");
+            axleMailClient = io.vertx.axle.ext.mail.MailClient.newInstance(client);
+        }
         return axleMailClient;
     }
 
     @Singleton
     @Produces
-    public io.vertx.reactivex.ext.mail.MailClient rxMailClient() {
+    @Deprecated
+    public synchronized io.vertx.reactivex.ext.mail.MailClient rxMailClient() {
+        if (rxMailClient == null) {
+            LOGGER.warn(
+                    "`io.vertx.reactivex.ext.mail.MailClient` is deprecated and will be removed in a future version - it is "
+                            + "recommended to switch to `io.vertx.mutiny.ext.mail.MailClient`");
+            rxMailClient = io.vertx.reactivex.ext.mail.MailClient.newInstance(client);
+        }
         return rxMailClient;
     }
 

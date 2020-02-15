@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.junit.jupiter.api.AfterAll;
@@ -16,9 +15,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 
-import io.quarkus.mailer.runtime.ReactiveMailerImpl;
-import io.vertx.axle.core.Vertx;
+import io.quarkus.mailer.runtime.MutinyMailerImpl;
+import io.vertx.core.file.FileSystemException;
 import io.vertx.core.file.OpenOptions;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.buffer.Buffer;
 
 class AttachmentTest {
 
@@ -34,7 +35,7 @@ class AttachmentTest {
 
     @AfterAll
     static void closing() {
-        vertx.close().toCompletableFuture().join();
+        vertx.close().await().indefinitely();
     }
 
     @Test
@@ -48,9 +49,7 @@ class AttachmentTest {
         assertThat(attachment.getContentType()).isEqualTo("text/plain");
         assertThat(attachment.getData()).isNull();
 
-        String content = ReactiveMailerImpl.getAttachmentStream(vertx, attachment)
-                .thenApply(buffer -> buffer.toString("UTF-8"))
-                .toCompletableFuture().join();
+        String content = getContent(attachment);
         assertThat(content).startsWith(BEGINNING);
     }
 
@@ -65,34 +64,15 @@ class AttachmentTest {
         assertThat(attachment.getContentType()).isEqualTo("text/plain");
         assertThat(attachment.getData()).isNull();
 
-        String content = ReactiveMailerImpl.getAttachmentStream(vertx, attachment)
-                .thenApply(buffer -> buffer.toString("UTF-8"))
-                .toCompletableFuture().join();
+        String content = getContent(attachment);
         assertThat(content).startsWith(BEGINNING);
     }
 
     @Test
     void testAttachmentCreationFromStream() {
         Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .thenApply(af -> af.toPublisherBuilder().flatMapIterable(buffer -> () -> new Iterator<Byte>() {
-                    private int index = 0;
-                    private byte[] bytes = buffer.getBytes();
-
-                    @Override
-                    public boolean hasNext() {
-                        return bytes.length > index;
-                    }
-
-                    @Override
-                    public Byte next() {
-                        if (!hasNext()) {
-                            throw new NoSuchElementException();
-                        }
-                        return bytes[index++];
-                    }
-                }).buildRs())
-                .toCompletableFuture()
-                .join();
+                .onItem().produceMulti(af -> af.toMulti()
+                        .onItem().produceIterable(this::getBytes).concatenate());
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain");
         assertThat(attachment.getFile()).isNull();
@@ -103,34 +83,35 @@ class AttachmentTest {
         assertThat(attachment.getContentType()).isEqualTo("text/plain");
         assertThat(attachment.getData()).isNotNull().isEqualTo(publisher);
 
-        String content = ReactiveMailerImpl.getAttachmentStream(vertx, attachment)
-                .thenApply(buffer -> buffer.toString("UTF-8"))
-                .toCompletableFuture().join();
+        String content = getContent(attachment);
         assertThat(content).startsWith(BEGINNING);
+    }
+
+    private Iterable<Byte> getBytes(Buffer buffer) {
+        return () -> new Iterator<Byte>() {
+            private int index = 0;
+            private byte[] bytes = buffer.getBytes();
+
+            @Override
+            public boolean hasNext() {
+                return bytes.length > index;
+            }
+
+            @Override
+            public Byte next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                return bytes[index++];
+            }
+        };
     }
 
     @Test
     void testInlineAttachmentCreationFromStream() {
         Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .thenApply(af -> af.toPublisherBuilder().flatMapIterable(buffer -> () -> new Iterator<Byte>() {
-                    private int index = 0;
-                    private byte[] bytes = buffer.getBytes();
-
-                    @Override
-                    public boolean hasNext() {
-                        return bytes.length > index;
-                    }
-
-                    @Override
-                    public Byte next() {
-                        if (!hasNext()) {
-                            throw new NoSuchElementException();
-                        }
-                        return bytes[index++];
-                    }
-                }).buildRs())
-                .toCompletableFuture()
-                .join();
+                .onItem().produceMulti(af -> af.toMulti()
+                        .onItem().produceIterable(this::getBytes).concatenate());
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain", "<my-id>");
         assertThat(attachment.getFile()).isNull();
@@ -141,34 +122,15 @@ class AttachmentTest {
         assertThat(attachment.getContentType()).isEqualTo("text/plain");
         assertThat(attachment.getData()).isNotNull().isEqualTo(publisher);
 
-        String content = ReactiveMailerImpl.getAttachmentStream(vertx, attachment)
-                .thenApply(buffer -> buffer.toString("UTF-8"))
-                .toCompletableFuture().join();
+        String content = getContent(attachment);
         assertThat(content).startsWith(BEGINNING);
     }
 
     @Test
     void testAttachmentCreationWithDescription() {
         Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .thenApply(af -> af.toPublisherBuilder().flatMapIterable(buffer -> () -> new Iterator<Byte>() {
-                    private int index = 0;
-                    private byte[] bytes = buffer.getBytes();
-
-                    @Override
-                    public boolean hasNext() {
-                        return bytes.length > index;
-                    }
-
-                    @Override
-                    public Byte next() {
-                        if (!hasNext()) {
-                            throw new NoSuchElementException();
-                        }
-                        return bytes[index++];
-                    }
-                }).buildRs())
-                .toCompletableFuture()
-                .join();
+                .onItem().produceMulti(af -> af.toMulti()
+                        .onItem().produceIterable(this::getBytes).concatenate());
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain",
                 DESCRIPTION, Attachment.DISPOSITION_ATTACHMENT);
@@ -180,34 +142,21 @@ class AttachmentTest {
         assertThat(attachment.getContentType()).isEqualTo("text/plain");
         assertThat(attachment.getData()).isNotNull().isEqualTo(publisher);
 
-        String content = ReactiveMailerImpl.getAttachmentStream(vertx, attachment)
-                .thenApply(buffer -> buffer.toString("UTF-8"))
-                .toCompletableFuture().join();
+        String content = getContent(attachment);
         assertThat(content).startsWith(BEGINNING);
+    }
+
+    private String getContent(Attachment attachment) {
+        return MutinyMailerImpl.getAttachmentStream(vertx, attachment)
+                .map(buffer -> buffer.toString("UTF-8"))
+                .await().indefinitely();
     }
 
     @Test
     void testInlineAttachmentCreationWithDescription() {
         Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .thenApply(af -> af.toPublisherBuilder().flatMapIterable(buffer -> () -> new Iterator<Byte>() {
-                    private int index = 0;
-                    private byte[] bytes = buffer.getBytes();
-
-                    @Override
-                    public boolean hasNext() {
-                        return bytes.length > index;
-                    }
-
-                    @Override
-                    public Byte next() {
-                        if (!hasNext()) {
-                            throw new NoSuchElementException();
-                        }
-                        return bytes[index++];
-                    }
-                }).buildRs())
-                .toCompletableFuture()
-                .join();
+                .onItem().produceMulti(af -> af.toMulti()
+                        .onItem().produceIterable(this::getBytes).concatenate());
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain",
                 DESCRIPTION, Attachment.DISPOSITION_INLINE);
@@ -219,9 +168,7 @@ class AttachmentTest {
         assertThat(attachment.getContentType()).isEqualTo("text/plain");
         assertThat(attachment.getData()).isNotNull().isEqualTo(publisher);
 
-        String content = ReactiveMailerImpl.getAttachmentStream(vertx, attachment)
-                .thenApply(buffer -> buffer.toString("UTF-8"))
-                .toCompletableFuture().join();
+        String content = getContent(attachment);
         assertThat(content).startsWith(BEGINNING);
     }
 
@@ -240,9 +187,7 @@ class AttachmentTest {
         assertThat(attachment.getContentType()).isEqualTo("text/plain");
         assertThat(attachment.getData()).isNotNull();
 
-        String content = ReactiveMailerImpl.getAttachmentStream(vertx, attachment)
-                .thenApply(buffer -> buffer.toString("UTF-8"))
-                .toCompletableFuture().join();
+        String content = getContent(attachment);
         assertThat(content).isEqualTo(payload);
     }
 
@@ -264,9 +209,8 @@ class AttachmentTest {
     void testCreationFromMissingFile() {
         File missing = new File("missing");
         Attachment attachment = new Attachment("missing", missing, "text/plain");
-        Assertions.assertThrows(ExecutionException.class, () -> {
-            ReactiveMailerImpl.getAttachmentStream(vertx, attachment).toCompletableFuture().get();
-        });
+        Assertions.assertThrows(FileSystemException.class,
+                () -> MutinyMailerImpl.getAttachmentStream(vertx, attachment).await().indefinitely());
     }
 
 }

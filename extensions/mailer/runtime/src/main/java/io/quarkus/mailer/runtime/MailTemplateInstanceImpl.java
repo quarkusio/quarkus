@@ -7,26 +7,26 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.MailTemplate.MailTemplateInstance;
-import io.quarkus.mailer.ReactiveMailer;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.VariantTemplate;
+import io.smallrye.mutiny.Uni;
 
 class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
 
-    private final ReactiveMailer mailer;
+    private final MutinyMailerImpl mailer;
     private final TemplateInstance templateInstance;
     private final Map<String, Object> data;
     private Mail mail;
 
-    MailTemplateInstanceImpl(ReactiveMailer mailer, TemplateInstance templateInstance) {
+    MailTemplateInstanceImpl(MutinyMailerImpl mailer, TemplateInstance templateInstance) {
         this.mailer = mailer;
         this.templateInstance = templateInstance;
         this.data = new HashMap<>();
@@ -89,9 +89,6 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
 
     @Override
     public CompletionStage<Void> send() {
-
-        CompletableFuture<Void> result = new CompletableFuture<>();
-
         if (templateInstance.getAttribute(VariantTemplate.VARIANTS) != null) {
 
             List<Result> results = new ArrayList<>();
@@ -101,8 +98,8 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
             for (Variant variant : variants) {
                 if (variant.mediaType.equals(Variant.TEXT_HTML) || variant.mediaType.equals(Variant.TEXT_PLAIN)) {
                     results.add(new Result(variant,
-                            templateInstance.setAttribute(SELECTED_VARIANT, variant).data(data).renderAsync()
-                                    .toCompletableFuture()));
+                            Uni.createFrom().completionStage(
+                                    () -> templateInstance.setAttribute(SELECTED_VARIANT, variant).data(data).renderAsync())));
                 }
             }
 
@@ -110,49 +107,42 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
                 throw new IllegalStateException("No suitable template variant found");
             }
 
-            CompletableFuture<Void> all = CompletableFuture
-                    .allOf(results.stream().map(Result::getValue).toArray(CompletableFuture[]::new));
-            all.whenComplete((r1, t1) -> {
-                if (t1 != null) {
-                    result.completeExceptionally(t1);
-                } else {
-                    try {
-                        for (Result res : results) {
-                            if (res.variant.mediaType.equals(Variant.TEXT_HTML)) {
-                                mail.setHtml(res.value.get());
-                            } else if (res.variant.mediaType.equals(Variant.TEXT_PLAIN)) {
-                                mail.setText(res.value.get());
-                            }
-                        }
-                    } catch (InterruptedException | ExecutionException e) {
-                        result.completeExceptionally(e);
-                    }
-                    mailer.send(mail).whenComplete((r, t) -> {
-                        if (t != null) {
-                            result.completeExceptionally(t);
-                        } else {
-                            result.complete(null);
-                        }
-                    });
-                }
-            });
+            List<Uni<String>> unis = results.stream().map(Result::getValue).collect(Collectors.toList());
+            return Uni.combine().all().unis(unis)
+                    .combinedWith(combine(results))
+                    .onItem().produceUni(m -> mailer.send((Mail) m))
+                    .subscribeAsCompletionStage();
         } else {
             throw new IllegalStateException("No template variant found");
         }
-        return result;
+    }
+
+    private Function<List<String>, Mail> combine(List<Result> results) {
+        return ignored -> {
+            for (Result res : results) {
+                // We can safely access the content here: 1. it has been resolved, 2. it's cached.
+                String content = res.value.await().indefinitely();
+                if (res.variant.mediaType.equals(Variant.TEXT_HTML)) {
+                    mail.setHtml(content);
+                } else if (res.variant.mediaType.equals(Variant.TEXT_PLAIN)) {
+                    mail.setText(content);
+                }
+            }
+            return mail;
+        };
     }
 
     static class Result {
 
         final Variant variant;
-        final CompletableFuture<String> value;
+        final Uni<String> value;
 
-        public Result(Variant variant, CompletableFuture<String> result) {
+        public Result(Variant variant, Uni<String> result) {
             this.variant = variant;
-            this.value = result;
+            this.value = result.cache();
         }
 
-        CompletableFuture<String> getValue() {
+        Uni<String> getValue() {
             return value;
         }
     }

@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
+import javax.enterprise.event.Observes;
 import javax.inject.Singleton;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
@@ -74,7 +75,7 @@ public class JPAConfig {
      *
      * @param event ignored
      */
-    void destroy(@BeforeDestroyed(ApplicationScoped.class) Object event) {
+    void destroy(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event) {
         for (LazyPersistenceUnit factory : persistenceUnits.values()) {
             try {
                 factory.close();

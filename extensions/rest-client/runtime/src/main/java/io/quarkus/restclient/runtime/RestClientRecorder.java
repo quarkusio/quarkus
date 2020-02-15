@@ -20,6 +20,7 @@ import io.quarkus.runtime.annotations.Recorder;
 public class RestClientRecorder {
 
     public static ResteasyProviderFactory providerFactory;
+    public static boolean SSL_ENABLED;
 
     public void setRestClientBuilderResolver() {
         RestClientBuilderResolver.setInstance(new BuilderResolver());

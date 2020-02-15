@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 import javax.json.bind.annotation.JsonbTransient;
 import javax.persistence.LockModeType;
 import javax.persistence.Transient;
+import javax.persistence.criteria.CriteriaQuery;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -254,6 +255,17 @@ public abstract class PanacheEntityBase {
      */
     @GenerateBridge
     public static <T extends PanacheEntityBase> PanacheQuery<T> findAll() {
+        throw JpaOperations.implementationInjectionMissing();
+    }
+    
+    /**
+     * Find all entities of this type, in the given criteria.
+     *
+     * @param criteria to use
+     * @return a new {@link PanacheQuery} instance to find all entities of this type.
+     */
+    @GenerateBridge
+    public static <T extends PanacheEntityBase> PanacheQuery<T> findAll(CriteriaQuery<T> criteriaQuery) {
         throw JpaOperations.implementationInjectionMissing();
     }
 

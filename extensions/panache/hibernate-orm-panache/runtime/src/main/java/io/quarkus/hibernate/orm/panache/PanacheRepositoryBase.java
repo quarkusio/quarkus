@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import javax.persistence.LockModeType;
+import javax.persistence.criteria.CriteriaQuery;
 
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 import io.quarkus.panache.common.Parameters;
@@ -238,6 +239,17 @@ public interface PanacheRepositoryBase<Entity, Id> {
      */
     @GenerateBridge
     public default PanacheQuery<Entity> find(String query, Sort sort, Parameters params) {
+        throw JpaOperations.implementationInjectionMissing();
+    }
+    
+    /**
+     * Find all entities of this type, in the given criteria.
+     * 
+     * @param criteria to use
+     * @return a new {@link PanacheQuery} instance to find all entities of this type.
+     */
+    @GenerateBridge
+    public default PanacheQuery<Entity> findAll(CriteriaQuery<Entity> criteriaQuery) {
         throw JpaOperations.implementationInjectionMissing();
     }
 

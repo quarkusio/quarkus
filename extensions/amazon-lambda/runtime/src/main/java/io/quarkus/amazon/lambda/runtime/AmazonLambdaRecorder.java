@@ -147,6 +147,12 @@ public class AmazonLambdaRecorder {
                             String requestId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID);
                             Object response;
                             try {
+                                // todo custom runtime requires the setting of an ENV Var
+                                // Should we override getenv?  If we do that,
+                                // then this will never be able to process multiple requests at the same time
+                                String traceId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY);
+                                TraceId.setTraceId(traceId);
+
                                 Object val = objectReader.readValue(requestConnection.getInputStream());
                                 RequestHandler handler = beanContainer.instance(handlerClass);
                                 response = handler.handleRequest(val,

@@ -241,3 +241,9 @@ you'll see this:
 ----
 
 This environment variable resolves some incompatibilities between Quarkus and the Amazon Lambda Custom Runtime environment.
+
+== Tracing with AWS XRay and GraalVM
+
+If you are building native images, and want to use https://aws.amazon.com/xray[AWS X-Ray Tracing] with your lambda
+you will need to include `quarkus-amazon-lambda-xray` as a dependency in your pom.  The AWS X-Ray
+library is not fully compatible with GraalVM so we had to do some integration work to make this work.

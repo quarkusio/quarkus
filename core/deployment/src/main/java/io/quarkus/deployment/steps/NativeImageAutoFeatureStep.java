@@ -254,8 +254,14 @@ public class NativeImageAutoFeatureStep {
 
             TryBlock tc = mv.tryBlock();
 
-            ResultHandle clazz = tc.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class),
-                    tc.load(entry.getKey()));
+            ResultHandle currentThread = tc
+                    .invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));
+            ResultHandle tccl = tc.invokeVirtualMethod(
+                    ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
+                    currentThread);
+            ResultHandle clazz = tc.invokeStaticMethod(
+                    ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
+                    tc.load(entry.getKey()), tc.load(false), tccl);
             //we call these methods first, so if they are going to throw an exception it happens before anything has been registered
             ResultHandle constructors = tc
                     .invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructors", Constructor[].class), clazz);

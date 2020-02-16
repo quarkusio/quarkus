@@ -122,7 +122,7 @@ not being invalidated correctly in some cases. To run a build with a new instanc
 ### MicroProfile TCK's
 
 Quarkus has a TCK module in `tcks` where all the MicroProfile TCK's are set up for you to run if you wish. These 
-includes tests to areas like Config, JWT Authentication, Fault Tolerance, Health Checks, Metrics, OpenAPI, OpenTracing, 
+include tests to areas like Config, JWT Authentication, Fault Tolerance, Health Checks, Metrics, OpenAPI, OpenTracing, 
 REST Client, Reactive Messaging and Context Propagation.
 
 The TCK module is not part of the main Maven reactor build, but you can enable it and run the TCK tests by activating 

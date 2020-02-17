@@ -10,8 +10,10 @@ If any organization would like get added or removed please make a pull request b
 * Please don't include your organization's logo or other trademarked material
 * Add a reference (link to a public blog post, video, slides, etc) mentioning that Quarkus is used
 
-| Organization  |  Reference |
-|---------------|------------|
-|GoWithFlow     | https://quarkus.io/blog/gowithflow-chooses-quarkus-to-deliver-fast-to-production/ |
-|Talkdesk       | https://quarkus.io/blog/talkdesk-chooses-quarkus-for-fast-innovation/ |
-|Vodafone Greece| https://quarkus.io/blog/vodafone-greece-replaces-spring-boot/|
+| Organization          | Reference                                                                        |
+|-----------------------|----------------------------------------------------------------------------------|
+|GoWithFlow             | https://quarkus.io/blog/gowithflow-chooses-quarkus-to-deliver-fast-to-production/|
+|Lufthansa Technik      | https://quarkus.io/blog/aviatar-experiences-significant-savings/                 |
+|Suomen Asiakastieto Oy | https://quarkus.io/blog/asiakastieto-chooses-quarkus-for-microservices/          |
+|Talkdesk               | https://quarkus.io/blog/talkdesk-chooses-quarkus-for-fast-innovation/            |
+|Vodafone Greece        | https://quarkus.io/blog/vodafone-greece-replaces-spring-boot/                    |

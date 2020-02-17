@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
@@ -359,6 +360,8 @@ public class UndertowDeploymentRecorder {
                 if (maxBodySize.isPresent()) {
                     exchange.setMaxEntitySize(maxBodySize.get().asLongValue());
                 }
+                Duration readTimeout = httpConfiguration.readTimeout;
+                exchange.setReadTimeout(readTimeout.toMillis());
                 defaultHandler.handle(exchange);
             }
         };

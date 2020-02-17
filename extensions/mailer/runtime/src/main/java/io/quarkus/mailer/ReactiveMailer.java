@@ -4,7 +4,11 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * A mailer to send email asynchronously.
+ *
+ * @deprecated Use {@link io.quarkus.mailer.reactive.ReactiveMailer} instead. This class is going to be removed in a
+ *             future version.
  */
+@Deprecated
 public interface ReactiveMailer {
 
     /**

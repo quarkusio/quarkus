@@ -26,10 +26,10 @@ public class MailConfigRecorder {
         return new RuntimeValue<>(client);
     }
 
-    public RuntimeValue<ReactiveMailerImpl> configureTheMailer(BeanContainer container, MailConfig config,
+    public RuntimeValue<MutinyMailerImpl> configureTheMailer(BeanContainer container, MailConfig config,
             LaunchMode launchMode) {
 
-        ReactiveMailerImpl mailer = container.instance(ReactiveMailerImpl.class);
+        MutinyMailerImpl mailer = container.instance(MutinyMailerImpl.class);
 
         // mock defaults to true on DEV and TEST
         mailer.configure(config.from, config.bounceAddress, config.mock.orElse(launchMode.isDevOrTest()));
@@ -39,7 +39,7 @@ public class MailConfigRecorder {
 
     void initialize(Vertx vertx, MailConfig config) {
         io.vertx.ext.mail.MailConfig cfg = toVertxMailConfig(config);
-        client = MailClient.createNonShared(vertx, cfg);
+        client = MailClient.createShared(vertx, cfg);
     }
 
     private io.vertx.ext.mail.MailConfig toVertxMailConfig(MailConfig config) {

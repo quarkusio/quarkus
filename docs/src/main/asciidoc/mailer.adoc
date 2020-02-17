@@ -100,9 +100,15 @@ ReactiveMailer reactiveMailer;
 There are 2 APIs:
 
 * `io.quarkus.mailer.Mailer` provides the imperative (blocking and synchronous) API;
-* `io.quarkus.mailer.ReactiveMailer` provides the reactive (non-blocking and asynchronous) API
+* `io.quarkus.mailer.reactive.ReactiveMailer` provides the reactive (non-blocking and asynchronous) API
 
 NOTE: The two APIs are equivalent feature-wise. Actually the `Mailer` implementation is built on top of the `ReactiveMailer` implementation.
+
+[NOTE]
+.Deprecation
+====
+`io.quarkus.mailer.ReactiveMailer` is deprecated in favor of `io.quarkus.mailer.reactive.ReactiveMailer`.
+====
 
 To send a simple email, proceed as follows:
 
@@ -111,7 +117,7 @@ To send a simple email, proceed as follows:
 // Imperative API:
 mailer.send(Mail.withText("to@acme.org", "A simple email from quarkus", "This is my body."));
 // Reactive API:
-CompletionStage<Void> stage = reactiveMailer.send(Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body."));
+Uni<Void> stage = reactiveMailer.send(Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body."));
 ----
 
 For example, you can use the `Mailer` in a JAX-RS endpoint as follows:
@@ -130,8 +136,14 @@ public Response sendASimpleEmail() {
 public CompletionStage<Response> sendASimpleEmailAsync() {
     return reactiveMailer.send(
             Mail.withText("to@acme.org", "A reactive email from quarkus", "This is my body"))
+            .subscribeAsCompletionStage()
             .thenApply(x -> Response.accepted().build());
 }
+----
+
+[NOTE]
+----
+With the `quarkus-resteasy-mutiny` extension, you can return an instance of `Uni` directly.
 ----
 
 With such a JAX-RS resource, you can check that everything is working with:
@@ -215,6 +227,7 @@ public CompletionStage<Response> send() {
        // the template looks like: Hello {name}!
        .data("name", "John") <3>
        .send() <4>
+       .subscribeAsCompletionStage()
        .thenApply(x -> Response.accepted().build());
 }
 ----
@@ -325,8 +338,9 @@ If you need fine control on how the mail is sent, for instance if you need to re
 
 Three API flavors are exposed:
 
-* the Axle client (`io.vertx.axle.ext.mail.MailClient`), using `CompletionStage` and Reactive Streams `Publisher`
-* the RX Java 2 client (`io.vertx.reactivex.ext.mail.MailClient`)
+* the Mutiny client (`io.vertx.mutiny.ext.mail.MailClient`)
+* the Axle client (`io.vertx.axle.ext.mail.MailClient`), using `CompletionStage` and Reactive Streams `Publisher` - deprecated, it is recommended to switch to the Mutiny client
+* the RX Java 2 client (`io.vertx.reactivex.ext.mail.MailClient`) - deprecated, it is recommended to switch to the Mutiny client
 * the bare client (`io.vertx.ext.mail.MailClient`)
 
 Check the link:vertx[Using Vert.x guide] for further details about these different APIs and how to select the most suitable for you.

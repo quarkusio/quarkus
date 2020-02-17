@@ -34,6 +34,10 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         this.paramsArrayOrMap = paramsArrayOrMap;
         page = new Page(0, Integer.MAX_VALUE);
     }
+    
+    PanacheQueryImpl(EntityManager em, javax.persistence.Query jpaQuery, Object paramsArrayOrMap) {
+        this(em, jpaQuery, null, paramsArrayOrMap);
+    }
 
     // Builder
 
@@ -110,6 +114,9 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     @SuppressWarnings("unchecked")
     public long count() {
+    	if(this.query == null || this.query.isEmpty())
+    		throw new RuntimeException("Operation not permitted. Use criteria for this");
+    	
         if (count == null) {
             // FIXME: this is crude but good enough for a first version
             String lcQuery = query.toLowerCase();

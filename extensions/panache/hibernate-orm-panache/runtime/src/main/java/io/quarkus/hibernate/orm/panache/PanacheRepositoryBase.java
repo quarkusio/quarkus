@@ -250,7 +250,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * @see #findAll()
      */
     @GenerateBridge
-    public default PanacheQuery<Entity> findAll(CriteriaQuery<Entity> criteria) {
+    public default PanacheQuery<Entity> find(CriteriaQuery<Entity> criteria) {
         throw JpaOperations.implementationInjectionMissing();
     }
 

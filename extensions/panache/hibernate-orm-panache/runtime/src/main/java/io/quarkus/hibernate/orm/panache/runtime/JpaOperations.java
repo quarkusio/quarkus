@@ -270,7 +270,7 @@ public class JpaOperations {
     }
 
     @SuppressWarnings("rawtypes")
-    public static PanacheQuery<?> findAll(Class<?> entityClass, CriteriaQuery<?> criteriaQuery) {
+    public static PanacheQuery<?> find(Class<?> entityClass, CriteriaQuery<?> criteriaQuery) {
         String query = "FROM " + getEntityName(entityClass);
         EntityManager em = getEntityManager();
         return new PanacheQueryImpl(em, em.createQuery(criteriaQuery), query, null);

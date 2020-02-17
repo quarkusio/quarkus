@@ -266,7 +266,7 @@ public abstract class PanacheEntityBase {
      * @see #findAll()
      */
     @GenerateBridge
-    public static <T extends PanacheEntityBase> PanacheQuery<T> findAll(CriteriaQuery<T> criteria) {
+    public static <T extends PanacheEntityBase> PanacheQuery<T> find(CriteriaQuery<T> criteria) {
         throw JpaOperations.implementationInjectionMissing();
     }
 

@@ -55,9 +55,11 @@ import io.smallrye.faulttolerance.ExecutorFactory;
 import io.smallrye.faulttolerance.ExecutorProvider;
 import io.smallrye.faulttolerance.FaultToleranceBinding;
 import io.smallrye.faulttolerance.FaultToleranceInterceptor;
+import io.smallrye.faulttolerance.internal.RequestContextControllerProvider;
 import io.smallrye.faulttolerance.internal.StrategyCache;
 import io.smallrye.faulttolerance.metrics.MetricsCollectorFactory;
 import io.smallrye.faulttolerance.propagation.ContextPropagationExecutorFactory;
+import io.smallrye.faulttolerance.propagation.ContextPropagationRequestContextControllerProvider;
 
 public class SmallRyeFaultToleranceProcessor {
 
@@ -86,6 +88,8 @@ public class SmallRyeFaultToleranceProcessor {
 
         serviceProvider.produce(new ServiceProviderBuildItem(ExecutorFactory.class.getName(),
                 ContextPropagationExecutorFactory.class.getName()));
+        serviceProvider.produce(new ServiceProviderBuildItem(RequestContextControllerProvider.class.getName(),
+                ContextPropagationRequestContextControllerProvider.class.getName()));
 
         IndexView index = combinedIndexBuildItem.getIndex();
 

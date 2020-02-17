@@ -140,7 +140,7 @@ public class AppModelGradleResolver implements AppModelResolver {
         final List<AppDependency> fullDeploymentDeps = new ArrayList<>();
         if (!extensionDeps.isEmpty()) {
             final Configuration deploymentConfig = project.getConfigurations()
-                    .detachedConfiguration(extensionDeps.toArray(new Dependency[extensionDeps.size()]));
+                    .detachedConfiguration(extensionDeps.toArray(new Dependency[0]));
             final ResolvedConfiguration rc = deploymentConfig.getResolvedConfiguration();
             for (ResolvedArtifact a : rc.getResolvedArtifacts()) {
                 final ModuleVersionIdentifier userVersion = userModules.get(getModuleId(a));
@@ -232,14 +232,14 @@ public class AppModelGradleResolver implements AppModelResolver {
         return resolveModel(appArtifact);
     }
 
-    private ModuleIdentifier getModuleId(ResolvedArtifact a) {
+    private static ModuleIdentifier getModuleId(ResolvedArtifact a) {
         final String[] split = a.getModuleVersion().toString().split(":");
         return DefaultModuleIdentifier.newId(split[0], split[1]);
     }
 
-    private AppDependency toAppDependency(ResolvedArtifact a) {
+    static AppDependency toAppDependency(ResolvedArtifact a) {
         final String[] split = a.getModuleVersion().toString().split(":");
-        final AppArtifact appArtifact = new AppArtifact(split[0], split[1], split[2]);
+        final AppArtifact appArtifact = new AppArtifact(split[0], split[1], split.length > 2 ? split[2] : null);
         appArtifact.setPath(a.getFile().toPath());
         return new AppDependency(appArtifact, "runtime");
     }

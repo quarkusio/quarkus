@@ -114,6 +114,13 @@ public class DockerProcessor {
         }
 
         if (pushRequested || containerImageConfig.execution == ContainerImageConfig.Execution.PUSH) {
+            // Check if we need to login first
+            if (containerImageConfig.username.isPresent() && containerImageConfig.password.isPresent()) {
+                boolean loginSuccesful = ExecUtil.exec("docker", "-u", containerImageConfig.username.get(), "-p" + containerImageConfig.password.get());
+                if (!loginSuccesful) {
+                    throw dockerException(new String[] {"-u", containerImageConfig.username.get(), "-p", "********"});
+                }
+            }
             String[] pushArgs = { "push", image };
             boolean pushSuccessful = ExecUtil.exec("docker", pushArgs);
             if (!pushSuccessful) {

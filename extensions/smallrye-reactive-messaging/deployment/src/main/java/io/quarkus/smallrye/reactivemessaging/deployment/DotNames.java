@@ -10,6 +10,7 @@ import io.smallrye.reactive.messaging.annotations.Channel;
 import io.smallrye.reactive.messaging.annotations.Emitter;
 import io.smallrye.reactive.messaging.annotations.Merge;
 import io.smallrye.reactive.messaging.annotations.OnOverflow;
+import io.smallrye.reactive.messaging.metrics.MetricDecorator;
 
 public final class DotNames {
 
@@ -26,6 +27,8 @@ public final class DotNames {
     static final DotName ACKNOWLEDGMENT = DotName.createSimple(Acknowledgment.class.getName());
     static final DotName MERGE = DotName.createSimple(Merge.class.getName());
     static final DotName BROADCAST = DotName.createSimple(Broadcast.class.getName());
+
+    static final DotName METRIC_DECORATOR = DotName.createSimple(MetricDecorator.class.getName());
 
     private DotNames() {
     }

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.enterprise.context.Dependent;
+import javax.enterprise.inject.Vetoed;
 import javax.enterprise.inject.spi.DeploymentException;
 
 import org.eclipse.microprofile.config.Config;
@@ -61,7 +62,6 @@ import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfigurat
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLifecycle;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder;
 import io.smallrye.reactive.messaging.Invoker;
-import io.smallrye.reactive.messaging.metrics.MetricDecorator;
 
 /**
  * @author Martin Kouba
@@ -236,10 +236,27 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     @BuildStep
-    public void enableMetrics(Capabilities capabilities, ReactiveMessagingConfiguration configuration,
-            BuildProducer<AdditionalBeanBuildItem> beans) {
-        if (capabilities.isCapabilityPresent(Capabilities.METRICS) && configuration.metricsEnabled) {
-            beans.produce(new AdditionalBeanBuildItem(MetricDecorator.class.getName()));
+    public void enableMetrics(BuildProducer<AnnotationsTransformerBuildItem> transformers,
+            Capabilities capabilities, ReactiveMessagingConfiguration configuration) {
+        boolean isMetricEnabled = capabilities.isCapabilityPresent(Capabilities.METRICS) && configuration.metricsEnabled;
+        if (!isMetricEnabled) {
+            LOGGER.info("Metric is disabled - vetoing the MetricDecorator");
+            // We veto the Metric Decorator
+            AnnotationsTransformerBuildItem veto = new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+                @Override
+                public boolean appliesTo(AnnotationTarget.Kind kind) {
+                    return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+                }
+
+                @Override
+                public void transform(AnnotationsTransformer.TransformationContext ctx) {
+                    if (ctx.isClass() && ctx.getTarget().asClass().name().equals(
+                            io.quarkus.smallrye.reactivemessaging.deployment.DotNames.METRIC_DECORATOR)) {
+                        ctx.transform().add(Vetoed.class).done();
+                    }
+                }
+            });
+            transformers.produce(veto);
         }
     }
 

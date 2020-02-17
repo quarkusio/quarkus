@@ -51,9 +51,5 @@
             <artifactId>microprofile-reactive-messaging-tck</artifactId>
             <version>${microprofile-reactive-messaging-api.version}</version>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-metrics</artifactId>
-        </dependency>
     </dependencies>
 </project>

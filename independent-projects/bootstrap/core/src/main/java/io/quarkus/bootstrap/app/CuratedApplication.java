@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.app;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
 import io.quarkus.bootstrap.classloading.JarClassPathElement;
@@ -137,7 +138,7 @@ public class CuratedApplication implements Serializable, Closeable {
     }
 
     private synchronized ClassPathElement getElement(AppArtifact artifact) {
-        if (!artifact.getType().equals("jar")) {
+        if (!artifact.getType().equals(BootstrapConstants.JAR)) {
             //avoid the need for this sort of check in multiple places
             return ClassPathElement.EMPTY;
         }
@@ -190,14 +191,6 @@ public class CuratedApplication implements Serializable, Closeable {
             for (Path i : quarkusBootstrap.getAdditionalDeploymentArchives()) {
                 builder.addElement(ClassPathElement.fromPath(i));
             }
-            //now make sure we can't accidentally load other deps from this CL
-            //only extensions and their dependencies.
-            //            for (AppDependency userDep : appModel.getUserDependencies()) {
-            //                if (!deploymentArtifacts.contains(userDep.getArtifact())) {
-            //                    ClassPathElement element = getElement(userDep.getArtifact());
-            //                    builder.addBannedElement(element);
-            //                }
-            //            }
             augmentClassLoader = builder.build();
 
         }

@@ -144,7 +144,7 @@ public class AppModelGradleResolver implements AppModelResolver {
             final ResolvedConfiguration rc = deploymentConfig.getResolvedConfiguration();
             for (ResolvedArtifact a : rc.getResolvedArtifacts()) {
                 final ModuleVersionIdentifier userVersion = userModules.get(getModuleId(a));
-                if (userVersion != null) {
+                if (userVersion != null || !isDependency(a)) {
                     continue;
                 }
                 final AppDependency dependency = toAppDependency(a);
@@ -183,11 +183,10 @@ public class AppModelGradleResolver implements AppModelResolver {
             Map<ModuleIdentifier, ModuleVersionIdentifier> userModules) {
         final Configuration config = project.getConfigurations().getByName(configName);
         for (ResolvedArtifact a : config.getResolvedConfiguration().getResolvedArtifacts()) {
-            final File f = a.getFile();
-            if (!"jar".equals(a.getExtension()) && !f.isDirectory()) {
+            if (!isDependency(a)) {
                 continue;
             }
-
+            final File f = a.getFile();
             userModules.put(getModuleId(a), a.getModuleVersion().getId());
             AppDependency dependency = toAppDependency(a);
             userDeps.add(dependency);
@@ -209,6 +208,14 @@ public class AppModelGradleResolver implements AppModelResolver {
                 extensionDeps.add(dep);
             }
         }
+    }
+
+    /**
+     * A {@link ResolvedArtifact} is valid if it's a JAR or a directory
+     */
+    private static boolean isDependency(ResolvedArtifact a) {
+        return BootstrapConstants.JAR.equalsIgnoreCase(a.getExtension()) ||
+                a.getFile().isDirectory();
     }
 
     private AppDependency alignVersion(AppDependency dependency, Map<AppArtifactKey, AppDependency> versionMap) {

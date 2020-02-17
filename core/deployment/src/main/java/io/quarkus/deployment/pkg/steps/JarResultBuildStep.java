@@ -201,69 +201,22 @@ public class JarResultBuildStep {
                 final Path resolvedDep = depArtifact.getPath();
 
                 // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
-                if (!resolvedDep.getFileName().toString().endsWith(".jar")) {
+                if (!isAppDepAJar(depArtifact)) {
                     continue;
                 }
 
                 Set<String> transformedFromThisArchive = transformedClasses.getTransformedFilesByJar().get(resolvedDep);
 
-                try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {
-                    for (final Path root : artifactFs.getRootDirectories()) {
-                        final Path metaInfDir = root.resolve("META-INF");
-                        Files.walkFileTree(root, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
-                                new SimpleFileVisitor<Path>() {
-                                    @Override
-                                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                                            throws IOException {
-                                        final String relativePath = toUri(root.relativize(dir));
-                                        if (!relativePath.isEmpty()) {
-                                            addDir(runnerZipFs, relativePath);
-                                        }
-                                        return FileVisitResult.CONTINUE;
-                                    }
-
-                                    @Override
-                                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                                            throws IOException {
-                                        final String relativePath = toUri(root.relativize(file));
-                                        //if this has been transfomed we do not copy it
-                                        // if it's a signature file (under the <jar>/META-INF directory),
-                                        // then we don't add it to the uber jar
-                                        if (isBlockOrSF(relativePath) &&
-                                                file.relativize(metaInfDir).getNameCount() == 1) {
-                                            if (log.isDebugEnabled()) {
-                                                log.debug("Signature file " + file.toAbsolutePath() + " from app " +
-                                                        "dependency " + appDep + " will not be included in uberjar");
-                                            }
-                                            return FileVisitResult.CONTINUE;
-                                        }
-                                        boolean transformed = transformedFromThisArchive != null
-                                                && transformedFromThisArchive.contains(relativePath);
-                                        if (!transformed) {
-                                            if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
-                                                services.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
-                                                        .add(read(file));
-                                                return FileVisitResult.CONTINUE;
-                                            } else if (!finalIgnoredEntries.contains(relativePath)) {
-                                                duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
-                                                        .add(appDep);
-                                                if (!seen.containsKey(relativePath)) {
-                                                    seen.put(relativePath, appDep.toString());
-                                                    Files.copy(file, runnerZipFs.getPath(relativePath),
-                                                            StandardCopyOption.REPLACE_EXISTING);
-                                                } else if (!relativePath.endsWith(".class")) {
-                                                    //for .class entries we warn as a group
-                                                    log.warn("Duplicate entry " + relativePath + " entry from " + appDep
-                                                            + " will be ignored. Existing file was provided by "
-                                                            + seen.get(relativePath));
-                                                }
-                                            }
-                                        }
-                                        return FileVisitResult.CONTINUE;
-                                    }
-                                });
+                if (isAppDepPathAJar(depArtifact)) {
+                    try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {
+                        for (final Path root : artifactFs.getRootDirectories()) {
+                            walkFileDependencyForDependency(root, runnerZipFs, seen, duplicateCatcher, services,
+                                    finalIgnoredEntries, appDep, transformedFromThisArchive);
+                        }
                     }
-
+                } else {
+                    walkFileDependencyForDependency(appDep.getArtifact().getPath(), runnerZipFs, seen, duplicateCatcher,
+                            services, finalIgnoredEntries, appDep, transformedFromThisArchive);
                 }
             }
             Set<Set<AppDependency>> explained = new HashSet<>();
@@ -282,6 +235,72 @@ public class JarResultBuildStep {
         runnerJar.toFile().setReadable(true, false);
 
         return new JarBuildItem(runnerJar, originalJar, null);
+    }
+
+    private boolean isAppDepAJar(AppArtifact artifact) {
+        return "jar".equals(artifact.getType());
+    }
+
+    private boolean isAppDepPathAJar(AppArtifact artifact) {
+        return !Files.isDirectory(artifact.getPath());
+    }
+
+    private void walkFileDependencyForDependency(Path root, FileSystem runnerZipFs, Map<String, String> seen,
+            Map<String, Set<AppDependency>> duplicateCatcher, Map<String, List<byte[]>> services,
+            Set<String> finalIgnoredEntries, AppDependency appDep, Set<String> transformedFromThisArchive) throws IOException {
+        final Path metaInfDir = root.resolve("META-INF");
+        Files.walkFileTree(root, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
+                new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                            throws IOException {
+                        final String relativePath = toUri(root.relativize(dir));
+                        if (!relativePath.isEmpty()) {
+                            addDir(runnerZipFs, relativePath);
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                            throws IOException {
+                        final String relativePath = toUri(root.relativize(file));
+                        //if this has been transfomed we do not copy it
+                        // if it's a signature file (under the <jar>/META-INF directory),
+                        // then we don't add it to the uber jar
+                        if (isBlockOrSF(relativePath) &&
+                                file.relativize(metaInfDir).getNameCount() == 1) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("Signature file " + file.toAbsolutePath() + " from app " +
+                                        "dependency " + appDep + " will not be included in uberjar");
+                            }
+                            return FileVisitResult.CONTINUE;
+                        }
+                        boolean transformed = transformedFromThisArchive != null
+                                && transformedFromThisArchive.contains(relativePath);
+                        if (!transformed) {
+                            if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
+                                services.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
+                                        .add(read(file));
+                                return FileVisitResult.CONTINUE;
+                            } else if (!finalIgnoredEntries.contains(relativePath)) {
+                                duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>())
+                                        .add(appDep);
+                                if (!seen.containsKey(relativePath)) {
+                                    seen.put(relativePath, appDep.toString());
+                                    Files.copy(file, runnerZipFs.getPath(relativePath),
+                                            StandardCopyOption.REPLACE_EXISTING);
+                                } else if (!relativePath.endsWith(".class")) {
+                                    //for .class entries we warn as a group
+                                    log.warn("Duplicate entry " + relativePath + " entry from " + appDep
+                                            + " will be ignored. Existing file was provided by "
+                                            + seen.get(relativePath));
+                                }
+                            }
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
     }
 
     private JarBuildItem buildThinJar(CurateOutcomeBuildItem curateOutcomeBuildItem,
@@ -415,7 +434,8 @@ public class JarResultBuildStep {
 
         final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
 
-        copyLibraryJars(transformedClasses, libDir, classPath, appDeps);
+        copyLibraryJars(runnerZipFs, transformedClasses, libDir, classPath,
+                appDeps, services);
 
         AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
         // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
@@ -425,32 +445,55 @@ public class JarResultBuildStep {
                 generatedResources, seen);
     }
 
-    private void copyLibraryJars(TransformedClassesBuildItem transformedClasses, Path libDir,
-            StringBuilder classPath, List<AppDependency> appDeps) throws IOException {
+    private void copyLibraryJars(FileSystem runnerZipFs, TransformedClassesBuildItem transformedClasses, Path libDir,
+            StringBuilder classPath, List<AppDependency> appDeps, Map<String, List<byte[]>> services) throws IOException {
+
         for (AppDependency appDep : appDeps) {
             final AppArtifact depArtifact = appDep.getArtifact();
             final Path resolvedDep = depArtifact.getPath();
 
             // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
-            if (!resolvedDep.getFileName().toString().endsWith(".jar")) {
+            if (!isAppDepAJar(depArtifact)) {
                 continue;
             }
 
-            Set<String> transformedFromThisArchive = transformedClasses.getTransformedFilesByJar().get(resolvedDep);
-
-            if (transformedFromThisArchive == null || transformedFromThisArchive.isEmpty()) {
-                final String fileName = depArtifact.getGroupId() + "." + resolvedDep.getFileName();
-                final Path targetPath = libDir.resolve(fileName);
-                Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                classPath.append(" lib/" + fileName);
+            if (isAppDepPathAJar(depArtifact)) {
+                Set<String> transformedFromThisArchive = transformedClasses.getTransformedFilesByJar().get(resolvedDep);
+                if (transformedFromThisArchive == null || transformedFromThisArchive.isEmpty()) {
+                    final String fileName = depArtifact.getGroupId() + "." + resolvedDep.getFileName();
+                    final Path targetPath = libDir.resolve(fileName);
+                    Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                    classPath.append(" lib/" + fileName);
+                } else {
+                    //we have transformed classes, we need to handle them correctly
+                    final String fileName = "modified-" + depArtifact.getGroupId() + "." + resolvedDep.getFileName();
+                    final Path targetPath = libDir.resolve(fileName);
+                    classPath.append(" lib/" + fileName);
+                    filterZipFile(resolvedDep, targetPath, transformedFromThisArchive);
+                }
             } else {
-                //we have transformed classes, we need to handle them correctly
-                final String fileName = "modified-" + depArtifact.getGroupId() + "." + resolvedDep.getFileName();
-                final Path targetPath = libDir.resolve(fileName);
-                classPath.append(" lib/" + fileName);
-                filterZipFile(resolvedDep, targetPath, transformedFromThisArchive);
+                // This case can happen when we are building a jar from inside the Quarkus repository
+                // and Quarkus Bootstrap's localProjectDiscovery has been set to true. In such a case
+                // the non-jar dependencies are the Quarkus dependencies picked up on the file system
+                Files.walkFileTree(resolvedDep, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
+                        new SimpleFileVisitor<Path>() {
+                            @Override
+                            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                                    throws IOException {
+                                final String relativePath = toUri(resolvedDep.relativize(file));
+                                if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
+                                    services.computeIfAbsent(relativePath, (u) -> new ArrayList<>())
+                                            .add(read(file));
+                                } else if (file.getFileName().toString().endsWith(".class")) {
+                                    final Path targetPath = runnerZipFs
+                                            .getPath(appDep.getArtifact().getPath().relativize(file).toString());
+                                    Files.createDirectories(targetPath.getParent());
+                                    Files.copy(file, targetPath);
+                                }
+                                return FileVisitResult.CONTINUE;
+                            }
+                        });
             }
-
         }
     }
 

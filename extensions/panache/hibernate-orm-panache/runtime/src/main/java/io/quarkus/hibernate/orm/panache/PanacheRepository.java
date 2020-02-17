@@ -1,5 +1,9 @@
 package io.quarkus.hibernate.orm.panache;
 
+import javax.persistence.EntityManager;
+
+import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
+
 /**
  * <p>
  * Represents a Repository for a specific type of entity {@code Entity}, with an ID type
@@ -13,4 +17,7 @@ package io.quarkus.hibernate.orm.panache;
  */
 public interface PanacheRepository<Entity> extends PanacheRepositoryBase<Entity, Long> {
 
+	default EntityManager entityManager() {
+	    return JpaOperations.getEntityManager();
+	}
 }

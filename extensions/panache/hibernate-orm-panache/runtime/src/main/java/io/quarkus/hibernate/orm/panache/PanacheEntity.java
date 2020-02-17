@@ -1,9 +1,12 @@
 package io.quarkus.hibernate.orm.panache;
 
+import javax.persistence.EntityManager;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Transient;
+
+import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
 
 /**
  * <p>
@@ -38,6 +41,10 @@ public abstract class PanacheEntity extends PanacheEntityBase {
     public String toString() {
         return this.getClass().getSimpleName() + "<" + id + ">";
     }
+    
+    public EntityManager entityManager() {
+	    return JpaOperations.getEntityManager();
+	}
 
     // FIXME: VERSION?
 }

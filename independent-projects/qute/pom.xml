@@ -38,15 +38,14 @@
         <version.junit>5.6.0</version.junit>
         <version.gizmo>1.0.2.Final</version.gizmo>
         <version.jboss-logging>3.3.2.Final</version.jboss-logging>
-        <version.reactivestreams>1.0.2</version.reactivestreams>
-        <version.rxjava2>2.2.17</version.rxjava2>
-        <version.smallrye-reactive-streams-operators>1.0.6</version.smallrye-reactive-streams-operators>
+        <version.reactivestreams>1.0.3</version.reactivestreams>
+        <version.mutiny>0.3.1</version.mutiny>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
     </properties>
 
     <modules>
         <module>core</module>
-        <module>rxjava</module>
+        <module>mutiny</module>
         <module>generator</module>
     </modules>
 
@@ -91,14 +90,9 @@
                 <version>${version.reactivestreams}</version>
             </dependency>
             <dependency>
-                <groupId>io.reactivex.rxjava2</groupId>
-                <artifactId>rxjava</artifactId>
-                <version>${version.rxjava2}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-reactive-streams-operators-1.0</artifactId>
-                <version>${version.smallrye-reactive-streams-operators}</version>
+                <artifactId>mutiny</artifactId>
+                <version>${version.mutiny}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

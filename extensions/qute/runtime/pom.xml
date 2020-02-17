@@ -29,7 +29,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus.qute</groupId>
-            <artifactId>qute-rxjava</artifactId>
+            <artifactId>qute-mutiny</artifactId>
         </dependency>
     </dependencies>
 

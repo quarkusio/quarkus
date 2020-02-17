@@ -49,7 +49,7 @@ public interface Engine {
      * 
      * @param id
      * @return the template or null
-     * @see EngineBuilder#addLocator(java.util.function.Function)
+     * @see EngineBuilder#addLocator(TemplateLocator)
      */
     public Template getTemplate(String id);
 

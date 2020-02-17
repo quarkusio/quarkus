@@ -263,6 +263,29 @@ public class ReportGenerator {
 <2> Use the `@Scheduled` annotation to instruct Quarkus to execute this method on the half hour. For more information see the link:scheduler[Scheduler] guide.
 <3> The `TemplateInstance.render()` method triggers rendering. Note that this method blocks the current thread.
 
+== Reactive and Asynchronous APIs
+
+Templates can be rendered as a `CompletionStage<String>` (completed with the rendered output asynchronously) or as `Publisher<String>` containing the rendered chunks:
+
+[source, java]
+----
+CompletionStage<String> async = template.data("name", "neo").renderAsync();
+Publisher<String> publisher = template.data("name", "neo").publisher();
+----
+
+In the case of a `Publisher`, the template is rendered chunk by chunk following the requests from the subscriber.
+The rendering is not started until a subscriber requests it.
+The returned `Publisher` is an instance of `io.smallrye.mutiny.Multi`.
+
+It is possible to create an instance of `io.smallrye.mutiny.Uni` as follows:
+
+[source, java]
+----
+Uni<String> uni = Uni.createFrom().completionStage(() -> template.data("name", "neo").renderAsync());
+----
+
+In this case, the rendering only starts once the subscriber requests it.
+
 == Qute Reference Guide
 
 To learn more about Qute, please refer to the link:qute-reference[Qute reference guide].

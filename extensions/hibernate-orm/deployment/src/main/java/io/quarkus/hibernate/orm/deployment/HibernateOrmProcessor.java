@@ -106,6 +106,9 @@ public final class HibernateOrmProcessor {
     private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
     private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
 
+    private static final String INTEGRATOR_SERVICE_FILE = "META-INF/services/org.hibernate.integrator.spi.Integrator";
+    private static final String SERVICE_CONTRIBUTOR_SERVICE_FILE = "META-INF/services/org.hibernate.service.spi.ServiceContributor";
+
     /**
      * Hibernate ORM configuration
      */
@@ -125,6 +128,9 @@ public final class HibernateOrmProcessor {
     List<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles(LaunchModeBuildItem launchMode) {
         List<HotDeploymentWatchedFileBuildItem> watchedFiles = new ArrayList<>();
         watchedFiles.add(new HotDeploymentWatchedFileBuildItem("META-INF/persistence.xml"));
+        watchedFiles.add(new HotDeploymentWatchedFileBuildItem(INTEGRATOR_SERVICE_FILE));
+        watchedFiles.add(new HotDeploymentWatchedFileBuildItem(SERVICE_CONTRIBUTOR_SERVICE_FILE));
+
         getSqlLoadScript(launchMode.getLaunchMode()).ifPresent(script -> {
             watchedFiles.add(new HotDeploymentWatchedFileBuildItem(script));
         });
@@ -222,17 +228,16 @@ public final class HibernateOrmProcessor {
         recorderContext.registerNonDefaultConstructor(ParsedPersistenceXmlDescriptor.class.getDeclaredConstructor(URL.class),
                 (i) -> Collections.singletonList(i.getPersistenceUnitRootUrl()));
 
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         // inspect service files for additional integrators
         Collection<Class<? extends Integrator>> integratorClasses = new LinkedHashSet<>();
-        for (String integratorClassName : ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
-                "META-INF/services/org.hibernate.integrator.spi.Integrator")) {
+        for (String integratorClassName : ServiceUtil.classNamesNamedIn(classLoader, INTEGRATOR_SERVICE_FILE)) {
             integratorClasses.add((Class<? extends Integrator>) recorderContext.classProxy(integratorClassName));
         }
-
         // inspect service files for service contributors
         Collection<Class<? extends ServiceContributor>> serviceContributorClasses = new LinkedHashSet<>();
-        for (String serviceContributorClassName : ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
-                "META-INF/services/org.hibernate.service.spi.ServiceContributor")) {
+        for (String serviceContributorClassName : ServiceUtil.classNamesNamedIn(classLoader,
+                SERVICE_CONTRIBUTOR_SERVICE_FILE)) {
             serviceContributorClasses
                     .add((Class<? extends ServiceContributor>) recorderContext.classProxy(serviceContributorClassName));
         }

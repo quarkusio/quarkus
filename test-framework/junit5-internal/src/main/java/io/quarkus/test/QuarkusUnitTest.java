@@ -125,6 +125,10 @@ public class QuarkusUnitTest
     }
 
     public QuarkusUnitTest assertException(Consumer<Throwable> assertException) {
+        if (this.assertException != null) {
+            throw new IllegalStateException("Don't set the asserted or excepted exception twice"
+                    + " to avoid shadowing out the first call.");
+        }
         this.assertException = assertException;
         return this;
     }

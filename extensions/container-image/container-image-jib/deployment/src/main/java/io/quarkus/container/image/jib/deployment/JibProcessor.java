@@ -138,8 +138,8 @@ public class JibProcessor {
             RegistryImage registryImage = RegistryImage.named(imageReference);
             registryImage.addCredentialRetriever(credentialRetrieverFactory.wellKnownCredentialHelpers());
             registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig());
-            if (jibConfig.username.isPresent() && jibConfig.password.isPresent()) {
-                registryImage.addCredential(jibConfig.username.get(), jibConfig.password.get());
+            if (containerImageConfig.username.isPresent() && containerImageConfig.password.isPresent()) {
+                registryImage.addCredential(containerImageConfig.username.get(), containerImageConfig.password.get());
             }
             containerizer = Containerizer.to(registryImage);
         } else {
@@ -151,7 +151,7 @@ public class JibProcessor {
                 log.log(toJBossLoggingLevel(e.getLevel()), e.getMessage());
             }
         });
-        containerizer.setAllowInsecureRegistries(jibConfig.insecure);
+        containerizer.setAllowInsecureRegistries(containerImageConfig.insecure);
         return containerizer;
     }
 

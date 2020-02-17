@@ -564,20 +564,23 @@ The generated service can be customized using the following properties:
 
 == Deployment
 
-To trigger building and deploying a container image you need to enable `quarkus.container.build` and `quarkus.container.deploy` flags respectively.
+To trigger building and deploying a container image you need to enable the `quarkus.container.deploy` flag.
 This can be easily done from the command line:
 
 [source, subs=attributes+]
 ----
-mvn clean package -Dquarkus.container.build=true -Dquarkus.kubernetes.deploy=true
+mvn clean package -Dquarkus.kubernetes.deploy=true
 ----
 
 === Building
 
-At the moment this is only possible, using `docker`.
-The dockerfiles used are internal (Dockerfiles found under `src/main/docker` are NOT used).
+Building is possible, using any of the 3 available `container-image` extensions:
 
-if the `docker` binary is not present in the `PATH` or a docker daemon is not available, this step will be skipped.
+- link:container-image#docker[Docker]
+- link:container-image#jib[Jib]
+- link:container-image#s2i[s2i]
+
+Each time deployment is requested, a container build will be implicitly triggered (no additonal properties are required).
 
 === Deploying
 

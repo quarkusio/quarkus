@@ -26,7 +26,6 @@ import io.dekorate.utils.Packaging;
 import io.dekorate.utils.Serialization;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.container.image.deployment.util.ImageUtil;
-import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageResultBuildItem;
 import io.quarkus.deployment.IsNormal;

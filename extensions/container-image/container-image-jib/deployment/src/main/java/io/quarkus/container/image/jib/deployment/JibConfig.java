@@ -43,21 +43,4 @@ public class JibConfig {
 
     //TODO: do the following config options belong in ContainerImageConfig ?
 
-    /**
-     * The username to use to authenticate with the registry
-     */
-    @ConfigItem
-    public Optional<String> username;
-
-    /**
-     * The password to use to authenticate with the registry
-     */
-    @ConfigItem
-    public Optional<String> password;
-
-    /**
-     * Whether or not insecure registries are allowed
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean insecure;
 }

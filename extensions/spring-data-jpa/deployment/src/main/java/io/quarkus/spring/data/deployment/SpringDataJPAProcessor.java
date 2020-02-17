@@ -1,5 +1,7 @@
 package io.quarkus.spring.data.deployment;
 
+import static java.util.stream.Collectors.toList;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -7,12 +9,16 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.logging.Logger;
 import org.springframework.data.domain.Auditable;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -38,6 +44,17 @@ import io.quarkus.spring.data.deployment.generate.SpringDataRepositoryCreator;
 
 public class SpringDataJPAProcessor {
 
+    private static final Logger LOGGER = Logger.getLogger(SpringDataJPAProcessor.class.getName());
+    private static final Pattern pattern = Pattern.compile("spring\\.jpa\\..*");
+    public static final String SPRING_JPA_SHOW_SQL = "spring.jpa.show-sql";
+    public static final String SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT = "spring.jpa.properties.hibernate.dialect";
+    public static final String SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT_STORAGE_ENGINE = "spring.jpa.properties.hibernate.dialect.storage_engine";
+    public static final String SPRING_JPA_GENERATE_DDL = "spring.jpa.generate-ddl";
+    public static final String QUARKUS_HIBERNATE_ORM_DIALECT = "quarkus.hibernate-orm.dialect";
+    public static final String QUARKUS_HIBERNATE_ORM_LOG_SQL = "quarkus.hibernate-orm.log.sql";
+    public static final String QUARKUS_HIBERNATE_ORM_DIALECT_STORAGE_ENGINE = "quarkus.hibernate-orm.dialect.storage-engine";
+    public static final String QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION = "quarkus.hibernate-orm.database.generation";
+
     @BuildStep
     FeatureBuildItem registerFeature() {
         return new FeatureBuildItem(FeatureBuildItem.SPRING_DATA_JPA);
@@ -57,6 +74,8 @@ public class SpringDataJPAProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
 
+        detectAndLogSpecificSpringPropertiesIfExist();
+
         IndexView indexIndex = index.getIndex();
         List<ClassInfo> interfacesExtendingCrudRepository = getAllInterfacesExtending(DotNames.SUPPORTED_REPOSITORIES,
                 indexIndex);
@@ -64,6 +83,46 @@ public class SpringDataJPAProcessor {
         removeNoRepositoryBeanClasses(interfacesExtendingCrudRepository);
         implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans, reflectiveClasses,
                 interfacesExtendingCrudRepository, indexIndex);
+    }
+
+    private void detectAndLogSpecificSpringPropertiesIfExist() {
+        Config config = ConfigProvider.getConfig();
+
+        Iterable<String> iterablePropertyNames = config.getPropertyNames();
+        List<String> propertyNames = new ArrayList<String>();
+        iterablePropertyNames.forEach(propertyNames::add);
+        List<String> springProperties = propertyNames.stream().filter(s -> pattern.matcher(s).matches()).collect(toList());
+        String notSupportedProperties = "";
+
+        if (!springProperties.isEmpty()) {
+            for (String sp : springProperties) {
+                switch (sp) {
+                    case SPRING_JPA_SHOW_SQL:
+                        notSupportedProperties = notSupportedProperties + "\t- " + SPRING_JPA_SHOW_SQL
+                                + " should be replaced by " + QUARKUS_HIBERNATE_ORM_LOG_SQL + "\n";
+                        break;
+                    case SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT:
+                        notSupportedProperties = notSupportedProperties + "\t- " + SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
+                                + " should be replaced by " + QUARKUS_HIBERNATE_ORM_DIALECT + "\n";
+                        break;
+                    case SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT_STORAGE_ENGINE:
+                        notSupportedProperties = notSupportedProperties + "\t- "
+                                + SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT_STORAGE_ENGINE + " should be replaced by "
+                                + QUARKUS_HIBERNATE_ORM_DIALECT_STORAGE_ENGINE + "\n";
+                        break;
+                    case SPRING_JPA_GENERATE_DDL:
+                        notSupportedProperties = notSupportedProperties + "\t- " + SPRING_JPA_GENERATE_DDL
+                                + " should be replaced by " + QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION + "\n";
+                        break;
+                    default:
+                        notSupportedProperties = notSupportedProperties + "\t- " + sp + "\n";
+                        break;
+                }
+            }
+            LOGGER.warnf(
+                    "Quarkus does not support the following Spring Boot configuration properties: %n%s",
+                    notSupportedProperties);
+        }
     }
 
     private void removeNoRepositoryBeanClasses(List<ClassInfo> interfacesExtendingCrudRepository) {

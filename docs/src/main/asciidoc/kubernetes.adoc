@@ -569,7 +569,7 @@ This can be easily done from the command line:
 
 [source, subs=attributes+]
 ----
-mvn clean package -Dquarkus.container.build=true -Dquarkus.container.deploy=true
+mvn clean package -Dquarkus.container.build=true -Dquarkus.kubernetes.deploy=true
 ----
 
 === Building

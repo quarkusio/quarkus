@@ -1,5 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -22,9 +24,11 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.dekorate.Session;
 import io.dekorate.SessionWriter;
+import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.PortBuilder;
 import io.dekorate.kubernetes.config.ProbeBuilder;
 import io.dekorate.kubernetes.configurator.AddPort;
+import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddRoleBindingResourceDecorator;
@@ -47,6 +51,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesEnvVarBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
@@ -59,8 +64,6 @@ class KubernetesProcessor {
             Arrays.asList("kubernetes", "openshift", "knative", "docker", "s2i"));
     private static final Set<String> IMAGE_GENERATORS = new HashSet(Arrays.asList("docker", "s2i"));
 
-    private static final String DEPLOYMENT_TARGET = "kubernetes.deployment.target";
-    private static final String KUBERNETES = "kubernetes";
     private static final String DOCKER_REGISTRY_PROPERTY = PROPERTY_PREFIX + "docker.registry";
     private static final String APP_GROUP_PROPERTY = "app.group";
 
@@ -77,6 +80,7 @@ class KubernetesProcessor {
             ArchiveRootBuildItem archiveRootBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             PackageConfig packageConfig,
+            List<KubernetesEnvVarBuildItem> kubernetesEnvBuildItems,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
             Optional<ContainerImageInfoBuildItem> containerImageBuildItem,
@@ -129,8 +133,8 @@ class KubernetesProcessor {
                 .findFirst();
         kubernetesGroup.ifPresent(v -> System.setProperty(APP_GROUP_PROPERTY, v));
 
-        Path artifactPath = archiveRootBuildItem.getArchiveRoot().resolve(String.format(OUTPUT_ARTIFACT_FORMAT,
-                outputTargetBuildItem.getBaseName(), packageConfig.runnerSuffix));
+        Path artifactPath = archiveRootBuildItem.getArchiveRoot().resolve(
+                String.format(OUTPUT_ARTIFACT_FORMAT, outputTargetBuildItem.getBaseName(), packageConfig.runnerSuffix));
         final Map<String, String> generatedResourcesMap;
         try {
             final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
@@ -142,7 +146,9 @@ class KubernetesProcessor {
             session.feed(Maps.fromProperties(configAsMap));
 
             //apply build item configurations to the dekorate session.
-            applyBuildItems(session, applicationInfo, kubernetesRoleBuildItems, kubernetesPortBuildItems,
+            applyBuildItems(session, applicationInfo,
+                    kubernetesEnvBuildItems,
+                    kubernetesRoleBuildItems, kubernetesPortBuildItems,
                     containerImageBuildItem,
                     kubernetesHealthLivenessPathBuildItem,
                     kubernetesHealthReadinessPathBuildItem);
@@ -185,6 +191,7 @@ class KubernetesProcessor {
     }
 
     private void applyBuildItems(Session session, ApplicationInfoBuildItem applicationInfo,
+            List<KubernetesEnvVarBuildItem> kubernetesEnvBuildItems,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
             Optional<ContainerImageInfoBuildItem> containerImageBuildItem,
@@ -193,6 +200,11 @@ class KubernetesProcessor {
 
         containerImageBuildItem.ifPresent(c -> session.resources()
                 .decorate(new ApplyImageDecorator(applicationInfo.getName(), c.getImage())));
+
+        //Hanlde env variables
+        kubernetesEnvBuildItems.forEach(e -> session.resources()
+                .decorate(new AddEnvVarDecorator(new EnvBuilder().withName(e.getName()).withValue(e.getValue()).build())));
+
         //Handle ports
         final Map<String, Integer> ports = verifyPorts(kubernetesPortBuildItems);
         ports.entrySet().stream()

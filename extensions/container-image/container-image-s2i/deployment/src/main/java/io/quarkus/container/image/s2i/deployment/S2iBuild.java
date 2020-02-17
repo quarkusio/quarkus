@@ -1,5 +1,4 @@
-
-package io.quarkus.kubernetes.deployment;
+package io.quarkus.container.image.s2i.deployment;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,39 +16,22 @@ import org.jboss.logging.Logger;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.deployment.util.ExecUtil;
 
-public class KubernetesDeploy implements BooleanSupplier {
+public class S2iBuild implements BooleanSupplier {
 
-    private final Logger LOGGER = Logger.getLogger(KubernetesDeploy.class);
-    private static boolean serverFound = false;
+    private static final Logger LOGGER = Logger.getLogger(S2iBuild.class.getName());
 
-    private KubernetesConfig kubernetesConfig;
     private ContainerImageConfig containerImageConfig;
 
-    KubernetesDeploy(ContainerImageConfig containerImageConfig, KubernetesConfig kubernetesConfig) {
+    S2iBuild(ContainerImageConfig containerImageConfig) {
         this.containerImageConfig = containerImageConfig;
-        this.kubernetesConfig = kubernetesConfig;
     }
 
     @Override
     public boolean getAsBoolean() {
-        //No need to perform the check multiple times.
-        if (serverFound) {
-            return true;
-        }
         OutputFilter filter = new OutputFilter();
         try {
-            if (kubernetesConfig.getDeploymentTarget().contains(DeploymentTarget.OPENSHIFT)) {
-                if (ExecUtil.exec(new File("."), filter, "oc", "version")) {
-                    Optional<String> version = getServerVersionFromOc(filter.getLines());
-                    version.ifPresent(v -> LOGGER.info("Found Kubernetes version:" + v));
-                    serverFound = true;
-                    return true;
-                }
-            }
-            if (ExecUtil.exec(new File("."), filter, "kubectl", "version")) {
-                Optional<String> version = getServerVersionFromKubectl(filter.getLines());
-                version.ifPresent(v -> LOGGER.info("Found Kubernetes version:" + v));
-                serverFound = true;
+            if (ExecUtil.exec(new File("."), filter, "oc", "version")) {
+                Optional<String> version = getServerVersionFromOc(filter.getLines());
                 return true;
             }
         } catch (Exception e) {
@@ -64,15 +46,6 @@ public class KubernetesDeploy implements BooleanSupplier {
                 .map(l -> l.split(" "))
                 .filter(a -> a.length > 2)
                 .map(a -> a[1])
-                .findFirst();
-    }
-
-    private static Optional<String> getServerVersionFromKubectl(List<String> lines) {
-        return lines.stream()
-                .filter(l -> l.startsWith("Server Version"))
-                .map(l -> l.split("\""))
-                .filter(a -> a.length > 5)
-                .map(a -> a[5])
                 .findFirst();
     }
 

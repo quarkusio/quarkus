@@ -564,6 +564,8 @@ public class VertxHttpRecorder {
         private final HttpServerOptions httpOptions;
         private final HttpServerOptions httpsOptions;
         private final LaunchMode launchMode;
+        private volatile boolean clearHttpProperty = false;
+        private volatile boolean clearHttpsProperty = false;
 
         public WebDeploymentVerticle(int port, int httpsPort, String host, HttpServerOptions httpOptions,
                 HttpServerOptions httpsOptions, LaunchMode launchMode) {
@@ -588,6 +590,7 @@ public class VertxHttpRecorder {
                     int actualPort = event.result().actualPort();
                     if (actualPort != port) {
                         // Override quarkus.http.(test-)?port
+                        clearHttpProperty = true;
                         System.setProperty(launchMode == LaunchMode.TEST ? "quarkus.http.test-port" : "quarkus.http.port",
                                 String.valueOf(actualPort));
                         // Set in HttpOptions to output the port in the Timing class
@@ -608,6 +611,7 @@ public class VertxHttpRecorder {
                         int actualPort = event.result().actualPort();
                         if (actualPort != httpsPort) {
                             // Override quarkus.https.(test-)?port
+                            clearHttpsProperty = true;
                             System.setProperty(launchMode == LaunchMode.TEST ? "quarkus.https.test-port" : "quarkus.https.port",
                                     String.valueOf(actualPort));
                             // Set in HttpOptions to output the port in the Timing class
@@ -623,6 +627,12 @@ public class VertxHttpRecorder {
 
         @Override
         public void stop(Future<Void> stopFuture) {
+            if (clearHttpProperty) {
+                System.clearProperty(launchMode == LaunchMode.TEST ? "quarkus.http.test-port" : "quarkus.http.port");
+            }
+            if (clearHttpsProperty) {
+                System.clearProperty(launchMode == LaunchMode.TEST ? "quarkus.https.test-port" : "quarkus.https.port");
+            }
             httpServer.close(new Handler<AsyncResult<Void>>() {
                 @Override
                 public void handle(AsyncResult<Void> event) {

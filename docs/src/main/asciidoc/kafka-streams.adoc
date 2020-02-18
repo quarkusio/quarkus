@@ -119,7 +119,7 @@ import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.logging.Logger;
 
 import io.reactivex.Flowable;
-import io.smallrye.reactive.messaging.kafka.KafkaMessage;
+import io.smallrye.reactive.messaging.kafka.KafkaRecord;
 
 /**
  * A bean producing random temperature data every second.
@@ -149,26 +149,24 @@ public class ValuesGenerator {
 
 
     @Outgoing("temperature-values")                             // <1>
-    public Flowable<KafkaMessage<Integer, String>> generate() {
+    public Flowable<KafkaRecord<Integer, String>> generate() {
 
         return Flowable.interval(500, TimeUnit.MILLISECONDS)    // <2>
                 .onBackpressureDrop()
                 .map(tick -> {
                     WeatherStation station = stations.get(random.nextInt(stations.size()));
-                    double temperature = new BigDecimal(
-                                random.nextGaussian() * 15 + station.averageTemperature
-                            )
+                    double temperature = BigDecimal.valueOf(random.nextGaussian() * 15 + station.averageTemperature)
                             .setScale(1, RoundingMode.HALF_UP)
                             .doubleValue();
 
                     LOG.info("station: {}, temperature: {}", station.name, temperature);
-                    return KafkaMessage.of(station.id, Instant.now() + ";" + temperature);
+                    return KafkaRecord.of(station.id, Instant.now() + ";" + temperature);
                 });
     }
 
     @Outgoing("weather-stations")                               // <3>
-    public Flowable<KafkaMessage<Integer, String>> weatherStations() {
-        List<KafkaMessage<Integer, String>> stationsAsJson = stations.stream()
+    public Flowable<KafkaRecord<Integer, String>> weatherStations() {
+        List<KafkaRecord<Integer, String>> stationsAsJson = stations.stream()
             .map(s -> KafkaMessage.of(
                     s.id,
                     "{ \"id\" : " + s.id +

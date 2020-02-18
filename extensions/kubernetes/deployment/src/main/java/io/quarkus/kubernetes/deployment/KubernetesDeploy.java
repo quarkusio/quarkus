@@ -1,6 +1,8 @@
 
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOY;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +14,8 @@ import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.container.image.deployment.ContainerImageConfig;
@@ -32,6 +36,11 @@ public class KubernetesDeploy implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
+        Config config = ConfigProvider.getConfig();
+        if (!config.getOptionalValue(DEPLOY, Boolean.class).orElse(false)) {
+            return false;
+        }
+
         //No need to perform the check multiple times.
         if (serverFound) {
             return true;

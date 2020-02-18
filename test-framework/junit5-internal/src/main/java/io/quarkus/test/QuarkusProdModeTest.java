@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +43,8 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.utilities.JavaBinFinder;
@@ -84,6 +87,7 @@ public class QuarkusProdModeTest
     private Optional<Field> prodModeTestResultsField = Optional.empty();
     private Path logfilePath;
     private Optional<Field> logfileField = Optional.empty();
+    private List<AppArtifact> forcedDependencies = Collections.emptyList();
 
     public Supplier<JavaArchive> getArchiveProducer() {
         return archiveProducer;
@@ -145,6 +149,15 @@ public class QuarkusProdModeTest
      */
     public QuarkusProdModeTest setRuntimeProperties(Map<String, String> runtimeProperties) {
         this.runtimeProperties = runtimeProperties;
+        return this;
+    }
+
+    /**
+     * Provides a convenient way to either add additional dependencies to the application (if it doesn't already contain a
+     * dependency), or override a version (if the dependency already exists)
+     */
+    public QuarkusProdModeTest setForcedDependencies(List<AppArtifact> forcedDependencies) {
+        this.forcedDependencies = forcedDependencies;
         return this;
     }
 
@@ -229,7 +242,9 @@ public class QuarkusProdModeTest
                         .setLocalProjectDiscovery(true)
                         .addExcludedPath(testLocation)
                         .setProjectRoot(testLocation)
-                        .setTargetDirectory(buildDir);
+                        .setTargetDirectory(buildDir)
+                        .setForcedDependencies(forcedDependencies.stream().map(d -> new AppDependency(d, "compile"))
+                                .collect(Collectors.toList()));
                 if (applicationName != null) {
                     builder.setBaseName(applicationName);
                 }

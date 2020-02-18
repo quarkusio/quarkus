@@ -7,7 +7,7 @@ import com.mongodb.client.MongoClient;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
-import io.quarkus.mongodb.ReactiveMongoClient;
+import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 

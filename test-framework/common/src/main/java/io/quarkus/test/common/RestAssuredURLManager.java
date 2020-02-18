@@ -55,11 +55,17 @@ public class RestAssuredURLManager {
     }
 
     public static void setURL(boolean useSecureConnection) {
+        setURL(useSecureConnection, null);
+    }
+
+    public static void setURL(boolean useSecureConnection, Integer port) {
         if (portField != null) {
             try {
                 oldPort = (Integer) portField.get(null);
-                int port = useSecureConnection ? getPortFromConfig("quarkus.https.test-port", DEFAULT_HTTPS_PORT)
-                        : getPortFromConfig("quarkus.http.test-port", DEFAULT_HTTP_PORT);
+                if (port == null) {
+                    port = useSecureConnection ? getPortFromConfig("quarkus.https.test-port", DEFAULT_HTTPS_PORT)
+                            : getPortFromConfig("quarkus.http.test-port", DEFAULT_HTTP_PORT);
+                }
                 portField.set(null, port);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();

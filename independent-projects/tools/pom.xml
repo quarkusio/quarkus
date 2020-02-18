@@ -54,6 +54,7 @@
     <modules>
         <module>platform-descriptor-api</module>
         <module>common</module>
+        <module>utilities</module>
         <module>platform-descriptor-resolver-json</module>
     </modules>
     <dependencyManagement>
@@ -67,6 +68,11 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-core</artifactId>
                 <version>${quarkus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devtools-utilities</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>

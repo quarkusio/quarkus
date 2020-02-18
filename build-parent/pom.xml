@@ -104,6 +104,11 @@
 
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devtools-utilities</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-common</artifactId>
                 <version>${project.version}</version>
             </dependency>

@@ -187,9 +187,7 @@ public final class BuildContext {
      */
     public void note(Location location, String format, Object... args) {
         final List<Diagnostic> list = execution.getDiagnostics();
-        synchronized (list) {
-            list.add(new Diagnostic(Diagnostic.Level.NOTE, location, format, args));
-        }
+        list.add(new Diagnostic(Diagnostic.Level.NOTE, location, format, args));
     }
 
     /**
@@ -201,9 +199,7 @@ public final class BuildContext {
      */
     public void warn(Location location, String format, Object... args) {
         final List<Diagnostic> list = execution.getDiagnostics();
-        synchronized (list) {
-            list.add(new Diagnostic(Diagnostic.Level.WARN, location, format, args));
-        }
+        list.add(new Diagnostic(Diagnostic.Level.WARN, location, format, args));
     }
 
     /**
@@ -215,9 +211,7 @@ public final class BuildContext {
      */
     public void error(Location location, String format, Object... args) {
         final List<Diagnostic> list = execution.getDiagnostics();
-        synchronized (list) {
-            list.add(new Diagnostic(Diagnostic.Level.ERROR, location, format, args));
-        }
+        list.add(new Diagnostic(Diagnostic.Level.ERROR, location, format, args));
         execution.setErrorReported();
     }
 
@@ -279,10 +273,7 @@ public final class BuildContext {
                     buildStep.execute(this);
                 } catch (Throwable t) {
                     final List<Diagnostic> list = execution.getDiagnostics();
-                    synchronized (list) {
-                        list.add(
-                                new Diagnostic(Diagnostic.Level.ERROR, t, null, "Build step %s threw an exception", buildStep));
-                    }
+                    list.add(new Diagnostic(Diagnostic.Level.ERROR, t, null, "Build step %s threw an exception", buildStep));
                     execution.setErrorReported();
                 } finally {
                     running = false;

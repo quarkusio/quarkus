@@ -1,10 +1,8 @@
 package io.quarkus.mongodb.impl;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
 
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
@@ -12,52 +10,107 @@ import org.reactivestreams.Publisher;
 
 import com.mongodb.reactivestreams.client.Success;
 
-import io.reactivex.Flowable;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
-import io.vertx.reactivex.RxHelper;
 
 class Wrappers {
-    private static final Supplier<RuntimeException> UNEXPECTED_EMPTY_STREAM = () -> new IllegalStateException(
-            "Unexpected empty stream");
 
     private Wrappers() {
         // Avoid direct instantiation.
     }
 
-    static <T> CompletionStage<T> toCompletionStage(Publisher<T> publisher) {
+    static <T> Uni<T> toUni(Publisher<T> publisher) {
         Context context = Vertx.currentContext();
-        CompletionStage<Optional<T>> run = ReactiveStreams.fromPublisher(publisher)
-                .findFirst()
-                .run();
-        CompletableFuture<T> cf = new CompletableFuture<>();
-        run.whenComplete((opt, err) -> {
-            if (context != null) {
-                context.runOnContext(x -> completeOrFailedTheFuture(cf, opt, err));
-            } else {
-                completeOrFailedTheFuture(cf, opt, err);
-            }
-        });
-        return cf;
-
+        Uni<T> uni = Uni.createFrom().publisher(publisher);
+        if (context != null) {
+            return uni.emitOn(command -> context.runOnContext(x -> command.run()));
+        }
+        return uni;
     }
 
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private static <T> void completeOrFailedTheFuture(CompletableFuture<T> cf, Optional<T> opt, Throwable err) {
+    static Uni<Void> toEmptyUni(Publisher<Success> publisher) {
+        return toUni(publisher).onItem().apply(s -> null);
+    }
+
+    static <T> Multi<T> toMulti(Publisher<T> publisher) {
+        @Nullable
+        Context context = Vertx.currentContext();
+        if (context != null) {
+            return Multi.createFrom().publisher(publisher).emitOn(command -> context.runOnContext(x -> command.run()));
+        } else {
+            return Multi.createFrom().publisher(publisher);
+        }
+    }
+
+    static <T> Uni<List<T>> toUniOfList(Publisher<T> publisher) {
+        @Nullable
+        Context context = Vertx.currentContext();
+        Uni<List<T>> uni = Multi.createFrom().publisher(publisher)
+                .collectItems().asList();
+
+        if (context != null) {
+            return uni.emitOn(command -> context.runOnContext(x -> command.run()));
+        }
+        return uni;
+    }
+
+    static <T> PublisherBuilder<T> toPublisherBuilder(Publisher<T> publisher) {
+        @Nullable
+        Context context = Vertx.currentContext();
+        if (context != null) {
+            Multi<T> multi = Multi.createFrom().publisher(publisher)
+                    .emitOn(command -> context.runOnContext(x -> command.run()));
+            return ReactiveStreams.fromPublisher(multi);
+        } else {
+            return ReactiveStreams.fromPublisher(publisher);
+        }
+    }
+
+    public static <T> CompletionStage<T> toCompletionStage(Publisher<T> publisher) {
+        Context context = Vertx.currentContext();
+        CompletableFuture<T> future = Multi.createFrom().publisher(publisher)
+                .collectItems().first()
+                .subscribeAsCompletionStage();
+
+        CompletableFuture<T> result = new CompletableFuture<>();
+        future.whenComplete((value, err) -> {
+            if (context != null) {
+                context.runOnContext(x -> completeOrFailedTheFuture(result, value, err));
+            } else {
+                completeOrFailedTheFuture(result, value, err);
+            }
+        });
+        return result;
+    }
+
+    private static final RuntimeException UNEXPECTED_EMPTY_STREAM = new IllegalStateException(
+            "Unexpected empty stream");
+
+    private static <T> void completeOrFailedTheFuture(CompletableFuture<T> cf, T value, Throwable err) {
         if (err != null) {
             cf.completeExceptionally(err);
         } else {
-            cf.complete(opt.orElseThrow(UNEXPECTED_EMPTY_STREAM));
+            if (value == null) {
+                cf.completeExceptionally(UNEXPECTED_EMPTY_STREAM);
+            } else {
+                cf.complete(value);
+            }
         }
+    }
+
+    static CompletionStage<Void> toEmptyCompletionStage(Publisher<Success> publisher) {
+        return toCompletionStage(publisher).thenApply(x -> null);
     }
 
     static <T> CompletionStage<List<T>> toCompletionStageOfList(Publisher<T> publisher) {
         @Nullable
         Context context = Vertx.currentContext();
-        CompletionStage<List<T>> run = ReactiveStreams.fromPublisher(publisher)
-                .toList()
-                .run();
+        CompletionStage<List<T>> run = Multi.createFrom().publisher(publisher)
+                .collectItems().asList()
+                .subscribeAsCompletionStage();
         CompletableFuture<List<T>> cf = new CompletableFuture<>();
         run.thenAccept(list -> {
             if (context != null) {
@@ -70,19 +123,4 @@ class Wrappers {
 
     }
 
-    static CompletionStage<Void> toEmptyCompletionStage(Publisher<Success> publisher) {
-        return toCompletionStage(publisher).thenApply(x -> null);
-    }
-
-    static <T> PublisherBuilder<T> toPublisherBuilder(Publisher<T> publisher) {
-        @Nullable
-        Context context = Vertx.currentContext();
-        if (context != null) {
-            Flowable<T> flowable = Flowable.fromPublisher(publisher);
-            return ReactiveStreams.fromPublisher(flowable.observeOn(RxHelper.scheduler(context)));
-        } else {
-            return ReactiveStreams.fromPublisher(publisher);
-        }
-
-    }
 }

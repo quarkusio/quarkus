@@ -983,6 +983,11 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-mutiny</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.reactivex.rxjava2</groupId>
                 <artifactId>rxjava</artifactId>
                 <version>${rxjava.version}</version>

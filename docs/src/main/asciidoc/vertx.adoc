@@ -135,13 +135,49 @@ Quarkus web resources support asynchronous processing and streaming results over
 
 === Asynchronous processing
 
-Most programming guides start easy with a greeting service and this one makes no exception.
-
-To asynchronously greet a client, the endpoint method must return a `java.util.concurrent.CompletionStage`:
+To asynchronously handle the HTTP request, the endpoint method must return a `java.util.concurrent.CompletionStage` or an `io.smallrye.mutiny.Uni` (requires the `quarkus-resteasy-mutiny` extension):
 
 [source,java]
 ----
-@Path("/hello")
+@Path("/lorem")
+public class GreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public Uni<String> doSomethingAsync() {
+        // Mimic an asynchronous computation.
+        return Uni.createFrom()
+                .item(() -> "Hello!")
+                .onItem().delayIt().by(Duration.ofMillis(10));
+    }
+}
+----
+
+
+[source, shell]
+----
+./mvnw compile quarkus:dev
+----
+
+Then, open your browser to 'http://localhost:8080/lorem' and you should get the message.
+
+So far so good.
+Now let's use the Vert.x API instead of this artificial delay:
+
+[source,java]
+----
+package org.acme.vertx;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.Vertx;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/lorem")
 public class GreetingResource {
 
     @Inject
@@ -149,59 +185,30 @@ public class GreetingResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    @Path("{name}")
-    public CompletionStage<String> greeting(@PathParam String name) {
-        // When complete, return the content to the client
-        CompletableFuture<String> future = new CompletableFuture<>();
-
-        long start = System.nanoTime();
-
-        // TODO: asynchronous greeting
-
-        return future;
+    public Uni<String> doSomethingAsync() {
+        return vertx.fileSystem().readFile("/META-INF/resources/lorem.txt")
+                .onItem().apply(b -> b.toString("UTF-8"));
     }
 }
 ----
 
-So far so good.
-Now let's use the Vert.x API to implement the artificially delayed reply with the `setTimer` provided by Vert.x:
+In this code, we inject the `vertx` instance (`io.vertx.mutiny.core.Vertx`) and read a file from the file system.
 
-[source,java]
+Create the `src/main/resources/META_INF/resources/lorem.txt` file with the following content:
+
+[source,text]
 ----
-// Delay reply by 10ms
-vertx.setTimer(10, l -> {
-    // Compute elapsed time in milliseconds
-    long duration = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
-
-    // Format message
-    String message = String.format("Hello %s! (%d ms)%n", name, duration);
-
-    // Complete
-    future.complete(message);
-});
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
 ----
 
-That's it.
-Now start Quarkus in `dev` mode with:
-
-[source, shell]
-----
-./mvnw compile quarkus:dev
-----
-
-Eventually, open your browser and navigate to http://localhost:8080/hello/Quarkus, you should see:
-
-[source, shell]
-----
-Hello Quarkus! (10 ms)
-----
+Then, refresh the page, you should see the _lorem ipsum_ text.
 
 === Streaming using Server-Sent Events
 
 Quarkus web resources that need to send content as https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events] must have a method:
 
 * declaring the `text/event-stream` response content type
-* returning a https://www.reactive-streams.org/[Reactive Streams] `Publisher` or an RX Java 2 `Observable` or `Flowable`
+* returning a https://www.reactive-streams.org/[Reactive Streams] `Publisher` or Mutiny `Multi`  (requires the `quarkus-resteasy-mutiny` extension)
 
 In practice, a streaming greeting service would look like:
 
@@ -212,50 +219,44 @@ public class StreamingResource {
 
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    @Path("{name}/streaming")
-    public Publisher<String> greeting(@PathParam String name) {
-        // TODO: create a Reactive Streams publisher
+    @Path("/{name}")
+    public Multi<String> greeting(@PathParam String name) {
+        // TODO: create a Reactive Streams publisher or a Mutiny Multi
         return publisher;
     }
 }
 ----
 
-How to create a Reactive Streams publisher?
-There are a few ways to do this:
-
-1. If you use `io.vertx.axle.core.Vertx`, the API provides `toPublisher` methods (and then use RX Java 2 or Reactive Streams Operators to manipulate the stream)
-2. You can also use `io.vertx.reactivex.core.Vertx` which already provides RX Java 2 (RX Java 2 `Flowable` implement Reactive Streams `publisher`).
-
-The first approach can be implemented as follows:
+Now we just need to return our `Publisher` or `Multi`:
 
 [source, java]
 ----
-// Use io.vertx.axle.core.Vertx;
-@Inject Vertx vertx;
+package org.acme.vertx;
 
-@GET
-@Produces(MediaType.SERVER_SENT_EVENTS)
-@Path("{name}/streaming")
-public Publisher<String> greeting(@PathParam String name) {
-    return vertx.periodicStream(2000).toPublisherBuilder()
-            .map(l -> String.format("Hello %s! (%s)%n", name, new Date()))
-            .buildRs();
-}
-----
+import io.smallrye.mutiny.Multi;
+import io.vertx.mutiny.core.Vertx;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
-The second approach slightly differs:
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import java.util.Date;
 
-[source,java]
-----
-// Use io.vertx.reactivex.core.Vertx;
-@Inject Vertx vertx;
+@Path("/stream")
+public class StreamingResource {
 
-@GET
-@Produces(MediaType.SERVER_SENT_EVENTS)
-@Path("{name}/streaming")
-public Publisher<String> greeting(@PathParam String name) {
-    return vertx.periodicStream(2000).toFlowable()
-            .map(l -> String.format("Hello %s! (%s)%n", name, new Date()));
+    @Inject
+    Vertx vertx;
+
+    @GET
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @Path("/{name}")
+    public Multi<String> greeting(@PathParam String name) {
+        return vertx.periodicStream(2000).toMulti()
+                .map(l -> String.format("Hello %s! (%s)%n", name, new Date()));
+    }
 }
 ----
 
@@ -284,13 +285,17 @@ The magic, as always, lies in the Javascript code:
 [source,javascript]
 .META-INF/resources/streaming.js
 ----
-var eventSource = new EventSource("/hello/Quarkus/streaming");
-eventSource.onmessage = function (event) {
-    var container = document.getElementById("container");
-    var paragraph = document.createElement("p");
-    paragraph.innerHTML = event.data;
-    container.appendChild(paragraph);
-};
+if (!!window.EventSource) {
+    var eventSource = new EventSource("/stream/Quarkus");
+    eventSource.onmessage = function (event) {
+        var container = document.getElementById("container");
+        var paragraph = document.createElement("p");
+        paragraph.innerHTML = event.data;
+        container.appendChild(paragraph);
+    };
+} else {
+    window.alert("EventSource not available on this browser.")
+}
 ----
 
 IMPORTANT: Most browsers support SSE but some don't.
@@ -301,11 +306,15 @@ A new greeting should show-up every 2 seconds.
 
 [source, text]
 ----
-Hello Quarkus! (Thu Mar 21 17:26:12 CET 2019)
+Hello Quarkus! (Wed Feb 12 17:13:55 CET 2020)
 
-Hello Quarkus! (Thu Mar 21 17:26:14 CET 2019)
+Hello Quarkus! (Wed Feb 12 17:13:57 CET 2020)
 
-Hello Quarkus! (Thu Mar 21 17:26:16 CET 2019)
+Hello Quarkus! (Wed Feb 12 17:13:59 CET 2020)
+
+Hello Quarkus! (Wed Feb 12 17:14:01 CET 2020)
+
+Hello Quarkus! (Wed Feb 12 17:14:03 CET 2020)
 
 ...
 ----
@@ -351,7 +360,7 @@ Then, navigate to http://localhost:8080/hello/Quarkus/array:
 ["Hello","Quarkus"]
 ----
 
-Needless to say, this works equally well when the JSON content is a request body or is wrapped in a `CompletionStage` or `Publisher`.
+Needless to say, this works equally well when the JSON content is a request body or is wrapped in a `Uni`, `Multi`, `CompletionStage` or `Publisher`.
 
 == Using Vert.x Clients
 
@@ -397,7 +406,7 @@ In this guide, we are going to use the Axle API, so:
 ----
 <dependency>
   <groupId>io.smallrye.reactive</groupId>
-  <artifactId>smallrye-axle-web-client</artifactId>
+  <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
 </dependency>
 ----
 
@@ -408,11 +417,6 @@ Now, create a new resource in your project with the following content:
 ----
 package org.acme.vertx;
 
-import io.vertx.axle.core.Vertx;
-import io.vertx.axle.ext.web.client.WebClient;
-import io.vertx.axle.ext.web.codec.BodyCodec;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.WebClientOptions;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -420,12 +424,17 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import java.util.concurrent.CompletionStage;
+
+import io.smallrye.mutiny.Uni;
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
 
-@Path("/swapi")
-public class ResourceUsingWebClient {
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.ext.web.client.WebClient;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.WebClientOptions;
 
+@Path("/fruit-data")
+public class ResourceUsingWebClient {
 
     @Inject
     Vertx vertx;
@@ -435,16 +444,17 @@ public class ResourceUsingWebClient {
     @PostConstruct
     void initialize() {
         this.client = WebClient.create(vertx,
-                new WebClientOptions().setDefaultHost("swapi.co").setDefaultPort(443).setSsl(true));
+                new WebClientOptions().setDefaultHost("fruityvice.com")
+                    .setDefaultPort(443).setSsl(true).setTrustAll(true));
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{id}")
-    public CompletionStage<JsonObject> getStarWarsCharacter(@PathParam int id) {
-        return client.get("/api/people/" + id)
+    @Path("/{name}")
+    public Uni<JsonObject> getFruitData(@PathParam("name") String name) {
+        return client.get("/api/fruit/" + name)
                 .send()
-                .thenApply(resp -> {
+                .onItem().apply(resp -> {
                     if (resp.statusCode() == 200) {
                         return resp.bodyAsJsonObject();
                     } else {
@@ -456,11 +466,12 @@ public class ResourceUsingWebClient {
     }
 
 }
+
 ----
 
-This resource creates a `WebClient` and upon request use this client to invoke the https://swapi.co/ API.
+This resource creates a `WebClient` and upon request use this client to invoke the _fruityvice_ API.
 Depending on the result the response is forwarded as it's received, or a new JSON object is created with the status and body.
-The `WebClient` is obviously asynchronous (and non-blocking), to the endpoint returns a `CompletionStage`.
+The `WebClient` is obviously asynchronous (and non-blocking), to the endpoint returns a `Uni`.
 
 Run the application with:
 
@@ -469,7 +480,7 @@ Run the application with:
 ./mvnw compile quarkus:dev
 ----
 
-And then, open a browser to: http://localhost:8080/swapi/1. You should get _Luke Skywalker_.
+And then, open a browser to: `http://localhost:8080/fruit-data/pear`. You should get some details about pears.
 
 The application can also run as a native executable.
 But, first, we need to instruct Quarkus to enable _ssl_.

@@ -56,6 +56,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String RESTEASY_JACKSON = "resteasy-jackson";
     public static final String RESTEASY_JAXB = "resteasy-jaxb";
     public static final String RESTEASY_JSONB = "resteasy-jsonb";
+    public static final String RESTEASY_MUTINY = "resteasy-mutiny";
     public static final String RESTEASY_QUTE = "resteasy-qute";
     public static final String REST_CLIENT = "rest-client";
     public static final String SCALA = "scala";

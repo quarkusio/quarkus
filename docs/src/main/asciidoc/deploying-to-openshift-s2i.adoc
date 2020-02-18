@@ -50,10 +50,10 @@ curl $URL/hello/greeting/quarkus
 ----
 
 [TIP]
-----
+====
 The `oc new-app` command above uses a builder image compatible with JDK 8.
 In order to create a JDK 11 native compatible image use `quay.io/quarkus/ubi-quarkus-native-s2i:{graalvm-version}-java11` as a builder image.
-----
+====
 
 Your application is accessible at the printed URL.
 

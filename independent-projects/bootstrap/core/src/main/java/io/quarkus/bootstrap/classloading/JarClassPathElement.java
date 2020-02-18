@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -38,7 +39,7 @@ public class JarClassPathElement implements ClassPathElement {
             jarPath = root.toUri().toURL();
             jarFile = new JarFile(file = root.toFile());
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException("Error while reading file as JAR: " + root, e);
         }
     }
 

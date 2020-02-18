@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.util.Map;
 import java.util.function.Function;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
@@ -26,28 +27,33 @@ public class DefaultTenantConfigResolver {
     private volatile TenantConfigContext defaultTenant;
     private volatile Function<OidcTenantConfig, TenantConfigContext> tenantConfigContextFactory;
 
-    TenantConfigContext resolve(RoutingContext context) {
+    @PostConstruct
+    public void verifyResolvers() {
         if (tenantConfigResolver.isAmbiguous()) {
             throw new IllegalStateException("Multiple " + TenantConfigResolver.class + " beans registered");
         }
-
-        TenantConfigContext config = getTenantConfigFromConfigResolver(context, true);
-
-        if (config != null) {
-            return config;
-        }
-
-        String tenant = null;
-
         if (tenantResolver.isAmbiguous()) {
             throw new IllegalStateException("Multiple " + TenantResolver.class + " beans registered");
         }
+    }
 
-        if (tenantResolver.isResolvable()) {
-            tenant = tenantResolver.get().resolve(context);
+    /**
+     * Resolve {@linkplain TenantConfigContext} which contains the tenant configuration and
+     * the active OIDC connection instance which may be null.
+     * 
+     * @param context the current request context
+     * @param create if true then the OIDC connection must be available or established
+     *        for the resolution to be successful
+     * @return
+     */
+    TenantConfigContext resolve(RoutingContext context, boolean create) {
+        TenantConfigContext config = getTenantConfigFromConfigResolver(context, create);
+
+        if (config == null) {
+            config = getTenantConfigFromTenantResolver(context);
         }
 
-        return tenantsConfig.getOrDefault(tenant, defaultTenant);
+        return config;
     }
 
     void setTenantsConfig(Map<String, TenantConfigContext> tenantsConfig) {
@@ -60,6 +66,16 @@ public class DefaultTenantConfigResolver {
 
     void setTenantConfigContextFactory(Function<OidcTenantConfig, TenantConfigContext> tenantConfigContextFactory) {
         this.tenantConfigContextFactory = tenantConfigContextFactory;
+    }
+
+    private TenantConfigContext getTenantConfigFromTenantResolver(RoutingContext context) {
+        String tenant = null;
+
+        if (tenantResolver.isResolvable()) {
+            tenant = tenantResolver.get().resolve(context);
+        }
+
+        return tenantsConfig.getOrDefault(tenant, defaultTenant);
     }
 
     boolean isBlocking(RoutingContext context) {
@@ -78,8 +94,8 @@ public class DefaultTenantConfigResolver {
             }
 
             if (tenantConfig != null) {
-                String tenantId = tenantConfig.getClientId()
-                        .orElseThrow(() -> new IllegalStateException("You must provide a client_id"));
+                String tenantId = tenantConfig.getTenantId()
+                        .orElseThrow(() -> new IllegalStateException("You must provide a tenant id"));
                 TenantConfigContext tenantContext = tenantsConfig.get(tenantId);
 
                 if (tenantContext == null && create) {

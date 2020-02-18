@@ -3,8 +3,6 @@ package io.quarkus.oidc.runtime;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import javax.enterprise.context.ApplicationScoped;
-
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
@@ -14,12 +12,13 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
-@ApplicationScoped
 public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
 
-    @Override
+    private static final String BEARER = "Bearer";
+
     public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager) {
+            IdentityProviderManager identityProviderManager,
+            DefaultTenantConfigResolver resolver) {
         String token = extractBearerToken(context);
 
         // if a bearer token is provided try to authenticate
@@ -30,8 +29,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         return CompletableFuture.completedFuture(null);
     }
 
-    @Override
-    public CompletionStage<ChallengeData> getChallenge(RoutingContext context) {
+    public CompletionStage<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
         String bearerToken = extractBearerToken(context);
 
         if (bearerToken == null) {

@@ -10,8 +10,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import javax.enterprise.context.ApplicationScoped;
-
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -33,7 +31,6 @@ import io.vertx.ext.auth.oauth2.AccessToken;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.impl.CookieImpl;
 
-@ApplicationScoped
 public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
 
     private static final Logger LOG = Logger.getLogger(CodeAuthenticationMechanism.class);
@@ -63,9 +60,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .build();
     }
 
-    @Override
     public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager) {
+            IdentityProviderManager identityProviderManager,
+            DefaultTenantConfigResolver resolver) {
         Cookie sessionCookie = context.request().getCookie(SESSION_COOKIE_NAME);
 
         // if session already established, try to re-authenticate
@@ -82,17 +79,16 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
 
         // start a new session by starting the code flow dance
-        return performCodeFlow(identityProviderManager, context);
+        return performCodeFlow(identityProviderManager, context, resolver);
     }
 
-    @Override
-    public CompletionStage<ChallengeData> getChallenge(RoutingContext context) {
+    public CompletionStage<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
         removeCookie(context, SESSION_COOKIE_NAME);
+
+        TenantConfigContext configContext = resolver.resolve(context, false);
 
         ChallengeData challenge;
         JsonObject params = new JsonObject();
-
-        TenantConfigContext configContext = tenantConfigResolver.resolve(context);
 
         // scope
         List<Object> scopes = new ArrayList<>();
@@ -102,13 +98,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         // redirect_uri
         URI absoluteUri = URI.create(context.request().absoluteURI());
-        String redirectPath = getRedirectPath(context, absoluteUri);
+        String redirectPath = getRedirectPath(configContext, absoluteUri);
         String redirectUriParam = buildRedirectUri(context, absoluteUri, redirectPath);
         LOG.debugf("Authentication request redirect_uri parameter: %s", redirectUriParam);
         params.put("redirect_uri", redirectUriParam);
 
         // state
-        params.put("state", generateState(context, absoluteUri, redirectPath));
+        params.put("state", generateState(context, configContext, absoluteUri, redirectPath));
 
         // extra redirect parameters, see https://openid.net/specs/openid-connect-core-1_0.html#AuthRequests
         if (configContext.oidcConfig.authentication.getExtraParams() != null) {
@@ -124,7 +120,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private CompletionStage<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
-            RoutingContext context) {
+            RoutingContext context, DefaultTenantConfigResolver resolver) {
+        TenantConfigContext configContext = resolver.resolve(context, true);
+
         JsonObject params = new JsonObject();
 
         String code = context.request().getParam("code");
@@ -177,12 +175,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
 
         params.put("code", code);
-        String redirectPath = getRedirectPath(context, absoluteUri);
+        String redirectPath = getRedirectPath(configContext, absoluteUri);
         String redirectUriParam = buildRedirectUri(context, absoluteUri, redirectPath);
         LOG.debugf("Token request redirect_uri parameter: %s", redirectUriParam);
         params.put("redirect_uri", redirectUriParam);
 
-        tenantConfigResolver.resolve(context).auth.authenticate(params, userAsyncResult -> {
+        configContext.auth.authenticate(params, userAsyncResult -> {
             if (userAsyncResult.failed()) {
                 cf.completeExceptionally(new AuthenticationFailedException());
             } else {
@@ -221,16 +219,17 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 result.opaqueRefreshToken(), context));
     }
 
-    private String getRedirectPath(RoutingContext context, URI absoluteUri) {
-        Authentication auth = tenantConfigResolver.resolve(context).oidcConfig.getAuthentication();
+    private String getRedirectPath(TenantConfigContext configContext, URI absoluteUri) {
+        Authentication auth = configContext.oidcConfig.getAuthentication();
         return auth.getRedirectPath().isPresent() ? auth.getRedirectPath().get() : absoluteUri.getRawPath();
     }
 
-    private String generateState(RoutingContext context, URI absoluteUri, String redirectPath) {
+    private String generateState(RoutingContext context, TenantConfigContext configContext, URI absoluteUri,
+            String redirectPath) {
         String uuid = UUID.randomUUID().toString();
         String cookieValue = uuid;
 
-        Authentication auth = tenantConfigResolver.resolve(context).oidcConfig.getAuthentication();
+        Authentication auth = configContext.oidcConfig.getAuthentication();
         if (auth.isRestorePathAfterRedirect() && !redirectPath.equals(absoluteUri.getRawPath())) {
             cookieValue += (COOKIE_DELIM + absoluteUri.getRawPath());
         }

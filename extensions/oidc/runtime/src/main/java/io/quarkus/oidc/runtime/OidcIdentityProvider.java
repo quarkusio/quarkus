@@ -27,7 +27,6 @@ import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
 public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticationRequest> {
-
     @Inject
     DefaultTenantConfigResolver tenantResolver;
 
@@ -36,7 +35,6 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         return TokenAuthenticationRequest.class;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public CompletionStage<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
@@ -55,10 +53,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         return authenticate(request, vertxContext);
     }
 
+    @SuppressWarnings("deprecation")
     private CompletableFuture<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             RoutingContext vertxContext) {
         CompletableFuture<SecurityIdentity> result = new CompletableFuture<>();
-        TenantConfigContext resolvedContext = tenantResolver.resolve(vertxContext);
+        TenantConfigContext resolvedContext = tenantResolver.resolve(vertxContext, true);
         OidcTenantConfig config = resolvedContext.oidcConfig;
 
         resolvedContext.auth.decodeToken(request.getToken().getToken(),
@@ -66,7 +65,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     @Override
                     public void handle(AsyncResult<AccessToken> event) {
                         if (event.failed()) {
-                            result.completeExceptionally(new AuthenticationFailedException());
+                            result.completeExceptionally(new AuthenticationFailedException(event.cause()));
                             return;
                         }
                         AccessToken token = event.result();

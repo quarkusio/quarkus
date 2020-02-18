@@ -13,7 +13,7 @@ public class CategoryConfig {
      * The log level level for this category
      */
     @ConfigItem(defaultValue = "inherit")
-    String level;
+    InheritableLevel level;
 
     /**
      * The names of the handlers to link to this category.

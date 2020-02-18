@@ -8,6 +8,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.extest.runtime.beans.PublicKeyProducer;
+import io.quarkus.extest.runtime.config.FooRuntimeConfig;
 import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
 import io.quarkus.extest.runtime.config.TestRunTimeConfig;
 import io.quarkus.extest.runtime.config.XmlConfig;
@@ -17,11 +18,7 @@ import io.quarkus.runtime.annotations.Recorder;
 
 /**
  * The runtime recorder
- *
- * note that the use of the deprecated @Template is deliberate, to ensure that it still works.
- *
  */
-@SuppressWarnings("deprecation")
 @Recorder
 public class TestRecorder {
     static final Logger log = Logger.getLogger(TestRecorder.class);
@@ -38,10 +35,10 @@ public class TestRecorder {
      */
     public void configureBeans(BeanContainer beanContainer, Class<IConfigConsumer> beanClass,
             TestBuildAndRunTimeConfig buildTimeConfig,
-            TestRunTimeConfig runTimeConfig) {
+            TestRunTimeConfig runTimeConfig, FooRuntimeConfig fooRuntimeConfig) {
         log.infof("Begin BeanContainerListener callback\n");
         IConfigConsumer instance = beanContainer.instance(beanClass);
-        instance.loadConfig(buildTimeConfig, runTimeConfig);
+        instance.loadConfig(buildTimeConfig, runTimeConfig, fooRuntimeConfig);
         log.infof("configureBeans, instance=%s\n", instance);
     }
 

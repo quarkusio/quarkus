@@ -54,6 +54,7 @@ public class ConfiguredBeanTest {
         Assertions.assertNotNull(configuredBean);
         Assertions.assertNotNull(configuredBean.getBuildTimeConfig());
         Assertions.assertNotNull(configuredBean.getRunTimeConfig());
+        Assertions.assertEquals("huhu", configuredBean.getFooRuntimeConfig().bar);
     }
 
     /**

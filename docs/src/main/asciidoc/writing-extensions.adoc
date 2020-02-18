@@ -921,7 +921,7 @@ lowercased, and re-joined using hyphens (`-`).
 A configuration root's class name can contain an extra suffix segment for the case where there are configuration
 roots for multiple <<Configuration Root Phases>>.  Classes which correspond to the `BUILD_TIME` and `BUILD_AND_RUN_TIME_FIXED`
 may end with `BuildTimeConfig` or `BuildTimeConfiguration`, and classes which correspond to the `RUN_TIME` phase
-may end with `RunTimeConfig` or `RunTimeConfiguration`.
+may end with `RuntimeConfig`, `RunTimeConfig`, `RuntimeConfiguration` or `RunTimeConfiguration`.
 
 Note: The current implementation is still using injection site to determine the root set, so to avoid migration problems, it
 is recommended that the injection site (field or parameter) have the same name as the configuration root class until

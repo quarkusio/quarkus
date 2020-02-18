@@ -4,6 +4,7 @@ import javax.enterprise.event.Observes;
 
 import io.quarkus.extest.runtime.IConfigConsumer;
 import io.quarkus.extest.runtime.TestAnnotation;
+import io.quarkus.extest.runtime.config.FooRuntimeConfig;
 import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
 import io.quarkus.extest.runtime.config.TestRunTimeConfig;
 import io.quarkus.runtime.ShutdownEvent;
@@ -11,8 +12,9 @@ import io.quarkus.runtime.StartupEvent;
 
 @TestAnnotation
 public class NativeBean implements IConfigConsumer {
-    TestRunTimeConfig runTimeConfig;
-    TestBuildAndRunTimeConfig buildTimeConfig;
+    volatile TestRunTimeConfig runTimeConfig;
+    volatile TestBuildAndRunTimeConfig buildTimeConfig;
+    volatile FooRuntimeConfig fooRuntimeConfig;
 
     public NativeBean() {
         System.out.printf("NativeBean.ctor, %s%n", super.toString());
@@ -24,10 +26,13 @@ public class NativeBean implements IConfigConsumer {
      * @param runTimeConfig
      */
     @Override
-    public void loadConfig(TestBuildAndRunTimeConfig buildTimeConfig, TestRunTimeConfig runTimeConfig) {
-        System.out.printf("loadConfig, buildTimeConfig=%s, runTimeConfig=%s%n", buildTimeConfig, runTimeConfig);
+    public void loadConfig(TestBuildAndRunTimeConfig buildTimeConfig, TestRunTimeConfig runTimeConfig,
+            FooRuntimeConfig fooRuntimeConfig) {
+        System.out.printf("loadConfig, buildTimeConfig=%s, runTimeConfig=%s, fooRuntimeConfig=%s%n", buildTimeConfig,
+                runTimeConfig, fooRuntimeConfig);
         this.buildTimeConfig = buildTimeConfig;
         this.runTimeConfig = runTimeConfig;
+        this.fooRuntimeConfig = fooRuntimeConfig;
     }
 
     /**

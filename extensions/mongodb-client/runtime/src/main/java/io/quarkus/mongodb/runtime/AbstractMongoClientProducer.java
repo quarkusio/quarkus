@@ -101,6 +101,9 @@ public abstract class AbstractMongoClientProducer {
     public io.quarkus.mongodb.ReactiveMongoClient createLegacyReactiveMongoClient(MongoClientConfig mongoClientConfig,
             String name)
             throws MongoException {
+        LOGGER.warn(
+                "`io.quarkus.mongodb.ReactiveMongoClient` is deprecated and will be removed in a future version - it is "
+                        + "recommended to switch to `io.quarkus.mongodb.reactive.ReactiveMongoClient`");
         MongoClientSettings mongoConfiguration = createMongoConfiguration(mongoClientConfig);
         com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
                 .create(mongoConfiguration);

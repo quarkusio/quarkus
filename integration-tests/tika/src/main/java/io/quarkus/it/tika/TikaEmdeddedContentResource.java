@@ -1,13 +1,6 @@
 package io.quarkus.it.tika;
 
-import io.quarkus.tika.TikaContent;
-import io.quarkus.tika.TikaMetadata;
-import io.quarkus.tika.TikaParser;
-import org.apache.tika.parser.AutoDetectParser;
-import org.apache.tika.parser.RecursiveParserWrapper;
-import org.apache.tika.parser.microsoft.OfficeParser;
-import org.apache.tika.parser.microsoft.ooxml.OOXMLParser;
-import org.apache.tika.parser.pdf.PDFParser;
+import java.io.InputStream;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -15,7 +8,16 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-import java.io.InputStream;
+
+import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.RecursiveParserWrapper;
+import org.apache.tika.parser.microsoft.OfficeParser;
+import org.apache.tika.parser.microsoft.ooxml.OOXMLParser;
+import org.apache.tika.parser.pdf.PDFParser;
+
+import io.quarkus.tika.TikaContent;
+import io.quarkus.tika.TikaMetadata;
+import io.quarkus.tika.TikaParser;
 
 @Path("/embedded")
 public class TikaEmdeddedContentResource {

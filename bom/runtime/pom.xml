@@ -182,7 +182,6 @@
         <jzlib.version>1.1.1</jzlib.version>
         <checker-qual.version>2.5.2</checker-qual.version>
         <error-prone-annotations.version>2.2.0</error-prone-annotations.version>
-        <reflections.version>0.9.12</reflections.version>
         <ooxml-schemas.version>1.4</ooxml-schemas.version>
         <xmlbeans.version>3.0.2</xmlbeans.version>
     </properties>
@@ -2774,13 +2773,6 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-banner</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-
-            <!-- reflections -->
-            <dependency>
-                <groupId>org.reflections</groupId>
-                <artifactId>reflections</artifactId>
-                <version>${reflections.version}</version>
             </dependency>
 
             <!-- ooxml -->

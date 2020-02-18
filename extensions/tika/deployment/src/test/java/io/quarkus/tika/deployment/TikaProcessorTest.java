@@ -1,16 +1,16 @@
 package io.quarkus.tika.deployment;
 
-import io.quarkus.deployment.util.ReflectUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
 import org.apache.xmlbeans.XmlObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.DocumentDocumentImpl;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.*;
+import io.quarkus.test.QuarkusUnitTest;
 
 public class TikaProcessorTest {
 
@@ -92,7 +92,7 @@ public class TikaProcessorTest {
 
     @Test
     public void testReflection() {
-        List<Class> types = ReflectUtil
+        List<Class> types = TikaProcessor
                 .getAllClassesFromPackage(DocumentDocumentImpl.class.getPackage().getName(), XmlObject.class)
                 .collect(Collectors.toList());
         assertTrue(types.size() > 0);
@@ -111,4 +111,5 @@ public class TikaProcessorTest {
                 Optional.ofNullable(tikaConfigPath), Optional.ofNullable(parsers),
                 parserParamMaps, parserAbbreviations);
     }
+
 }

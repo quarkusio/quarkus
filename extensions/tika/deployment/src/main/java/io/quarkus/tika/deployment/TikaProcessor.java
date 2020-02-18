@@ -1,21 +1,17 @@
 package io.quarkus.tika.deployment;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CapabilityBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.*;
-import io.quarkus.deployment.util.ReflectUtil;
-import io.quarkus.deployment.util.ServiceUtil;
-import io.quarkus.tika.TikaParseException;
-import io.quarkus.tika.runtime.TikaConfiguration;
-import io.quarkus.tika.runtime.TikaParserProducer;
-import io.quarkus.tika.runtime.TikaRecorder;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.xml.parsers.SAXParserFactory;
+import javax.xml.transform.TransformerFactory;
+
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ooxml.POIXMLDocumentPart;
 import org.apache.poi.xslf.usermodel.XSLFTheme;
 import org.apache.poi.xwpf.usermodel.XWPFSettings;
@@ -32,13 +28,21 @@ import org.openxmlformats.schemas.presentationml.x2006.main.impl.PresentationDoc
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CalcChainDocumentImpl;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.impl.DocumentDocumentImpl;
 
-import javax.xml.parsers.SAXParserFactory;
-import javax.xml.transform.TransformerFactory;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.*;
+import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.tika.TikaParseException;
+import io.quarkus.tika.runtime.TikaConfiguration;
+import io.quarkus.tika.runtime.TikaParserProducer;
+import io.quarkus.tika.runtime.TikaRecorder;
 
 public class TikaProcessor {
     private static final Set<String> NOT_NATIVE_READY_PARSERS = Arrays.stream(new String[] {
@@ -136,7 +140,7 @@ public class TikaProcessor {
 
         if (pptxSupport) {
             resource.produce(new ReflectiveClassBuildItem(true, true, true, STPlaceholderType.Enum.class.getName()));
-            ReflectUtil.getAllClassesFromPackage(XSLFTheme.class.getPackage().getName(), POIXMLDocumentPart.class)
+            getAllClassesFromPackage(XSLFTheme.class.getPackage().getName(), POIXMLDocumentPart.class)
                     .forEach(aClass -> resource.produce(
                             new ReflectiveClassBuildItem(true, true, true, aClass)));
         }
@@ -158,24 +162,24 @@ public class TikaProcessor {
                 "schemaorg_apache_xmlbeans.system.sD023D6490046BA0250A839A9AD24C443.TypeSystemHolder"));
 
         if (pptxSupport) {
-            ReflectUtil.getAllClassesFromPackage(ThemeDocumentImpl.class.getPackage().getName(), XmlObject.class)
+            getAllClassesFromPackage(ThemeDocumentImpl.class.getPackage().getName(), XmlObject.class)
                     .forEach(aClass -> resource.produce(
                             new ReflectiveClassBuildItem(true, true, true, aClass)));
-            ReflectUtil.getAllClassesFromPackage(
+            getAllClassesFromPackage(
                     PresentationDocumentImpl.class.getPackage().getName(),
                     XmlObject.class)
-                    .forEach(aClass -> resource.produce(
-                            new ReflectiveClassBuildItem(true, true, true, aClass)));
+                            .forEach(aClass -> resource.produce(
+                                    new ReflectiveClassBuildItem(true, true, true, aClass)));
         }
 
         if (xlsxSupport) {
-            ReflectUtil.getAllClassesFromPackage(CalcChainDocumentImpl.class.getPackage().getName(), XmlObject.class)
+            getAllClassesFromPackage(CalcChainDocumentImpl.class.getPackage().getName(), XmlObject.class)
                     .forEach(aClass -> resource.produce(
                             new ReflectiveClassBuildItem(true, true, true, aClass)));
         }
 
         if (docxSupport) {
-            ReflectUtil.getAllClassesFromPackage(DocumentDocumentImpl.class.getPackage().getName(), XmlObject.class)
+            getAllClassesFromPackage(DocumentDocumentImpl.class.getPackage().getName(), XmlObject.class)
                     .forEach(aClass -> resource.produce(
                             new ReflectiveClassBuildItem(true, true, true, aClass)));
         }
@@ -254,6 +258,19 @@ public class TikaProcessor {
                     .collect(Collectors.toMap(Function.identity(),
                             p -> getParserConfig(p, parserParamMaps.get(fullNamesAndAbbreviations.get(p)))));
         }
+    }
+
+    public static Stream<Class> getAllClassesFromPackage(String packageName, Class... baseClasses) {
+        if (StringUtils.isBlank(packageName) || ArrayUtils.isEmpty(baseClasses)) {
+            return new ArrayList<Class>().stream();
+        }
+
+        org.reflections.Reflections reflections = new org.reflections.Reflections(packageName);
+
+        return (Stream<Class>) Arrays.stream(baseClasses)
+                .flatMap(aClass -> reflections.getSubTypesOf(aClass).stream())
+                .filter(aClass -> !((Class) aClass).isInterface())
+                .filter(aClass -> ((Class) aClass).getPackage().getName().equals(packageName));
     }
 
     private static List<String> getParserAbbreviations(Optional<String> requiredParsers) {

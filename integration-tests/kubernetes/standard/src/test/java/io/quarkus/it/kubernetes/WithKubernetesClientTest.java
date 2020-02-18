@@ -1,0 +1,74 @@
+package io.quarkus.it.kubernetes;
+
+import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.is;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
+
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.test.LogFile;
+import io.quarkus.test.ProdBuildResults;
+import io.quarkus.test.ProdModeTestResults;
+import io.quarkus.test.QuarkusProdModeTest;
+
+public class WithKubernetesClientTest {
+
+    @RegisterExtension
+    static final QuarkusProdModeTest config = new QuarkusProdModeTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .setApplicationName("kubernetes-with-client")
+            .setApplicationVersion("0.1-SNAPSHOT")
+            .setRun(true)
+            .setLogFileName("k8s.log")
+            .setForcedDependencies(
+                    Collections.singletonList(
+                            new AppArtifact("io.quarkus", "quarkus-kubernetes-client", TestUtil.getProjectVersion())));
+
+    @ProdBuildResults
+    private ProdModeTestResults prodModeTestResults;
+
+    @LogFile
+    private Path logfile;
+
+    @Test
+    public void asertApplicationRuns() throws IOException {
+        assertThat(logfile).isRegularFile().hasFileName("k8s.log");
+        String entireLogContent = String.join("\n", Files.readAllLines(logfile));
+        assertThat(entireLogContent).contains("kubernetes").contains("kubernetes-client");
+
+        given()
+                .when().get("/greeting")
+                .then()
+                .statusCode(200)
+                .body(is("hello"));
+    }
+
+    @Test
+    public void assertGeneratedResources() throws IOException {
+        final Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
+        assertThat(kubernetesDir)
+                .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.json"))
+                .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.yml"));
+        List<HasMetadata> kubernetesList = DeserializationUtil
+                .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
+
+        assertThat(kubernetesList).filteredOn(h -> "ServiceAccount".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
+            assertThat(h.getMetadata().getName()).isEqualTo("kubernetes-with-client");
+        });
+
+        assertThat(kubernetesList).filteredOn(h -> "RoleBinding".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
+            assertThat(h.getMetadata().getName()).isEqualTo("kubernetes-with-client:view");
+        });
+    }
+}

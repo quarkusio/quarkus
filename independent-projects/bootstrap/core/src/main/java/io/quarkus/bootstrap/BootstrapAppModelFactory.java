@@ -80,6 +80,8 @@ public class BootstrapAppModelFactory {
 
     private LocalProject appClassesWorkspace;
 
+    private List<AppDependency> forcedDependencies = Collections.emptyList();
+
     private BootstrapAppModelFactory() {
     }
 
@@ -140,6 +142,11 @@ public class BootstrapAppModelFactory {
 
     public BootstrapAppModelFactory setAppArtifact(AppArtifact appArtifact) {
         this.appArtifact = appArtifact;
+        return this;
+    }
+
+    public BootstrapAppModelFactory setForcedDependencies(List<AppDependency> forcedDependencies) {
+        this.forcedDependencies = forcedDependencies;
         return this;
     }
 
@@ -273,7 +280,7 @@ public class BootstrapAppModelFactory {
             }
             AppModelResolver appModelResolver = getAppModelResolver();
             CurationResult curationResult = new CurationResult(appModelResolver
-                    .resolveManagedModel(appArtifact, Collections.emptyList(), managingProject));
+                    .resolveManagedModel(appArtifact, forcedDependencies, managingProject));
             if (cachedCpPath != null) {
                 Files.createDirectories(cachedCpPath.getParent());
                 try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(cachedCpPath))) {

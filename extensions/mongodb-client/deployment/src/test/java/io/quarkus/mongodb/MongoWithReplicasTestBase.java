@@ -70,14 +70,6 @@ public class MongoWithReplicasTestBase {
         });
     }
 
-    protected String getConnectionString() {
-        if (getConfiguredConnectionString() != null) {
-            return getConfiguredConnectionString();
-        } else {
-            return "mongodb://localhost:27018";
-        }
-    }
-
     private static void initializeReplicaSet(final List<IMongodConfig> mongodConfigList) throws UnknownHostException {
         final String arbitrerAddress = "mongodb://" + mongodConfigList.get(0).net().getServerAddress().getHostName() + ":"
                 + mongodConfigList.get(0).net().getPort();

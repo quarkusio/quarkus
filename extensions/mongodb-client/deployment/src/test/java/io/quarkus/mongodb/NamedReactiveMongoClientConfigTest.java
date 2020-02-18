@@ -22,11 +22,19 @@ public class NamedReactiveMongoClientConfigTest extends MongoWithReplicasTestBas
 
     @Inject
     @MongoClientName("cluster1")
-    ReactiveMongoClient client;
+    ReactiveMongoClient legacyClient;
+
+    @Inject
+    @MongoClientName("cluster1")
+    io.quarkus.mongodb.reactive.ReactiveMongoClient client;
 
     @Inject
     @MongoClientName("cluster2")
-    ReactiveMongoClient client2;
+    ReactiveMongoClient legacyClient2;
+
+    @Inject
+    @MongoClientName("cluster2")
+    io.quarkus.mongodb.reactive.ReactiveMongoClient client2;
 
     @AfterEach
     void cleanup() {
@@ -36,11 +44,19 @@ public class NamedReactiveMongoClientConfigTest extends MongoWithReplicasTestBas
         if (client2 != null) {
             client2.close();
         }
+        if (legacyClient != null) {
+            legacyClient.close();
+        }
+        if (legacyClient2 != null) {
+            legacyClient2.close();
+        }
     }
 
     @Test
     public void testNamedDataSourceInjection() {
-        assertThat(client.listDatabases().findFirst().run().toCompletableFuture().join()).isNotEmpty();
-        assertThat(client2.listDatabases().findFirst().run().toCompletableFuture().join()).isNotEmpty();
+        assertThat(client.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
+        assertThat(client2.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
+        assertThat(legacyClient.listDatabases().findFirst().run().toCompletableFuture().join()).isNotEmpty();
+        assertThat(legacyClient2.listDatabases().findFirst().run().toCompletableFuture().join()).isNotEmpty();
     }
 }

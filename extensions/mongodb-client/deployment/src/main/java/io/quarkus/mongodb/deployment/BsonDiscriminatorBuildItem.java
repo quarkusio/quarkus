@@ -6,13 +6,13 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class BsonDiscriminatorBuildItem extends SimpleBuildItem {
 
-    private List<String> bsonDisciminatorClassNames;
+    private List<String> bsonDiscriminatorClassNames;
 
-    public BsonDiscriminatorBuildItem(List<String> bsonDisciminatorClassNames) {
-        this.bsonDisciminatorClassNames = bsonDisciminatorClassNames;
+    public BsonDiscriminatorBuildItem(List<String> bsonDiscriminatorClassNames) {
+        this.bsonDiscriminatorClassNames = bsonDiscriminatorClassNames;
     }
 
-    public List<String> getBsonDisciminatorClassNames() {
-        return bsonDisciminatorClassNames;
+    public List<String> getBsonDiscriminatorClassNames() {
+        return bsonDiscriminatorClassNames;
     }
 }

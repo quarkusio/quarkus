@@ -77,7 +77,7 @@ public class MongoClientProcessor {
             BsonDiscriminatorBuildItem bsonDiscriminator,
             MongodbConfig config) {
         recorder.configureRuntimeProperties(codecProvider.getCodecProviderClassNames(),
-                bsonDiscriminator.getBsonDisciminatorClassNames(), config);
+                bsonDiscriminator.getBsonDiscriminatorClassNames(), config);
     }
 
     @BuildStep
@@ -103,7 +103,7 @@ public class MongoClientProcessor {
             BsonDiscriminatorBuildItem bsonDiscriminators) {
         List<String> reflectiveClassNames = new ArrayList<>();
         reflectiveClassNames.addAll(codecProviders.getCodecProviderClassNames());
-        reflectiveClassNames.addAll(bsonDiscriminators.getBsonDisciminatorClassNames());
+        reflectiveClassNames.addAll(bsonDiscriminators.getBsonDiscriminatorClassNames());
 
         return reflectiveClassNames.stream()
                 .map(s -> new ReflectiveClassBuildItem(true, true, false, s))

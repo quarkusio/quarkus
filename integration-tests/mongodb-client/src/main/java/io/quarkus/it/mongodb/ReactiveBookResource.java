@@ -11,8 +11,8 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import io.quarkus.mongodb.ReactiveMongoClient;
-import io.quarkus.mongodb.ReactiveMongoCollection;
+import io.quarkus.mongodb.reactive.ReactiveMongoClient;
+import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 
 @Path("/reactive-books")
 @Produces(MediaType.APPLICATION_JSON)
@@ -31,19 +31,22 @@ public class ReactiveBookResource {
 
     @GET
     public CompletionStage<List<Book>> getBooks() {
-        return collection.find().toList().run();
+        return collection.find().collectItems().asList().subscribeAsCompletionStage();
     }
 
     @POST
     public CompletionStage<Response> addBook(Book book) {
-        return collection.insertOne(book).thenApply(x -> Response.accepted().build());
+        return collection.insertOne(book)
+                .onItem().apply(x -> Response.accepted().build())
+                .subscribeAsCompletionStage();
     }
 
     @GET
     @Path("/{author}")
     public CompletionStage<List<Book>> getBooksByAuthor(@PathParam("author") String author) {
         return collection.find(eq("author", author))
-                .toList().run();
+                .collectItems().asList()
+                .subscribeAsCompletionStage();
     }
 
 }

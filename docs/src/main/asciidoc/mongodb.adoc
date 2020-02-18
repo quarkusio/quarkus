@@ -281,12 +281,19 @@ A reactive MongoDB Client is included in Quarkus.
 Using it is as easy as using the classic MongoDB Client.
 You can rewrite the previous example to use it like the following.
 
+[NOTE]
+.Deprecation
+====
+The `io.quarkus.mongodb.ReactiveMongoClient` client is deprecated and will be removed in the future.
+It is recommended to switch to the `io.quarkus.mongodb.reactive.ReactiveMongoClient` client providing the `Mutiny` API.
+====
+
 [source,java]
 ----
 package org.acme.rest.json;
 
-import io.quarkus.mongodb.ReactiveMongoClient;
-import io.quarkus.mongodb.ReactiveMongoCollection;
+import io.quarkus.mongodb.reactive.ReactiveMongoClient;
+import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import org.bson.Document;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -301,19 +308,22 @@ public class ReactiveFruitService {
     ReactiveMongoClient mongoClient;
 
     public CompletionStage<List<Fruit>> list(){
-        return getCollection().find().map(doc -> {
-            Fruit fruit = new Fruit();
-            fruit.setName(doc.getString("name"));
-            fruit.setDescription(doc.getString("description"));
-            return fruit;
-        }).toList().run();
+        return getCollection().find()
+            .map(doc -> {
+                Fruit fruit = new Fruit();
+                fruit.setName(doc.getString("name"));
+                fruit.setDescription(doc.getString("description"));
+                return fruit;
+            })
+            .collectItems().asList()
+            .subscribeAsCompletionStage();
     }
 
     public CompletionStage<Void> add(Fruit fruit){
         Document document = new Document()
                 .append("name", fruit.getName())
                 .append("description", fruit.getDescription());
-        return getCollection().insertOne(document);
+        return getCollection().insertOne(document).subscribeAsCompletionStage();
     }
 
     private ReactiveMongoCollection<Document> getCollection(){

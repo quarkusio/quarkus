@@ -18,7 +18,7 @@ public class QuarkusSecurityCommonProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Record(ExecutionTime.STATIC_INIT)
     public void registerPasswordProvider(ElytronCommonRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem) {
         recorder.registerPasswordProvider(shutdownContextBuildItem);
     }

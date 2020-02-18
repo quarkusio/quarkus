@@ -15,9 +15,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.PreDestroy;
+import javax.annotation.Priority;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Typed;
 import javax.inject.Singleton;
+import javax.interceptor.Interceptor;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -82,7 +84,8 @@ public class SimpleScheduler implements Scheduler {
         }
     }
 
-    void start(@Observes StartupEvent event) {
+    // Use Interceptor.Priority.PLATFORM_BEFORE to start the scheduler before regular StartupEvent observers
+    void start(@Observes @Priority(Interceptor.Priority.PLATFORM_BEFORE) StartupEvent event) {
         if (scheduledExecutor == null) {
             return;
         }

@@ -18,27 +18,27 @@ public class EmitterWithOverflowTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(StreamEmitterWithOverflow.class));
+                    .addClasses(ChannelEmitterWithOverflow.class));
 
     @Inject
-    StreamEmitterWithOverflow streamEmitter;
+    ChannelEmitterWithOverflow bean;
 
     @Test
-    public void testStreamEmitter() {
-        streamEmitter.run();
-        List<String> list = streamEmitter.list();
+    public void testEmitter() {
+        bean.run();
+        List<String> list = bean.list();
         assertEquals(3, list.size());
         assertEquals("a", list.get(0));
         assertEquals("b", list.get(1));
         assertEquals("c", list.get(2));
 
-        List<String> sink1 = streamEmitter.sink1();
+        List<String> sink1 = bean.sink1();
         assertEquals(3, sink1.size());
         assertEquals("a1", sink1.get(0));
         assertEquals("b1", sink1.get(1));
         assertEquals("c1", sink1.get(2));
 
-        List<String> sink2 = streamEmitter.sink2();
+        List<String> sink2 = bean.sink2();
         assertEquals(3, sink2.size());
         assertEquals("a2", sink2.get(0));
         assertEquals("b2", sink2.get(1));

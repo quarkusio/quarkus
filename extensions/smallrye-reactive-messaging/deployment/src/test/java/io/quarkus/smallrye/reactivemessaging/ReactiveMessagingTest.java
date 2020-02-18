@@ -14,18 +14,18 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class SimpleTest {
+public class ReactiveMessagingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(SimpleBean.class, StreamConsumer.class, StreamEmitter.class));
+                    .addClasses(SimpleBean.class, ChannelConsumer.class, EmitterExample.class));
 
     @Inject
-    StreamConsumer streamConsumer;
+    ChannelConsumer channelConsumer;
 
     @Inject
-    StreamEmitter streamEmitter;
+    EmitterExample emitterExample;
 
     @Test
     public void testSimpleBean() {
@@ -37,8 +37,8 @@ public class SimpleTest {
     }
 
     @Test
-    public void testStreamInject() {
-        List<String> consumed = streamConsumer.consume();
+    public void testChannelInjection() {
+        List<String> consumed = channelConsumer.consume();
         assertEquals(5, consumed.size());
         assertEquals("hello", consumed.get(0));
         assertEquals("with", consumed.get(1));
@@ -48,9 +48,9 @@ public class SimpleTest {
     }
 
     @Test
-    public void testStreamEmitter() {
-        streamEmitter.run();
-        List<String> list = streamEmitter.list();
+    public void testEmitter() {
+        emitterExample.run();
+        List<String> list = emitterExample.list();
         assertEquals(3, list.size());
         assertEquals("a", list.get(0));
         assertEquals("b", list.get(1));

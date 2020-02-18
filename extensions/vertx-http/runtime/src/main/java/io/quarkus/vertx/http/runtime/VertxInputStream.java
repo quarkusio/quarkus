@@ -199,7 +199,7 @@ public class VertxInputStream extends InputStream {
                     if (input1 == null) {
                         request.fetch(1);
                     }
-                } else {
+                } else if (!eof) {
                     request.fetch(1);
                 }
 

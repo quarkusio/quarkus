@@ -1,16 +1,14 @@
-package io.quarkus.qute.runtime;
+package io.quarkus.qute.runtime.extensions;
 
 import static io.quarkus.qute.TemplateExtension.ANY;
 
-import java.util.List;
 import java.util.Map;
 
 import io.quarkus.qute.Results.Result;
 import io.quarkus.qute.TemplateExtension;
 
 @TemplateExtension
-public class BuiltinTemplateExtensions {
-
+public class MapTemplateExtensions {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @TemplateExtension(matchName = ANY)
     static Object map(Map map, String name) {
@@ -38,10 +36,6 @@ public class BuiltinTemplateExtensions {
 
     static boolean containsKey(Map<?, ?> map, Object key) {
         return map.containsKey(key);
-    }
-
-    static Object get(List<?> list, int index) {
-        return list.get(index);
     }
 
 }

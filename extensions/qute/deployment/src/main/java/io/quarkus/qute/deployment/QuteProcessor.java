@@ -85,25 +85,32 @@ import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
 import io.quarkus.qute.generator.ValueResolverGenerator;
 import io.quarkus.qute.mutiny.MutinyPublisherFactory;
-import io.quarkus.qute.runtime.BuiltinTemplateExtensions;
 import io.quarkus.qute.runtime.EngineProducer;
 import io.quarkus.qute.runtime.QuteConfig;
 import io.quarkus.qute.runtime.QuteRecorder;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.quarkus.qute.runtime.TemplateProducer;
 import io.quarkus.qute.runtime.VariantTemplateProducer;
+import io.quarkus.qute.runtime.extensions.CollectionTemplateExtensions;
+import io.quarkus.qute.runtime.extensions.MapTemplateExtensions;
+import io.quarkus.qute.runtime.extensions.NumberTemplateExtensions;
 
 public class QuteProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(QuteProcessor.class);
 
     public static final DotName RESOURCE_PATH = DotName.createSimple(ResourcePath.class.getName());
+
     public static final DotName TEMPLATE = DotName.createSimple(Template.class.getName());
+
     public static final DotName VARIANT_TEMPLATE = DotName.createSimple(VariantTemplate.class.getName());
 
     static final DotName ITERABLE = DotName.createSimple(Iterable.class.getName());
+
     static final DotName STREAM = DotName.createSimple(Stream.class.getName());
+
     static final DotName MAP = DotName.createSimple(Map.class.getName());
+
     static final DotName MAP_ENTRY = DotName.createSimple(Entry.class.getName());
 
     private static final String MATCH_NAME = "matchName";
@@ -148,7 +155,8 @@ public class QuteProcessor {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
                 .addBeanClasses(EngineProducer.class, TemplateProducer.class, VariantTemplateProducer.class, ResourcePath.class,
-                        Template.class, TemplateInstance.class, BuiltinTemplateExtensions.class)
+                        Template.class, TemplateInstance.class, CollectionTemplateExtensions.class,
+                        MapTemplateExtensions.class, NumberTemplateExtensions.class)
                 .build();
     }
 
@@ -745,6 +753,7 @@ public class QuteProcessor {
 
     static class Match {
         ClassInfo clazz;
+
         Type type;
 
         List<Type> getParameterizedTypeArguments() {

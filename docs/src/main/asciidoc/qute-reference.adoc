@@ -694,6 +694,37 @@ class MyExtensions {
 ----
 <1> `item.discountedPrice` is resolved to an instance of `BigDecimal`.
 
+==== Built-in Template Extension methods
+
+Quarkus provides a set of built-in extension methods.
+
+===== Map extension methods:
+
+* `keys` or `keySet`: Returns a Set view of the keys contained in a map
+** `{#for key in map.keySet}`
+
+* `values`: Returns a Collection view of the values contained in a map
+** `{#for value in map.values}`
+
+* `size`: Returns the number of key-value mappings in a map
+** `{map.size}`
+
+* `isEmpty`: Returns true if a map contains no key-value mappings
+** `{#if map.isEmpty}`
+
+* `get(key)`: Returns the value to which the specified key is mapped
+** `{map.get('foo')}` or `{map['foo']}`
+
+===== Collection extension methods:
+
+* `get(index)`: Returns the element at the specified position in a list
+** `{list.get(0)}` or `{list[0]}`
+
+===== Number extension methods:
+
+* `mod`: Modulo operation
+** `{#if counter.mod(5) == 0}`
+
 === @TemplateData
 
 A value resolver is automatically generated for a type annotated with `@TemplateData`.

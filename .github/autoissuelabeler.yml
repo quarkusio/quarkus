@@ -1,0 +1,4 @@
+## docs: https://github.com/maxandersen/jbang-issuelabeler
+- labels: [area/qute]
+  title: "(?i).*qute.*"
+  description: "(?i).*qute.*"

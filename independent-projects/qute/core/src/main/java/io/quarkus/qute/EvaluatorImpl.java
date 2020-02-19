@@ -69,7 +69,7 @@ class EvaluatorImpl implements Evaluator {
         return resolve(new EvalContextImpl(tryParent, ref, parts.next(), resolutionContext), resolvers.iterator())
                 .thenCompose(r -> {
                     if (parts.hasNext()) {
-                        return resolveReference(false, r, parts, resolutionContext);
+                        return resolveReference(tryParent, r, parts, resolutionContext);
                     } else {
                         return CompletableFuture.completedFuture(r);
                     }
@@ -82,7 +82,7 @@ class EvaluatorImpl implements Evaluator {
             if (evalContext.tryParent && parent != null) {
                 // Continue with parent context
                 return resolve(
-                        new EvalContextImpl(false, parent.getData(), evalContext.name, parent),
+                        new EvalContextImpl(true, parent.getData(), evalContext.name, parent),
                         this.resolvers.iterator());
             }
             LOGGER.tracef("Unable to resolve %s", evalContext);

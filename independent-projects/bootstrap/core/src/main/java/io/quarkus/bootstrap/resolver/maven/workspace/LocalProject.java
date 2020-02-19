@@ -80,25 +80,20 @@ public class LocalProject {
 
     private static Model loadRootModel(Path currentProjectDir) throws BootstrapException {
         Path pomXml = currentProjectDir.resolve(POM_XML);
-        Model model = readModel(pomXml);
-        Parent parent = model.getParent();
-        while (parent != null) {
-            if (parent.getRelativePath() != null && !parent.getRelativePath().isEmpty()) {
+        Model model = null;
+        while (Files.exists(pomXml)) {
+            model = readModel(pomXml);
+            final Parent parent = model.getParent();
+            if (parent != null
+                    && parent.getRelativePath() != null
+                    && !parent.getRelativePath().isEmpty()) {
                 pomXml = pomXml.getParent().resolve(parent.getRelativePath()).normalize();
-                if (!Files.exists(pomXml)) {
-                    return model;
-                }
                 if (Files.isDirectory(pomXml)) {
                     pomXml = pomXml.resolve(POM_XML);
                 }
             } else {
                 pomXml = pomXml.getParent().getParent().resolve(POM_XML);
-                if (!Files.exists(pomXml)) {
-                    return model;
-                }
             }
-            model = readModel(pomXml);
-            parent = model.getParent();
         }
         return model;
     }

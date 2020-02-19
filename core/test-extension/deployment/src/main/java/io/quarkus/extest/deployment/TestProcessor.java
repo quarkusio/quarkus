@@ -59,6 +59,7 @@ import io.quarkus.extest.runtime.TestAnnotation;
 import io.quarkus.extest.runtime.TestRecorder;
 import io.quarkus.extest.runtime.beans.CommandServlet;
 import io.quarkus.extest.runtime.beans.PublicKeyProducer;
+import io.quarkus.extest.runtime.config.FooRuntimeConfig;
 import io.quarkus.extest.runtime.config.ObjectOfValue;
 import io.quarkus.extest.runtime.config.ObjectValueOf;
 import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
@@ -388,10 +389,11 @@ public final class TestProcessor {
     @Record(RUNTIME_INIT)
     void configureBeans(TestRecorder recorder, List<TestBeanBuildItem> testBeans,
             BeanContainerBuildItem beanContainer,
-            TestRunTimeConfig runTimeConfig) {
+            TestRunTimeConfig runTimeConfig, FooRuntimeConfig fooRuntimeConfig) {
         for (TestBeanBuildItem testBeanBuildItem : testBeans) {
             Class<IConfigConsumer> beanClass = testBeanBuildItem.getConfigConsumer();
-            recorder.configureBeans(beanContainer.getValue(), beanClass, buildAndRunTimeConfig, runTimeConfig);
+            recorder.configureBeans(beanContainer.getValue(), beanClass, buildAndRunTimeConfig, runTimeConfig,
+                    fooRuntimeConfig);
         }
     }
 

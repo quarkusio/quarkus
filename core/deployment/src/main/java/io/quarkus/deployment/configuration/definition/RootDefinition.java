@@ -35,7 +35,11 @@ public final class RootDefinition extends ClassDefinition {
                     withoutSuffix(
                             withoutSuffix(
                                     withoutSuffix(
-                                            segments,
+                                            withoutSuffix(
+                                                    withoutSuffix(
+                                                            segments,
+                                                            "Runtime", "Configuration"),
+                                                    "Runtime", "Config"),
                                             "Run", "Time", "Configuration"),
                                     "Run", "Time", "Config"),
                             "Configuration"),

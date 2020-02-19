@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.enterprise.inject.spi.CDI;
 import javax.persistence.PersistenceException;
 import javax.persistence.SharedCacheMode;
 import javax.persistence.spi.PersistenceUnitTransactionType;
@@ -79,6 +80,7 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
+import io.quarkus.hibernate.orm.runtime.boot.fakebeanmanager.FakeBeanManagerEmulator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatform;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
@@ -321,6 +323,9 @@ public class FastBootMetadataBuilder {
 
         cfg.put(org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY,
                 QuarkusInfinispanRegionFactory.class.getName());
+
+        // without this, EntityListeners cannot use @Inject
+        cfg.put(AvailableSettings.CDI_BEAN_MANAGER, new FakeBeanManagerEmulator(CDI.current()));
 
         HibernateOrmIntegrations.contributeBootProperties((k, v) -> cfg.put(k, v));
 

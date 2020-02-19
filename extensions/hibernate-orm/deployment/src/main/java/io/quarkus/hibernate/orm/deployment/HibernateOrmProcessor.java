@@ -51,6 +51,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.ResourceAnnotationBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -155,6 +156,8 @@ public final class HibernateOrmProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<JpaEntitiesBuildItem> domainObjectsProducer,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItemProducer,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             List<HibernateOrmIntegrationBuildItem> integrations,
             LaunchModeBuildItem launchMode) throws Exception {
 
@@ -183,8 +186,9 @@ public final class HibernateOrmProcessor {
             }
         }
 
-        JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, explicitDescriptors, compositeIndex,
-                nonJpaModelClasses, ignorableNonIndexedClasses);
+        JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, unremovableBeanBuildItemProducer,
+                additionalBeanBuildItemBuildProducer, explicitDescriptors, compositeIndex, nonJpaModelClasses,
+                ignorableNonIndexedClasses);
         final JpaEntitiesBuildItem domainObjects = scavenger.discoverModelAndRegisterForReflection();
 
         // remember how to run the enhancers later

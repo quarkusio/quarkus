@@ -13,18 +13,23 @@ import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
 import javax.persistence.MappedSuperclass;
 
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
@@ -48,9 +53,12 @@ final class JpaJandexScavenger {
             DotName.createSimple(Embedded.class.getName()),
             DotName.createSimple(ElementCollection.class.getName()));
     private static final DotName MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
+    private static final DotName ENTITY_LISTENERS = DotName.createSimple(EntityListeners.class.getName());
 
     private static final DotName ENUM = DotName.createSimple(Enum.class.getName());
 
+    private final BuildProducer<UnremovableBeanBuildItem> unremovableBean;
+    private final BuildProducer<AdditionalBeanBuildItem> additionalBean;
     private final List<ParsedPersistenceXmlDescriptor> explicitDescriptors;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
     private final IndexView indexView;
@@ -58,11 +66,15 @@ final class JpaJandexScavenger {
     private final Set<String> ignorableNonIndexedClasses;
 
     JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBean,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean,
             List<ParsedPersistenceXmlDescriptor> explicitDescriptors,
             IndexView indexView,
             Set<String> nonJpaModelClasses,
             Set<String> ignorableNonIndexedClasses) {
         this.reflectiveClass = reflectiveClass;
+        this.unremovableBean = unremovableBean;
+        this.additionalBean = additionalBean;
         this.explicitDescriptors = explicitDescriptors;
         this.indexView = indexView;
         this.nonJpaModelClasses = nonJpaModelClasses;
@@ -76,6 +88,7 @@ final class JpaJandexScavenger {
         final Set<String> enumTypeCollector = new HashSet<>();
         final Set<String> javaTypeCollector = new HashSet<>();
         final Set<DotName> unindexedClasses = new TreeSet<>();
+        final Set<String> entityListenerClasses = new HashSet<>();
 
         enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, javaTypeCollector, JPA_ENTITY,
                 unindexedClasses);
@@ -85,6 +98,7 @@ final class JpaJandexScavenger {
                 unindexedClasses);
         enlistEmbeddedsAndElementCollections(indexView, domainObjectCollector, enumTypeCollector, javaTypeCollector,
                 unindexedClasses);
+        enlistEntityListenerClasses(indexView, entityListenerClasses);
 
         for (PersistenceUnitDescriptor pud : explicitDescriptors) {
             enlistExplicitClasses(indexView, domainObjectCollector, enumTypeCollector, javaTypeCollector,
@@ -121,6 +135,12 @@ final class JpaJandexScavenger {
                                 + "Consider adding them to the index either by creating a Jandex index " +
                                 "for your dependency via the Maven plugin, an empty META-INF/beans.xml or quarkus.index-dependency properties.");
             }
+        }
+
+        for (String entityListenerClass : entityListenerClasses) {
+            unremovableBean.produce(new UnremovableBeanBuildItem(new BeanClassNameExclusion(entityListenerClass)));
+            additionalBean.produce(new AdditionalBeanBuildItem(entityListenerClass));
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, entityListenerClass));
         }
 
         return domainObjectCollector;
@@ -191,6 +211,23 @@ final class JpaJandexScavenger {
                     unindexedClasses);
             collectDomainObject(domainObjectCollector, klass);
         }
+    }
+
+    private static void enlistEntityListenerClasses(
+            IndexView index,
+            Set<String> entityListenerClasses) {
+        Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(ENTITY_LISTENERS);
+
+        if (jpaAnnotations == null) {
+            return;
+        }
+
+        jpaAnnotations.stream()
+                .filter(annotation -> annotation.target().kind() == Kind.CLASS)
+                .map(annotation -> annotation.value().asClassArray())
+                .flatMap(Arrays::stream)
+                .map(type -> type.name().toString())
+                .collect(Collectors.toCollection(() -> entityListenerClasses));
     }
 
     /**

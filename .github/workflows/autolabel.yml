@@ -1,6 +1,6 @@
 on:
     issues:
-        type: [opened]
+      type: [opened]
 
 jobs:
     autolabel:

@@ -7,7 +7,7 @@ on:
 
 jobs:
   cleanup-prs:
-    if: github.repository == 'protean-project/quarkus-ci'
+    if: github.repository == 'quarkusio/quarkus'
     name: "Cleanup Duplicate PRs"
     runs-on: ubuntu-latest
     steps:

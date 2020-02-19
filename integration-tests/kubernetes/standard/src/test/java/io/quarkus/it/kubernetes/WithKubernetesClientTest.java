@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -42,10 +41,9 @@ public class WithKubernetesClientTest {
     private Path logfile;
 
     @Test
-    public void asertApplicationRuns() throws IOException {
+    public void assertApplicationRuns() {
         assertThat(logfile).isRegularFile().hasFileName("k8s.log");
-        String entireLogContent = String.join("\n", Files.readAllLines(logfile));
-        assertThat(entireLogContent).contains("kubernetes").contains("kubernetes-client");
+        TestUtil.assertLogFileContents(logfile, "kubernetes", "kubernetes-client");
 
         given()
                 .when().get("/greeting")

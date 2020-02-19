@@ -3,8 +3,10 @@ package io.quarkus.resteasy.mutiny.test;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.annotations.Stream;
 
@@ -38,5 +40,22 @@ public class MutinyResource {
     @GET
     public Uni<Integer> injectionAsync(@Async @Context Integer value) {
         return Uni.createFrom().item(value);
+    }
+
+    @Path("web-failure")
+    @GET
+    public Uni<String> failing() {
+        return Uni.createFrom().item("not ok")
+                .onItem().failWith(s -> new WebApplicationException(
+                        Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(s).build()));
+    }
+
+    @Path("app-failure")
+    @GET
+    public Uni<String> failingBecauseOfApplicationCode() {
+        return Uni.createFrom().item("not ok")
+                .onItem().apply(s -> {
+                    throw new IllegalStateException("BOOM!");
+                });
     }
 }

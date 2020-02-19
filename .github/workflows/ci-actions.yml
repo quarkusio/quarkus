@@ -258,7 +258,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        category: [Main, Data1, Data2, Data3, Data4, Data5, Security1, Security2, Amazon, Messaging, Misc1, Misc2, Misc3, Spring]
+        category: [Main, Data1, Data2, Data3, Data4, Data5, Security1, Security2, Amazon, Messaging, HTTP, Misc1, Misc2, Misc3, Spring]
         include:
           - category: Main
             postgres: "true"

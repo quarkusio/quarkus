@@ -66,6 +66,8 @@ import org.jboss.logging.Logger;
  */
 public class MavenRepoInitializer {
 
+    public static final String QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS = "quarkus-internal.maven-cmd-line-args";
+
     private static final String DEFAULT_REMOTE_REPO_ID = "central";
     private static final String DEFAULT_REMOTE_REPO_URL = "https://repo.maven.apache.org/maven2";
 
@@ -93,7 +95,10 @@ public class MavenRepoInitializer {
     private static final BootstrapMavenOptions mvnArgs;
 
     static {
-        final String mvnCmd = System.getenv(MAVEN_CMD_LINE_ARGS);
+        String mvnCmd = System.getenv(MAVEN_CMD_LINE_ARGS);
+        if (mvnCmd == null) {
+            mvnCmd = System.getProperty(QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS);
+        }
         mvnArgs = BootstrapMavenOptions.newInstance(mvnCmd);
         final String userSettings = mvnArgs.getOptionValue(ALTERNATE_USER_SETTINGS);
         final String globalSettings = mvnArgs.getOptionValue(ALTERNATE_GLOBAL_SETTINGS);

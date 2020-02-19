@@ -38,6 +38,21 @@ public class ParserTest {
     }
 
     @Test
+    public void testIgnoreInvalidIdentifier() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("{\"foo\":\"bar\"} bar {'} baz ZX80",
+                engine.parse("{\"foo\":\"bar\"} {_foo} {'} {1foo} {čip}").data("_foo", "bar").data("1foo", "baz")
+                        .data("čip", "ZX80").render());
+    }
+
+    @Test
+    public void testEscapingDelimiters() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("{foo} bar \\ignored {čip}",
+                engine.parse("\\{foo\\} {foo} \\ignored \\{čip}").data("foo", "bar").render());
+    }
+
+    @Test
     public void testTypeCheckInfos() {
         Engine engine = Engine.builder().addDefaultSectionHelpers()
                 .build();

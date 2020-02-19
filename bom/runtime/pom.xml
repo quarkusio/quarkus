@@ -996,6 +996,11 @@
                 <version>${mutiny.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>mutiny-context-propagation</artifactId>
+                <version>${mutiny.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-mutiny</artifactId>
                 <version>${project.version}</version>

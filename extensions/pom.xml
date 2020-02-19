@@ -136,8 +136,10 @@
         <!-- Database migrations -->
         <module>flyway</module>
 
-        <!-- kogito -->
+        <!-- Business automation -->
         <module>kogito</module>
+        <module>optaplanner</module>
+        <module>optaplanner-jackson</module>
 
         <!-- vault -->
         <module>vault</module>

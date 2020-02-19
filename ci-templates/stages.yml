@@ -411,6 +411,7 @@ stages:
           timeoutInMinutes: 35
           modules:
             - kogito
+            - optaplanner-jackson
             - kubernetes-client
             - quartz
             - qute

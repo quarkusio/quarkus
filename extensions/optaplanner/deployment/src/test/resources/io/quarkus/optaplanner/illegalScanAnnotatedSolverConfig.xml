@@ -1,0 +1,4 @@
+<solver>
+  <!-- Quarkus already scans the classpath, so this is illegal -->
+  <scanAnnotatedClasses/>
+</solver>

@@ -24,6 +24,8 @@ update_configs:
       - match:
           dependency_name: "org.eclipse.jgit:org.eclipse.jgit"
       - match:
+          dependency_name: "org.eclipse.jgit:org.eclipse.jgit.http.server"
+      - match:
           dependency_name: "io.fabric8:kubernetes-client-bom"
       - match:
           dependency_name: "org.apache.httpcomponents:httpclient"

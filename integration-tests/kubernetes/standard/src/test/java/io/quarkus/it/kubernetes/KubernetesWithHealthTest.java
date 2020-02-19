@@ -43,7 +43,7 @@ public class KubernetesWithHealthTest {
     private Path logfile;
 
     @Test
-    public void asertApplicationRuns() {
+    public void assertApplicationRuns() {
         assertThat(logfile).isRegularFile().hasFileName("k8s.log");
         TestUtil.assertLogFileContents(logfile, "kubernetes", "health");
 

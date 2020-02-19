@@ -1,0 +1,463 @@
+name: Quarkus CI
+
+#on: [push, pull_request]
+on: push
+
+env:
+  # Workaround testsuite locale issue
+  LANG: en_US.UTF-8
+  NATIVE_TEST_MAVEN_OPTS: "-B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-mariadb -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-vault -Dtest-neo4j -Dnative-image.xmx=6g -Dnative -Dno-format install"
+  JVM_TEST_MAVEN_OPTS: "-e -B --settings azure-mvn-settings.xml -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-mariadb -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-dynamodb -Dtest-vault -Dtest-neo4j -Dtest-keycloak -Dno-format"
+  DB_USER: hibernate_orm_test
+  DB_PASSWORD: hibernate_orm_test
+  DB_NAME: hibernate_orm_test
+jobs:
+  build-jdk8:
+    name: "JDK 8 Build"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: n1hility/cancel-previous-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up JDK 8
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@7134ae95986e4e0a4f9f0b51345c93fcebfc4ea9
+        with:
+          java-version: openjdk8
+      - name: Compute cache restore key
+        # Always recompute on a push so that the maven repo doesnt grow indefinitely with old versions
+        run: |
+           if ${{ github.event_name == 'pull_request' }}; then echo "::set-env name=COMPUTED_RESTORE_KEY::q2maven-"; fi
+      - name: Cache Maven Repository
+        id: cache-maven
+        uses: n1hility/cache@v2
+        with:
+          path: ~/.m2/repository
+          # Improves the reusability of the cache to limit key changes
+          key: q2maven-${{ hashFiles('bom/runtime/pom.xml') }}
+          restore-keys: ${{ env.COMPUTED_RESTORE_KEY }}
+          restore-only: ${{ github.event_name == 'pull_request' }}
+      - name: Build
+        run: |
+          mvn -e -B  -DskipTests=true -Dno-format -DskipDocs clean install
+      - name: Tar Maven Repo
+        shell: bash
+        run: tar -czvf maven-repo.tgz -C ~ .m2/repository
+      - name: Persist Maven Repo
+        uses: actions/upload-artifact@v1
+        with:
+          name: maven-repo
+          path: maven-repo.tgz
+      - name: Cleanup Cache
+        shell: bash
+        run: |
+          find ~/.m2/repositoiry/io/quarkus/ -mindepth 1 -maxdepth 1 \( ! -name http -a ! -name gizmo -a ! -name security \) -exec echo {} \; -exec rm -rf {} \; || true
+
+  linux-jvm-tests:
+    name: JDK ${{matrix.java-version}} JVM Tests
+    needs: build-jdk8
+    timeout-minutes: 120
+    strategy:
+      matrix:
+        java-version: [8, 11, 12]
+
+    runs-on: ubuntu-latest
+
+    services:
+      keycloak:
+        image: quay.io/keycloak/keycloak:8.0.1
+        env:
+          KEYCLOAK_USER: admin
+          KEYCLOAK_PASSWORD: admin
+          JAVA_OPTS: "-server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -Dkeycloak.profile.feature.upload_scripts=enabled"
+        ports:
+          - 8180:8080
+      postgres:
+        image: postgres:10.5
+        env:
+          POSTGRES_USER: hibernate_orm_test
+          POSTGRES_PASSWORD: hibernate_orm_test
+          POSTGRES_DB: hibernate_orm_test
+        ports:
+          - 5432:5432
+      mariadb:
+        image: mariadb:10.4
+        env:
+          MYSQL_USER: hibernate_orm_test
+          MYSQL_PASSWORD: hibernate_orm_test
+          MYSQL_DATABASE: hibernate_orm_test
+          MYSQL_RANDOM_ROOT_PASSWORD: true
+        ports:
+          - 3308:3306
+      mssql:
+        image: microsoft/mssql-server-linux:2017-CU12
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: ActuallyRequired11Complexity
+          MYSQL_USER: hibernate_orm_test
+          MYSQL_PASSWORD: hibernate_orm_test
+          MYSQL_DATABASE: hibernate_orm_test
+        ports:
+          - 1433:1433
+      neo4j:
+        image: neo4j/neo4j-experimental:4.0.0-rc01
+        env:
+          NEO4J_AUTH: neo4j/secret
+          NEO4J_dbms_memory_pagecache_size: 10M 
+          NEO4J_dbms_memory_heap_initial__size: 10M
+        ports:
+          - 7687:7687
+      dynamodb:
+        image: amazon/dynamodb-local:1.11.477
+        ports:
+          - 8000:8000
+
+    steps:
+      - name: Start mysql
+        shell: bash
+        run: |
+          netstat -ln
+          sudo service mysql stop || true
+          docker run --rm --publish 3306:3306 --name build-mysql -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl
+      - uses: actions/checkout@v2
+      - name: Set up JDK ${{ matrix.java-version }}
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@7134ae95986e4e0a4f9f0b51345c93fcebfc4ea9
+        with:
+          java-version: openjdk${{ matrix.java-version }}
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzvf maven-repo.tgz -C ~
+      - name: Build with Maven
+        run: eval mvn $JVM_TEST_MAVEN_OPTS install
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -name '*-reports' -type d | tar -czvf test-reports.tgz -T - 
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: test-reports-linux-jvm${{matrix.java-version}}
+          path: 'test-reports.tgz'
+
+  windows-jdk8-jvm-tests:
+    name: Windows JDK 8 JVM Tests
+    needs: build-jdk8
+    runs-on: windows-latest
+    timeout-minutes: 120
+    env:
+      MAVEN_OPTS: -Xmx1280m
+   
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@7134ae95986e4e0a4f9f0b51345c93fcebfc4ea9
+        with:
+          java-version: openjdk8
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzvf maven-repo.tgz -C ~
+      - name: Build with Maven
+        shell: bash
+        run: mvn -B --settings azure-mvn-settings.xml -Dno-native -Dno-format install
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: |
+          # Disambiguate windows find from cygwin find
+          /usr/bin/find . -name '*-reports' -type d | tar -czvf test-reports.tgz -T - 
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: test-reports-windows-jdk8-jvm
+          path: 'test-reports.tgz'
+
+  tcks-test:
+    name: TCKS Test
+    needs: build-jdk8
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    services:
+      postgres:
+        image: postgres:10.5
+        env:
+          POSTGRES_USER: hibernate_orm_test
+          POSTGRES_PASSWORD: hibernate_orm_test
+          POSTGRES_DB: hibernate_orm_test
+        ports:
+          - 5432:5432
+      neo4j:
+        image: neo4j/neo4j-experimental:4.0.0-rc01
+        env:
+          NEO4J_AUTH: neo4j/secret
+          NEO4J_dbms_memory_pagecache_size: 10M 
+          NEO4J_dbms_memory_heap_initial__size: 10M
+        ports:
+          - 7687:7687
+      dynamodb:
+        image: amazon/dynamodb-local:1.11.477
+        ports:
+          - 8000:8000
+
+    steps:
+      - name: Start mysql
+        shell: bash
+        run: |
+          sudo service mysql stop || true
+          docker run --rm --publish 3306:3306 --name build-mysql -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl
+      - uses: actions/checkout@v2
+      - name: Set up JDK 8
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@7134ae95986e4e0a4f9f0b51345c93fcebfc4ea9
+        with:
+          java-version: openjdk8
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzvf maven-repo.tgz -C ~
+      - name: Build with Maven
+        run: mvn -B --settings azure-mvn-settings.xml -Dno-native -Dno-format -DskipTests -Dtcks install
+      - name: Verify with Maven
+        run: mvn -B --settings azure-mvn-settings.xml -f tcks/pom.xml verify
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -name '*-reports' -type d | tar -czvf test-reports.tgz -T - 
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: test-reports-tcks
+          path: 'test-reports.tgz'
+       
+  native-tests:
+    name: Native Tests - ${{matrix.category}}
+    needs: build-jdk8
+    runs-on: ubuntu-latest
+    # Ignore the following YAML Schema error 
+    timeout-minutes: ${{matrix.timeout}}
+    strategy:
+      fail-fast: true
+      matrix:
+        category: [Main, Data1, Data2, Data3, Data4, Data5, Security1, Security2, Amazon, Messaging, Misc1, Misc2, Misc3, Spring]
+        include:
+          - category: Main
+            postgres: "true"
+            timeout: 25
+            test-modules: main
+          - category: Data1
+            mariadb: "true"
+            mssql: "true"
+            timeout: 40
+            test-modules: >
+              jpa-h2
+              jpa-mariadb
+              jpa-mssql
+              jpa-derby
+              jpa-without-entity
+          - category: Data2
+            mysql: "true"
+            postgres: "true"
+            timeout: 25
+            test-modules: >
+              jpa
+              jpa-postgresql
+              jpa-mysql
+              reactive-mysql-client
+          - category: Data3
+            postgres: "true"
+            timeout: 30
+            test-modules: >
+              flyway
+              hibernate-orm-panache
+              reactive-pg-client 
+          - category: Data4
+            neo4j: "true"
+            timeout: 30
+            test-modules: >
+              mongodb-client
+              mongodb-panache
+              neo4j
+          - category: Data5
+            timeout: 25
+            test-modules: >
+              hibernate-search-elasticsearch
+              narayana-stm
+              narayana-jta
+          - category: Amazon
+            dynamodb: "true"
+            timeout: 15
+            test-modules: >
+              amazon-dynamodb
+              amazon-lambda
+              amazon-lambda-http
+          - category: Messaging
+            timeout: 30
+            test-modules: >
+              artemis-core
+              artemis-jms
+              kafka
+              kafka-streams
+          - category: Security1
+            timeout: 20
+            keycloak: "true"
+            test-modules: >
+              elytron-security-oauth2
+              elytron-security
+              elytron-security-jdbc
+              elytron-undertow 
+          - category: Security2
+            timeout: 45
+            keycloak: "true"
+            test-modules: >
+              elytron-resteasy
+              oidc
+              oidc-code-flow
+              oidc-tenancy
+              vault-app
+              keycloak-authorization
+          - category: Cache
+            timeout: 30
+            test-modules: >
+              infinispan-cache-jpa
+              infinispan-client
+              infinispan-embedded
+              cache
+          - category: HTTP
+            timeout: 55
+            test-modules: >
+              resteasy-jackson
+              resteasy-mutiny
+              vertx
+              vertx-http
+              vertx-graphql
+              virtual-http
+          - category: Misc1
+            timeout: 40
+            test-modules: >
+              maven
+              jackson
+              jsonb
+              jsch
+              jgit
+          - category: Misc2
+            timeout: 35
+            test-modules: >
+              tika
+              hibernate-validator
+              test-extension
+              logging-gelf
+              bootstrap-config
+          - category: Misc3
+            timeout: 35
+            test-modules: >
+              kogito
+              kubernetes-client
+              optaplanner-jackson
+              quartz
+              qute
+          - category: Spring
+            timeout: 30
+            test-modules: >
+              spring-di
+              spring-web
+              spring-data-jpa
+              spring-boot-properties
+              spring-cloud-config-client
+    steps:
+      # These should be services, but services do not (yet) allow conditional execution
+      - name: Postgres Service
+        run: |
+              docker run --rm --publish 5432:5432 --name build-postgres \
+              -e POSTGRES_USER=$DB_USER -e POSTGRES_PASSWORD=$DB_PASSWORD -e POSTGRES_DB=$DB_NAME \
+              -d postgres:10.5
+        if: matrix.postgres
+      - name: MySQL Service
+        run: |
+          sudo service mysql stop || true
+          docker run --rm --publish 3306:3306 --name build-mysql  \
+            -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true \
+            -d mysql:5 --skip-ssl
+        if: matrix.mysql
+      - name: Maria DB Service
+        run: |
+          docker run --rm --publish 3308:3306 --name build-mariadb \
+            -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true \
+            -d mariadb:10.4
+      - name: MS-SQL Service
+        run: |
+          docker run --rm --publish 1433:1433 --name build-mssql \
+            -e ACCEPT_EULA=Y -e SA_PASSWORD=ActuallyRequired11Complexity \
+            -d microsoft/mssql-server-linux:2017-CU12
+        if: matrix.mssql
+      - name: Dynamo DB Service
+        run: |
+          docker run --rm --publish 8000:8000 --name build-dynamodb \
+            -d amazon/dynamodb-local:1.11.477
+        if: matrix.dynamodb
+      - name: Neo4j Service
+        run: |
+          docker run --rm --publish 7687:7687 --name build-neo4j \
+            -e NEO4J_AUTH=neo4j/secret -e NEO4J_dbms_memory_pagecache_size=10M -e NEO4J_dbms_memory_heap_initial__size=10M \
+            -d neo4j/neo4j-experimental:4.0.0-rc01
+        if: matrix.neo4j
+      - name: Keycloak Service
+        run: |
+          docker run --rm --publish 8180:8080 --name build-keycloak \
+            -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -e JAVA_OPTS=" \
+              -server -Xms64m -Xmx512m -XX:MetaspaceSize=96M \
+              -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true \
+              -Dkeycloak.profile.feature.upload_scripts=enabled" \
+            -d quay.io/keycloak/keycloak:8.0.1
+        if: matrix.keycloak
+      - uses: actions/checkout@v2
+      - name: Set up JDK 8
+        # Uses sha for added security since tags can be updated
+        uses: joschi/setup-jdk@7134ae95986e4e0a4f9f0b51345c93fcebfc4ea9
+        with:
+          java-version: openjdk8
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v1
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzvf maven-repo.tgz -C ~
+      - name: Build with Maven
+        env: 
+          TEST_MODULES: ${{matrix.test-modules}}
+        run: |
+          for i in $TEST_MODULES
+          do modules+=("integration-tests/$i"); done
+          IFS=,
+          eval mvn -pl "${modules[*]}" $NATIVE_TEST_MAVEN_OPTS
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -name '*-reports' -type d | tar -czvf test-reports.tgz -T - 
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: test-reports-native-${{matrix.category}}
+          path: 'test-reports.tgz'

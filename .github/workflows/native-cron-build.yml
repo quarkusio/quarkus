@@ -1,8 +1,8 @@
 name: "Quarkus Cron Native image"
 on:
-  schedule:
-    - cron: '0 2 * * *'
-  repository_dispatch:
+  pull_request:
+    branches:
+      - master
 
 
 jobs:
@@ -11,6 +11,7 @@ jobs:
     strategy:
       matrix:
         java: [ 11 ]
+      fail-fast: false
     name: build-and-testing
     steps:
 
@@ -28,8 +29,8 @@ jobs:
       - name: Checkout Quarkus
         uses: actions/checkout@v2
         with:
-          repository: quarkusio/quarkus
-          ref: master
+          repository: gwenneg/quarkus
+          ref: issue-7269-support-graalvm-20.0
 
       - uses: actions/cache@v1
         with:
@@ -43,29 +44,3 @@ jobs:
 
       - name: Run integration tests in native
         run: mvn -B --settings azure-mvn-settings.xml verify -f integration-tests/pom.xml -Dno-format -Ddocker -Dnative -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:20.0.0-java${{ matrix.java }} -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-dynamodb -Dtest-vault -Dtest-neo4j -Dtest-keycloak -Dtest-mssql -Dtest-mariadb -Dmariadb.url="jdbc:mariadb://localhost:3308/hibernate_orm_test"
-
-      - name: Report
-        if: always()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
-          STATUS: ${{ job.status }}
-          JAVA_VERSION: ${{ matrix.java }}
-        run: |
-          echo "The report step got status: ${STATUS}"
-          sudo apt-get update -o Dir::Etc::sourcelist="sources.list" \
-            -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
-          sudo apt-get install -y gnupg2 gnupg-agent
-          echo Installing SDKMAN
-          curl -s "https://get.sdkman.io" | bash
-          source ~/.sdkman/bin/sdkman-init.sh && \
-          sdk install kotlin 1.3.61 && \
-
-          # we need to install Java 8 because kscript doesn't yet work with Java 11: https://github.com/holgerbrandl/kscript/issues/239
-          if [[ ${JAVA_VERSION} = 11 ]]; then
-            echo "y" | sdk install java $(sdk list java | grep open.*\s*8.0.* | awk '{print $8}')
-            export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
-          fi
-
-          sdk install kscript 2.9.0
-          [[ ${JAVA_VERSION} = 8 ]] && ISSUE_NUMBER="6717" || ISSUE_NUMBER="6723"
-          kscript .github/NativeBuildReport.kts ${GITHUB_TOKEN} ${STATUS} ${ISSUE_NUMBER}

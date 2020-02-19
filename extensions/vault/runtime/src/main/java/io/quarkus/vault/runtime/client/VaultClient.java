@@ -1,5 +1,7 @@
 package io.quarkus.vault.runtime.client;
 
+import java.util.Map;
+
 import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultLookupSelf;
@@ -8,6 +10,7 @@ import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuth;
 import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV1;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2;
+import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2WriteBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecrypt;
@@ -42,6 +45,14 @@ public interface VaultClient {
     VaultKvSecretV1 getSecretV1(String token, String secretEnginePath, String path);
 
     VaultKvSecretV2 getSecretV2(String token, String secretEnginePath, String path);
+
+    void writeSecretV1(String token, String secretEnginePath, String path, Map<String, String> values);
+
+    void writeSecretV2(String token, String secretEnginePath, String path, VaultKvSecretV2WriteBody body);
+
+    void deleteSecretV1(String token, String secretEnginePath, String path);
+
+    void deleteSecretV2(String token, String secretEnginePath, String path);
 
     VaultDatabaseCredentials generateDatabaseCredentials(String token, String databaseCredentialsRole);
 

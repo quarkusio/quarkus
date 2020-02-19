@@ -16,6 +16,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.vault.VaultKVSecretEngine;
 import io.quarkus.vault.VaultTransitSecretEngine;
+import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.transit.ClearData;
 import io.quarkus.vault.transit.SigningInput;
 
@@ -48,10 +49,27 @@ public class VaultTestService {
             return "password=" + password + "; expected: " + expectedPassword;
         }
 
+        // basic
         Map<String, String> secrets = kv.readSecret("foo");
         String expectedSecrets = "{secret=s\u20accr\u20act}";
         if (!expectedSecrets.equals(secrets.toString())) {
             return "/foo=" + secrets + "; expected: " + expectedSecrets;
+        }
+
+        // crud
+        kv.writeSecret("crud", secrets);
+        secrets = kv.readSecret("crud");
+        if (!expectedSecrets.equals(secrets.toString())) {
+            return "/crud=" + secrets + "; expected: " + expectedSecrets;
+        }
+        kv.deleteSecret("crud");
+        try {
+            secrets = kv.readSecret("crud");
+            return "/crud=" + secrets + "; expected 404";
+        } catch (VaultClientException e) {
+            if (e.getStatus() != 404) {
+                return "http response code=" + e.getStatus() + "; expected: 404";
+            }
         }
 
         try {

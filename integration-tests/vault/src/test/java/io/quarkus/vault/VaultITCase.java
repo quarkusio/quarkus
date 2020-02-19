@@ -66,6 +66,7 @@ import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerify;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerifyBatchInput;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerifyBody;
 import io.quarkus.vault.runtime.config.VaultAuthenticationType;
+import io.quarkus.vault.test.VaultTestExtension;
 import io.quarkus.vault.test.VaultTestLifecycleManager;
 import io.quarkus.vault.test.client.TestVaultClient;
 import io.quarkus.vault.test.client.dto.VaultTransitHash;
@@ -78,6 +79,8 @@ public class VaultITCase {
     private static final Logger log = Logger.getLogger(VaultITCase.class);
 
     public static final String MY_PASSWORD = "my-password";
+
+    public static final String CRUD_PATH = "crud";
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -128,6 +131,11 @@ public class VaultITCase {
     public void secretV1() {
         Map<String, String> secrets = kvSecretEngine.readSecret(APP_SECRET_PATH);
         assertEquals("{" + SECRET_KEY + "=" + SECRET_VALUE + "}", secrets.toString());
+    }
+
+    @Test
+    public void crudSecretV1() {
+        VaultTestExtension.assertCrudSecret(kvSecretEngine);
     }
 
     @Test

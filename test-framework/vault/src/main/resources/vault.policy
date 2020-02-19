@@ -41,3 +41,11 @@ path "transit/*" {
 #path "transit/sign/my-sign-key" {
 #  capabilities = [ "read", "update" ]
 #}
+
+path "secret/crud" {
+  capabilities = ["read", "create", "update", "delete"]
+}
+
+path "secret-v2/data/crud" {
+  capabilities = ["read", "create", "update", "delete"]
+}

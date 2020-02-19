@@ -28,6 +28,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-mailer</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mutiny-deployment</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

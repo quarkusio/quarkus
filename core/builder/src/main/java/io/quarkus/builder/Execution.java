@@ -32,7 +32,7 @@ final class Execution {
     private final Set<ItemId> finalIds;
     private final ConcurrentHashMap<StepInfo, BuildContext> contextCache = new ConcurrentHashMap<>();
     private final EnhancedQueueExecutor executor;
-    private final List<Diagnostic> diagnostics = new ArrayList<>();
+    private final List<Diagnostic> diagnostics = Collections.synchronizedList(new ArrayList<>());
     private final String buildTargetName;
     private final AtomicBoolean errorReported = new AtomicBoolean();
     private final AtomicInteger lastStepCount = new AtomicInteger();

@@ -282,13 +282,8 @@ public class InfinispanClientProducer {
         if (cacheManager != null) {
             return cacheManager;
         }
-        synchronized (this) {
-            if (cacheManager != null) {
-                return cacheManager;
-            }
-            initialize();
-            return cacheManager;
-        }
+        initialize();
+        return cacheManager;
     }
 
     void configure(Properties properties) {

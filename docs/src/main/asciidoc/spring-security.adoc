@@ -404,10 +404,10 @@ The following table shows how Spring Security annotations can be converted to JA
 
 == More Spring guides
 
-Quarkus support has more Spring compatibility features. See the following guides for more details:
+Quarkus has more Spring compatibility features. See the following guides for more details:
 
 * link:spring-di[Quarkus - Extension for Spring DI]
 * link:spring-web[Quarkus - Extension for Spring Web]
 * link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
-
+* link:spring-spring-config-client[Quarkus - Reading properties from Spring Cloud Config Server]
 

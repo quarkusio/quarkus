@@ -1,3 +1,4 @@
+name: "Auto label new issues"
 on:
     issues:
       types: [opened]

@@ -343,7 +343,7 @@ jobs:
               infinispan-embedded
               cache
           - category: HTTP
-            timeout: 55
+            timeout: 35
             test-modules: >
               resteasy-jackson
               resteasy-mutiny

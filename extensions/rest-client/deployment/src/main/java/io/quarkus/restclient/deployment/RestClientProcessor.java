@@ -83,6 +83,9 @@ class RestClientProcessor {
     private static final DotName REGISTER_PROVIDER = DotName.createSimple(RegisterProvider.class.getName());
     private static final DotName REGISTER_PROVIDERS = DotName.createSimple(RegisterProviders.class.getName());
 
+    private static final DotName CLIENT_REQUEST_FILTER = DotName.createSimple(ClientRequestFilter.class.getName());
+    private static final DotName CLIENT_RESPONSE_FILTER = DotName.createSimple(ClientResponseFilter.class.getName());
+
     private static final String PROVIDERS_SERVICE_FILE = "META-INF/services/" + Providers.class.getName();
 
     @BuildStep
@@ -340,6 +343,15 @@ class RestClientProcessor {
         for (AnnotationInstance annotationInstance : allInstances) {
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(false, false, annotationInstance.value().asClass().toString()));
+        }
+
+        // now retain all un-annotated implementations of ClientRequestFilter and ClientResponseFilter
+        // in case they are programmatically registered by applications
+        for (ClassInfo info : index.getAllKnownImplementors(CLIENT_REQUEST_FILTER)) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, info.name().toString()));
+        }
+        for (ClassInfo info : index.getAllKnownImplementors(CLIENT_RESPONSE_FILTER)) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, info.name().toString()));
         }
     }
 

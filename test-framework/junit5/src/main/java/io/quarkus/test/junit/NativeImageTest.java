@@ -20,6 +20,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * run, it is expected that the JVM tests will be standard unit tests that are
  * executed by surefire, while the native image tests will be integration tests
  * executed by failsafe.
+ * This also means that injection of beans into a test class using {@code @Inject} is not supported
+ * in native image tests. Such injection is only possible in tests injected with
+ * {@link @QuarkusTest} so the test class structure must take this into account.
  *
  */
 @Target(ElementType.TYPE)

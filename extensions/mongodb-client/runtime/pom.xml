@@ -73,6 +73,16 @@
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--
+        We need this dependency to make MP context propagation work. As these tests do not
+        actually start Quarkus the MP CP extension does not run, so it does not exclude the
+        RESTEasy context provider. This results in a NoClassDefFoundError running the tests
+        -->
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-core</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     
     <build>

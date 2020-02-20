@@ -71,7 +71,7 @@ class SpringCloudConfigClientGatewayTest {
 
     private static SpringCloudConfigClientConfig configForTesting() {
         SpringCloudConfigClientConfig springCloudConfigClientConfig = new SpringCloudConfigClientConfig();
-        springCloudConfigClientConfig.uri = "http://localhost:" + MOCK_SERVER_PORT;
+        springCloudConfigClientConfig.url = "http://localhost:" + MOCK_SERVER_PORT;
         springCloudConfigClientConfig.connectionTimeout = Duration.ZERO;
         springCloudConfigClientConfig.readTimeout = Duration.ZERO;
         springCloudConfigClientConfig.username = Optional.empty();

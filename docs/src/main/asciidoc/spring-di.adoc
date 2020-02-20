@@ -305,8 +305,9 @@ The following table shows how Spring DI annotations can be converted to CDI and 
 
 == More Spring guides
 
-Quarkus supports additional Spring compatibility features. See the following guides for more details:
+Quarkus has more Spring compatibility features. See the following guides for more details:
 
 * link:spring-web[Quarkus - Extension for Spring Web]
 * link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
 * link:spring-security[Quarkus - Extension for Spring Security]
+* link:spring-spring-config-client[Quarkus - Reading properties from Spring Cloud Config Server]

@@ -47,7 +47,7 @@ public class SpringCloudConfigServerClientConfigSourceProvider implements Config
             return result;
         } catch (Exception e) {
             final String errorMessage = "Unable to obtain configuration from Spring Cloud Config Server at "
-                    + springCloudConfigClientConfig.uri;
+                    + springCloudConfigClientConfig.url;
             if (springCloudConfigClientConfig.failFast) {
                 throw new RuntimeException(errorMessage, e);
             } else {

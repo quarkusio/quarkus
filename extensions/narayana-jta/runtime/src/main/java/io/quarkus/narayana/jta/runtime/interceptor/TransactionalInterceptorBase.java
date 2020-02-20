@@ -125,7 +125,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             if (!throwing && ret != null) {
                 ReactiveTypeConverter<Object> converter = null;
                 if (ret instanceof CompletionStage == false
-                        && ret instanceof Publisher == false) {
+                        && (ret instanceof Publisher == false || ic.getMethod().getReturnType() != Publisher.class)) {
                     @SuppressWarnings({ "rawtypes", "unchecked" })
                     Optional<ReactiveTypeConverter<Object>> lookup = Registry.lookup((Class) ret.getClass());
                     if (lookup.isPresent()) {

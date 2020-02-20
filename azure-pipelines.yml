@@ -5,24 +5,24 @@ trigger:
       - master
       - '1.1'
 
-pr:
-  branches:
-    include:
-      - master
-  paths:
-    exclude:
-      - docs/src/main/asciidoc/*
-      - docs/src/main/asciidoc/images/*
-      - README.md
-      - CONTRIBUTING.md
-      - ADOPTERS.md
-      - LICENSE.txt
-      - dco.txt
-      - .github/ISSUE_TEMPLATE/*.md
-      - .github/labeler.yml
-      - .github/boring-cyborg.yml
-      - .github/workflows/*
-      - .dependabot/config.yml
+# pr:
+#   branches:
+#     include:
+#       - master
+#   paths:
+#     exclude:
+#       - docs/src/main/asciidoc/*
+#       - docs/src/main/asciidoc/images/*
+#       - README.md
+#       - CONTRIBUTING.md
+#       - ADOPTERS.md
+#       - LICENSE.txt
+#       - dco.txt
+#       - .github/ISSUE_TEMPLATE/*.md
+#       - .github/labeler.yml
+#       - .github/boring-cyborg.yml
+#       - .github/workflows/*
+#       - .dependabot/config.yml
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository/

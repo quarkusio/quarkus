@@ -30,7 +30,7 @@ steps:
 - script: docker run --rm --publish 3308:3306 --name build-mariadb  -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_RANDOM_ROOT_PASSWORD=true -d mariadb:10.4
   displayName: 'start mariadb'
 
-- script: docker run --rm --publish 8180:8080 --name build-keycloak  -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -e JAVA_OPTS="-server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -Dkeycloak.profile.feature.upload_scripts=enabled" -d quay.io/keycloak/keycloak:8.0.1
+- script: docker run --rm --publish 8180:8080 --name build-keycloak  -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -e JAVA_OPTS="-server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -Dkeycloak.profile.feature.upload_scripts=enabled" -d quay.io/keycloak/keycloak:9.0.0
   displayName: 'start keycloak'
 
 - script: docker run --rm --publish 1433:1433 --name build-mssql -e ACCEPT_EULA=Y -e SA_PASSWORD=ActuallyRequired11Complexity -d microsoft/mssql-server-linux:2017-CU12

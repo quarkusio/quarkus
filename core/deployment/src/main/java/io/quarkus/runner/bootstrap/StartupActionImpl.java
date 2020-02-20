@@ -67,6 +67,7 @@ public class StartupActionImpl implements StartupAction {
             baseClassLoader.reset(resources, bytecodeTransformers, transformerClassLoader);
             runtimeClassLoader = baseClassLoader;
         }
+        ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
 
         //we have our class loaders
         ClassLoader old = Thread.currentThread().getContextClassLoader();
@@ -104,6 +105,7 @@ public class StartupActionImpl implements StartupAction {
                             runtimeClassLoader.close();
                         }
                     } finally {
+                        ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());
                         if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST) {
                             //for tests we just always shut down the curated application, as it is only used once
                             //dev mode might be about to restart, so we leave it

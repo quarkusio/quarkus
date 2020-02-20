@@ -384,6 +384,8 @@ jobs:
               jsonb
               jsch
               jgit
+              quartz
+              qute
           - category: Misc2
             timeout: 35
             test-modules: >
@@ -392,14 +394,13 @@ jobs:
               test-extension
               logging-gelf
               bootstrap-config
+              optaplanner-jackson
+          # kubernetes-client alone takes 16mn+
           - category: Misc3
             timeout: 35
             test-modules: >
               kogito
               kubernetes-client
-              optaplanner-jackson
-              quartz
-              qute
           - category: Spring
             timeout: 30
             test-modules: >

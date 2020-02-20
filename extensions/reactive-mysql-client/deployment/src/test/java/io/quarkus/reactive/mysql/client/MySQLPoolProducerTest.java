@@ -20,6 +20,7 @@ public class MySQLPoolProducerTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(BeanUsingBareMySQLClient.class)
+                    .addClasses(BeanUsingMutinyMySQLClient.class)
                     .addClasses(BeanUsingAxleMySQLClient.class)
                     .addClasses(BeanUsingRXMySQLClient.class));
 
@@ -32,11 +33,15 @@ public class MySQLPoolProducerTest {
     @Inject
     BeanUsingRXMySQLClient beanUsingRx;
 
+    @Inject
+    BeanUsingMutinyMySQLClient beanUsingMutiny;
+
     @Test
-    public void testVertxInjection() throws Exception {
+    public void testVertxInjection() {
         beanUsingBare.verify()
                 .thenCompose(v -> beanUsingAxle.verify())
                 .thenCompose(v -> beanUsingRx.verify())
+                .thenCompose(v -> beanUsingMutiny.verify())
                 .toCompletableFuture()
                 .join();
     }
@@ -58,6 +63,20 @@ public class MySQLPoolProducerTest {
 
     @ApplicationScoped
     static class BeanUsingAxleMySQLClient {
+
+        @Inject
+        io.vertx.mutiny.mysqlclient.MySQLPool mysqlClient;
+
+        public CompletionStage<Void> verify() {
+            return mysqlClient.query("SELECT 1")
+                    .onItem().ignore().andContinueWithNull()
+                    .onFailure().recoverWithItem((Void) null)
+                    .subscribeAsCompletionStage();
+        }
+    }
+
+    @ApplicationScoped
+    static class BeanUsingMutinyMySQLClient {
 
         @Inject
         io.vertx.axle.mysqlclient.MySQLPool mysqlClient;

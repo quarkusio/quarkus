@@ -20,6 +20,7 @@ public class PgPoolProducerTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(BeanUsingBarePgClient.class)
+                    .addClass(BeanUsingMutinyPgClient.class)
                     .addClasses(BeanUsingAxlePgClient.class)
                     .addClasses(BeanUsingRXPgClient.class));
 
@@ -32,9 +33,13 @@ public class PgPoolProducerTest {
     @Inject
     BeanUsingRXPgClient beanUsingRx;
 
+    @Inject
+    BeanUsingMutinyPgClient beanUsingMutiny;
+
     @Test
-    public void testVertxInjection() throws Exception {
+    public void testVertxInjection() {
         beanUsingBare.verify()
+                .thenCompose(v -> beanUsingMutiny.verify())
                 .thenCompose(v -> beanUsingAxle.verify())
                 .thenCompose(v -> beanUsingRx.verify())
                 .toCompletableFuture()
@@ -53,6 +58,20 @@ public class PgPoolProducerTest {
                 cf.complete(null);
             });
             return cf;
+        }
+    }
+
+    @ApplicationScoped
+    static class BeanUsingMutinyPgClient {
+
+        @Inject
+        io.vertx.mutiny.pgclient.PgPool pgClient;
+
+        public CompletionStage<Void> verify() {
+            return pgClient.query("SELECT 1")
+                    .onItem().ignore().andContinueWithNull()
+                    .onFailure().recoverWithItem(() -> null)
+                    .subscribeAsCompletionStage();
         }
     }
 

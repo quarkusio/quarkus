@@ -9,10 +9,10 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import io.vertx.axle.pgclient.PgPool;
-import io.vertx.axle.sqlclient.Row;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Row;
 
 @Path("/fruits")
 public class FruitResource {
@@ -23,24 +23,25 @@ public class FruitResource {
     @PostConstruct
     void setupDb() {
         client.query("DROP TABLE IF EXISTS fruits")
-                .thenCompose(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)"))
-                .thenCompose(r -> client.query("INSERT INTO fruits (name) VALUES ('Orange')"))
-                .thenCompose(r -> client.query("INSERT INTO fruits (name) VALUES ('Pear')"))
-                .thenCompose(r -> client.query("INSERT INTO fruits (name) VALUES ('Apple')"))
-                .toCompletableFuture()
-                .join();
+                .flatMap(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)"))
+                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Orange')"))
+                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Pear')"))
+                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Apple')"))
+                .await().indefinitely();
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<JsonArray> listFruits() {
-        return client.query("SELECT * FROM fruits").thenApply(pgRowSet -> {
-            JsonArray jsonArray = new JsonArray();
-            for (Row row : pgRowSet) {
-                jsonArray.add(toJson(row));
-            }
-            return jsonArray;
-        });
+        return client.query("SELECT * FROM fruits")
+                .map(pgRowSet -> {
+                    JsonArray jsonArray = new JsonArray();
+                    for (Row row : pgRowSet) {
+                        jsonArray.add(toJson(row));
+                    }
+                    return jsonArray;
+                })
+                .subscribeAsCompletionStage();
     }
 
     private JsonObject toJson(Row row) {

@@ -88,7 +88,9 @@ Otherwise, you can manually add this to the dependencies section of your `pom.xm
 ----
 
 NOTE: In this guide, we will use the Axle API of the Reactive PostgreSQL Client.
-Read the link:vertx[Using Eclipse Vert.x] guide to understand the differences between the callback, RxJava and Axle based APIs.
+Read the link:vertx[Using Eclipse Vert.x] guide to understand the differences between the callback, Mutiny, RxJava and Axle based APIs.
+The RxJava and Axle API are deprecated, and are planned for removal.
+It is recommended to switch to Mutiny.
 
 === JSON Binding
 
@@ -127,7 +129,7 @@ quarkus.datasource.password=quarkus_test
 IMPORTANT: The eagle eyes among you might have noticed the `url` prefix is different from usual JDBC urls.
 It is required to use the `vertx-reactive:` prefix otherwise the Reactive PostgreSQL Client extension will not use the `quarkus.datasource.url` config property.
 
-With that you may create your `FruitResource` skeleton and `@Inject` a `io.vertx.axle.pgclient.PgPool` instance:
+With that you may create your `FruitResource` skeleton and `@Inject` a `io.vertx.mutiny.pgclient.PgPool` instance:
 
 [source,java]
 .src/main/java/org/acme/vertx/FruitResource.java
@@ -138,7 +140,7 @@ With that you may create your `FruitResource` skeleton and `@Inject` a `io.vertx
 public class FruitResource {
 
     @Inject
-    io.vertx.axle.pgclient.PgPool client;
+    io.vertx.mutiny.pgclient.PgPool client;
 }
 ----
 
@@ -174,20 +176,19 @@ TIP: You may override the default value of the `myapp.schema.create` property in
 
 Almost ready!
 To initialize the DB in development mode, we will use the client simple `query` method.
-It returns a `CompletionStage` and thus can be composed to execute queries sequentially:
+It returns a `Uni` and thus can be composed to execute queries sequentially:
 
 [source,java]
 ----
-        client.query("DROP TABLE IF EXISTS fruits")
-                .thenCompose(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)"))
-                .thenCompose(r -> client.query("INSERT INTO fruits (name) VALUES ('Orange')"))
-                .thenCompose(r -> client.query("INSERT INTO fruits (name) VALUES ('Pear')"))
-                .thenCompose(r -> client.query("INSERT INTO fruits (name) VALUES ('Apple')"))
-                .toCompletableFuture()
-                .join();
+ client.query("DROP TABLE IF EXISTS fruits")
+    .flatMap(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)"))
+    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Orange')"))
+    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Pear')"))
+    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Apple')"))
+    .await().indefinitely();
 ----
 
-NOTE: Wondering why we need to convert the result to `CompletableFuture` and block until the latest query is completed?
+NOTE: Wondering why we need block until the latest query is completed?
 This code is part of a `@PostConstruct` method and Quarkus invokes it synchronously.
 As a consequence, returning prematurely could lead to serving requests while the database is not ready yet.
 
@@ -204,7 +205,7 @@ To retrieve all the data, we will use the `query` method again:
 
 [source,java]
 ----
-CompletionStage<RowSet> rowSet = client.query("SELECT id, name FROM fruits ORDER BY name ASC");
+Uni<RowSet> rowSet = client.query("SELECT id, name FROM fruits ORDER BY name ASC");
 ----
 
 When the operation completes, we will get a `RowSet` that has all the rows buffered in memory.
@@ -212,13 +213,14 @@ As an `java.lang.Iterable<Row>`, it can be traversed with a _for-each_ loop:
 
 [source,java]
 ----
-CompletionStage<List<Fruit>> fruits = rowSet.thenApply(pgRowSet -> {
-    List<Fruit> list = new ArrayList<>(pgRowSet.size());
-    for (Row row : pgRowSet) {
-        list.add(from(row));
-    }
-    return list;
-});
+Uni<List<Fruit>> fruits = rowSet
+    .map(pgRowSet -> {
+        List<Fruit> list = new ArrayList<>(pgRowSet.size());
+        for (Row row : pgRowSet) {
+            list.add(from(row));
+        }
+        return list;
+    });
 ----
 
 The `from` method converts a `Row` instance to a `Fruit` instance.
@@ -237,14 +239,15 @@ Putting it all together, the `Fruit.findAll` method looks like:
 [source,java]
 .src/main/java/org/acme/vertx/Fruit.java
 ----
-    public static CompletionStage<List<Fruit>> findAll(PgPool client) {
-        return client.query("SELECT id, name FROM fruits ORDER BY name ASC").thenApply(pgRowSet -> {
-            List<Fruit> list = new ArrayList<>(pgRowSet.size());
-            for (Row row : pgRowSet) {
-                list.add(from(row));
-            }
-            return list;
-        });
+    public static Uni<List<Fruit>> findAll(PgPool client) {
+        return client.query("SELECT id, name FROM fruits ORDER BY name ASC")
+            .map(pgRowSet -> {
+                List<Fruit> list = new ArrayList<>(pgRowSet.size());
+                for (Row row : pgRowSet) {
+                    list.add(from(row));
+                }
+                return list;
+            });
     }
 ----
 
@@ -254,10 +257,10 @@ And the endpoint to get all fruits from the backend:
 .src/main/java/org/acme/vertx/FruitResource.java
 ----
 @GET
-public CompletionStage<Response> get() {
+public Uni<Response> get() {
     return Fruit.findAll(client)
-            .thenApply(Response::ok)
-            .thenApply(ResponseBuilder::build);
+            .map(Response::ok)
+            .map(ResponseBuilder::build);
 }
 ----
 
@@ -286,16 +289,16 @@ client.preparedQuery("SELECT name FROM fruits WHERE id = $1", Tuple.of(id))
 
 TIP: The SQL string can refer to parameters by position, using $1, $2, ...etc.
 
-Like the simple `query` method, `preparedQuery` returns an instance of `CompletionStage<RowSet>`.
+Like the simple `query` method, `preparedQuery` returns an instance of `Uni<RowSet>`.
 Equipped with this tooling, we are able to safely use an `id` provided by the user to get the details of a particular fruit:
 
 [source,java]
 .src/main/java/org/acme/vertx/Fruit.java
 ----
-public static CompletionStage<Fruit> findById(PgPool client, Long id) {
+public static Uni<Fruit> findById(PgPool client, Long id) {
     return client.preparedQuery("SELECT id, name FROM fruits WHERE id = $1", Tuple.of(id)) // <1>
-            .thenApply(RowSet::iterator) // <2>
-            .thenApply(iterator -> iterator.hasNext() ? from(iterator.next()) : null); // <3>
+            .map(RowSet::iterator) // <2>
+            .map(iterator -> iterator.hasNext() ? from(iterator.next()) : null); // <3>
 }
 ----
 <1> Create a `Tuple` to hold the prepared query parameters.
@@ -309,10 +312,10 @@ And in the JAX-RS resource:
 ----
 @GET
 @Path("{id}")
-public CompletionStage<Response> getSingle(@PathParam Long id) {
+public Uni<Response> getSingle(@PathParam Long id) {
     return Fruit.findById(client, id)
-            .thenApply(fruit -> fruit != null ? Response.ok(fruit) : Response.status(Status.NOT_FOUND)) // <1>
-            .thenApply(ResponseBuilder::build); // <2>
+            .map(fruit -> fruit != null ? Response.ok(fruit) : Response.status(Status.NOT_FOUND)) // <1>
+            .map(ResponseBuilder::build); // <2>
 }
 ----
 <1> Prepare a JAX-RS response with  either the `Fruit` instance if found or the `404` status code.
@@ -323,9 +326,9 @@ The same logic applies when saving a `Fruit`:
 [source,java]
 .src/main/java/org/acme/vertx/Fruit.java
 ----
-public CompletionStage<Long> save(PgPool client) {
+public Uni<Long> save(PgPool client) {
     return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)", Tuple.of(name))
-            .thenApply(pgRowSet -> pgRowSet.iterator().next().getLong("id"));
+            .map(pgRowSet -> pgRowSet.iterator().next().getLong("id"));
 }
 ----
 
@@ -335,10 +338,10 @@ And in the web resource we handle the `POST` request:
 .src/main/java/org/acme/vertx/FruitResource.java
 ----
 @POST
-public CompletionStage<Response> create(Fruit fruit) {
+public Uni<Response> create(Fruit fruit) {
     return fruit.save(client)
-            .thenApply(id -> URI.create("/fruits/" + id))
-            .thenApply(uri -> Response.created(uri).build());
+            .map(id -> URI.create("/fruits/" + id))
+            .map(uri -> Response.created(uri).build());
 }
 ----
 
@@ -354,9 +357,9 @@ Let's use this to support removal of fruits in the database:
 [source,java]
 .src/main/java/org/acme/vertx/Fruit.java
 ----
-public static CompletionStage<Boolean> delete(PgPool client, Long id) {
+public static Uni<Boolean> delete(PgPool client, Long id) {
     return client.preparedQuery("DELETE FROM fruits WHERE id = $1", Tuple.of(id))
-            .thenApply(pgRowSet -> pgRowSet.rowCount() == 1); // <1>
+            .map(pgRowSet -> pgRowSet.rowCount() == 1); // <1>
 }
 ----
 <1> Inspect metadata to determine if a fruit has been actually deleted.
@@ -368,10 +371,10 @@ And to handle the HTTP `DELETE` method in the web resource:
 ----
 @DELETE
 @Path("{id}")
-public CompletionStage<Response> delete(@PathParam Long id) {
+public Uni<Response> delete(@PathParam Long id) {
     return Fruit.delete(client, id)
-            .thenApply(deleted -> deleted ? Status.NO_CONTENT : Status.NOT_FOUND)
-            .thenApply(status -> Response.status(status).build());
+            .map(deleted -> deleted ? Status.NO_CONTENT : Status.NOT_FOUND)
+            .map(status -> Response.status(status).build());
 }
 ----
 
@@ -467,11 +470,11 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 
 |PostgreSQL
 |`quarkus-reactive-pg-client`
-|`io.vertx.axle.pgclient.PgPool`
+|`io.vertx.mutiny.pgclient.PgPool`
 
 |MySQL
 |`quarkus-reactive-mysql-client`
-|`io.vertx.axle.mysqlclient.MySQLPool`
+|`io.vertx.mutiny.mysqlclient.MySQLPool`
 |===
 
 == Configuration Reference

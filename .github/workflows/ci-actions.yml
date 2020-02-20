@@ -4,7 +4,31 @@ on:
   push:
     branches-ignore:
       - 'dependabot/**'
+    paths-ignore:
+      - 'docs/src/main/asciidoc/**'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'ADOPTERS.md'
+      - 'LICENSE.txt'
+      - 'dco.txt'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/autoissuelabeler.yml'
+      - '.github/boring-cyborg.yml'
+      - '.github/NativeBuildReport.kts'
+      - '.dependabot/**'
   pull_request:
+    paths-ignore:
+      - 'docs/src/main/asciidoc/**'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'ADOPTERS.md'
+      - 'LICENSE.txt'
+      - 'dco.txt'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/autoissuelabeler.yml'
+      - '.github/boring-cyborg.yml'
+      - '.github/NativeBuildReport.kts'
+      - '.dependabot/**'
 
 env:
   # Workaround testsuite locale issue

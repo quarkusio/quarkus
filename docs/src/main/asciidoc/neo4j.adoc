@@ -412,28 +412,16 @@ The https://neo4j.com/docs/[Neo4j docs], the sandboxes and more are a good start
 
 If you have access to Neo4j 4.0, you can go fully reactive.
 
-The make life a bit easier, we will use https://projectreactor.io[Project Reactor] for this.
+To make life a bit easier, we will use https://smallrye.io/smallrye-mutiny/[Mutiny] for this.
 
-Please add the following dependency management and dependency to your `pom.xml`
+Please add the following dependency to your `pom.xml`
 
 [source,xml]
 ----
-<dependencyManagement>
-    <dependencies>
-      <dependency>
-          <groupId>io.projectreactor</groupId>
-          <artifactId>reactor-bom</artifactId>
-          <version>Dysprosium-RELEASE</version>
-          <type>pom</type>
-          <scope>import</scope>
-      </dependency>
-    </dependencies>
-</dependencyManagement>
-
 <dependencies>
     <dependency>
-        <groupId>io.projectreactor</groupId>
-        <artifactId>reactor-core</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-mutiny</artifactId>
     </dependency>
 </dependencies>
 ----
@@ -452,12 +440,12 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.reactive.RxSession;
 import org.neo4j.driver.reactive.RxResult;
 import org.reactivestreams.Publisher;
 
-import reactor.core.publisher.Flux;
 
 @Path("reactivefruits")
 @Produces(MediaType.APPLICATION_JSON)
@@ -470,17 +458,24 @@ public class ReactiveFruitResource {
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public Publisher<String> get() {
-        return Flux.using(driver::rxSession, session -> session.readTransaction(tx -> {
-            RxResult result = tx.run("MATCH (f:Fruit) RETURN f.name as name ORDER BY f.name");
-            return Flux.from(result.records()).map(record -> record.get("name").asString());
-        }), RxSession::close);
+        // Create a stream from a resource we can close in a finalizer:
+        return Multi.createFrom().resource(driver::rxSession,
+                session -> session.readTransaction(tx -> {
+                    RxResult result = tx.run("MATCH (f:Fruit) RETURN f.name as name ORDER BY f.name");
+                    return Multi.createFrom().publisher(result.records())
+                            .map(record -> record.get("name").asString());
+                })
+        ).withFinalizer(session -> {
+            return Uni.createFrom().publisher(session.close());
+        });
     }
 }
 ----
 
 `driver.rxSession()` returns a reactive session.
 It exposes its API based on http://www.reactive-streams.org[Reactive Streams], most prominently, as `org.reactivestreams.Publisher`.
-Those can be used directly, but we found it easier and more expressive to wrap them in reactive types from https://projectreactor.io[Project Reactor].
+Those can be used directly, but we found it easier and more expressive to wrap them in reactive types such as the one provided by Mutiny.
+Typically, in the previous code, the session is closed when the stream completes, fails or the subscriber cancels.
 
 == Configuration Reference
 

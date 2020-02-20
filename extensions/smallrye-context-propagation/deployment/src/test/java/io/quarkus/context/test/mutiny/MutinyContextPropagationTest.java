@@ -2,8 +2,12 @@ package io.quarkus.context.test.mutiny;
 
 import static org.hamcrest.Matchers.equalTo;
 
+import java.util.concurrent.TimeUnit;
+
 import javax.ws.rs.core.Response;
 
+import org.awaitility.Awaitility;
+import org.awaitility.core.ThrowingRunnable;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -104,24 +108,24 @@ public class MutinyContextPropagationTest {
     public void testTransactionPropagationWithUni() {
         RestAssured.when().get("/mutiny-context/transaction-uni").then()
                 .statusCode(Response.Status.OK.getStatusCode());
-        RestAssured.when().get("/mutiny-context/transaction2-uni").then()
-                .statusCode(Response.Status.CONFLICT.getStatusCode());
-        RestAssured.when().get("/mutiny-context/transaction3-uni").then()
-                .statusCode(Response.Status.CONFLICT.getStatusCode());
-        RestAssured.when().get("/mutiny-context/transaction4").then()
-                .statusCode(Response.Status.OK.getStatusCode());
+        awaitState(() -> RestAssured.when().get("/mutiny-context/transaction2-uni").then()
+                .statusCode(Response.Status.CONFLICT.getStatusCode()));
+        awaitState(() -> RestAssured.when().get("/mutiny-context/transaction3-uni").then()
+                .statusCode(Response.Status.CONFLICT.getStatusCode()));
+        awaitState(() -> RestAssured.when().get("/mutiny-context/transaction4").then()
+                .statusCode(Response.Status.OK.getStatusCode()));
     }
 
     @Test
     public void testTransactionPropagationWithUniCreatedFromCS() {
         RestAssured.when().get("/mutiny-context/transaction-uni-cs").then()
                 .statusCode(Response.Status.OK.getStatusCode());
-        RestAssured.when().get("/mutiny-context/transaction2-uni-cs").then()
-                .statusCode(Response.Status.CONFLICT.getStatusCode());
-        RestAssured.when().get("/mutiny-context/transaction3-uni-cs").then()
-                .statusCode(Response.Status.CONFLICT.getStatusCode());
-        RestAssured.when().get("/mutiny-context/transaction4-cs").then()
-                .statusCode(Response.Status.OK.getStatusCode());
+        awaitState(() -> RestAssured.when().get("/mutiny-context/transaction2-uni-cs").then()
+                .statusCode(Response.Status.CONFLICT.getStatusCode()));
+        awaitState(() -> RestAssured.when().get("/mutiny-context/transaction3-uni-cs").then()
+                .statusCode(Response.Status.CONFLICT.getStatusCode()));
+        awaitState(() -> RestAssured.when().get("/mutiny-context/transaction4-cs").then()
+                .statusCode(Response.Status.OK.getStatusCode()));
     }
 
     @Test
@@ -141,8 +145,8 @@ public class MutinyContextPropagationTest {
         RestAssured.when().get("/mutiny-context/transaction-new-uni").then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body(equalTo("OK"));
-        RestAssured.when().get("/mutiny-context/transaction-uni-2").then()
-                .statusCode(Response.Status.OK.getStatusCode());
+        awaitState(() -> RestAssured.when().get("/mutiny-context/transaction-uni-2").then()
+                .statusCode(Response.Status.OK.getStatusCode()));
     }
 
     @Test
@@ -150,7 +154,14 @@ public class MutinyContextPropagationTest {
         RestAssured.when().get("/mutiny-context/transaction-multi").then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body(equalTo("OK"));
-        RestAssured.when().get("/mutiny-context/transaction-multi-2").then()
-                .statusCode(Response.Status.OK.getStatusCode());
+        awaitState(() -> RestAssured.when().get("/mutiny-context/transaction-multi-2").then()
+                .statusCode(Response.Status.OK.getStatusCode()));
     }
+
+    private void awaitState(ThrowingRunnable task) {
+        Awaitility.await().atMost(5, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(task);
+    }
+
 }

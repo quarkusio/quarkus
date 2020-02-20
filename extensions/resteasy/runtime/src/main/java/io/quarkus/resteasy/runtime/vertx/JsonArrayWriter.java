@@ -1,4 +1,4 @@
-package io.quarkus.vertx.runtime;
+package io.quarkus.resteasy.runtime.vertx;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -15,35 +15,36 @@ import javax.ws.rs.ext.Provider;
 import org.jboss.resteasy.spi.AsyncMessageBodyWriter;
 import org.jboss.resteasy.spi.AsyncOutputStream;
 
-import io.vertx.core.json.JsonObject;
+import io.vertx.core.json.JsonArray;
 
 /**
- * A body writer that allows to return a Vert.x {@link JsonObject} as JAX-RS response content.
+ * A body writer that allows to return a Vert.x {@link JsonArray} as JAX-RS response content.
  *
  * @author Thomas Segismont
  */
 @Provider
 @Produces(MediaType.APPLICATION_JSON)
-public class JsonObjectWriter implements AsyncMessageBodyWriter<JsonObject> {
+public class JsonArrayWriter implements AsyncMessageBodyWriter<JsonArray> {
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return type == JsonObject.class;
+        return type == JsonArray.class;
     }
 
     @Override
-    public void writeTo(JsonObject jsonObject, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+    public void writeTo(JsonArray jsonArray, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        entityStream.write(jsonObject.toBuffer().getBytes());
+        entityStream.write(jsonArray.toBuffer().getBytes());
         entityStream.flush();
         entityStream.close();
     }
 
     @Override
-    public CompletionStage<Void> asyncWriteTo(JsonObject jsonObject, Class<?> type, Type genericType, Annotation[] annotations,
+    public CompletionStage<Void> asyncWriteTo(JsonArray jsonArray, Class<?> type, Type genericType, Annotation[] annotations,
             MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, AsyncOutputStream entityStream) {
-        CompletionStage<Void> a = entityStream.asyncWrite(jsonObject.toBuffer().getBytes());
+            MultivaluedMap<String, Object> httpHeaders,
+            AsyncOutputStream entityStream) {
+        CompletionStage<Void> a = entityStream.asyncWrite(jsonArray.toBuffer().getBytes());
         CompletionStage<Void> b = entityStream.asyncFlush();
         return a.thenCompose(v -> b);
     }

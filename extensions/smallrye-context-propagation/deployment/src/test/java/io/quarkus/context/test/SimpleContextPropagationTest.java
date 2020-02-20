@@ -2,8 +2,12 @@ package io.quarkus.context.test;
 
 import static org.hamcrest.Matchers.equalTo;
 
+import java.util.concurrent.TimeUnit;
+
 import javax.ws.rs.core.Response;
 
+import org.awaitility.Awaitility;
+import org.awaitility.core.ThrowingRunnable;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -16,6 +20,12 @@ import io.restassured.RestAssured;
  * Tests simple context propagation of basic contexts (Arc, RestEasy, server, transaction) via either
  * {@link org.eclipse.microprofile.context.ManagedExecutor} (ME) or
  * {@link org.eclipse.microprofile.context.ThreadContext} (TC).
+ *
+ * Note that the transaction does not commit until after the response is on the wire,
+ * this introduces an unlikely race condition where a subsequent request may not see the
+ * committed tx.
+ *
+ * To work around this we are using awaitability
  */
 public class SimpleContextPropagationTest {
     private static Class[] testClasses = {
@@ -81,12 +91,18 @@ public class SimpleContextPropagationTest {
     public void testTransactionMEContextPropagation() {
         RestAssured.when().get("/context/transaction").then()
                 .statusCode(Response.Status.OK.getStatusCode());
-        RestAssured.when().get("/context/transaction2").then()
-                .statusCode(Response.Status.CONFLICT.getStatusCode());
-        RestAssured.when().get("/context/transaction3").then()
-                .statusCode(Response.Status.CONFLICT.getStatusCode());
-        RestAssured.when().get("/context/transaction4").then()
-                .statusCode(Response.Status.OK.getStatusCode());
+        awaitState(() -> RestAssured.when().get("/context/transaction2").then()
+                .statusCode(Response.Status.CONFLICT.getStatusCode()));
+        awaitState(() -> RestAssured.when().get("/context/transaction3").then()
+                .statusCode(Response.Status.CONFLICT.getStatusCode()));
+        awaitState(() -> RestAssured.when().get("/context/transaction4").then()
+                .statusCode(Response.Status.OK.getStatusCode()));
+    }
+
+    private void awaitState(ThrowingRunnable task) {
+        Awaitility.await().atMost(5, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(task);
     }
 
     @Test
@@ -106,8 +122,8 @@ public class SimpleContextPropagationTest {
         RestAssured.when().get("/context/transaction-single").then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body(equalTo("OK"));
-        RestAssured.when().get("/context/transaction-single2").then()
-                .statusCode(Response.Status.OK.getStatusCode());
+        awaitState(() -> RestAssured.when().get("/context/transaction-single2").then()
+                .statusCode(Response.Status.OK.getStatusCode()));
     }
 
     @Test()
@@ -115,7 +131,7 @@ public class SimpleContextPropagationTest {
         RestAssured.when().get("/context/transaction-publisher").then()
                 .statusCode(Response.Status.OK.getStatusCode())
                 .body(equalTo("OK"));
-        RestAssured.when().get("/context/transaction-publisher2").then()
-                .statusCode(Response.Status.OK.getStatusCode());
+        awaitState(() -> RestAssured.when().get("/context/transaction-publisher2").then()
+                .statusCode(Response.Status.OK.getStatusCode()));
     }
 }

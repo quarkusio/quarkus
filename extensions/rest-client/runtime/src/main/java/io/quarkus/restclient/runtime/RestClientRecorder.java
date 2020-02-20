@@ -29,10 +29,22 @@ public class RestClientRecorder {
         RestClientBuilderImpl.setSslEnabled(sslEnabled);
     }
 
-    public void initializeResteasyProviderFactory(RuntimeValue<InjectorFactory> injectorFactory, boolean useBuiltIn,
+    public void initializeResteasyProviderFactory(RuntimeValue<InjectorFactory> ifc, boolean useBuiltIn,
             Set<String> providersToRegister,
             Set<String> contributedProviders) {
-        ResteasyProviderFactory clientProviderFactory = new ResteasyProviderFactoryImpl(RuntimeType.CLIENT);
+        ResteasyProviderFactory clientProviderFactory = new ResteasyProviderFactoryImpl(RuntimeType.CLIENT,
+                new ResteasyProviderFactoryImpl()) {
+            @Override
+            public RuntimeType getRuntimeType() {
+                return RuntimeType.CLIENT;
+            }
+
+            @Override
+            public InjectorFactory getInjectorFactory() {
+                return ifc.getValue();
+            }
+        };
+
         if (useBuiltIn) {
             RegisterBuiltin.register(clientProviderFactory);
             registerProviders(clientProviderFactory, contributedProviders, false);

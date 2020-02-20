@@ -375,7 +375,7 @@ public class QuarkusUnitTest
                         .addExcludedPath(testLocation)
                         .setProjectRoot(testLocation)
                         .setForcedDependencies(forcedDependencies.stream().map(d -> new AppDependency(d, "compile"))
-                                               .collect(Collectors.toList()));
+                                .collect(Collectors.toList()));
                 if (!allowTestClassOutsideDeployment) {
                     builder
                             .setBaseClassLoader(

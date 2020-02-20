@@ -1,6 +1,34 @@
 name: Quarkus CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+    paths-ignore:
+      - 'docs/src/main/asciidoc/**'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'ADOPTERS.md'
+      - 'LICENSE.txt'
+      - 'dco.txt'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/autoissuelabeler.yml'
+      - '.github/boring-cyborg.yml'
+      - '.github/NativeBuildReport.kts'
+      - '.dependabot/**'
+  pull_request:
+    paths-ignore:
+      - 'docs/src/main/asciidoc/**'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'ADOPTERS.md'
+      - 'LICENSE.txt'
+      - 'dco.txt'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/autoissuelabeler.yml'
+      - '.github/boring-cyborg.yml'
+      - '.github/NativeBuildReport.kts'
+      - '.dependabot/**'
 
 env:
   # Workaround testsuite locale issue
@@ -58,6 +86,7 @@ jobs:
     needs: build-jdk8
     timeout-minutes: 120
     strategy:
+      fail-fast: ${{ github.repository == 'quarkusio/quarkus' }}
       matrix:
         java-version: [8, 11, 12]
 
@@ -71,7 +100,7 @@ jobs:
           KEYCLOAK_PASSWORD: admin
           JAVA_OPTS: "-server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djava.awt.headless=true -Dkeycloak.profile.feature.upload_scripts=enabled"
         ports:
-          - 8180:8080
+          - 127.0.0.1:8180:8080
       postgres:
         image: postgres:10.5
         env:
@@ -79,7 +108,7 @@ jobs:
           POSTGRES_PASSWORD: hibernate_orm_test
           POSTGRES_DB: hibernate_orm_test
         ports:
-          - 5432:5432
+          - 127.0.0.1:5432:5432
       mariadb:
         image: mariadb:10.4
         env:
@@ -88,17 +117,14 @@ jobs:
           MYSQL_DATABASE: hibernate_orm_test
           MYSQL_RANDOM_ROOT_PASSWORD: true
         ports:
-          - 3308:3306
+          - 127.0.0.1:3308:3306
       mssql:
         image: microsoft/mssql-server-linux:2017-CU12
         env:
           ACCEPT_EULA: Y
           SA_PASSWORD: ActuallyRequired11Complexity
-          MYSQL_USER: hibernate_orm_test
-          MYSQL_PASSWORD: hibernate_orm_test
-          MYSQL_DATABASE: hibernate_orm_test
         ports:
-          - 1433:1433
+          - 127.0.0.1:1433:1433
       neo4j:
         image: neo4j/neo4j-experimental:4.0.0-rc01
         env:
@@ -106,11 +132,11 @@ jobs:
           NEO4J_dbms_memory_pagecache_size: 10M 
           NEO4J_dbms_memory_heap_initial__size: 10M
         ports:
-          - 7687:7687
+          - 127.0.0.1:7687:7687
       dynamodb:
         image: amazon/dynamodb-local:1.11.477
         ports:
-          - 8000:8000
+          - 127.0.0.1:8000:8000
 
     steps:
       - name: Start mysql
@@ -118,7 +144,7 @@ jobs:
         run: |
           netstat -ln
           sudo service mysql stop || true
-          docker run --rm --publish 3306:3306 --name build-mysql -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl
+          docker run --rm --publish 127.0.0.1:3306:3306 --name build-mysql -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl
       - uses: actions/checkout@v2
       - name: Set up JDK ${{ matrix.java-version }}
         # Uses sha for added security since tags can be updated
@@ -358,6 +384,8 @@ jobs:
               jsonb
               jsch
               jgit
+              quartz
+              qute
           - category: Misc2
             timeout: 35
             test-modules: >
@@ -366,14 +394,13 @@ jobs:
               test-extension
               logging-gelf
               bootstrap-config
+              optaplanner-jackson
+          # kubernetes-client alone takes 16mn+
           - category: Misc3
             timeout: 35
             test-modules: >
               kogito
               kubernetes-client
-              optaplanner-jackson
-              quartz
-              qute
           - category: Spring
             timeout: 30
             test-modules: >

@@ -6,8 +6,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-import javax.inject.Inject;
-
 import org.apache.http.HttpStatus;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -20,7 +18,6 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
-import org.eclipse.microprofile.config.Config;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -34,9 +31,6 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(KafkaTestResource.class)
 @QuarkusTest
 public class KafkaStreamsTest {
-
-    @Inject
-    public Config config;
 
     private static Producer<Integer, Customer> createCustomerProducer() {
         Properties props = new Properties();

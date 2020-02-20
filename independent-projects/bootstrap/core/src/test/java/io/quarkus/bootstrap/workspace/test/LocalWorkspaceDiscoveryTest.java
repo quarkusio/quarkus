@@ -107,10 +107,10 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals("independent", project.getArtifactId());
         assertEquals(MvnProjectBuilder.DEFAULT_VERSION, project.getVersion());
         final Map<AppArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
-        assertEquals(1, projects.size());
+        assertEquals(6, projects.size());
         assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "independent")));
 
-        assertLocalDeps(project);
+        assertLocalDeps(project, "root-module-not-direct-child", "root-no-parent-module", "root-module-with-parent");
     }
 
     @Test
@@ -135,9 +135,9 @@ public class LocalWorkspaceDiscoveryTest {
         assertEquals(MvnProjectBuilder.DEFAULT_VERSION, project.getVersion());
         assertNotNull(project.getWorkspace());
         final Map<AppArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
-        assertEquals(1, projects.size());
+        assertEquals(5, projects.size());
         assertTrue(projects.containsKey(new AppArtifactKey(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module")));
-        assertLocalDeps(project);
+        assertLocalDeps(project, "root-module-not-direct-child");
     }
 
     @Test

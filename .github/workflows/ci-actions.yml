@@ -429,6 +429,7 @@ jobs:
           docker run --rm --publish 3308:3306 --name build-mariadb \
             -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true \
             -d mariadb:10.4
+        if: matrix.mariadb
       - name: MS-SQL Service
         run: |
           docker run --rm --publish 1433:1433 --name build-mssql \

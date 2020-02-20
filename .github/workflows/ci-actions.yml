@@ -1,6 +1,10 @@
 name: Quarkus CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+  pull_request:
 
 env:
   # Workaround testsuite locale issue

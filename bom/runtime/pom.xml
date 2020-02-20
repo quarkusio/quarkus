@@ -150,7 +150,7 @@
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.4</jboss-logmanager.version>
         <jgit.version>5.6.1.202002131546-r</jgit.version>
-        <flyway.version>6.2.3</flyway.version>
+        <flyway.version>6.2.4</flyway.version>
         <yasson.version>1.0.6</yasson.version>
         <neo4j-java-driver.version>4.0.0</neo4j-java-driver.version>
         <mongo-client.version>3.12.0</mongo-client.version>

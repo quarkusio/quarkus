@@ -1,4 +1,4 @@
-name: Cleanup Duplicate Quarkus PRS
+name: Cleanup Duplicate CI Runs
 
 on:
   schedule:

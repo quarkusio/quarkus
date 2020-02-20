@@ -267,7 +267,7 @@ jobs:
           - category: Data1
             mariadb: "true"
             mssql: "true"
-            timeout: 40
+            timeout: 50
             test-modules: >
               jpa-h2
               jpa-mariadb

@@ -199,6 +199,8 @@ public final class ValueResolvers {
                 return CompletableFuture.completedFuture(map.keySet());
             case "values":
                 return CompletableFuture.completedFuture(map.values());
+            case "entrySet":
+                return CompletableFuture.completedFuture(map.entrySet());
             case "size":
                 return CompletableFuture.completedFuture(map.size());
             case "empty":

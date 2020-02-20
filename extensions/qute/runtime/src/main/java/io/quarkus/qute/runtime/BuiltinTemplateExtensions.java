@@ -14,16 +14,14 @@ public class BuiltinTemplateExtensions {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @TemplateExtension(matchName = ANY)
     static Object map(Map map, String name) {
-        Object val = map.get(name);
-        if (val != null) {
-            return val;
-        }
         switch (name) {
             case "keys":
             case "keySet":
                 return map.keySet();
             case "values":
                 return map.values();
+            case "entrySet":
+                return map.entrySet();
             case "size":
                 return map.size();
             case "empty":

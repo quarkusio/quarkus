@@ -24,16 +24,23 @@ values that used to be in thread-locals, and restoring them when your code is ca
 
 == Setting it up
 
-If you are using link:https://github.com/eclipse/microprofile-reactive-streams-operators[SmallRye Reactive Streams Operators]
-(the `quarkus-smallrye-reactive-streams-operators` module),
-you get automatic context propagation for all your streams, because the `quarkus-smallrye-context-propagation` 
-module is automatically imported.
+If you are using link:http://smallrye.io/smallrye-mutiny[Mutiny] (the `quarkus-mutiny` extension), you just need to add the
+the `quarkus-smallrye-context-propagation` extension to enable context propagation.
 
-If you are not using SmallRye Reactive Streams Operators, add the following to your `pom.xml`:
+In other words, add the following dependencies to your `pom.xml`:
 
 [source,xml]
 --
 <dependencies>
+    <!-- Mutiny and RestEasy support extensions if not already included -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-mutiny</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-mutiny</artifactId>
+    </dependency>
     <!-- Context Propagation extension -->
     <dependency>
         <groupId>io.quarkus</groupId>
@@ -44,42 +51,42 @@ If you are not using SmallRye Reactive Streams Operators, add the following to y
 
 With this, you will get context propagation for ArC, RESTEasy and transactions, if you are using them.
 
-== Usage example with SmallRye Reactive Streams Operators
+== Usage example with Mutiny
 
-If you are using SmallRye Reactive Streams Operators (the `quarkus-smallrye-reactive-streams-operators` module),
-you get context propagation out of the box, so, for example, let's write a REST endpoint that reads the next
-3 items from a link:kafka[Kafka topic], stores them in a database using
+Let's write a REST endpoint that reads the next 3 items from a link:kafka[Kafka topic], stores them in a database using
 link:hibernate-orm-panache[Hibernate ORM with Panache] (all in the same transaction) before returning
 them to the client, you can do it like this:
 
 [source,java]
 --
-    // Get the price-stream Kafka topic
+    // Get the prices stream
     @Inject
-    @Channel("price-stream") Publisher<Double> prices;
+    @Channel("prices") Publisher<Double> prices;
 
     @Transactional
     @GET
     @Path("/prices")
-    public Publisher<Double> prices() throws SystemException {
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @SseElementType(MediaType.TEXT_PLAIN)
+    public Publisher<Double> prices() {
         // get the next three prices from the price stream
-        return ReactiveStreams.fromPublisher(prices)
-                .limit(3)
+        return Multi.createFrom().publisher(prices)
+                .transform().byTakingFirstItems(3)
                 .map(price -> {
                     // store each price before we send them
                     Price priceEntity = new Price();
                     priceEntity.value = price;
-                    // here we are all in the same transaction 
+                    // here we are all in the same transaction
                     // thanks to context propagation
                     priceEntity.persist();
-                    
                     return price;
-                })
-                .buildRs();
+                    // the transaction is committed once the stream completes
+                });
     }
 --
 
-Notice that thanks to automatic support for context propagation with Reactive Streams Operators this works out of the box.
+Notice that thanks to Mutiny support for context propagation, this works out of the box.
+The 3 items are persisted using the same transaction and this transaction is committed when the stream completes.
 
 == Usage example for `CompletionStage`
 

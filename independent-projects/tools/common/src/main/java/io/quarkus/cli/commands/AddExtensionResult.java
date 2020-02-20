@@ -1,5 +1,12 @@
 package io.quarkus.cli.commands;
 
+/**
+ * @deprecated in 1.3.0.CR1
+ *             This class was replaced with {@link QuarkusCommandOutcome} as the generic outcome of a project manipulating
+ *             command.
+ * @see QuarkusCommand
+ */
+@Deprecated
 public class AddExtensionResult {
 
     private final boolean updated;

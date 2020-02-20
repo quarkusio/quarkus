@@ -6,10 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
-import io.quarkus.cli.commands.QuarkusCommandInvocation;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
-import io.quarkus.platform.tools.MessageWriter;
 
 public abstract class QuarkusPlatformTask extends QuarkusTask {
 
@@ -17,15 +15,7 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
         super(description);
     }
 
-    protected void execute() {
-        final MessageWriter msgWriter = new GradleMessageWriter(getProject().getLogger());
-        final QuarkusPlatformDescriptor platformDescr = getPlatformDescriptor(msgWriter);
-        doExecute(new QuarkusCommandInvocation(platformDescr, msgWriter));
-    }
-
-    protected abstract void doExecute(QuarkusCommandInvocation invocation);
-
-    private QuarkusPlatformDescriptor getPlatformDescriptor(MessageWriter msgWriter) {
+    protected QuarkusPlatformDescriptor platformDescriptor() {
         final Path currentDir = getProject().getProjectDir().toPath();
 
         final Path gradlePropsPath = currentDir.resolve("gradle.properties");
@@ -43,7 +33,7 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
 
         return QuarkusJsonPlatformDescriptorResolver.newInstance()
                 .setArtifactResolver(extension().getAppModelResolver())
-                .setMessageWriter(msgWriter)
+                .setMessageWriter(new GradleMessageWriter(getProject().getLogger()))
                 .resolveFromBom(
                         getRequiredProperty(props, "quarkusPlatformGroupId"),
                         getRequiredProperty(props, "quarkusPlatformArtifactId"),

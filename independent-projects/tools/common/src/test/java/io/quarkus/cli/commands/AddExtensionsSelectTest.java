@@ -24,11 +24,11 @@ class AddExtensionsSelectTest {
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
-        SelectionResult matches = AddExtensions.select("foo", extensions, true);
+        SelectionResult matches = AddExtensionsCommandHandler.select("foo", extensions, true);
         Assertions.assertFalse(matches.matches());
         Assertions.assertEquals(2, matches.getExtensions().size());
 
-        matches = AddExtensions.select("foo", extensions, false);
+        matches = AddExtensionsCommandHandler.select("foo", extensions, false);
         Assertions.assertFalse(matches.matches());
         Assertions.assertEquals(0, matches.getExtensions().size());
     }
@@ -44,7 +44,7 @@ class AddExtensionsSelectTest {
 
         List<Extension> extensions = asList(e1, e2);
         Collections.shuffle(extensions);
-        SelectionResult matches = AddExtensions.select("foo", extensions, true);
+        SelectionResult matches = AddExtensionsCommandHandler.select("foo", extensions, true);
         Assertions.assertFalse(matches.matches());
         Assertions.assertEquals(1, matches.getExtensions().size());
     }
@@ -63,11 +63,11 @@ class AddExtensionsSelectTest {
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
-        SelectionResult matches = AddExtensions.select("foo", extensions, false);
+        SelectionResult matches = AddExtensionsCommandHandler.select("foo", extensions, false);
         Assertions.assertFalse(matches.matches());
         Assertions.assertEquals(2, matches.getExtensions().size());
 
-        matches = AddExtensions.select("foo", extensions, true);
+        matches = AddExtensionsCommandHandler.select("foo", extensions, true);
         Assertions.assertFalse(matches.matches());
         Assertions.assertEquals(3, matches.getExtensions().size());
 
@@ -88,7 +88,7 @@ class AddExtensionsSelectTest {
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
-        SelectionResult matches = AddExtensions.select("foo", extensions, false);
+        SelectionResult matches = AddExtensionsCommandHandler.select("foo", extensions, false);
         Assertions.assertTrue(matches.matches());
         Assertions.assertEquals(1, matches.getExtensions().size());
         Assertions.assertTrue(matches.iterator().hasNext());
@@ -111,7 +111,7 @@ class AddExtensionsSelectTest {
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
-        SelectionResult matches = AddExtensions.select("foo", extensions, false);
+        SelectionResult matches = AddExtensionsCommandHandler.select("foo", extensions, false);
         Assertions.assertEquals(1, matches.getExtensions().size());
         Assertions.assertTrue(matches.iterator().hasNext());
         Assertions.assertTrue(matches.iterator().next().getArtifactId().equalsIgnoreCase("quarkus-foo"));
@@ -133,10 +133,10 @@ class AddExtensionsSelectTest {
 
         List<Extension> extensions = asList(e1, e2, e3);
         Collections.shuffle(extensions);
-        SelectionResult matches = AddExtensions.select("quarkus-foo", extensions, true);
+        SelectionResult matches = AddExtensionsCommandHandler.select("quarkus-foo", extensions, true);
         Assertions.assertEquals(2, matches.getExtensions().size());
 
-        matches = AddExtensions.select("quarkus-foo-unlisted", extensions, true);
+        matches = AddExtensionsCommandHandler.select("quarkus-foo-unlisted", extensions, true);
         Assertions.assertEquals(1, matches.getExtensions().size());
 
     }

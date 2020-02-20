@@ -25,6 +25,11 @@ public interface ProjectGenerator {
 
     String getName();
 
+    /**
+     * @deprecated since 1.3.0.CR1
+     *             Please use {@link #generate(ProjectWriter, QuarkusCommandInvocation)} instead.
+     */
+    @Deprecated
     default void generate(ProjectWriter writer, Map<String, Object> parameters) throws IOException {
         generate(writer, new LegacyQuarkusCommandInvocation(parameters));
     }

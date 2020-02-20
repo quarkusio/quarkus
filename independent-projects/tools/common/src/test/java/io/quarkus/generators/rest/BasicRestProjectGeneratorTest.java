@@ -16,18 +16,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableMap;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.cli.commands.PlatformAwareTestBase;
+import io.quarkus.cli.commands.QuarkusCommandInvocation;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.generators.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;
 import java.io.File;
 import java.nio.file.Files;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -40,16 +38,15 @@ import org.junit.jupiter.api.Timeout;
 
 class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
 
-    private final Map<String, Object> BASIC_PROJECT_CONTEXT = ImmutableMap.<String, Object> builder()
-            .put(PROJECT_GROUP_ID, "org.example")
-            .put(PROJECT_ARTIFACT_ID, "quarkus-app")
-            .put(PROJECT_VERSION, "0.0.1-SNAPSHOT")
-            .put(BOM_VERSION, getBomVersion())
-            .put(SOURCE_TYPE, SourceType.JAVA)
-            .put(PACKAGE_NAME, "org.example")
-            .put(CLASS_NAME, "ExampleResource")
-            .put("path", "/hello")
-            .build();
+    private final QuarkusCommandInvocation BASIC_PROJECT_CONTEXT = new QuarkusCommandInvocation(getPlatformDescriptor())
+            .setProperty(PROJECT_GROUP_ID, "org.example")
+            .setProperty(PROJECT_ARTIFACT_ID, "quarkus-app")
+            .setProperty(PROJECT_VERSION, "0.0.1-SNAPSHOT")
+            .setProperty(BOM_VERSION, getBomVersion())
+            .setProperty(PACKAGE_NAME, "org.example")
+            .setProperty(CLASS_NAME, "ExampleResource")
+            .setProperty("path", "/hello")
+            .setValue(SOURCE_TYPE, SourceType.JAVA);
 
     @Test
     @Timeout(2)
@@ -119,9 +116,8 @@ class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
 
         when(mockWriter.mkdirs(anyString())).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0, String.class));
 
-        Map<String, Object> springContext = new HashMap<>();
-        springContext.putAll(BASIC_PROJECT_CONTEXT);
-        springContext.put(IS_SPRING, Boolean.TRUE);
+        QuarkusCommandInvocation springContext = new QuarkusCommandInvocation(BASIC_PROJECT_CONTEXT);
+        springContext.setValue(IS_SPRING, Boolean.TRUE);
         basicRestProjectGenerator.generate(mockWriter, springContext);
 
         verify(mockWriter, times(1)).write(eq("src/main/java/org/example/ExampleResource.java"),

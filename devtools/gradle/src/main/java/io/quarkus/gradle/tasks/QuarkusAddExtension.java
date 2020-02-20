@@ -12,7 +12,6 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.cli.commands.AddExtensions;
-import io.quarkus.cli.commands.QuarkusCommandInvocation;
 import io.quarkus.cli.commands.file.GradleBuildFile;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 
@@ -36,20 +35,16 @@ public class QuarkusAddExtension extends QuarkusPlatformTask {
 
     @TaskAction
     public void addExtension() {
-        execute();
-    }
-
-    @Override
-    protected void doExecute(QuarkusCommandInvocation invocation) {
         Set<String> extensionsSet = getExtensionsToAdd()
                 .stream()
                 .flatMap(ext -> stream(ext.split(",")))
                 .map(String::trim)
                 .collect(toSet());
-        invocation.setValue(AddExtensions.EXTENSIONS, extensionsSet);
+
         try {
-            new AddExtensions(new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir())))
-                    .execute(invocation);
+            new AddExtensions(new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir())), platformDescriptor())
+                    .extensions(extensionsSet)
+                    .execute();
         } catch (Exception e) {
             throw new GradleException("Failed to add extensions " + getExtensionsToAdd(), e);
         }

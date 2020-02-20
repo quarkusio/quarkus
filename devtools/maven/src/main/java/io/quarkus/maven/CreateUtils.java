@@ -53,7 +53,13 @@ public final class CreateUtils {
     static QuarkusPlatformDescriptor setGlobalPlatformDescriptor(final String bomGroupId, final String bomArtifactId,
             final String bomVersion,
             MavenArtifactResolver mvn, Log log) throws MojoExecutionException {
+        final QuarkusPlatformDescriptor platform = resolvePlatformDescriptor(bomGroupId, bomArtifactId, bomVersion, mvn, log);
+        QuarkusPlatformConfig.defaultConfigBuilder().setPlatformDescriptor(platform).build();
+        return platform;
+    }
 
+    static QuarkusPlatformDescriptor resolvePlatformDescriptor(final String bomGroupId, final String bomArtifactId,
+            final String bomVersion, MavenArtifactResolver mvn, Log log) throws MojoExecutionException {
         final QuarkusJsonPlatformDescriptorResolver platformResolver = QuarkusJsonPlatformDescriptorResolver.newInstance()
                 .setMessageWriter(new MojoMessageWriter(log))
                 .setArtifactResolver(new BootstrapAppModelResolver(mvn));
@@ -79,8 +85,6 @@ public final class CreateUtils {
         } else {
             platform = platformResolver.resolveFromBom(groupId, artifactId, version);
         }
-
-        QuarkusPlatformConfig.defaultConfigBuilder().setPlatformDescriptor(platform).build();
         return platform;
     }
 

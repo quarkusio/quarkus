@@ -58,6 +58,7 @@ jobs:
     needs: build-jdk8
     timeout-minutes: 120
     strategy:
+      fail-fast: ${{ github.repository == 'quarkusio/quarkus' }}
       matrix:
         java-version: [8, 11, 12]
 

@@ -94,9 +94,6 @@ jobs:
         env:
           ACCEPT_EULA: Y
           SA_PASSWORD: ActuallyRequired11Complexity
-          MYSQL_USER: hibernate_orm_test
-          MYSQL_PASSWORD: hibernate_orm_test
-          MYSQL_DATABASE: hibernate_orm_test
         ports:
           - 1433:1433
       neo4j:

@@ -5,8 +5,6 @@ import java.util.Set;
 import javax.ws.rs.RuntimeType;
 
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
-import org.jboss.resteasy.core.providerfactory.ClientHelper;
-import org.jboss.resteasy.core.providerfactory.NOOPServerHelper;
 import org.jboss.resteasy.core.providerfactory.ResteasyProviderFactoryImpl;
 import org.jboss.resteasy.microprofile.client.RestClientBuilderImpl;
 import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
@@ -34,24 +32,7 @@ public class RestClientRecorder {
     public void initializeResteasyProviderFactory(RuntimeValue<InjectorFactory> injectorFactory, boolean useBuiltIn,
             Set<String> providersToRegister,
             Set<String> contributedProviders) {
-        ResteasyProviderFactory clientProviderFactory = new ResteasyProviderFactoryImpl(null, true) {
-            @Override
-            public RuntimeType getRuntimeType() {
-                return RuntimeType.CLIENT;
-            }
-
-            @Override
-            protected void initializeUtils() {
-                clientHelper = new ClientHelper(this);
-                serverHelper = NOOPServerHelper.INSTANCE;
-            }
-
-            @Override
-            public InjectorFactory getInjectorFactory() {
-                return injectorFactory.getValue();
-            }
-        };
-
+        ResteasyProviderFactory clientProviderFactory = new ResteasyProviderFactoryImpl(RuntimeType.CLIENT);
         if (useBuiltIn) {
             RegisterBuiltin.register(clientProviderFactory);
             registerProviders(clientProviderFactory, contributedProviders, false);

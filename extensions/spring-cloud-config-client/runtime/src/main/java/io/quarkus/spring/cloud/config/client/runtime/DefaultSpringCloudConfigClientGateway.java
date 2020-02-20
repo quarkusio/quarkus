@@ -38,7 +38,7 @@ class DefaultSpringCloudConfigClientGateway implements SpringCloudConfigClientGa
     }
 
     private String determineBaseUri(SpringCloudConfigClientConfig springCloudConfigClientConfig) {
-        String baseUri = springCloudConfigClientConfig.uri;
+        String baseUri = springCloudConfigClientConfig.url;
         if (null == baseUri || baseUri.isEmpty()) {
             throw new IllegalArgumentException("baseUri cannot be empty");
         }

@@ -10,7 +10,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BOOTSTRAP, name = SpringCloudConfigClientConfig.NAME)
 public class SpringCloudConfigClientConfig {
 
-    protected static final String NAME = "scccc";
+    protected static final String NAME = "spring-cloud-config";
 
     /**
      * If enabled, will try to read the configuration from a Spring Cloud Config Server
@@ -28,7 +28,7 @@ public class SpringCloudConfigClientConfig {
      * The Base URI where the Spring Cloud Config Server is available
      */
     @ConfigItem(defaultValue = "http://localhost:8888")
-    public String uri;
+    public String url;
 
     /**
      * The amount of time to wait when initially establishing a connection before giving up and timing out.

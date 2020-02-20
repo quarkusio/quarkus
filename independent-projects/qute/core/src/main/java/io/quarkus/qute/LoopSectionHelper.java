@@ -47,7 +47,9 @@ public class LoopSectionHelper implements SectionHelper {
             } else if (it instanceof Integer) {
                 iterator = IntStream.rangeClosed(1, (Integer) it).iterator();
             } else {
-                throw new IllegalStateException("Cannot iterate over: " + it);
+                throw new IllegalStateException(
+                        String.format("Cannot iterate over [%s] resolved for [%s] in template %s on line %s", it,
+                                iterable.toOriginalString(), iterable.origin.getTemplateId(), iterable.origin.getLine()));
             }
             int idx = 0;
             while (iterator.hasNext()) {

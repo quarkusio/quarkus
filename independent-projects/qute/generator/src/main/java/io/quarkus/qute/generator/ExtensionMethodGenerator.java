@@ -8,12 +8,14 @@ import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.ValueResolver;
@@ -196,12 +198,20 @@ public class ExtensionMethodGenerator {
                 args[i + shift] = success.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_GET, paramResult);
             }
 
-            ResultHandle invokeRet = success
+            // try
+            TryBlock tryCatch = success.tryBlock();
+            // catch (Throwable e)
+            CatchBlockCreator exception = tryCatch.addCatch(Throwable.class);
+            // CompletableFuture.completeExceptionally(Throwable)
+            exception.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,
+                    exception.getCaughtException());
+
+            ResultHandle invokeRet = tryCatch
                     .invokeStaticMethod(MethodDescriptor.ofMethod(declaringClass.name().toString(), method.name(),
                             method.returnType().name().toString(),
                             method.parameters().stream().map(p -> p.name().toString()).collect(Collectors.toList()).toArray()),
                             args);
-            success.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
+            tryCatch.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE, whenRet, invokeRet);
 
             BytecodeCreator failure = throwableIsNull.falseBranch();
             failure.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_COMPLETE_EXCEPTIONALLY, whenRet,

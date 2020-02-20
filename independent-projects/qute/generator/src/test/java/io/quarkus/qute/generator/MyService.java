@@ -1,6 +1,7 @@
 package io.quarkus.qute.generator;
 
 import io.quarkus.qute.TemplateData;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -48,6 +49,10 @@ public class MyService {
 
     public CompletionStage<String> getAnotherTestName(String param) {
         return CompletableFuture.completedFuture(param);
+    }
+
+    public static List<String> getDummy(MyService service, int limit, String dummy) {
+        return Collections.emptyList();
     }
 
 }

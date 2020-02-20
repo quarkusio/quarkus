@@ -68,8 +68,8 @@ public class LoopSectionTest {
 
     @Test
     public void testNestedLoops() {
-        List<String> data = new ArrayList<>();
-        data.add("alpha");
+        List<String> list = new ArrayList<>();
+        list.add("alpha");
 
         Engine engine = Engine.builder()
                 .addSectionHelper(new LoopSectionHelper.Factory())
@@ -92,14 +92,14 @@ public class LoopSectionTest {
                 })
                 .build();
 
-        String template = "{#for name in this}"
+        String template = "{#for name in list}"
                 + "{count}.{name}: {#for char in name.chars}"
-                + "{name} - char at {index} = {char}{#if hasNext},{/}"
+                + "{name} {global} char at {index} = {char}{#if hasNext},{/}"
                 + "{/}{/}";
 
         assertEquals(
                 "1.alpha: alpha - char at 0 = a,alpha - char at 1 = l,alpha - char at 2 = p,alpha - char at 3 = h,alpha - char at 4 = a",
-                engine.parse(template).render(data));
+                engine.parse(template).data("global", "-").data("list", list).render());
     }
 
     @Test

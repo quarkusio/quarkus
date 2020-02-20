@@ -1,4 +1,4 @@
-package io.quarkus.it.mongodb.panache.axle;
+package io.quarkus.it.mongodb.panache.reactive;
 
 import static io.restassured.RestAssured.get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,8 +20,6 @@ import javax.ws.rs.sse.SseEventSource;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -43,7 +41,6 @@ import io.restassured.response.Response;
 @QuarkusTest
 @QuarkusTestResource(MongoTestResource.class)
 class ReactiveMongodbPanacheResourceTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReactiveMongodbPanacheResourceTest.class);
     private static final TypeRef<List<BookDTO>> LIST_OF_BOOK_TYPE_REF = new TypeRef<List<BookDTO>>() {
     };
     private static final TypeRef<List<Person>> LIST_OF_PERSON_TYPE_REF = new TypeRef<List<Person>>() {
@@ -51,22 +48,22 @@ class ReactiveMongodbPanacheResourceTest {
 
     @Test
     public void testReactiveBookEntity() throws InterruptedException {
-        callReactiveBookEndpoint("/axle/books/entity");
+        callReactiveBookEndpoint("/reactive/books/entity");
     }
 
     @Test
     public void testReactiveBookRepository() throws InterruptedException {
-        callReactiveBookEndpoint("/axle/books/repository");
+        callReactiveBookEndpoint("/reactive/books/repository");
     }
 
     @Test
     public void testReactivePersonEntity() {
-        callReactivePersonEndpoint("/axle/persons/entity");
+        callReactivePersonEndpoint("/reactive/persons/entity");
     }
 
     @Test
     public void testReactivePersonRepository() {
-        callReactivePersonEndpoint("/axle/persons/repository");
+        callReactivePersonEndpoint("/reactive/persons/repository");
     }
 
     private void callReactiveBookEndpoint(String endpoint) throws InterruptedException {

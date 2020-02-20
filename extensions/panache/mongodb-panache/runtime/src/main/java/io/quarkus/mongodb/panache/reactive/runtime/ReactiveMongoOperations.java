@@ -1,12 +1,10 @@
-package io.quarkus.mongodb.panache.axle.runtime;
+package io.quarkus.mongodb.panache.reactive.runtime;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -17,9 +15,7 @@ import org.bson.Document;
 import org.bson.codecs.Codec;
 import org.bson.codecs.EncoderContext;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.context.ThreadContext;
 import org.jboss.logging.Logger;
-import org.reactivestreams.Publisher;
 
 import com.mongodb.client.model.InsertOneModel;
 import com.mongodb.client.model.ReplaceOneModel;
@@ -28,15 +24,17 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.mongodb.ReactiveMongoClient;
-import io.quarkus.mongodb.ReactiveMongoCollection;
-import io.quarkus.mongodb.ReactiveMongoDatabase;
 import io.quarkus.mongodb.panache.MongoEntity;
-import io.quarkus.mongodb.panache.axle.ReactivePanacheQuery;
 import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
+import io.quarkus.mongodb.reactive.ReactiveMongoClient;
+import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
+import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 public class ReactiveMongoOperations {
     private static final Logger LOGGER = Logger.getLogger(ReactiveMongoOperations.class);
@@ -45,28 +43,30 @@ public class ReactiveMongoOperations {
     //
     // Instance methods
 
-    public static CompletionStage<Void> persist(Object entity) {
+    public static Uni<Void> persist(Object entity) {
         ReactiveMongoCollection collection = mongoCollection(entity);
         return persist(collection, entity);
     }
 
-    public static CompletionStage<Void> persist(Iterable<?> entities) {
-        // not all iterables are re-traversal, so we traverse it once for copying inside a list
-        List<Object> objects = new ArrayList<>();
-        for (Object entity : entities) {
-            objects.add(entity);
-        }
+    public static Uni<Void> persist(Iterable<?> entities) {
+        return Uni.createFrom().deferred(() -> {
+            // not all iterables are re-traversal, so we traverse it once for copying inside a list
+            List<Object> objects = new ArrayList<>();
+            for (Object entity : entities) {
+                objects.add(entity);
+            }
 
-        if (objects.size() > 0) {
-            // get the first entity to be able to retrieve the collection with it
-            Object firstEntity = objects.get(0);
-            ReactiveMongoCollection collection = mongoCollection(firstEntity);
-            return persist(collection, objects);
-        }
-        return nullFuture();
+            if (objects.size() > 0) {
+                // get the first entity to be able to retrieve the collection with it
+                Object firstEntity = objects.get(0);
+                ReactiveMongoCollection collection = mongoCollection(firstEntity);
+                return persist(collection, objects);
+            }
+            return nullUni();
+        });
     }
 
-    public static CompletionStage<Void> persist(Object firstEntity, Object... entities) {
+    public static Uni<Void> persist(Object firstEntity, Object... entities) {
         ReactiveMongoCollection collection = mongoCollection(firstEntity);
         if (entities == null || entities.length == 0) {
             return persist(collection, firstEntity);
@@ -78,39 +78,43 @@ public class ReactiveMongoOperations {
         }
     }
 
-    public static CompletionStage<Void> persist(Stream<?> entities) {
-        List<Object> objects = entities.collect(Collectors.toList());
-        if (objects.size() > 0) {
-            // get the first entity to be able to retrieve the collection with it
-            Object firstEntity = objects.get(0);
-            ReactiveMongoCollection collection = mongoCollection(firstEntity);
-            return persist(collection, objects);
-        }
-        return nullFuture();
+    public static Uni<Void> persist(Stream<?> entities) {
+        return Uni.createFrom().deferred(() -> {
+            List<Object> objects = entities.collect(Collectors.toList());
+            if (objects.size() > 0) {
+                // get the first entity to be able to retrieve the collection with it
+                Object firstEntity = objects.get(0);
+                ReactiveMongoCollection collection = mongoCollection(firstEntity);
+                return persist(collection, objects);
+            }
+            return nullUni();
+        });
     }
 
-    public static CompletionStage<Void> update(Object entity) {
+    public static Uni<Void> update(Object entity) {
         ReactiveMongoCollection collection = mongoCollection(entity);
         return update(collection, entity);
     }
 
-    public static CompletionStage<Void> update(Iterable<?> entities) {
-        // not all iterables are re-traversal, so we traverse it once for copying inside a list
-        List<Object> objects = new ArrayList<>();
-        for (Object entity : entities) {
-            objects.add(entity);
-        }
+    public static Uni<Void> update(Iterable<?> entities) {
+        return Uni.createFrom().deferred(() -> {
+            // not all iterables are re-traversal, so we traverse it once for copying inside a list
+            List<Object> objects = new ArrayList<>();
+            for (Object entity : entities) {
+                objects.add(entity);
+            }
 
-        if (objects.size() > 0) {
-            // get the first entity to be able to retrieve the collection with it
-            Object firstEntity = objects.get(0);
-            ReactiveMongoCollection collection = mongoCollection(firstEntity);
-            return update(collection, objects);
-        }
-        return nullFuture();
+            if (objects.size() > 0) {
+                // get the first entity to be able to retrieve the collection with it
+                Object firstEntity = objects.get(0);
+                ReactiveMongoCollection collection = mongoCollection(firstEntity);
+                return update(collection, objects);
+            }
+            return nullUni();
+        });
     }
 
-    public static CompletionStage<Void> update(Object firstEntity, Object... entities) {
+    public static Uni<Void> update(Object firstEntity, Object... entities) {
         ReactiveMongoCollection collection = mongoCollection(firstEntity);
         if (entities == null || entities.length == 0) {
             return update(collection, firstEntity);
@@ -122,39 +126,43 @@ public class ReactiveMongoOperations {
         }
     }
 
-    public static CompletionStage<Void> update(Stream<?> entities) {
-        List<Object> objects = entities.collect(Collectors.toList());
-        if (objects.size() > 0) {
-            // get the first entity to be able to retrieve the collection with it
-            Object firstEntity = objects.get(0);
-            ReactiveMongoCollection collection = mongoCollection(firstEntity);
-            return update(collection, objects);
-        }
-        return nullFuture();
+    public static Uni<Void> update(Stream<?> entities) {
+        return Uni.createFrom().deferred(() -> {
+            List<Object> objects = entities.collect(Collectors.toList());
+            if (objects.size() > 0) {
+                // get the first entity to be able to retrieve the collection with it
+                Object firstEntity = objects.get(0);
+                ReactiveMongoCollection collection = mongoCollection(firstEntity);
+                return update(collection, objects);
+            }
+            return nullUni();
+        });
     }
 
-    public static CompletionStage<Void> persistOrUpdate(Object entity) {
+    public static Uni<Void> persistOrUpdate(Object entity) {
         ReactiveMongoCollection collection = mongoCollection(entity);
         return persistOrUpdate(collection, entity);
     }
 
-    public static CompletionStage<Void> persistOrUpdate(Iterable<?> entities) {
-        // not all iterables are re-traversal, so we traverse it once for copying inside a list
-        List<Object> objects = new ArrayList<>();
-        for (Object entity : entities) {
-            objects.add(entity);
-        }
+    public static Uni<Void> persistOrUpdate(Iterable<?> entities) {
+        return Uni.createFrom().deferred(() -> {
+            // not all iterables are re-traversal, so we traverse it once for copying inside a list
+            List<Object> objects = new ArrayList<>();
+            for (Object entity : entities) {
+                objects.add(entity);
+            }
 
-        if (objects.size() > 0) {
-            // get the first entity to be able to retrieve the collection with it
-            Object firstEntity = objects.get(0);
-            ReactiveMongoCollection collection = mongoCollection(firstEntity);
-            return persistOrUpdate(collection, objects);
-        }
-        return nullFuture();
+            if (objects.size() > 0) {
+                // get the first entity to be able to retrieve the collection with it
+                Object firstEntity = objects.get(0);
+                ReactiveMongoCollection collection = mongoCollection(firstEntity);
+                return persistOrUpdate(collection, objects);
+            }
+            return nullUni();
+        });
     }
 
-    public static CompletionStage<Void> persistOrUpdate(Object firstEntity, Object... entities) {
+    public static Uni<Void> persistOrUpdate(Object firstEntity, Object... entities) {
         ReactiveMongoCollection collection = mongoCollection(firstEntity);
         if (entities == null || entities.length == 0) {
             return persistOrUpdate(collection, firstEntity);
@@ -166,23 +174,25 @@ public class ReactiveMongoOperations {
         }
     }
 
-    public static CompletionStage<Void> persistOrUpdate(Stream<?> entities) {
-        List<Object> objects = entities.collect(Collectors.toList());
-        if (objects.size() > 0) {
-            // get the first entity to be able to retrieve the collection with it
-            Object firstEntity = objects.get(0);
-            ReactiveMongoCollection collection = mongoCollection(firstEntity);
-            return persistOrUpdate(collection, objects);
-        }
-        return nullFuture();
+    public static Uni<Void> persistOrUpdate(Stream<?> entities) {
+        return Uni.createFrom().deferred(() -> {
+            List<Object> objects = entities.collect(Collectors.toList());
+            if (objects.size() > 0) {
+                // get the first entity to be able to retrieve the collection with it
+                Object firstEntity = objects.get(0);
+                ReactiveMongoCollection collection = mongoCollection(firstEntity);
+                return persistOrUpdate(collection, objects);
+            }
+            return nullUni();
+        });
     }
 
-    public static CompletionStage<Void> delete(Object entity) {
+    public static Uni<Void> delete(Object entity) {
         ReactiveMongoCollection collection = mongoCollection(entity);
         BsonDocument document = getBsonDocument(collection, entity);
         BsonValue id = document.get(ID);
         BsonDocument query = new BsonDocument().append(ID, id);
-        return collection.deleteOne(query).thenApply(r -> null);
+        return collection.deleteOne(query).onItem().ignore().andContinueWithNull();
     }
 
     public static ReactiveMongoCollection mongoCollection(Class<?> entityClass) {
@@ -202,42 +212,37 @@ public class ReactiveMongoOperations {
     //
     // Private stuff
 
-    public static CompletableFuture<Void> nullFuture() {
-        return completedFuture(null);
+    public static Uni<Void> nullUni() {
+        return Uni.createFrom().item((Void) null);
     }
 
-    public static <U> CompletableFuture<U> completedFuture(U value) {
-        ThreadContext threadContext = Arc.container().instance(ThreadContext.class).get();
-        return threadContext.withContextCapture(CompletableFuture.completedFuture(value));
-    }
-
-    private static CompletionStage<Void> persist(ReactiveMongoCollection collection, Object entity) {
+    private static Uni<Void> persist(ReactiveMongoCollection collection, Object entity) {
         return collection.insertOne(entity);
     }
 
-    private static CompletionStage<Void> persist(ReactiveMongoCollection collection, List<Object> entities) {
+    private static Uni<Void> persist(ReactiveMongoCollection collection, List<Object> entities) {
         return collection.insertMany(entities);
     }
 
-    private static CompletionStage<Void> update(ReactiveMongoCollection collection, Object entity) {
+    private static Uni<Void> update(ReactiveMongoCollection collection, Object entity) {
         //we transform the entity as a document first
         BsonDocument document = getBsonDocument(collection, entity);
 
         //then we get its id field and create a new Document with only this one that will be our replace query
         BsonValue id = document.get(ID);
         BsonDocument query = new BsonDocument().append(ID, id);
-        return collection.replaceOne(query, entity).thenApply(u -> null);
+        return collection.replaceOne(query, entity).onItem().ignore().andContinueWithNull();
     }
 
-    private static CompletionStage<Void> update(ReactiveMongoCollection collection, List<Object> entities) {
-        CompletionStage<Void> ret = nullFuture();
+    private static Uni<Void> update(ReactiveMongoCollection collection, List<Object> entities) {
+        Uni<Void> ret = nullUni();
         for (Object entity : entities) {
-            ret.thenCompose(v -> update(collection, entity));
+            ret.and(update(collection, entity));
         }
-        return ret.thenApply(v -> null);
+        return ret.onItem().ignore().andContinueWithNull();
     }
 
-    private static CompletionStage<Void> persistOrUpdate(ReactiveMongoCollection collection, Object entity) {
+    private static Uni<Void> persistOrUpdate(ReactiveMongoCollection collection, Object entity) {
         //we transform the entity as a document first
         BsonDocument document = getBsonDocument(collection, entity);
 
@@ -250,11 +255,11 @@ public class ReactiveMongoOperations {
             //insert with user provided ID or update
             BsonDocument query = new BsonDocument().append(ID, id);
             return collection.replaceOne(query, entity, ReplaceOptions.createReplaceOptions(new UpdateOptions().upsert(true)))
-                    .thenApply(u -> null);
+                    .onItem().ignore().andContinueWithNull();
         }
     }
 
-    private static CompletionStage<Void> persistOrUpdate(ReactiveMongoCollection collection, List<Object> entities) {
+    private static Uni<Void> persistOrUpdate(ReactiveMongoCollection collection, List<Object> entities) {
         //this will be an ordered bulk: it's less performant than a unordered one but will fail at the first failed write
         List<WriteModel> bulk = new ArrayList<>();
         for (Object entity : entities) {
@@ -274,7 +279,7 @@ public class ReactiveMongoOperations {
             }
         }
 
-        return collection.bulkWrite(bulk).thenApply(b -> null);
+        return collection.bulkWrite(bulk).onItem().ignore().andContinueWithNull();
     }
 
     private static BsonDocument getBsonDocument(ReactiveMongoCollection collection, Object entity) {
@@ -302,14 +307,15 @@ public class ReactiveMongoOperations {
     //
     // Queries
 
-    public static CompletionStage<Object> findById(Class<?> entityClass, Object id) {
-        CompletionStage<Optional> optionalEntity = findByIdOptional(entityClass, id);
-        return optionalEntity.thenApply(optional -> optional.orElse(null));
+    public static Uni<Object> findById(Class<?> entityClass, Object id) {
+        Uni<Optional> optionalEntity = findByIdOptional(entityClass, id);
+        return optionalEntity.onItem().apply(optional -> optional.orElse(null));
     }
 
-    public static CompletionStage<Optional> findByIdOptional(Class<?> entityClass, Object id) {
+    public static Uni<Optional> findByIdOptional(Class<?> entityClass, Object id) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
-        return collection.find(new Document(ID, id)).findFirst().run();
+        return collection.find(new Document(ID, id)).collectItems().first()
+                .onItem().apply(Optional::ofNullable);
     }
 
     public static ReactivePanacheQuery<?> find(Class<?> entityClass, String query, Object... params) {
@@ -402,71 +408,71 @@ public class ReactiveMongoOperations {
         return find(entityClass, query, (Document) null);
     }
 
-    public static CompletionStage<List<?>> list(Class<?> entityClass, String query, Object... params) {
-        return (CompletionStage) find(entityClass, query, params).list();
+    public static Uni<List<?>> list(Class<?> entityClass, String query, Object... params) {
+        return (Uni) find(entityClass, query, params).list();
     }
 
-    public static CompletionStage<List<?>> list(Class<?> entityClass, String query, Sort sort, Object... params) {
-        return (CompletionStage) find(entityClass, query, sort, params).list();
+    public static Uni<List<?>> list(Class<?> entityClass, String query, Sort sort, Object... params) {
+        return (Uni) find(entityClass, query, sort, params).list();
     }
 
-    public static CompletionStage<List<?>> list(Class<?> entityClass, String query, Map<String, Object> params) {
-        return (CompletionStage) find(entityClass, query, params).list();
+    public static Uni<List<?>> list(Class<?> entityClass, String query, Map<String, Object> params) {
+        return (Uni) find(entityClass, query, params).list();
     }
 
-    public static CompletionStage<List<?>> list(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        return (CompletionStage) find(entityClass, query, sort, params).list();
+    public static Uni<List<?>> list(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
+        return (Uni) find(entityClass, query, sort, params).list();
     }
 
-    public static CompletionStage<List<?>> list(Class<?> entityClass, String query, Parameters params) {
-        return (CompletionStage) find(entityClass, query, params).list();
+    public static Uni<List<?>> list(Class<?> entityClass, String query, Parameters params) {
+        return (Uni) find(entityClass, query, params).list();
     }
 
-    public static CompletionStage<List<?>> list(Class<?> entityClass, String query, Sort sort, Parameters params) {
-        return (CompletionStage) find(entityClass, query, sort, params).list();
-    }
-
-    //specific Mongo query
-    public static CompletionStage<List<?>> list(Class<?> entityClass, Document query) {
-        return (CompletionStage) find(entityClass, query).list();
+    public static Uni<List<?>> list(Class<?> entityClass, String query, Sort sort, Parameters params) {
+        return (Uni) find(entityClass, query, sort, params).list();
     }
 
     //specific Mongo query
-    public static CompletionStage<List<?>> list(Class<?> entityClass, Document query, Document sort) {
-        return (CompletionStage) find(entityClass, query, sort).list();
+    public static Uni<List<?>> list(Class<?> entityClass, Document query) {
+        return (Uni) find(entityClass, query).list();
     }
 
-    public static Publisher<?> stream(Class<?> entityClass, String query, Object... params) {
+    //specific Mongo query
+    public static Uni<List<?>> list(Class<?> entityClass, Document query, Document sort) {
+        return (Uni) find(entityClass, query, sort).list();
+    }
+
+    public static Multi<?> stream(Class<?> entityClass, String query, Object... params) {
         return find(entityClass, query, params).stream();
     }
 
-    public static Publisher<?> stream(Class<?> entityClass, String query, Sort sort, Object... params) {
+    public static Multi<?> stream(Class<?> entityClass, String query, Sort sort, Object... params) {
         return find(entityClass, query, sort, params).stream();
     }
 
-    public static Publisher<?> stream(Class<?> entityClass, String query, Map<String, Object> params) {
+    public static Multi<?> stream(Class<?> entityClass, String query, Map<String, Object> params) {
         return find(entityClass, query, params).stream();
     }
 
-    public static Publisher<?> stream(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
+    public static Multi<?> stream(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         return find(entityClass, query, sort, params).stream();
     }
 
-    public static Publisher<?> stream(Class<?> entityClass, String query, Parameters params) {
+    public static Multi<?> stream(Class<?> entityClass, String query, Parameters params) {
         return find(entityClass, query, params).stream();
     }
 
-    public static Publisher<?> stream(Class<?> entityClass, String query, Sort sort, Parameters params) {
+    public static Multi<?> stream(Class<?> entityClass, String query, Sort sort, Parameters params) {
         return find(entityClass, query, sort, params).stream();
     }
 
     //specific Mongo query
-    public static Publisher<?> stream(Class<?> entityClass, Document query) {
+    public static Multi<?> stream(Class<?> entityClass, Document query) {
         return find(entityClass, query).stream();
     }
 
     //specific Mongo query
-    public static Publisher<?> stream(Class<?> entityClass, Document query, Document sort) {
+    public static Multi<?> stream(Class<?> entityClass, Document query, Document sort) {
         return find(entityClass, query, sort).stream();
     }
 
@@ -495,78 +501,78 @@ public class ReactiveMongoOperations {
         return sortDoc;
     }
 
-    public static CompletionStage<List<?>> listAll(Class<?> entityClass) {
-        return (CompletionStage) findAll(entityClass).list();
+    public static Uni<List<?>> listAll(Class<?> entityClass) {
+        return (Uni) findAll(entityClass).list();
     }
 
-    public static CompletionStage<List<?>> listAll(Class<?> entityClass, Sort sort) {
-        return (CompletionStage) findAll(entityClass, sort).list();
+    public static Uni<List<?>> listAll(Class<?> entityClass, Sort sort) {
+        return (Uni) findAll(entityClass, sort).list();
     }
 
-    public static Publisher<?> streamAll(Class<?> entityClass) {
+    public static Multi<?> streamAll(Class<?> entityClass) {
         return findAll(entityClass).stream();
     }
 
-    public static Publisher<?> streamAll(Class<?> entityClass, Sort sort) {
+    public static Multi<?> streamAll(Class<?> entityClass, Sort sort) {
         return findAll(entityClass, sort).stream();
     }
 
-    public static CompletionStage<Long> count(Class<?> entityClass) {
+    public static Uni<Long> count(Class<?> entityClass) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return collection.countDocuments();
     }
 
-    public static CompletionStage<Long> count(Class<?> entityClass, String query, Object... params) {
+    public static Uni<Long> count(Class<?> entityClass, String query, Object... params) {
         String bindQuery = bindQuery(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return collection.countDocuments(docQuery);
     }
 
-    public static CompletionStage<Long> count(Class<?> entityClass, String query, Map<String, Object> params) {
+    public static Uni<Long> count(Class<?> entityClass, String query, Map<String, Object> params) {
         String bindQuery = bindQuery(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return collection.countDocuments(docQuery);
     }
 
-    public static CompletionStage<Long> count(Class<?> entityClass, String query, Parameters params) {
+    public static Uni<Long> count(Class<?> entityClass, String query, Parameters params) {
         return count(entityClass, query, params.map());
     }
 
     //specific Mongo query
-    public static CompletionStage<Long> count(Class<?> entityClass, Document query) {
+    public static Uni<Long> count(Class<?> entityClass, Document query) {
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         return collection.countDocuments(query);
     }
 
-    public static CompletionStage<Long> deleteAll(Class<?> entityClass) {
+    public static Uni<Long> deleteAll(Class<?> entityClass) {
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
-        return collection.deleteMany(new Document()).thenApply(deleteResult -> deleteResult.getDeletedCount());
+        return collection.deleteMany(new Document()).map(deleteResult -> deleteResult.getDeletedCount());
     }
 
-    public static CompletionStage<Long> delete(Class<?> entityClass, String query, Object... params) {
+    public static Uni<Long> delete(Class<?> entityClass, String query, Object... params) {
         String bindQuery = bindQuery(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
-        return collection.deleteMany(docQuery).thenApply(deleteResult -> deleteResult.getDeletedCount());
+        return collection.deleteMany(docQuery).map(deleteResult -> deleteResult.getDeletedCount());
     }
 
-    public static CompletionStage<Long> delete(Class<?> entityClass, String query, Map<String, Object> params) {
+    public static Uni<Long> delete(Class<?> entityClass, String query, Map<String, Object> params) {
         String bindQuery = bindQuery(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
-        return collection.deleteMany(docQuery).thenApply(deleteResult -> deleteResult.getDeletedCount());
+        return collection.deleteMany(docQuery).map(deleteResult -> deleteResult.getDeletedCount());
     }
 
-    public static CompletionStage<Long> delete(Class<?> entityClass, String query, Parameters params) {
+    public static Uni<Long> delete(Class<?> entityClass, String query, Parameters params) {
         return delete(entityClass, query, params.map());
     }
 
     //specific Mongo query
-    public static CompletionStage<Long> delete(Class<?> entityClass, Document query) {
+    public static Uni<Long> delete(Class<?> entityClass, Document query) {
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
-        return collection.deleteMany(query).thenApply(deleteResult -> deleteResult.getDeletedCount());
+        return collection.deleteMany(query).map(deleteResult -> deleteResult.getDeletedCount());
     }
 
     public static IllegalStateException implementationInjectionMissing() {

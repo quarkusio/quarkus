@@ -1,4 +1,4 @@
-package io.quarkus.it.mongodb.panache.axle;
+package io.quarkus.it.mongodb.panache.reactive;
 
 import io.quarkus.test.junit.NativeImageTest;
 

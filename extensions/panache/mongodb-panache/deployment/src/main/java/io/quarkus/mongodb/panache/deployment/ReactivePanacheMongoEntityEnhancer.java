@@ -14,7 +14,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.mongodb.panache.axle.runtime.ReactiveMongoOperations;
+import io.quarkus.mongodb.panache.reactive.runtime.ReactiveMongoOperations;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
@@ -29,7 +29,7 @@ public class ReactivePanacheMongoEntityEnhancer extends PanacheEntityEnhancer<Me
     final Map<String, EntityModel> entities = new HashMap<>();
 
     public ReactivePanacheMongoEntityEnhancer(IndexView index) {
-        super(index, PanacheResourceProcessor.DOTNAME_AXLE_PANACHE_ENTITY_BASE);
+        super(index, PanacheResourceProcessor.DOTNAME_MUTINY_PANACHE_ENTITY_BASE);
         modelInfo = new MetamodelInfo<>();
     }
 

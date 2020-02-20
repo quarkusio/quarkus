@@ -98,9 +98,14 @@ public class StartupActionImpl implements StartupAction {
                 @Override
                 public void close() throws IOException {
                     try {
+                        ClassLoader original = Thread.currentThread().getContextClassLoader();
                         try {
+                            // some actions during close can still require the runtime classloader
+                            // (e.g. ServiceLoader calls)
+                            Thread.currentThread().setContextClassLoader(runtimeClassLoader);
                             closeTask.close();
                         } finally {
+                            Thread.currentThread().setContextClassLoader(original);
                             runtimeClassLoader.close();
                         }
                     } finally {

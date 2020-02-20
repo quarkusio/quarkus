@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.Response;
 
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -58,6 +59,18 @@ public class RestEasyMutinyTest {
 
         data = client.target(url.toExternalForm() + "/injection-async").request().get(Integer.class);
         Assertions.assertEquals((Integer) 42, data);
+    }
+
+    @Test
+    public void testFailingWithWebApplicationException() {
+        Response response = client.target(url.toExternalForm() + "/web-failure").request().get();
+        Assertions.assertEquals(response.getStatus(), Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
+    }
+
+    @Test
+    public void testFailingWithApplicationFailure() {
+        Response response = client.target(url.toExternalForm() + "/app-failure").request().get();
+        Assertions.assertEquals(response.getStatus(), 500);
     }
 
 }

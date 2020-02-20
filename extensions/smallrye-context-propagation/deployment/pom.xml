@@ -56,7 +56,12 @@
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-reactive-converter-rxjava2</artifactId>
-            <version>1.0.4</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- For Mutiny tests -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-mutiny-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <!-- For DB -->

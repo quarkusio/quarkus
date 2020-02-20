@@ -1,0 +1,2 @@
+io.quarkus.mutiny.converters.MultiConverter
+io.quarkus.mutiny.converters.UniConverter

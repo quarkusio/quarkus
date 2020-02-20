@@ -14,4 +14,9 @@ public class ContextPropagationTestCase {
     public void testContextPropagation() throws Exception {
         RestAssured.when().get("/context-propagation").then().body(is("OK"));
     }
+
+    @Test
+    public void testContextPropagationWithMutiny() throws Exception {
+        RestAssured.when().get("/context-propagation-mutiny").then().body(is("OK"));
+    }
 }

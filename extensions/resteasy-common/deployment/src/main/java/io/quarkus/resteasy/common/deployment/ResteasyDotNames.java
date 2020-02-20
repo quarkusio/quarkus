@@ -77,6 +77,7 @@ public final class ResteasyDotNames {
             DotName.createSimple("javax.ws.rs.core.Response"),
             DotName.createSimple("javax.ws.rs.container.AsyncResponse"),
             DotName.createSimple("javax.ws.rs.core.StreamingOutput"),
+            DotName.createSimple("javax.ws.rs.core.Form"),
 
             // RESTEasy
             DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartInput"),

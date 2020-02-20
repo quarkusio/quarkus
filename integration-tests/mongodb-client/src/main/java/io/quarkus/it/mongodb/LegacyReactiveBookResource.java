@@ -11,13 +11,13 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import io.quarkus.mongodb.reactive.ReactiveMongoClient;
-import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
+import io.quarkus.mongodb.ReactiveMongoClient;
+import io.quarkus.mongodb.ReactiveMongoCollection;
 
-@Path("/reactive-books")
+@Path("/legacy-reactive-books")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class ReactiveBookResource {
+public class LegacyReactiveBookResource {
 
     @Inject
     ReactiveMongoClient client;
@@ -26,27 +26,24 @@ public class ReactiveBookResource {
 
     @PostConstruct
     public void init() {
-        collection = client.getDatabase("books").getCollection("my-reactive-collection", Book.class);
+        collection = client.getDatabase("books").getCollection("my-legacy-reactive-collection", Book.class);
     }
 
     @GET
     public CompletionStage<List<Book>> getBooks() {
-        return collection.find().collectItems().asList().subscribeAsCompletionStage();
+        return collection.find().toList().run();
     }
 
     @POST
     public CompletionStage<Response> addBook(Book book) {
-        return collection.insertOne(book)
-                .onItem().apply(x -> Response.accepted().build())
-                .subscribeAsCompletionStage();
+        return collection.insertOne(book).thenApply(x -> Response.accepted().build());
     }
 
     @GET
     @Path("/{author}")
     public CompletionStage<List<Book>> getBooksByAuthor(@PathParam("author") String author) {
         return collection.find(eq("author", author))
-                .collectItems().asList()
-                .subscribeAsCompletionStage();
+                .toList().run();
     }
 
 }

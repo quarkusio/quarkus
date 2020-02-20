@@ -1,4 +1,4 @@
-package io.quarkus.mongodb;
+package io.quarkus.mongodb.reactive;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -7,13 +7,10 @@ import static org.assertj.core.api.Assertions.fail;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.bson.Document;
 import org.bson.types.ObjectId;
-import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +19,9 @@ import com.mongodb.MongoWriteException;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.reactivestreams.client.MongoClients;
 
+import io.quarkus.mongodb.FindOptions;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
+import io.smallrye.mutiny.Uni;
 
 class ReactiveMongoClientTest extends MongoTestBase {
 
@@ -46,14 +45,12 @@ class ReactiveMongoClientTest extends MongoTestBase {
         ReactiveMongoCollection<Document> myCollection = database.getCollection(collection);
         Document document = createDoc();
         myCollection.insertOne(document)
-                .thenCompose(x -> myCollection.find(eq("foo", "bar")).findFirst().run())
-                .thenAccept(opt -> {
-                    Document found = opt.orElse(null);
+                .onItem().produceUni(x -> myCollection.find(eq("foo", "bar")).collectItems().first())
+                .onItem().invoke(found -> {
                     assertThat(found).isNotNull();
                     assertThat(found.getObjectId("_id")).isNotNull();
                 })
-                .toCompletableFuture()
-                .join();
+                .await().indefinitely();
     }
 
     @Test
@@ -63,12 +60,9 @@ class ReactiveMongoClientTest extends MongoTestBase {
         ReactiveMongoCollection<Document> myCollection = database.getCollection(collection);
         Document document = createDoc();
         myCollection.insertOne(document)
-                .thenCompose(x -> myCollection.find(eq("nothing", "missing")).findFirst().run())
-                .thenAccept(opt -> {
-                    assertThat(opt).isEmpty();
-                })
-                .toCompletableFuture()
-                .join();
+                .onItem().produceUni(x -> myCollection.find(eq("nothing", "missing")).collectItems().first())
+                .onItem().invoke(opt -> assertThat(opt).isNull())
+                .await().indefinitely();
     }
 
     @Test
@@ -79,8 +73,8 @@ class ReactiveMongoClientTest extends MongoTestBase {
         Document doc = createDoc();
         ObjectId value = new ObjectId();
         doc.put("_id", value);
-        myCollection.insertOne(doc).toCompletableFuture().join();
-        Optional<Document> optional = myCollection.find().findFirst().run().toCompletableFuture().join();
+        myCollection.insertOne(doc).await().indefinitely();
+        Optional<Document> optional = myCollection.find().collectItems().first().await().asOptional().indefinitely();
         assertThat(optional).isNotEmpty();
         assertThat(optional.orElse(new Document()).getObjectId("_id")).isEqualTo(value);
     }
@@ -93,8 +87,8 @@ class ReactiveMongoClientTest extends MongoTestBase {
         Document doc = createDoc();
         ObjectId value = new ObjectId();
         doc.put("_id", value);
-        myCollection.insertOne(doc).toCompletableFuture().join();
-        Optional<Document> optional = myCollection.find().findFirst().run().toCompletableFuture().join();
+        myCollection.insertOne(doc).await().indefinitely();
+        Optional<Document> optional = myCollection.find().collectItems().first().await().asOptional().indefinitely();
         assertThat(optional).isNotEmpty();
         assertThat(optional.orElse(new Document()).getObjectId("_id")).isEqualTo(value);
         assertThat(optional.orElse(new Document())).isEqualTo(doc);
@@ -108,12 +102,12 @@ class ReactiveMongoClientTest extends MongoTestBase {
         Document doc = createDoc();
         ObjectId value = new ObjectId();
         doc.put("_id", value);
-        myCollection.insertOne(doc).toCompletableFuture().join();
+        myCollection.insertOne(doc).await().indefinitely();
         try {
-            myCollection.insertOne(doc).toCompletableFuture().join();
+            myCollection.insertOne(doc).await().indefinitely();
             fail("Write Exception expected");
         } catch (Exception e) {
-            assertThat(e).isInstanceOf(CompletionException.class).hasCauseInstanceOf(MongoWriteException.class);
+            assertThat(e).isInstanceOf(MongoWriteException.class);
         }
     }
 
@@ -128,12 +122,10 @@ class ReactiveMongoClientTest extends MongoTestBase {
         }
         List<Document> documents = new CopyOnWriteArrayList<>();
         myCollection.insertMany(toBeInserted)
-                .thenCompose(x -> {
-                    return ReactiveStreams.fromPublisher(myCollection.findAsPublisher().sort(eq("foo", 1)))
-                            .forEach(documents::add)
-                            .run();
-                })
-                .toCompletableFuture().join();
+                .onItem().produceUni(x -> myCollection.find(new FindOptions().sort(eq("foo", 1)))
+                        .onItem().invoke(documents::add)
+                        .onItem().ignoreAsUni())
+                .await().indefinitely();
 
         assertThat(documents.size()).isEqualTo(3000);
         assertThat(documents.get(0).getString("foo")).isEqualTo("bar0");
@@ -151,12 +143,10 @@ class ReactiveMongoClientTest extends MongoTestBase {
         }
         List<Document> documents = new CopyOnWriteArrayList<>();
         myCollection.insertMany(toBeInserted)
-                .thenCompose(x -> {
-                    return ReactiveStreams.fromPublisher(myCollection.findAsPublisher(Document.class).sort(eq("foo", 1)))
-                            .forEach(documents::add)
-                            .run();
-                })
-                .toCompletableFuture().join();
+                .onItem().produceUni(x -> myCollection.find(Document.class, new FindOptions().sort(eq("foo", 1)))
+                        .onItem().invoke(documents::add)
+                        .onItem().ignoreAsUni())
+                .await().indefinitely();
 
         assertThat(documents.size()).isEqualTo(3000);
         assertThat(documents.get(0).getString("foo")).isEqualTo("bar0");
@@ -174,13 +164,10 @@ class ReactiveMongoClientTest extends MongoTestBase {
         }
         List<Document> documents = new CopyOnWriteArrayList<>();
         myCollection.insertMany(toBeInserted)
-                .thenCompose(x -> {
-                    return ReactiveStreams.fromPublisher(myCollection.findAsPublisher(eq("num", 123))
-                            .sort(eq("foo", 1)))
-                            .forEach(documents::add)
-                            .run();
-                })
-                .toCompletableFuture().join();
+                .onItem().produceUni(x -> myCollection.find(new FindOptions().filter(eq("num", 123)).sort(eq("foo", 1)))
+                        .onItem().invoke(documents::add)
+                        .onItem().ignoreAsUni())
+                .await().indefinitely();
 
         assertThat(documents.size()).isEqualTo(3000);
         assertThat(documents.get(0).getString("foo")).isEqualTo("bar0");
@@ -198,13 +185,11 @@ class ReactiveMongoClientTest extends MongoTestBase {
         }
         List<Document> documents = new CopyOnWriteArrayList<>();
         myCollection.insertMany(toBeInserted)
-                .thenCompose(x -> {
-                    return ReactiveStreams.fromPublisher(myCollection.findAsPublisher(eq("num", 123), Document.class)
-                            .sort(eq("foo", 1)))
-                            .forEach(documents::add)
-                            .run();
-                })
-                .toCompletableFuture().join();
+                .onItem().produceUni(x -> myCollection.find(Document.class,
+                        new FindOptions().filter(eq("num", 123)).sort(eq("foo", 1)))
+                        .onItem().invoke(documents::add)
+                        .onItem().ignoreAsUni())
+                .await().indefinitely();
 
         assertThat(documents.size()).isEqualTo(3000);
         assertThat(documents.get(0).getString("foo")).isEqualTo("bar0");
@@ -213,7 +198,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
 
     @Test
     void testUpsertCreatesHexIfRecordDoesNotExist() {
-        upsertDoc(randomCollection(), createDoc(), null).toCompletableFuture().join();
+        upsertDoc(randomCollection(), createDoc(), null).await().indefinitely();
     }
 
     @Test
@@ -226,26 +211,27 @@ class ReactiveMongoClientTest extends MongoTestBase {
         nested.put("a-field", "an-entry");
         insertStatement.put("$setOnInsert", nested);
 
-        upsertDoc(collection, docToInsert, insertStatement, null).thenAccept(saved -> {
-            assertThat(saved).isNotEmpty();
-            assertThat("an-entry").isEqualTo(saved.get().getString("a-field"));
-        }).toCompletableFuture().join();
+        upsertDoc(collection, docToInsert, insertStatement, null).onItem().invoke(saved -> {
+            assertThat(saved).isNotNull();
+            assertThat("an-entry").isEqualTo(saved.getString("a-field"));
+        }).await().indefinitely();
 
     }
 
-    private CompletionStage<Optional<Document>> upsertDoc(String collection, Document docToInsert, String expectedId) {
+    private Uni<Document> upsertDoc(String collection, Document docToInsert, String expectedId) {
         Document insertStatement = new Document();
         insertStatement.put("$set", docToInsert);
         return upsertDoc(collection, docToInsert, insertStatement, expectedId);
     }
 
-    private CompletionStage<Optional<Document>> upsertDoc(String collection, Document docToInsert, Document insertStatement,
+    private Uni<Document> upsertDoc(String collection, Document docToInsert,
+            Document insertStatement,
             String expectedId) {
         return client.getDatabase(DATABASE).getCollection(collection)
                 .updateMany(eq("foo", docToInsert.getString("foo")),
                         insertStatement,
                         new UpdateOptions().upsert(true))
-                .thenCompose(result -> {
+                .onItem().produceUni(result -> {
                     assertThat(result.getModifiedCount()).isEqualTo(0);
                     if (expectedId == null) {
                         assertThat(0).isEqualTo(result.getMatchedCount());
@@ -255,7 +241,7 @@ class ReactiveMongoClientTest extends MongoTestBase {
                         assertThat(result.getUpsertedId()).isNull();
                     }
 
-                    return client.getDatabase(DATABASE).getCollection(collection).find().findFirst().run();
+                    return client.getDatabase(DATABASE).getCollection(collection).find().collectItems().first();
                 });
     }
 
@@ -278,15 +264,11 @@ class ReactiveMongoClientTest extends MongoTestBase {
         pipeline.add(doc4);
 
         Optional<Integer> optional = client.getDatabase(DATABASE).createCollection(collection)
-                .thenCompose(x -> insertDocs(client, collection, numDocs))
-                .thenApply(x -> client.getDatabase(DATABASE).getCollection(collection).aggregate(pipeline))
-                .toCompletableFuture().join()
-                .findFirst()
-                .run()
-                .toCompletableFuture()
-                .join()
-                .map(doc -> doc.getInteger("foo_starting_with_bar1"));
-
+                .onItem().produceUni(x -> insertDocs(client, collection, numDocs))
+                .onItem().produceMulti(x -> client.getDatabase(DATABASE).getCollection(collection).aggregate(pipeline))
+                .collectItems().first()
+                .onItem().apply(doc -> doc.getInteger("foo_starting_with_bar1"))
+                .await().asOptional().indefinitely();
         assertThat(optional).contains(11);
     }
 

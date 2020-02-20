@@ -45,8 +45,9 @@ import com.mongodb.connection.ServerSettings;
 import com.mongodb.connection.SocketSettings;
 import com.mongodb.connection.SslSettings;
 
-import io.quarkus.mongodb.ReactiveMongoClient;
+import io.quarkus.mongodb.impl.AxleReactiveMongoClientImpl;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
+import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 
 public abstract class AbstractMongoClientProducer {
 
@@ -58,6 +59,7 @@ public abstract class AbstractMongoClientProducer {
     private List<String> bsonDiscriminators;
     private Map<String, MongoClient> mongoclients = new HashMap<>();
     private Map<String, ReactiveMongoClient> reactiveMongoClients = new HashMap<>();
+    private Map<String, io.quarkus.mongodb.ReactiveMongoClient> legacyReactiveMongoClients = new HashMap<>();
 
     public MongoClientConfig getDefaultMongoClientConfig() {
         return mongodbConfig.defaultMongoClientConfig;
@@ -68,6 +70,10 @@ public abstract class AbstractMongoClientProducer {
     }
 
     public ReactiveMongoClient getReactiveClient(String name) {
+        return reactiveMongoClients.get(name);
+    }
+
+    public ReactiveMongoClient getLegacyReactiveClient(String name) {
         return reactiveMongoClients.get(name);
     }
 
@@ -85,10 +91,25 @@ public abstract class AbstractMongoClientProducer {
     public ReactiveMongoClient createReactiveMongoClient(MongoClientConfig mongoClientConfig, String name)
             throws MongoException {
         MongoClientSettings mongoConfiguration = createMongoConfiguration(mongoClientConfig);
-        ReactiveMongoClient reactive = new ReactiveMongoClientImpl(
-                com.mongodb.reactivestreams.client.MongoClients.create(mongoConfiguration));
+        com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
+                .create(mongoConfiguration);
+        ReactiveMongoClientImpl reactive = new ReactiveMongoClientImpl(client);
         reactiveMongoClients.put(name, reactive);
         return reactive;
+    }
+
+    public io.quarkus.mongodb.ReactiveMongoClient createLegacyReactiveMongoClient(MongoClientConfig mongoClientConfig,
+            String name)
+            throws MongoException {
+        LOGGER.warn(
+                "`io.quarkus.mongodb.ReactiveMongoClient` is deprecated and will be removed in a future version - it is "
+                        + "recommended to switch to `io.quarkus.mongodb.reactive.ReactiveMongoClient`");
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(mongoClientConfig);
+        com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
+                .create(mongoConfiguration);
+        AxleReactiveMongoClientImpl legacyClient = new AxleReactiveMongoClientImpl(client);
+        legacyReactiveMongoClients.put(name, legacyClient);
+        return legacyClient;
     }
 
     private static class ClusterSettingBuilder implements Block<ClusterSettings.Builder> {

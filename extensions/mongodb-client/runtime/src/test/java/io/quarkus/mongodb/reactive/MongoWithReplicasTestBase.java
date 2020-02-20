@@ -1,6 +1,6 @@
-package io.quarkus.mongodb;
+package io.quarkus.mongodb.reactive;
 
-import static io.quarkus.mongodb.MongoTestBase.getConfiguredConnectionString;
+import static io.quarkus.mongodb.reactive.MongoTestBase.getConfiguredConnectionString;
 import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
@@ -68,6 +68,14 @@ public class MongoWithReplicasTestBase {
                 LOGGER.error("Unable to stop MongoDB", e);
             }
         });
+    }
+
+    protected String getConnectionString() {
+        if (getConfiguredConnectionString() != null) {
+            return getConfiguredConnectionString();
+        } else {
+            return "mongodb://localhost:27018";
+        }
     }
 
     private static void initializeReplicaSet(final List<IMongodConfig> mongodConfigList) throws UnknownHostException {

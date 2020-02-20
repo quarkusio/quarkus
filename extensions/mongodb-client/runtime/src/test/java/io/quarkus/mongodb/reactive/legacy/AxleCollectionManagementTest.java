@@ -1,4 +1,4 @@
-package io.quarkus.mongodb;
+package io.quarkus.mongodb.reactive.legacy;
 
 import static com.mongodb.client.model.Accumulators.sum;
 import static com.mongodb.client.model.Filters.eq;
@@ -19,19 +19,34 @@ import org.junit.jupiter.api.Test;
 
 import com.mongodb.MongoNamespace;
 import com.mongodb.bulk.BulkWriteResult;
-import com.mongodb.client.model.*;
+import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.model.BulkWriteOptions;
+import com.mongodb.client.model.CreateCollectionOptions;
+import com.mongodb.client.model.DeleteOneModel;
+import com.mongodb.client.model.FindOneAndDeleteOptions;
+import com.mongodb.client.model.FindOneAndReplaceOptions;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.InsertOneModel;
+import com.mongodb.client.model.ReplaceOneModel;
+import com.mongodb.client.model.ReplaceOptions;
+import com.mongodb.client.model.ReturnDocument;
+import com.mongodb.client.model.UpdateOneModel;
+import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.UpdateResult;
 import com.mongodb.reactivestreams.client.MongoClients;
 
-import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
+import io.quarkus.mongodb.*;
+import io.quarkus.mongodb.impl.AxleReactiveMongoClientImpl;
+import io.quarkus.mongodb.reactive.MongoTestBase;
 
-class CollectionManagementTest extends MongoTestBase {
+class AxleCollectionManagementTest extends MongoTestBase {
 
     private ReactiveMongoClient client;
 
     @BeforeEach
     void init() {
-        client = new ReactiveMongoClientImpl(MongoClients.create(getConnectionString()));
+        client = new AxleReactiveMongoClientImpl(MongoClients.create(getConnectionString()));
     }
 
     @AfterEach

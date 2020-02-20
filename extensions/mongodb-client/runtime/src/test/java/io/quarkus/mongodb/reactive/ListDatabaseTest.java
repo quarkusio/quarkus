@@ -1,11 +1,10 @@
-package io.quarkus.mongodb;
+package io.quarkus.mongodb.reactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
 import org.bson.Document;
-import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,36 +32,29 @@ class ListDatabaseTest extends MongoWithReplicasTestBase {
     @Test
     void testListingDatabasesWithNoCreatedDatabases() {
         // local, and admin are created by default in replicas mode (admin because of the replicas registration)
-        List<Document> documents = client.listDatabases().toList().run().toCompletableFuture().join();
+        List<Document> documents = client.listDatabases().collectItems().asList().await().indefinitely();
         assertThat(documents).hasSize(2);
-        documents = ReactiveStreams.fromPublisher(client.listDatabasesAsPublisher()).toList().run().toCompletableFuture()
-                .join();
         assertThat(documents).hasSize(2);
-        assertThat(client.listDatabaseNames().toList().run().toCompletableFuture().join())
+        assertThat(client.listDatabaseNames().collectItems().asList().await().indefinitely())
                 .containsExactlyInAnyOrder("local", "admin");
-        assertThat(ReactiveStreams.fromPublisher(client.listDatabaseNamesAsPublisher()).toList().run().toCompletableFuture()
-                .join())
-                        .containsExactlyInAnyOrder("local", "admin");
 
         List<String> names = client.startSession()
-                .thenCompose(session -> client.listDatabaseNames(session).toList().run())
-                .toCompletableFuture()
-                .join();
+                .onItem().produceUni(session -> client.listDatabaseNames(session).collectItems().asList())
+                .await().indefinitely();
         assertThat(names).containsExactlyInAnyOrder("local", "admin");
 
         names = client.startSession()
-                .thenCompose(session -> client.listDatabases(session).map(doc -> doc.getString("name")).toList().run())
-                .toCompletableFuture()
-                .join();
+                .onItem()
+                .produceUni(session -> client.listDatabases(session).map(doc -> doc.getString("name")).collectItems().asList())
+                .await().indefinitely();
         assertThat(names).containsExactlyInAnyOrder("local", "admin");
-
     }
 
     @Test
     void testSessionCreation() {
         // Session requires replicas
         ClientSession session = client.startSession(ClientSessionOptions.builder().causallyConsistent(true).build())
-                .toCompletableFuture().join();
+                .await().indefinitely();
         assertThat(session).isNotNull();
         session.close();
     }

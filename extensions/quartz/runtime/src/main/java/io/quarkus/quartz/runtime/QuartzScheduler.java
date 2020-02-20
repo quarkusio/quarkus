@@ -9,10 +9,13 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.PreDestroy;
+import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
+import javax.interceptor.Interceptor;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
@@ -27,7 +30,7 @@ import org.quartz.SchedulerFactory;
 import org.quartz.SimpleScheduleBuilder;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
-import org.quartz.spi.JobFactory;
+import org.quartz.simpl.SimpleJobFactory;
 import org.quartz.spi.TriggerFiredBundle;
 
 import com.cronutils.mapper.CronMapper;
@@ -56,8 +59,15 @@ public class QuartzScheduler implements Scheduler {
     private final AtomicInteger triggerNameSequence;
     private final Map<String, ScheduledInvoker> invokers;
 
+    @Produces
+    @Singleton
+    org.quartz.Scheduler produceQuartzScheduler() {
+        return scheduler;
+    }
+
     public QuartzScheduler(SchedulerSupport schedulerSupport, QuartzSupport quartzSupport, Config config) {
-        if (schedulerSupport.getScheduledMethods().isEmpty()) {
+        if (!quartzSupport.getRuntimeConfig().forceStart && schedulerSupport.getScheduledMethods().isEmpty()) {
+            LOGGER.infof("No scheduled business methods found - Quartz scheduler will not be started");
             this.triggerNameSequence = null;
             this.scheduler = null;
             this.invokers = null;
@@ -73,17 +83,7 @@ public class QuartzScheduler implements Scheduler {
                 scheduler = schedulerFactory.getScheduler();
 
                 // Set custom job factory
-                scheduler.setJobFactory(new JobFactory() {
-
-                    @Override
-                    public Job newJob(TriggerFiredBundle bundle, org.quartz.Scheduler scheduler) throws SchedulerException {
-                        Class<? extends Job> jobClass = bundle.getJobDetail().getJobClass();
-                        if (jobClass.equals(InvokerJob.class)) {
-                            return new InvokerJob();
-                        }
-                        throw new IllegalStateException("Unsupported job class: " + jobClass);
-                    }
-                });
+                scheduler.setJobFactory(new InvokerJobFactory(invokers));
 
                 CronType cronType = schedulerSupport.getCronType();
                 CronDefinition def = CronDefinitionBuilder.instanceDefinitionFor(cronType);
@@ -187,7 +187,8 @@ public class QuartzScheduler implements Scheduler {
         }
     }
 
-    void start(@Observes StartupEvent startupEvent) {
+    // Use Interceptor.Priority.PLATFORM_BEFORE to start the scheduler before regular StartupEvent observers
+    void start(@Observes @Priority(Interceptor.Priority.PLATFORM_BEFORE) StartupEvent startupEvent) {
         if (scheduler == null) {
             return;
         }
@@ -264,7 +265,13 @@ public class QuartzScheduler implements Scheduler {
         return props;
     }
 
-    class InvokerJob implements Job {
+    static class InvokerJob implements Job {
+
+        final Map<String, ScheduledInvoker> invokers;
+
+        InvokerJob(Map<String, ScheduledInvoker> invokers) {
+            this.invokers = invokers;
+        }
 
         @Override
         public void execute(JobExecutionContext context) {
@@ -308,6 +315,25 @@ public class QuartzScheduler implements Scheduler {
                 });
             }
         }
+    }
+
+    static class InvokerJobFactory extends SimpleJobFactory {
+
+        final Map<String, ScheduledInvoker> invokers;
+
+        InvokerJobFactory(Map<String, ScheduledInvoker> invokers) {
+            this.invokers = invokers;
+        }
+
+        @Override
+        public Job newJob(TriggerFiredBundle bundle, org.quartz.Scheduler Scheduler) throws SchedulerException {
+            Class<? extends Job> jobClass = bundle.getJobDetail().getJobClass();
+            if (jobClass.equals(InvokerJob.class)) {
+                return new InvokerJob(invokers);
+            }
+            return super.newJob(bundle, Scheduler);
+        }
+
     }
 
 }

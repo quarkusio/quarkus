@@ -19,4 +19,12 @@ public class QuartzRuntimeConfig {
     @ConfigItem(defaultValue = "5")
     public int threadPriority;
 
+    /**
+     * By default, the scheduler is not started unless a {@link io.quarkus.scheduler.Scheduled} business method is found.
+     * If set to true the scheduler will be started even if no scheduled business methods are found. This is necessary for
+     * "pure" programmatic scheduling.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean forceStart;
+
 }

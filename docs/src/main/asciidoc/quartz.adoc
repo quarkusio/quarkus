@@ -124,6 +124,58 @@ public class TaskBean {
 3. Create a new `Task` with the current start time.
 4. Persist the task in database using https://quarkus.io/guides/hibernate-orm-panache[Panache].
 
+=== Scheduling Jobs Programatically
+
+It is also possible to leverage the Quartz API directly.
+You can inject the underlying `org.quartz.Scheduler` in any bean:
+
+[source,java]
+----
+package org.acme.quartz;
+
+@ApplicationScoped
+public class TaskBean {
+
+    @Inject
+    org.quartz.Scheduler quartz; <1>
+    
+    void onStart(@Observes StartupEvent event) {
+       JobDetail job = JobBuilder.newJob(MyJob.class)
+                         .withIdentity("myJob", "myGroup")
+                         .build();
+       Trigger trigger = TriggerBuilder.newTrigger()
+                            .withIdentity("myTrigger", "myGroup")
+                            .startNow()
+                            .withSchedule(
+                               SimpleScheduleBuilder.simpleSchedule()
+                                  .withIntervalInSeconds(10)
+                                  .repeatForever())
+                            .build();
+       quartz.scheduleJob(job, trigger); <2>
+    }
+    
+    @Transactional
+    void performTask() {
+        Task task = new Task();
+        task.persist();
+    }
+    
+    // A new instance of MyJob is created by Quartz for every job execution
+    static class MyJob implements Job {
+    
+       public void execute(JobExecutionContext context) throws JobExecutionException {
+          Arc.container().instance(TaskBean.class).get(). performTask(); <3>
+       }
+    
+    }
+}
+----
+1. Inject the underlying `org.quartz.Scheduler` instance.
+2. Schedule a new job using the Quartz API.
+3. Lookup the bean instance of `TaskBean` and invoke the `performTask()` method from the job.
+
+NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling. See also <<quartz-configuration-reference>>.  
+
 == Updating the application configuration file
 
 Edit the `application.properties` file and add the below configuration:

@@ -124,7 +124,7 @@ public class TaskBean {
 3. Create a new `Task` with the current start time.
 4. Persist the task in database using https://quarkus.io/guides/hibernate-orm-panache[Panache].
 
-=== Scheduling Jobs Programatically
+=== Scheduling Jobs Programmatically
 
 It is also possible to leverage the Quartz API directly.
 You can inject the underlying `org.quartz.Scheduler` in any bean:

@@ -5,6 +5,8 @@ trigger:
       - master
       - '1.1'
 
+pr: none
+
 # pr:
 #   branches:
 #     include:

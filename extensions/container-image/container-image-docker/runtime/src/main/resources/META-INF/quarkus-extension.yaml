@@ -1,0 +1,10 @@
+---
+name: "Container Image Docker"
+metadata:
+  keywords:
+    - "docker"
+    - "container"
+    - "image"
+  categories:
+    - "cloud"
+  status: "preview"

@@ -109,5 +109,15 @@
                 <maven.test.skip>true</maven.test.skip>
             </properties>
         </profile>
+        <profile>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+            </properties>
+        </profile>
     </profiles>
 </project>

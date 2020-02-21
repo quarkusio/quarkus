@@ -58,6 +58,7 @@ public class KubernetesClientProcessor {
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListenerBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem,
             KubernetesClientRecorder recorder) {
+
         featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.KUBERNETES_CLIENT));
         roleProducer.produce(new KubernetesRoleBuildItem("view"));
 

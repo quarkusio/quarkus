@@ -13,6 +13,15 @@
     <artifactId>quarkus-kubernetes</artifactId>
     <name>Quarkus - Kubernetes - Runtime</name>
     <description>Generate Kubernetes resources from annotations</description>
+
+    <dependencies>
+        <!-- We need the config to be on the runtime classpath because it's referenced from the config generation -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes-client-internal</artifactId>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>
@@ -34,5 +43,5 @@
         </plugins>
     </build>
 
-    
+
 </project>

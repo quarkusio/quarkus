@@ -20,7 +20,10 @@ import java.sql.Statement;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import javax.sql.DataSource;
 
@@ -32,6 +35,7 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import io.quarkus.vault.VaultException;
+import io.quarkus.vault.VaultKVSecretEngine;
 import io.quarkus.vault.runtime.VaultManager;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
@@ -76,6 +80,8 @@ public class VaultTestExtension {
     public static final String TMP_POSTGRES_INIT_SQL_FILE = "/tmp/postgres-init.sql";
     public static final String TEST_QUERY_STRING = "SELECT 1";
 
+    private static String CRUD_PATH = "crud";
+
     public GenericContainer vaultContainer;
     public PostgreSQLContainer postgresContainer;
     public String rootToken = null;
@@ -96,6 +102,40 @@ public class VaultTestExtension {
                 }
             }
         }
+    }
+
+    public static void assertCrudSecret(VaultKVSecretEngine kvSecretEngine) {
+
+        assertDeleteSecret(kvSecretEngine);
+
+        assertDeleteSecret(kvSecretEngine);
+
+        Map<String, String> newsecrets = new HashMap<>();
+        newsecrets.put("first", "one");
+        newsecrets.put("second", "two");
+        kvSecretEngine.writeSecret(CRUD_PATH, newsecrets);
+        assertEquals("{first=one, second=two}", readSecretAsString(kvSecretEngine, CRUD_PATH));
+
+        newsecrets.put("first", "un");
+        newsecrets.put("third", "tres");
+        kvSecretEngine.writeSecret(CRUD_PATH, newsecrets);
+        assertEquals("{first=un, second=two, third=tres}", readSecretAsString(kvSecretEngine, CRUD_PATH));
+
+        assertDeleteSecret(kvSecretEngine);
+    }
+
+    private static void assertDeleteSecret(VaultKVSecretEngine kvSecretEngine) {
+        kvSecretEngine.deleteSecret(CRUD_PATH);
+        try {
+            readSecretAsString(kvSecretEngine, CRUD_PATH);
+        } catch (VaultClientException e) {
+            assertEquals(404, e.getStatus());
+        }
+    }
+
+    private static String readSecretAsString(VaultKVSecretEngine kvSecretEngine, String path) {
+        Map<String, String> secret = kvSecretEngine.readSecret(path);
+        return new TreeMap<>(secret).toString();
     }
 
     private static VaultManager createVaultManager() {

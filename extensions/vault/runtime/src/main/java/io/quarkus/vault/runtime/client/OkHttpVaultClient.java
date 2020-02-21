@@ -6,6 +6,7 @@ import static io.quarkus.vault.runtime.client.OkHttpClientFactory.createHttpClie
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Map;
 
 import org.jboss.logging.Logger;
 
@@ -25,6 +26,8 @@ import io.quarkus.vault.runtime.client.dto.auth.VaultUserPassAuthBody;
 import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV1;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2;
+import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2Write;
+import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2WriteBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
@@ -89,6 +92,26 @@ public class OkHttpVaultClient implements VaultClient {
     }
 
     @Override
+    public void writeSecretV1(String token, String secretEnginePath, String path, Map<String, String> secret) {
+        post(secretEnginePath + "/" + path, token, secret, null, 204);
+    }
+
+    @Override
+    public void writeSecretV2(String token, String secretEnginePath, String path, VaultKvSecretV2WriteBody body) {
+        post(secretEnginePath + "/data/" + path, token, body, VaultKvSecretV2Write.class);
+    }
+
+    @Override
+    public void deleteSecretV1(String token, String secretEnginePath, String path) {
+        delete(secretEnginePath + "/" + path, token, null, null, 204);
+    }
+
+    @Override
+    public void deleteSecretV2(String token, String secretEnginePath, String path) {
+        delete(secretEnginePath + "/data/" + path, token, null, null, 204);
+    }
+
+    @Override
     public VaultRenewSelf renewSelf(String token, String increment) {
         VaultRenewSelfBody body = new VaultRenewSelfBody(increment);
         return post("auth/token/renew-self", token, body, VaultRenewSelf.class);
@@ -145,6 +168,11 @@ public class OkHttpVaultClient implements VaultClient {
     }
 
     // ---
+
+    protected <T> T delete(String path, String token, Object body, Class<T> resultClass, int expectedCode) {
+        Request request = builder(path, token).delete(requestBody(body)).build();
+        return exec(request, resultClass, expectedCode);
+    }
 
     protected <T> T post(String path, String token, Object body, Class<T> resultClass, int expectedCode) {
         Request request = builder(path, token).post(requestBody(body)).build();

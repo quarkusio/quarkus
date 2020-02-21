@@ -11,6 +11,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.sentry.Sentry;
 import io.sentry.SentryOptions;
 import io.sentry.config.Lookup;
+import io.sentry.dsn.Dsn;
 import io.sentry.jul.SentryHandler;
 
 @Recorder
@@ -18,7 +19,12 @@ public class SentryHandlerValueFactory {
     private static final Logger LOG = Logger.getLogger(SentryConfigProvider.class);
 
     public RuntimeValue<Optional<Handler>> create(final SentryConfig config) {
+        final SentryConfigProvider provider = new SentryConfigProvider(config);
+        final Lookup lookup = new Lookup(provider, provider);
+
         if (!config.enable) {
+            // Disable Sentry
+            Sentry.init(SentryOptions.from(lookup, Dsn.DEFAULT_DSN));
             return new RuntimeValue<>(Optional.empty());
         }
         if (!config.dsn.isPresent()) {
@@ -29,8 +35,9 @@ public class SentryHandlerValueFactory {
             LOG.warn(
                     "No 'quarkus.sentry.in-app-packages' was configured, this option is highly recommended as it affects stacktrace grouping and display on Sentry. See https://quarkus.io/guides/logging-sentry#in-app-packages");
         }
-        final SentryConfigProvider provider = new SentryConfigProvider(config);
-        Sentry.init(SentryOptions.from(new Lookup(provider, provider), config.dsn.get()));
+
+        // Init Sentry
+        Sentry.init(SentryOptions.from(lookup, config.dsn.get()));
         SentryHandler handler = new SentryHandler();
         handler.setLevel(config.level);
         return new RuntimeValue<>(Optional.of(handler));

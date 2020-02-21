@@ -350,7 +350,7 @@ jobs:
               amazon-lambda
               amazon-lambda-http
           - category: Messaging
-            timeout: 30
+            timeout: 45
             test-modules: >
               artemis-core
               artemis-jms
@@ -411,7 +411,7 @@ jobs:
               optaplanner-jackson
           # kubernetes-client alone takes 16mn+
           - category: Misc3
-            timeout: 35
+            timeout: 45
             test-modules: >
               kogito
               kubernetes-client

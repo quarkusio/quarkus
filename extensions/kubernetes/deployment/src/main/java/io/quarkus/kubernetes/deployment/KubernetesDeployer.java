@@ -48,7 +48,7 @@ public class KubernetesDeployer {
 
         if (!containerImage.isPresent()) {
             LOG.warn(
-                    "A Kubernetes deployment was requested by no extension was found to build a container image. Consider adding one of following extensions: \"quarkus-container-image-jib\", \"quarkus-container-image-docker\" or \"quarkus-container-image-s2i\",");
+                    "A Kubernetes deployment was requested but no extension was found to build a container image. Consider adding one of following extensions: \"quarkus-container-image-jib\", \"quarkus-container-image-docker\" or \"quarkus-container-image-s2i\".");
         }
 
         Config config = ConfigProvider.getConfig();

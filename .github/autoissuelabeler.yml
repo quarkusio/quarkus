@@ -43,6 +43,10 @@
   title: "(?i).*qute.*"
   description: "(?i).*qute.*"
   addcomment: "/cc @mkouba"
+- labels: [area/spring]
+  title: "(?i).*spring.*"
+  description: "(?i).*spring.*"
+  addcomment: "/cc @geoand"
 - labels: [env/windows]
   title: "(?i).*windows.*"
   description: "(?i).*windows.*"

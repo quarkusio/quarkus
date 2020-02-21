@@ -10,7 +10,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot
-public class KubernetesConfig implements PlatformConfiguration {
+public class KnativeConfig implements PlatformConfiguration {
 
     /**
      * The group of the application.
@@ -176,13 +176,6 @@ public class KubernetesConfig implements PlatformConfiguration {
      */
     @ConfigItem
     Map<String, ContainerConfig> containers;
-
-    /**
-     * The target deployment platform. Defaults to kubernetes. Can be kubernetes,
-     * openshift, knative or any combination of the above as comma separated list.
-     */
-    @ConfigItem(defaultValue = "kubernetes")
-    List<DeploymentTarget> deploymentTarget;
 
     public Optional<String> getGroup() {
         return group;

@@ -1,23 +1,19 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_TARGET;
-import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLHandshakeException;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.dekorate.deps.kubernetes.api.model.HasMetadata;
@@ -40,7 +36,8 @@ public class KubernetesDeployer {
     private static final Logger LOG = Logger.getLogger(KubernetesDeployer.class);
 
     @BuildStep(onlyIf = { IsNormal.class, KubernetesDeploy.class })
-    public void deploy(KubernetesClientBuildItem kubernetesClient,
+    public void deploy(KubernetesConfig kubernetesConfig,
+            KubernetesClientBuildItem kubernetesClient,
             ApplicationInfoBuildItem applicationInfo,
             Optional<ContainerImageResultBuildItem> containerImage,
             OutputTargetBuildItem outputTarget,
@@ -51,10 +48,14 @@ public class KubernetesDeployer {
                     "A Kubernetes deployment was requested but no extension was found to build a container image. Consider adding one of following extensions: \"quarkus-container-image-jib\", \"quarkus-container-image-docker\" or \"quarkus-container-image-s2i\".");
         }
 
-        Config config = ConfigProvider.getConfig();
-        List<DeploymentTarget> deploymentTargets = Arrays
-                .stream(config.getOptionalValue(DEPLOYMENT_TARGET, String.class).orElse(KUBERNETES).split(","))
-                .map(String::trim).map(String::toUpperCase).map(DeploymentTarget::valueOf).collect(Collectors.toList());
+        Map<String, Object> config = KubernetesConfigUtil.toMap();
+        Set<DeploymentTarget> deploymentTargets = new HashSet<>();
+        deploymentTargets.addAll(KubernetesConfigUtil.getDeploymentTargets(config).stream()
+                .map(String::toUpperCase)
+                .map(DeploymentTarget::valueOf)
+                .collect(Collectors.toList()));
+
+        deploymentTargets.addAll(kubernetesConfig.deploymentTarget);
 
         final KubernetesClient client = Clients.fromConfig(kubernetesClient.getClient().getConfiguration());
         DeploymentTarget target = deploymentTargets.stream().findFirst().orElse(DeploymentTarget.KUBERNETES);

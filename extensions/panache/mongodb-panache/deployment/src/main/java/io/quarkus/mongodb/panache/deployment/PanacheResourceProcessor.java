@@ -304,7 +304,7 @@ public class PanacheResourceProcessor {
             ApplicationIndexBuildItem applicationIndex,
             BuildProducer<BytecodeTransformerBuildItem> transformers) throws Exception {
 
-        ReactivePanacheMongoRepositoryEnhancer daoEnhancer = new ReactivePanacheMongoRepositoryEnhancer(index.getIndex());
+        AxlePanacheMongoRepositoryEnhancer daoEnhancer = new AxlePanacheMongoRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_AXLE_PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
@@ -323,7 +323,7 @@ public class PanacheResourceProcessor {
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
         }
 
-        ReactivePanacheMongoEntityEnhancer modelEnhancer = new ReactivePanacheMongoEntityEnhancer(index.getIndex());
+        AxlePanacheMongoEntityEnhancer modelEnhancer = new AxlePanacheMongoEntityEnhancer(index.getIndex());
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheMongoEntity if we ask for subtypes of PanacheMongoEntityBase

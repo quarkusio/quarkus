@@ -20,7 +20,7 @@ import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
 
-public class ReactivePanacheMongoEntityEnhancer extends PanacheEntityEnhancer<MetamodelInfo<EntityModel<EntityField>>> {
+public class AxlePanacheMongoEntityEnhancer extends PanacheEntityEnhancer<MetamodelInfo<EntityModel<EntityField>>> {
     public final static String MONGO_OPERATIONS_NAME = ReactiveMongoOperations.class.getName();
     public final static String MONGO_OPERATIONS_BINARY_NAME = MONGO_OPERATIONS_NAME.replace('.', '/');
 
@@ -28,7 +28,7 @@ public class ReactivePanacheMongoEntityEnhancer extends PanacheEntityEnhancer<Me
 
     final Map<String, EntityModel> entities = new HashMap<>();
 
-    public ReactivePanacheMongoEntityEnhancer(IndexView index) {
+    public AxlePanacheMongoEntityEnhancer(IndexView index) {
         super(index, PanacheResourceProcessor.DOTNAME_AXLE_PANACHE_ENTITY_BASE);
         modelInfo = new MetamodelInfo<>();
     }

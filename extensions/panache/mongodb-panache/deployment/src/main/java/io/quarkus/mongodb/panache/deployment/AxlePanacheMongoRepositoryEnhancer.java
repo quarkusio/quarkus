@@ -10,13 +10,13 @@ import io.quarkus.mongodb.panache.axle.ReactivePanacheMongoRepository;
 import io.quarkus.mongodb.panache.axle.ReactivePanacheMongoRepositoryBase;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
-public class ReactivePanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhancer {
+public class AxlePanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhancer {
     public final static DotName PANACHE_REPOSITORY_BASE_NAME = DotName
             .createSimple(ReactivePanacheMongoRepositoryBase.class.getName());
 
     public final static DotName PANACHE_REPOSITORY_NAME = DotName.createSimple(ReactivePanacheMongoRepository.class.getName());
 
-    public ReactivePanacheMongoRepositoryEnhancer(IndexView index) {
+    public AxlePanacheMongoRepositoryEnhancer(IndexView index) {
         super(index, PanacheResourceProcessor.DOTNAME_AXLE_PANACHE_REPOSITORY_BASE);
     }
 
@@ -45,7 +45,7 @@ public class ReactivePanacheMongoRepositoryEnhancer extends PanacheRepositoryEnh
 
         @Override
         protected String getPanacheOperationsBinaryName() {
-            return ReactivePanacheMongoEntityEnhancer.MONGO_OPERATIONS_BINARY_NAME;
+            return AxlePanacheMongoEntityEnhancer.MONGO_OPERATIONS_BINARY_NAME;
         }
 
         @Override

@@ -72,6 +72,16 @@ public class PanacheResourceProcessor {
             .createSimple(ReactivePanacheMongoEntityBase.class.getName());
     private static final DotName DOTNAME_AXLE_PANACHE_ENTITY = DotName.createSimple(ReactivePanacheMongoEntity.class.getName());
 
+    // reactive types: Mutiny
+    static final DotName DOTNAME_MUTINY_PANACHE_REPOSITORY_BASE = DotName
+            .createSimple(io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepositoryBase.class.getName());
+    private static final DotName DOTNAME_MUTINY_PANACHE_REPOSITORY = DotName
+            .createSimple(io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository.class.getName());
+    static final DotName DOTNAME_MUTINY_PANACHE_ENTITY_BASE = DotName
+            .createSimple(io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntityBase.class.getName());
+    private static final DotName DOTNAME_MUTINY_PANACHE_ENTITY = DotName
+            .createSimple(io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity.class.getName());
+
     private static final DotName DOTNAME_OBJECT_ID = DotName.createSimple(ObjectId.class.getName());
 
     private static final DotName DOTNAME_OBJECT = DotName.createSimple(Object.class.getName());
@@ -334,6 +344,63 @@ public class PanacheResourceProcessor {
                 modelEnhancer.collectFields(classInfo);
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_AXLE_PANACHE_ENTITY)) {
+            if (modelClasses.add(classInfo.name().toString()))
+                modelEnhancer.collectFields(classInfo);
+        }
+        for (String modelClass : modelClasses) {
+            transformers.produce(new BytecodeTransformerBuildItem(modelClass, modelEnhancer));
+        }
+
+        if (!modelEnhancer.entities.isEmpty()) {
+            PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(
+                    modelEnhancer.getModelInfo());
+            for (ClassInfo classInfo : applicationIndex.getIndex().getKnownClasses()) {
+                String className = classInfo.name().toString();
+                if (!modelClasses.contains(className)) {
+                    transformers.produce(new BytecodeTransformerBuildItem(className, panacheFieldAccessEnhancer));
+                }
+            }
+        }
+    }
+
+    @BuildStep
+    void buildMutiny(CombinedIndexBuildItem index,
+            ApplicationIndexBuildItem applicationIndex,
+            BuildProducer<BytecodeTransformerBuildItem> transformers) {
+
+        MutinyPanacheMongoRepositoryEnhancer daoEnhancer = new MutinyPanacheMongoRepositoryEnhancer(index.getIndex());
+        Set<String> daoClasses = new HashSet<>();
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_MUTINY_PANACHE_REPOSITORY_BASE)) {
+            // Skip PanacheRepository
+            if (classInfo.name().equals(DOTNAME_MUTINY_PANACHE_REPOSITORY))
+                continue;
+            if (PanacheRepositoryEnhancer.skipRepository(classInfo))
+                continue;
+            daoClasses.add(classInfo.name().toString());
+        }
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_MUTINY_PANACHE_REPOSITORY)) {
+            if (PanacheRepositoryEnhancer.skipRepository(classInfo))
+                continue;
+            daoClasses.add(classInfo.name().toString());
+        }
+        for (String daoClass : daoClasses) {
+            System.out.println("found " + daoClasses);
+            transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
+        }
+
+        System.out.println("HERE WE ARE");
+
+        MutinyPanacheMongoEntityEnhancer modelEnhancer = new MutinyPanacheMongoEntityEnhancer(index.getIndex());
+        Set<String> modelClasses = new HashSet<>();
+        // Note that we do this in two passes because for some reason Jandex does not give us subtypes
+        // of PanacheMongoEntity if we ask for subtypes of PanacheMongoEntityBase
+        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_MUTINY_PANACHE_ENTITY_BASE)) {
+            if (classInfo.name().equals(DOTNAME_MUTINY_PANACHE_ENTITY))
+                continue;
+            if (modelClasses.add(classInfo.name().toString()))
+                modelEnhancer.collectFields(classInfo);
+        }
+        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_MUTINY_PANACHE_ENTITY)) {
             if (modelClasses.add(classInfo.name().toString()))
                 modelEnhancer.collectFields(classInfo);
         }

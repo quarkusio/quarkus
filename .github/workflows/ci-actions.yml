@@ -294,6 +294,7 @@ jobs:
     # Ignore the following YAML Schema error 
     timeout-minutes: ${{matrix.timeout}}
     strategy:
+      max-parallel: 8
       fail-fast: true
       matrix:
         category: [Main, Data1, Data2, Data3, Data4, Data5, Security1, Security2, Amazon, Messaging, Cache, HTTP, Misc1, Misc2, Misc3, Spring]

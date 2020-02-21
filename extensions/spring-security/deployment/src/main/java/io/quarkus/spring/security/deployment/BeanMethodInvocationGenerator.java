@@ -72,7 +72,9 @@ class BeanMethodInvocationGenerator {
         int parametersEndIndex = expression.indexOf(')');
         String[] beanMethodArgumentExpressions = {};
         if (parametersEndIndex > parametersStartIndex + 1) {
-            beanMethodArgumentExpressions = expression.substring(parametersStartIndex + 1, parametersEndIndex).split(",");
+            beanMethodArgumentExpressions = expression.substring(parametersStartIndex + 1, parametersEndIndex).trim()
+                    .split("\\s*,\\s*");
+            ;
         }
         /*
          * We need to make sure the cache key contains the both the expression and the parameter types of the method

@@ -86,6 +86,15 @@ public class BeanMethodCheckTest {
     }
 
     @Test
+    public void testWithParamsAndConstant() {
+        assertSuccess(() -> beanWithBeanMethodChecks.withParamAndConstant(new Person("geo")), "withParamAndConstant",
+                ANONYMOUS);
+        assertFailureFor(() -> beanWithBeanMethodChecks.withParamAndConstant(new Person("other")), ForbiddenException.class,
+                USER);
+        assertSuccess(() -> beanWithBeanMethodChecks.withParamAndConstant(new Person("geo")), "withParamAndConstant", USER);
+    }
+
+    @Test
     public void testWithExtraUnusedParam() {
         assertFailureFor(() -> someInterface.doSomething("other", 1, new Person("geo")), UnauthorizedException.class,
                 ANONYMOUS);

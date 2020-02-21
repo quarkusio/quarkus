@@ -498,6 +498,92 @@ Then, create the native executable with:
 ./mvnw package -Pnative
 ----
 
+== Deploying verticles
+
+https://vertx.io/docs/vertx-core/java/#_verticles[Verticles] is "a simple, scalable, actor-like deployment and concurrency model" provided by _Vert.x_.
+This model does not claim to be a strict actor-model implementation, but it does share similarities especially with respect to concurrency, scaling and deployment.
+To use this model, you write and _deploy_ verticles, communicating with each other by sending messages on the event bus.
+
+You can deploy _verticles_ in Quarkus.
+It supports:
+
+* _bare_ verticle - Java classes extending `io.vertx.core.AbstractVerticle`
+* _Mutiny_ verticle - Java classes extending `io.smallrye.mutiny.vertx.core.AbstractVerticle`
+
+To deploy verticles, use the regular Vert.x API:
+
+[source, java]
+====
+@Inject Vertx vertx;
+
+// ...
+vertx.deployVerticle(MyVerticle.class.getName(), ar -> { });
+vertx.deployVerticle(new MyVerticle(), ar -> { });
+====
+
+You can also pass deployment options to configure the verticle as well as set the number of instances.
+
+Verticles are not _beans_ by default.
+However, you can implement them as _ApplicationScoped_ beans and get injection support:
+
+[source, java]
+====
+package io.quarkus.vertx.verticles;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.vertx.core.AbstractVerticle;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class MyBeanVerticle extends AbstractVerticle {
+
+    @ConfigProperty(name = "address") String address;
+
+    @Override
+    public Uni<Void> asyncStart() {
+        return vertx.eventBus().consumer(address)
+                .handler(m -> m.replyAndForget("hello"))
+                .completionHandler();
+    }
+}
+====
+
+You don't have to inject the `vertx` instance but instead leverage the instance stored in the protected field of `AbstractVerticle`.
+
+Then, deploy the verticle instance with:
+
+[source, java]
+====
+package io.quarkus.vertx.verticles;
+
+import io.quarkus.runtime.StartupEvent;
+import io.vertx.mutiny.core.Vertx;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+
+@ApplicationScoped
+public class VerticleDeployer {
+
+    public void init(@Observes StartupEvent e, Vertx vertx, MyBeanVerticle verticle) {
+         vertx.deployVerticle(verticle).await().indefinitely();
+    }
+}
+====
+
+If you want to deploy every exposed `AbstractVerticle`, you can use:
+
+[source, java]
+====
+public void init(@Observes StartupEvent e, Vertx vertx, Instance<AbstractVerticle> verticles) {
+    for (AbstractVerticle verticle : verticles) {
+        vertx.deployVerticle(verticle).await().indefinitely();
+    }
+}
+====
+
 == Read only deployment environments
 
 In environments with read only file systems you may receive errors of the form:

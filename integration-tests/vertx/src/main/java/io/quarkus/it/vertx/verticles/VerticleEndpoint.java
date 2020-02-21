@@ -46,4 +46,18 @@ public class VerticleEndpoint {
                 .thenApply(Message::body);
     }
 
+    @GET
+    @Path("/mutiny")
+    public CompletionStage<String> mutiny() {
+        return vertx.eventBus().<String> request("mutiny", "")
+                .thenApply(Message::body);
+    }
+
+    @GET
+    @Path("/mutiny-classname")
+    public CompletionStage<String> mutinyWithClassName() {
+        return vertx.eventBus().<String> request("mutiny-classname", "")
+                .thenApply(Message::body);
+    }
+
 }

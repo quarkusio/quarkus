@@ -49,7 +49,6 @@ import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.runtime.VertxProducer;
 import io.quarkus.vertx.runtime.VertxRecorder;
-import io.vertx.reactivex.core.AbstractVerticle;
 
 class VertxProcessor {
 
@@ -158,10 +157,17 @@ class VertxProcessor {
     }
 
     @BuildStep
-    void registerRxVerticleClasses(CombinedIndexBuildItem indexBuildItem,
+    void registerVerticleClasses(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        // RX Verticles
         for (ClassInfo ci : indexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple(AbstractVerticle.class.getName()))) {
+                .getAllKnownSubclasses(DotName.createSimple(io.vertx.reactivex.core.AbstractVerticle.class.getName()))) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ci.toString()));
+        }
+
+        // Mutiny Verticles
+        for (ClassInfo ci : indexBuildItem.getIndex()
+                .getAllKnownSubclasses(DotName.createSimple(io.smallrye.mutiny.vertx.core.AbstractVerticle.class.getName()))) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ci.toString()));
         }
     }

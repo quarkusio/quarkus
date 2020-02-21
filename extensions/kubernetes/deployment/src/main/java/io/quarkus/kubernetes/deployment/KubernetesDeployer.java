@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javax.net.ssl.SSLHandshakeException;
+
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
@@ -21,6 +23,7 @@ import org.jboss.logging.Logger;
 import io.dekorate.deps.kubernetes.api.model.HasMetadata;
 import io.dekorate.deps.kubernetes.api.model.KubernetesList;
 import io.dekorate.deps.kubernetes.client.KubernetesClient;
+import io.dekorate.deps.kubernetes.client.KubernetesClientException;
 import io.dekorate.utils.Clients;
 import io.dekorate.utils.Serialization;
 import io.quarkus.container.spi.ContainerImageResultBuildItem;
@@ -43,6 +46,11 @@ public class KubernetesDeployer {
             OutputTargetBuildItem outputTarget,
             BuildProducer<DeploymentResultBuildItem> deploymentResult) {
 
+        if (!containerImage.isPresent()) {
+            LOG.warn(
+                    "A Kubernetes deployment was requested by no extension was found to build a container image. Consider adding one of following extensions: \"quarkus-container-image-jib\", \"quarkus-container-image-docker\" or \"quarkus-container-image-s2i\",");
+        }
+
         Config config = ConfigProvider.getConfig();
         List<DeploymentTarget> deploymentTargets = Arrays
                 .stream(config.getOptionalValue(DEPLOYMENT_TARGET, String.class).orElse(KUBERNETES).split(","))
@@ -62,6 +70,7 @@ public class KubernetesDeployer {
         try (FileInputStream fis = new FileInputStream(manifest)) {
             KubernetesList list = Serialization.unmarshalAsList(fis);
             list.getItems().forEach(i -> {
+                LOG.info("Applying: " + i.getKind() + " " + i.getMetadata().getName() + ".");
                 client.resource(i).inNamespace(namespace).createOrReplace();
                 LOG.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
             });
@@ -74,6 +83,14 @@ public class KubernetesDeployer {
         } catch (FileNotFoundException e) {
             throw new IllegalStateException(
                     "Can't find generated kubernetes manifest: " + manifest.getAbsolutePath());
+        } catch (KubernetesClientException e) {
+            if (e.getCause() instanceof SSLHandshakeException) {
+                String message = "The application could not be deployed to the cluster because the Kubernetes API Server certificates are not trusted. The certificates can be configured using the relevant configuration propertiers under the 'quarkus.kubernetes-client' config root, or \"quarkus.kubernetes-client.trust-certs=true\" can be set to explicitly trust the certificates (not recommended)";
+                LOG.error(message);
+                throw new RuntimeException(e.getCause());
+            }
+            LOG.error("Unable to deploy the application to the Kubernetes cluster: " + e.getMessage());
+            throw e;
         } catch (IOException e) {
             throw new RuntimeException("Error closing file: " + manifest.getAbsolutePath());
         }

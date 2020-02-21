@@ -445,6 +445,7 @@ public class QuarkusUnitTest
             }
             curatedApplication.close();
         } finally {
+            System.clearProperty("test.url");
             Thread.currentThread().setContextClassLoader(originalClassLoader);
             timeoutTask.cancel();
             timeoutTask = null;

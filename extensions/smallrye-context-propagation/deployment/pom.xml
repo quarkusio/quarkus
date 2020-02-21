@@ -42,7 +42,7 @@
             <artifactId>quarkus-undertow-deployment</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- For Single tests -->        
+        <!-- For RX Java tests -->
         <dependency>
             <groupId>io.reactivex.rxjava2</groupId>
             <artifactId>rxjava</artifactId>
@@ -59,6 +59,11 @@
             <scope>test</scope>
         </dependency>
         <!-- For Mutiny tests -->
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>mutiny-context-propagation</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-mutiny-deployment</artifactId>

@@ -73,12 +73,10 @@ final public class Constants {
     public static final String MEMORY_SIZE_INFORMATION = String.format(Constants.MORE_INFO_ABOUT_TYPE_FORMAT,
             Constants.MEMORY_SIZE_NOTE_ANCHOR, "MemorySize");
 
-    public static final String CONFIG_PHASE_RUNTIME_ILLUSTRATION = "icon:cogs[title=Overridable at runtime]";
-    public static final String CONFIG_PHASE_BOOTSTRAP_ILLUSTRATION = "icon:cogs[title=Bootstrap - Overridable at runtime]";
-    public static final String CONFIG_PHASE_BUILD_TIME_ILLUSTRATION = "icon:archive[title=Fixed at build time]";
+    public static final String CONFIG_PHASE_BUILD_TIME_ILLUSTRATION = "icon:lock[title=Fixed at build time]";
     public static final String CONFIG_PHASE_LEGEND = String.format(
-            "%n%s Configuration property fixed at build time - %s️ Configuration property overridable at runtime %n",
-            CONFIG_PHASE_BUILD_TIME_ILLUSTRATION, CONFIG_PHASE_RUNTIME_ILLUSTRATION);
+            "%n%s Configuration property fixed at build time - All other configuration properties are overridable at runtime",
+            CONFIG_PHASE_BUILD_TIME_ILLUSTRATION);
 
     public static final String DURATION_FORMAT_NOTE = "\n[NOTE]" +
             "\n[[" + DURATION_NOTE_ANCHOR + "]]\n" +

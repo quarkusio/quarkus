@@ -191,7 +191,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 120
     env:
-      MAVEN_OPTS: -Xmx1280m
+      MAVEN_OPTS: -Xmx1408m
    
     steps:
       - uses: actions/checkout@v2

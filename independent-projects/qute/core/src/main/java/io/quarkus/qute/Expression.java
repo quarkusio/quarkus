@@ -12,6 +12,12 @@ import java.util.concurrent.ExecutionException;
 /**
  * Represents a value expression. It could be a literal such as {@code 'foo'}. It could have a namespace such as {@code data}
  * for {@code data:name}. It could have several parts such as {@code item} and {@code name} for {@code item.name}.
+ * <p>
+ * An expression may have a "type check information" attached. The string has a form {@code [TYPE_INFO]<SECTION_HINT>.foo.baz}
+ * where TYPE_INFO represent the fully qualified type name (including type parameters) and SECTION_HINT represents an optional
+ * hint set by the corresponding section helper. For example the expression {@code foo.name} may have the following type check
+ * info: {@code [org.acme.Foo].name} and the expression {@code it.name} may have
+ * {@code [java.util.List<org.acme.Label>]<for-element>.name}.
  * 
  * @see Evaluator
  */

@@ -45,6 +45,8 @@ class Parser implements Function<String, Expression> {
     static final char START_COMPOSITE_PARAM = '(';
     static final char END_COMPOSITE_PARAM = ')';
 
+    static final String TYPE_CHECK_NAMESPACE = "[" + Expressions.TYPECHECK_NAMESPACE_PLACEHOLDER + "].";
+
     private StringBuilder buffer;
     private State state;
     private int line;
@@ -590,9 +592,7 @@ class Parser implements Function<String, Expression> {
         }
         if (literal == Result.NOT_FOUND) {
             if (namespace != null) {
-                // TODO use constants!
-                typeCheckInfo = "[" + Expressions.TYPECHECK_NAMESPACE_PLACEHOLDER + "]";
-                typeCheckInfo += "." + parts.stream().collect(Collectors.joining("."));
+                typeCheckInfo = TYPE_CHECK_NAMESPACE + parts.stream().collect(Collectors.joining("."));
             } else if (typeInfos.containsKey(parts.get(0))) {
                 typeCheckInfo = typeInfos.get(parts.get(0));
                 if (typeCheckInfo != null) {

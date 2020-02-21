@@ -4,6 +4,8 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * Defines the logic of a section node.
+ * 
+ * @see SectionHelperFactory
  */
 @FunctionalInterface
 public interface SectionHelper {

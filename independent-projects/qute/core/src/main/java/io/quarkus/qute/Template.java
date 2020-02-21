@@ -4,11 +4,21 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Represents a template definition.
+ * Represents an immutable template definition.
+ * <p>
+ * The workflow is as follows:
+ * <ol>
+ * <li>Create a new template instance via {@link #instance()} or any convenient method</li>
+ * <li>Set the model data</li>
+ * <li>Trigger rendering with {@link TemplateInstance#render()}, {@link TemplateInstance#renderAsync()},
+ * {@link TemplateInstance#consume(java.util.function.Consumer)} or subscribe to a publisher returned from
+ * {@link TemplateInstance#publisher()}</li>
+ * </ol>
  */
 public interface Template {
 
     /**
+     * Template instance represents a rendering configuration.
      * 
      * @return a new template instance
      */

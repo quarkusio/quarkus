@@ -93,6 +93,12 @@ public final class EngineBuilder {
     }
 
     public EngineBuilder addNamespaceResolver(NamespaceResolver resolver) {
+        for (NamespaceResolver namespaceResolver : namespaceResolvers) {
+            if (namespaceResolver.getNamespace().equals(resolver.getNamespace())) {
+                throw new IllegalArgumentException(
+                        String.format("Namespace %s is already handled by %s", resolver.getNamespace()));
+            }
+        }
         this.namespaceResolvers.add(resolver);
         return this;
     }

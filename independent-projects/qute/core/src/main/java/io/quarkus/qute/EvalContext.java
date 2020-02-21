@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Each part of an {@link Expression} is evaluated with a new context.
+ * Evaluation context of a specific part of an {@link Expression}.
+ * 
+ * @see Expression#parts
  */
 public interface EvalContext {
 
@@ -29,8 +31,20 @@ public interface EvalContext {
      */
     List<String> getParams();
 
+    /**
+     * Parse and evaluate the given expression using the relevant {@link ResolutionContext}
+     * 
+     * @param expression
+     * @return the result
+     */
     CompletionStage<Object> evaluate(String expression);
 
+    /**
+     * Evaluate the given expression using the relevant {@link ResolutionContext}.
+     * 
+     * @param expression
+     * @return the result
+     */
     CompletionStage<Object> evaluate(Expression expression);
 
 }

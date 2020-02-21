@@ -51,22 +51,14 @@ public class ContainerImageConfig {
     public boolean insecure;
 
     /**
-     * Controls what kind of execution is needed.
-     * <ul>
-     * <li>{@link io.quarkus.container.image.deployment.ContainerImageConfig.Execution#NONE} means that no container image will
-     * be created</li>
-     * <li>{@link io.quarkus.container.image.deployment.ContainerImageConfig.Execution#BUILD} will result in a container image
-     * being created locally</li>
-     * <li>{@link io.quarkus.container.image.deployment.ContainerImageConfig.Execution#PUSH} will result in a container image
-     * being pushed to the specified registry</li>
-     * </ul>
+     * Whether or not a image build will be performed.
      */
-    @ConfigItem(defaultValue = "none")
-    public Execution execution;
+    @ConfigItem(defaultValue = "false")
+    public boolean build;
 
-    public enum Execution {
-        NONE,
-        BUILD,
-        PUSH
-    }
+    /**
+     * Whether or not an image push will be performed.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean push;
 }

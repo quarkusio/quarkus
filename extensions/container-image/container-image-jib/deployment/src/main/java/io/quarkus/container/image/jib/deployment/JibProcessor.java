@@ -32,7 +32,6 @@ import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
 
 import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
-import io.quarkus.container.image.deployment.ContainerImageConfig.Execution;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
@@ -65,7 +64,8 @@ public class JibProcessor {
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer) {
 
-        if (containerImageConfig.execution == Execution.NONE && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
+                && !pushRequest.isPresent()) {
             return;
         }
 
@@ -91,7 +91,8 @@ public class JibProcessor {
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer) {
 
-        if (containerImageConfig.execution == Execution.NONE && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
+                && !pushRequest.isPresent()) {
             return;
         }
 
@@ -118,7 +119,7 @@ public class JibProcessor {
             log.info("Starting container image build");
             JibContainer container = jibContainerBuilder.containerize(containerizer);
             log.infof("%s container image %s (%s)\n",
-                    containerImageConfig.execution == ContainerImageConfig.Execution.PUSH ? "Pushed" : "Created",
+                    containerImageConfig.push ? "Pushed" : "Created",
                     container.getTargetImage(),
                     container.getDigest());
             return container;
@@ -132,7 +133,7 @@ public class JibProcessor {
         Containerizer containerizer;
         ImageReference imageReference = getImageReference(containerImageConfig, applicationInfo);
 
-        if (pushRequested || containerImageConfig.execution == ContainerImageConfig.Execution.PUSH) {
+        if (pushRequested || containerImageConfig.push) {
             CredentialRetrieverFactory credentialRetrieverFactory = CredentialRetrieverFactory.forImage(imageReference,
                     log::info);
             RegistryImage registryImage = RegistryImage.named(imageReference);

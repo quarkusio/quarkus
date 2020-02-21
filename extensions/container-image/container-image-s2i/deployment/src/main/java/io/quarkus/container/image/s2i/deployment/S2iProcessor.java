@@ -30,7 +30,6 @@ import io.dekorate.utils.Packaging;
 import io.dekorate.utils.Serialization;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
-import io.quarkus.container.image.deployment.ContainerImageConfig.Execution;
 import io.quarkus.container.image.deployment.util.ImageUtil;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
@@ -110,7 +109,8 @@ public class S2iProcessor {
             // used to ensure that the jar has been built
             JarBuildItem jar) {
 
-        if (containerImageConfig.execution == Execution.NONE && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
+                && !pushRequest.isPresent()) {
             return;
         }
 
@@ -146,7 +146,8 @@ public class S2iProcessor {
             BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer,
             NativeImageBuildItem nativeImageBuildItem) {
 
-        if (containerImageConfig.execution == Execution.NONE && !buildRequest.isPresent() && !pushRequest.isPresent()) {
+        if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
+                && !pushRequest.isPresent()) {
             return;
         }
 

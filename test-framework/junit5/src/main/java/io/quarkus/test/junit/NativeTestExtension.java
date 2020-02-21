@@ -2,7 +2,10 @@ package io.quarkus.test.junit;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Map;
+
+import javax.inject.Inject;
 
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -41,6 +44,7 @@ public class NativeTestExtension
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        ensureNoInjectAnnotationIsUsed(extensionContext.getRequiredTestClass());
 
         ExtensionContext root = extensionContext.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
@@ -69,6 +73,23 @@ public class NativeTestExtension
                 throw new JUnitException("Quarkus native image start failed, original cause: " + e);
             }
         }
+    }
+
+    private void ensureNoInjectAnnotationIsUsed(Class<?> testClass) {
+        Class<?> current = testClass;
+        while (current.getSuperclass() != null) {
+            for (Field field : current.getDeclaredFields()) {
+                Inject injectAnnotation = field.getAnnotation(Inject.class);
+                if (injectAnnotation != null) {
+                    throw new JUnitException(
+                            "@Inject is not supported in NativeImageTest tests. Offending field is "
+                                    + field.getDeclaringClass().getTypeName() + "."
+                                    + field.getName());
+                }
+            }
+            current = current.getSuperclass();
+        }
+
     }
 
     @Override

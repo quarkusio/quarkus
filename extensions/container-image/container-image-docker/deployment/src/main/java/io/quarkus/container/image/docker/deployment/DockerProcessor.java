@@ -91,7 +91,7 @@ public class DockerProcessor {
                     "The native binary produced by the build is not a Linux binary and therefore cannot be used in a Linux container image. Consider adding \"quarkus.native.container-build=true\" to your configuration");
         }
 
-        log.info("Building docker image for native image.");
+        log.info("Starting docker image build");
 
         String image = containerImage.getImage();
 
@@ -114,6 +114,8 @@ public class DockerProcessor {
             throw dockerException(buildArgs);
         }
 
+        log.infof("Pushed container image %s (%s)\n", image, reader.getImageId());
+
         if (pushRequested || containerImageConfig.push) {
             // Check if we need to login first
             if (containerImageConfig.username.isPresent() && containerImageConfig.password.isPresent()) {
@@ -128,6 +130,7 @@ public class DockerProcessor {
             if (!pushSuccessful) {
                 throw dockerException(pushArgs);
             }
+            log.info("Successfully pushed docker image " + image);
         }
     }
 

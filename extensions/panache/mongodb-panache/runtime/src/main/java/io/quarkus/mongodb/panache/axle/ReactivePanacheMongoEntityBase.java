@@ -23,7 +23,9 @@ import io.quarkus.panache.common.impl.GenerateBridge;
  * {@link ReactivePanacheMongoEntity} instead.
  *
  * @see ReactivePanacheMongoEntity
+ * @deprecated Use {@link io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntityBase} instead.
  */
+@Deprecated
 public abstract class ReactivePanacheMongoEntityBase {
 
     // Operations

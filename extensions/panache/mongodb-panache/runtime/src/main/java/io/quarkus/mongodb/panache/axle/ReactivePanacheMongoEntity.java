@@ -12,7 +12,9 @@ import org.bson.types.ObjectId;
  * all the useful methods.
  *
  * @see ReactivePanacheMongoEntityBase
+ * @deprecated Use {@link io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository} instead.
  */
+@Deprecated
 public abstract class ReactivePanacheMongoEntity extends ReactivePanacheMongoEntityBase {
 
     /**

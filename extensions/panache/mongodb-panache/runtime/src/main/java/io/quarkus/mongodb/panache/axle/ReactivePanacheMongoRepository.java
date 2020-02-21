@@ -9,7 +9,9 @@ import org.bson.types.ObjectId;
  * implement {@link ReactivePanacheMongoRepositoryBase} instead.
  *
  * @param <Entity> The type of entity to operate on
+ * @deprecated Use {@link io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository} instead.
  */
+@Deprecated
 public interface ReactivePanacheMongoRepository<Entity> extends ReactivePanacheMongoRepositoryBase<Entity, ObjectId> {
 
 }

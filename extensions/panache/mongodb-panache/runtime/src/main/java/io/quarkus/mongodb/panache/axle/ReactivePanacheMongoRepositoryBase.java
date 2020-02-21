@@ -25,7 +25,9 @@ import io.quarkus.panache.common.impl.GenerateBridge;
  * @param <Entity> The type of entity to operate on
  * @param <Id> The ID type of the entity
  * @see ReactivePanacheMongoRepository
+ * @deprecated Use {@link io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity} instead.
  */
+@Deprecated
 public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
 
     // Operations

@@ -17,7 +17,9 @@ import io.quarkus.panache.common.Page;
  * modified, and instances of this interface can be reused to obtain multiple pages of results.
  *
  * @param <Entity> The entity type being queried
+ * @deprecated Use {@link io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery} instead.
  */
+@Deprecated
 public interface ReactivePanacheQuery<Entity> {
 
     // Builder

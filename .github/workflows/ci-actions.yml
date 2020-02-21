@@ -191,7 +191,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 120
     env:
-      MAVEN_OPTS: -Xmx1280m
+      MAVEN_OPTS: -Xmx1408m
    
     steps:
       - uses: actions/checkout@v2
@@ -294,6 +294,7 @@ jobs:
     # Ignore the following YAML Schema error 
     timeout-minutes: ${{matrix.timeout}}
     strategy:
+      max-parallel: 8
       fail-fast: true
       matrix:
         category: [Main, Data1, Data2, Data3, Data4, Data5, Security1, Security2, Amazon, Messaging, Cache, HTTP, Misc1, Misc2, Misc3, Spring]
@@ -349,7 +350,7 @@ jobs:
               amazon-lambda
               amazon-lambda-http
           - category: Messaging
-            timeout: 30
+            timeout: 45
             test-modules: >
               artemis-core
               artemis-jms
@@ -410,7 +411,7 @@ jobs:
               optaplanner-jackson
           # kubernetes-client alone takes 16mn+
           - category: Misc3
-            timeout: 35
+            timeout: 45
             test-modules: >
               kogito
               kubernetes-client

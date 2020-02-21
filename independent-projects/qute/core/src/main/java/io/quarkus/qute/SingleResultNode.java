@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * A result node backed by an object value.
+ * A result node backed by a single object value.
  */
 public class SingleResultNode implements ResultNode {
 

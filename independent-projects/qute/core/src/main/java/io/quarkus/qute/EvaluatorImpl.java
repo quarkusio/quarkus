@@ -66,14 +66,21 @@ class EvaluatorImpl implements Evaluator {
 
     private CompletionStage<Object> resolveReference(boolean tryParent, Object ref, Iterator<String> parts,
             ResolutionContext resolutionContext) {
-        return resolve(new EvalContextImpl(tryParent, ref, parts.next(), resolutionContext), resolvers.iterator())
-                .thenCompose(r -> {
-                    if (parts.hasNext()) {
-                        return resolveReference(tryParent, r, parts, resolutionContext);
-                    } else {
-                        return CompletableFuture.completedFuture(r);
-                    }
-                });
+        String part = parts.next();
+        EvalContextImpl evalContext = new EvalContextImpl(tryParent, ref, part, resolutionContext);
+        if (!parts.hasNext()) {
+            // The last part - no need to compose
+            return resolve(evalContext, resolvers.iterator());
+        } else {
+            return resolve(evalContext, resolvers.iterator())
+                    .thenCompose(r -> {
+                        if (parts.hasNext()) {
+                            return resolveReference(tryParent, r, parts, resolutionContext);
+                        } else {
+                            return CompletableFuture.completedFuture(r);
+                        }
+                    });
+        }
     }
 
     private CompletionStage<Object> resolve(EvalContextImpl evalContext, Iterator<ValueResolver> resolvers) {

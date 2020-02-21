@@ -4,6 +4,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
+/**
+ * A result node backed by an array of result nodes.
+ */
 public class MultiResultNode implements ResultNode {
 
     private final ResultNode[] results;

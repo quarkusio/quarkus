@@ -4,13 +4,14 @@ import java.io.Reader;
 import java.util.Optional;
 
 /**
- * Locates template sources.
+ * Locates template sources. The locator with higher priority takes precedence.
  * 
  * @see Engine#getTemplate(String)
  */
 public interface TemplateLocator extends WithPriority {
 
     /**
+     * Must return {@link Optional#empty()} if it's not possible to locate a template with the specified id.
      * 
      * @param id
      * @return the template location for the given id

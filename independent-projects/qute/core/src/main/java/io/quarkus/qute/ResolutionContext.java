@@ -10,20 +10,23 @@ import java.util.concurrent.CompletionStage;
 public interface ResolutionContext {
 
     /**
+     * Parse and evaluate the expression.
      * 
      * @param expression
-     * @return the result of the evaluated expression
+     * @return the result
      */
     CompletionStage<Object> evaluate(String expression);
 
     /**
+     * Evaluate the expression.
      * 
      * @param expression
-     * @return the result of the evaluated expression
+     * @return the result
      */
     CompletionStage<Object> evaluate(Expression expression);
 
     /**
+     * Create a child resolution context with the specified data and namespace resolvers.
      * 
      * @param data
      * @param namespaceResolversFactories
@@ -32,6 +35,7 @@ public interface ResolutionContext {
     ResolutionContext createChild(Object data, List<NamespaceResolver> namespaceResolvers);
 
     /**
+     * Create a child resolution context with the specifiec extending blocks.
      * 
      * @param extendingBlocks
      * @return a new child resolution context
@@ -59,7 +63,7 @@ public interface ResolutionContext {
     /**
      * 
      * @param name
-     * @return the extending block or null
+     * @return the extending block for the specified name or null
      */
     SectionBlock getExtendingBlock(String name);
 

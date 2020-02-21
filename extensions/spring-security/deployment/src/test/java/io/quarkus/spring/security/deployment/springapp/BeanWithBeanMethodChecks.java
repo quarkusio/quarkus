@@ -21,6 +21,11 @@ public class BeanWithBeanMethodChecks {
         return "withParams";
     }
 
+    @PreAuthorize("@personChecker.check(#person, 'geo')")
+    public String withParamAndConstant(Person person) {
+        return "withParamAndConstant";
+    }
+
     @PreAuthorize("@personChecker.check(#person, #input)")
     public String anotherWithParams(String input, Person person) {
         return "anotherWithParams";

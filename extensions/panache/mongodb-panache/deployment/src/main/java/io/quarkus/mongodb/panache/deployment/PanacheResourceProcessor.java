@@ -384,11 +384,8 @@ public class PanacheResourceProcessor {
             daoClasses.add(classInfo.name().toString());
         }
         for (String daoClass : daoClasses) {
-            System.out.println("found " + daoClasses);
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
         }
-
-        System.out.println("HERE WE ARE");
 
         MutinyPanacheMongoEntityEnhancer modelEnhancer = new MutinyPanacheMongoEntityEnhancer(index.getIndex());
         Set<String> modelClasses = new HashSet<>();

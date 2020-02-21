@@ -67,11 +67,11 @@ The creation of such objects is being taken care of by the Quarkus kubernetes ex
 
 == Building
 
-To build a container image for your project, you just need to specify `quarkus.container-image.execution=build` either to the `application.properties` or as a system property.
+To build a container image for your project, you just need to specify `quarkus.container-image.build=true` either to the `application.properties` or as a system property.
 
 [source, subs=attributes+]
 ----
-mvn clean package -Dquarkus.container-image.execution=build
+mvn clean package -Dquarkus.container-image.build=true
 ----
 
 Setting the environment variable `QUARKUS_CONTAINER_IMAGE_EXECUTION` to `build` can be used instead of the system propery.

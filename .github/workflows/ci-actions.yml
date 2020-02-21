@@ -411,7 +411,7 @@ jobs:
               optaplanner-jackson
           # kubernetes-client alone takes 16mn+
           - category: Misc3
-            timeout: 45
+            timeout: 35
             test-modules: >
               kogito
               kubernetes-client

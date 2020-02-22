@@ -1,9 +1,9 @@
 <infinispan
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xsi:schemaLocation="urn:infinispan:config:10.0 http://www.infinispan.org/schemas/infinispan-config-10.0.xsd
+      xsi:schemaLocation="urn:infinispan:config:10.1 http://www.infinispan.org/schemas/infinispan-config-10.1.xsd
                           urn:org:jgroups http://www.jgroups.org/schema/jgroups-4.0.xsd"
-      xmlns="urn:infinispan:config:10.0"
-      xmlns:ispn="urn:infinispan:config:10.0">
+      xmlns="urn:infinispan:config:10.1"
+      xmlns:ispn="urn:infinispan:config:10.1">
    <jgroups transport="org.infinispan.remoting.transport.jgroups.JGroupsTransport">
       <!-- Load external JGroups stacks -->
       <stack-file name="udp-test" path="stacks/udp.xml"/>
@@ -85,7 +85,7 @@
    <threads>
       <thread-factory name="infinispan-factory" group-name="infinispan" thread-name-pattern="%G %i" priority="5"/>
       <!-- listener-executor -->
-      <blocking-bounded-queue-thread-pool name="infinispan-async" thread-factory="infinispan-factory"
+      <blocking-bounded-queue-thread-pool name="async-infinispan" thread-factory="infinispan-factory"
             core-threads="5" max-threads="5" queue-length="0" keepalive-time="0"/>
       <!-- listener-executor -->
       <blocking-bounded-queue-thread-pool name="infinispan-listener" thread-factory="infinispan-factory"
@@ -102,7 +102,7 @@
       <scheduled-thread-pool name="infinispan-expiration" thread-factory="infinispan-factory" />
    </threads>
 
-   <cache-container name="maximal" aliases="alias1 alias2" default-cache="local" async-executor="infinispan-async" expiration-executor="infinispan-expiration"
+   <cache-container name="maximal" aliases="alias1 alias2" default-cache="local" async-executor="async-infinispan" expiration-executor="infinispan-expiration"
                     jndi-name="java:global/infinispan/maximal"  state-transfer-executor="infinispan-state-transfer" listener-executor="infinispan-listener"
                     persistence-executor="infinispan-cached" module="org.infinispan" statistics="true" shutdown-hook="DONT_REGISTER" zero-capacity-node="false">
        <transport cluster="maximal-cluster" executor="infinispan-transport" remote-command-executor="infinispan-cached" lock-timeout="120000" stack="tcpping" node-name="a-node" machine="a" rack="b" site="c"

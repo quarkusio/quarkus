@@ -2,7 +2,9 @@ package io.quarkus.infinispan.embedded.runtime.graal;
 
 import java.security.SecureRandom;
 
+import org.jgroups.JChannel;
 import org.jgroups.util.UUID;
+import org.jgroups.util.Util;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
@@ -45,5 +47,14 @@ final class SubstituteDiscardProtocol {
         // should call super.stop() but the "super" Protocol.stop() does nothing,
         // so this empty impl is OK
 
+    }
+}
+
+@TargetClass(Util.class)
+final class SubstituteJgroupsUtil {
+
+    @Substitute
+    public static void registerChannel(JChannel channel, String name) {
+        // do nothing
     }
 }

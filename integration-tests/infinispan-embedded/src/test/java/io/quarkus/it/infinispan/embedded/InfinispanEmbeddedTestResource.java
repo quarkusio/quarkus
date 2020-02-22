@@ -14,8 +14,8 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 public class InfinispanEmbeddedTestResource implements QuarkusTestResourceLifecycleManager {
     @Override
     public Map<String, String> start() {
-        // Since 10.0.xml is not in the classpath for native and not in the image - we have to point to the src one
-        String xmlLocation = Paths.get(System.getProperty("basedir"), "src", "main", "resources", "10.0.xml").toString();
+        // Since 10.1.xml is not in the classpath for native and not in the image - we have to point to the src one
+        String xmlLocation = Paths.get(System.getProperty("basedir"), "src", "main", "resources", "10.1.xml").toString();
         return Collections.singletonMap("quarkus.infinispan-embedded.xml-config", xmlLocation);
     }
 

@@ -37,12 +37,17 @@ public class AppArtifact extends AppArtifactCoords implements Serializable {
     private void writeObject(java.io.ObjectOutputStream out)
             throws IOException {
         out.defaultWriteObject();
-        out.writeUTF(path.toAbsolutePath().toString());
+        out.writeBoolean(isResolved());
+        if (path != null) {
+            out.writeUTF(path.toAbsolutePath().toString());
+        }
     }
 
     private void readObject(java.io.ObjectInputStream in)
             throws IOException, ClassNotFoundException {
         in.defaultReadObject();
-        path = Paths.get(in.readUTF());
+        if (in.readBoolean()) {
+            path = Paths.get(in.readUTF());
+        }
     }
 }

@@ -32,6 +32,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
@@ -63,6 +64,7 @@ public class NativeImageAutoFeatureStep {
             "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport",
             "rerunInitialization", void.class, Class.class, String.class);
     static final String RUNTIME_REFLECTION = RuntimeReflection.class.getName();
+    static final String JNI_RUNTIME_ACCESS = "com.oracle.svm.core.jni.JNIRuntimeAccess";
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
     static final String DYNAMIC_PROXY_REGISTRY = "com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry";
     static final String LOCALIZATION_FEATURE = "com.oracle.svm.core.jdk.LocalizationFeature";
@@ -104,7 +106,8 @@ public class NativeImageAutoFeatureStep {
             List<ReflectiveFieldBuildItem> reflectiveFields,
             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
             List<ServiceProviderBuildItem> serviceProviderBuildItems,
-            List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields) {
+            List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields,
+            List<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses) {
         ClassCreator file = new ClassCreator(new ClassOutput() {
             @Override
             public void write(String s, byte[] bytes) {
@@ -337,6 +340,62 @@ public class NativeImageAutoFeatureStep {
             //cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
             mv.returnValue(null);
         }
+
+        count = 0;
+
+        for (JniRuntimeAccessBuildItem jniAccessible : jniRuntimeAccessibleClasses) {
+            for (String className : jniAccessible.getClassNames()) {
+                MethodCreator mv = file.getMethodCreator("registerJniAccessibleClass" + count++, "V");
+                mv.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
+                overallCatch.invokeStaticMethod(mv.getMethodDescriptor());
+
+                TryBlock tc = mv.tryBlock();
+
+                ResultHandle currentThread = tc
+                        .invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));
+                ResultHandle tccl = tc.invokeVirtualMethod(
+                        ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class),
+                        currentThread);
+                ResultHandle clazz = tc.invokeStaticMethod(
+                        ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class),
+                        tc.load(className), tc.load(false), tccl);
+                //we call these methods first, so if they are going to throw an exception it happens before anything has been registered
+                ResultHandle constructors = tc
+                        .invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructors", Constructor[].class), clazz);
+                ResultHandle methods = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethods", Method[].class),
+                        clazz);
+                ResultHandle fields = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredFields", Field[].class), clazz);
+
+                ResultHandle carray = tc.newArray(Class.class, tc.load(1));
+                tc.writeArrayValue(carray, 0, clazz);
+                tc.invokeStaticMethod(ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Class[].class),
+                        carray);
+
+                if (jniAccessible.isConstructors()) {
+                    tc.invokeStaticMethod(
+                            ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
+                            constructors);
+                }
+
+                if (jniAccessible.isMethods()) {
+                    tc.invokeStaticMethod(
+                            ofMethod(JNI_RUNTIME_ACCESS, "register", void.class, Executable[].class),
+                            methods);
+                }
+
+                if (jniAccessible.isFields()) {
+                    tc.invokeStaticMethod(
+                            ofMethod(JNI_RUNTIME_ACCESS, "register", void.class,
+                                    boolean.class, Field[].class),
+                            tc.load(jniAccessible.isFinalFieldsWriteable()), fields);
+                }
+
+                CatchBlockCreator cc = tc.addCatch(Throwable.class);
+                //cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+                mv.returnValue(null);
+            }
+        }
+
         CatchBlockCreator print = overallCatch.addCatch(Throwable.class);
         print.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), print.getCaughtException());
 

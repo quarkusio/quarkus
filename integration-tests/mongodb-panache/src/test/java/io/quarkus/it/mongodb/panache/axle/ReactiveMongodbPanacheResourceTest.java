@@ -325,7 +325,7 @@ class ReactiveMongodbPanacheResourceTest {
         return cal.getTime();
     }
 
-    private class IntegerAdder {
+    private static class IntegerAdder {
         int cpt = 0;
 
         public void increment() {

@@ -27,14 +27,14 @@ import net.bytebuddy.utility.OpenedClassReader;
  */
 public final class HibernateEntityEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
-    private final BytecodeProvider provider = new org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl();
+    private static final BytecodeProvider PROVIDER = new org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl();
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
         return new HibernateEnhancingClassVisitor(className, outputClassVisitor);
     }
 
-    private class HibernateEnhancingClassVisitor extends ClassVisitor {
+    private static class HibernateEnhancingClassVisitor extends ClassVisitor {
 
         private final String className;
         private final ClassVisitor outputClassVisitor;
@@ -61,7 +61,7 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
                     return Thread.currentThread().getContextClassLoader();
                 }
             };
-            this.enhancer = provider.getEnhancer(enhancementContext);
+            this.enhancer = PROVIDER.getEnhancer(enhancementContext);
         }
 
         @Override
@@ -92,7 +92,7 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
             }
 
         };
-        Enhancer enhancer = provider.getEnhancer(enhancementContext);
+        Enhancer enhancer = PROVIDER.getEnhancer(enhancementContext);
         return enhancer.enhance(className, bytes);
     }
 }

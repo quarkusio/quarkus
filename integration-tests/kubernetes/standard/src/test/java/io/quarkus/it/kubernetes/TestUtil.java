@@ -7,6 +7,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -24,7 +25,7 @@ final class TestUtil {
      */
     public static String getProjectVersion() {
         try (BufferedReader bufferedReader = new BufferedReader(
-                new InputStreamReader(TestUtil.class.getResourceAsStream("/version.txt")))) {
+                new InputStreamReader(TestUtil.class.getResourceAsStream("/version.txt"), StandardCharsets.UTF_8))) {
             return bufferedReader.readLine();
         } catch (IOException e) {
             throw new UncheckedIOException(e);

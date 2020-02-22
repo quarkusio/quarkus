@@ -215,12 +215,6 @@ class AxleReactiveMongoClientTest extends MongoTestBase {
         assertThat(documents.get(3000 - 1).getString("foo")).isEqualTo("bar999");
     }
 
-    private CompletionStage<Optional<Document>> upsertDoc(String collection, Document docToInsert, String expectedId) {
-        Document insertStatement = new Document();
-        insertStatement.put("$set", docToInsert);
-        return upsertDoc(collection, docToInsert, insertStatement, expectedId);
-    }
-
     private CompletionStage<Optional<Document>> upsertDoc(String collection, Document docToInsert, Document insertStatement,
             String expectedId) {
         return client.getDatabase(DATABASE).getCollection(collection)

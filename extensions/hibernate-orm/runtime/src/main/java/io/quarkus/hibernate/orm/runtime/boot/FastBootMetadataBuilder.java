@@ -7,15 +7,11 @@ import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_DRIVER;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_PASSWORD;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_URL;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_USER;
-import static org.hibernate.cfg.AvailableSettings.JPA_SHARED_CACHE_MODE;
 import static org.hibernate.cfg.AvailableSettings.JPA_TRANSACTION_TYPE;
 import static org.hibernate.cfg.AvailableSettings.PASS;
 import static org.hibernate.cfg.AvailableSettings.TRANSACTION_COORDINATOR_STRATEGY;
 import static org.hibernate.cfg.AvailableSettings.URL;
 import static org.hibernate.cfg.AvailableSettings.USER;
-import static org.hibernate.cfg.AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
-import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
-import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 import static org.hibernate.cfg.AvailableSettings.WRAP_RESULT_SETS;
 import static org.hibernate.cfg.AvailableSettings.XML_MAPPING_ENABLED;
 import static org.hibernate.internal.HEMLogging.messageLogger;
@@ -33,7 +29,6 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.persistence.PersistenceException;
-import javax.persistence.SharedCacheMode;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.boot.CacheRegionDefinition;
@@ -284,8 +279,6 @@ public class FastBootMetadataBuilder {
         }
         cfg.remove(JACC_ENABLED);
 
-        enableCachingByDefault(cfg);
-
         // here we are going to iterate the merged config settings looking for:
         // 1) additional JACC permissions
         // 2) additional cache region declarations
@@ -325,17 +318,6 @@ public class FastBootMetadataBuilder {
         HibernateOrmIntegrations.contributeBootProperties((k, v) -> cfg.put(k, v));
 
         return mergedSettings;
-    }
-
-    /**
-     * Enable 2LC for entities and queries by default. Also allow "reference caching" by default.
-     */
-    private void enableCachingByDefault(final Map<String, Object> configurationValues) {
-        //Only set these if the user isn't making an explicit choice:
-        configurationValues.putIfAbsent(USE_DIRECT_REFERENCE_CACHE_ENTRIES, Boolean.TRUE);
-        configurationValues.putIfAbsent(USE_SECOND_LEVEL_CACHE, Boolean.TRUE);
-        configurationValues.putIfAbsent(USE_QUERY_CACHE, Boolean.TRUE);
-        configurationValues.putIfAbsent(JPA_SHARED_CACHE_MODE, SharedCacheMode.ENABLE_SELECTIVE);
     }
 
     public RecordedState build() {

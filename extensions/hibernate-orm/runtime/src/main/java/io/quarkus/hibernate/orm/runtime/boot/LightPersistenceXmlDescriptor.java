@@ -3,9 +3,7 @@ package io.quarkus.hibernate.orm.runtime.boot;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import javax.persistence.SharedCacheMode;
 import javax.persistence.ValidationMode;
@@ -36,7 +34,7 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
         this.validationMode = toClone.getValidationMode();
         this.sharedCachemode = toClone.getSharedCacheMode();
         this.managedClassNames = Collections.unmodifiableList(toClone.getManagedClassNames());
-        this.properties = filterNonStrings(toClone.getProperties());
+        this.properties = toClone.getProperties();
         verifyIgnoredFields(toClone);
     }
 
@@ -61,25 +59,6 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
         if (toClone.getNonJtaDataSource() != null) {
             throw new UnsupportedOperationException("Value found for #getNonJtaDataSource : not supported");
         }
-    }
-
-    private static final Properties filterNonStrings(final Properties properties) {
-        Properties clean = new Properties();
-        final Set<Map.Entry<Object, Object>> entries = properties.entrySet();
-        for (Map.Entry<Object, Object> e : entries) {
-            final Object key = e.getKey();
-            if (!(key instanceof String)) {
-                log.infof("Ignoring persistence unit property key '%s' as it's not a String", key);
-                continue;
-            }
-            final Object value = e.getValue();
-            if (!(value instanceof String)) {
-                log.infof("Ignoring persistence unit property for key '%s' as the value is not a String", key);
-                continue;
-            }
-            clean.setProperty((String) key, (String) value);
-        }
-        return clean;
     }
 
     @Override

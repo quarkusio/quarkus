@@ -2,6 +2,10 @@ package io.quarkus.hibernate.orm.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static org.hibernate.cfg.AvailableSettings.JPA_SHARED_CACHE_MODE;
+import static org.hibernate.cfg.AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
+import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
+import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 
 import java.io.IOException;
 import java.net.URL;
@@ -17,12 +21,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Produces;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
+import javax.persistence.SharedCacheMode;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
 import org.eclipse.microprofile.metrics.Metadata;
@@ -672,10 +678,24 @@ public final class HibernateOrmProcessor {
                 }
 
                 // Caching
-                Map<String, String> cacheConfigEntries = HibernateConfigUtil
-                        .getCacheConfigEntries(hibernateConfig);
-                for (Entry<String, String> entry : cacheConfigEntries.entrySet()) {
-                    desc.getProperties().setProperty(entry.getKey(), entry.getValue());
+                if (hibernateConfig.secondLevelCachingEnabled) {
+                    Properties p = desc.getProperties();
+                    //Only set these if the user isn't making an explicit choice:
+                    p.putIfAbsent(USE_DIRECT_REFERENCE_CACHE_ENTRIES, Boolean.TRUE);
+                    p.putIfAbsent(USE_SECOND_LEVEL_CACHE, Boolean.TRUE);
+                    p.putIfAbsent(USE_QUERY_CACHE, Boolean.TRUE);
+                    p.putIfAbsent(JPA_SHARED_CACHE_MODE, SharedCacheMode.ENABLE_SELECTIVE);
+                    Map<String, String> cacheConfigEntries = HibernateConfigUtil.getCacheConfigEntries(hibernateConfig);
+                    for (Entry<String, String> entry : cacheConfigEntries.entrySet()) {
+                        desc.getProperties().setProperty(entry.getKey(), entry.getValue());
+                    }
+                } else {
+                    //Unless the global switch is explicitly set to off, in which case we disable all caching:
+                    Properties p = desc.getProperties();
+                    p.put(USE_DIRECT_REFERENCE_CACHE_ENTRIES, Boolean.FALSE);
+                    p.put(USE_SECOND_LEVEL_CACHE, Boolean.FALSE);
+                    p.put(USE_QUERY_CACHE, Boolean.FALSE);
+                    p.put(JPA_SHARED_CACHE_MODE, SharedCacheMode.NONE);
                 }
 
                 descriptors.add(desc);

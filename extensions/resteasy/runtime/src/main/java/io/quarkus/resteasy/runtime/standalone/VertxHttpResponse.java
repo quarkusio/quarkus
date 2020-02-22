@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.ext.RuntimeDelegate;
@@ -170,13 +171,22 @@ public class VertxHttpResponse implements HttpResponse {
                 }
 
             } else {
-                response.setChunked(true);
+                if (isSse()) {
+                    getOutputHeaders().putSingle("transfer-encoding", "identity");
+                } else {
+                    response.setChunked(true);
+                }
             }
             transformHeaders(this, response, providerFactory);
         }
         if (finished)
             this.finished = true;
         output.write(buffer, finished);
+    }
+
+    private boolean isSse() {
+        return MediaType.SERVER_SENT_EVENTS.equalsIgnoreCase(
+                (String) outputHeaders.getFirst(javax.ws.rs.core.HttpHeaders.CONTENT_TYPE));
     }
 
 }

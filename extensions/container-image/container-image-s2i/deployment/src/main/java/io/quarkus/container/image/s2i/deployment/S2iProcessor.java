@@ -127,7 +127,7 @@ public class S2iProcessor {
         Path artifactPath = out.getOutputDirectory()
                 .resolve(String.format(JAR_ARTIFACT_FORMAT, out.getBaseName(), packageConfig.runnerSuffix));
 
-        createContainerImage(kubernetesClient, openshiftYml, out.getOutputDirectory(), artifactPath,
+        createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), artifactPath,
                 out.getOutputDirectory().resolve("lib"));
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
         containerImageResultProducer.produce(
@@ -165,7 +165,7 @@ public class S2iProcessor {
         Path artifactPath = out.getOutputDirectory()
                 .resolve(String.format(NATIVE_ARTIFACT_FORMAT, out.getBaseName(), packageConfig.runnerSuffix));
 
-        createContainerImage(kubernetesClient, openshiftYml, out.getOutputDirectory(), artifactPath);
+        createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), artifactPath);
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
         containerImageResultProducer.produce(
                 new ContainerImageResultBuildItem(null, ImageUtil.getRepository(image), ImageUtil.getTag(image)));
@@ -173,6 +173,7 @@ public class S2iProcessor {
 
     public static void createContainerImage(KubernetesClientBuildItem kubernetesClient,
             GeneratedFileSystemResourceBuildItem openshiftManifests,
+            S2iConfig s2iConfig,
             Path output,
             Path... additional) {
 
@@ -186,7 +187,7 @@ public class S2iProcessor {
                 .collect(Collectors.toList());
 
         applyS2iResources(client, buildResources);
-        s2iBuild(client, buildResources, tar);
+        s2iBuild(client, buildResources, tar, s2iConfig);
     }
 
     /**
@@ -215,9 +216,10 @@ public class S2iProcessor {
         S2iUtils.waitForImageStreamTags(buildResources, 2, TimeUnit.MINUTES);
     }
 
-    private static void s2iBuild(KubernetesClient client, List<HasMetadata> buildResources, File binaryFile) {
+    private static void s2iBuild(KubernetesClient client, List<HasMetadata> buildResources, File binaryFile,
+            S2iConfig s2iConfig) {
         buildResources.stream().filter(i -> i instanceof BuildConfig).map(i -> (BuildConfig) i)
-                .forEach(bc -> s2iBuild(client.adapt(OpenShiftClient.class), bc, binaryFile));
+                .forEach(bc -> s2iBuild(client.adapt(OpenShiftClient.class), bc, binaryFile, s2iConfig));
     }
 
     /**
@@ -227,9 +229,9 @@ public class S2iProcessor {
      * @param buildConfig The build config.
      * @param binaryFile The binary file.
      */
-    private static void s2iBuild(OpenShiftClient client, BuildConfig buildConfig, File binaryFile) {
+    private static void s2iBuild(OpenShiftClient client, BuildConfig buildConfig, File binaryFile, S2iConfig s2iConfig) {
         Build build = client.buildConfigs().withName(buildConfig.getMetadata().getName()).instantiateBinary()
-                .fromFile(binaryFile);
+                .withTimeoutInMillis(s2iConfig.buildTimeout.toMillis()).fromFile(binaryFile);
         try (BufferedReader reader = new BufferedReader(
                 client.builds().withName(build.getMetadata().getName()).getLogReader())) {
             for (String line = reader.readLine(); line != null; line = reader.readLine()) {

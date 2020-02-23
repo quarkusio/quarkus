@@ -1,5 +1,6 @@
 package io.quarkus.container.image.s2i.deployment;
 
+import java.time.Duration;
 import java.util.List;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -49,6 +50,12 @@ public class S2iConfig {
      */
     @ConfigItem(defaultValue = "/home/quarkus/application")
     public String nativeBinaryPath;
+
+    /**
+     * The build timeout.
+     */
+    @ConfigItem(defaultValue = "PT5M")
+    Duration buildTimeout;
 
     /**
      * Check if baseJvmImage is the default

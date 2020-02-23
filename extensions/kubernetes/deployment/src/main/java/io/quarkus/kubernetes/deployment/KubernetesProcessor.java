@@ -1,6 +1,9 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.*;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOY;
+import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
+import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
+import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,7 +11,6 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -16,26 +18,38 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.dekorate.Session;
 import io.dekorate.SessionWriter;
+import io.dekorate.kubernetes.config.Annotation;
 import io.dekorate.kubernetes.config.EnvBuilder;
+import io.dekorate.kubernetes.config.Label;
 import io.dekorate.kubernetes.config.PortBuilder;
 import io.dekorate.kubernetes.config.ProbeBuilder;
 import io.dekorate.kubernetes.configurator.AddPort;
+import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
+import io.dekorate.kubernetes.decorator.AddAwsElasticBlockStoreVolumeDecorator;
+import io.dekorate.kubernetes.decorator.AddAzureDiskVolumeDecorator;
+import io.dekorate.kubernetes.decorator.AddAzureFileVolumeDecorator;
+import io.dekorate.kubernetes.decorator.AddConfigMapVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
+import io.dekorate.kubernetes.decorator.AddImagePullSecretDecorator;
+import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
+import io.dekorate.kubernetes.decorator.AddLabelDecorator;
 import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
+import io.dekorate.kubernetes.decorator.AddMountDecorator;
+import io.dekorate.kubernetes.decorator.AddPvcVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddReadinessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddRoleBindingResourceDecorator;
+import io.dekorate.kubernetes.decorator.AddSecretVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceAccountResourceDecorator;
+import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
 import io.dekorate.kubernetes.decorator.ApplyArgsDecorator;
 import io.dekorate.kubernetes.decorator.ApplyCommandDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImageDecorator;
+import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.kubernetes.decorator.ApplyServiceAccountNamedDecorator;
+import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
 import io.dekorate.processor.SimpleFileWriter;
 import io.dekorate.project.BuildInfo;
 import io.dekorate.project.FileProjectFactory;
@@ -44,7 +58,6 @@ import io.dekorate.s2i.config.S2iBuildConfig;
 import io.dekorate.s2i.config.S2iBuildConfigBuilder;
 import io.dekorate.s2i.decorator.AddBuilderImageStreamResourceDecorator;
 import io.dekorate.utils.Maps;
-import io.dekorate.utils.Strings;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.IsNormal;
@@ -66,13 +79,8 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 class KubernetesProcessor {
 
     private static final String PROPERTY_PREFIX = "dekorate.";
-    private static final Set<String> ALLOWED_GENERATORS = new HashSet(
-            Arrays.asList("kubernetes", "openshift", "knative", "docker", "s2i"));
-    private static final Set<String> IMAGE_GENERATORS = new HashSet(Arrays.asList("docker", "s2i"));
-
     private static final String DOCKER_REGISTRY_PROPERTY = PROPERTY_PREFIX + "docker.registry";
     private static final String APP_GROUP_PROPERTY = "app.group";
-
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
 
     @BuildStep(onlyIf = IsNormal.class)
@@ -80,6 +88,9 @@ class KubernetesProcessor {
             ArchiveRootBuildItem archiveRootBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             PackageConfig packageConfig,
+            KubernetesConfig kubernetesConfig,
+            OpenshiftConfig openshiftConfig,
+            KnativeConfig knativeConfig,
             List<KubernetesEnvVarBuildItem> kubernetesEnvBuildItems,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
@@ -104,34 +115,21 @@ class KubernetesProcessor {
             throw new RuntimeException("Unable to setup environment for generating Kubernetes resources", e);
         }
 
-        Config config = ConfigProvider.getConfig();
-        List<String> deploymentTargets = Arrays
-                .stream(config.getOptionalValue(DEPLOYMENT_TARGET, String.class)
-                        .orElse(KUBERNETES).split(","))
-                .map(String::trim)
-                .map(String::toLowerCase)
-                .collect(Collectors.toList());
-
-        Map<String, Object> configAsMap = StreamSupport.stream(config.getPropertyNames().spliterator(), false)
-                .filter(k -> ALLOWED_GENERATORS.contains(generatorName(k)))
-                .collect(Collectors.toMap(k -> PROPERTY_PREFIX + k, k -> config.getValue(k, String.class)));
+        Map<String, Object> config = KubernetesConfigUtil.toMap();
+        Set<String> deploymentTargets = new HashSet<>();
+        deploymentTargets.addAll(KubernetesConfigUtil.getDeploymentTargets(config));
+        deploymentTargets.addAll(kubernetesConfig.deploymentTarget.stream().map(Enum::name).map(String::toLowerCase)
+                .collect(Collectors.toList()));
 
         // this is a hack to get kubernetes.registry working because currently it's not supported as is in Dekorate
-        Optional<String> dockerRegistry = IMAGE_GENERATORS.stream()
-                .map(g -> config.getOptionalValue(g + ".registry", String.class))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .findFirst();
-
+        Optional<String> dockerRegistry = KubernetesConfigUtil.getDockerRegistry(config);
         dockerRegistry.ifPresent(v -> System.setProperty(DOCKER_REGISTRY_PROPERTY, v));
 
         // this is a hack to work around Dekorate using the default group for some of the properties
-        Optional<String> kubernetesGroup = ALLOWED_GENERATORS.stream()
-                .map(g -> config.getOptionalValue(g + ".group", String.class))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .findFirst();
+        Optional<String> kubernetesGroup = KubernetesConfigUtil.getGroup(config);
         kubernetesGroup.ifPresent(v -> System.setProperty(APP_GROUP_PROPERTY, v));
+
+        String name = KubernetesConfigUtil.getName(config).orElse(applicationInfo.getName());
 
         Path artifactPath = archiveRootBuildItem.getArchiveRoot().resolve(
                 String.format(OUTPUT_ARTIFACT_FORMAT, outputTargetBuildItem.getBaseName(), packageConfig.runnerSuffix));
@@ -143,12 +141,18 @@ class KubernetesProcessor {
             final Session session = Session.getSession();
             session.setWriter(sessionWriter);
 
-            session.feed(Maps.fromProperties(configAsMap));
+            session.feed(Maps.fromProperties(config));
+
+            //Apply configuration
+            applyGlobalConfig(session, kubernetesConfig);
+            applyConfig(session, KUBERNETES, name, kubernetesConfig);
+            applyConfig(session, OPENSHIFT, name, openshiftConfig);
+            applyConfig(session, KNATIVE, name, knativeConfig);
 
             //apply build item configurations to the dekorate session.
             applyBuildItems(session,
+                    name,
                     deploymentTargets,
-                    applicationInfo,
                     kubernetesEnvBuildItems,
                     kubernetesRoleBuildItems,
                     kubernetesPortBuildItems,
@@ -195,9 +199,116 @@ class KubernetesProcessor {
         featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.KUBERNETES));
     }
 
+    /**
+     * Apply global changes
+     *
+     * @param session The session to apply the changes
+     * @param config The {@link KubernetesConfig} instance
+     */
+    private void applyGlobalConfig(Session session, KubernetesConfig config) {
+        //Ports
+        config.ports.entrySet().forEach(e -> session.configurators().add(new AddPort(PortConverter.convert(e))));
+    }
+
+    /**
+     * Apply changes to the target resource group
+     *
+     * @param session The session to apply the changes
+     * @param target The deployment target (e.g. kubernetes, openshift, knative)
+     * @param name The name of the resource to accept the configuration
+     * @param config The {@link PlatformConfiguration} instance
+     */
+    private void applyConfig(Session session, String target, String name, PlatformConfiguration config) {
+        //Labels
+        config.getLabels().forEach((key, value) -> {
+            session.resources().decorate(target, new AddLabelDecorator(new Label(key, value)));
+        });
+
+        //Annotations
+        config.getAnnotations().forEach((key, value) -> {
+            session.resources().decorate(target, new AddAnnotationDecorator(new Annotation(key, value)));
+        });
+
+        //EnvVars
+        config.getEnvVars().entrySet().forEach(e -> {
+            session.resources().decorate(target, new AddEnvVarDecorator(EnvConverter.convert(e)));
+        });
+
+        config.getWorkingDir().ifPresent(w -> {
+            session.resources().decorate(target, new ApplyWorkingDirDecorator(name, DEPLOY));
+        });
+
+        config.getCommand().ifPresent(c -> {
+            session.resources().decorate(target,
+                    new ApplyCommandDecorator(name, c.toArray(new String[c.size()])));
+        });
+
+        config.getArguments().ifPresent(a -> {
+            session.resources().decorate(target, new ApplyArgsDecorator(name, a.toArray(new String[a.size()])));
+        });
+
+        config.getServiceAccount().ifPresent(s -> {
+            session.resources().decorate(target, new ApplyServiceAccountNamedDecorator(name, s));
+        });
+
+        //Image Pull
+        session.resources().decorate(new ApplyImagePullPolicyDecorator(config.getImagePullPolicy()));
+        config.getImagePullSecrets().ifPresent(l -> {
+            l.forEach(s -> session.resources().decorate(target, new AddImagePullSecretDecorator(name, s)));
+        });
+
+        //Probes
+        config.getLivenessProbe().ifPresent(p -> {
+            session.resources().decorate(target, new AddLivenessProbeDecorator(name, ProbeConverter.convert(p)));
+        });
+
+        config.getReadinessProbe().ifPresent(p -> {
+            session.resources().decorate(target,
+                    new AddReadinessProbeDecorator(name, ProbeConverter.convert(p)));
+        });
+
+        // Mounts and Volumes
+        config.getMounts().entrySet().forEach(e -> {
+            session.resources().decorate(target, new AddMountDecorator(MountConverter.convert(e)));
+        });
+
+        config.getSecretVolumes().entrySet().forEach(e -> {
+            session.resources().decorate(target, new AddSecretVolumeDecorator(SecretVolumeConverter.convert(e)));
+        });
+
+        config.getConfigMapVolumes().entrySet().forEach(e -> {
+            session.resources().decorate(target, new AddConfigMapVolumeDecorator(ConfigMapVolumeConverter.convert(e)));
+        });
+
+        config.getPvcVolumes().entrySet().forEach(e -> {
+            session.resources().decorate(target, new AddPvcVolumeDecorator(PvcVolumeConverter.convert(e)));
+        });
+
+        config.getAwsElasticBlockStoreVolumes().entrySet().forEach(e -> {
+            session.resources().decorate(target,
+                    new AddAwsElasticBlockStoreVolumeDecorator(AwsElasticBlockStoreVolumeConverter.convert(e)));
+        });
+
+        config.getAzureFileVolumes().entrySet().forEach(e -> {
+            session.resources().decorate(target, new AddAzureFileVolumeDecorator(AzureFileVolumeConverter.convert(e)));
+        });
+
+        config.getAzureDiskVolumes().entrySet().forEach(e -> {
+            session.resources().decorate(target, new AddAzureDiskVolumeDecorator(AzureDiskVolumeConverter.convert(e)));
+        });
+
+        config.getInitContainers().entrySet().forEach(e -> {
+            session.resources().decorate(target, new AddInitContainerDecorator(name, ContainerConverter.convert(e)));
+        });
+
+        config.getContainers().entrySet().forEach(e -> {
+            session.resources().decorate(target, new AddSidecarDecorator(name, ContainerConverter.convert(e)));
+        });
+    }
+
     private void applyBuildItems(Session session,
-            List<String> deploymentTargets,
-            ApplicationInfoBuildItem applicationInfo,
+            String name,
+            Set<String> deploymentTargets,
             List<KubernetesEnvVarBuildItem> kubernetesEnvBuildItems,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
@@ -208,7 +319,7 @@ class KubernetesProcessor {
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem) {
 
         containerImageBuildItem.ifPresent(c -> session.resources()
-                .decorate(new ApplyImageDecorator(applicationInfo.getName(), c.getImage())));
+                .decorate(new ApplyImageDecorator(name, c.getImage())));
 
         //Handle env variables
         kubernetesEnvBuildItems.forEach(e -> session.resources()
@@ -216,8 +327,8 @@ class KubernetesProcessor {
 
         //Handle Command and arguments
         commandBuildItem.ifPresent(c -> {
-            session.resources().decorate(new ApplyCommandDecorator(applicationInfo.getName(), new String[] { c.getCommand() }));
-            session.resources().decorate(new ApplyArgsDecorator(applicationInfo.getName(), c.getArgs()));
+            session.resources().decorate(new ApplyCommandDecorator(name, new String[] { c.getCommand() }));
+            session.resources().decorate(new ApplyArgsDecorator(name, c.getArgs()));
         });
 
         //Handle ports
@@ -241,19 +352,19 @@ class KubernetesProcessor {
                 session.resources().decorate(DeploymentTarget.OPENSHIFT.name().toLowerCase(),
                         new AddBuilderImageStreamResourceDecorator(s2iBuildConfig));
 
-                session.resources().decorate(new ApplyBuilderImageDecorator(applicationInfo.getName(), builderImage));
+                session.resources().decorate(new ApplyBuilderImageDecorator(name, builderImage));
             });
         }
 
         //Handle probes
         kubernetesHealthLivenessPathBuildItem
                 .ifPresent(l -> session.resources()
-                        .decorate(new AddLivenessProbeDecorator(applicationInfo.getName(), new ProbeBuilder()
+                        .decorate(new AddLivenessProbeDecorator(name, new ProbeBuilder()
                                 .withHttpActionPath(l.getPath())
                                 .build())));
         kubernetesHealthReadinessPathBuildItem
                 .ifPresent(r -> session.resources()
-                        .decorate(new AddReadinessProbeDecorator(applicationInfo.getName(), new ProbeBuilder()
+                        .decorate(new AddReadinessProbeDecorator(name, new ProbeBuilder()
                                 .withHttpActionPath(r.getPath())
                                 .build())));
     }
@@ -288,19 +399,6 @@ class KubernetesProcessor {
                 project.getBuildInfo().getClassOutputDir());
 
         return new Project(project.getRoot(), buildInfo, project.getScmInfo());
-    }
-
-    /**
-     * Returns the name of the generators that can handle the specified key.
-     *
-     * @param key The key.
-     * @return The generator name or null if the key format is unexpected.
-     */
-    private static String generatorName(String key) {
-        if (Strings.isNullOrEmpty(key) || !key.contains(".")) {
-            return null;
-        }
-        return key.substring(0, key.indexOf("."));
     }
 
 }

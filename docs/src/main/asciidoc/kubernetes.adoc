@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 This guide covers generating and deploying Kubernetes resources based on sane defaults and user supplied configuration.
-In detail, it supports generating resources for <<Kubernetes>>, <<Openshift>> and <<Knative>>. Also it supports automatically <<deploying, Deployment>> these resources to the target platform.
+In detail, it supports generating resources for <<Kubernetes>>, <<Openshift>> and <<Quarkus.Knative.>. Also it supports automatically <<deploying, Deployment>> these resources to the target platform.
 
 == Prerequisites
 
@@ -59,7 +59,7 @@ By using the following configuration for example:
 
 [source]
 ----
-kubernetes.group=yourDockerUsername # this is optional and defaults to your username if not set. 
+quarkus.kubernetes.group=yourDockerUsername # this is optional and defaults to your username if not set.
 quarkus.application.name=test-quarkus-app # this is also optional and defaults to the project name if not set
 ----
 
@@ -169,7 +169,7 @@ To change the number of replicas from 1 to  3:
 
 [source]
 ----
-kubernetes.replicas=3 
+quarkus.kubernetes.replicas=3
 ----
 
 === Defining a docker registry and repository
@@ -178,8 +178,8 @@ The docker registry and the user of the docker image can be specified, with the 
 
 [source]
 ----
-kubernetes.group=myUser 
-docker.registry=http://my.docker-registry.net
+quarkus.kubernetes.group=myUser
+quarkus.docker.registry=http://my.docker-registry.net
 ----
 
 Note: These options used to be `quarkus.kubernetes.docker.registry` and `quarkus.kubernetes.group` respectively.
@@ -189,8 +189,7 @@ To add a new label to all generated resources, say `foo=bar`:
 
 [source]
 ----
-kubernetes.labels[0].key=foo
-kubernetes.labels[0].value=bar
+quarkus.kubernetes.labels.foo=bar
 ----
 
 === Customizing the readiness probe:
@@ -198,8 +197,8 @@ To set the initial delay of the probe to 20 seconds and the period to 45:
 
 [source]
 ----
-kubernetes.readiness-probe.initial-delay-seconds=20
-kubernetes.readiness-probe.period-seconds=45
+quarkus.kubernetes.readiness-probe.initial-delay-seconds=20
+quarkus.kubernetes.readiness-probe.period-seconds=45
 ----
 
 Here you can find a complete reference to all the available configuration options:
@@ -210,38 +209,37 @@ The table below describe all the available configuration options.
 
 .Kubernetes
 |====
-| Property                                   | Type                          | Description | Default Value
-| kubernetes.group                           | String                        |             |
-| kubernetes.name                            | String                        |             |
-| kubernetes.version                         | String                        |             |
-| kubernetes.init-containers                 | Container[]                   |             |
-| kubernetes.labels                          | Label[]                       |             |
-| kubernetes.annotations                     | Annotation[]                  |             |
-| kubernetes.env-vars                        | Env[]                         |             |
-| kubernetes.working-dir                     | String                        |             |
-| kubernetes.command                         | String[]                      |             |
-| kubernetes.arguments                       | String[]                      |             |
-| kubernetes.replicas                        | int                           |             | 1
-| kubernetes.service-account                 | String                        |             |
-| kubernetes.host                            | String                        |             |
-| kubernetes.ports                           | Port[]                        |             |
-| kubernetes.service-type                    | ServiceType                   |             | ClusterIP
-| kubernetes.pvc-volumes                     | PersistentVolumeClaimVolume[] |             |
-| kubernetes.secret-volumes                  | SecretVolume[]                |             |
-| kubernetes.config-map-volumes              | ConfigMapVolume[]             |             |
-| kubernetes.git-repo-volumes                | GitRepoVolume[]               |             |
-| kubernetes.aws-elastic-block-store-volumes | AwsElasticBlockStoreVolume[]  |             |
-| kubernetes.azure-disk-volumes              | AzureDiskVolume[]             |             |
-| kubernetes.azure-file-volumes              | AzureFileVolume[]             |             |
-| kubernetes.mounts                          | Mount[]                       |             |
-| kubernetes.image-pull-policy               | ImagePullPolicy               |             | IfNotPresent
-| kubernetes.image-pull-secrets              | String[]                      |             |
-| kubernetes.liveness-probe                  | Probe                         |             | ( see Probe )
-| kubernetes.readiness-probe                 | Probe                         |             | ( see Probe )
-| kubernetes.sidecars                        | Container[]                   |             |
-| kubernetes.expose                          | boolean                       |             | false
-| kubernetes.headless                        | boolean                       |             | false
-| kubernetes.auto-deploy-enabled             | boolean                       |             | false
+| Property                                           | Type                                      | Description | Default Value
+| quarkus.kubernetes.group                           | String                                    |             |
+| quarkus.kubernetes.name                            | String                                    |             |
+| quarkus.kubernetes.version                         | String                                    |             |
+| quarkus.kubernetes.init-containers                 | Map<String, Container>                    |             |
+| quarkus.kubernetes.labels                          | Map                                       |             |
+| quarkus.kubernetes.annotations                     | Map                                       |             |
+| quarkus.kubernetes.env-vars                        | Map<String, Env>                          |             |
+| quarkus.kubernetes.working-dir                     | String                                    |             |
+| quarkus.kubernetes.command                         | String[]                                  |             |
+| quarkus.kubernetes.arguments                       | String[]                                  |             |
+| quarkus.kubernetes.replicas                        | int                                       |             | 1
+| quarkus.kubernetes.service-account                 | String                                    |             |
+| quarkus.kubernetes.host                            | String                                    |             |
+| quarkus.kubernetes.ports                           | Map<String, Port>                         |             |
+| quarkus.kubernetes.service-type                    | ServiceType                               |             | ClusterIP
+| quarkus.kubernetes.pvc-volumes                     | Map<String, PersistentVolumeClaimVolume>  |             |
+| quarkus.kubernetes.secret-volumes                  | Map<String, SecretVolume>                 |             |
+| quarkus.kubernetes.config-map-volumes              | Map<String, ConfigMapVolume>              |             |
+| quarkus.kubernetes.git-repo-volumes                | Map<String, GitRepoVolume>                |             |
+| quarkus.kubernetes.aws-elastic-block-store-volumes | Map<String, AwsElasticBlockStoreVolume>   |             |
+| quarkus.kubernetes.azure-disk-volumes              | Map<String, AzureDiskVolume>              |             |
+| quarkus.kubernetes.azure-file-volumes              | Map<String, AzureFileVolume>              |             |
+| quarkus.kubernetes.mounts                          | Map<String, Mount>                        |             |
+| quarkus.kubernetes.image-pull-policy               | ImagePullPolicy                           |             | IfNotPresent
+| quarkus.kubernetes.image-pull-secrets              | String[]                                  |             |
+| quarkus.kubernetes.liveness-probe                  | Probe                                     |             | ( see Probe )
+| quarkus.kubernetes.readiness-probe                 | Probe                                     |             | ( see Probe )
+| quarkus.kubernetes.sidecars                        | Map<String, Container>                    |             |
+| quarkus.kubernetes.expose                          | boolean                                   |             | false
+| quarkus.kubernetes.headless                        | boolean                                   |             | false
 |====
 
 Properties that use non standard types, can be referenced by expanding the property.
@@ -249,8 +247,8 @@ For example to define a `kubernetes-readiness-probe` which is of type `Probe`:
 
 [source]
 ----
-kubernetes.readiness-probe.initial-delay-seconds=20
-kubernetes.readiness-probe.period-seconds=45
+quarkus.kubernetes.readiness-probe.initial-delay-seconds=20
+quarkus.kubernetes.readiness-probe.period-seconds=45
 ----
 
 In this example `initial-delay` and `period-seconds` are fields of the type `Probe`.
@@ -259,27 +257,10 @@ Below you will find tables describing all available types.
 
 ===== Basic Types
 
-.Annotation
-|====
-| Property | Type   | Description | Default Value 
-| key      | String |             |               
-| value    | String |             |               
-|====
-
-
-.Label
-|====
-| Property | Type   | Description | Default Value 
-| key      | String |             |               
-| value    | String |             |               
-|====
-
-
 .Env
 |====
 | Property  | Type   | Description | Default Value
-| name      | String |             |              
-| value     | String |             |              
+| value     | String |             |
 | secret    | String |             |              
 | configmap | String |             |              
 | field     | String |             |              
@@ -299,7 +280,6 @@ Below you will find tables describing all available types.
 .Port
 |====
 | Property        | Type     | Description | Default Value
-| name            | String   |             |
 | container-port  | int      |             |
 | host-port       | int      |             | 0
 | path            | String   |             | /
@@ -310,8 +290,7 @@ Below you will find tables describing all available types.
 |====
 | Property          | Type                                    | Description | Default Value
 | image             | String                                  |             |
-| name              | String                                  |             |
-| env-vars          | Env[]                                   |             |                                          
+| env-vars          | Env[]                                   |             |
 | working-dir       | String                                  |             |                                          
 | command           | String[]                                |             |
 | arguments         | String[]                                |             |
@@ -328,7 +307,6 @@ Below you will find tables describing all available types.
 .Mount
 |====
 | Property  | Type    | Description | Default Value
-| name      | String  |             |
 | path      | String  |             |
 | sub-path  | String  |             |               
 | read-only | boolean |             | false         
@@ -337,8 +315,7 @@ Below you will find tables describing all available types.
 .ConfigMapVolume
 |====
 | Property        | Type    | Description | Default Value
-| volume-name     | String  |             |
-| config-map-name | String  |             |               
+| config-map-name | String  |             |
 | default-mode    | int     |             | 384
 | optional        | boolean |             | false
 |====
@@ -346,8 +323,7 @@ Below you will find tables describing all available types.
 .SecretVolume
 |====
 | Property     | Type    | Description | Default Value
-| volume-name  | String  |             |               
-| secret-name  | String  |             |               
+| secret-name  | String  |             |
 | default-mode | int     |             | 384           
 | optional     | boolean |             | false
 |====
@@ -356,8 +332,7 @@ Below you will find tables describing all available types.
 .AzureDiskVolume
 |====
 | Property     | Type    | Description | Default Value
-| volume-name  | String  |             |               
-| disk-name    | String  |             |               
+| disk-name    | String  |             |
 | disk-uri     | String  |             |               
 | kind         | String  |             | Managed
 | caching-mode | String  |             | ReadWrite     
@@ -368,8 +343,7 @@ Below you will find tables describing all available types.
 .AwsElasticBlockStoreVolume
 |====
 | Property    | Type    | Description | Default Value
-| volume-name | String  |             |               
-| volume-id   | String  |             |               
+| volume-id   | String  |             |
 | partition   | int     |             |
 | fs-type     | String  |             | ext4          
 | read-only   | boolean |             | false         
@@ -378,7 +352,6 @@ Below you will find tables describing all available types.
 .GitRepoVolume
 |====
 | Property    | Type   | Description | Default Value
-| volume-name | String |             |               
 | repository  | String |             |
 | directory   | String |             |
 | revision    | String |             |
@@ -387,28 +360,15 @@ Below you will find tables describing all available types.
 .PersistentVolumeClaimVolume
 |====
 | Property    | Type    | Description | Default Value
-| volume-name | String  |             |              
-| claim-name  | String  |             |              
+| claim-name  | String  |             |
 | read-only   | boolean |             | false        
 |====
 .AzureFileVolume
 |====
 | Property    | Type    | Description | Default Value
-| volume-name | String  |             |              
-| share-name  | String  |             |              
+| share-name  | String  |             |
 | secret-name | String  |             |              
 | read-only   | boolean |             | false        
-|====
-
-== Docker
-
-.Docker 
-|====
-| Property           | Type    | Description | Default Value
-| docker.docker-file        | String  |             | Dockerfile
-| docker.registry           | String  |             |
-| docker.auto-push-enabled  | boolean |             | false
-| docker.auto-build-enabled | boolean |             | false
 |====
 
 === OpenShift
@@ -417,82 +377,68 @@ To enable the generation of OpenShift resources, you need to include OpenShift i
 
 [source]
 ----
-kubernetes.deployment.target=openshift
+quarkus.kubernetes.deployment-target=openshift
 ----
 
 If you need to generate resources for both platforms (vanilla Kubernetes and OpenShift), then you need to include both (coma separated).
 
 [source]
 ----
-kubernetes.deployment.target=kubernetes, openshift
+quarkus.kubernetes.deployment-target=kubernetes, openshift
 ----
 
 The OpenShift resources can be customized in a similar approach with Kubernetes.
 
 .Openshift
 |====
-| Property                                  | Type                          | Description | Default Value
-| openshift.group                           | String                        |             |
-| openshift.name                            | String                        |             |
-| openshift.version                         | String                        |             |
-| openshift.init-containers                 | Container[]                   |             |
-| openshift.labels                          | Label[]                       |             |
-| openshift.annotations                     | Annotation[]                  |             |
-| openshift.env-vars                        | Env[]                         |             |
-| openshift.working-dir                     | String                        |             |
-| openshift.command                         | String[]                      |             |
-| openshift.arguments                       | String[]                      |             |
-| openshift.replicas                        | int                           |             | 1
-| openshift.service-account                 | String                        |             |
-| openshift.host                            | String                        |             |
-| openshift.ports                           | Port[]                        |             |
-| openshift.service-type                    | ServiceType                   |             | ClusterIP
-| openshift.pvc-volumes                     | PersistentVolumeClaimVolume[] |             |
-| openshift.secret-volumes                  | SecretVolume[]                |             |
-| openshift.config-map-volumes              | ConfigMapVolume[]             |             |
-| openshift.git-repo-volumes                | GitRepoVolume[]               |             |
-| openshift.aws-elastic-block-store-volumes | AwsElasticBlockStoreVolume[]  |             |
-| openshift.azure-disk-volumes              | AzureDiskVolume[]             |             |
-| openshift.azure-file-volumes              | AzureFileVolume[]             |             |
-| openshift.mounts                          | Mount[]                       |             |
-| openshift.image-pull-policy               | ImagePullPolicy               |             | IfNotPresent
-| openshift.image-pull-secrets              | String[]                      |             |
-| openshift.liveness-probe                  | Probe                         |             | ( see Probe )
-| openshift.readiness-probe                 | Probe                         |             | ( see Probe )
-| openshift.sidecars                        | Container[]                   |             |
-| openshift.expose                          | boolean                       |             | false
-| openshift.headless                        | boolean                       |             | false
-| openshift.auto-deploy-enabled             | boolean                       |             | false
-|====
-
-.S2i
-|====
-| Property                | Type    | Description | Default Value
-| s2i.enabled             | boolean |             | true
-| s2i.docker-file         | String  |             | Dockerfile
-| s2i.registry            | String  |             |
-| s2i.builder-image       | String  |             | fabric8/s2i-java:2.3
-| s2i.build-env-vars      | Env[]   |             |
-| s2i.auto-push-enabled   | boolean |             | false
-| s2i.auto-build-enabled  | boolean |             | false
-| s2i.auto-deploy-enabled | boolean |             | false               
+| Property                                          | Type                                      | Description | Default Value
+| quarkus.openshift.group                           | String                                    |             |
+| quarkus.openshift.name                            | String                                    |             |
+| quarkus.openshift.version                         | String                                    |             |
+| quarkus.openshift.init-containers                 | Map<String, Container>                    |             |
+| quarkus.openshift.labels                          | Map                                       |             |
+| quarkus.openshift.annotations                     | Map                                       |             |
+| quarkus.openshift.env-vars                        | Map<String, Env>                          |             |
+| quarkus.openshift.working-dir                     | String                                    |             |
+| quarkus.openshift.command                         | String[]                                  |             |
+| quarkus.openshift.arguments                       | String[]                                  |             |
+| quarkus.openshift.replicas                        | int                                       |             | 1
+| quarkus.openshift.service-account                 | String                                    |             |
+| quarkus.openshift.host                            | String                                    |             |
+| quarkus.openshift.ports                           | Map<String, Port>                         |             |
+| quarkus.openshift.service-type                    | ServiceType                               |             | ClusterIP
+| quarkus.openshift.pvc-volumes                     | Map<String, PersistentVolumeClaimVolume>  |             |
+| quarkus.openshift.secret-volumes                  | Map<String, SecretVolume>                 |             |
+| quarkus.openshift.config-map-volumes              | Map<String, ConfigMapVolume>              |             |
+| quarkus.openshift.git-repo-volumes                | Map<String, GitRepoVolume>                |             |
+| quarkus.openshift.aws-elastic-block-store-volumes | Map<String, AwsElasticBlockStoreVolume>   |             |
+| quarkus.openshift.azure-disk-volumes              | Map<String, AzureDiskVolume>              |             |
+| quarkus.openshift.azure-file-volumes              | Map<String, AzureFileVolume>              |             |
+| quarkus.openshift.mounts                          | Map<String, Mount>                        |             |
+| quarkus.openshift.image-pull-policy               | ImagePullPolicy                           |             | IfNotPresent
+| quarkus.openshift.image-pull-secrets              | String[]                                  |             |
+| quarkus.openshift.liveness-probe                  | Probe                                     |             | ( see Probe )
+| quarkus.openshift.readiness-probe                 | Probe                                     |             | ( see Probe )
+| quarkus.openshift.sidecars                        | Map<String, Container>                    |             |
+| quarkus.openshift.expose                          | boolean                                   |             | false
+| quarkus.openshift.headless                        | boolean                                   |             | false
 |====
 
 === Knative
     
-To enable the generation of Knative resources, you need to include Knative in the target platforms:
+To enable the generation of Quarkus.Knative.resources, you need to include Knative in the target platforms:
 
 [source]
 ----
-kubernetes.deployment.target=knative
+quarkus.kubernetes.deployment.target=knative
 ----
 
 Following the execution of `./mvnw package` you will notice amongst the other files that are created, two files named
-`knative.json` and `knative.yml` in the `target/kubernetes/` directory.
+`quarkus.knative.json` and `knative.yml` in the `target/kubernetes/` directory.
 
-If you look at either file you will see that it contains a Knative `Service`.
+If you look at either file you will see that it contains a Quarkus.Knative.`Service`.
 
-The full source of the `knative.json` file looks something like this:
+The full source of the `quarkus.knative.json` file looks something like this:
 
 [source,json]
 ----
@@ -500,7 +446,7 @@ The full source of the `knative.json` file looks something like this:
   "apiVersion" : "v1",
   "kind" : "List",
   "items" : [ {
-    "apiVersion" : "serving.knative.dev/v1alpha1",
+    "apiVersion" : "serving.quarkus.knative.dev/v1alpha1",
     "kind" : "Service",
     "metadata" : {
       "labels" : {
@@ -508,7 +454,7 @@ The full source of the `knative.json` file looks something like this:
         "version" : "0.1-SNAPSHOT",
         "group" : "yourDockerUsername"
       },
-      "name" : "knative"
+      "name" : "quarkus.knative.
     },
     "spec" : {
       "runLatest" : {
@@ -532,35 +478,78 @@ The generated service can be customized using the following properties:
 
 .Knative
 |====
-| Property                                | Type                          | Description | Default Value
-| knative.group                           | String                        |             |
-| knative.name                            | String                        |             |
-| knative.version                         | String                        |             |
-| knative.labels                          | Label[]                       |             |
-| knative.annotations                     | Annotation[]                  |             |
-| knative.env-vars                        | Env[]                         |             |
-| knative.working-dir                     | String                        |             |
-| knative.command                         | String[]                      |             |
-| knative.arguments                       | String[]                      |             |
-| knative.service-account                 | String                        |             |
-| knative.host                            | String                        |             |
-| knative.ports                           | Port[]                        |             |
-| knative.service-type                    | ServiceType                   |             | ClusterIP
-| knative.pvc-volumes                     | PersistentVolumeClaimVolume[] |             |
-| knative.secret-volumes                  | SecretVolume[]                |             |
-| knative.config-map-volumes              | ConfigMapVolume[]             |             |
-| knative.git-repo-volumes                | GitRepoVolume[]               |             |
-| knative.aws-elastic-block-store-volumes | AwsElasticBlockStoreVolume[]  |             |
-| knative.azure-disk-volumes              | AzureDiskVolume[]             |             |
-| knative.azure-file-volumes              | AzureFileVolume[]             |             |
-| knative.mounts                          | Mount[]                       |             |
-| knative.image-pull-policy               | ImagePullPolicy               |             | IfNotPresent
-| knative.image-pull-secrets              | String[]                      |             |
-| knative.liveness-probe                  | Probe                         |             | ( see Probe )
-| knative.readiness-probe                 | Probe                         |             | ( see Probe )
-| knative.sidecars                        | Container[]                   |             |
-| knative.expose                          | boolean                       |             | false
+| Property                                        | Type                                      | Description | Default Value
+| quarkus.knative.group                           | String                                    |             |
+| quarkus.knative.name                            | String                                    |             |
+| quarkus.knative.version                         | String                                    |             |
+| quarkus.knative.init-containers                 | Map<String, Container>                    |             |
+| quarkus.knative.labels                          | Map                                       |             |
+| quarkus.knative.annotations                     | Map                                       |             |
+| quarkus.knative.env-vars                        | Map<String, Env>                          |             |
+| quarkus.knative.working-dir                     | String                                    |             |
+| quarkus.knative.command                         | String[]                                  |             |
+| quarkus.knative.arguments                       | String[]                                  |             |
+| quarkus.knative.replicas                        | int                                       |             | 1
+| quarkus.knative.service-account                 | String                                    |             |
+| quarkus.knative.host                            | String                                    |             |
+| quarkus.knative.ports                           | Map<String, Port>                         |             |
+| quarkus.knative.service-type                    | ServiceType                               |             | ClusterIP
+| quarkus.knative.pvc-volumes                     | Map<String, PersistentVolumeClaimVolume>  |             |
+| quarkus.knative.secret-volumes                  | Map<String, SecretVolume>                 |             |
+| quarkus.knative.config-map-volumes              | Map<String, ConfigMapVolume>              |             |
+| quarkus.knative.git-repo-volumes                | Map<String, GitRepoVolume>                |             |
+| quarkus.knative.aws-elastic-block-store-volumes | Map<String, AwsElasticBlockStoreVolume>   |             |
+| quarkus.knative.azure-disk-volumes              | Map<String, AzureDiskVolume>              |             |
+| quarkus.knative.azure-file-volumes              | Map<String, AzureFileVolume>              |             |
+| quarkus.knative.mounts                          | Map<String, Mount>                        |             |
+| quarkus.knative.image-pull-policy               | ImagePullPolicy                           |             | IfNotPresent
+| quarkus.knative.image-pull-secrets              | String[]                                  |             |
+| quarkus.knative.liveness-probe                  | Probe                                     |             | ( see Probe )
+| quarkus.knative.readiness-probe                 | Probe                                     |             | ( see Probe )
+| quarkus.knative.sidecars                        | Map<String, Container>                    |             |
 |====
+
+
+=== Deprecated configuration
+
+The following categories of configuration properties have been deprecated.
+
+==== Properties without the quarkus prefix
+
+In earlier versions of the extension, the `quarkus.` was missing from those properties. These properties are now deprecated.
+
+==== Docker and S2i properties
+
+The properties for configuring `docker` and `s2i` are also deprecated in favor of the new container-image extensions.
+
+==== Config group arrays
+
+Properties refering to config group arrays (e.g. kubernetes.labels[0], kubernetes.env-vars[0] etc) have been converted to maps, to align with the rest of the quarkus ecosystem.
+
+The code below demonstrates the change in `labels` config:
+
+[source]
+----
+# Old labels config:
+kubernetes.labels[0].name=foo
+kubernetes.labels[0].name=bar
+
+# New labels
+quarkus.kubernetes.labels.foo=bar
+----
+
+The code below demonstrates the change in `env-vars` config:
+
+[source]
+----
+# Old env-vars config:
+kubernetes.env-vars[0].name=foo
+kubernetes.env-vars[0].configmap=my-configmap
+
+# New env-vars
+quarkus.kubernetes.env-vars.foo.configmap=myconfigmap
+----
+
 
 == Deployment
 
@@ -584,7 +573,7 @@ Each time deployment is requested, a container build will be implicitly triggere
 
 === Deploying
 
-When deployment is enabled, the kubernetes extension will selected the resources specified by `kubernetes.deployment.target` and deploy them.
+When deployment is enabled, the kubernetes extension will selected the resources specified by `quarkus.kubernetes.deployment.target` and deploy them.
 This assumes that a `.kube/config` is available in your user directory that points to a real kubernetes cluster.
 In other words the extension will use whatever cluster `kubectl` uses. The same applies to credentials.
 

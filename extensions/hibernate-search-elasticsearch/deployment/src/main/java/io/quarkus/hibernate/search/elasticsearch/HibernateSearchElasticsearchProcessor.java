@@ -208,6 +208,7 @@ class HibernateSearchElasticsearchProcessor {
 
         Type superClassType = classInfo.superClassType();
         while (superClassType != null && !superClassType.name().toString().equals("java.lang.Object")) {
+            reflectiveClassCollector.add(superClassType.name());
             if (superClassType instanceof ClassType) {
                 superClassType = index.getClassByName(superClassType.name()).superClassType();
             } else if (superClassType instanceof ParameterizedType) {

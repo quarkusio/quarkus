@@ -6,8 +6,11 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(name = "mongodb", phase = ConfigPhase.RUN_TIME)
+@ConfigRoot(name = MongodbConfig.CONFIG_NAME, phase = ConfigPhase.RUN_TIME)
 public class MongodbConfig {
+
+    public static final String CONFIG_NAME = "mongodb";
+
     /**
      * The default mongo client connection.
      */

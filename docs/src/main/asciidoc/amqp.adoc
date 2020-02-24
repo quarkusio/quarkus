@@ -289,7 +289,7 @@ Then, you just need to run the application using:
 
 [source, shell]
 ----
-./mvnw compile quarkus:dev
+./mvnw quarkus:dev
 ----
 
 Open `http://localhost:8080/prices.html` in your browser.
@@ -310,7 +310,7 @@ You can build the native executable with:
 Sometimes you need to have an imperative way of sending messages.
 
 For example, if you need to send a message to a stream from inside a REST endpoint when receiving a POST request.
-In this case, you cannot use `@Output` because your method has parameters.
+In this case, you cannot use `@Outgoing` because your method has parameters.
 
 For this, you can use an `Emitter`.
 

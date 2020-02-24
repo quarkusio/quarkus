@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProviderInitiator;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
@@ -19,7 +18,6 @@ import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
-import org.hibernate.engine.jndi.internal.JndiServiceInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.hql.internal.QueryTranslatorFactoryInitiator;
 import org.hibernate.integrator.spi.Integrator;
@@ -35,6 +33,8 @@ import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.customized.DisabledBytecodeProviderInitiator;
+import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProviderInitiator;
+import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFactory;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
@@ -163,7 +163,8 @@ public class PreconfiguredServiceRegistryBuilder {
         // Replaces JdbcEnvironmentInitiator.INSTANCE :
         serviceInitiators.add(new QuarkusJdbcEnvironmentInitiator(rs.getDialect()));
 
-        serviceInitiators.add(JndiServiceInitiator.INSTANCE);
+        // Custom one!
+        serviceInitiators.add(QuarkusJndiServiceInitiator.INSTANCE);
 
         // Custom one!
         serviceInitiators.add(DisabledJMXInitiator.INSTANCE);

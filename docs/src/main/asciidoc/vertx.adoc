@@ -513,13 +513,13 @@ It supports:
 To deploy verticles, use the regular Vert.x API:
 
 [source, java]
-====
+----
 @Inject Vertx vertx;
 
 // ...
 vertx.deployVerticle(MyVerticle.class.getName(), ar -> { });
 vertx.deployVerticle(new MyVerticle(), ar -> { });
-====
+----
 
 You can also pass deployment options to configure the verticle as well as set the number of instances.
 
@@ -527,7 +527,7 @@ Verticles are not _beans_ by default.
 However, you can implement them as _ApplicationScoped_ beans and get injection support:
 
 [source, java]
-====
+----
 package io.quarkus.vertx.verticles;
 
 import io.smallrye.mutiny.Uni;
@@ -548,14 +548,14 @@ public class MyBeanVerticle extends AbstractVerticle {
                 .completionHandler();
     }
 }
-====
+----
 
 You don't have to inject the `vertx` instance but instead leverage the instance stored in the protected field of `AbstractVerticle`.
 
 Then, deploy the verticle instance with:
 
 [source, java]
-====
+----
 package io.quarkus.vertx.verticles;
 
 import io.quarkus.runtime.StartupEvent;
@@ -571,26 +571,27 @@ public class VerticleDeployer {
          vertx.deployVerticle(verticle).await().indefinitely();
     }
 }
-====
+----
 
 If you want to deploy every exposed `AbstractVerticle`, you can use:
 
 [source, java]
-====
+----
 public void init(@Observes StartupEvent e, Vertx vertx, Instance<AbstractVerticle> verticles) {
     for (AbstractVerticle verticle : verticles) {
         vertx.deployVerticle(verticle).await().indefinitely();
     }
 }
-====
+----
 
 == Read only deployment environments
 
 In environments with read only file systems you may receive errors of the form:
 
-```
+[source]
+----
 java.lang.IllegalStateException: Failed to create cache dir
-```
+----
 
 Assuming `/tmp/` is writeable this can be fixed by setting the `vertx.cacheDirBase` property to point to a directory in `/tmp/` for instance in OpenShift by creating an environment variable `JAVA_OPTS` with the value `-Dvertx.cacheDirBase=/tmp/vertx`.
 

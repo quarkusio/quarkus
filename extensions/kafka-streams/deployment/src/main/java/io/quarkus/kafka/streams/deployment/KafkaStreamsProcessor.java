@@ -1,9 +1,10 @@
 package io.quarkus.kafka.streams.deployment;
 
+import static io.quarkus.kafka.streams.runtime.KafkaStreamsPropertiesUtil.buildKafkaStreamsProperties;
+
 import java.io.IOException;
 import java.util.Properties;
 
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serdes.ByteArraySerde;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.DefaultProductionExceptionHandler;
@@ -11,8 +12,6 @@ import org.apache.kafka.streams.errors.LogAndFailExceptionHandler;
 import org.apache.kafka.streams.processor.DefaultPartitionGrouper;
 import org.apache.kafka.streams.processor.FailOnInvalidTimestamp;
 import org.apache.kafka.streams.processor.internals.StreamsPartitionAssignor;
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Status;
 import org.rocksdb.util.Environment;
@@ -31,16 +30,12 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
-import io.quarkus.kafka.streams.runtime.HotReplacementInterceptor;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class KafkaStreamsProcessor {
-
-    private static final String STREAMS_OPTION_PREFIX = "kafka-streams.";
 
     @BuildStep
     void build(BuildProducer<FeatureBuildItem> feature,
@@ -148,43 +143,6 @@ class KafkaStreamsProcessor {
     BeanContainerListenerBuildItem processBuildTimeConfig(KafkaStreamsRecorder recorder, LaunchModeBuildItem launchMode) {
         Properties kafkaStreamsProperties = buildKafkaStreamsProperties(launchMode.getLaunchMode());
         return new BeanContainerListenerBuildItem(recorder.configure(kafkaStreamsProperties));
-    }
-
-    private Properties buildKafkaStreamsProperties(LaunchMode launchMode) {
-        Config config = ConfigProvider.getConfig();
-        Properties kafkaStreamsProperties = new Properties();
-        for (String property : config.getPropertyNames()) {
-            if (isKafkaStreamsProperty(property)) {
-                includeKafkaStreamsProperty(config, kafkaStreamsProperties, property);
-            }
-        }
-
-        if (launchMode == LaunchMode.DEVELOPMENT) {
-            addHotReplacementInterceptor(kafkaStreamsProperties);
-        }
-
-        return kafkaStreamsProperties;
-    }
-
-    private void addHotReplacementInterceptor(Properties kafkaStreamsProperties) {
-        String interceptorConfig = HotReplacementInterceptor.class.getName();
-        Object originalInterceptorConfig = kafkaStreamsProperties
-                .get(StreamsConfig.consumerPrefix(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG));
-
-        if (originalInterceptorConfig != null) {
-            interceptorConfig = interceptorConfig + "," + originalInterceptorConfig;
-        }
-
-        kafkaStreamsProperties.put(StreamsConfig.consumerPrefix(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG), interceptorConfig);
-    }
-
-    private boolean isKafkaStreamsProperty(String property) {
-        return property.startsWith(STREAMS_OPTION_PREFIX);
-    }
-
-    private void includeKafkaStreamsProperty(Config config, Properties kafkaStreamsProperties, String property) {
-        kafkaStreamsProperties.setProperty(property.substring(STREAMS_OPTION_PREFIX.length()),
-                config.getValue(property, String.class));
     }
 
     @BuildStep

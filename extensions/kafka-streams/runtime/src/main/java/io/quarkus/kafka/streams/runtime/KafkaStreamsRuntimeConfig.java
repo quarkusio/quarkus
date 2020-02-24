@@ -38,10 +38,46 @@ public class KafkaStreamsRuntimeConfig {
     @ConfigItem
     public List<String> topics;
 
+    /**
+     * The schema registry key.
+     *
+     * e.g. to diff between different registry impls / instances
+     * as they have this registry url under different property key.
+     *
+     * Red Hat / Apicurio - apicurio.registry.url
+     * Confluent - schema.registry.url
+     */
+    @ConfigItem(defaultValue = "schema.registry.url")
+    public String schemaRegistryKey;
+
+    /**
+     * The schema registry url.
+     */
+    @ConfigItem
+    public Optional<String> schemaRegistryUrl;
+
+    /**
+     * The SASL JAAS config.
+     */
+    public SaslConfig sasl;
+
+    /**
+     * Kafka SSL config
+     */
+    public SslConfig ssl;
+
     @Override
     public String toString() {
-        return "KafkaStreamsRuntimeConfig [applicationId=" + applicationId + ", bootstrapServers=" + bootstrapServers
-                + ", applicationServer=" + applicationServer + ", topics=" + topics + "]";
+        return "KafkaStreamsRuntimeConfig{" +
+                "applicationId='" + applicationId + '\'' +
+                ", bootstrapServers=" + bootstrapServers +
+                ", applicationServer=" + applicationServer +
+                ", topics=" + topics +
+                ", schemaRegistryKey='" + schemaRegistryKey + '\'' +
+                ", schemaRegistryUrl=" + schemaRegistryUrl +
+                ", sasl=" + sasl +
+                ", ssl=" + ssl +
+                '}';
     }
 
     public List<String> getTrimmedTopics() {

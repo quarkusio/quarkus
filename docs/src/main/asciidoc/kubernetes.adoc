@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 This guide covers generating and deploying Kubernetes resources based on sane defaults and user supplied configuration.
-In detail, it supports generating resources for <<Kubernetes>>, <<Openshift>> and <<Quarkus.Knative.>. Also it supports automatically <<deploying, Deployment>> these resources to the target platform.
+In detail, it supports generating resources for <<Kubernetes>>, <<OpenShift>> and <<Knative>>. Also it supports automatically <<Deployment>> these resources to the target platform.
 
 == Prerequisites
 

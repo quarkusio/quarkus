@@ -1,0 +1,37 @@
+---
+tags: [quarkus]
+---
+
+# To generate a project
+mvn io.quarkus:quarkus-maven-plugin:<version>.Final:create \
+    -DprojectGroupId=<groupId> \
+    -DprojectArtifactId=<artifactId> \
+    -DprojectVersion=<version> \
+    -DclassName="<resource>"
+
+# List extensions
+mvn quarkus:list-extensions
+
+# Add extension
+mvn quarkus:add-extension -Dextensions="<extension-name>, <extension-name>"
+
+# Development mode
+mvn compile quarkus:dev
+
+# Building a native executable
+mvn package -Pnative
+
+# Building a container friendly executable
+mvn package -Dnative -Dquarkus.native.container-build=true
+
+# UberJAR
+mvn package -Dquarkus.package.uber-jar=true
+
+# Create a container image
+# With any of the quarkus-container-image-jib, quarkus-container-image-docker, quarkus-container-image-s2i installed.
+mvn package -Dquarkus.container-image.build=true \
+            -Dquarkus.container-image.push=true \
+            -Dquarkus.container-image.registry=<registry_hostname>
+
+# Deploy to Kubernetes
+mvn package -Dquarkus.kubernetes.deploy=true

@@ -142,9 +142,9 @@ public CompletionStage<Response> sendASimpleEmailAsync() {
 ----
 
 [NOTE]
-----
+====
 With the `quarkus-resteasy-mutiny` extension, you can return an instance of `Uni` directly.
-----
+====
 
 With such a JAX-RS resource, you can check that everything is working with:
 

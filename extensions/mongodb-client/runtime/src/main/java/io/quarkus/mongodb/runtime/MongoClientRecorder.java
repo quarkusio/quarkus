@@ -3,6 +3,7 @@ package io.quarkus.mongodb.runtime;
 import java.util.List;
 
 import com.mongodb.client.MongoClient;
+import com.mongodb.event.ConnectionPoolListener;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -30,7 +31,8 @@ public class MongoClientRecorder {
         };
     }
 
-    public void configureRuntimeProperties(List<String> codecs, List<String> bsonDiscriminators, MongodbConfig config) {
+    public void configureRuntimeProperties(List<String> codecs, List<String> bsonDiscriminators, MongodbConfig config,
+            List<ConnectionPoolListener> connectionPoolListeners) {
         // TODO @dmlloyd
         // Same here, the map is entirely empty (obviously, I didn't expect the values
         // that were not properly injected but at least the config objects present in
@@ -40,6 +42,7 @@ public class MongoClientRecorder {
         producer.setCodecs(codecs);
         producer.setBsonDiscriminators(bsonDiscriminators);
         producer.setConfig(config);
+        producer.setConnectionPoolListeners(connectionPoolListeners);
     }
 
     public RuntimeValue<MongoClient> getClient(String name) {
@@ -51,5 +54,4 @@ public class MongoClientRecorder {
         AbstractMongoClientProducer producer = Arc.container().instance(AbstractMongoClientProducer.class).get();
         return new RuntimeValue<>(producer.getReactiveClient(name));
     }
-
 }

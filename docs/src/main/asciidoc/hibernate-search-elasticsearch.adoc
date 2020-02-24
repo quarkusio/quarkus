@@ -510,8 +510,11 @@ the mass indexer should then only be used when you change your indexing configur
 
 [NOTE]
 ====
-Hibernate Search supports a significant part of the Elasticsearch predicates (match, range, nested, phrase, spatial...).
-Feel free to explore the DSL by using autocompletion.
+The Hibernate Search DSL supports a significant subset of the Elasticsearch predicates (match, range, nested, phrase, spatial...).
+Feel free to explore the DSL using autocompletion.
+
+When that's not enough, you can always fall back to
+[defining a predicate using JSON directly](https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/#search-dsl-predicate-extensions-elasticsearch-from-json).
 ====
 
 == Configuring the application
@@ -551,7 +554,7 @@ Since the mapping is created at build time to reduce startup time, Hibernate Sea
 This is for testing purposes with the Elasticsearch Docker container.
 It should not be used in production.
 <9> This means that we wait for the entities to be searchable before considering a write complete.
-While on a production setup, the `write-sync` default might be a suitable value.
+On a production setup, the `write-sync` default will provide better performance.
 Using `sync` is especially important when testing as you need the entities to be searchable immediately.
 
 [TIP]

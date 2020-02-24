@@ -25,12 +25,13 @@ import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.agroal.deployment.DataSourceInitializedBuildItem;
-import io.quarkus.agroal.deployment.DataSourceSchemaReadyBuildItem;
+import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
+import io.quarkus.agroal.deployment.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.datasource.runtime.DataSourceUtil;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -73,7 +74,7 @@ class FlywayProcessor {
             BuildProducer<BeanContainerListenerBuildItem> containerListenerProducer,
             BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
             FlywayRecorder recorder,
-            DataSourceInitializedBuildItem dataSourceInitializedBuildItem,
+            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItem,
             RecorderContext recorderContext) throws IOException, URISyntaxException {
 
@@ -82,11 +83,13 @@ class FlywayProcessor {
         AdditionalBeanBuildItem unremovableProducer = AdditionalBeanBuildItem.unremovableOf(FlywayProducer.class);
         additionalBeanProducer.produce(unremovableProducer);
 
-        Collection<String> dataSourceNames = DataSourceInitializedBuildItem.dataSourceNamesOf(dataSourceInitializedBuildItem);
+        Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
+                .map(i -> i.getName())
+                .collect(Collectors.toList());
         new FlywayDatasourceBeanGenerator(dataSourceNames, generatedBeanBuildItem).createFlywayProducerBean();
 
         registerNativeImageResources(resourceProducer, generatedResourceProducer,
-                discoverApplicationMigrations(getMigrationLocations(dataSourceInitializedBuildItem)));
+                discoverApplicationMigrations(getMigrationLocations(dataSourceNames)));
 
         containerListenerProducer.produce(
                 new BeanContainerListenerBuildItem(recorder.setFlywayBuildConfig(flywayBuildConfig)));
@@ -104,15 +107,16 @@ class FlywayProcessor {
     ServiceStartBuildItem configureRuntimeProperties(FlywayRecorder recorder,
             FlywayRuntimeConfig flywayRuntimeConfig,
             BeanContainerBuildItem beanContainer,
-            DataSourceInitializedBuildItem dataSourceInitializedBuildItem,
-            BuildProducer<DataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
+            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
+            BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
         recorder.configureFlywayProperties(flywayRuntimeConfig, beanContainer.getValue());
         recorder.doStartActions(flywayRuntimeConfig, beanContainer.getValue());
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"
-        final Collection<String> dataSourceNames = DataSourceInitializedBuildItem
-                .dataSourceNamesOf(dataSourceInitializedBuildItem);
-        schemaReadyBuildItem.produce(new DataSourceSchemaReadyBuildItem(dataSourceNames));
+        Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
+                .map(i -> i.getName())
+                .collect(Collectors.toList());
+        schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(dataSourceNames));
         return new ServiceStartBuildItem("flyway");
     }
 
@@ -139,16 +143,15 @@ class FlywayProcessor {
      * <p>
      * A {@link LinkedHashSet} is used to avoid duplications.
      *
-     * @param dataSourceInitializedBuildItem {@link DataSourceInitializedBuildItem}
+     * @param dataSourceInitializedBuildItem {@link JdbcDataSourceInitializedBuildItem}
      * @return {@link Collection} of {@link String}s
      */
-    private Collection<String> getMigrationLocations(DataSourceInitializedBuildItem dataSourceInitializedBuildItem) {
-        Collection<String> dataSourceNames = DataSourceInitializedBuildItem.dataSourceNamesOf(dataSourceInitializedBuildItem);
+    private Collection<String> getMigrationLocations(Collection<String> dataSourceNames) {
         Collection<String> migrationLocations = dataSourceNames.stream()
                 .map(flywayBuildConfig::getConfigForDataSourceName)
                 .flatMap(config -> config.locations.stream())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        if (DataSourceInitializedBuildItem.isDefaultDataSourcePresent(dataSourceInitializedBuildItem)) {
+        if (DataSourceUtil.hasDefault(dataSourceNames)) {
             migrationLocations.addAll(flywayBuildConfig.defaultDataSource.locations);
         }
         return migrationLocations;

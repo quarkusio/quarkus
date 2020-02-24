@@ -8,42 +8,13 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public class DataSourceRuntimeConfig {
+public class DataSourceJdbcRuntimeConfig {
 
     /**
      * The datasource URL
      */
     @ConfigItem
-    public Optional<String> url;
-
-    /**
-     * The datasource username
-     */
-    @ConfigItem
-    public Optional<String> username;
-
-    /**
-     * The datasource password
-     */
-    @ConfigItem
-    public Optional<String> password;
-
-    /**
-     * The credentials provider name
-     */
-    @ConfigItem
-    public Optional<String> credentialsProvider;
-
-    /**
-     * The credentials provider type.
-     * <p>
-     * It is the {@code &#64;Named} value of the credentials provider bean. It is used to discriminate if multiple
-     * CredentialsProvider beans are available.
-     * <p>
-     * For Vault it is: vault-credentials-provider. Not necessary if there is only one credentials provider available.
-     */
-    @ConfigItem
-    public Optional<String> credentialsProviderType;
+    public Optional<String> url = Optional.empty();
 
     /**
      * The initial size of the pool. Usually you will want to set the initial size to match at least the
@@ -51,19 +22,19 @@ public class DataSourceRuntimeConfig {
      * of the connections on boot, while being able to sustain a minimal pool size after boot.
      */
     @ConfigItem
-    public Optional<Integer> initialSize;
+    public Optional<Integer> initialSize = Optional.empty();
 
     /**
      * The datasource pool minimum size
      */
     @ConfigItem(defaultValue = "0")
-    public int minSize;
+    public int minSize = 0;
 
     /**
      * The datasource pool maximum size
      */
     @ConfigItem(defaultValue = "20")
-    public int maxSize;
+    public int maxSize = 20;
 
     /**
      * The interval at which we validate idle connections in the background.
@@ -71,37 +42,37 @@ public class DataSourceRuntimeConfig {
      * Set to {@code 0} to disable background validation.
      */
     @ConfigItem(defaultValue = "2M")
-    public Optional<Duration> backgroundValidationInterval;
+    public Optional<Duration> backgroundValidationInterval = Optional.of(Duration.ofMinutes(2));
 
     /**
      * The timeout before cancelling the acquisition of a new connection
      */
     @ConfigItem(defaultValue = "5")
-    public Optional<Duration> acquisitionTimeout;
+    public Optional<Duration> acquisitionTimeout = Optional.of(Duration.ofSeconds(5));
 
     /**
      * The interval at which we check for connection leaks.
      */
     @ConfigItem
-    public Optional<Duration> leakDetectionInterval;
+    public Optional<Duration> leakDetectionInterval = Optional.empty();
 
     /**
      * The interval at which we try to remove idle connections.
      */
     @ConfigItem(defaultValue = "5M")
-    public Optional<Duration> idleRemovalInterval;
+    public Optional<Duration> idleRemovalInterval = Optional.of(Duration.ofMinutes(5));
 
     /**
      * The max lifetime of a connection.
      */
     @ConfigItem
-    public Optional<Duration> maxLifetime;
+    public Optional<Duration> maxLifetime = Optional.empty();
 
     /**
      * The transaction isolation level.
      */
     @ConfigItem
-    public Optional<AgroalConnectionFactoryConfiguration.TransactionIsolation> transactionIsolationLevel;
+    public Optional<AgroalConnectionFactoryConfiguration.TransactionIsolation> transactionIsolationLevel = Optional.empty();
 
     /**
      * When enabled Agroal will be able to produce a warning when a connection is returned
@@ -111,17 +82,17 @@ public class DataSourceRuntimeConfig {
      * no leaks are happening.
      */
     @ConfigItem(defaultValue = "true")
-    public boolean detectStatementLeaks;
+    public boolean detectStatementLeaks = true;
 
     /**
      * Query executed when first using a connection.
      */
     @ConfigItem
-    public Optional<String> newConnectionSql;
+    public Optional<String> newConnectionSql = Optional.empty();
 
     /**
      * Query executed to validate a connection.
      */
     @ConfigItem
-    public Optional<String> validationQuerySql;
+    public Optional<String> validationQuerySql = Optional.empty();
 }

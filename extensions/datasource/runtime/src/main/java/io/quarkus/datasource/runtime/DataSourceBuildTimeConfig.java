@@ -1,0 +1,15 @@
+package io.quarkus.datasource.runtime;
+
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
+
+@ConfigGroup
+public class DataSourceBuildTimeConfig {
+
+    /**
+     * The kind of datasource we will connect to (e.g. h2, postgresql...).
+     */
+    @ConfigItem
+    public String kind;
+
+}

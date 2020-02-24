@@ -15,7 +15,7 @@ public class XaRequiresXaDatasourceTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("base.properties")
-            .overrideConfigKey("quarkus.datasource.transactions", "XA")
+            .overrideConfigKey("quarkus.datasource.jdbc.transactions", "XA")
             .assertException(t -> {
                 assertEquals(DeploymentException.class, t.getClass());
             });

@@ -8,7 +8,7 @@ import java.util.Optional;
 
 import org.hibernate.search.backend.elasticsearch.index.IndexLifecycleStrategyName;
 import org.hibernate.search.backend.elasticsearch.index.IndexStatus;
-import org.hibernate.search.mapper.orm.automaticindexing.AutomaticIndexingSynchronizationStrategyName;
+import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategyNames;
 import org.hibernate.search.mapper.orm.search.loading.EntityLoadingCacheLookupStrategy;
 import org.hibernate.search.util.common.SearchException;
 import org.hibernate.search.util.common.impl.StringHelper;
@@ -210,13 +210,167 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         /**
          * The synchronization strategy to use when indexing automatically.
          * <p>
-         * Defines the status for which you wait before considering the operation completed by Hibernate Search.
+         * Defines how complete indexing should be before resuming the application thread
+         * after a database transaction is committed.
          * <p>
-         * Use {@code queued} or {@code committed} in production environments.
-         * {@code searchable} is useful in integration tests.
+         * Available values:
+         * <table>
+         * <thead>
+         * <tr>
+         * <th rowspan="2">
+         * <p>
+         * Strategy
+         * </p>
+         * </th>
+         * <th colspan="3">
+         * <p>
+         * Guarantees when the application thread resumes
+         * </p>
+         * </th>
+         * <th rowspan="2">
+         * <p>
+         * Throughput
+         * </p>
+         * </th>
+         * </tr>
+         * <tr>
+         * <th>
+         * <p>
+         * Changes applied
+         * </p>
+         * </th>
+         * <th>
+         * <p>
+         * Changes safe from crash/power loss
+         * </p>
+         * </th>
+         * <th>
+         * <p>
+         * Changes visible on search
+         * </p>
+         * </th>
+         * </tr>
+         * </thead>
+         * <tbody>
+         * <tr>
+         * <td>
+         * <p>
+         * <code>{@value AutomaticIndexingSynchronizationStrategyNames#ASYNC}</code>
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * No guarantee
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * No guarantee
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * No guarantee
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * Best
+         * </p>
+         * </td>
+         * </tr>
+         * <tr>
+         * <td>
+         * <p>
+         * <code>{@value AutomaticIndexingSynchronizationStrategyNames#WRITE_SYNC}</code> (<strong>default</strong>)
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * Guaranteed
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * Guaranteed
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * No guarantee
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * Medium
+         * </p>
+         * </td>
+         * </tr>
+         * <tr>
+         * <td>
+         * <p>
+         * <code>{@value AutomaticIndexingSynchronizationStrategyNames#READ_SYNC}</code>
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * Guaranteed
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * No guarantee
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * Guaranteed
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * Medium to worst
+         * </p>
+         * </td>
+         * </tr>
+         * <tr>
+         * <td>
+         * <p>
+         * <code>{@value AutomaticIndexingSynchronizationStrategyNames#SYNC}</code>
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * Guaranteed
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * Guaranteed
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * Guaranteed
+         * </p>
+         * </td>
+         * <td>
+         * <p>
+         * Worst
+         * </p>
+         * </td>
+         * </tr>
+         * </tbody>
+         * </table>
+         * <p>
+         * See
+         * <a href=
+         * "https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/#mapper-orm-indexing-automatic-synchronization">this
+         * section of the reference documentation</a>
+         * for more information.
          */
-        @ConfigItem(defaultValue = "committed")
-        AutomaticIndexingSynchronizationStrategyName strategy;
+        @ConfigItem(defaultValue = AutomaticIndexingSynchronizationStrategyNames.WRITE_SYNC)
+        String strategy;
     }
 
     @ConfigGroup

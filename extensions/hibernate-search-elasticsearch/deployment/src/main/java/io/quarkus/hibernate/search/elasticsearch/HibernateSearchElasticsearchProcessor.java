@@ -1,8 +1,8 @@
 package io.quarkus.hibernate.search.elasticsearch;
 
+import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.GSON_CLASSES;
 import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.INDEXED;
 import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.PROPERTY_MAPPING_META_ANNOTATION;
-import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.SCHEMA_MAPPING_CLASSES;
 import static io.quarkus.hibernate.search.elasticsearch.HibernateSearchClasses.TYPE_MAPPING_META_ANNOTATION;
 
 import java.util.ArrayList;
@@ -10,8 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -177,9 +175,15 @@ class HibernateSearchElasticsearchProcessor {
             }
         }
 
-        String[] reflectiveClasses = Stream
-                .of(reflectiveClassCollector.stream(), SCHEMA_MAPPING_CLASSES.stream())
-                .flatMap(Function.identity()).map(c -> c.toString()).toArray(String[]::new);
+        for (Class<?> gsonClass : GSON_CLASSES) {
+            Class<?> currentClass = gsonClass;
+            while (currentClass != Object.class) {
+                reflectiveClassCollector.add(DotName.createSimple(currentClass.getName()));
+                currentClass = currentClass.getSuperclass();
+            }
+        }
+
+        String[] reflectiveClasses = reflectiveClassCollector.stream().map(DotName::toString).toArray(String[]::new);
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, reflectiveClasses));
 
         for (Type reflectiveHierarchyType : reflectiveHierarchyCollector) {
@@ -204,6 +208,7 @@ class HibernateSearchElasticsearchProcessor {
 
         Type superClassType = classInfo.superClassType();
         while (superClassType != null && !superClassType.name().toString().equals("java.lang.Object")) {
+            reflectiveClassCollector.add(superClassType.name());
             if (superClassType instanceof ClassType) {
                 superClassType = index.getClassByName(superClassType.name()).superClassType();
             } else if (superClassType instanceof ParameterizedType) {

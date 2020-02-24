@@ -39,7 +39,7 @@ public class HibernateSearchTestResource {
         SearchSession searchSession = Search.session(entityManager);
 
         List<Person> person = searchSession.search(Person.class)
-                .predicate(f -> f.match().field("name").matching("john"))
+                .where(f -> f.match().field("name").matching("john"))
                 .sort(f -> f.field("name_sort"))
                 .fetchHits(20);
 
@@ -48,7 +48,7 @@ public class HibernateSearchTestResource {
         assertEquals("John Irving", person.get(1).getName());
 
         person = searchSession.search(Person.class)
-                .predicate(f -> f.nested().objectField("address").nest(
+                .where(f -> f.nested().objectField("address").nest(
                         f.match().field("address.city").matching("london")))
                 .sort(f -> f.field("name_sort"))
                 .fetchHits(20);
@@ -71,12 +71,12 @@ public class HibernateSearchTestResource {
     }
 
     @PUT
-    @Path("/flush")
+    @Path("/refresh")
     @Produces(MediaType.TEXT_PLAIN)
-    public String testFlush() {
+    public String testRefresh() {
         SearchSession searchSession = Search.session(entityManager);
 
-        searchSession.workspace().flush();
+        searchSession.workspace().refresh();
 
         return "OK";
     }
@@ -88,7 +88,7 @@ public class HibernateSearchTestResource {
         SearchSession searchSession = Search.session(entityManager);
 
         List<Person> person = searchSession.search(Person.class)
-                .predicate(f -> f.matchAll())
+                .where(f -> f.matchAll())
                 .fetchHits(20);
 
         assertEquals(0, person.size());

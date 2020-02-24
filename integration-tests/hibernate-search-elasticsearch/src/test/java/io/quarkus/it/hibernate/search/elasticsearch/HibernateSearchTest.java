@@ -23,7 +23,7 @@ public class HibernateSearchTest {
                 .statusCode(200)
                 .body(is("OK"));
 
-        RestAssured.when().put("/test/hibernate-search/flush").then()
+        RestAssured.when().put("/test/hibernate-search/refresh").then()
                 .statusCode(200)
                 .body(is("OK"));
 

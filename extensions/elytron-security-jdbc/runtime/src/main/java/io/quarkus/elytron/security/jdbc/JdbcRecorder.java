@@ -43,11 +43,10 @@ public class JdbcRecorder {
     }
 
     private void registerPrincipalQuery(PrincipalQueryConfig principalQuery, JdbcSecurityRealmBuilder builder) {
-        DataSource dataSource = (DataSource) principalQuery.datasource
-                .map(name -> Arc.container().instance(name).get())
-                .orElse(Arc.container().instance(DataSource.class).get());
 
-        QueryBuilder queryBuilder = builder.principalQuery(principalQuery.sql).from(dataSource);
+        QueryBuilder queryBuilder = builder.principalQuery(principalQuery.sql.orElseThrow(
+                () -> new IllegalStateException("quarkus.security.jdbc.principal-query.sql property must be set")))
+                .from(getDataSource(principalQuery));
 
         AttributeMapper[] mappers = principalQuery.attributeMappings.entrySet()
                 .stream()
@@ -61,5 +60,11 @@ public class JdbcRecorder {
         if (principalQuery.bcryptPasswordKeyMapperConfig.enabled) {
             queryBuilder.withMapper(principalQuery.bcryptPasswordKeyMapperConfig.toPasswordKeyMapper());
         }
+    }
+
+    private DataSource getDataSource(PrincipalQueryConfig principalQuery) {
+        return (DataSource) principalQuery.datasource
+                .map(name -> Arc.container().instance(name).get())
+                .orElse(Arc.container().instance(DataSource.class).get());
     }
 }

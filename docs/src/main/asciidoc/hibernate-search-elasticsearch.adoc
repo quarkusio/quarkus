@@ -483,7 +483,7 @@ In our existing `LibraryResource`, we just need to inject the following methods 
             @QueryParam Optional<Integer> size) {
         return Search.session(em) // <5>
                 .search(Author.class) // <6>
-                .predicate(f ->
+                .where(f ->
                     pattern == null || pattern.trim().isEmpty() ?
                             f.matchAll() : // <7>
                             f.simpleQueryString()
@@ -536,7 +536,7 @@ quarkus.hibernate-search.elasticsearch.version=7 <5>
 quarkus.hibernate-search.elasticsearch.analysis.configurer=org.acme.hibernate.search.elasticsearch.config.AnalysisConfigurer <6>
 quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.strategy=drop-and-create <7>
 quarkus.hibernate-search.elasticsearch.index-defaults.lifecycle.required-status=yellow <8>
-quarkus.hibernate-search.automatic-indexing.synchronization.strategy=searchable <9>
+quarkus.hibernate-search.automatic-indexing.synchronization.strategy=sync <9>
 ----
 <1> We won't use SSL so we disable it to have a more compact native executable.
 <2> Let's create a PostgreSQL datasource.
@@ -551,7 +551,8 @@ Since the mapping is created at build time to reduce startup time, Hibernate Sea
 This is for testing purposes with the Elasticsearch Docker container.
 It should not be used in production.
 <9> This means that we wait for the entities to be searchable before considering a write complete.
-While, on a production setup, the `committed` default might be a suitable value, using `searchable` is especially important when testing as you need the entities to be searchable immediately.
+While on a production setup, the `write-sync` default might be a suitable value.
+Using `sync` is especially important when testing as you need the entities to be searchable immediately.
 
 [TIP]
 For more information about the Hibernate Search extension configuration please refer to the <<configuration-reference, Configuration Reference>>.

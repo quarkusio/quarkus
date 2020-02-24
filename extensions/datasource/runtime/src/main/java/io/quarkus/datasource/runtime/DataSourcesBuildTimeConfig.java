@@ -1,7 +1,6 @@
 package io.quarkus.datasource.runtime;
 
 import java.util.Map;
-import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -16,7 +15,7 @@ public class DataSourcesBuildTimeConfig {
      * The default datasource.
      */
     @ConfigItem(name = ConfigItem.PARENT)
-    public Optional<DataSourceBuildTimeConfig> defaultDataSource;
+    public DataSourceBuildTimeConfig defaultDataSource;
 
     /**
      * Additional named datasources.

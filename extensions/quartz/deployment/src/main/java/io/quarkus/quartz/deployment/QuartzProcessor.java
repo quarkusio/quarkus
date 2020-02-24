@@ -92,20 +92,19 @@ public class QuartzProcessor {
         return new QuartzJDBCDriverDialectBuildItem(Optional.of(guessDriver(selectedJdbcDataSourceBuildItem)));
     }
 
-    private String guessDriver(Optional<JdbcDataSourceBuildItem> dataSourceDriver) {
-        if (!dataSourceDriver.isPresent()) {
+    private String guessDriver(Optional<JdbcDataSourceBuildItem> jdbcDataSource) {
+        if (!jdbcDataSource.isPresent()) {
             return StdJDBCDelegate.class.getName();
         }
 
-        String resolvedDriver = dataSourceDriver.get().getDriver();
-        if (resolvedDriver.contains("postgresql")) {
+        String dataSourceKind = jdbcDataSource.get().getKind();
+        if (dataSourceKind.equals("postgresql")) {
             return PostgreSQLDelegate.class.getName();
         }
-        if (resolvedDriver.contains("org.h2.Driver")) {
+        if (dataSourceKind.equals("h2")) {
             return HSQLDBDelegate.class.getName();
         }
-
-        if (resolvedDriver.contains("com.microsoft.sqlserver.jdbc.SQLServerDriver")) {
+        if (dataSourceKind.equals("mssql")) {
             return MSSQLDelegate.class.getName();
         }
 

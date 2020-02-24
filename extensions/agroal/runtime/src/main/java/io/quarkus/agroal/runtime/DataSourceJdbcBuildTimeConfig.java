@@ -18,7 +18,7 @@ public class DataSourceJdbcBuildTimeConfig {
      * The datasource driver class name
      */
     @ConfigItem
-    public String driver;
+    public Optional<String> driver = Optional.empty();
 
     /**
      * Whether we want to use regular JDBC transactions, XA, or disable all transactional capabilities.
@@ -33,6 +33,6 @@ public class DataSourceJdbcBuildTimeConfig {
      * smallrye-metrics extension is active.
      */
     @ConfigItem
-    public Optional<Boolean> enableMetrics;
+    public Optional<Boolean> enableMetrics = Optional.empty();
 
 }

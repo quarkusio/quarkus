@@ -12,13 +12,13 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
 
     private final String name;
 
-    private final String driver;
+    private final String kind;
 
     private final boolean isDefault;
 
-    public JdbcDataSourceBuildItem(String name, String driver, boolean isDefault) {
+    public JdbcDataSourceBuildItem(String name, String kind, boolean isDefault) {
         this.name = name;
-        this.driver = driver;
+        this.kind = kind;
         this.isDefault = isDefault;
     }
 
@@ -26,8 +26,8 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
         return name;
     }
 
-    public String getDriver() {
-        return driver;
+    public String getKind() {
+        return kind;
     }
 
     public boolean isDefault() {

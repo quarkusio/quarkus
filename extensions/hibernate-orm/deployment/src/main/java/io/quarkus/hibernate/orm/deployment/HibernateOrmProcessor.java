@@ -568,7 +568,7 @@ public final class HibernateOrmProcessor {
             //we have no persistence.xml so we will create a default one
             Optional<String> dialect = hibernateConfig.dialect;
             if (!dialect.isPresent()) {
-                dialect = guessDialect(driverBuildItem.map(JdbcDataSourceBuildItem::getDriver));
+                dialect = guessDialect(driverBuildItem.map(JdbcDataSourceBuildItem::getKind));
             }
             dialect.ifPresent(s -> {
                 // we found one
@@ -719,20 +719,19 @@ public final class HibernateOrmProcessor {
         // later, we can keep doing that but also avoid DCE
         // of all the dialects we want in so that people can override them
         String resolvedDriver = driver.orElse("NODRIVER");
-        if (resolvedDriver.contains("postgresql")) {
+        if (resolvedDriver.equals("postgresql")) {
             return Optional.of(QuarkusPostgreSQL95Dialect.class.getName());
         }
-        if (resolvedDriver.contains("org.h2.Driver")) {
+        if (resolvedDriver.equals("h2")) {
             return Optional.of(QuarkusH2Dialect.class.getName());
         }
-        if (resolvedDriver.contains("org.mariadb.jdbc.Driver")) {
+        if (resolvedDriver.equals("mariadb")) {
             return Optional.of(MariaDB103Dialect.class.getName());
         }
-
-        if (resolvedDriver.contains("com.mysql.cj.jdbc.Driver")) {
+        if (resolvedDriver.equals("mysql")) {
             return Optional.of(MySQL8Dialect.class.getName());
         }
-        if (resolvedDriver.contains("org.apache.derby.jdbc.ClientDriver")) {
+        if (resolvedDriver.equals("derby")) {
             return Optional.of((DerbyTenSevenDialect.class.getName()));
         }
 

@@ -104,7 +104,7 @@ class AgroalProcessor {
 
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, false,
-                            aggregatedDataSourceBuildTimeConfig.getJdbcConfig().driver));
+                            aggregatedDataSourceBuildTimeConfig.getJdbcConfig().driver.get()));
 
             aggregatedConfig.produce(aggregatedDataSourceBuildTimeConfig);
         }
@@ -143,7 +143,8 @@ class AgroalProcessor {
         String fullDataSourceName = aggregatedConfig.isDefault() ? "default datasource"
                 : "datasource named '" + aggregatedConfig.getName() + "'";
 
-        String driverName = jdbcBuildTimeConfig.driver;
+        // TODO: make the driver optional
+        String driverName = jdbcBuildTimeConfig.driver.get();
         Class<?> driver;
         try {
             driver = Class.forName(driverName, true, Thread.currentThread().getContextClassLoader());
@@ -192,7 +193,7 @@ class AgroalProcessor {
 
         for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedBuildTimeConfigBuildItem : aggregatedBuildTimeConfigBuildItems) {
             jdbcDataSource.produce(new JdbcDataSourceBuildItem(aggregatedBuildTimeConfigBuildItem.getName(),
-                    aggregatedBuildTimeConfigBuildItem.getJdbcConfig().driver,
+                    aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().kind.get(),
                     DataSourceUtil.isDefault(aggregatedBuildTimeConfigBuildItem.getName())));
         }
     }
@@ -207,14 +208,11 @@ class AgroalProcessor {
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig) {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
 
-        if (dataSourcesBuildTimeConfig.defaultDataSource.isPresent()) {
-            DataSourceJdbcBuildTimeConfig defaultDataSourceJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig.jdbc
-                    .isPresent() ? dataSourcesJdbcBuildTimeConfig.jdbc.get()
-                            : new DataSourceJdbcBuildTimeConfig();
-            if (defaultDataSourceJdbcBuildTimeConfig.enabled) {
+        if (dataSourcesBuildTimeConfig.defaultDataSource.kind.isPresent()) {
+            if (dataSourcesJdbcBuildTimeConfig.jdbc.enabled) {
                 dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
-                        dataSourcesBuildTimeConfig.defaultDataSource.get(),
-                        defaultDataSourceJdbcBuildTimeConfig));
+                        dataSourcesBuildTimeConfig.defaultDataSource,
+                        dataSourcesJdbcBuildTimeConfig.jdbc));
             }
         }
         for (Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.namedDataSources.entrySet()) {

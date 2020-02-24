@@ -23,8 +23,8 @@ public class AgroalDevModeTestCase {
                             .addClass(DevModeResource.class)
                             .add(new StringAsset("quarkus.datasource.kind=h2\n" +
                                     "quarkus.datasource.username=USERNAME-NAMED\n" +
-                                    "quarkus.datasource.jbdc.url=jdbc:h2:tcp://localhost/mem:testing\n" +
-                                    "quarkus.datasource.jbdc.driver=org.h2.Driver\n"), "application.properties");
+                                    "quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:testing\n" +
+                                    "quarkus.datasource.jdbc.driver=org.h2.Driver\n"), "application.properties");
                 }
             });
 

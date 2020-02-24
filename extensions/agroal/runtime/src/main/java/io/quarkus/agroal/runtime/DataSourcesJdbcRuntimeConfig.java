@@ -1,7 +1,6 @@
 package io.quarkus.agroal.runtime;
 
 import java.util.Map;
-import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -17,7 +16,7 @@ public class DataSourcesJdbcRuntimeConfig {
      * The default datasource.
      */
     @ConfigItem
-    public Optional<DataSourceJdbcRuntimeConfig> jdbc;
+    public DataSourceJdbcRuntimeConfig jdbc;
 
     /**
      * Additional named datasources.

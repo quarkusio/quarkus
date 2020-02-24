@@ -87,7 +87,7 @@ public abstract class AbstractDataSourceProducer {
         // we first make sure that all available JDBC drivers are loaded in the current TCCL
         loadDriversInTCCL();
 
-        String driverName = dataSourceJdbcBuildTimeConfig.driver;
+        String driverName = dataSourceJdbcBuildTimeConfig.driver.get();
         Class<?> driver;
         try {
             driver = Class.forName(driverName, true, Thread.currentThread().getContextClassLoader());
@@ -238,8 +238,7 @@ public abstract class AbstractDataSourceProducer {
 
     protected DataSourceBuildTimeConfig getDataSourceBuildTimeConfig(String dataSourceName) {
         if (DataSourceUtil.isDefault(dataSourceName)) {
-            return dataSourcesBuildTimeConfig.defaultDataSource.isPresent() ? dataSourcesBuildTimeConfig.defaultDataSource.get()
-                    : new DataSourceBuildTimeConfig();
+            return dataSourcesBuildTimeConfig.defaultDataSource;
         }
 
         DataSourceBuildTimeConfig namedConfig = dataSourcesBuildTimeConfig.namedDataSources.get(dataSourceName);
@@ -249,9 +248,7 @@ public abstract class AbstractDataSourceProducer {
 
     protected DataSourceJdbcBuildTimeConfig getDataSourceJdbcBuildTimeConfig(String dataSourceName) {
         if (DataSourceUtil.isDefault(dataSourceName)) {
-            return dataSourcesJdbcBuildTimeConfig.jdbc.isPresent()
-                    ? dataSourcesJdbcBuildTimeConfig.jdbc.get()
-                    : new DataSourceJdbcBuildTimeConfig();
+            return dataSourcesJdbcBuildTimeConfig.jdbc;
         }
 
         DataSourceJdbcOuterNamedBuildTimeConfig namedOuterConfig = dataSourcesJdbcBuildTimeConfig.namedDataSources
@@ -262,8 +259,7 @@ public abstract class AbstractDataSourceProducer {
 
     protected DataSourceRuntimeConfig getDataSourceRuntimeConfig(String dataSourceName) {
         if (DataSourceUtil.isDefault(dataSourceName)) {
-            return dataSourcesRuntimeConfig.defaultDataSource.isPresent() ? dataSourcesRuntimeConfig.defaultDataSource.get()
-                    : new DataSourceRuntimeConfig();
+            return dataSourcesRuntimeConfig.defaultDataSource;
         }
 
         DataSourceRuntimeConfig namedConfig = dataSourcesRuntimeConfig.namedDataSources.get(dataSourceName);
@@ -273,9 +269,7 @@ public abstract class AbstractDataSourceProducer {
 
     protected DataSourceJdbcRuntimeConfig getDataSourceJdbcRuntimeConfig(String dataSourceName) {
         if (DataSourceUtil.isDefault(dataSourceName)) {
-            return dataSourcesJdbcRuntimeConfig.jdbc.isPresent()
-                    ? dataSourcesJdbcRuntimeConfig.jdbc.get()
-                    : new DataSourceJdbcRuntimeConfig();
+            return dataSourcesJdbcRuntimeConfig.jdbc;
         }
 
         DataSourceJdbcOuterNamedRuntimeConfig namedOuterConfig = dataSourcesJdbcRuntimeConfig.namedDataSources

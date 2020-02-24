@@ -64,4 +64,7 @@ public interface PlatformConfiguration {
 
     Map<String, ContainerConfig> getContainers();
 
+    default String getConfigName() {
+        return getClass().getSimpleName().replaceAll("Config$", "").toLowerCase();
+    }
 }

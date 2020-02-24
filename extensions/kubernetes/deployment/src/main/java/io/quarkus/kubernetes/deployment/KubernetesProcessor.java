@@ -7,7 +7,6 @@ import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,6 +17,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.jboss.logging.Logger;
 
 import io.dekorate.Session;
 import io.dekorate.SessionWriter;
@@ -78,6 +79,8 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 class KubernetesProcessor {
 
+    private static final Logger LOG = Logger.getLogger(KubernetesDeployer.class);
+
     private static final String PROPERTY_PREFIX = "dekorate.";
     private static final String DOCKER_REGISTRY_PROPERTY = PROPERTY_PREFIX + "docker.registry";
     private static final String APP_GROUP_PROPERTY = "app.group";
@@ -100,14 +103,13 @@ class KubernetesProcessor {
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem,
             BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer,
-            BuildProducer<FeatureBuildItem> featureProducer)
-            throws UnsupportedEncodingException {
+            BuildProducer<FeatureBuildItem> featureProducer) {
 
         if (kubernetesPortBuildItems.isEmpty()) {
+            LOG.debug("The service is not an HTTP service so no Kubernetes manifests will be generated");
             return;
         }
 
-        // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase
         final Path root;
         try {
             root = Files.createTempDirectory("quarkus-kubernetes");
@@ -115,7 +117,7 @@ class KubernetesProcessor {
             throw new RuntimeException("Unable to setup environment for generating Kubernetes resources", e);
         }
 
-        Map<String, Object> config = KubernetesConfigUtil.toMap();
+        Map<String, Object> config = KubernetesConfigUtil.toMap(kubernetesConfig, openshiftConfig, knativeConfig);
         Set<String> deploymentTargets = new HashSet<>();
         deploymentTargets.addAll(KubernetesConfigUtil.getDeploymentTargets(config));
         deploymentTargets.addAll(kubernetesConfig.deploymentTarget.stream().map(Enum::name).map(String::toLowerCase)
@@ -129,12 +131,11 @@ class KubernetesProcessor {
         Optional<String> kubernetesGroup = KubernetesConfigUtil.getGroup(config);
         kubernetesGroup.ifPresent(v -> System.setProperty(APP_GROUP_PROPERTY, v));
 
-        String name = KubernetesConfigUtil.getName(config).orElse(applicationInfo.getName());
-
         Path artifactPath = archiveRootBuildItem.getArchiveRoot().resolve(
                 String.format(OUTPUT_ARTIFACT_FORMAT, outputTargetBuildItem.getBaseName(), packageConfig.runnerSuffix));
         final Map<String, String> generatedResourcesMap;
         try {
+            // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase
             final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
             Project project = createProject(applicationInfo, artifactPath);
             sessionWriter.setProject(project);
@@ -145,13 +146,16 @@ class KubernetesProcessor {
 
             //Apply configuration
             applyGlobalConfig(session, kubernetesConfig);
-            applyConfig(session, KUBERNETES, name, kubernetesConfig);
-            applyConfig(session, OPENSHIFT, name, openshiftConfig);
-            applyConfig(session, KNATIVE, name, knativeConfig);
+            applyConfig(session, KUBERNETES, kubernetesConfig.name.orElse(applicationInfo.getName()), kubernetesConfig);
+            applyConfig(session, OPENSHIFT, openshiftConfig.name.orElse(applicationInfo.getName()), openshiftConfig);
+            applyConfig(session, KNATIVE, knativeConfig.name.orElse(applicationInfo.getName()), knativeConfig);
 
             //apply build item configurations to the dekorate session.
             applyBuildItems(session,
-                    name,
+                    applicationInfo.getName(),
+                    kubernetesConfig,
+                    openshiftConfig,
+                    knativeConfig,
                     deploymentTargets,
                     kubernetesEnvBuildItems,
                     kubernetesRoleBuildItems,
@@ -308,6 +312,9 @@ class KubernetesProcessor {
 
     private void applyBuildItems(Session session,
             String name,
+            KubernetesConfig kubernetesConfig,
+            OpenshiftConfig openshiftConfig,
+            KnativeConfig knativeConfig,
             Set<String> deploymentTargets,
             List<KubernetesEnvVarBuildItem> kubernetesEnvBuildItems,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
@@ -318,8 +325,20 @@ class KubernetesProcessor {
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem) {
 
-        containerImageBuildItem.ifPresent(c -> session.resources()
-                .decorate(new ApplyImageDecorator(name, c.getImage())));
+        String kubernetesName = kubernetesConfig.name.orElse(name);
+        String openshiftName = openshiftConfig.name.orElse(name);
+        String knativeName = knativeConfig.name.orElse(name);
+
+        //TODO: This is needed until  https://github.com/dekorateio/dekorate/issues/456 is resolved.
+        containerImageBuildItem
+                .ifPresent(c -> session.resources().decorate(new ApplyImageDecorator(kubernetesName, c.getImage())));
+
+        containerImageBuildItem.ifPresent(
+                c -> session.resources().decorate(KUBERNETES, new ApplyImageDecorator(kubernetesName, c.getImage())));
+        containerImageBuildItem
+                .ifPresent(c -> session.resources().decorate(OPENSHIFT, new ApplyImageDecorator(openshiftName, c.getImage())));
+        containerImageBuildItem
+                .ifPresent(c -> session.resources().decorate(KNATIVE, new ApplyImageDecorator(knativeName, c.getImage())));
 
         //Handle env variables
         kubernetesEnvBuildItems.forEach(e -> session.resources()
@@ -327,8 +346,17 @@ class KubernetesProcessor {
 
         //Handle Command and arguments
         commandBuildItem.ifPresent(c -> {
-            session.resources().decorate(new ApplyCommandDecorator(name, new String[] { c.getCommand() }));
-            session.resources().decorate(new ApplyArgsDecorator(name, c.getArgs()));
+            session.resources()
+                    .decorate(new ApplyCommandDecorator(kubernetesName, new String[] { c.getCommand() }));
+            session.resources().decorate(KUBERNETES, new ApplyArgsDecorator(kubernetesName, c.getArgs()));
+
+            session.resources()
+                    .decorate(new ApplyCommandDecorator(openshiftName, new String[] { c.getCommand() }));
+            session.resources().decorate(OPENSHIFT, new ApplyArgsDecorator(openshiftName, c.getArgs()));
+
+            session.resources()
+                    .decorate(new ApplyCommandDecorator(knativeName, new String[] { c.getCommand() }));
+            session.resources().decorate(KNATIVE, new ApplyArgsDecorator(knativeName, c.getArgs()));
         });
 
         //Handle ports
@@ -349,10 +377,8 @@ class KubernetesProcessor {
         if (deploymentTargets.contains(DeploymentTarget.OPENSHIFT.name().toLowerCase())) {
             baseImageBuildItem.map(BaseImageInfoBuildItem::getImage).ifPresent(builderImage -> {
                 S2iBuildConfig s2iBuildConfig = new S2iBuildConfigBuilder().withBuilderImage(builderImage).build();
-                session.resources().decorate(DeploymentTarget.OPENSHIFT.name().toLowerCase(),
-                        new AddBuilderImageStreamResourceDecorator(s2iBuildConfig));
-
-                session.resources().decorate(new ApplyBuilderImageDecorator(name, builderImage));
+                session.resources().decorate(OPENSHIFT, new AddBuilderImageStreamResourceDecorator(s2iBuildConfig));
+                session.resources().decorate(OPENSHIFT, new ApplyBuilderImageDecorator(openshiftName, builderImage));
             });
         }
 

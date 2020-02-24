@@ -17,13 +17,13 @@ public class ContainerImageConfig {
     /**
      * The name of the container image. If not set defaults to the application name
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "${quarkus.application.name:unset}")
     public Optional<String> name;
 
     /**
      * The tag of the container image. If not set defaults to the application version
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "${quarkus.application.version:latest}")
     public Optional<String> tag;
 
     /**

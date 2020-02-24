@@ -16,20 +16,20 @@ public class OpenshiftConfig implements PlatformConfiguration {
     /**
      * The group of the application.
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "${quarkus.container-image.group}")
     Optional<String> group;
 
     /**
      * The name of the application. This value will be used for naming Kubernetes
      * resources like: - Deployment - Service and so on ...
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "${quarkus.container-image.name}")
     Optional<String> name;
 
     /**
      * The version of the application.
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "${quarkus.container-image.tag}")
     Optional<String> version;
 
     /**

@@ -210,10 +210,10 @@ The table below describe all the available configuration options.
 .Kubernetes
 |====
 | Property                                           | Type                                      | Description | Default Value
-| quarkus.kubernetes.group                           | String                                    |             |
-| quarkus.kubernetes.name                            | String                                    |             |
-| quarkus.kubernetes.version                         | String                                    |             |
-| quarkus.kubernetes.init-containers                 | Map<String, Container>                    |             |
+| quarkus.kubernetes.group                           | String                                    |             | ${quarkus.container-image.group} 
+| quarkus.kubernetes.name                            | String                                    |             | ${quarkus.container-image.name}
+| quarkus.kubernetes.version                         | String                                    |             | ${quarkus.container-image.tag}
+| quarkus.kubernetes.init-containers                 | Map<String, Container>                    |             | 
 | quarkus.kubernetes.labels                          | Map                                       |             |
 | quarkus.kubernetes.annotations                     | Map                                       |             |
 | quarkus.kubernetes.env-vars                        | Map<String, Env>                          |             |
@@ -392,9 +392,9 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 .Openshift
 |====
 | Property                                          | Type                                      | Description | Default Value
-| quarkus.openshift.group                           | String                                    |             |
-| quarkus.openshift.name                            | String                                    |             |
-| quarkus.openshift.version                         | String                                    |             |
+| quarkus.openshift.group                           | String                                    |             | ${quarkus.container-image.group} 
+| quarkus.openshift.name                            | String                                    |             | ${quarkus.container-image.name}
+| quarkus.openshift.version                         | String                                    |             | ${quarkus.container-image.tag}
 | quarkus.openshift.init-containers                 | Map<String, Container>                    |             |
 | quarkus.openshift.labels                          | Map                                       |             |
 | quarkus.openshift.annotations                     | Map                                       |             |
@@ -479,9 +479,9 @@ The generated service can be customized using the following properties:
 .Knative
 |====
 | Property                                        | Type                                      | Description | Default Value
-| quarkus.knative.group                           | String                                    |             |
-| quarkus.knative.name                            | String                                    |             |
-| quarkus.knative.version                         | String                                    |             |
+| quarkus.knative.group                           | String                                    |             | ${quarkus.container-image.group} 
+| quarkus.knative.name                            | String                                    |             | ${quarkus.container-image.name}
+| quarkus.knative.version                         | String                                    |             | ${quarkus.container-image.tag}
 | quarkus.knative.init-containers                 | Map<String, Container>                    |             |
 | quarkus.knative.labels                          | Map                                       |             |
 | quarkus.knative.annotations                     | Map                                       |             |
@@ -569,7 +569,7 @@ Building is possible, using any of the 3 available `container-image` extensions:
 - link:container-image#jib[Jib]
 - link:container-image#s2i[s2i]
 
-Each time deployment is requested, a container build will be implicitly triggered (no additonal properties are required).
+Each time deployment is requested, a container build will be implicitly triggered (no additional properties are required).
 
 === Deploying
 
@@ -577,4 +577,4 @@ When deployment is enabled, the kubernetes extension will selected the resources
 This assumes that a `.kube/config` is available in your user directory that points to a real kubernetes cluster.
 In other words the extension will use whatever cluster `kubectl` uses. The same applies to credentials.
 
-At the moment no additonal options are provided for further customization.
+At the moment no additional options are provided for further customization.

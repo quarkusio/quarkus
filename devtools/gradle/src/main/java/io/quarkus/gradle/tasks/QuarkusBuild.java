@@ -15,7 +15,6 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 
 public class QuarkusBuild extends QuarkusTask {
 
@@ -54,13 +53,9 @@ public class QuarkusBuild extends QuarkusTask {
         getLogger().lifecycle("building quarkus runner");
 
         final AppArtifact appArtifact = extension().getAppArtifact();
+        appArtifact.setPath(extension().appJarOrClasses());
         final AppModelResolver modelResolver = extension().getAppModelResolver();
-        try {
-            // this needs to be done otherwise the app artifact doesn't get a proper path
-            modelResolver.resolveModel(appArtifact);
-        } catch (AppModelResolverException e) {
-            throw new GradleException("Failed to resolve application model " + appArtifact + " dependencies", e);
-        }
+
         final Properties realProperties = getBuildSystemProperties(appArtifact);
 
         boolean clear = false;

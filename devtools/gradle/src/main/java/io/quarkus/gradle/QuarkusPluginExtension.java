@@ -1,15 +1,23 @@
 package io.quarkus.gradle;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Set;
 
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.RegularFile;
+import org.gradle.api.plugins.Convention;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.jvm.tasks.Jar;
 
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusPluginExtension {
@@ -28,6 +36,36 @@ public class QuarkusPluginExtension {
 
     public QuarkusPluginExtension(Project project) {
         this.project = project;
+    }
+
+    public Path appJarOrClasses() {
+        final Jar jarTask = (Jar) project.getTasks().findByName(JavaPlugin.JAR_TASK_NAME);
+        if (jarTask == null) {
+            throw new RuntimeException("Failed to locate task 'jar' in the project.");
+        }
+        final Provider<RegularFile> jarProvider = jarTask.getArchiveFile();
+        Path classesDir = null;
+        if (jarProvider.isPresent()) {
+            final File f = jarProvider.get().getAsFile();
+            if (f.exists()) {
+                classesDir = f.toPath();
+            }
+        }
+        if (classesDir == null) {
+            final Convention convention = project.getConvention();
+            JavaPluginConvention javaConvention = convention.findPlugin(JavaPluginConvention.class);
+            if (javaConvention != null) {
+                final SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+                final String classesPath = QuarkusGradleUtils.getClassesDir(mainSourceSet, jarTask);
+                if (classesPath != null) {
+                    classesDir = Paths.get(classesPath);
+                }
+            }
+        }
+        if (classesDir == null) {
+            throw new RuntimeException("Failed to locate project's classes directory");
+        }
+        return classesDir;
     }
 
     public File outputDirectory() {

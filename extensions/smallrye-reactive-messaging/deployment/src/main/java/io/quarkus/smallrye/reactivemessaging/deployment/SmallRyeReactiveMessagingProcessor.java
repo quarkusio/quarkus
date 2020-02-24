@@ -64,7 +64,7 @@ import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRe
 import io.smallrye.reactive.messaging.Invoker;
 
 /**
- * @author Martin Kouba
+ * 
  */
 public class SmallRyeReactiveMessagingProcessor {
 
@@ -96,14 +96,17 @@ public class SmallRyeReactiveMessagingProcessor {
             @Override
             public void transform(AnnotationsTransformer.TransformationContext ctx) {
                 if (ctx.isClass()) {
-                    if (BuiltinScope.isDeclaredOn(ctx.getTarget().asClass())) {
-                        return;
-                    }
                     ClassInfo clazz = ctx.getTarget().asClass();
                     Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
-                    if (annotations.containsKey(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.INCOMING)
-                            || annotations
-                                    .containsKey(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OUTGOING)) {
+                    if (BuiltinScope.isDeclaredOn(clazz)
+                            || annotations.containsKey(ReactiveMessagingDotNames.JAXRS_PATH)
+                            || annotations.containsKey(ReactiveMessagingDotNames.REST_CONTROLLER)
+                            || annotations.containsKey(ReactiveMessagingDotNames.JAXRS_PROVIDER)) {
+                        // Skip - has a built-in scope annotation or is a JAX-RS endpoint/provider
+                        return;
+                    }
+                    if (annotations.containsKey(ReactiveMessagingDotNames.INCOMING)
+                            || annotations.containsKey(ReactiveMessagingDotNames.OUTGOING)) {
                         LOGGER.debugf(
                                 "Found reactive messaging annotations on a class %s with no scope defined - adding @Dependent",
                                 ctx.getTarget());
@@ -128,9 +131,9 @@ public class SmallRyeReactiveMessagingProcessor {
             // TODO: add support for inherited business methods
             for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
                 AnnotationInstance incoming = annotationStore.getAnnotation(method,
-                        io.quarkus.smallrye.reactivemessaging.deployment.DotNames.INCOMING);
+                        ReactiveMessagingDotNames.INCOMING);
                 AnnotationInstance outgoing = annotationStore.getAnnotation(method,
-                        io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OUTGOING);
+                        ReactiveMessagingDotNames.OUTGOING);
                 if (incoming != null || outgoing != null) {
                     if (incoming != null && incoming.value().asString().isEmpty()) {
                         validationPhase.getContext().addDeploymentProblem(
@@ -151,9 +154,9 @@ public class SmallRyeReactiveMessagingProcessor {
                 .get(BuildExtension.Key.INJECTION_POINTS)) {
             // New emitter from the spec.
             if (injectionPoint.getRequiredType().name().equals(
-                    io.quarkus.smallrye.reactivemessaging.deployment.DotNames.EMITTER)) {
+                    ReactiveMessagingDotNames.EMITTER)) {
                 AnnotationInstance instance = injectionPoint
-                        .getRequiredQualifier(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.CHANNEL);
+                        .getRequiredQualifier(ReactiveMessagingDotNames.CHANNEL);
                 if (instance == null) {
                     validationPhase.getContext().addDeploymentProblem(
                             new DeploymentException(
@@ -163,7 +166,7 @@ public class SmallRyeReactiveMessagingProcessor {
                     String channelName = instance.value().asString();
                     Optional<AnnotationInstance> overflow = annotationStore.getAnnotations(injectionPoint.getTarget())
                             .stream()
-                            .filter(ai -> io.quarkus.smallrye.reactivemessaging.deployment.DotNames.ON_OVERFLOW
+                            .filter(ai -> ReactiveMessagingDotNames.ON_OVERFLOW
                                     .equals(ai.name()))
                             .filter(ai -> {
                                 if (ai.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER && injectionPoint
@@ -179,9 +182,9 @@ public class SmallRyeReactiveMessagingProcessor {
 
             // Deprecated Emitter from SmallRye (emitter, channel and on overflow have been added to the spec)
             if (injectionPoint.getRequiredType().name()
-                    .equals(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.LEGACY_EMITTER)) {
+                    .equals(ReactiveMessagingDotNames.LEGACY_EMITTER)) {
                 AnnotationInstance instance = injectionPoint
-                        .getRequiredQualifier(io.quarkus.smallrye.reactivemessaging.deployment.DotNames.LEGACY_CHANNEL);
+                        .getRequiredQualifier(ReactiveMessagingDotNames.LEGACY_CHANNEL);
                 if (instance == null) {
                     validationPhase.getContext().addDeploymentProblem(
                             new DeploymentException(
@@ -191,7 +194,7 @@ public class SmallRyeReactiveMessagingProcessor {
                     String channelName = instance.value().asString();
                     Optional<AnnotationInstance> overflow = annotationStore.getAnnotations(injectionPoint.getTarget())
                             .stream()
-                            .filter(ai -> io.quarkus.smallrye.reactivemessaging.deployment.DotNames.LEGACY_ON_OVERFLOW
+                            .filter(ai -> ReactiveMessagingDotNames.LEGACY_ON_OVERFLOW
                                     .equals(ai.name()))
                             .filter(ai -> {
                                 if (ai.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER && injectionPoint
@@ -229,10 +232,10 @@ public class SmallRyeReactiveMessagingProcessor {
         return Arrays.asList(
                 new UnremovableBeanBuildItem(
                         new BeanClassAnnotationExclusion(
-                                io.quarkus.smallrye.reactivemessaging.deployment.DotNames.INCOMING)),
+                                ReactiveMessagingDotNames.INCOMING)),
                 new UnremovableBeanBuildItem(
                         new BeanClassAnnotationExclusion(
-                                io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OUTGOING)));
+                                ReactiveMessagingDotNames.OUTGOING)));
     }
 
     @BuildStep
@@ -251,7 +254,7 @@ public class SmallRyeReactiveMessagingProcessor {
                 @Override
                 public void transform(AnnotationsTransformer.TransformationContext ctx) {
                     if (ctx.isClass() && ctx.getTarget().asClass().name().equals(
-                            io.quarkus.smallrye.reactivemessaging.deployment.DotNames.METRIC_DECORATOR)) {
+                            ReactiveMessagingDotNames.METRIC_DECORATOR)) {
                         ctx.transform().add(Vetoed.class).done();
                     }
                 }
@@ -386,7 +389,7 @@ public class SmallRyeReactiveMessagingProcessor {
                         MethodDescriptor.ofMethod(method.declaringClass().name().toString(), method.name(),
                                 method.returnType().name().toString(), argTypes),
                         invoke.readInstanceField(beanInstanceField, invoke.getThis()), args);
-                if (io.quarkus.smallrye.reactivemessaging.deployment.DotNames.VOID.equals(method.returnType().name())) {
+                if (ReactiveMessagingDotNames.VOID.equals(method.returnType().name())) {
                     invoke.returnValue(invoke.loadNull());
                 } else {
                     invoke.returnValue(result);

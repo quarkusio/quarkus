@@ -12,7 +12,7 @@ import io.smallrye.reactive.messaging.annotations.Merge;
 import io.smallrye.reactive.messaging.annotations.OnOverflow;
 import io.smallrye.reactive.messaging.metrics.MetricDecorator;
 
-public final class DotNames {
+public final class ReactiveMessagingDotNames {
 
     static final DotName VOID = DotName.createSimple(void.class.getName());
     static final DotName INCOMING = DotName.createSimple(Incoming.class.getName());
@@ -30,7 +30,13 @@ public final class DotNames {
 
     static final DotName METRIC_DECORATOR = DotName.createSimple(MetricDecorator.class.getName());
 
-    private DotNames() {
+    // Used to detect REST endpoints and JAX-RS provider
+    public static final DotName JAXRS_PATH = DotName.createSimple("javax.ws.rs.Path");
+    public static final DotName REST_CONTROLLER = DotName
+            .createSimple("org.springframework.web.bind.annotation.RestController");
+    public static final DotName JAXRS_PROVIDER = DotName.createSimple("javax.ws.rs.ext.Provider");
+
+    private ReactiveMessagingDotNames() {
     }
 
 }

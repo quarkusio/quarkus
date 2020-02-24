@@ -59,6 +59,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Overridable;
 import io.quarkus.deployment.annotations.Produce;
+import io.quarkus.deployment.annotations.ProduceWeak;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.annotations.Weak;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
@@ -878,6 +879,14 @@ public final class ExtensionLoader {
                 stepConfig = stepConfig.andThen(bsb -> {
                     for (Produce produce : produces) {
                         bsb.beforeConsume(produce.value());
+                    }
+                });
+            }
+            final ProduceWeak[] produceWeaks = method.getAnnotationsByType(ProduceWeak.class);
+            if (produceWeaks.length > 0) {
+                stepConfig = stepConfig.andThen(bsb -> {
+                    for (ProduceWeak produceWeak : produceWeaks) {
+                        bsb.beforeConsume(produceWeak.value(), ProduceFlag.WEAK);
                     }
                 });
             }

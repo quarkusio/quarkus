@@ -51,11 +51,11 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=mongodb-quickstart \
     -DclassName="org.acme.rest.json.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-jsonb,mongodb-client"
+    -Dextensions="resteasy-jsonb,mongodb-client,resteasy-mutiny,context-propagation"
 cd mongodb-quickstart
 ----
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS, JSON-B and MongoDB Client extensions.
+This command generates a Maven structure importing the RESTEasy/JAX-RS, JSON-B, Mutiny, Context Propagation and MongoDB Client extensions.
 After this, the quarkus-mongodb-client extension has been added to your `pom.xml`.
 
 
@@ -294,12 +294,12 @@ package org.acme.rest.json;
 
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
+import io.smallrye.mutiny.Uni;
 import org.bson.Document;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 @ApplicationScoped
 public class ReactiveFruitService {
@@ -307,26 +307,24 @@ public class ReactiveFruitService {
     @Inject
     ReactiveMongoClient mongoClient;
 
-    public CompletionStage<List<Fruit>> list(){
+    public Uni<List<Fruit>> list() {
         return getCollection().find()
-            .map(doc -> {
-                Fruit fruit = new Fruit();
-                fruit.setName(doc.getString("name"));
-                fruit.setDescription(doc.getString("description"));
-                return fruit;
-            })
-            .collectItems().asList()
-            .subscribeAsCompletionStage();
+                .map(doc -> {
+                    Fruit fruit = new Fruit();
+                    fruit.setName(doc.getString("name"));
+                    fruit.setDescription(doc.getString("description"));
+                    return fruit;
+                }).collectItems().asList();
     }
 
-    public CompletionStage<Void> add(Fruit fruit){
+    public Uni<Void> add(Fruit fruit) {
         Document document = new Document()
                 .append("name", fruit.getName())
                 .append("description", fruit.getDescription());
-        return getCollection().insertOne(document).subscribeAsCompletionStage();
+        return getCollection().insertOne(document);
     }
 
-    private ReactiveMongoCollection<Document> getCollection(){
+    private ReactiveMongoCollection<Document> getCollection() {
         return mongoClient.getDatabase("fruit").getCollection("fruit");
     }
 }
@@ -337,6 +335,9 @@ public class ReactiveFruitService {
 ----
 package org.acme.rest.json;
 
+import io.smallrye.mutiny.Uni;
+
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.ws.rs.Path;
@@ -345,26 +346,24 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.core.MediaType;
-import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 @Path("/reactive_fruits")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ReactiveFruitResource {
 
-    @Inject ReactiveFruitService fruitService;
-
+    @Inject
+    ReactiveFruitService fruitService;
 
     @GET
-    public CompletionStage<List<Fruit>> list() {
+    public Uni<List<Fruit>> list() {
         return fruitService.list();
     }
 
     @POST
-    public CompletionStage<List<Fruit>>  add(Fruit fruit) {
-        fruitService.add(fruit);
-        return list();
+    public Uni<List<Fruit>> add(Fruit fruit) {
+        return fruitService.add(fruit)
+                .onItem().ignore().andSwitchTo(this::list);
     }
 }
 ----

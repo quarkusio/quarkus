@@ -39,6 +39,13 @@ final class Execution {
     private volatile Thread runningThread;
     private volatile boolean done;
 
+    static {
+        try {
+            Class.forName("org.jboss.threads.EnhancedQueueExecutor$1", false, Execution.class.getClassLoader());
+        } catch (ClassNotFoundException ignored) {
+        }
+    }
+
     Execution(final BuildExecutionBuilder builder, final Set<ItemId> finalIds) {
         chain = builder.getChain();
         this.singles = new ConcurrentHashMap<>(builder.getInitialSingle());

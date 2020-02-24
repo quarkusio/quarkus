@@ -31,6 +31,13 @@ import sun.misc.Unsafe;
  */
 public final class CleanableExecutor implements ExecutorService {
 
+    static {
+        try {
+            Class.forName("org.jboss.threads.EnhancedQueueExecutor$1", false, CleanableExecutor.class.getClassLoader());
+        } catch (ClassNotFoundException ignored) {
+        }
+    }
+
     private final EnhancedQueueExecutor executor;
 
     private static final AtomicInteger generation = new AtomicInteger(1);

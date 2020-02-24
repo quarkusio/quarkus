@@ -130,8 +130,16 @@ public class S2iProcessor {
 
         Path artifactPath = out.getOutputDirectory()
                 .resolve(String.format(JAR_ARTIFACT_FORMAT, out.getBaseName(), packageConfig.runnerSuffix));
+        Path applicationJarPath = out.getOutputDirectory()
+                .resolve(String.format(JAR_ARTIFACT_FORMAT, "application", packageConfig.runnerSuffix));
 
-        createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), artifactPath,
+        try {
+            Files.copy(artifactPath, applicationJarPath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception e) {
+            throw new RuntimeException("Error preparing the s2i build archive.", e);
+        }
+
+        createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), applicationJarPath,
                 out.getOutputDirectory().resolve("lib"));
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
         containerImageResultProducer.produce(
@@ -168,8 +176,16 @@ public class S2iProcessor {
 
         Path artifactPath = out.getOutputDirectory()
                 .resolve(String.format(NATIVE_ARTIFACT_FORMAT, out.getBaseName(), packageConfig.runnerSuffix));
+        Path applicationImagePath = out.getOutputDirectory()
+                .resolve(String.format(NATIVE_ARTIFACT_FORMAT, "application", packageConfig.runnerSuffix));
 
-        createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), artifactPath);
+        try {
+            Files.copy(artifactPath, applicationImagePath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception e) {
+            throw new RuntimeException("Error preparing the s2i build archive.", e);
+        }
+
+        createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), applicationImagePath);
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
         containerImageResultProducer.produce(
                 new ContainerImageResultBuildItem(null, ImageUtil.getRepository(image), ImageUtil.getTag(image)));

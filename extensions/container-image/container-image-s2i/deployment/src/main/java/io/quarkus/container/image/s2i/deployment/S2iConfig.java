@@ -41,7 +41,7 @@ public class S2iConfig {
      * The path to where the jar is added during the assemble phase.
      * This is dependant on the s2i image and should be supplied if a non default image is used.
      */
-    @ConfigItem(defaultValue = "/deployments/${quarkus.application.name}-${quarkus.application.version:1.0.0-for-tests}-runner.jar")
+    @ConfigItem(defaultValue = "/deployments/application${quarkus.package.runner-suffix}.jar")
     public String jarPath;
 
     /**

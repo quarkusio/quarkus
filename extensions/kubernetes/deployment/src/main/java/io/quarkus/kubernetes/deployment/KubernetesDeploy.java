@@ -29,8 +29,7 @@ public class KubernetesDeploy implements BooleanSupplier {
         if (serverFound) {
             return true;
         }
-        final KubernetesClient client = KubernetesClientUtils.createClient();
-        try {
+        try (final KubernetesClient client = KubernetesClientUtils.createClient()) {
             //Let's check id we can connect.
             RootPaths paths = client.rootPaths();
             LOGGER.info("Found kubernetes server.");

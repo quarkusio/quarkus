@@ -88,6 +88,8 @@ update_configs:
       # Smallrye
       - match:
           dependency_name: "io.smallrye:smallrye-jwt"
+      - match:
+          dependency_name: "io.smallrye.config:smallrye-config"
       # Tika
       - match:
           dependency_name: "org.apache.tika:tika-parsers"

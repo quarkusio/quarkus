@@ -1,7 +1,7 @@
 package io.quarkus.flyway;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
@@ -17,6 +17,7 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.flyway.runtime.FlywayProducer;
@@ -47,12 +48,14 @@ class FlywayDatasourceBeanGenerator {
 
     private static final int ACCESS_PACKAGE_PROTECTED = 0;
 
-    private final Collection<String> dataSourceNames = new HashSet<>();
+    private final Collection<String> namedDataSourceNames;
     private final BuildProducer<GeneratedBeanBuildItem> generatedBean;
 
     public FlywayDatasourceBeanGenerator(Collection<String> dataSourceNames,
             BuildProducer<GeneratedBeanBuildItem> generatedBean) {
-        this.dataSourceNames.addAll(dataSourceNames);
+        this.namedDataSourceNames = dataSourceNames.stream()
+                .filter(n -> !DataSourceUtil.isDefault(n))
+                .collect(Collectors.toSet());
         this.generatedBean = generatedBean;
     }
 
@@ -74,7 +77,7 @@ class FlywayDatasourceBeanGenerator {
         defaultProducerField.setModifiers(ACCESS_PACKAGE_PROTECTED);
         defaultProducerField.addAnnotation(Inject.class);
 
-        for (String dataSourceName : dataSourceNames) {
+        for (String dataSourceName : namedDataSourceNames) {
             String dataSourceFieldName = "dataSource" + hashed(dataSourceName);
             FieldCreator dataSourceField = classCreator.getFieldCreator(dataSourceFieldName, DataSource.class);
             dataSourceField.setModifiers(ACCESS_PACKAGE_PROTECTED);
@@ -131,6 +134,7 @@ class FlywayDatasourceBeanGenerator {
 
     @Override
     public String toString() {
-        return "FlywayDatasourceBeanGenerator [dataSourceNames=" + dataSourceNames + ", generatedBean=" + generatedBean + "]";
+        return "FlywayDatasourceBeanGenerator [dataSourceNames=" + namedDataSourceNames + ", generatedBean=" + generatedBean
+                + "]";
     }
 }

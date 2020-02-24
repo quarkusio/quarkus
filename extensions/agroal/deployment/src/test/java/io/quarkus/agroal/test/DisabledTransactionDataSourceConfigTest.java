@@ -25,8 +25,8 @@ public class DisabledTransactionDataSourceConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("base.properties")
-            .overrideConfigKey("quarkus.datasource.transactions", "DISABLED")
-            .overrideConfigKey("quarkus.datasource.detect-statement-leaks", "false");
+            .overrideConfigKey("quarkus.datasource.jdbc.transactions", "DISABLED")
+            .overrideConfigKey("quarkus.datasource.jdbc.detect-statement-leaks", "false");
 
     @Test
     public void testNonTransactionalDataSourceInjection() throws SQLException {

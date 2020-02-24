@@ -1,4 +1,4 @@
-package io.quarkus.agroal.runtime;
+package io.quarkus.datasource.runtime;
 
 import java.util.Map;
 
@@ -9,7 +9,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(name = "datasource", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public class AgroalBuildTimeConfig {
+public class DataSourcesBuildTimeConfig {
 
     /**
      * The default datasource.

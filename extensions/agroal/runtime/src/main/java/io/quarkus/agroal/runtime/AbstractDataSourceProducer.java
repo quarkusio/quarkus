@@ -6,7 +6,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.ServiceLoader;
 
 import javax.annotation.PreDestroy;
@@ -27,16 +26,26 @@ import io.agroal.api.security.NamePrincipal;
 import io.agroal.api.security.SimplePassword;
 import io.agroal.api.transaction.TransactionIntegration;
 import io.agroal.narayana.NarayanaTransactionIntegration;
+import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig.DataSourceJdbcOuterNamedBuildTimeConfig;
+import io.quarkus.agroal.runtime.DataSourcesJdbcRuntimeConfig.DataSourceJdbcOuterNamedRuntimeConfig;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
+import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
+import io.quarkus.datasource.runtime.DataSourceUtil;
+import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vault.CredentialsProvider;
 
 public abstract class AbstractDataSourceProducer {
 
     private static final Logger log = Logger.getLogger(AbstractDataSourceProducer.class.getName());
 
-    private AgroalBuildTimeConfig buildTimeConfig;
-    private AgroalRuntimeConfig runtimeConfig;
+    private DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig;
+    private DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
+    private DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig;
+    private DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig;
     private boolean disableSslSupport = false;
 
     private List<AgroalDataSource> dataSources = new ArrayList<>();
@@ -47,59 +56,53 @@ public abstract class AbstractDataSourceProducer {
     @Inject
     public TransactionSynchronizationRegistry transactionSynchronizationRegistry;
 
-    public DataSourceBuildTimeConfig getDefaultBuildTimeConfig() {
-        return buildTimeConfig.defaultDataSource;
-    }
-
-    public Optional<DataSourceRuntimeConfig> getDefaultRuntimeConfig() {
-        checkRuntimeConfig();
-
-        return Optional.of(runtimeConfig.defaultDataSource);
-    }
-
-    public DataSourceBuildTimeConfig getBuildTimeConfig(String dataSourceName) {
-        return buildTimeConfig.namedDataSources.get(dataSourceName);
-    }
-
-    public Optional<DataSourceRuntimeConfig> getRuntimeConfig(String dataSourceName) {
-        checkRuntimeConfig();
-
-        return Optional.ofNullable(runtimeConfig.namedDataSources.get(dataSourceName));
+    public void configureDataSources(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
+            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig,
+            boolean disableSslSupport) {
+        this.dataSourcesBuildTimeConfig = dataSourcesBuildTimeConfig;
+        this.dataSourcesJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig;
+        this.dataSourcesRuntimeConfig = dataSourcesRuntimeConfig;
+        this.dataSourcesJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig;
+        this.disableSslSupport = disableSslSupport;
     }
 
     public AgroalDataSource createDataSource(String dataSourceName,
             DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
-            Optional<DataSourceRuntimeConfig> dataSourceRuntimeConfigOptional,
+            DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
+            DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig,
             boolean mpMetricsPresent) {
-        if (!dataSourceRuntimeConfigOptional.isPresent() || !dataSourceRuntimeConfigOptional.get().url.isPresent()) {
-            log.warn("Datasource " + dataSourceName + " not started: driver and/or url are not defined.");
-            return null;
+        checkConfigInjection();
+
+        if (!dataSourceJdbcRuntimeConfig.url.isPresent()) {
+            throw new ConfigurationException("URL is not defined for datasource " + dataSourceName);
         }
+
         // we first make sure that all available JDBC drivers are loaded in the current TCCL
         loadDriversInTCCL();
 
-        DataSourceRuntimeConfig dataSourceRuntimeConfig = dataSourceRuntimeConfigOptional.get();
-
-        String driverName = dataSourceBuildTimeConfig.driver.get();
+        String driverName = dataSourceJdbcBuildTimeConfig.driver.get();
         Class<?> driver;
         try {
             driver = Class.forName(driverName, true, Thread.currentThread().getContextClassLoader());
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Unable to load the dataSource driver", e);
+            throw new RuntimeException("Unable to load the datasource driver", e);
         }
 
-        String url = dataSourceRuntimeConfig.url.get();
+        String url = dataSourceJdbcRuntimeConfig.url.get();
 
         //TODO should we do such checks at build time only? All these are currently defined at build - but it could change
         //depending on if and how we could do Driver auto-detection.
-        final io.quarkus.agroal.runtime.TransactionIntegration transactionIntegration = dataSourceBuildTimeConfig.transactions;
+        final io.quarkus.agroal.runtime.TransactionIntegration transactionIntegration = dataSourceJdbcBuildTimeConfig.transactions;
         if (transactionIntegration == io.quarkus.agroal.runtime.TransactionIntegration.XA) {
             if (!XADataSource.class.isAssignableFrom(driver)) {
-                throw new RuntimeException("Driver is not an XA dataSource and XA has been configured");
+                throw new RuntimeException("Driver is not an XA datasource and XA has been configured");
             }
         } else {
             if (driver != null && !DataSource.class.isAssignableFrom(driver) && !Driver.class.isAssignableFrom(driver)) {
-                throw new RuntimeException("Driver is an XA dataSource and XA has not been configured");
+                throw new RuntimeException("Driver is an XA datasource and XA has not been configured");
             }
         }
 
@@ -110,12 +113,12 @@ public abstract class AbstractDataSourceProducer {
                 .connectionFactoryConfiguration();
         agroalConnectionFactoryConfigurationSupplier.jdbcUrl(url);
         agroalConnectionFactoryConfigurationSupplier.connectionProviderClass(driver);
-        agroalConnectionFactoryConfigurationSupplier.trackJdbcResources(dataSourceRuntimeConfig.detectStatementLeaks);
+        agroalConnectionFactoryConfigurationSupplier.trackJdbcResources(dataSourceJdbcRuntimeConfig.detectStatementLeaks);
 
-        if (dataSourceRuntimeConfig.transactionIsolationLevel.isPresent()) {
+        if (dataSourceJdbcRuntimeConfig.transactionIsolationLevel.isPresent()) {
             agroalConnectionFactoryConfigurationSupplier
                     .jdbcTransactionIsolation(
-                            dataSourceRuntimeConfig.transactionIsolationLevel.get());
+                            dataSourceJdbcRuntimeConfig.transactionIsolationLevel.get());
         }
 
         if (transactionIntegration != io.quarkus.agroal.runtime.TransactionIntegration.DISABLED) {
@@ -125,16 +128,16 @@ public abstract class AbstractDataSourceProducer {
         }
 
         // New connection SQL
-        if (dataSourceRuntimeConfig.newConnectionSql.isPresent()) {
-            agroalConnectionFactoryConfigurationSupplier.initialSql(dataSourceRuntimeConfig.newConnectionSql.get());
+        if (dataSourceJdbcRuntimeConfig.newConnectionSql.isPresent()) {
+            agroalConnectionFactoryConfigurationSupplier.initialSql(dataSourceJdbcRuntimeConfig.newConnectionSql.get());
         }
 
         // metrics
-        if (dataSourceBuildTimeConfig.enableMetrics.isPresent()) {
-            dataSourceConfiguration.metricsEnabled(dataSourceBuildTimeConfig.enableMetrics.get());
+        if (dataSourceJdbcBuildTimeConfig.enableMetrics.isPresent()) {
+            dataSourceConfiguration.metricsEnabled(dataSourceJdbcBuildTimeConfig.enableMetrics.get());
         } else {
             // if the enable-metrics property is unspecified, treat it as true if MP Metrics are being exposed
-            dataSourceConfiguration.metricsEnabled(buildTimeConfig.metricsEnabled && mpMetricsPresent);
+            dataSourceConfiguration.metricsEnabled(dataSourcesBuildTimeConfig.metricsEnabled && mpMetricsPresent);
         }
 
         // Authentication
@@ -165,22 +168,22 @@ public abstract class AbstractDataSourceProducer {
         }
 
         // Pool size configuration:
-        poolConfiguration.minSize(dataSourceRuntimeConfig.minSize);
-        poolConfiguration.maxSize(dataSourceRuntimeConfig.maxSize);
-        if (dataSourceRuntimeConfig.initialSize.isPresent() && dataSourceRuntimeConfig.initialSize.get() > 0) {
-            poolConfiguration.initialSize(dataSourceRuntimeConfig.initialSize.get());
+        poolConfiguration.minSize(dataSourceJdbcRuntimeConfig.minSize);
+        poolConfiguration.maxSize(dataSourceJdbcRuntimeConfig.maxSize);
+        if (dataSourceJdbcRuntimeConfig.initialSize.isPresent() && dataSourceJdbcRuntimeConfig.initialSize.get() > 0) {
+            poolConfiguration.initialSize(dataSourceJdbcRuntimeConfig.initialSize.get());
         }
 
         // Connection management
         poolConfiguration.connectionValidator(ConnectionValidator.defaultValidator());
-        if (dataSourceRuntimeConfig.acquisitionTimeout.isPresent()) {
-            poolConfiguration.acquisitionTimeout(dataSourceRuntimeConfig.acquisitionTimeout.get());
+        if (dataSourceJdbcRuntimeConfig.acquisitionTimeout.isPresent()) {
+            poolConfiguration.acquisitionTimeout(dataSourceJdbcRuntimeConfig.acquisitionTimeout.get());
         }
-        if (dataSourceRuntimeConfig.backgroundValidationInterval.isPresent()) {
-            poolConfiguration.validationTimeout(dataSourceRuntimeConfig.backgroundValidationInterval.get());
+        if (dataSourceJdbcRuntimeConfig.backgroundValidationInterval.isPresent()) {
+            poolConfiguration.validationTimeout(dataSourceJdbcRuntimeConfig.backgroundValidationInterval.get());
         }
-        if (dataSourceRuntimeConfig.validationQuerySql.isPresent()) {
-            String validationQuery = dataSourceRuntimeConfig.validationQuerySql.get();
+        if (dataSourceJdbcRuntimeConfig.validationQuerySql.isPresent()) {
+            String validationQuery = dataSourceJdbcRuntimeConfig.validationQuerySql.get();
             poolConfiguration.connectionValidator(new ConnectionValidator() {
 
                 @Override
@@ -195,14 +198,14 @@ public abstract class AbstractDataSourceProducer {
                 }
             });
         }
-        if (dataSourceRuntimeConfig.idleRemovalInterval.isPresent()) {
-            poolConfiguration.reapTimeout(dataSourceRuntimeConfig.idleRemovalInterval.get());
+        if (dataSourceJdbcRuntimeConfig.idleRemovalInterval.isPresent()) {
+            poolConfiguration.reapTimeout(dataSourceJdbcRuntimeConfig.idleRemovalInterval.get());
         }
-        if (dataSourceRuntimeConfig.leakDetectionInterval.isPresent()) {
-            poolConfiguration.leakTimeout(dataSourceRuntimeConfig.leakDetectionInterval.get());
+        if (dataSourceJdbcRuntimeConfig.leakDetectionInterval.isPresent()) {
+            poolConfiguration.leakTimeout(dataSourceJdbcRuntimeConfig.leakDetectionInterval.get());
         }
-        if (dataSourceRuntimeConfig.maxLifetime.isPresent()) {
-            poolConfiguration.maxLifetime(dataSourceRuntimeConfig.maxLifetime.get());
+        if (dataSourceJdbcRuntimeConfig.maxLifetime.isPresent()) {
+            poolConfiguration.maxLifetime(dataSourceJdbcRuntimeConfig.maxLifetime.get());
         }
 
         // SSL support: we should push the driver specific code to the driver extensions but it will have to do for now
@@ -229,22 +232,53 @@ public abstract class AbstractDataSourceProducer {
         return dataSource;
     }
 
-    public void setBuildTimeConfig(AgroalBuildTimeConfig buildTimeConfig) {
-        this.buildTimeConfig = buildTimeConfig;
+    public DataSourceBuildTimeConfig getDataSourceBuildTimeConfig(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return dataSourcesBuildTimeConfig.defaultDataSource;
+        }
+
+        DataSourceBuildTimeConfig namedConfig = dataSourcesBuildTimeConfig.namedDataSources.get(dataSourceName);
+
+        return namedConfig != null ? namedConfig : new DataSourceBuildTimeConfig();
     }
 
-    public void setRuntimeConfig(AgroalRuntimeConfig runtimeConfig) {
-        this.runtimeConfig = runtimeConfig;
+    public DataSourceJdbcBuildTimeConfig getDataSourceJdbcBuildTimeConfig(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return dataSourcesJdbcBuildTimeConfig.jdbc;
+        }
+
+        DataSourceJdbcOuterNamedBuildTimeConfig namedOuterConfig = dataSourcesJdbcBuildTimeConfig.namedDataSources
+                .get(dataSourceName);
+
+        return namedOuterConfig != null ? namedOuterConfig.jdbc : new DataSourceJdbcBuildTimeConfig();
     }
 
-    public void disableSslSupport() {
-        this.disableSslSupport = true;
+    public DataSourceRuntimeConfig getDataSourceRuntimeConfig(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return dataSourcesRuntimeConfig.defaultDataSource;
+        }
+
+        DataSourceRuntimeConfig namedConfig = dataSourcesRuntimeConfig.namedDataSources.get(dataSourceName);
+
+        return namedConfig != null ? namedConfig : new DataSourceRuntimeConfig();
     }
 
-    private void checkRuntimeConfig() {
-        if (runtimeConfig == null) {
+    public DataSourceJdbcRuntimeConfig getDataSourceJdbcRuntimeConfig(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return dataSourcesJdbcRuntimeConfig.jdbc;
+        }
+
+        DataSourceJdbcOuterNamedRuntimeConfig namedOuterConfig = dataSourcesJdbcRuntimeConfig.namedDataSources
+                .get(dataSourceName);
+
+        return namedOuterConfig != null ? namedOuterConfig.jdbc : new DataSourceJdbcRuntimeConfig();
+    }
+
+    private void checkConfigInjection() {
+        if (dataSourcesBuildTimeConfig == null || dataSourcesJdbcBuildTimeConfig == null || dataSourcesRuntimeConfig == null
+                || dataSourcesJdbcRuntimeConfig == null) {
             throw new IllegalStateException(
-                    "The datasources are not ready to be consumed: the runtime configuration has not been injected yet");
+                    "The datasources are not ready to be consumed: the configuration has not been injected yet");
         }
     }
 

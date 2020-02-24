@@ -50,9 +50,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 
-import io.quarkus.agroal.deployment.DataSourceDriverBuildItem;
-import io.quarkus.agroal.deployment.DataSourceInitializedBuildItem;
-import io.quarkus.agroal.deployment.DataSourceSchemaReadyBuildItem;
+import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
+import io.quarkus.agroal.deployment.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -153,7 +152,7 @@ public final class HibernateOrmProcessor {
             CombinedIndexBuildItem index,
             ArchiveRootBuildItem archiveRoot,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            Optional<DataSourceDriverBuildItem> driverBuildItem,
+            List<JdbcDataSourceBuildItem> jdbcDataSourcesBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorProducer,
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
@@ -204,11 +203,16 @@ public final class HibernateOrmProcessor {
             return;
         }
 
+        // we only support the default datasource for now
+        Optional<JdbcDataSourceBuildItem> defaultJdbcDataSourceBuildItem = jdbcDataSourcesBuildItem.stream()
+                .filter(i -> i.isDefault())
+                .findFirst();
+
         // handle the implicit persistence unit
         List<ParsedPersistenceXmlDescriptor> allDescriptors = new ArrayList<>(explicitDescriptors.size() + 1);
         allDescriptors.addAll(explicitDescriptors);
         handleHibernateORMWithNoPersistenceXml(allDescriptors, resourceProducer, systemPropertyProducer, archiveRoot,
-                driverBuildItem, applicationArchivesBuildItem, launchMode.getLaunchMode());
+                defaultJdbcDataSourceBuildItem, applicationArchivesBuildItem, launchMode.getLaunchMode());
 
         for (ParsedPersistenceXmlDescriptor descriptor : allDescriptors) {
             persistenceUnitDescriptorProducer.produce(new PersistenceUnitDescriptorBuildItem(descriptor));
@@ -348,10 +352,10 @@ public final class HibernateOrmProcessor {
     @BuildStep
     @Record(RUNTIME_INIT)
     public void startPersistenceUnits(HibernateOrmRecorder recorder, BeanContainerBuildItem beanContainer,
-            Optional<DataSourceInitializedBuildItem> dataSourceInitialized,
+            List<JdbcDataSourceBuildItem> dataSourcesConfigured,
             JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels,
             List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationsRuntimeConfigured,
-            Optional<DataSourceSchemaReadyBuildItem> schemaReadyBuildItem) throws Exception {
+            Optional<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) throws Exception {
         if (!hasEntities(jpaEntities, nonJpaModels)) {
             return;
         }
@@ -557,14 +561,14 @@ public final class HibernateOrmProcessor {
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
             ArchiveRootBuildItem root,
-            Optional<DataSourceDriverBuildItem> driverBuildItem,
+            Optional<JdbcDataSourceBuildItem> driverBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode) {
         if (descriptors.isEmpty()) {
             //we have no persistence.xml so we will create a default one
             Optional<String> dialect = hibernateConfig.dialect;
             if (!dialect.isPresent()) {
-                dialect = guessDialect(driverBuildItem.map(DataSourceDriverBuildItem::getDriver));
+                dialect = guessDialect(driverBuildItem.map(JdbcDataSourceBuildItem::getKind));
             }
             dialect.ifPresent(s -> {
                 // we found one
@@ -715,20 +719,19 @@ public final class HibernateOrmProcessor {
         // later, we can keep doing that but also avoid DCE
         // of all the dialects we want in so that people can override them
         String resolvedDriver = driver.orElse("NODRIVER");
-        if (resolvedDriver.contains("postgresql")) {
+        if (resolvedDriver.equals("postgresql")) {
             return Optional.of(QuarkusPostgreSQL95Dialect.class.getName());
         }
-        if (resolvedDriver.contains("org.h2.Driver")) {
+        if (resolvedDriver.equals("h2")) {
             return Optional.of(QuarkusH2Dialect.class.getName());
         }
-        if (resolvedDriver.contains("org.mariadb.jdbc.Driver")) {
+        if (resolvedDriver.equals("mariadb")) {
             return Optional.of(MariaDB103Dialect.class.getName());
         }
-
-        if (resolvedDriver.contains("com.mysql.cj.jdbc.Driver")) {
+        if (resolvedDriver.equals("mysql")) {
             return Optional.of(MySQL8Dialect.class.getName());
         }
-        if (resolvedDriver.contains("org.apache.derby.jdbc.ClientDriver")) {
+        if (resolvedDriver.equals("derby")) {
             return Optional.of((DerbyTenSevenDialect.class.getName()));
         }
 

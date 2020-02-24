@@ -16,7 +16,7 @@ public class PrincipalQueryConfig {
      * The sql query to find the password
      */
     @ConfigItem
-    public String sql;
+    public Optional<String> sql;
 
     /**
      * The data source to use

@@ -7,7 +7,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import io.quarkus.builder.item.EmptyBuildItem;
+import io.quarkus.builder.item.BuildItem;
 
 /**
  * Declare that this step comes before the given build items are consumed.
@@ -21,7 +21,7 @@ public @interface Produce {
      *
      * @return the build item
      */
-    Class<? extends EmptyBuildItem> value();
+    Class<? extends BuildItem> value();
 
     /**
      * The repeatable holder for {@link Produce}.

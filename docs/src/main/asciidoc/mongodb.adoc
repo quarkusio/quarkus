@@ -543,6 +543,14 @@ So when you access the `/health/ready` endpoint of your application you will hav
 
 This behavior can be disabled by setting the `quarkus.mongodb.health.enabled` property to `false` in your `application.properties`.
 
+== Metrics
+
+If you are using the `quarkus-smallrye-metrics` extension, `quarkus-mongodb` can provide metrics about the connection pools.
+This behavior must first be enabled by setting the `quarkus.mongodb.metrics.enabled` property to `true` in your `application.properties`.
+
+So when you access the `/metrics` endpoint of your application you will have information about the connection pool status in the `vendor` scope.
+
+
 == The legacy client
 
 We don't include the legacy MongoDB client by default. It contains the now retired MongoDB Java API (DB, DBCollection,... )

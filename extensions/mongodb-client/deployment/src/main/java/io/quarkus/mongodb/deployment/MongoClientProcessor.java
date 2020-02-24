@@ -24,6 +24,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 import com.mongodb.client.MongoClient;
+import com.mongodb.event.ConnectionPoolListener;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -32,6 +33,7 @@ import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -49,6 +51,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.mongodb.ReactiveMongoClient;
+import io.quarkus.mongodb.metrics.MongoMetricsConnectionPoolListener;
 import io.quarkus.mongodb.runtime.AbstractMongoClientProducer;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.mongodb.runtime.MongoClientName;
@@ -75,9 +78,16 @@ public class MongoClientProcessor {
     void configureRuntimeProperties(MongoClientRecorder recorder,
             CodecProviderBuildItem codecProvider,
             BsonDiscriminatorBuildItem bsonDiscriminator,
-            MongodbConfig config) {
+            MongodbConfig config,
+            List<MongoConnectionPoolListenerBuildItem> connectionPoolListenerProvider) {
+        List<ConnectionPoolListener> poolListenerList = connectionPoolListenerProvider.stream()
+                .map(MongoConnectionPoolListenerBuildItem::getConnectionPoolListener)
+                .collect(Collectors.toList());
+
         recorder.configureRuntimeProperties(codecProvider.getCodecProviderClassNames(),
-                bsonDiscriminator.getBsonDiscriminatorClassNames(), config);
+                bsonDiscriminator.getBsonDiscriminatorClassNames(),
+                config,
+                poolListenerList);
     }
 
     @BuildStep
@@ -391,5 +401,15 @@ public class MongoClientProcessor {
     HealthBuildItem addHealthCheck(MongoClientBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.mongodb.health.MongoHealthCheck",
                 buildTimeConfig.healthEnabled, "mongodb");
+    }
+
+    @BuildStep
+    void setupMetrics(
+            MongoClientBuildTimeConfig buildTimeConfig, Capabilities capabilities,
+            BuildProducer<MongoConnectionPoolListenerBuildItem> producer) {
+
+        if (buildTimeConfig.metricsEnabled && capabilities.isCapabilityPresent(Capabilities.METRICS)) {
+            producer.produce(new MongoConnectionPoolListenerBuildItem(new MongoMetricsConnectionPoolListener()));
+        }
     }
 }

@@ -85,7 +85,7 @@
         <hibernate-orm.version>5.4.12.Final</hibernate-orm.version>
         <hibernate-validator.version>6.1.2.Final</hibernate-validator.version>
         <hibernate-search.version>6.0.0.Beta5</hibernate-search.version>
-        <narayana.version>5.10.0.Final</narayana.version>
+        <narayana.version>5.10.1.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.7</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
@@ -111,7 +111,7 @@
         <postgresql-jdbc.version>42.2.10</postgresql-jdbc.version>
         <mariadb-jdbc.version>2.5.4</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.19</mysql-jdbc.version>
-        <mssql-jdbc.version>7.2.1.jre8</mssql-jdbc.version>
+        <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>4.2.0</rest-assured.version>

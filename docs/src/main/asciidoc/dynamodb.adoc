@@ -106,12 +106,12 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=dynamodb-quickstart \
     -DclassName="org.acme.dynamodb.FruitResource" \
     -Dpath="/fruits" \
-    -Dextensions="resteasy-jsonb,dynamodb"
+    -Dextensions="resteasy-jsonb,dynamodb,resteasy-mutiny"
 cd dynamodb-quickstart
 ----
 
-This command generates a Maven structure importing the RESTEasy/JAX-RS and DynamoDB Client extensions.
-After this, the `amazon-dynamodb` extension has been added to your `pom.xml`.
+This command generates a Maven structure importing the RESTEasy/JAX-RS, Mutiny and DynamoDB Client extensions.
+After this, the `amazon-dynamodb` extension has been added to your `pom.xml` as well as the Mutiny support for RESTEasy.
 
 == Creating JSON REST service
 
@@ -413,6 +413,7 @@ import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
+import io.smallrye.mutiny.Uni;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 
 @ApplicationScoped
@@ -421,38 +422,37 @@ public class FruitAsyncService extends AbstractService {
     @Inject
     DynamoDbAsyncClient dynamoDB;
 
-    public CompletableFuture<List<Fruit>> findAll() {
-        return dynamoDB.scan(scanRequest())
-                .thenApply(res -> res.items().stream().map(Fruit::from).collect(Collectors.toList()));
+    public Uni<List<Fruit>> findAll() {
+        return Uni.createFrom().completionStage(() -> dynamoDB.scan(scanRequest()))
+                .onItem().apply(res -> res.items().stream().map(Fruit::from).collect(Collectors.toList()));
     }
 
-    public CompletableFuture<List<Fruit>> add(Fruit fruit) {
-        return dynamoDB.putItem(putRequest(fruit)).thenCompose(ret -> findAll());
+    public Uni<List<Fruit>> add(Fruit fruit) {
+        return Uni.createFrom().completionStage(() -> dynamoDB.putItem(putRequest(fruit)))
+                .onItem().ignore().andSwitchTo(this::findAll);
     }
 
-    public CompletableFuture<Fruit> get(String name) {
-        return dynamoDB.getItem(getRequest(name)).thenApply(resp -> Fruit.from(resp.item()));
+    public Uni<Fruit> get(String name) {
+        return Uni.createFrom().completionStage(() -> dynamoDB.getItem(getRequest(name)))
+                .onItem().apply(resp -> Fruit.from(resp.item()));
     }
 }
 ----
 
-Create an asynchronous REST resource:
+In the previous code, we create `Uni` instances from the `CompletionStage` objects returned by the asynchronous DynamoDB client, and then transform the emitted item.
+
+Then, create an asynchronous REST resource that consumes this async service:
 
 [source,java]
 ----
 package org.acme.dynamodb;
 
-import java.util.List;
-import java.util.concurrent.CompletionStage;
+import io.smallrye.mutiny.Uni;
 
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import java.util.List;
 
 @Path("/async-fruits")
 @Produces(MediaType.APPLICATION_JSON)
@@ -463,20 +463,20 @@ public class FruitAsyncResource {
     FruitAsyncService service;
 
     @GET
-    public CompletionStage<List<Fruit>> getAll() {
+    public Uni<List<Fruit>> getAll() {
         return service.findAll();
     }
 
     @GET
     @Path("{name}")
-    public CompletionStage<Fruit> getSingle(@PathParam("name") String name) {
+    public Uni<Fruit> getSingle(@PathParam("name") String name) {
         return service.get(name);
     }
 
     @POST
-    public CompletionStage<List<Fruit>> add(Fruit fruit) {
-        service.add(fruit);
-        return getAll();
+    public Uni<List<Fruit>> add(Fruit fruit) {
+        return service.add(fruit)
+                .onItem().ignore().andSwitchTo(this::getAll);
     }
 }
 ----

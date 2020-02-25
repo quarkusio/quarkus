@@ -17,7 +17,6 @@ import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +29,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -42,7 +40,6 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.artifacts.ResolvedDependency;
-import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -293,51 +290,13 @@ public class QuarkusDev extends QuarkusTask {
                     sourcePaths.add(sourceDir.getAbsolutePath());
                 }
 
-                FileCollection classesDirs = mainSourceSet.getOutput().getClassesDirs();
-                final String classesPaths;
-                Set<File> classDirFiles = classesDirs.getFiles();
-                if (classDirFiles.size() == 1) {
-                    classesPaths = classesDirs.getAsPath();
-                } else {
-                    //there does not seem to be any sane way of dealing with multiple output dirs, as there does not seem
-                    //to be a way to map them. We will need to address this at some point, but for now we just stick them
-                    //all in a temp dir
-
-                    Path path = getTemporaryDir().toPath();
-                    classesPaths = path.toAbsolutePath().toString();
-                    for (File c : classDirFiles) {
-                        Path cd = c.toPath();
-                        if (!Files.exists(cd)) {
-                            continue;
-                        }
-                        try (Stream<Path> stream = Files.walk(cd)) {
-                            stream.forEach(s -> {
-                                try {
-                                    if (Files.isDirectory(s)) {
-                                        return;
-                                    }
-                                    final Path file = cd.relativize(path);
-                                    final Path targetPath = path.resolve(file.toString());
-                                    Files.createDirectories(targetPath.getParent());
-                                    byte[] data = Files.readAllBytes(s);
-                                    Files.write(targetPath, data);
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-
-                            });
-                        }
-                    }
-
-                }
-
                 String resourcePaths = mainSourceSet.getResources().getSourceDirectories().getSingleFile().getAbsolutePath(); //TODO: multiple resource directories
 
                 DevModeContext.ModuleInfo wsModuleInfo = new DevModeContext.ModuleInfo(
                         dependencyProject.getName(),
                         dependencyProject.getProjectDir().getAbsolutePath(),
                         sourcePaths,
-                        classesPaths,
+                        QuarkusGradleUtils.getClassesDir(mainSourceSet, this),
                         resourcePaths);
 
                 context.getModules().add(wsModuleInfo);
@@ -366,7 +325,10 @@ public class QuarkusDev extends QuarkusTask {
             final String outputResourcesDirectory = extension.outputConfigDirectory().getAbsolutePath();
             context.getClassesRoots().add(extension.outputDirectory().getAbsoluteFile());
             if (!outputClassDirectory.equals(outputResourcesDirectory)) {
-                context.getClassesRoots().add(extension.outputConfigDirectory().getAbsoluteFile());
+                final File configDir = extension.outputConfigDirectory().getAbsoluteFile();
+                if (configDir.exists()) {
+                    context.getClassesRoots().add(configDir);
+                }
             }
             context.setFrameworkClassesDir(wiringClassesDirectory.getAbsoluteFile());
             context.setCacheDir(new File(getBuildDir(), "transformer-cache").getAbsoluteFile());
@@ -401,7 +363,7 @@ public class QuarkusDev extends QuarkusTask {
                 out.write(bytes.toByteArray());
             }
 
-            final Path serializedModel = QuarkusGradleUtils.serializeAppModel(appModel);
+            final Path serializedModel = QuarkusGradleUtils.serializeAppModel(appModel, this);
             serializedModel.toFile().deleteOnExit();
             args.add("-D" + BootstrapConstants.SERIALIZED_APP_MODEL + "=" + serializedModel.toAbsolutePath());
 

@@ -27,7 +27,7 @@ public class QuarkusTestConfig extends QuarkusTask {
                     .toAbsolutePath()
                     .toString();
 
-            final Path serializedModel = QuarkusGradleUtils.serializeAppModel(deploymentDeps);
+            final Path serializedModel = QuarkusGradleUtils.serializeAppModel(deploymentDeps, this);
 
             for (Test test : getProject().getTasks().withType(Test.class)) {
                 final Map<String, Object> props = test.getSystemProperties();

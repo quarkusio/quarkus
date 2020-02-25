@@ -1,10 +1,10 @@
 package io.quarkus.smallrye.reactivemessaging.deployment;
 
-import static io.quarkus.smallrye.reactivemessaging.deployment.DotNames.ACKNOWLEDGMENT;
-import static io.quarkus.smallrye.reactivemessaging.deployment.DotNames.BROADCAST;
-import static io.quarkus.smallrye.reactivemessaging.deployment.DotNames.INCOMING;
-import static io.quarkus.smallrye.reactivemessaging.deployment.DotNames.MERGE;
-import static io.quarkus.smallrye.reactivemessaging.deployment.DotNames.OUTGOING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.ACKNOWLEDGMENT;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.BROADCAST;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.MERGE;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.OUTGOING;
 
 import java.util.List;
 import java.util.stream.Collectors;

@@ -358,9 +358,14 @@ public class CreateExtensionMojo extends AbstractMojo {
      * These are the template files you may want to provide under your custom {@link #templatesUriBase}:
      * <ul>
      * <li>{@code deployment-pom.xml}</li>
+     * <li>{@code integration-test-application.properties}</li>
+     * <li>{@code integration-test-pom.xml}</li>
+     * <li>{@code IT.java}</li>
      * <li>{@code parent-pom.xml}</li>
-     * <li>{@code runtime-pom.xml}</li>
      * <li>{@code Processor.java}</li>
+     * <li>{@code runtime-pom.xml}</li>
+     * <li>{@code Test.java}</li>
+     * <li>{@code TestResource.java}</li>
      * </ul>
      * Note that you do not need to provide all of them. Files not available in your custom {@link #templatesUriBase}
      * will be looked up in the default URI base {@value #DEFAULT_TEMPLATES_URI_BASE}. The default templates are
@@ -434,9 +439,9 @@ public class CreateExtensionMojo extends AbstractMojo {
     List<String> additionalRuntimeDependencies;
 
     /**
-     * A path relative to {@link #basedir} pointing at a {@code pom.xml} file that should serve as a parent for the
-     * integration test Maven module this mojo generates. If {@link #itestParentPath} is not set, the integration test
-     * module will not be generated.
+     * An absolute path or a path relative to {@link #basedir} pointing at a {@code pom.xml} file that should serve as
+     * a parent for the integration test Maven module this mojo generates. If {@link #itestParentPath} is not set,
+     * the integration test module will not be generated.
      *
      * @since 0.22.0
      */
@@ -884,6 +889,8 @@ public class CreateExtensionMojo extends AbstractMojo {
 
             final Path itestDir = itestParentAbsPath.getParent().resolve(model.artifactIdBase);
             evalTemplate(cfg, "integration-test-pom.xml", itestDir.resolve("pom.xml"), model);
+            evalTemplate(cfg, "integration-test-application.properties",
+                    itestDir.resolve("src/main/resources/application.properties"), model);
 
             final Path testResourcePath = itestDir.resolve("src/main/java/" + model.javaPackageBase.replace('.', '/')
                     + "/it/" + model.artifactIdBaseCamelCase + "Resource.java");
@@ -1025,10 +1032,10 @@ public class CreateExtensionMojo extends AbstractMojo {
                             defaultLoader //
                     });
         } else if (templatesUriBase.startsWith(FILE_PREFIX)) {
+            final Path resolvedTemplatesDir = basedir.toPath().resolve(templatesUriBase.substring(FILE_PREFIX.length()));
             return new MultiTemplateLoader( //
                     new TemplateLoader[] { //
-                            new FileTemplateLoader(
-                                    new File(basedir, templatesUriBase.substring(FILE_PREFIX.length()))), //
+                            new FileTemplateLoader(resolvedTemplatesDir.toFile()),
                             defaultLoader //
                     });
         } else {

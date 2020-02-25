@@ -1,8 +1,8 @@
-package io.quarkus.it.mongodb.panache.axle.person;
+package io.quarkus.it.mongodb.panache.reactive.person;
 
 import org.bson.codecs.pojo.annotations.BsonId;
 
-import io.quarkus.mongodb.panache.axle.ReactivePanacheMongoEntityBase;
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntityBase;
 
 public class ReactivePersonEntity extends ReactivePanacheMongoEntityBase {
     @BsonId

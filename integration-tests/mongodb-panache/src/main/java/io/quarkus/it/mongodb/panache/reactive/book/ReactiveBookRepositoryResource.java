@@ -1,9 +1,8 @@
-package io.quarkus.it.mongodb.panache.axle.book;
+package io.quarkus.it.mongodb.panache.reactive.book;
 
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -19,8 +18,9 @@ import org.reactivestreams.Publisher;
 import io.quarkus.it.mongodb.panache.book.Book;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
+import io.smallrye.mutiny.Uni;
 
-@Path("/axle/books/repository")
+@Path("/reactive/books/repository")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ReactiveBookRepositoryResource {
@@ -36,7 +36,7 @@ public class ReactiveBookRepositoryResource {
     }
 
     @GET
-    public CompletionStage<List<Book>> getBooks(@QueryParam("sort") String sort) {
+    public Uni<List<Book>> getBooks(@QueryParam("sort") String sort) {
         if (sort != null) {
             return reactiveBookRepository.listAll(Sort.ascending(sort));
         }
@@ -55,8 +55,8 @@ public class ReactiveBookRepositoryResource {
     }
 
     @POST
-    public CompletionStage<Response> addBook(Book book) {
-        return reactiveBookRepository.persist(book).thenApply(v -> {
+    public Uni<Response> addBook(Book book) {
+        return reactiveBookRepository.persist(book).map(v -> {
             //the ID is populated before sending it to the database
             String id = book.getId().toString();
             return Response.created(URI.create("/books/entity" + id)).build();
@@ -64,37 +64,37 @@ public class ReactiveBookRepositoryResource {
     }
 
     @PUT
-    public CompletionStage<Response> updateBook(Book book) {
-        return reactiveBookRepository.update(book).thenApply(v -> Response.accepted().build());
+    public Uni<Response> updateBook(Book book) {
+        return reactiveBookRepository.update(book).map(v -> Response.accepted().build());
     }
 
     // PATCH is not correct here but it allows to test persistOrUpdate without a specific subpath
     @PATCH
-    public CompletionStage<Response> upsertBook(Book book) {
-        return reactiveBookRepository.persistOrUpdate(book).thenApply(v -> Response.accepted().build());
+    public Uni<Response> upsertBook(Book book) {
+        return reactiveBookRepository.persistOrUpdate(book).map(v -> Response.accepted().build());
     }
 
     @DELETE
     @Path("/{id}")
-    public CompletionStage<Void> deleteBook(@PathParam("id") String id) {
-        return reactiveBookRepository.findById(new ObjectId(id)).thenCompose(book -> reactiveBookRepository.delete(book));
+    public Uni<Void> deleteBook(@PathParam("id") String id) {
+        return reactiveBookRepository.findById(new ObjectId(id)).flatMap(book -> reactiveBookRepository.delete(book));
     }
 
     @GET
     @Path("/{id}")
-    public CompletionStage<Book> getBook(@PathParam("id") String id) {
+    public Uni<Book> getBook(@PathParam("id") String id) {
         return reactiveBookRepository.findById(new ObjectId(id));
     }
 
     @GET
     @Path("/search/{author}")
-    public CompletionStage<List<Book>> getBooksByAuthor(@PathParam("author") String author) {
+    public Uni<List<Book>> getBooksByAuthor(@PathParam("author") String author) {
         return reactiveBookRepository.list("author", author);
     }
 
     @GET
     @Path("/search")
-    public CompletionStage<Book> search(@QueryParam("author") String author, @QueryParam("title") String title,
+    public Uni<Book> search(@QueryParam("author") String author, @QueryParam("title") String title,
             @QueryParam("dateFrom") String dateFrom, @QueryParam("dateTo") String dateTo) {
         if (author != null) {
             return reactiveBookRepository.find("{'author': ?1,'bookTitle': ?2}", author, title).firstResult();
@@ -108,7 +108,7 @@ public class ReactiveBookRepositoryResource {
 
     @GET
     @Path("/search2")
-    public CompletionStage<Book> search2(@QueryParam("author") String author, @QueryParam("title") String title,
+    public Uni<Book> search2(@QueryParam("author") String author, @QueryParam("title") String title,
             @QueryParam("dateFrom") String dateFrom, @QueryParam("dateTo") String dateTo) {
         if (author != null) {
             return reactiveBookRepository.find("{'author': :author,'bookTitle': :title}",
@@ -120,7 +120,7 @@ public class ReactiveBookRepositoryResource {
     }
 
     @DELETE
-    public CompletionStage<Void> deleteAll() {
-        return reactiveBookRepository.deleteAll().thenApply(l -> null);
+    public Uni<Void> deleteAll() {
+        return reactiveBookRepository.deleteAll().map(l -> null);
     }
 }

@@ -1,4 +1,4 @@
-package io.quarkus.it.mongodb.panache.axle.book;
+package io.quarkus.it.mongodb.panache.reactive.book;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -11,7 +11,7 @@ import org.bson.codecs.pojo.annotations.BsonProperty;
 
 import io.quarkus.it.mongodb.panache.book.BookDetail;
 import io.quarkus.mongodb.panache.MongoEntity;
-import io.quarkus.mongodb.panache.axle.ReactivePanacheMongoEntity;
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
 
 @MongoEntity(collection = "TheBookEntity")
 public class ReactiveBookEntity extends ReactivePanacheMongoEntity {

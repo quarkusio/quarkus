@@ -6,8 +6,8 @@ import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 
-import io.quarkus.mongodb.panache.axle.ReactivePanacheMongoRepository;
-import io.quarkus.mongodb.panache.axle.ReactivePanacheMongoRepositoryBase;
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepositoryBase;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
 public class ReactivePanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhancer {
@@ -17,7 +17,7 @@ public class ReactivePanacheMongoRepositoryEnhancer extends PanacheRepositoryEnh
     public final static DotName PANACHE_REPOSITORY_NAME = DotName.createSimple(ReactivePanacheMongoRepository.class.getName());
 
     public ReactivePanacheMongoRepositoryEnhancer(IndexView index) {
-        super(index, PanacheResourceProcessor.DOTNAME_AXLE_PANACHE_REPOSITORY_BASE);
+        super(index, PanacheResourceProcessor.DOTNAME_MUTINY_PANACHE_REPOSITORY_BASE);
     }
 
     @Override

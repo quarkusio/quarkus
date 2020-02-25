@@ -1,13 +1,12 @@
-package io.quarkus.mongodb.panache.axle;
+package io.quarkus.mongodb.panache.reactive;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
-import org.reactivestreams.Publisher;
-
 import io.quarkus.panache.common.Page;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Interface representing an entity query, which abstracts the use of paging, getting the number of results, and
@@ -74,7 +73,7 @@ public interface ReactivePanacheQuery<Entity> {
      * @see #firstPage()
      * @see #count()
      */
-    public <T extends Entity> CompletionStage<ReactivePanacheQuery<T>> lastPage();
+    public <T extends Entity> Uni<ReactivePanacheQuery<T>> lastPage();
 
     /**
      * Returns true if there is another page to read after the current one.
@@ -84,7 +83,7 @@ public interface ReactivePanacheQuery<Entity> {
      * @see #hasPreviousPage()
      * @see #count()
      */
-    public CompletionStage<Boolean> hasNextPage();
+    public Uni<Boolean> hasNextPage();
 
     /**
      * Returns true if there is a page to read before the current one.
@@ -100,7 +99,7 @@ public interface ReactivePanacheQuery<Entity> {
      * 
      * @return the total number of pages to be read using the current page size.
      */
-    public CompletionStage<Integer> pageCount();
+    public Uni<Integer> pageCount();
 
     /**
      * Returns the current page.
@@ -120,7 +119,7 @@ public interface ReactivePanacheQuery<Entity> {
      * 
      * @return the total number of entities this query operates on, cached.
      */
-    public CompletionStage<Long> count();
+    public Uni<Long> count();
 
     /**
      * Returns the current page of results as a {@link List}.
@@ -129,7 +128,7 @@ public interface ReactivePanacheQuery<Entity> {
      * @see #page(Page)
      * @see #page()
      */
-    public <T extends Entity> CompletionStage<List<T>> list();
+    public <T extends Entity> Uni<List<T>> list();
 
     /**
      * Returns the current page of results as a {@link Stream}.
@@ -139,7 +138,7 @@ public interface ReactivePanacheQuery<Entity> {
      * @see #page(Page)
      * @see #page()
      */
-    public <T extends Entity> Publisher<T> stream();
+    public <T extends Entity> Multi<T> stream();
 
     /**
      * Returns the first result of the current page index. This ignores the current page size to fetch
@@ -148,7 +147,7 @@ public interface ReactivePanacheQuery<Entity> {
      * @return the first result of the current page index, or null if there are no results.
      * @see #singleResult()
      */
-    public <T extends Entity> CompletionStage<T> firstResult();
+    public <T extends Entity> Uni<T> firstResult();
 
     /**
      * Returns the first result of the current page index. This ignores the current page size to fetch
@@ -157,7 +156,7 @@ public interface ReactivePanacheQuery<Entity> {
      * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
      * @see #singleResultOptional()
      */
-    public <T extends Entity> CompletionStage<Optional<T>> firstResultOptional();
+    public <T extends Entity> Uni<Optional<T>> firstResultOptional();
 
     /**
      * Executes this query for the current page and return a single result.
@@ -166,7 +165,7 @@ public interface ReactivePanacheQuery<Entity> {
      * @throws io.quarkus.panache.common.exception.PanacheQueryException if there are more than one result.
      * @see #firstResult()
      */
-    public <T extends Entity> CompletionStage<T> singleResult();
+    public <T extends Entity> Uni<T> singleResult();
 
     /**
      * Executes this query for the current page and return a single result.
@@ -175,5 +174,5 @@ public interface ReactivePanacheQuery<Entity> {
      * @throws io.quarkus.panache.common.exception.PanacheQueryException if there are more than one result.
      * @see #firstResultOptional()
      */
-    public <T extends Entity> CompletionStage<Optional<T>> singleResultOptional();
+    public <T extends Entity> Uni<Optional<T>> singleResultOptional();
 }

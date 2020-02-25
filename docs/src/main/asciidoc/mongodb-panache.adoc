@@ -623,47 +623,47 @@ person.birth = LocalDate.of(1910, Month.FEBRUARY, 1);
 person.status = Status.Alive;
 
 // persist it
-CompletionStage<Void> cs1 = person.persist();
+Uni<Void> cs1 = person.persist();
 
 person.status = Status.Dead;
 
 // Your must call update() in order to send your entity modifications to MongoDB
-CompletionStage<Void> cs2 = person.update();
+Uni<Void> cs2 = person.update();
 
 // delete it
-CompletionStage<Void> cs3 = person.delete();
+Uni<Void> cs3 = person.delete();
 
 // getting a list of all persons
-CompletionStage<List<ReactivePerson>> allPersons = ReactivePerson.listAll();
+Uni<List<ReactivePerson>> allPersons = ReactivePerson.listAll();
 
 // finding a specific person by ID
-CompletionStage<ReactivePerson> personById = ReactivePerson.findById(personId);
+Uni<ReactivePerson> personById = ReactivePerson.findById(personId);
 
 // finding a specific person by ID via an Optional
-CompletionStage<Optional<ReactivePerson>> optional = ReactivePerson.findByIdOptional(personId);
-personById = optional.thenApply(o -> o.orElseThrow(() -> new NotFoundException()));
+Uni<Optional<ReactivePerson>> optional = ReactivePerson.findByIdOptional(personId);
+personById = optional.map(o -> o.orElseThrow(() -> new NotFoundException()));
 
 // finding all living persons
-CompletionStage<List<ReactivePerson>> livingPersons = ReactivePerson.list("status", Status.Alive);
+Uni<List<ReactivePerson>> livingPersons = ReactivePerson.list("status", Status.Alive);
 
 // counting all persons
-CompletionStage<Long> countAll = ReactivePerson.count();
+Uni<Long> countAll = ReactivePerson.count();
 
 // counting all living persons
-CompletionStage<Long> countAlive = ReactivePerson.count("status", Status.Alive);
+Uni<Long> countAlive = ReactivePerson.count("status", Status.Alive);
 
 // delete all living persons
-CompletionStage<Long>  deleteCount = ReactivePerson.delete("status", Status.Alive);
+Uni<Long>  deleteCount = ReactivePerson.delete("status", Status.Alive);
 
 // delete all persons
 deleteCount = ReactivePerson.deleteAll();
 ----
 
-TIP: If you use MongoDB with Panache in conjunction with RESTEasy, you can directly return a reactive type inside your JAX-RS resource endpoint as RESTEasy will handle it correctly.
+TIP: If you use MongoDB with Panache in conjunction with RESTEasy, you can directly return a reactive type inside your JAX-RS resource endpoint as long as you include the `quarkus-resteasy-mutiny` extension.
 
-The same query facility exists for the reactive types, but the `stream()` methods act differently: they return a reactive stream `Publisher` instead of a `Stream`.
+The same query facility exists for the reactive types, but the `stream()` methods act differently: they return a `Multi` (which implement  a reactive stream `Publisher`) instead of a `Stream`.
 
-It allows more advanced reactive use cases, for example you can use it to send server-sent events (SSE) via RESTEasy:
+It allows more advanced reactive use cases, for example, you can use it to send server-sent events (SSE) via RESTEasy:
 
 [source,java]
 ----
@@ -677,7 +677,7 @@ import javax.ws.rs.Produces;
 @Path("/stream")
 @Produces(MediaType.SERVER_SENT_EVENTS)
 @SseElementType(MediaType.APPLICATION_JSON)
-public Publisher<ReactivePerson> streamPersons() {
+public Multi<ReactivePerson> streamPersons() {
     return ReactivePerson.streamAll();
 }
 ----

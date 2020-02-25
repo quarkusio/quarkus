@@ -1,4 +1,4 @@
-package io.quarkus.mongodb.panache.axle;
+package io.quarkus.mongodb.panache.reactive;
 
 import org.bson.types.ObjectId;
 

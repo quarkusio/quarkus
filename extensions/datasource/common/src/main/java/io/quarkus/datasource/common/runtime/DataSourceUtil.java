@@ -1,4 +1,4 @@
-package io.quarkus.datasource.runtime;
+package io.quarkus.datasource.common.runtime;
 
 import java.util.Collection;
 

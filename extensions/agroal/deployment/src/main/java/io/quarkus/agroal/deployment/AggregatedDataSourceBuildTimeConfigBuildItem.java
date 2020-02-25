@@ -2,8 +2,8 @@ package io.quarkus.agroal.deployment;
 
 import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourceUtil;
 
 final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem {
 

@@ -2,6 +2,7 @@ package io.quarkus.reactive.mysql.client.deployment;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -37,8 +38,8 @@ class ReactiveMySQLClientProcessor {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.REACTIVE_MYSQL_CLIENT));
 
         if (!dataSourcesBuildTimeConfig.defaultDataSource.kind.isPresent()
-                || (!"mysql".equals(dataSourcesBuildTimeConfig.defaultDataSource.kind.get())
-                        && !"mariadb".equals(dataSourcesBuildTimeConfig.defaultDataSource.kind.get()))
+                || (!DatabaseKind.isMySQL(dataSourcesBuildTimeConfig.defaultDataSource.kind.get())
+                        && !DatabaseKind.isMariaDB(dataSourcesBuildTimeConfig.defaultDataSource.kind.get()))
                 || !dataSourceReactiveBuildTimeConfig.enabled) {
             return;
         }

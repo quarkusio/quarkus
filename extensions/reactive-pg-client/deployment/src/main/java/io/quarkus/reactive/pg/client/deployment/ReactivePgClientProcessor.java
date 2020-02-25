@@ -2,6 +2,7 @@ package io.quarkus.reactive.pg.client.deployment;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -44,7 +45,7 @@ class ReactivePgClientProcessor {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.REACTIVE_PG_CLIENT));
 
         if (!dataSourcesBuildTimeConfig.defaultDataSource.kind.isPresent()
-                || !"postgresql".equals(dataSourcesBuildTimeConfig.defaultDataSource.kind.get())
+                || !DatabaseKind.isPostgreSQL(dataSourcesBuildTimeConfig.defaultDataSource.kind.get())
                 || !dataSourceReactiveBuildTimeConfig.enabled) {
             return;
         }

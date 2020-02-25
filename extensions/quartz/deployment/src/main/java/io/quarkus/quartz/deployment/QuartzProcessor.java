@@ -26,6 +26,7 @@ import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.deployment.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -98,13 +99,13 @@ public class QuartzProcessor {
         }
 
         String dataSourceKind = jdbcDataSource.get().getKind();
-        if (dataSourceKind.equals("postgresql")) {
+        if (DatabaseKind.isPostgreSQL(dataSourceKind)) {
             return PostgreSQLDelegate.class.getName();
         }
-        if (dataSourceKind.equals("h2")) {
+        if (DatabaseKind.isH2(dataSourceKind)) {
             return HSQLDBDelegate.class.getName();
         }
-        if (dataSourceKind.equals("mssql")) {
+        if (DatabaseKind.isMsSQL(dataSourceKind)) {
             return MSSQLDelegate.class.getName();
         }
 

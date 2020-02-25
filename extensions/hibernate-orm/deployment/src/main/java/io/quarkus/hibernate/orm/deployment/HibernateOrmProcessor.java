@@ -56,6 +56,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.ResourceAnnotationBuildItem;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -714,31 +715,31 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    private Optional<String> guessDialect(Optional<String> driver) {
+    private Optional<String> guessDialect(Optional<String> kind) {
         // For now select the latest dialect from the driver
         // later, we can keep doing that but also avoid DCE
         // of all the dialects we want in so that people can override them
-        String resolvedDriver = driver.orElse("NODRIVER");
-        if (resolvedDriver.equals("postgresql")) {
+        String resolvedKind = kind.orElse("NO_KIND");
+        if (DatabaseKind.isPostgreSQL(resolvedKind)) {
             return Optional.of(QuarkusPostgreSQL95Dialect.class.getName());
         }
-        if (resolvedDriver.equals("h2")) {
+        if (DatabaseKind.isH2(resolvedKind)) {
             return Optional.of(QuarkusH2Dialect.class.getName());
         }
-        if (resolvedDriver.equals("mariadb")) {
+        if (DatabaseKind.isMariaDB(resolvedKind)) {
             return Optional.of(MariaDB103Dialect.class.getName());
         }
-        if (resolvedDriver.equals("mysql")) {
+        if (DatabaseKind.isMySQL(resolvedKind)) {
             return Optional.of(MySQL8Dialect.class.getName());
         }
-        if (resolvedDriver.equals("derby")) {
+        if (DatabaseKind.isDerby(resolvedKind)) {
             return Optional.of((DerbyTenSevenDialect.class.getName()));
         }
 
-        String error = driver.isPresent()
-                ? "Hibernate extension could not guess the dialect from the driver '" + resolvedDriver
+        String error = kind.isPresent()
+                ? "Hibernate extension could not guess the dialect from the kind '" + resolvedKind
                         + "'. Add an explicit '" + HIBERNATE_ORM_CONFIG_PREFIX + "dialect' property."
-                : "Hibernate extension cannot guess the dialect as no JDBC driver is specified by 'quarkus.datasource.driver'";
+                : "Hibernate extension cannot guess the dialect as no kind is specified by 'quarkus.datasource.kind'";
         throw new ConfigurationError(error);
     }
 

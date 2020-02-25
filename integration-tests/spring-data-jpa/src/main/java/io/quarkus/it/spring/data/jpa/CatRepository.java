@@ -30,6 +30,8 @@ public interface CatRepository extends CrudRepository<Cat, Long> {
 
     Long countByColorIgnoreCase(String color);
 
+    Long countByColorContainsIgnoreCase(String color);
+
     Boolean existsByColorStartingWith(String color);
 
     long removeCatsByColor(String color);

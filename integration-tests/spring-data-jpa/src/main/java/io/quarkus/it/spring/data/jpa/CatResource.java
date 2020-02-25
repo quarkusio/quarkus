@@ -89,6 +89,12 @@ public class CatResource {
     }
 
     @GET
+    @Path("/count/by/color/{color}/contains")
+    public Long countByColorContains(@PathParam("color") String color) {
+        return catRepository.countByColorContainsIgnoreCase(color);
+    }
+
+    @GET
     @Path("/exists/by/colorStartsWith/{color}")
     public Boolean existsByColorStartsWith(@PathParam("color") String color) {
         return catRepository.existsByColorStartingWith(color);

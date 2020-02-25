@@ -41,6 +41,7 @@ public final class FieldContainer extends Container {
         if (sb.length() > 0) {
             sb.append(':');
         }
+        sb.append(member.getField().getDeclaringClass().getSimpleName()).append('#');
         sb.append(member.getName());
         return sb;
     }

@@ -1,6 +1,9 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.kubernetes.deployment.Constants.*;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_TARGET;
+import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
+import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
+import static io.quarkus.kubernetes.deployment.Constants.S2I;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -21,19 +24,10 @@ import io.dekorate.utils.Strings;
 public class KubernetesConfigUtil {
 
     private static final String DEKORATE_PREFIX = "dekorate.";
-    private static final String QUARKUS_PREFIX = "quarkus.";
-
-    //Most of quarkus prefixed properties are handled directly by the config items (KubenretesConfig, OpenshiftConfig, KnativeConfig)
-    //We just need group, name & version parsed here, as we don't have decorators for these (low level properties).
-    private static final Set<String> QUARKUS_PREFIX_WHITELIST = new HashSet<>(Arrays.asList("group", "name", "version"));
 
     private static final Set<String> ALLOWED_GENERATORS = new HashSet<>(
             Arrays.asList("kubernetes", "openshift", "knative", "docker", "s2i"));
     private static final Set<String> IMAGE_GENERATORS = new HashSet<>(Arrays.asList("docker", "s2i"));
-
-    public static List<String> getDeploymentTargets() {
-        return getDeploymentTargets(toMap());
-    }
 
     public static List<String> getDeploymentTargets(Map<String, Object> map) {
         return Arrays.stream(map.getOrDefault(DEKORATE_PREFIX + DEPLOYMENT_TARGET, KUBERNETES).toString().split(","))
@@ -65,18 +59,18 @@ public class KubernetesConfigUtil {
      *
      * @return A map containing the properties.
      */
-    public static Map<String, Object> toMap() {
+    public static Map<String, Object> toMap(PlatformConfiguration... platformConfigurations) {
         Config config = ConfigProvider.getConfig();
         Map<String, Object> result = new HashMap<>();
 
-        Map<String, Object> quarkusPrefixed = StreamSupport.stream(config.getPropertyNames().spliterator(), false)
-                .filter(s -> s.startsWith(QUARKUS_PREFIX))
-                .map(s -> s.replaceFirst(QUARKUS_PREFIX, ""))
-                .filter(k -> ALLOWED_GENERATORS.contains(generatorName(k)))
-                .filter(k -> QUARKUS_PREFIX_WHITELIST.contains(propertyName(k)))
-                .filter(k -> config.getOptionalValue(QUARKUS_PREFIX + k, String.class).isPresent())
-                .collect(Collectors.toMap(k -> DEKORATE_PREFIX + k,
-                        k -> config.getValue(QUARKUS_PREFIX + k, String.class)));
+        // Most of quarkus prefixed properties are handled directly by the config items (KubernetesConfig, OpenshiftConfig, KnativeConfig)
+        // We just need group, name & version parsed here, as we don't have decorators for these (low level properties).
+        Map<String, Object> quarkusPrefixed = new HashMap<>();
+        Arrays.stream(platformConfigurations).forEach(p -> {
+            p.getGroup().ifPresent(g -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".group", g));
+            p.getName().ifPresent(n -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".name", n));
+            p.getVersion().ifPresent(v -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".version", v));
+        });
 
         Map<String, Object> unPrefixed = StreamSupport.stream(config.getPropertyNames().spliterator(), false)
                 .filter(k -> ALLOWED_GENERATORS.contains(generatorName(k)))
@@ -85,6 +79,7 @@ public class KubernetesConfigUtil {
 
         result.putAll(unPrefixed);
         result.putAll(quarkusPrefixed);
+        result.putAll(toS2iProperties(quarkusPrefixed));
         return result;
     }
 
@@ -101,17 +96,13 @@ public class KubernetesConfigUtil {
         return key.substring(0, key.indexOf("."));
     }
 
-    /**
-     * Returns the name of the property stripped of all prefixes.
-     *
-     * @param key The key.
-     * @return The property name.
-     */
-    private static String propertyName(String key) {
-        if (Strings.isNullOrEmpty(key) || !key.contains(".")) {
-            return key;
-        }
-        return key.substring(key.lastIndexOf(".") + 1);
+    private static Map<String, Object> toS2iProperties(Map<String, Object> map) {
+        Map<String, Object> result = new HashMap<>();
+        map.forEach((k, v) -> {
+            if (k.contains(OPENSHIFT)) {
+                result.put(k.replaceAll(OPENSHIFT, S2I), v);
+            }
+        });
+        return result;
     }
-
 }

@@ -16,7 +16,8 @@ public class ReactiveMySQLReloadTest {
     public static final QuarkusDevModeTest test = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(DevModeResource.class)
-                    .add(new StringAsset("quarkus.datasource.url=vertx-reactive:mysql://localhost:6033/reload_test"),
+                    .add(new StringAsset("quarkus.datasource.kind=mysql\n" +
+                            "quarkus.datasource.reactive.url=vertx-reactive:mysql://localhost:6033/reload_test"),
                             "application.properties"));
 
     @Test

@@ -1,14 +1,13 @@
-package io.quarkus.reactive.pg.client.runtime;
+package io.quarkus.reactive.mysql.client.runtime;
 
 import java.util.Optional;
-import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(name = "reactive-pg-client", phase = ConfigPhase.RUN_TIME)
-public class PgPoolConfig {
+@ConfigRoot(name = "datasource.reactive.mysql", phase = ConfigPhase.RUN_TIME)
+public class DataSourceReactiveMySQLConfig {
 
     /**
      * Whether prepared statements should be cached on the client side.
@@ -17,8 +16,14 @@ public class PgPoolConfig {
     public Optional<Boolean> cachePreparedStatements;
 
     /**
-     * The maximum number of inflight database commands that can be pipelined.
+     * Charset for connections.
      */
     @ConfigItem
-    public OptionalInt pipeliningLimit;
+    public Optional<String> charset;
+
+    /**
+     * Collation for connections.
+     */
+    @ConfigItem
+    public Optional<String> collation;
 }

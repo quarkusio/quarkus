@@ -1,26 +1,23 @@
 package io.quarkus.reactive.mysql.client.deployment;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.reactive.mysql.client.runtime.DataSourceConfig;
-import io.quarkus.reactive.mysql.client.runtime.MySQLPoolConfig;
+import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
+import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
+import io.quarkus.reactive.mysql.client.runtime.DataSourceReactiveMySQLConfig;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolProducer;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolRecorder;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.deployment.VertxBuildItem;
-import io.vertx.mysqlclient.MySQLPool;
 
 class ReactiveMySQLClientProcessor {
-
-    private static final Logger LOGGER = Logger.getLogger(ReactiveMySQLClientProcessor.class.getName());
 
     @BuildStep
     AdditionalBeanBuildItem registerBean() {
@@ -29,16 +26,25 @@ class ReactiveMySQLClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    MySQLPoolBuildItem build(BuildProducer<FeatureBuildItem> feature, MySQLPoolRecorder recorder, VertxBuildItem vertx,
+    void build(BuildProducer<FeatureBuildItem> feature, BuildProducer<MySQLPoolBuildItem> mysqlPool, MySQLPoolRecorder recorder,
+            VertxBuildItem vertx,
             BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown,
-            DataSourceConfig dataSourceConfig, MySQLPoolConfig mysqlPoolConfig) {
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig,
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
+            DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.REACTIVE_MYSQL_CLIENT));
 
-        RuntimeValue<MySQLPool> mysqlPool = recorder.configureMySQLPool(vertx.getVertx(), beanContainer.getValue(),
-                dataSourceConfig,
-                mysqlPoolConfig, shutdown);
+        if (!dataSourcesBuildTimeConfig.defaultDataSource.kind.isPresent()
+                || (!"mysql".equals(dataSourcesBuildTimeConfig.defaultDataSource.kind.get())
+                        && !"mariadb".equals(dataSourcesBuildTimeConfig.defaultDataSource.kind.get()))
+                || !dataSourceReactiveBuildTimeConfig.enabled) {
+            return;
+        }
 
-        return new MySQLPoolBuildItem(mysqlPool);
+        mysqlPool.produce(new MySQLPoolBuildItem(recorder.configureMySQLPool(vertx.getVertx(), beanContainer.getValue(),
+                dataSourcesRuntimeConfig, dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig,
+                shutdown)));
     }
 }

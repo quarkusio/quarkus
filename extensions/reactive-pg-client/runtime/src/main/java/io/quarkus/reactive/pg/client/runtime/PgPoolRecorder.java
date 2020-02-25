@@ -1,6 +1,9 @@
 package io.quarkus.reactive.pg.client.runtime;
 
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
+import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -13,9 +16,14 @@ import io.vertx.sqlclient.PoolOptions;
 public class PgPoolRecorder {
 
     public RuntimeValue<PgPool> configurePgPool(RuntimeValue<Vertx> vertx, BeanContainer container,
-            DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig, ShutdownContext shutdown) {
+            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
+            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig,
+            ShutdownContext shutdown) {
 
-        PgPool pgPool = initialize(vertx.getValue(), dataSourceConfig, pgPoolConfig);
+        PgPool pgPool = initialize(vertx.getValue(), dataSourcesRuntimeConfig.defaultDataSource,
+                dataSourceReactiveRuntimeConfig,
+                dataSourceReactivePostgreSQLConfig);
 
         PgPoolProducer producer = container.instance(PgPoolProducer.class);
         producer.initialize(pgPool);
@@ -24,41 +32,58 @@ public class PgPoolRecorder {
         return new RuntimeValue<>(pgPool);
     }
 
-    private PgPool initialize(Vertx vertx, DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig) {
-        PoolOptions poolOptions = toPoolOptions(dataSourceConfig, pgPoolConfig);
-        PgConnectOptions pgConnectOptions = toPgConnectOptions(dataSourceConfig, pgPoolConfig);
+    private PgPool initialize(Vertx vertx, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
+            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
+        PoolOptions poolOptions = toPoolOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
+                dataSourceReactivePostgreSQLConfig);
+        PgConnectOptions pgConnectOptions = toPgConnectOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
+                dataSourceReactivePostgreSQLConfig);
         return PgPool.pool(vertx, pgConnectOptions, poolOptions);
     }
 
-    private PoolOptions toPoolOptions(DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig) {
+    private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
+            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
-        if (dataSourceConfig != null) {
-            dataSourceConfig.maxSize.ifPresent(value -> poolOptions.setMaxSize(value));
+
+        if (dataSourceReactiveRuntimeConfig.maxSize.isPresent()) {
+            poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize.getAsInt());
         }
 
         return poolOptions;
     }
 
-    private PgConnectOptions toPgConnectOptions(DataSourceConfig dataSourceConfig, PgPoolConfig pgPoolConfig) {
+    private PgConnectOptions toPgConnectOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
+            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
         PgConnectOptions pgConnectOptions;
-        if (dataSourceConfig != null) {
-            pgConnectOptions = dataSourceConfig.url
-                    .filter(s -> s.matches("^vertx-reactive:postgre(?:s|sql)://.*$"))
-                    .map(s -> s.substring("vertx-reactive:".length()))
-                    .map(PgConnectOptions::fromUri)
-                    .orElse(new PgConnectOptions());
 
-            dataSourceConfig.username.ifPresent(value -> pgConnectOptions.setUser(value));
-            dataSourceConfig.password.ifPresent(value -> pgConnectOptions.setPassword(value));
-
+        if (dataSourceReactiveRuntimeConfig.url.isPresent()) {
+            String url = dataSourceReactiveRuntimeConfig.url.get();
+            // clean up the URL to make migrations easier
+            if (url.matches("^vertx-reactive:postgre(?:s|sql)://.*$")) {
+                url = url.substring("vertx-reactive:".length());
+            }
+            pgConnectOptions = PgConnectOptions.fromUri(url);
         } else {
             pgConnectOptions = new PgConnectOptions();
         }
 
-        if (pgPoolConfig != null) {
-            pgPoolConfig.cachePreparedStatements.ifPresent(value -> pgConnectOptions.setCachePreparedStatements(value));
-            pgPoolConfig.pipeliningLimit.ifPresent(value -> pgConnectOptions.setPipeliningLimit(value));
+        if (dataSourceRuntimeConfig.username.isPresent()) {
+            pgConnectOptions.setUser(dataSourceRuntimeConfig.username.get());
+        }
+
+        if (dataSourceRuntimeConfig.password.isPresent()) {
+            pgConnectOptions.setPassword(dataSourceRuntimeConfig.password.get());
+        }
+
+        if (dataSourceReactivePostgreSQLConfig.cachePreparedStatements.isPresent()) {
+            pgConnectOptions.setCachePreparedStatements(dataSourceReactivePostgreSQLConfig.cachePreparedStatements.get());
+        }
+        if (dataSourceReactivePostgreSQLConfig.pipeliningLimit.isPresent()) {
+            pgConnectOptions.setPipeliningLimit(dataSourceReactivePostgreSQLConfig.pipeliningLimit.getAsInt());
         }
 
         return pgConnectOptions;

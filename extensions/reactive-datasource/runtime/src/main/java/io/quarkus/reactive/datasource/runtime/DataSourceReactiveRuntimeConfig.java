@@ -1,4 +1,4 @@
-package io.quarkus.reactive.pg.client.runtime;
+package io.quarkus.reactive.datasource.runtime;
 
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -7,26 +7,17 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(name = "datasource", phase = ConfigPhase.RUN_TIME)
-public class DataSourceConfig {
+/**
+ * For now, the reactive extensions only support a default datasource.
+ */
+@ConfigRoot(name = "datasource.reactive", phase = ConfigPhase.RUN_TIME)
+public class DataSourceReactiveRuntimeConfig {
 
     /**
      * The datasource URL.
      */
     @ConfigItem
     public Optional<String> url;
-
-    /**
-     * The datasource username.
-     */
-    @ConfigItem
-    public Optional<String> username;
-
-    /**
-     * The datasource password.
-     */
-    @ConfigItem
-    public Optional<String> password;
 
     /**
      * The datasource pool maximum size.

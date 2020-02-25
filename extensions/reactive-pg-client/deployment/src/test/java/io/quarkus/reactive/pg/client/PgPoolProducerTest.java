@@ -18,6 +18,7 @@ public class PgPoolProducerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withConfigurationResource("application-default-datasource.properties")
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(BeanUsingBarePgClient.class)
                     .addClass(BeanUsingMutinyPgClient.class)

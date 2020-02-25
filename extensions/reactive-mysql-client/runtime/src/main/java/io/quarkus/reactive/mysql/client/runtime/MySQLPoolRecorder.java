@@ -1,6 +1,9 @@
 package io.quarkus.reactive.mysql.client.runtime;
 
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
+import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -13,9 +16,14 @@ import io.vertx.sqlclient.PoolOptions;
 public class MySQLPoolRecorder {
 
     public RuntimeValue<MySQLPool> configureMySQLPool(RuntimeValue<Vertx> vertx, BeanContainer container,
-            DataSourceConfig dataSourceConfig, MySQLPoolConfig mysqlPoolConfig, ShutdownContext shutdown) {
+            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
+            DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig,
+            ShutdownContext shutdown) {
 
-        MySQLPool mysqlPool = initialize(vertx.getValue(), dataSourceConfig, mysqlPoolConfig);
+        MySQLPool mysqlPool = initialize(vertx.getValue(), dataSourcesRuntimeConfig.defaultDataSource,
+                dataSourceReactiveRuntimeConfig,
+                dataSourceReactiveMySQLConfig);
 
         MySQLPoolProducer producer = container.instance(MySQLPoolProducer.class);
         producer.initialize(mysqlPool);
@@ -24,42 +32,60 @@ public class MySQLPoolRecorder {
         return new RuntimeValue<>(mysqlPool);
     }
 
-    private MySQLPool initialize(Vertx vertx, DataSourceConfig dataSourceConfig, MySQLPoolConfig mysqlPoolConfig) {
-        PoolOptions poolOptions = toPoolOptions(dataSourceConfig, mysqlPoolConfig);
-        MySQLConnectOptions mysqlConnectOptions = toMySQLConnectOptions(dataSourceConfig, mysqlPoolConfig);
+    private MySQLPool initialize(Vertx vertx, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
+            DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig) {
+        PoolOptions poolOptions = toPoolOptions(dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
+                dataSourceReactiveMySQLConfig);
+        MySQLConnectOptions mysqlConnectOptions = toMySQLConnectOptions(dataSourceRuntimeConfig,
+                dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig);
         return MySQLPool.pool(vertx, mysqlConnectOptions, poolOptions);
     }
 
-    private PoolOptions toPoolOptions(DataSourceConfig dataSourceConfig, MySQLPoolConfig mysqlPoolConfig) {
+    private PoolOptions toPoolOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
+            DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig) {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
-        if (dataSourceConfig != null) {
-            dataSourceConfig.maxSize.ifPresent(value -> poolOptions.setMaxSize(value));
+
+        if (dataSourceReactiveRuntimeConfig.maxSize.isPresent()) {
+            poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize.getAsInt());
         }
 
         return poolOptions;
     }
 
-    private MySQLConnectOptions toMySQLConnectOptions(DataSourceConfig dataSourceConfig, MySQLPoolConfig mysqlPoolConfig) {
+    private MySQLConnectOptions toMySQLConnectOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
+            DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig) {
         MySQLConnectOptions mysqlConnectOptions;
-        if (dataSourceConfig != null) {
-            mysqlConnectOptions = dataSourceConfig.url
-                    .filter(s -> s.startsWith("vertx-reactive:mysql://"))
-                    .map(s -> s.substring("vertx-reactive:".length()))
-                    .map(MySQLConnectOptions::fromUri)
-                    .orElse(new MySQLConnectOptions());
-
-            dataSourceConfig.username.ifPresent(value -> mysqlConnectOptions.setUser(value));
-            dataSourceConfig.password.ifPresent(value -> mysqlConnectOptions.setPassword(value));
-
+        if (dataSourceReactiveRuntimeConfig.url.isPresent()) {
+            String url = dataSourceReactiveRuntimeConfig.url.get();
+            // clean up the URL to make migrations easier
+            if (url.startsWith("vertx-reactive:mysql://")) {
+                url = url.substring("vertx-reactive:".length());
+            }
+            mysqlConnectOptions = MySQLConnectOptions.fromUri(url);
         } else {
             mysqlConnectOptions = new MySQLConnectOptions();
         }
 
-        if (mysqlPoolConfig != null) {
-            mysqlPoolConfig.cachePreparedStatements.ifPresent(value -> mysqlConnectOptions.setCachePreparedStatements(value));
-            mysqlPoolConfig.charset.ifPresent(value -> mysqlConnectOptions.setCharset(value));
-            mysqlPoolConfig.collation.ifPresent(value -> mysqlConnectOptions.setCollation(value));
+        if (dataSourceRuntimeConfig.username.isPresent()) {
+            mysqlConnectOptions.setUser(dataSourceRuntimeConfig.username.get());
+        }
+
+        if (dataSourceRuntimeConfig.password.isPresent()) {
+            mysqlConnectOptions.setPassword(dataSourceRuntimeConfig.password.get());
+        }
+
+        if (dataSourceReactiveMySQLConfig.cachePreparedStatements.isPresent()) {
+            mysqlConnectOptions.setCachePreparedStatements(dataSourceReactiveMySQLConfig.cachePreparedStatements.get());
+        }
+        if (dataSourceReactiveMySQLConfig.charset.isPresent()) {
+            mysqlConnectOptions.setCharset(dataSourceReactiveMySQLConfig.charset.get());
+        }
+        if (dataSourceReactiveMySQLConfig.collation.isPresent()) {
+            mysqlConnectOptions.setCollation(dataSourceReactiveMySQLConfig.collation.get());
         }
 
         return mysqlConnectOptions;

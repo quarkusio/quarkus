@@ -2,39 +2,29 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
+        <artifactId>quarkus-reactive-datasource-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-reactive-pg-client-parent</artifactId>
         <version>999-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-reactive-pg-client</artifactId>
-
-    <name>Quarkus - Reactive PostgreSQL Client - Runtime</name>
-    <description>A reactive client for the PostgreSQL database</description>
+    <artifactId>quarkus-reactive-datasource</artifactId>
+    <name>Quarkus - Reactive Datasource - Runtime</name>
+    <description>Configure your reactive datasources</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-reactive-datasource</artifactId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx</artifactId>
+            <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-pg-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-axle-pg-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-mutiny-vertx-pg-client</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-datasource</artifactId>
         </dependency>
     </dependencies>
 

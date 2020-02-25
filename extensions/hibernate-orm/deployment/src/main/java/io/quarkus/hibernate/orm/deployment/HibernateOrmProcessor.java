@@ -38,6 +38,7 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.DerbyTenSevenDialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
+import org.hibernate.dialect.SQLServer2012Dialect;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
@@ -734,6 +735,9 @@ public final class HibernateOrmProcessor {
         }
         if (DatabaseKind.isDerby(resolvedKind)) {
             return Optional.of((DerbyTenSevenDialect.class.getName()));
+        }
+        if (DatabaseKind.isMsSQL(resolvedKind)) {
+            return Optional.of((SQLServer2012Dialect.class.getName()));
         }
 
         String error = kind.isPresent()

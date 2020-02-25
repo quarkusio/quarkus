@@ -329,7 +329,7 @@ class KubernetesProcessor {
         String openshiftName = openshiftConfig.name.orElse(name);
         String knativeName = knativeConfig.name.orElse(name);
 
-        //TODO: This is needed until  https://github.com/dekorateio/dekorate/issues/456 is resolved.
+        //TODO: This is needed until https://github.com/dekorateio/dekorate/issues/456 is resolved.
         containerImageBuildItem
                 .ifPresent(c -> session.resources().decorate(new ApplyImageDecorator(kubernetesName, c.getImage())));
 

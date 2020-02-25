@@ -44,7 +44,7 @@ public class KubernetesDeployer {
             BuildProducer<DeploymentResultBuildItem> deploymentResult) {
 
         if (!containerImage.isPresent()) {
-            LOG.warn(
+            throw new RuntimeException(
                     "A Kubernetes deployment was requested but no extension was found to build a container image. Consider adding one of following extensions: \"quarkus-container-image-jib\", \"quarkus-container-image-docker\" or \"quarkus-container-image-s2i\".");
         }
 

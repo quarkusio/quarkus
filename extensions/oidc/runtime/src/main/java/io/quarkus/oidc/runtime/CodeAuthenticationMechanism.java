@@ -17,10 +17,10 @@ import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
-import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.quarkus.vertx.http.runtime.security.AuthenticationCompletionException;
 import io.quarkus.vertx.http.runtime.security.AuthenticationRedirectException;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.vertx.core.http.Cookie;
@@ -138,8 +138,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (stateCookie != null) {
             List<String> values = context.queryParam("state");
             // IDP must return a 'state' query parameter and the value of the state cookie must start with this parameter's value
-            if (values.size() != 1 || !stateCookie.getValue().startsWith(values.get(0))) {
-                cf.completeExceptionally(new AuthenticationFailedException());
+            if (values.size() != 1) {
+                LOG.debug("State parameter can not be empty or multi-valued");
+                cf.completeExceptionally(new AuthenticationCompletionException());
+                return cf;
+            } else if (!stateCookie.getValue().startsWith(values.get(0))) {
+                LOG.debug("State cookie does not match the state parameter");
+                cf.completeExceptionally(new AuthenticationCompletionException());
                 return cf;
             } else if (context.queryParam("pathChecked").isEmpty()) {
                 // This is an original redirect from IDP, check if the request path needs to be updated
@@ -170,7 +175,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             }
         } else {
             // State cookie must be available to minimize the risk of CSRF
-            cf.completeExceptionally(new AuthenticationFailedException());
+            LOG.debug("The state cookie is missing after a redirect from IDP");
+            cf.completeExceptionally(new AuthenticationCompletionException());
             return cf;
         }
 
@@ -182,16 +188,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         configContext.auth.authenticate(params, userAsyncResult -> {
             if (userAsyncResult.failed()) {
-                cf.completeExceptionally(new AuthenticationFailedException());
+                if (userAsyncResult.cause() != null) {
+                    LOG.debugf("Exception during the code to token exchange: %s", userAsyncResult.cause().getMessage());
+                }
+                cf.completeExceptionally(new AuthenticationCompletionException(userAsyncResult.cause()));
             } else {
                 AccessToken result = AccessToken.class.cast(userAsyncResult.result());
 
                 authenticate(identityProviderManager, new IdTokenCredential(result.opaqueIdToken(), context))
                         .whenCompleteAsync((securityIdentity, throwable) -> {
                             if (throwable != null) {
-                                cf.completeExceptionally(throwable);
+                                cf.completeExceptionally(new AuthenticationCompletionException(throwable));
                             } else {
-                                processSuccessfulAuthentication(context, cf, result, securityIdentity);
+                                processSuccessfulAuthentication(context, configContext, cf, result, securityIdentity);
                             }
                         });
             }
@@ -200,7 +209,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return cf;
     }
 
-    private void processSuccessfulAuthentication(RoutingContext context,
+    private void processSuccessfulAuthentication(RoutingContext context, TenantConfigContext configContext,
             CompletableFuture<SecurityIdentity> cf,
             AccessToken result, SecurityIdentity securityIdentity) {
         removeCookie(context, SESSION_COOKIE_NAME);
@@ -213,6 +222,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         cookie.setMaxAge(result.idToken().getInteger("exp"));
         cookie.setSecure(context.request().isSSL());
         cookie.setHttpOnly(true);
+        if (configContext.oidcConfig.authentication.cookiePath.isPresent()) {
+            cookie.setPath(configContext.oidcConfig.authentication.cookiePath.get());
+        }
         context.response().addCookie(cookie);
 
         cf.complete(augmentIdentity(securityIdentity, result.opaqueAccessToken(),
@@ -240,7 +252,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         cookie.setSecure(context.request().isSSL());
         // max-age is 30 minutes
         cookie.setMaxAge(60 * 30);
-
+        if (auth.cookiePath.isPresent()) {
+            cookie.setPath(auth.getCookiePath().get());
+        }
         context.response().addCookie(cookie);
         return uuid;
     }

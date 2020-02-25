@@ -13,7 +13,6 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         if ("tenant-d".equals(context.request().path().split("/")[2])) {
             OidcTenantConfig config = new OidcTenantConfig();
             config.setTenantId("tenant-id");
-            ;
             config.setAuthServerUrl(getIssuerUrl() + "/realms/quarkus-d");
             config.setClientId("quarkus-d");
             OidcTenantConfig.Credentials credentials = new OidcTenantConfig.Credentials();

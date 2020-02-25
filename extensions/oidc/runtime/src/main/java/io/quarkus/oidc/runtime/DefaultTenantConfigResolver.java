@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -8,6 +9,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
@@ -15,6 +18,7 @@ import io.vertx.ext.web.RoutingContext;
 @ApplicationScoped
 public class DefaultTenantConfigResolver {
 
+    private static final Logger LOG = Logger.getLogger(DefaultTenantConfigResolver.class);
     private static final String CURRENT_TENANT_CONFIG = "io.quarkus.oidc.current.tenant.config";
 
     @Inject
@@ -23,14 +27,18 @@ public class DefaultTenantConfigResolver {
     @Inject
     Instance<TenantConfigResolver> tenantConfigResolver;
 
-    private volatile Map<String, TenantConfigContext> tenantsConfig;
+    private volatile Map<String, TenantConfigContext> staticTenantsConfig;
     private volatile TenantConfigContext defaultTenant;
     private volatile Function<OidcTenantConfig, TenantConfigContext> tenantConfigContextFactory;
+    private volatile Map<String, TenantConfigContext> dynamicTenantsConfig;
 
     @PostConstruct
     public void verifyResolvers() {
-        if (tenantConfigResolver.isAmbiguous()) {
-            throw new IllegalStateException("Multiple " + TenantConfigResolver.class + " beans registered");
+        if (tenantConfigResolver.isResolvable()) {
+            if (tenantConfigResolver.isAmbiguous()) {
+                throw new IllegalStateException("Multiple " + TenantConfigResolver.class + " beans registered");
+            }
+            dynamicTenantsConfig = new HashMap<>();
         }
         if (tenantResolver.isAmbiguous()) {
             throw new IllegalStateException("Multiple " + TenantResolver.class + " beans registered");
@@ -57,7 +65,7 @@ public class DefaultTenantConfigResolver {
     }
 
     void setTenantsConfig(Map<String, TenantConfigContext> tenantsConfig) {
-        this.tenantsConfig = tenantsConfig;
+        this.staticTenantsConfig = tenantsConfig;
     }
 
     void setDefaultTenant(TenantConfigContext defaultTenant) {
@@ -69,13 +77,20 @@ public class DefaultTenantConfigResolver {
     }
 
     private TenantConfigContext getTenantConfigFromTenantResolver(RoutingContext context) {
-        String tenant = null;
+        String tenantId = null;
 
         if (tenantResolver.isResolvable()) {
-            tenant = tenantResolver.get().resolve(context);
+            tenantId = tenantResolver.get().resolve(context);
         }
 
-        return tenantsConfig.getOrDefault(tenant, defaultTenant);
+        TenantConfigContext configContext = staticTenantsConfig.get(tenantId);
+        if (configContext == null) {
+            if (tenantId != null && !tenantId.isEmpty()) {
+                LOG.debugf("No configuration with a tenant id '%s' has been found, using the default configuration");
+            }
+            configContext = defaultTenant;
+        }
+        return configContext;
     }
 
     boolean isBlocking(RoutingContext context) {
@@ -96,11 +111,11 @@ public class DefaultTenantConfigResolver {
             if (tenantConfig != null) {
                 String tenantId = tenantConfig.getTenantId()
                         .orElseThrow(() -> new IllegalStateException("You must provide a tenant id"));
-                TenantConfigContext tenantContext = tenantsConfig.get(tenantId);
+                TenantConfigContext tenantContext = dynamicTenantsConfig.get(tenantId);
 
                 if (tenantContext == null && create) {
-                    synchronized (this) {
-                        return tenantsConfig.computeIfAbsent(tenantId,
+                    synchronized (dynamicTenantsConfig) {
+                        return dynamicTenantsConfig.computeIfAbsent(tenantId,
                                 clientId -> tenantConfigContextFactory.apply(tenantConfig));
                     }
                 }

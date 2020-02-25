@@ -2219,21 +2219,6 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-mutiny-generator</artifactId>
-                <version>${mutiny-client.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-databind</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-core</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-core</artifactId>
                 <version>${mutiny-client.version}</version>
                 <exclusions>

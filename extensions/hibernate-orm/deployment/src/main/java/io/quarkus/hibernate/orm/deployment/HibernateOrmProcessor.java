@@ -89,7 +89,7 @@ import io.quarkus.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionEntityManagers;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
-import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL95Dialect;
+import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
 import io.quarkus.hibernate.orm.runtime.metrics.HibernateCounter;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.metrics.deployment.spi.MetricBuildItem;
@@ -721,7 +721,7 @@ public final class HibernateOrmProcessor {
         // of all the dialects we want in so that people can override them
         String resolvedKind = kind.orElse("NO_KIND");
         if (DatabaseKind.isPostgreSQL(resolvedKind)) {
-            return Optional.of(QuarkusPostgreSQL95Dialect.class.getName());
+            return Optional.of(QuarkusPostgreSQL10Dialect.class.getName());
         }
         if (DatabaseKind.isH2(resolvedKind)) {
             return Optional.of(QuarkusH2Dialect.class.getName());

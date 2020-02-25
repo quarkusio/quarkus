@@ -93,6 +93,15 @@
                         <excludedArtifact>javax.servlet:servlet-api</excludedArtifact>
                         <excludedArtifact>javax.servlet:javax.servlet-api</excludedArtifact>
                     </excludedArtifacts>
+                    <parentFirstArtifacts>
+                        <!--
+                        Sentry logging has a dependency on the Servlet API, so we load it parent first to
+                        prevent class loading problems.
+
+                        see https://github.com/quarkusio/quarkus/issues/7407
+                        -->
+                        <parentFirstArtifact>jakarta.servlet:jakarta.servlet-api</parentFirstArtifact>
+                    </parentFirstArtifacts>
                 </configuration>
             </plugin>
             <plugin>

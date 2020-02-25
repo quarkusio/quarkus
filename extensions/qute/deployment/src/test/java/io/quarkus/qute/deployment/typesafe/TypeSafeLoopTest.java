@@ -1,4 +1,4 @@
-package io.quarkus.qute.deployment;
+package io.quarkus.qute.deployment.typesafe;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Template;
+import io.quarkus.qute.deployment.Foo;
+import io.quarkus.qute.deployment.MyFooList;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class TypeSafeLoopTest {

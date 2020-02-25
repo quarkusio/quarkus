@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -45,7 +46,7 @@ class Parser implements Function<String, Expression> {
     static final char START_COMPOSITE_PARAM = '(';
     static final char END_COMPOSITE_PARAM = ')';
 
-    static final String TYPE_CHECK_NAMESPACE = "[" + Expressions.TYPECHECK_NAMESPACE_PLACEHOLDER + "].";
+    static final String TYPE_CHECK_NAMESPACE = "|" + Expressions.TYPECHECK_NAMESPACE_PLACEHOLDER + "|.";
 
     private StringBuilder buffer;
     private State state;
@@ -367,7 +368,7 @@ class Parser implements Function<String, Expression> {
             int spaceIdx = content.indexOf(" ");
             String key = content.substring(spaceIdx + 1, content.length());
             String value = content.substring(1, spaceIdx);
-            typeInfos.put(key, "[" + value + "]");
+            typeInfos.put(key, Expressions.TYPE_INFO_SEPARATOR + value + Expressions.TYPE_INFO_SEPARATOR);
 
         } else {
             sectionBlockStack.peek().addNode(new ExpressionNode(apply(content), engine, origin()));
@@ -592,14 +593,23 @@ class Parser implements Function<String, Expression> {
         }
         if (literal == Result.NOT_FOUND) {
             if (namespace != null) {
+                // inject:foo.name becomes "[$$namespace$$].foo.name"
                 typeCheckInfo = TYPE_CHECK_NAMESPACE + parts.stream().collect(Collectors.joining("."));
             } else if (typeInfos.containsKey(parts.get(0))) {
                 typeCheckInfo = typeInfos.get(parts.get(0));
                 if (typeCheckInfo != null) {
-                    if (parts.size() == 2) {
-                        typeCheckInfo += "." + parts.get(1);
-                    } else if (parts.size() > 2) {
-                        typeCheckInfo += "." + parts.stream().skip(1).collect(Collectors.joining("."));
+                    for (String part : parts.subList(1, parts.size())) {
+                        if (Expressions.isVirtualMethod(part)) {
+                            List<String> params = new ArrayList<>(Expressions.parseVirtualMethodParams(part));
+                            for (ListIterator<String> iterator = params.listIterator(); iterator.hasNext();) {
+                                String param = iterator.next();
+                                iterator.set(typeInfos.getOrDefault(param, param));
+                            }
+                            typeCheckInfo += "."
+                                    + Expressions.buildVirtualMethodSignature(Expressions.parseVirtualMethodName(part), params);
+                        } else {
+                            typeCheckInfo += "." + typeInfos.getOrDefault(part, part);
+                        }
                     }
                 }
             }

@@ -77,24 +77,25 @@ public class ParserTest {
                 + "{/}"
                 + "{#for foo in foos}"
                 + "{foo.baz}"
-                + "{/}");
+                + "{/}"
+                + "{foo.call(labels,bar)}");
         Set<Expression> expressions = template.getExpressions();
 
-        assertExpr(expressions, "foo.name", 2, "[org.acme.Foo].name");
-        assertExpr(expressions, "foo.items", 2, "[org.acme.Foo].items");
-        assertExpr(expressions, "item.name", 2, "[org.acme.Foo].items<for-element>.name");
+        assertExpr(expressions, "foo.name", 2, "|org.acme.Foo|.name");
+        assertExpr(expressions, "foo.items", 2, "|org.acme.Foo|.items");
+        assertExpr(expressions, "item.name", 2, "|org.acme.Foo|.items<for-element>.name");
         assertExpr(expressions, "bar", 1, null);
-        assertExpr(expressions, "labels", 1, "[java.util.List<org.acme.Label>]");
-        assertExpr(expressions, "it.name", 2, "[java.util.List<org.acme.Label>]<for-element>.name");
-        assertExpr(expressions, "inject:bean.name", 2, "[" + Expressions.TYPECHECK_NAMESPACE_PLACEHOLDER + "].bean.name");
-        assertExpr(expressions, "inject:bean.labels", 2, "[" + Expressions.TYPECHECK_NAMESPACE_PLACEHOLDER + "].bean.labels");
-        assertExpr(expressions, "it.value", 2,
-                "[" + Expressions.TYPECHECK_NAMESPACE_PLACEHOLDER + "].bean.labels<for-element>.value");
-        assertExpr(expressions, "foo.bar", 2, "[org.acme.Foo].bar");
-        assertExpr(expressions, "baz.name", 2, "[org.acme.Foo].bar.name");
-        assertExpr(expressions, "foo.bravo", 2, "[org.acme.Foo].bravo");
-        assertExpr(expressions, "delta.id", 2, "[org.acme.Foo].bravo.id");
+        assertExpr(expressions, "labels", 1, "|java.util.List<org.acme.Label>|");
+        assertExpr(expressions, "it.name", 2, "|java.util.List<org.acme.Label>|<for-element>.name");
+        assertExpr(expressions, "inject:bean.name", 2, Parser.TYPE_CHECK_NAMESPACE + "bean.name");
+        assertExpr(expressions, "inject:bean.labels", 2, Parser.TYPE_CHECK_NAMESPACE + "bean.labels");
+        assertExpr(expressions, "it.value", 2, Parser.TYPE_CHECK_NAMESPACE + "bean.labels<for-element>.value");
+        assertExpr(expressions, "foo.bar", 2, "|org.acme.Foo|.bar");
+        assertExpr(expressions, "baz.name", 2, "|org.acme.Foo|.bar.name");
+        assertExpr(expressions, "foo.bravo", 2, "|org.acme.Foo|.bravo");
+        assertExpr(expressions, "delta.id", 2, "|org.acme.Foo|.bravo.id");
         assertExpr(expressions, "foo.baz", 2, null);
+        assertExpr(expressions, "foo.call(labels,bar)", 2, "|org.acme.Foo|.call(|java.util.List<org.acme.Label>|,bar)");
     }
 
     @Test

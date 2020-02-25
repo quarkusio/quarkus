@@ -1,5 +1,6 @@
 package io.quarkus.qute.deployment;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,11 +9,14 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
+
+import io.quarkus.arc.processor.DotNames;
 
 public final class Types {
 
@@ -104,6 +108,33 @@ public final class Types {
             return containsTypeVariable(type.asArrayType().component());
         }
         return false;
+    }
+
+    static boolean isAssignableFrom(Type type1, Type type2, IndexView index) {
+        // TODO consider type params in assignability rules
+        return Types.isAssignableFrom(type1.name(), type2.name(), index);
+    }
+
+    static boolean isAssignableFrom(DotName class1, DotName class2, IndexView index) {
+        // java.lang.Object is assignable from any type
+        if (class1.equals(DotNames.OBJECT)) {
+            return true;
+        }
+        // type1 is the same as type2
+        if (class1.equals(class2)) {
+            return true;
+        }
+        // type1 is a superclass
+        Set<DotName> assignables = new HashSet<>();
+        Collection<ClassInfo> subclasses = index.getAllKnownSubclasses(class1);
+        for (ClassInfo subclass : subclasses) {
+            assignables.add(subclass.name());
+        }
+        Collection<ClassInfo> implementors = index.getAllKnownImplementors(class1);
+        for (ClassInfo implementor : implementors) {
+            assignables.add(implementor.name());
+        }
+        return assignables.contains(class2);
     }
 
 }

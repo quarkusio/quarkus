@@ -66,8 +66,17 @@ public final class ValueResolvers {
         return new ValueResolver() {
 
             public boolean appliesTo(EvalContext context) {
-                return context.getParams().size() == 1
-                        && ("?:".equals(context.getName()) || "or".equals(context.getName()) || ":".equals(context.getName()));
+                if (context.getParams().size() != 1) {
+                    return false;
+                }
+                switch (context.getName()) {
+                    case "?:":
+                    case "or":
+                    case ":":
+                        return true;
+                    default:
+                        return false;
+                }
             }
 
             @Override

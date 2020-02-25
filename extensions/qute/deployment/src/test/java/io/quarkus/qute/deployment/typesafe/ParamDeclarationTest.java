@@ -1,4 +1,4 @@
-package io.quarkus.qute.deployment;
+package io.quarkus.qute.deployment.typesafe;
 
 import javax.inject.Inject;
 
@@ -18,7 +18,7 @@ public class ParamDeclarationTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(Movie.class)
-                    .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.Movie movie}"
+                    .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Movie movie}"
                             + "{movie.mainCharacters.size}: {#for character in movie.mainCharacters}"
                             + "{character}"
                             + "{#if hasNext}, {/}"

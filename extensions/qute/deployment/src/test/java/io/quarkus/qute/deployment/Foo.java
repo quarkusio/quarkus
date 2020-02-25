@@ -1,6 +1,6 @@
 package io.quarkus.qute.deployment;
 
-class Foo {
+public class Foo {
 
     public String name;
 

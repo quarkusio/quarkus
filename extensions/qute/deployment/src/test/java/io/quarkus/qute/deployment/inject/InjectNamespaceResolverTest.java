@@ -1,7 +1,8 @@
-package io.quarkus.qute.deployment;
+package io.quarkus.qute.deployment.inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -11,22 +12,31 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Template;
+import io.quarkus.qute.deployment.Hello;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class UserTagTest {
+public class InjectNamespaceResolverTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset("{it}"), "templates/tags/hello.txt")
-                    .addAsResource(new StringAsset("{#hello name /}"), "templates/foo.txt"));
+                    .addClasses(SimpleBean.class, Hello.class)
+                    .addAsResource(new StringAsset("{inject:hello.ping}"), "templates/foo.html"));
 
     @Inject
-    Template foo;
+    SimpleBean simpleBean;
 
     @Test
     public void testInjection() {
-        assertEquals("bar", foo.data("name", "bar").render());
+        assertEquals("pong", simpleBean.foo.render());
+    }
+
+    @Dependent
+    public static class SimpleBean {
+
+        @Inject
+        Template foo;
+
     }
 
 }

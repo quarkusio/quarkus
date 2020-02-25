@@ -35,11 +35,11 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
         return matchClass;
     }
 
-    public boolean matchesClass(ClassInfo clazz) {
+    boolean matchesClass(ClassInfo clazz) {
         return matchClass.name().equals(clazz.name());
     }
 
-    public boolean matchesName(String name) {
+    boolean matchesName(String name) {
         return TemplateExtension.ANY.equals(matchName) ? true : matchName.equals(name);
     }
 

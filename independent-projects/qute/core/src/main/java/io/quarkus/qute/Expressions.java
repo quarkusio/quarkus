@@ -3,6 +3,7 @@ package io.quarkus.qute;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public final class Expressions {
 
@@ -10,6 +11,7 @@ public final class Expressions {
 
     static final String LEFT_BRACKET = "(";
     static final String RIGHT_BRACKET = ")";
+    public static final char TYPE_INFO_SEPARATOR = '|';
 
     private Expressions() {
     }
@@ -27,20 +29,40 @@ public final class Expressions {
         int start = value.indexOf(LEFT_BRACKET);
         if (start != -1 && value.endsWith(RIGHT_BRACKET)) {
             String params = value.substring(start + 1, value.length() - 1);
-            return splitParts(params, Expressions::isParamSeparator);
+            return splitParts(params, Expressions::isParamSeparator, Parser::isStringLiteralSeparator);
         }
         throw new IllegalArgumentException("Not a virtual method: " + value);
     }
 
-    public static List<String> splitParts(String value) {
-        return splitParts(value, Parser::isSeparator);
+    public static String buildVirtualMethodSignature(String name, List<String> params) {
+        return name + LEFT_BRACKET + params.stream().collect(Collectors.joining(",")) + RIGHT_BRACKET;
     }
 
-    public static List<String> splitParts(String value, Predicate<Character> separatorPredicate) {
+    public static List<String> splitParts(String value) {
+        return splitParts(value, Parser::isSeparator, Parser::isStringLiteralSeparator);
+    }
+
+    /**
+     * 
+     * @param value
+     * @return the parts
+     */
+    public static List<String> splitTypeCheckParts(String value) {
+        return splitParts(value, Parser::isSeparator, new Predicate<Character>() {
+
+            @Override
+            public boolean test(Character t) {
+                return t == TYPE_INFO_SEPARATOR;
+            }
+        }.or(Parser::isStringLiteralSeparator));
+    }
+
+    public static List<String> splitParts(String value, Predicate<Character> separatorPredicate,
+            Predicate<Character> literalSeparatorPredicate) {
         if (value == null || value.isEmpty()) {
             return Collections.emptyList();
         }
-        boolean stringLiteral = false;
+        boolean literal = false;
         boolean separator = false;
         char infix = 0;
         boolean brackets = false;
@@ -51,7 +73,7 @@ public final class Expressions {
             if (separatorPredicate.test(c)) {
                 // Adjacent separators are ignored
                 if (!separator) {
-                    if (!stringLiteral) {
+                    if (!literal) {
                         if (buffer.length() > 0) {
                             builder.add(buffer.toString());
                             buffer = new StringBuilder();
@@ -62,11 +84,11 @@ public final class Expressions {
                     }
                 }
             } else {
-                if (Parser.isStringLiteralSeparator(c)) {
-                    stringLiteral = !stringLiteral;
+                if (literalSeparatorPredicate.test(c)) {
+                    literal = !literal;
                 }
                 // Non-separator char
-                if (!stringLiteral) {
+                if (!literal) {
                     if (!brackets && c == ' ') {
                         if (infix == 1) {
                             // The second space after the infix method

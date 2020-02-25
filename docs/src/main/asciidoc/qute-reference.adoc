@@ -571,8 +571,6 @@ It is possible to specify optional parameter declarations in a template.
 Quarkus attempts to validate all expressions that reference such parameters.
 If an invalid/incorrect expression is found the build fails.
 
-NOTE: Only properties are currently validated in expressions; virtual methods are currently ignored.
-
 [source,html]
 ----
 {@org.acme.Foo foo} <1>

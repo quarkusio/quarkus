@@ -12,13 +12,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -82,6 +85,10 @@ import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.api.VariantTemplate;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
+import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.Check;
+import io.quarkus.qute.deployment.TypeCheckInfo.Part;
+import io.quarkus.qute.deployment.TypeCheckInfo.TypeInfoPart;
+import io.quarkus.qute.deployment.TypeCheckInfo.VirtualMethodPart;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
 import io.quarkus.qute.generator.ValueResolverGenerator;
 import io.quarkus.qute.mutiny.MutinyPublisherFactory;
@@ -105,6 +112,7 @@ public class QuteProcessor {
     static final DotName STREAM = DotName.createSimple(Stream.class.getName());
     static final DotName MAP = DotName.createSimple(Map.class.getName());
     static final DotName MAP_ENTRY = DotName.createSimple(Entry.class.getName());
+    static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
 
     private static final String MATCH_NAME = "matchName";
 
@@ -122,7 +130,7 @@ public class QuteProcessor {
         for (IncorrectExpressionBuildItem incorrectExpression : incorrectExpressions) {
             if (incorrectExpression.clazz != null) {
                 errors.add(String.format(
-                        "Incorrect expression: %s\n\t- property [%s] not found on class [%s] nor handled by an extension method\n\t- found in template [%s] on line %s",
+                        "Incorrect expression: %s\n\t- property/method [%s] not found on class [%s] nor handled by an extension method\n\t- found in template [%s] on line %s",
                         incorrectExpression.expression, incorrectExpression.property, incorrectExpression.clazz,
                         findTemplatePath(analysis, incorrectExpression.templateId), incorrectExpression.line));
             } else {
@@ -134,7 +142,7 @@ public class QuteProcessor {
         }
 
         if (!errors.isEmpty()) {
-            StringBuilder message = new StringBuilder("Found " + errors.size() + " template problems: ");
+            StringBuilder message = new StringBuilder("Found template problems (").append(errors.size()).append("):");
             int idx = 1;
             for (String errorMessage : errors) {
                 message.append("\n").append("[").append(idx++).append("] ").append(errorMessage);
@@ -199,13 +207,15 @@ public class QuteProcessor {
             }
         }).build();
 
-        for (TemplatePathBuildItem path : templatePaths) {
+        for (
+
+        TemplatePathBuildItem path : templatePaths) {
             Template template = dummyEngine.getTemplate(path.getPath());
             if (template != null) {
                 analysis.add(new TemplateAnalysis(template.getGeneratedId(), template.getExpressions(), path));
             }
         }
-        LOGGER.debugf("Finished analysis of %s templates  in %s ms", analysis.size(), System.currentTimeMillis() - start);
+        LOGGER.debugf("Finished analysis of %s templates in %s ms", analysis.size(), System.currentTimeMillis() - start);
         return new TemplatesAnalysisBuildItem(analysis);
     }
 
@@ -214,7 +224,7 @@ public class QuteProcessor {
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
             List<TypeCheckExcludeBuildItem> excludes,
             BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
-            BuildProducer<ImplicitValueResolverBuildItem> requiredClasses) {
+            BuildProducer<ImplicitValueResolverBuildItem> implicitClasses) {
 
         IndexView index = beanArchiveIndex.getIndex();
         Function<String, String> templateIdToPathFun = new Function<String, String>() {
@@ -224,47 +234,65 @@ public class QuteProcessor {
             }
         };
 
+        // Map implicit class -> true if methods were used
+        Map<ClassInfo, Boolean> implicitClassToMethodUsed = new HashMap<>();
+
         for (TemplateAnalysis analysis : templatesAnalysis.getAnalysis()) {
             for (Expression expression : analysis.expressions) {
-                if (expression.typeCheckInfo == null) {
+                if (expression.namespace != null || expression.typeCheckInfo == null) {
+                    // No type info available or a namespace expression
                     continue;
                 }
                 TypeCheckInfo typeCheckInfo = TypeCheckInfo.create(expression, index, templateIdToPathFun);
-                if (typeCheckInfo.parts.isEmpty()) {
-                    continue;
-                }
-                Iterator<String> parts = typeCheckInfo.parts.iterator();
+                Iterator<Part> parts = typeCheckInfo.parts.iterator();
+                TypeInfoPart root = parts.next().asTypeInfo();
                 Match match = new Match();
-                match.clazz = typeCheckInfo.rawClass;
-                match.type = typeCheckInfo.resolvedType;
-
-                String rootHint = typeCheckInfo.getHelperHint(TypeCheckInfo.ROOT_HINT);
-                if (rootHint != null) {
-                    processHints(rootHint, match, index);
+                match.clazz = root.rawClass;
+                match.type = root.resolvedType;
+                if (root.hint != null) {
+                    processHints(root.hint, match, index);
                 }
 
                 while (parts.hasNext()) {
                     // Now iterate over all parts of the expression and check each part against the current "match class"
-                    String name = parts.next();
+                    Part part = parts.next();
                     if (match.clazz != null) {
-                        requiredClasses.produce(new ImplicitValueResolverBuildItem(match.clazz));
-                        // TODO we don't validate virtual methods atm
-                        if (name.contains("(")) {
-                            break;
+                        // By default, we only consider properties
+                        implicitClassToMethodUsed.putIfAbsent(match.clazz, false);
+                        AnnotationTarget member = null;
+                        // First try to find java members
+                        if (part.isVirtualMethod()) {
+                            member = findMethod(part.asVirtualMethod(), match.clazz, expression, index, templateIdToPathFun);
+                            if (member != null) {
+                                implicitClassToMethodUsed.put(match.clazz, true);
+                            }
+                        } else if (part.isProperty()) {
+                            member = findProperty(part.asProperty().name, match.clazz, index);
                         }
-                        AnnotationTarget member = findProperty(name, match.clazz, index);
+                        // Java member not found - try extension methods
                         if (member == null) {
-                            member = findTemplateExtensionMethod(name, match.clazz, templateExtensionMethods);
+                            member = findTemplateExtensionMethod(part, match.clazz, templateExtensionMethods, expression, index,
+                                    templateIdToPathFun);
                         }
-                        if (member == null && excludes.stream().anyMatch(e -> e.getPredicate().test(name, match.clazz))) {
-                            LOGGER.debugf("No property found for %s in [%s] but it is intentionally ignored", name,
-                                    expression.toOriginalString(), match.clazz);
-                            break;
-                        }
+
                         if (member == null) {
+                            // Test whether the validation should be skipped
+                            Check check = new Check(part.isProperty() ? part.asProperty().name : part.asVirtualMethod().name,
+                                    match.clazz, part.isVirtualMethod() ? part.asVirtualMethod().parameters.size() : -1);
+                            if (isExcluded(check, excludes)) {
+                                LOGGER.debugf(
+                                        "Expression part [%s] excluded from validation of [%s] against class [%s]",
+                                        part.value,
+                                        expression.toOriginalString(), match.clazz);
+                                break;
+                            }
+                        }
+
+                        if (member == null) {
+                            // No member found - incorrect expression
                             incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                                    name, match.clazz.toString(), expression.origin.getLine(),
-                                    expression.origin.getTemplateId()));
+                                    part.value, match.clazz.toString(), expression.origin.getLine(),
+                                    expression.origin.getTemplateGeneratedId()));
                             break;
                         } else if (parts.hasNext()) {
                             match.type = resolveType(member, match, index);
@@ -272,19 +300,29 @@ public class QuteProcessor {
                                 break;
                             }
                             match.clazz = index.getClassByName(match.type.name());
-
-                            String helperHint = typeCheckInfo.getHelperHint(name);
-                            if (helperHint != null) {
-                                // For example a loop section needs to validate the type of an element
-                                processHints(helperHint, match, index);
+                            if (part.isProperty()) {
+                                String hint = part.asProperty().hint;
+                                if (hint != null) {
+                                    // For example a loop section needs to validate the type of an element
+                                    processHints(hint, match, index);
+                                }
                             }
                         }
                     } else {
-                        // No match class - skip further validation
+                        LOGGER.debugf(
+                                "No match class available - skip further validation for [%s] in expression [%s] in template [%s] on line %s",
+                                part, expression.toOriginalString(), expression.origin.getTemplateId(),
+                                expression.origin.getLine());
                         break;
                     }
                 }
             }
+        }
+
+        for (Entry<ClassInfo, Boolean> implicit : implicitClassToMethodUsed.entrySet()) {
+            implicitClasses.produce(implicit.getValue()
+                    ? new ImplicitValueResolverBuildItem(implicit.getKey(), new TemplateDataBuilder().properties(false).build())
+                    : new ImplicitValueResolverBuildItem(implicit.getKey()));
         }
     }
 
@@ -349,7 +387,7 @@ public class QuteProcessor {
             BeanRegistrationPhaseBuildItem registrationPhase,
             // This producer is needed to ensure the correct ordering, ie. this build step must be executed before the ArC validation step
             BuildProducer<BeanConfiguratorBuildItem> configurators,
-            BuildProducer<ImplicitValueResolverBuildItem> requiredClasses) {
+            BuildProducer<ImplicitValueResolverBuildItem> implicitClasses) {
 
         IndexView index = beanArchiveIndex.getIndex();
         Function<String, String> templateIdToPathFun = new Function<String, String>() {
@@ -368,6 +406,10 @@ public class QuteProcessor {
                     .collect(toMap(BeanInfo::getName, Function.identity()));
 
             Set<Expression> expressions = collectInjectExpressions(analysis);
+
+            // Map implicit class -> true if methods were used
+            Map<ClassInfo, Boolean> implicitClassToMethodUsed = new HashMap<>();
+
             for (Expression expression : expressions) {
 
                 String beanName = expression.parts.get(0);
@@ -376,55 +418,78 @@ public class QuteProcessor {
                     if (expression.parts.size() == 1) {
                         continue;
                     }
-                    TypeCheckInfo typeCheckInfo = TypeCheckInfo.create(expression, index, templateIdToPathFun);
-                    if (typeCheckInfo.parts.isEmpty()) {
-                        continue;
-                    }
 
-                    Iterator<String> parts = expression.parts.listIterator(1);
+                    TypeCheckInfo typeCheckInfo = TypeCheckInfo.create(expression, index, templateIdToPathFun);
+                    // Skip the first two parts - namespace placeholder + bean name; ie. "inject:hello" from "inject:hello.ping"
+                    Iterator<Part> parts = typeCheckInfo.parts.listIterator(2);
                     Match match = new Match();
+                    // First match the bean implementation class
                     match.clazz = bean.getImplClazz();
 
                     while (parts.hasNext()) {
                         // Now iterate over all parts of the expression and check each part against the current "match class"
-                        String name = parts.next();
+                        Part part = parts.next();
                         if (match.clazz != null) {
-                            requiredClasses.produce(new ImplicitValueResolverBuildItem(match.clazz));
+                            // By default, we only consider properties
+                            implicitClassToMethodUsed.putIfAbsent(match.clazz, false);
+                            AnnotationTarget member = null;
+                            // First try to find java members
+                            if (part.isVirtualMethod()) {
+                                member = findMethod(part.asVirtualMethod(), match.clazz, expression, index,
+                                        templateIdToPathFun);
+                                if (member != null) {
+                                    implicitClassToMethodUsed.put(match.clazz, true);
+                                }
+                            } else if (part.isProperty()) {
+                                member = findProperty(part.asProperty().name, match.clazz, index);
+                            }
+                            // Java member not found - try extension methods
+                            if (member == null) {
+                                member = findTemplateExtensionMethod(part, match.clazz, templateExtensionMethods, expression,
+                                        index,
+                                        templateIdToPathFun);
+                            }
 
-                            // TODO we don't validate virtual methods atm
-                            if (name.contains("(")) {
-                                break;
-                            }
-                            AnnotationTarget member = findProperty(name, match.clazz, index);
                             if (member == null) {
-                                member = findTemplateExtensionMethod(name, match.clazz, templateExtensionMethods);
+                                // Test whether the validation should be skipped
+                                Check check = new Check(
+                                        part.isProperty() ? part.asProperty().name : part.asVirtualMethod().name,
+                                        match.clazz, part.isVirtualMethod() ? part.asVirtualMethod().parameters.size() : -1);
+                                if (isExcluded(check, excludes)) {
+                                    LOGGER.debugf(
+                                            "Expression part [%s] excluded from validation of [%s] against class [%s]",
+                                            part.value,
+                                            expression.toOriginalString(), match.clazz);
+                                    break;
+                                }
                             }
-                            if (member == null
-                                    && excludes.stream().anyMatch(e -> e.getPredicate().test(name, match.clazz))) {
-                                LOGGER.debugf("No property found for %s in [%s] but it is intentionally ignored", name,
-                                        expression.toOriginalString(), match.clazz);
-                                break;
-                            }
+
                             if (member == null) {
+                                // No member found - incorrect expression
                                 incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                                        name, match.clazz.toString(), expression.origin.getLine(),
-                                        expression.origin.getTemplateId()));
+                                        part.value, match.clazz.toString(), expression.origin.getLine(),
+                                        expression.origin.getTemplateGeneratedId()));
                                 break;
-                            } else {
+                            } else if (parts.hasNext()) {
                                 match.type = resolveType(member, match, index);
                                 if (match.type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE) {
                                     break;
                                 }
                                 match.clazz = index.getClassByName(match.type.name());
-
-                                String helperHint = typeCheckInfo.getHelperHint(name);
-                                if (helperHint != null) {
-                                    // For example loop section needs to validate the type of an element
-                                    processHints(helperHint, match, index);
+                                if (part.isProperty()) {
+                                    String hint = part.asProperty().hint;
+                                    if (hint != null) {
+                                        // For example a loop section needs to validate the type of an element
+                                        processHints(hint, match, index);
+                                    }
                                 }
                             }
+
                         } else {
-                            // No match class - skip further validation
+                            LOGGER.debugf(
+                                    "No match class available - skip further validation for [%s] in expression [%s] in template [%s] on line %s",
+                                    part, expression.toOriginalString(), expression.origin.getTemplateId(),
+                                    expression.origin.getLine());
                             break;
                         }
                     }
@@ -433,8 +498,15 @@ public class QuteProcessor {
                     // User is injecting a non-existing bean
                     incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
                             beanName, null, expression.origin.getLine(),
-                            expression.origin.getTemplateId()));
+                            expression.origin.getTemplateGeneratedId()));
                 }
+            }
+
+            for (Entry<ClassInfo, Boolean> implicit : implicitClassToMethodUsed.entrySet()) {
+                implicitClasses.produce(implicit.getValue()
+                        ? new ImplicitValueResolverBuildItem(implicit.getKey(),
+                                new TemplateDataBuilder().properties(false).build())
+                        : new ImplicitValueResolverBuildItem(implicit.getKey()));
             }
         }
     }
@@ -454,7 +526,7 @@ public class QuteProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<TemplatePathBuildItem> templatePaths,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
-            List<ImplicitValueResolverBuildItem> requiredClasses,
+            List<ImplicitValueResolverBuildItem> implicitClasses,
             TemplatesAnalysisBuildItem templatesAnalysis,
             BuildProducer<GeneratedValueResolverBuildItem> generatedResolvers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
@@ -498,10 +570,21 @@ public class QuteProcessor {
                 processsTemplateData(index, templateData, containerInstance.target(), controlled, uncontrolled);
             }
         }
-        for (ImplicitValueResolverBuildItem required : requiredClasses) {
-            if (!controlled.contains(required.getClazz()) && !uncontrolled.containsKey(required.getClazz())) {
-                controlled.add(required.getClazz());
+
+        for (ImplicitValueResolverBuildItem implicit : implicitClasses) {
+            if (controlled.contains(implicit.getClazz())) {
+                LOGGER.debugf("Implicit value resolver build item ignored: %s is annotated with @TemplateData");
+                continue;
             }
+            AnnotationInstance templateData = uncontrolled.get(implicit.getClazz());
+            if (templateData != null) {
+                if (!templateData.equals(implicit.getTemplateData())) {
+                    throw new IllegalStateException("Multiple implicit value resolver build items produced for "
+                            + implicit.getClazz() + " and the synthetic template data is not equal");
+                }
+                continue;
+            }
+            uncontrolled.put(implicit.getClazz(), implicit.getTemplateData());
         }
 
         ValueResolverGenerator generator = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput)
@@ -637,6 +720,25 @@ public class QuteProcessor {
     }
 
     @BuildStep
+    void excludeTypeChecks(BuildProducer<TypeCheckExcludeBuildItem> excludes) {
+        // Exclude all checks that involve built-in value resolvers that accept at least one parameter
+        excludes.produce(new TypeCheckExcludeBuildItem(new Predicate<Check>() {
+            @Override
+            public boolean test(Check check) {
+                // Elvis and ternary operators
+                if (check.numberOfParameters == 1 && check.nameEquals("?:", "or", ":", "?")) {
+                    return true;
+                }
+                // Collection.contains()
+                if (check.numberOfParameters == 1 && check.clazz.name().equals(COLLECTION) && check.name.equals("contains")) {
+                    return true;
+                }
+                return false;
+            }
+        }));
+    }
+
+    @BuildStep
     @Record(value = STATIC_INIT)
     void initialize(QuteConfig config, BuildProducer<SyntheticBeanBuildItem> syntheticBeans, QuteRecorder recorder,
             List<GeneratedValueResolverBuildItem> generatedValueResolvers, List<TemplatePathBuildItem> templatePaths,
@@ -757,36 +859,132 @@ public class QuteProcessor {
         }
     }
 
-    private AnnotationTarget findTemplateExtensionMethod(String name, ClassInfo matchClass,
-            List<TemplateExtensionMethodBuildItem> templateExtensionMethods) {
-        for (TemplateExtensionMethodBuildItem templateExtensionMethod : templateExtensionMethods) {
-            if (templateExtensionMethod.matchesClass(matchClass) && templateExtensionMethod.matchesName(name)) {
-                return templateExtensionMethod.getMethod();
+    private AnnotationTarget findTemplateExtensionMethod(Part part, ClassInfo matchClass,
+            List<TemplateExtensionMethodBuildItem> templateExtensionMethods, Expression expression, IndexView index,
+            Function<String, String> templateIdToPathFun) {
+        if (!part.isProperty() && !part.isVirtualMethod()) {
+            return null;
+        }
+        String name = part.isProperty() ? part.asProperty().name : part.asVirtualMethod().name;
+        for (TemplateExtensionMethodBuildItem extensionMethod : templateExtensionMethods) {
+            if (!Types.isAssignableFrom(extensionMethod.getMatchClass().name(), matchClass.name(), index)) {
+                // If "Bar extends Foo" then Bar should be matched for extension method "int get(Foo)"   
+                continue;
             }
+            if (!extensionMethod.matchesName(name)) {
+                // Name does not match
+                continue;
+            }
+            if (part.isVirtualMethod()) {
+                // For virtual method validate the number of params and attempt to validate the parameter types if available
+                VirtualMethodPart virtualMethod = part.asVirtualMethod();
+                if (virtualMethod.parameters.size() != (extensionMethod.getMethod().parameters().size() - 1)) {
+                    // Check number of parameters; the first param of an extension method must be ignored
+                    continue;
+                }
+                boolean matches = true;
+                for (ListIterator<Type> iterator = extensionMethod.getMethod().parameters().listIterator(1); iterator
+                        .hasNext();) {
+                    Type paramType = iterator.next();
+                    Part paramPart = virtualMethod.parameters.get(iterator.previousIndex() - 1);
+                    if (paramPart.isTypeInfo()) {
+                        // TODO consider type params in assignability rules
+                        if (!Types.isAssignableFrom(paramPart.asTypeInfo().resolvedType,
+                                paramType, index)) {
+                            matches = false;
+                            break;
+                        }
+                    } else {
+                        LOGGER.debugf(
+                                "Type info not available - skip validation for parameter [%s] of extension method [%s] for expression [%s] in template [%s] on line %s",
+                                extensionMethod.getMethod().parameterName(iterator.previousIndex() + 1),
+                                extensionMethod.getMethod().declaringClass().name() + "#" + extensionMethod.getMethod().name(),
+                                expression.toOriginalString(),
+                                templateIdToPathFun.apply(expression.origin.getTemplateId()),
+                                expression.origin.getLine());
+                    }
+                }
+                if (!matches) {
+                    continue;
+                }
+            }
+            return extensionMethod.getMethod();
         }
         return null;
     }
 
-    private AnnotationTarget findProperty(String property, ClassInfo clazz, IndexView index) {
-        int start = property.indexOf("(");
-        if (start != -1) {
-            // TODO validate virtual method parameters?
-            property = property.substring(0, start);
-        }
+    /**
+     * Attempts to find a property with the specified name, ie. a public non-static non-synthetic field with the given name or a
+     * public non-static non-synthetic method with no params and the given name.
+     * 
+     * @param name
+     * @param clazz
+     * @param index
+     * @return the property or null
+     */
+    private AnnotationTarget findProperty(String name, ClassInfo clazz, IndexView index) {
         while (clazz != null) {
             // Fields
             for (FieldInfo field : clazz.fields()) {
                 if (Modifier.isPublic(field.flags()) && !Modifier.isStatic(field.flags())
-                        && !ValueResolverGenerator.isSynthetic(field.flags()) && field.name().equals(property)) {
+                        && !ValueResolverGenerator.isSynthetic(field.flags()) && field.name().equals(name)) {
                     return field;
                 }
             }
             // Methods
             for (MethodInfo method : clazz.methods()) {
                 if (Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags())
-                        && !ValueResolverGenerator.isSynthetic(method.flags()) && (method.name().equals(property)
-                                || ValueResolverGenerator.getPropertyName(method.name()).equals(property))) {
+                        && !ValueResolverGenerator.isSynthetic(method.flags()) && (method.name().equals(name)
+                                || ValueResolverGenerator.getPropertyName(method.name()).equals(name))) {
                     return method;
+                }
+            }
+            DotName superName = clazz.superName();
+            if (superName == null || DotNames.OBJECT.equals(superName)) {
+                clazz = null;
+            } else {
+                clazz = index.getClassByName(clazz.superName());
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Find a non-static non-synthetic method with the given name, matching number of params and assignable parameter types.
+     * 
+     * @param method
+     * @param clazz
+     * @param index
+     * @return the method or null
+     */
+    private AnnotationTarget findMethod(VirtualMethodPart virtualMethod, ClassInfo clazz, Expression expression,
+            IndexView index, Function<String, String> templateIdToPathFun) {
+        while (clazz != null) {
+            for (MethodInfo method : clazz.methods()) {
+                if (Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags())
+                        && !ValueResolverGenerator.isSynthetic(method.flags()) && method.name().equals(virtualMethod.name)
+                        && virtualMethod.parameters.size() == method.parameters().size()) {
+                    boolean matches = true;
+                    for (ListIterator<Part> iterator = virtualMethod.parameters.listIterator(); iterator.hasNext();) {
+                        Part parameter = iterator.next();
+                        if (parameter.isTypeInfo()) {
+                            // Type info available - validate parameter type
+                            if (!Types.isAssignableFrom(parameter.asTypeInfo().resolvedType,
+                                    method.parameters().get(iterator.previousIndex()), index)) {
+                                matches = false;
+                                break;
+                            }
+                        } else {
+                            LOGGER.debugf(
+                                    "Type info not available - skip validation for parameter [%s] of method [%s] for expression [%s] in template [%s] on line %s",
+                                    method.parameterName(iterator.previousIndex()),
+                                    method.declaringClass().name() + "#" + method,
+                                    expression.toOriginalString(),
+                                    templateIdToPathFun.apply(expression.origin.getTemplateId()),
+                                    expression.origin.getLine());
+                        }
+                    }
+                    return matches ? method : null;
                 }
             }
             DotName superName = clazz.superName();
@@ -811,22 +1009,22 @@ public class QuteProcessor {
                     if (v == null) {
                         return templateData;
                     }
-                    // Merge annotation values
-                    AnnotationValue ignoreValue = templateData.value("ignore");
-                    if (ignoreValue == null || !ignoreValue.equals(v.value("ignore"))) {
-                        ignoreValue = AnnotationValue.createArrayValue("ignore", new AnnotationValue[] {});
+                    if (!Objects.equals(v.value(ValueResolverGenerator.IGNORE),
+                            templateData.value(ValueResolverGenerator.IGNORE))
+                            || !Objects.equals(v.value(ValueResolverGenerator.PROPERTIES),
+                                    templateData.value(ValueResolverGenerator.PROPERTIES))
+                            || !Objects.equals(v.value(ValueResolverGenerator.IGNORE_SUPERCLASSES),
+                                    templateData.value(ValueResolverGenerator.IGNORE_SUPERCLASSES))) {
+                        throw new IllegalStateException(
+                                "Multiple unequal @TemplateData declared for " + c + ": " + v + " and " + templateData);
                     }
-                    AnnotationValue propertiesValue = templateData.value("properties");
-                    if (propertiesValue == null || propertiesValue.equals(v.value("properties"))) {
-                        propertiesValue = AnnotationValue.createBooleanValue("properties", false);
-                    }
-                    return AnnotationInstance.create(templateData.name(), templateData.target(),
-                            new AnnotationValue[] { ignoreValue, propertiesValue });
+                    return v;
                 });
             } else {
                 LOGGER.warnf("@TemplateData#target() not available: %s", annotationTarget.asClass().name());
             }
         }
+
     }
 
     private Set<Expression> collectInjectExpressions(TemplatesAnalysisBuildItem analysis) {
@@ -898,6 +1096,15 @@ public class QuteProcessor {
                 }
             }
         }
+    }
+
+    private boolean isExcluded(Check check, List<TypeCheckExcludeBuildItem> excludes) {
+        for (TypeCheckExcludeBuildItem exclude : excludes) {
+            if (exclude.getPredicate().test(check)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

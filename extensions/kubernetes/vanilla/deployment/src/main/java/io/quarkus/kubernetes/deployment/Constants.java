@@ -7,6 +7,7 @@ public class Constants {
     static final String DOCKER = "docker";
 
     static final String OPENSHIFT = "openshift";
+    static final String OPENSHIFT_APP_RUNTIME = "app.openshift.io/runtime";
     static final String DEPLOYMENT_CONFIG = "DeploymentConfig";
     static final String S2I = "s2i";
 
@@ -16,4 +17,6 @@ public class Constants {
     static final String OLD_DEPLOYMENT_TARGET = "kubernetes.deployment.target";
     static final String DEPLOYMENT_TARGET = "quarkus.kubernetes.deployment-target";
     static final String DEPLOY = "quarkus.kubernetes.deploy";
+
+    static final String QUARKUS = "quarkus";
 }

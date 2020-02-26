@@ -6,6 +6,8 @@ import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG;
 import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
+import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_APP_RUNTIME;
+import static io.quarkus.kubernetes.deployment.Constants.QUARKUS;
 import static io.quarkus.kubernetes.deployment.Constants.SERVICE;
 
 import java.io.File;
@@ -170,6 +172,7 @@ class KubernetesProcessor {
 
             session.feed(Maps.fromProperties(config));
 
+            session.resources().decorate(OPENSHIFT, new AddLabelDecorator(new Label(OPENSHIFT_APP_RUNTIME, QUARKUS)));
             //Apply configuration
             applyGlobalConfig(session, kubernetesConfig);
             applyConfig(session, KUBERNETES, kubernetesConfig.name.orElse(applicationInfo.getName()), kubernetesConfig);

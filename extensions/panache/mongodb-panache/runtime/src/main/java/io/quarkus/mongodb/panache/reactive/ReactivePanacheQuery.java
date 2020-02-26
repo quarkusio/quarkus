@@ -22,6 +22,14 @@ public interface ReactivePanacheQuery<Entity> {
     // Builder
 
     /**
+     * Defines a projection class: the getters, and the public fields, will be used to restrict which fields should be
+     * retrieved from the database.
+     *
+     * @return this query, modified
+     */
+    public <T> ReactivePanacheQuery<T> project(Class<T> type);
+
+    /**
      * Sets the current page.
      * 
      * @param page the new page

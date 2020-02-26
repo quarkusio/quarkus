@@ -53,7 +53,7 @@ public final class MongoPropertyUtil {
 
     // copied from JavaBeanUtil that is inside the core deployment module so not accessible at runtime.
     // See conventions expressed by https://docs.oracle.com/javase/7/docs/api/java/beans/Introspector.html#decapitalize(java.lang.String)
-    static String decapitalize(String name) {
+    public static String decapitalize(String name) {
         if (name != null && name.length() != 0) {
             if (name.length() > 1 && Character.isUpperCase(name.charAt(1))) {
                 return name;

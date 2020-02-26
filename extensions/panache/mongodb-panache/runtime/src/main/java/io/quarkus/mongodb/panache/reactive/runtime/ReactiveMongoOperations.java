@@ -343,7 +343,7 @@ public class ReactiveMongoOperations {
         Document docQuery = Document.parse(bindQuery);
         Document docSort = sortToDocument(sort);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
-        return new ReactivePanacheQueryImpl(collection, entityClass, docQuery, docSort);
+        return new ReactivePanacheQueryImpl(collection, docQuery, docSort);
     }
 
     /**
@@ -396,7 +396,7 @@ public class ReactiveMongoOperations {
         Document docQuery = Document.parse(bindQuery);
         Document docSort = sortToDocument(sort);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
-        return new ReactivePanacheQueryImpl(collection, entityClass, docQuery, docSort);
+        return new ReactivePanacheQueryImpl(collection, docQuery, docSort);
     }
 
     public static ReactivePanacheQuery<?> find(Class<?> entityClass, String query, Parameters params) {
@@ -411,12 +411,12 @@ public class ReactiveMongoOperations {
     public static ReactivePanacheQuery<?> find(Class<?> entityClass, Document query, Sort sort) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         Document sortDoc = sortToDocument(sort);
-        return new ReactivePanacheQueryImpl(collection, entityClass, query, sortDoc);
+        return new ReactivePanacheQueryImpl(collection, query, sortDoc);
     }
 
     public static ReactivePanacheQuery<?> find(Class<?> entityClass, Document query, Document sort) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
-        return new ReactivePanacheQueryImpl(collection, entityClass, query, sort);
+        return new ReactivePanacheQueryImpl(collection, query, sort);
     }
 
     public static ReactivePanacheQuery<?> find(Class<?> entityClass, Document query) {
@@ -494,14 +494,14 @@ public class ReactiveMongoOperations {
     @SuppressWarnings("rawtypes")
     public static ReactivePanacheQuery<?> findAll(Class<?> entityClass) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
-        return new ReactivePanacheQueryImpl(collection, entityClass, null, null);
+        return new ReactivePanacheQueryImpl(collection, null, null);
     }
 
     @SuppressWarnings("rawtypes")
     public static ReactivePanacheQuery<?> findAll(Class<?> entityClass, Sort sort) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         Document sortDoc = sortToDocument(sort);
-        return new ReactivePanacheQueryImpl(collection, entityClass, null, sortDoc);
+        return new ReactivePanacheQueryImpl(collection, null, sortDoc);
     }
 
     private static Document sortToDocument(Sort sort) {

@@ -1,12 +1,18 @@
 package io.quarkus.mongodb.panache.reactive.runtime;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.bson.Document;
 
 import io.quarkus.mongodb.FindOptions;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
+import io.quarkus.mongodb.panache.runtime.MongoPropertyUtil;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
@@ -18,6 +24,7 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     private ReactiveMongoCollection collection;
     private Document mongoQuery;
     private Document sort;
+    private Document projections;
 
     /*
      * We store the pageSize and apply it for each request because getFirstResult()
@@ -28,9 +35,7 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
 
     private Range range;
 
-    ReactivePanacheQueryImpl(ReactiveMongoCollection<? extends Entity> collection, Class<? extends Entity> entityClass,
-            Document mongoQuery,
-            Document sort) {
+    ReactivePanacheQueryImpl(ReactiveMongoCollection<? extends Entity> collection, Document mongoQuery, Document sort) {
         this.collection = collection;
         this.mongoQuery = mongoQuery;
         this.sort = sort;
@@ -38,6 +43,40 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     }
 
     // Builder
+
+    @Override
+    public <T> ReactivePanacheQuery<T> project(Class<T> type) {
+        Set<String> fieldNames = new HashSet<>();
+        // gather field names from getters
+        for (Method method : type.getMethods()) {
+            if (method.getName().startsWith("get") && !method.getName().equals("getClass")) {
+                String fieldName = MongoPropertyUtil.decapitalize(method.getName().substring(3));
+                fieldNames.add(fieldName);
+            }
+        }
+
+        // gather field names from public fields
+        for (Field field : type.getFields()) {
+            fieldNames.add(field.getName());
+        }
+
+        // replace fields that have @BsonProperty mappings
+        Map<String, String> replacementMap = MongoPropertyUtil.getReplacementMap(type);
+        for (Map.Entry<String, String> entry : replacementMap.entrySet()) {
+            if (fieldNames.contains(entry.getKey())) {
+                fieldNames.remove(entry.getKey());
+                fieldNames.add(entry.getValue());
+            }
+        }
+
+        // create the projection document
+        this.projections = new Document();
+        for (String fieldName : fieldNames) {
+            this.projections.append(fieldName, 1);
+        }
+
+        return (ReactivePanacheQuery<T>) this;
+    }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -133,8 +172,7 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Entity> Uni<List<T>> list() {
-        FindOptions options = buildOptions();
-        Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
+        Multi<T> results = stream();
         return results.collectItems().asList();
     }
 
@@ -193,6 +231,9 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
         } else {
             options.skip(page.index * page.size).limit(page.size);
         }
+        if (projections != null) {
+            options.projection(this.projections);
+        }
         return options;
     }
 
@@ -204,6 +245,9 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
             options.skip(range.getStartIndex()).limit(maxResults);
         } else {
             options.skip(page.index * page.size).limit(maxResults);
+        }
+        if (projections != null) {
+            options.projection(this.projections);
         }
         return options;
     }

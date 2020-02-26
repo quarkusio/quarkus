@@ -13,11 +13,14 @@ final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem 
 
     private final DataSourceJdbcBuildTimeConfig jdbcConfig;
 
+    private final String resolvedDriverClass;
+
     AggregatedDataSourceBuildTimeConfigBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
-            DataSourceJdbcBuildTimeConfig jdbcConfig) {
+            DataSourceJdbcBuildTimeConfig jdbcConfig, String resolvedDriverClass) {
         this.name = name;
         this.dataSourceConfig = dataSourceConfig;
         this.jdbcConfig = jdbcConfig;
+        this.resolvedDriverClass = resolvedDriverClass;
     }
 
     public String getName() {
@@ -34,5 +37,9 @@ final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem 
 
     public boolean isDefault() {
         return DataSourceUtil.isDefault(name);
+    }
+
+    public String getResolvedDriverClass() {
+        return resolvedDriverClass;
     }
 }

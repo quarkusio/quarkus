@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -80,6 +81,7 @@ class AgroalProcessor {
             AgroalRecorder recorder,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
+            List<JdbcDriverBuildItem> jdbcDriverBuildItems,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> resource,
@@ -92,7 +94,8 @@ class AgroalProcessor {
 
         List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedDataSourceBuildTimeConfigs = getAggregatedConfigBuildItems(
                 dataSourcesBuildTimeConfig,
-                dataSourcesJdbcBuildTimeConfig);
+                dataSourcesJdbcBuildTimeConfig,
+                jdbcDriverBuildItems);
 
         if (aggregatedDataSourceBuildTimeConfigs.isEmpty()) {
             log.warn("The Agroal dependency is present but no JDBC datasources have been defined.");
@@ -104,7 +107,7 @@ class AgroalProcessor {
 
             reflectiveClass
                     .produce(new ReflectiveClassBuildItem(true, false,
-                            aggregatedDataSourceBuildTimeConfig.getJdbcConfig().driver.get()));
+                            aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass()));
 
             aggregatedConfig.produce(aggregatedDataSourceBuildTimeConfig);
         }
@@ -143,13 +146,13 @@ class AgroalProcessor {
         String fullDataSourceName = aggregatedConfig.isDefault() ? "default datasource"
                 : "datasource named '" + aggregatedConfig.getName() + "'";
 
-        // TODO: make the driver optional
-        String driverName = jdbcBuildTimeConfig.driver.get();
+        String driverName = aggregatedConfig.getResolvedDriverClass();
         Class<?> driver;
         try {
             driver = Class.forName(driverName, true, Thread.currentThread().getContextClassLoader());
         } catch (ClassNotFoundException e) {
-            throw new ConfigurationException("Unable to load the datasource driver for the " + fullDataSourceName, e);
+            throw new ConfigurationException(
+                    "Unable to load the datasource driver " + driverName + " for the " + fullDataSourceName, e);
         }
         if (jdbcBuildTimeConfig.transactions == TransactionIntegration.XA) {
             if (!XADataSource.class.isAssignableFrom(driver)) {
@@ -162,12 +165,14 @@ class AgroalProcessor {
                     && !Driver.class.isAssignableFrom(driver)) {
                 if (aggregatedConfig.isDefault()) {
                     throw new ConfigurationException(
-                            "Driver is an XA dataSource, but XA transactions have not been enabled on the default datasource; please either set 'quarkus.datasource.xa=true' or switch to a standard non-XA JDBC driver implementation");
+                            "Driver " + driverName
+                                    + " is an XA datasource, but XA transactions have not been enabled on the default datasource; please either set 'quarkus.datasource.jdbc.transactions=xa' or switch to a standard non-XA JDBC driver implementation");
                 } else {
                     throw new ConfigurationException(
-                            "Driver is an XA dataSource, but XA transactions have not been enabled on the datasource named '"
+                            "Driver " + driverName
+                                    + " is an XA datasource, but XA transactions have not been enabled on the datasource named '"
                                     + fullDataSourceName + "'; please either set 'quarkus.datasource." + fullDataSourceName
-                                    + ".jdbc.xa=true' or switch to a standard non-XA JDBC driver implementation");
+                                    + ".jdbc.transactions=xa' or switch to a standard non-XA JDBC driver implementation");
                 }
             }
         }
@@ -205,14 +210,17 @@ class AgroalProcessor {
 
     private List<AggregatedDataSourceBuildTimeConfigBuildItem> getAggregatedConfigBuildItems(
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig) {
+            DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
+            List<JdbcDriverBuildItem> jdbcDriverBuildItems) {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
 
         if (dataSourcesBuildTimeConfig.defaultDataSource.kind.isPresent()) {
             if (dataSourcesJdbcBuildTimeConfig.jdbc.enabled) {
                 dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
                         dataSourcesBuildTimeConfig.defaultDataSource,
-                        dataSourcesJdbcBuildTimeConfig.jdbc));
+                        dataSourcesJdbcBuildTimeConfig.jdbc,
+                        resolveDriver(null, dataSourcesBuildTimeConfig.defaultDataSource,
+                                dataSourcesJdbcBuildTimeConfig.jdbc, jdbcDriverBuildItems)));
             }
         }
         for (Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.namedDataSources.entrySet()) {
@@ -224,10 +232,35 @@ class AgroalProcessor {
             }
             dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(entry.getKey(),
                     entry.getValue(),
-                    jdbcBuildTimeConfig));
+                    jdbcBuildTimeConfig,
+                    resolveDriver(entry.getKey(), entry.getValue(), jdbcBuildTimeConfig, jdbcDriverBuildItems)));
         }
 
         return dataSources;
+    }
+
+    private String resolveDriver(String dataSourceName, DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
+            DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, List<JdbcDriverBuildItem> jdbcDriverBuildItems) {
+        if (dataSourceJdbcBuildTimeConfig.driver.isPresent()) {
+            return dataSourceJdbcBuildTimeConfig.driver.get();
+        }
+
+        Optional<JdbcDriverBuildItem> matchingJdbcDriver = jdbcDriverBuildItems.stream()
+                .filter(i -> dataSourceBuildTimeConfig.kind.get().equals(i.getKind()))
+                .findFirst();
+
+        if (matchingJdbcDriver.isPresent()) {
+            if (io.quarkus.agroal.runtime.TransactionIntegration.XA == dataSourceJdbcBuildTimeConfig.transactions) {
+                if (matchingJdbcDriver.get().getDriverXAClass().isPresent()) {
+                    return matchingJdbcDriver.get().getDriverXAClass().get();
+                }
+            } else {
+                return matchingJdbcDriver.get().getDriverClass();
+            }
+        }
+
+        throw new ConfigurationException("Unable to determine the driver for " + (dataSourceName == null ? "default datasource"
+                : "datasource named " + dataSourceName));
     }
 
     /**
@@ -282,6 +315,8 @@ class AgroalProcessor {
                     MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getDataSourceJdbcRuntimeConfig",
                             DataSourceJdbcRuntimeConfig.class, String.class),
                     dataSourceMethodCreator.getThis(), dataSourceNameRH);
+            ResultHandle resolvedDriverClass = dataSourceMethodCreator
+                    .load(aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass());
             ResultHandle mpMetricsEnabled = dataSourceMethodCreator.load(metricsCapabilityPresent);
 
             dataSourceMethodCreator.returnValue(
@@ -293,11 +328,12 @@ class AgroalProcessor {
                                     DataSourceJdbcBuildTimeConfig.class,
                                     DataSourceRuntimeConfig.class,
                                     DataSourceJdbcRuntimeConfig.class,
+                                    String.class,
                                     boolean.class),
                             dataSourceMethodCreator.getThis(),
                             dataSourceNameRH,
                             dataSourceBuildTimeConfig, dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig,
-                            dataSourceJdbcRuntimeConfig, mpMetricsEnabled));
+                            dataSourceJdbcRuntimeConfig, resolvedDriverClass, mpMetricsEnabled));
         }
 
         classCreator.close();

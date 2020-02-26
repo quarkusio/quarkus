@@ -34,5 +34,4 @@ public class DataSourceJdbcBuildTimeConfig {
      */
     @ConfigItem
     public Optional<Boolean> enableMetrics = Optional.empty();
-
 }

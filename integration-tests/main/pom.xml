@@ -17,7 +17,6 @@
     <properties>
         <datasource.kind>h2</datasource.kind>
         <datasource.url>jdbc:h2:tcp://localhost/mem:test</datasource.url>
-        <datasource.driver>org.h2.Driver</datasource.driver>
         <datasource.username></datasource.username>
         <datasource.password></datasource.password>
         <maven.compiler.parameters>true</maven.compiler.parameters>
@@ -197,7 +196,6 @@
             <properties>
                 <datasource.kind>postgresql</datasource.kind>
                 <datasource.url>${postgres.url}</datasource.url>
-                <datasource.driver>org.postgresql.Driver</datasource.driver>
                 <datasource.username>hibernate_orm_test</datasource.username>
                 <datasource.password>hibernate_orm_test</datasource.password>
             </properties>

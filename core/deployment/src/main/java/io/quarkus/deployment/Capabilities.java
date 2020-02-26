@@ -9,6 +9,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
  */
 public final class Capabilities extends SimpleBuildItem {
 
+    public static final String AGROAL = "io.quarkus.agroal";
     public static final String CDI_ARC = "io.quarkus.cdi";
     public static final String SERVLET = "io.quarkus.servlet";
     public static final String TRANSACTIONS = "io.quarkus.transactions";

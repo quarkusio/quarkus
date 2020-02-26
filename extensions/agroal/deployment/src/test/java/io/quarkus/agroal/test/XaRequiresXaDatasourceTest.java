@@ -14,6 +14,7 @@ public class XaRequiresXaDatasourceTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("base.properties")
+            .overrideConfigKey("quarkus.datasource.jdbc.driver", "org.h2.Driver")
             .overrideConfigKey("quarkus.datasource.jdbc.transactions", "XA")
             .assertException(t -> {
                 assertEquals(ConfigurationException.class, t.getClass());

@@ -1,0 +1,9 @@
+---
+name: "Openshift"
+metadata:
+  keywords:
+  - "openshift"
+  guide: "https://quarkus.io/guides/kubernetes"
+  categories:
+  - "cloud"
+  status: "stable"

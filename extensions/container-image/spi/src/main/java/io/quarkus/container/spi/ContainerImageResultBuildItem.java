@@ -4,14 +4,20 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class ContainerImageResultBuildItem extends SimpleBuildItem {
 
+    private final String provider;
     private final String imageId;
     private final String repository;
     private final String tag;
 
-    public ContainerImageResultBuildItem(String imageId, String repository, String tag) {
+    public ContainerImageResultBuildItem(String provider, String imageId, String repository, String tag) {
+        this.provider = provider;
         this.imageId = imageId;
         this.repository = repository;
         this.tag = tag;
+    }
+
+    public String getProvider() {
+        return this.provider;
     }
 
     public String getImageId() {

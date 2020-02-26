@@ -51,6 +51,7 @@ public class JibProcessor {
 
     private static final Logger log = Logger.getLogger(JibProcessor.class);
 
+    private static final String JIB = "jib";
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
     private static final String BINARY_NAME_IN_CONTAINER = "application";
 
@@ -77,7 +78,7 @@ public class JibProcessor {
                 pushRequest.isPresent());
 
         ImageReference targetImage = container.getTargetImage();
-        containerImageResultProducer.produce(new ContainerImageResultBuildItem(container.getImageId().getHash(),
+        containerImageResultProducer.produce(new ContainerImageResultBuildItem(JIB, container.getImageId().getHash(),
                 targetImage.getRepository(), targetImage.getTag()));
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
     }
@@ -106,7 +107,7 @@ public class JibProcessor {
                 pushRequest.isPresent());
 
         ImageReference targetImage = container.getTargetImage();
-        containerImageResultProducer.produce(new ContainerImageResultBuildItem(container.getImageId().getHash(),
+        containerImageResultProducer.produce(new ContainerImageResultBuildItem(JIB, container.getImageId().getHash(),
                 targetImage.getRepository(), targetImage.getTag()));
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
     }

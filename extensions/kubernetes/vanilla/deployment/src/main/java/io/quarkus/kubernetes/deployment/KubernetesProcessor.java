@@ -1,9 +1,12 @@
 package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOY;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
+import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG;
 import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
+import static io.quarkus.kubernetes.deployment.Constants.SERVICE;
 
 import java.io.File;
 import java.io.IOException;
@@ -72,6 +75,7 @@ import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvVarBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
@@ -87,6 +91,27 @@ class KubernetesProcessor {
     private static final String APP_GROUP_PROPERTY = "app.group";
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
 
+    @BuildStep
+    public void checkKubernetes(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
+        if (KubernetesConfigUtil.getDeploymentTargets().contains(KUBERNETES)) {
+            deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT));
+        }
+    }
+
+    @BuildStep
+    public void checkOpenshift(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
+        if (KubernetesConfigUtil.getDeploymentTargets().contains(OPENSHIFT)) {
+            deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(OPENSHIFT, DEPLOYMENT_CONFIG));
+        }
+    }
+
+    @BuildStep
+    public void checkKnative(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
+        if (KubernetesConfigUtil.getDeploymentTargets().contains(KNATIVE)) {
+            deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KNATIVE, SERVICE));
+        }
+    }
+
     @BuildStep(onlyIf = IsNormal.class)
     public void build(ApplicationInfoBuildItem applicationInfo,
             ArchiveRootBuildItem archiveRootBuildItem,
@@ -98,6 +123,7 @@ class KubernetesProcessor {
             List<KubernetesEnvVarBuildItem> kubernetesEnvBuildItems,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
+            List<KubernetesDeploymentTargetBuildItem> kubernetesDeploymentTargetBuildItems,
             Optional<BaseImageInfoBuildItem> baseImageBuildItem,
             Optional<ContainerImageInfoBuildItem> containerImageBuildItem,
             Optional<KubernetesCommandBuildItem> commandBuildItem,
@@ -119,10 +145,9 @@ class KubernetesProcessor {
         }
 
         Map<String, Object> config = KubernetesConfigUtil.toMap(kubernetesConfig, openshiftConfig, knativeConfig);
-        Set<String> deploymentTargets = new HashSet<>();
-        deploymentTargets.addAll(KubernetesConfigUtil.getDeploymentTargets(config));
-        deploymentTargets.addAll(kubernetesConfig.deploymentTarget.stream().map(Enum::name).map(String::toLowerCase)
-                .collect(Collectors.toList()));
+        Set<String> deploymentTargets = kubernetesDeploymentTargetBuildItems.stream()
+                .map(KubernetesDeploymentTargetBuildItem::getName)
+                .collect(Collectors.toSet());
 
         // this is a hack to get kubernetes.registry working because currently it's not supported as is in Dekorate
         Optional<String> dockerRegistry = KubernetesConfigUtil.getDockerRegistry(config);
@@ -381,8 +406,8 @@ class KubernetesProcessor {
                     .forEach(r -> session.resources().decorate(new AddRoleBindingResourceDecorator(r.getRole())));
         }
 
-        //Hanlde custom s2i builder images
-        if (deploymentTargets.contains(DeploymentTarget.OPENSHIFT.name().toLowerCase())) {
+        //Handle custom s2i builder images
+        if (deploymentTargets.contains(OPENSHIFT)) {
             baseImageBuildItem.map(BaseImageInfoBuildItem::getImage).ifPresent(builderImage -> {
                 S2iBuildConfig s2iBuildConfig = new S2iBuildConfigBuilder().withBuilderImage(builderImage).build();
                 session.resources().decorate(OPENSHIFT, new AddBuilderImageStreamResourceDecorator(s2iBuildConfig));

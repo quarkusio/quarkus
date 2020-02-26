@@ -48,6 +48,9 @@ public class HttpSecurityRecorder {
                                         event.response().end();
                                     }
                                 });
+                            } else if (throwable instanceof AuthenticationCompletionException) {
+                                event.response().setStatusCode(401);
+                                event.response().end();
                             } else if (throwable instanceof AuthenticationRedirectException) {
                                 AuthenticationRedirectException redirectEx = (AuthenticationRedirectException) throwable;
                                 event.response().setStatusCode(redirectEx.getCode());

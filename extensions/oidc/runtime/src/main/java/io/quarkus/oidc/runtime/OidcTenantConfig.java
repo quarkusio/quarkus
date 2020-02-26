@@ -269,6 +269,13 @@ public class OidcTenantConfig {
         @ConfigItem
         public Map<String, String> extraParams;
 
+        /**
+         * Cookie path parameter value which, if set, will be used for the session and state cookies.
+         * It may need to be set when the redirect path has a root different to that of the original request URL.
+         */
+        @ConfigItem
+        public Optional<String> cookiePath = Optional.empty();
+
         public Optional<String> getRedirectPath() {
             return redirectPath;
         }
@@ -299,6 +306,14 @@ public class OidcTenantConfig {
 
         public void setRestorePathAfterRedirect(boolean restorePathAfterRedirect) {
             this.restorePathAfterRedirect = restorePathAfterRedirect;
+        }
+
+        public Optional<String> getCookiePath() {
+            return cookiePath;
+        }
+
+        public void setCookiePath(Optional<String> cookiePath) {
+            this.cookiePath = cookiePath;
         }
     }
 

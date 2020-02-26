@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.net.URI;
@@ -11,6 +12,7 @@ import java.net.URI;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.WebRequest;
@@ -153,6 +155,72 @@ public class CodeFlowTest {
             // HtmlUnit logs that a 'q_auth' cookie path parameter 'path' is set to 'path:/web-app'.
             // If really needed we can get the session and state cookie properties configurable.
             // assertNull(getStateCookie(webClient));
+        }
+    }
+
+    @Test
+    public void testIdTokenInjectionWithoutRestoredPathDifferentRoot() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-before-redirect?tenantId=tenant-2");
+            assertNotNull(getStateCookieStateParam(webClient));
+            assertNull(getStateCookieSavedPath(webClient));
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("web-app2:alice", page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testAuthenticationCompletionFailedNoStateCookie() throws IOException, InterruptedException {
+        // tenant-3 configuration uses a '/some/other/path' redirect parameter which does not have the same root
+        // as the original request which is 'web-app', as a result, when the user is returned back to Quarkus
+        // to '/some/other/path' no state cookie is detected.
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-before-redirect?tenantId=tenant-3");
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            try {
+                loginForm.getInputByName("login").click();
+                fail("401 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+            }
+        }
+    }
+
+    @Test
+    public void testAuthenticationCompletionFailedWrongRedirectUri() throws IOException, InterruptedException {
+        // CustomTenantResolver will return null for an empty tenantId which will lead to the default configuration
+        // being used and result in '/web-app/callback-before-redirect' be used as an initial redirect_uri parameter.
+        // When the user is redirected back, CustomTenantResolver will resolve a 'tenant-1' configuration with
+        // a redirect_uri '/web-app/callback-after-redirect' which will cause a code to token exchange failure
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-before-redirect?tenantId");
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            try {
+                page = loginForm.getInputByName("login").click();
+                fail("401 status error is expected: " + page.getBody().asText());
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+            }
         }
     }
 

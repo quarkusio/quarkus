@@ -6,11 +6,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javax.inject.Singleton;
+
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.builder.BuildException;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -30,11 +34,14 @@ import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.core.deployment.InternalWebVertxBuildItem;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.RouterProducer;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.quarkus.vertx.http.runtime.cors.CORSRecorder;
+import io.quarkus.vertx.http.runtime.devmode.ConfigHolder;
+import io.quarkus.vertx.http.runtime.devmode.ConfigViewerHandler;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.vertx.core.Handler;
 import io.vertx.core.impl.VertxImpl;
@@ -165,5 +172,18 @@ class VertxHttpProcessor {
     @BuildStep
     RuntimeInitializedClassBuildItem configureNativeCompilation() {
         return new RuntimeInitializedClassBuildItem("io.vertx.ext.web.handler.sockjs.impl.XhrTransport");
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public void configViewerRoute(HttpBuildTimeConfig httpBuildTimeConfig,
+            BuildProducer<AdditionalBeanBuildItem> beans,
+            BuildProducer<RouteBuildItem> routes) {
+        beans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(ConfigHolder.class)
+                .setDefaultScope(DotName.createSimple(Singleton.class.getName()))
+                .setUnremovable()
+                .build());
+        routes.produce(new RouteBuildItem(httpBuildTimeConfig.configPath,
+                new ConfigViewerHandler(), HandlerType.BLOCKING));
     }
 }

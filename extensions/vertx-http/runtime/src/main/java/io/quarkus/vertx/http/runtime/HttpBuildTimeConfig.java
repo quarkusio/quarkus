@@ -21,4 +21,10 @@ public class HttpBuildTimeConfig {
      */
     @ConfigItem
     public boolean virtual;
+
+    /**
+     * The path for the config viewer.
+     */
+    @ConfigItem(defaultValue = "/config")
+    public String configPath;
 }

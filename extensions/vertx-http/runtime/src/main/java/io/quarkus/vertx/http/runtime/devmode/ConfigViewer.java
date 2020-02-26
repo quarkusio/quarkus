@@ -8,8 +8,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.logging.Logger;
 
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
+import io.quarkus.runtime.configuration.ExpandingConfigSource;
 
 /**
  * Turns a {@link Config} into a JSON object with all config sources and properties as JSON. The config sources are
@@ -44,34 +43,39 @@ class ConfigViewer {
 
     private static final Logger LOGGER = Logger.getLogger(ConfigViewer.class.getName());
 
-    JsonObject dump(Config config) {
+    String dump(Config config) {
         JsonObject json = new JsonObject();
         if (config != null) {
-            if (config.getConfigSources().iterator().hasNext()) {
-                JsonArray jsonSources = new JsonArray();
-                for (ConfigSource source : config.getConfigSources()) {
-                    JsonObject jsonSource = new JsonObject();
-                    jsonSource.put("source", source.getName())
-                            .put("ordinal", source.getOrdinal());
-                    Set<String> propertyNames = source.getPropertyNames();
-                    if (!propertyNames.isEmpty()) {
-                        SortedSet<String> sortedPropertyNames = new TreeSet<>(propertyNames);
-                        JsonObject jsonProperties = new JsonObject();
-                        for (String propertyName : sortedPropertyNames) {
-                            try {
-                                jsonProperties.put(propertyName, source.getValue(propertyName));
-                            } catch (Throwable t) {
-                                LOGGER.errorf("Cannot get configuration value for '%s': %s",
-                                        propertyName, t.getMessage());
+            boolean old = ExpandingConfigSource.setExpanding(false);
+            try {
+                if (config.getConfigSources().iterator().hasNext()) {
+                    JsonArray jsonSources = new JsonArray();
+                    for (ConfigSource source : config.getConfigSources()) {
+                        JsonObject jsonSource = new JsonObject();
+                        jsonSource.put("source", source.getName())
+                                .put("ordinal", source.getOrdinal());
+                        Set<String> propertyNames = source.getPropertyNames();
+                        if (!propertyNames.isEmpty()) {
+                            SortedSet<String> sortedPropertyNames = new TreeSet<>(propertyNames);
+                            JsonObject jsonProperties = new JsonObject();
+                            for (String propertyName : sortedPropertyNames) {
+                                try {
+                                    jsonProperties.put(propertyName, source.getValue(propertyName));
+                                } catch (Throwable t) {
+                                    LOGGER.errorf("Cannot get configuration value for '%s': %s",
+                                            propertyName, t.getMessage());
+                                }
                             }
+                            jsonSource.put("properties", jsonProperties);
                         }
-                        jsonSource.put("properties", jsonProperties);
+                        jsonSources.put(jsonSource);
                     }
-                    jsonSources.add(jsonSource);
+                    json.put("sources", jsonSources);
                 }
-                json.put("sources", jsonSources);
+            } finally {
+                ExpandingConfigSource.setExpanding(old);
             }
         }
-        return json;
+        return json.toString(2);
     }
 }

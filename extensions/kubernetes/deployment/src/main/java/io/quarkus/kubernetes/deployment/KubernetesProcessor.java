@@ -70,6 +70,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesEnvVarBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
@@ -200,6 +201,13 @@ class KubernetesProcessor {
                             resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
         }
 
+        try {
+            if (root != null && root.toFile().exists()) {
+                FileUtil.deleteDirectory(root);
+            }
+        } catch (IOException e) {
+            LOG.debug("Unable to delete temporary directory " + root, e);
+        }
         featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.KUBERNETES));
     }
 

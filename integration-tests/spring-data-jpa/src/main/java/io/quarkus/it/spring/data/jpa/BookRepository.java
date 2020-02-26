@@ -18,6 +18,10 @@ public interface BookRepository extends Repository<Book, Integer> {
 
     List<Book> findByName(String name);
 
+    List<Book> findByNameContainingIgnoreCase(String name);
+
+    long countByNameStartsWithIgnoreCase(String name);
+
     boolean existsByBid(Integer id);
 
     boolean existsBookByPublicationYearBetween(Integer start, Integer end);

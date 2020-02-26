@@ -74,6 +74,20 @@ public class BookResourceTest {
     }
 
     @Test
+    void testByNameContainingIgnoreCase() {
+        when().get("/book/name/FUL/contains").then()
+                .statusCode(200)
+                .body(containsString("Factfulness"));
+    }
+
+    @Test
+    void testCountByNameStartsWithIgnoreCase() {
+        when().get("/book/name/t/count/like").then()
+                .statusCode(200)
+                .body(is("1"));
+    }
+
+    @Test
     void testByYear() {
         when().get("/book/year/2012").then()
                 .statusCode(200)

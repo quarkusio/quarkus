@@ -170,6 +170,21 @@ public class CatResourceTest {
     }
 
     @Test
+    void testCountByColorContains() {
+        when().get("/cat/count/by/color/Dummy/contains").then()
+                .statusCode(200)
+                .body(is("0"));
+
+        when().get("/cat/count/by/color/hit/contains").then()
+                .statusCode(200)
+                .body(is("1"));
+
+        when().get("/cat/count/by/color/Gre/contains").then()
+                .statusCode(200)
+                .body(is("2"));
+    }
+
+    @Test
     void testExistsByColorStartsWith() {
         when().get("/cat/exists/by/colorStartsWith/Dum").then()
                 .statusCode(200)

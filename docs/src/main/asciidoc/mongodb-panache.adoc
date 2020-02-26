@@ -50,6 +50,9 @@ NOTE: the `list()` method might be surprising at first. It takes fragments of Pa
 That makes for very concise but yet readable code.
 MongoDB native queries are also supported.
 
+NOTE: what was described above is essentially the link:https://www.martinfowler.com/eaaCatalog/activeRecord.html[active record pattern], sometimes just called the entity pattern.
+MongoDB with Panache also allows for the use of the more classical link:https://martinfowler.com/eaaCatalog/repository.html[repository pattern] via `PanacheMongoRepository`.
+
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
@@ -94,8 +97,8 @@ If you don't want to generate a new project you can add the dependency in your `
 To get started:
 
 * add your settings in `{config-file}`
-* Make your entities extend `PanacheMongoEntity`, you can use the `@MongoEntity` annotation to specify the name of the database and the name of the collection (it will default to the name of your entity).
-* place your entity logic in static methods in your entities
+* Make your entities extend `PanacheMongoEntity` (optional if you are using the repository pattern)
+* Use the `@MongoEntity` annotation to specify the name of the database and the name of the collection (it will default to the name of your entity).
 
 Then add the relevant configuration properties in `{config-file}`.
 
@@ -111,7 +114,9 @@ The `quarkus.mongodb.database` property will be used by MongoDB with Panache to 
 
 For advanced configuration of the MongoDB client, you can follow the link:mongodb#configuring-the-mongodb-database[Configuring the MongoDB database guide].
 
-== Defining your entity
+== Solution 1: using the active record pattern
+
+=== Defining your entity
 
 To define a Panache entity, simply extend `PanacheMongoEntity` and add your columns as public fields.
 You can add the `@MongoEntity` annotation to your entity if you need to customize the name of the collection and/or the database.
@@ -130,7 +135,8 @@ public class Person extends PanacheMongoEntity {
 }
 ----
 
-NOTE: annotating with `@MongoEntity` is optional, it allows you to configure the name of the collection and the name of the database. Here the entity will be stored in the `ThePerson` collection instead of the default `Person` collection.
+NOTE: annotating with `@MongoEntity` is optional, it allows you to configure the name of the collection and the name of the database.
+Here the entity will be stored in the `ThePerson` collection instead of the default `Person` collection.
 
 MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos/[PojoCodecProvider] to map your entities to a MongoDB `Document`.
 
@@ -164,9 +170,9 @@ public class Person extends PanacheMongoEntity {
 And thanks to our field access rewrite, when your users read `person.name` they will actually call your `getName()` accessor, and similarly for field writes and the setter.
 This allows for proper encapsulation at runtime as all fields calls will be replaced by the corresponding getter/setter calls.
 
-== Most useful operations
+=== Most useful operations
 
-Once you have written your entity, here are the most common operations you will be able to do:
+Once you have written your entity, here are the most common operations you will be able to perform:
 
 [source,java]
 ----
@@ -226,7 +232,175 @@ List<String> namesButEmmanuels = persons
 
 NOTE: A `persistOrUpdate()` method exist that persist or update an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
 
-== Paging
+== Adding entity methods
+
+Add custom queries on your entities inside the entities themselves.
+That way, you and your co-workers can find them easily, and queries are co-located with the object they operate on.
+Adding them as static methods in your entity class is the Panache Active Record way.
+
+[source,java]
+----
+public class Person extends PanacheMongoEntity {
+    public String name;
+    public LocalDate birth;
+    public Status status;
+
+    public static Person findByName(String name){
+        return find("name", name).firstResult();
+    }
+
+    public static List<Person> findAlive(){
+        return list("status", Status.Alive);
+    }
+
+    public static void deleteLoics(){
+        delete("name", "Loïc");
+    }
+}
+----
+
+== Solution 2: using the repository pattern
+
+=== Defining your entity
+
+You can define your entity as regular POJO.
+You can add the `@MongoEntity` annotation to your entity if you need to customize the name of the collection and/or the database.
+
+[source,java]
+----
+@MongoEntity(collection="ThePerson")
+public class Person  {
+    public ObjectId id; // used by MongoDB for the _id field
+    public String name;
+    public LocalDate birth;
+    public Status status;
+}
+----
+
+NOTE: annotating with `@MongoEntity` is optional, it allows you to configure the name of the collection and the name of the database.
+Here the entity will be stored in the `ThePerson` collection instead of the default `Person` collection.
+
+MongoDB with Panache uses the link:{mongodb-doc-root-url}/bson/pojos/[PojoCodecProvider] to map your entities to a MongoDB `Document`.
+
+You will be allowed to use the following annotations to customize this mapping:
+
+- `@BsonId`: allows you to customize the ID field, see <<custom-ids,Custom IDs>>.
+- `@BsonProperty`: customize the serialized name of the field.
+- `@BsonIgnore`: ignore a field during the serialization.
+
+TIP: You can use public fields or private fields with getters/setters.
+If you don't want to manage the ID by yourself, you can make your entity extends `PanacheMongoEntity`.
+
+=== Defining your repository
+
+When using Repositories, you can get the exact same convenient methods as wit the active record pattern, injected in your Repository,
+by making them implements `PanacheMongoRepository`:
+
+[source,java]
+----
+@ApplicationScoped
+public class PersonRepository implements PanacheMongoRepository<Person> {
+
+   // put your custom logic here as instance methods
+
+   public Person findByName(String name){
+       return find("name", name).firstResult();
+   }
+
+   public List<Person> findAlive(){
+       return list("status", Status.Alive);
+   }
+
+   public void deleteLoics(){
+       delete("name", "Loïc");
+  }
+}
+----
+
+All the operations that are defined on `PanacheMongoEntityBase` are available on your repository, so using it
+is exactly the same as using the active record pattern, except you need to inject it:
+
+[source,java]
+----
+@Inject
+PersonRepository personRepository;
+
+@GET
+public long count(){
+    return personRepository.count();
+}
+----
+
+=== Most useful operations
+
+Once you have written your repository, here are the most common operations you will be able to perform:
+
+[source,java]
+----
+// creating a person
+Person person = new Person();
+person.name = "Loïc";
+person.birth = LocalDate.of(1910, Month.FEBRUARY, 1);
+person.status = Status.Alive;
+
+// persist it
+personRepository.persist(person);
+
+person.status = Status.Dead;
+
+// Your must call update() in order to send your entity modifications to MongoDB
+personRepository.update(person);
+
+// delete it
+personRepository.delete(person);
+
+// getting a list of all Person entities
+List<Person> allPersons = personRepository.listAll();
+
+// finding a specific person by ID
+person = personRepository.findById(personId);
+
+// finding a specific person by ID via an Optional
+Optional<Person> optional = personRepository.findByIdOptional(personId);
+person = optional.orElseThrow(() -> new NotFoundException());
+
+// finding all living persons
+List<Person> livingPersons = personRepository.list("status", Status.Alive);
+
+// counting all persons
+long countAll = personRepository.count();
+
+// counting all living persons
+long countAlive = personRepository.count("status", Status.Alive);
+
+// delete all living persons
+personRepository.delete("status", Status.Alive);
+
+// delete all persons
+personRepository.deleteAll();
+----
+
+All `list` methods have equivalent `stream` versions.
+
+[source,java]
+----
+Stream<Person> persons = personRepository.streamAll();
+List<String> namesButEmmanuels = persons
+    .map(p -> p.name.toLowerCase() )
+    .filter( n -> ! "emmanuel".equals(n) )
+    .collect(Collectors.toList());
+----
+
+NOTE: A `persistOrUpdate()` method exist that persist or update an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
+
+NOTE: The rest of the documentation show usages based on the active record pattern only,
+but keep in mind that they can be performed with the repository pattern as well.
+The repository pattern examples have been omitted for brevity.
+
+
+== Advanced Query
+
+=== Paging
 
 You should only use `list` and `stream` methods if your collection contains small enough data sets. For larger data
 sets you can use the `find` method equivalents, which return a `PanacheQuery` on which you can do paging:
@@ -263,7 +437,7 @@ return Person.find("status", Status.Alive)
 
 The `PanacheQuery` type has many other methods to deal with paging and returning streams.
 
-== Sorting
+=== Sorting
 
 All methods accepting a query string also accept an optional `Sort` parameter, which allows you to abstract your sorting:
 
@@ -277,34 +451,7 @@ List<Person> persons = Person.list("status", Sort.by("name").and("birth"), Statu
 
 The `Sort` class has plenty of methods for adding columns and specifying sort direction.
 
-== Adding entity methods
-
-In general, we recommend not adding custom queries for your entities outside of the entities themselves,
-to keep all model queries close to the models they operate on. So we recommend adding them as static methods
-in your entity class:
-
-[source,java]
-----
-public class Person extends PanacheMongoEntity {
-    public String name;
-    public LocalDate birth;
-    public Status status;
-
-    public static Person findByName(String name){
-        return find("name", name).firstResult();
-    }
-
-    public static List<Person> findAlive(){
-        return list("status", Status.Alive);
-    }
-
-    public static void deleteLoics(){
-        delete("name", "Loïc");
-    }
-}
-----
-
-== Simplified queries
+=== Simplified queries
 
 Normally, MongoDB queries are of this form: `{'firstname': 'John', 'lastname':'Doe'}`, this is what we call MongoDB native queries.
 
@@ -329,7 +476,7 @@ The MongoDB POJO codec doesn't support `ZonedDateTime` and `OffsetDateTime` so y
 
 MongoDB with Panache also supports extended MongoDB queries by providing a `Document` query, this is supported by the find/list/stream/count/delete methods.
 
-== Query parameters
+=== Query parameters
 
 You can pass query parameters, for both native and PanacheQL queries, by index (1-based) as shown below:
 
@@ -390,16 +537,16 @@ public class Person extends PanacheMongoEntity {
 Both `findByNameWithPanacheQLQuery()` and `findByNameWithNativeQuery()` methods will return the same result but query written in PanacheQL
 will use the entity field name: `name`, and native query will use the MongoDB field name: `lastname`.
 
-== Query projection
+=== Query projection
 
 Query projection can be done with the `project(Class)` method on the `PanacheQuery` object that is returned by the `find()` methods.
 
 You can use it to restrict which fields will be returned by the database,
-the ID field will always be returned but it's not mandatory to include it inside the projection class.
+the ID field will always be returned, but it's not mandatory to include it inside the projection class.
 
-For this, you need to create a class (a Pojo) that will only contain the projected fields.
-This pojo needs to be annotated with `@ProjectionFor(Entity.class)` where `Entity` is the name of your entity class.
-The field names, or  getters, of the projection class will be used to restrict which properties will be loaded from the database.
+For this, you need to create a class (a POJO) that will only contain the projected fields.
+This POJO needs to be annotated with `@ProjectionFor(Entity.class)` where `Entity` is the name of your entity class.
+The field names, or getters, of the projection class will be used to restrict which properties will be loaded from the database.
 
 Projection can be done for both PanacheQL and native queries.
 
@@ -434,59 +581,9 @@ PanacheQuery<PersonName> query = Person.find("'status': ?1", Status.Alive).proje
 PanacheQuery<PersonName> nativeQuery = Person.find("{'status': 'ALIVE'}", Status.Alive).project(PersonName.class);
 ----
 
-TIP: Using @BsonProperty is not needed to define custom column mappings, as the mappings from the entity class will be used.
+TIP: Using `@BsonProperty` is not needed to define custom column mappings, as the mappings from the entity class will be used.
 
 TIP: You can have your projection class extends from another class. In this case, the parent class also needs to have use `@ProjectionFor` annotation.
-
-== The DAO/Repository option
-
-Repository is a very popular pattern and can be very accurate for some use case, depending on
-the complexity of your needs.
-
-Whether you want to use the Entity based approach presented above or a more traditional Repository approach, it is up to you,
-Panache and Quarkus have you covered either way.
-
-If you lean towards using Repositories, you can get the exact same convenient methods injected in your Repository by making it
-implement `PanacheMongoRepository`:
-
-[source,java]
-----
-@ApplicationScoped
-public class PersonRepository implements PanacheMongoRepository<Person> {
-
-   // put your custom logic here as instance methods
-
-   public Person findByName(String name){
-       return find("name", name).firstResult();
-   }
-
-   public List<Person> findAlive(){
-       return list("status", Status.Alive);
-   }
-
-   public void deleteLoics(){
-       delete("name", "Loïc");
-  }
-}
-----
-
-Absolutely all the operations that are defined on `PanacheMongoEntityBase` are available on your DAO, so using it
-is exactly the same except you need to inject it:
-
-[source,java]
-----
-@Inject
-PersonRepository personRepository;
-
-@GET
-public long count(){
-    return personRepository.count();
-}
-----
-
-So if Repositories are your thing, you can keep doing them. Even with repositories, you can keep your entities as
-subclasses of `PanacheMongoEntity` in order to get the ID and public fields working, but you can even skip that and
-go back to specifying your ID and using getters and setters if that's your thing. Use what works for you.
 
 == Transactions
 
@@ -709,7 +806,9 @@ a custom ID strategy, you can extend `PanacheMongoEntityBase` instead and handle
 - Use public fields. Get rid of dumb getter and setters. Under the hood, we will generate all getters and setters
 that are missing, and rewrite every access to these fields to use the accessor methods. This way you can still
 write _useful_ accessors when you need them, which will be used even though your entity users still use field accesses.
-- Don't use DAOs or Repositories: put all your entity logic in static methods in your entity class. Your entity superclass comes with lots of super useful static methods and you can add your own in your entity class. Users can just start using your entity `Person` by typing `Person.` and getting completion for all the operations in a single place.
+- With the active record pattern: put all your entity logic in static methods in your entity class and don't create DAOs.
+Your entity superclass comes with lots of super useful static methods, and you can add your own in your entity class.
+Users can just start using your entity `Person` by typing `Person.` and getting completion for all the operations in a single place.
 - Don't write parts of the query that you don't need: write `Person.find("order by name")` or
 `Person.find("name = ?1 and status = ?2", "Loïc", Status.Alive)` or even better `Person.find("name", "Loïc")`.
 

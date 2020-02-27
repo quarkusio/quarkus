@@ -28,7 +28,6 @@ import org.jboss.logging.Logger;
 import io.dekorate.Session;
 import io.dekorate.SessionWriter;
 import io.dekorate.kubernetes.config.Annotation;
-import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.Label;
 import io.dekorate.kubernetes.config.PortBuilder;
 import io.dekorate.kubernetes.config.ProbeBuilder;
@@ -78,7 +77,6 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
-import io.quarkus.kubernetes.spi.KubernetesEnvVarBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
@@ -86,7 +84,7 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 class KubernetesProcessor {
 
-    private static final Logger LOG = Logger.getLogger(KubernetesDeployer.class);
+    private static final Logger log = Logger.getLogger(KubernetesDeployer.class);
 
     private static final String PROPERTY_PREFIX = "dekorate.";
     private static final String DOCKER_REGISTRY_PROPERTY = PROPERTY_PREFIX + "docker.registry";
@@ -122,7 +120,6 @@ class KubernetesProcessor {
             KubernetesConfig kubernetesConfig,
             OpenshiftConfig openshiftConfig,
             KnativeConfig knativeConfig,
-            List<KubernetesEnvVarBuildItem> kubernetesEnvBuildItems,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
             List<KubernetesDeploymentTargetBuildItem> kubernetesDeploymentTargetBuildItems,
@@ -135,7 +132,7 @@ class KubernetesProcessor {
             BuildProducer<FeatureBuildItem> featureProducer) {
 
         if (kubernetesPortBuildItems.isEmpty()) {
-            LOG.debug("The service is not an HTTP service so no Kubernetes manifests will be generated");
+            log.debug("The service is not an HTTP service so no Kubernetes manifests will be generated");
             return;
         }
 
@@ -186,7 +183,6 @@ class KubernetesProcessor {
                     openshiftConfig,
                     knativeConfig,
                     deploymentTargets,
-                    kubernetesEnvBuildItems,
                     kubernetesRoleBuildItems,
                     kubernetesPortBuildItems,
                     baseImageBuildItem,
@@ -234,7 +230,7 @@ class KubernetesProcessor {
                 FileUtil.deleteDirectory(root);
             }
         } catch (IOException e) {
-            LOG.debug("Unable to delete temporary directory " + root, e);
+            log.debug("Unable to delete temporary directory " + root, e);
         }
         featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.KUBERNETES));
     }
@@ -352,7 +348,6 @@ class KubernetesProcessor {
             OpenshiftConfig openshiftConfig,
             KnativeConfig knativeConfig,
             Set<String> deploymentTargets,
-            List<KubernetesEnvVarBuildItem> kubernetesEnvBuildItems,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
             Optional<BaseImageInfoBuildItem> baseImageBuildItem,
@@ -375,10 +370,6 @@ class KubernetesProcessor {
                 .ifPresent(c -> session.resources().decorate(OPENSHIFT, new ApplyImageDecorator(openshiftName, c.getImage())));
         containerImageBuildItem
                 .ifPresent(c -> session.resources().decorate(KNATIVE, new ApplyImageDecorator(knativeName, c.getImage())));
-
-        //Handle env variables
-        kubernetesEnvBuildItems.forEach(e -> session.resources()
-                .decorate(new AddEnvVarDecorator(new EnvBuilder().withName(e.getName()).withValue(e.getValue()).build())));
 
         //Handle Command and arguments
         commandBuildItem.ifPresent(c -> {

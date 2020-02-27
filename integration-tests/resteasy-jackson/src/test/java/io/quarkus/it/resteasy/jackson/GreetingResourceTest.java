@@ -20,4 +20,14 @@ class GreetingResourceTest {
                 .body(containsString("[2019,1,1]"));
     }
 
+    @Test
+    void testEndpoint2() {
+        given()
+                .when().get("/greeting2")
+                .then()
+                .statusCode(200)
+                .body(containsString("hello2"))
+                .body(containsString("[2019,1,1]"));
+    }
+
 }

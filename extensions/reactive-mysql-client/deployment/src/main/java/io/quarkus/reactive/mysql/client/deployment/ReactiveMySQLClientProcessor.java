@@ -37,9 +37,9 @@ class ReactiveMySQLClientProcessor {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.REACTIVE_MYSQL_CLIENT));
 
-        if (!dataSourcesBuildTimeConfig.defaultDataSource.kind.isPresent()
-                || (!DatabaseKind.isMySQL(dataSourcesBuildTimeConfig.defaultDataSource.kind.get())
-                        && !DatabaseKind.isMariaDB(dataSourcesBuildTimeConfig.defaultDataSource.kind.get()))
+        if (!dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()
+                || (!DatabaseKind.isMySQL(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get())
+                        && !DatabaseKind.isMariaDB(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get()))
                 || !dataSourceReactiveBuildTimeConfig.enabled) {
             return;
         }

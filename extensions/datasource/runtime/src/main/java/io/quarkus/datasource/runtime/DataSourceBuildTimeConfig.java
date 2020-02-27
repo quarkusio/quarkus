@@ -10,10 +10,10 @@ import io.quarkus.runtime.annotations.ConvertWith;
 public class DataSourceBuildTimeConfig {
 
     /**
-     * The kind of datasource we will connect to (e.g. h2, postgresql...).
+     * The kind of database we will connect to (e.g. h2, postgresql...).
      */
     @ConfigItem
     @ConvertWith(DatabaseKindConverter.class)
-    public Optional<String> kind = Optional.empty();
+    public Optional<String> dbKind = Optional.empty();
 
 }

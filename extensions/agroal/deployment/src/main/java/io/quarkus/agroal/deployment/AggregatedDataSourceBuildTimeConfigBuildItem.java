@@ -16,7 +16,7 @@ final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem 
 
     private final LegacyDataSourceJdbcBuildTimeConfig legacyDataSourceJdbcConfig;
 
-    private final String resolvedKind;
+    private final String resolvedDbKind;
 
     private final String resolvedDriverClass;
 
@@ -24,13 +24,13 @@ final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem 
 
     AggregatedDataSourceBuildTimeConfigBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
             DataSourceJdbcBuildTimeConfig jdbcConfig,
-            LegacyDataSourceJdbcBuildTimeConfig legacyDataSourceJdbcConfig, String resolvedKind,
+            LegacyDataSourceJdbcBuildTimeConfig legacyDataSourceJdbcConfig, String resolvedDbKind,
             String resolvedDriverClass, boolean legacy) {
         this.name = name;
         this.dataSourceConfig = dataSourceConfig;
         this.jdbcConfig = jdbcConfig;
         this.legacyDataSourceJdbcConfig = legacyDataSourceJdbcConfig;
-        this.resolvedKind = resolvedKind;
+        this.resolvedDbKind = resolvedDbKind;
         this.resolvedDriverClass = resolvedDriverClass;
         this.legacy = legacy;
     }
@@ -55,8 +55,8 @@ final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem 
         return DataSourceUtil.isDefault(name);
     }
 
-    public String getResolvedKind() {
-        return resolvedKind;
+    public String getResolvedDbKind() {
+        return resolvedDbKind;
     }
 
     public String getResolvedDriverClass() {

@@ -98,7 +98,7 @@ public class QuartzProcessor {
             return StdJDBCDelegate.class.getName();
         }
 
-        String dataSourceKind = jdbcDataSource.get().getKind();
+        String dataSourceKind = jdbcDataSource.get().getDbKind();
         if (DatabaseKind.isPostgreSQL(dataSourceKind)) {
             return PostgreSQLDelegate.class.getName();
         }

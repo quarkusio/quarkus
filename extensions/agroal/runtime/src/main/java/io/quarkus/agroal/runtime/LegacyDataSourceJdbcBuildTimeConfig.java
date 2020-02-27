@@ -13,7 +13,8 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class LegacyDataSourceJdbcBuildTimeConfig {
 
     /**
-     * @deprecated use quarkus.datasource.kind (or quarkus.datasource.jdbc.driver if you really need a specific JDBC driver).
+     * @deprecated use quarkus.datasource.db-kind (and quarkus.datasource.jdbc.driver if you really need a specific JDBC
+     *             driver).
      */
     @ConfigItem
     @Deprecated

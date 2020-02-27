@@ -21,7 +21,7 @@ public class AgroalDevModeTestCase {
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClass(DevModeResource.class)
-                            .add(new StringAsset("quarkus.datasource.kind=h2\n" +
+                            .add(new StringAsset("quarkus.datasource.db-kind=h2\n" +
                                     "quarkus.datasource.username=USERNAME-NAMED\n" +
                                     "quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:testing\n" +
                                     "quarkus.datasource.jdbc.driver=org.h2.Driver\n"), "application.properties");

@@ -213,7 +213,7 @@ class AgroalProcessor {
 
         for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedBuildTimeConfigBuildItem : aggregatedBuildTimeConfigBuildItems) {
             jdbcDataSource.produce(new JdbcDataSourceBuildItem(aggregatedBuildTimeConfigBuildItem.getName(),
-                    aggregatedBuildTimeConfigBuildItem.getResolvedKind(),
+                    aggregatedBuildTimeConfigBuildItem.getResolvedDbKind(),
                     DataSourceUtil.isDefault(aggregatedBuildTimeConfigBuildItem.getName())));
         }
     }
@@ -231,13 +231,13 @@ class AgroalProcessor {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
 
         // New configuration
-        if (dataSourcesBuildTimeConfig.defaultDataSource.kind.isPresent()) {
+        if (dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()) {
             if (dataSourcesJdbcBuildTimeConfig.jdbc.enabled) {
                 dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
                         dataSourcesBuildTimeConfig.defaultDataSource,
                         dataSourcesJdbcBuildTimeConfig.jdbc,
                         null,
-                        dataSourcesBuildTimeConfig.defaultDataSource.kind.get(),
+                        dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get(),
                         resolveDriver(null, dataSourcesBuildTimeConfig.defaultDataSource,
                                 dataSourcesJdbcBuildTimeConfig.jdbc, jdbcDriverBuildItems),
                         false));
@@ -254,7 +254,7 @@ class AgroalProcessor {
                     entry.getValue(),
                     jdbcBuildTimeConfig,
                     null,
-                    entry.getValue().kind.get(),
+                    entry.getValue().dbKind.get(),
                     resolveDriver(entry.getKey(), entry.getValue(), jdbcBuildTimeConfig, jdbcDriverBuildItems),
                     false));
         }
@@ -296,7 +296,7 @@ class AgroalProcessor {
         }
 
         Optional<JdbcDriverBuildItem> matchingJdbcDriver = jdbcDriverBuildItems.stream()
-                .filter(i -> dataSourceBuildTimeConfig.kind.get().equals(i.getKind()))
+                .filter(i -> dataSourceBuildTimeConfig.dbKind.get().equals(i.getDbKind()))
                 .findFirst();
 
         if (matchingJdbcDriver.isPresent()) {
@@ -407,7 +407,7 @@ class AgroalProcessor {
                             LegacyDataSourceJdbcRuntimeConfig.class, String.class),
                     dataSourceMethodCreator.getThis(), dataSourceNameRH);
 
-            ResultHandle resolvedKind = dataSourceMethodCreator.load(aggregatedDataSourceBuildTimeConfig.getResolvedKind());
+            ResultHandle resolvedDbKind = dataSourceMethodCreator.load(aggregatedDataSourceBuildTimeConfig.getResolvedDbKind());
             ResultHandle resolvedDriverClass = dataSourceMethodCreator
                     .load(aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass());
             ResultHandle mpMetricsEnabled = dataSourceMethodCreator.load(metricsCapabilityPresent);
@@ -435,7 +435,7 @@ class AgroalProcessor {
                             dataSourceJdbcRuntimeConfig,
                             legacyDataSourceJdbcBuildTimeConfig, legacyDataSourceRuntimeConfig,
                             legacyDataSourceJdbcRuntimeConfig,
-                            resolvedKind, resolvedDriverClass, mpMetricsEnabled, isLegacy));
+                            resolvedDbKind, resolvedDriverClass, mpMetricsEnabled, isLegacy));
         }
 
         classCreator.close();

@@ -44,8 +44,8 @@ class ReactivePgClientProcessor {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.REACTIVE_PG_CLIENT));
 
-        if (!dataSourcesBuildTimeConfig.defaultDataSource.kind.isPresent()
-                || !DatabaseKind.isPostgreSQL(dataSourcesBuildTimeConfig.defaultDataSource.kind.get())
+        if (!dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()
+                || !DatabaseKind.isPostgreSQL(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get())
                 || !dataSourceReactiveBuildTimeConfig.enabled) {
             return;
         }

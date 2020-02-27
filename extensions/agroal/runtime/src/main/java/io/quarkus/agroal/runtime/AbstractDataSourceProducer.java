@@ -92,7 +92,7 @@ public abstract class AbstractDataSourceProducer {
             LegacyDataSourceJdbcBuildTimeConfig legacyDataSourceJdbcBuildTimeConfig,
             LegacyDataSourceRuntimeConfig legacyDataSourceRuntimeConfig,
             LegacyDataSourceJdbcRuntimeConfig legacyDataSourceJdbcRuntimeConfig,
-            String resolvedKind,
+            String resolvedDbKind,
             String resolvedDriverClass,
             boolean mpMetricsPresent,
             boolean isLegacy) {
@@ -121,7 +121,7 @@ public abstract class AbstractDataSourceProducer {
 
         InstanceHandle<AgroalConnectionConfigurer> agroalConnectionConfigurerHandle = Arc.container().instance(
                 AgroalConnectionConfigurer.class,
-                new JdbcDriverLiteral(resolvedKind));
+                new JdbcDriverLiteral(resolvedDbKind));
 
         AgroalDataSourceConfigurationSupplier dataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
 
@@ -140,10 +140,11 @@ public abstract class AbstractDataSourceProducer {
 
         if (disableSslSupport) {
             if (agroalConnectionConfigurerHandle.isAvailable()) {
-                agroalConnectionConfigurerHandle.get().disableSslSupport(dataSourceBuildTimeConfig.kind.get(),
+                agroalConnectionConfigurerHandle.get().disableSslSupport(dataSourceBuildTimeConfig.dbKind.get(),
                         dataSourceConfiguration);
             } else {
-                log.warnv("Agroal does not support disabling SSL for database kind {0}", dataSourceBuildTimeConfig.kind.get());
+                log.warnv("Agroal does not support disabling SSL for database kind {0}",
+                        dataSourceBuildTimeConfig.dbKind.get());
             }
         }
 

@@ -12,13 +12,13 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
 
     private final String name;
 
-    private final String kind;
+    private final String dbKind;
 
     private final boolean isDefault;
 
     public JdbcDataSourceBuildItem(String name, String kind, boolean isDefault) {
         this.name = name;
-        this.kind = kind;
+        this.dbKind = kind;
         this.isDefault = isDefault;
     }
 
@@ -26,8 +26,8 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
         return name;
     }
 
-    public String getKind() {
-        return kind;
+    public String getDbKind() {
+        return dbKind;
     }
 
     public boolean isDefault() {

@@ -12,26 +12,26 @@ import io.quarkus.builder.item.MultiBuildItem;
  */
 public final class JdbcDriverBuildItem extends MultiBuildItem {
 
-    private final String kind;
+    private final String dbKind;
 
     private final String driverClass;
 
     private final Optional<String> xaDriverClass;
 
-    public JdbcDriverBuildItem(String kind, String driverClass, String xaDriverClass) {
-        this.kind = kind;
+    public JdbcDriverBuildItem(String dbKind, String driverClass, String xaDriverClass) {
+        this.dbKind = dbKind;
         this.driverClass = driverClass;
         this.xaDriverClass = Optional.ofNullable(xaDriverClass);
     }
 
-    public JdbcDriverBuildItem(String kind, String driverClass) {
-        this.kind = kind;
+    public JdbcDriverBuildItem(String dbKind, String driverClass) {
+        this.dbKind = dbKind;
         this.driverClass = driverClass;
         this.xaDriverClass = Optional.empty();
     }
 
-    public String getKind() {
-        return kind;
+    public String getDbKind() {
+        return dbKind;
     }
 
     public String getDriverClass() {

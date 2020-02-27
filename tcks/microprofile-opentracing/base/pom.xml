@@ -142,6 +142,10 @@
                     <groupId>org.sonatype.plexus</groupId>
                     <artifactId>plexus-sec-dispatcher</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>javax.inject</groupId>
+                    <artifactId>javax.inject</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

@@ -20,13 +20,6 @@ public class KubernetesDeployerPrerequisite {
         buildRequestProducer.produce(new ContainerImageBuildRequestBuildItem());
         if (containerImage.getRegistry().isPresent()) {
             pushRequestProducer.produce(new ContainerImagePushRequestBuildItem());
-        } else {
-            log.warn(
-                    "A Kubernetes deployment was requested, but the container image to be built will not be pushed to any registry"
-                            +
-                            " because \"quarkus.container-image.registry\" has not been set. The Kubernetes deployment will only work properly"
-                            +
-                            " if the cluster is using the local Docker daemon.");
         }
     }
 }

@@ -38,6 +38,12 @@ public class HttpConfiguration {
     public String host;
 
     /**
+     * Enable listening to host:port
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean hostEnabled;
+
+    /**
      * The HTTPS port
      */
     @ConfigItem(defaultValue = "8443")
@@ -109,6 +115,42 @@ public class HttpConfiguration {
      */
     @ConfigItem(name = "auth.session.encryption-key")
     public Optional<String> encryptionKey;
+
+    /**
+     * Enable socket reuse port (linux/macOs native transport only)
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean soReusePort;
+
+    /**
+     * Enable tcp quick ack (linux native transport only)
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean tcpQuickAck;
+
+    /**
+     * Enable tcp cork (linux native transport only)
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean tcpCork;
+
+    /**
+     * Enable tcp fast open (linux native transport only)
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean tcpFastOpen;
+
+    /**
+     * Path to a unix domain socket
+     */
+    @ConfigItem(defaultValue = "/var/run/io.quarkus.app.socket")
+    public String domainSocket;
+
+    /**
+     * Enable listening to host:port
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean domainSocketEnabled;
 
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;

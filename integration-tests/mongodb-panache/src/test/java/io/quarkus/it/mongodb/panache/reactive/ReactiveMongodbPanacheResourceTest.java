@@ -203,7 +203,7 @@ class ReactiveMongodbPanacheResourceTest {
                 nbEvent.increment();
             });
             source.open();
-            Thread.sleep(100);//wait a little for the events to comes in
+            Thread.sleep(150);//wait a little for the events to comes in
             assertEquals(3, nbEvent.count());
         }
 

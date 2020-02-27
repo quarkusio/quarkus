@@ -70,9 +70,9 @@ public class ValueResolverGenerator {
     private static final String GET_PREFIX = "get";
     private static final String IS_PREFIX = "is";
 
-    private static final String IGNORE_SUPERCLASSES = "ignoreSuperclasses";
-    private static final String IGNORE = "ignore";
-    private static final String PROPERTIES = "properties";
+    public static final String IGNORE_SUPERCLASSES = "ignoreSuperclasses";
+    public static final String IGNORE = "ignore";
+    public static final String PROPERTIES = "properties";
 
     private final Set<String> analyzedTypes;
     private final Set<String> generatedTypes;
@@ -80,6 +80,12 @@ public class ValueResolverGenerator {
     private final ClassOutput classOutput;
     private final Map<ClassInfo, AnnotationInstance> uncontrolled;
 
+    /**
+     * 
+     * @param index
+     * @param classOutput
+     * @param uncontrolled The map of {@link TemplateData} metadata for classes that are not controlled by the client
+     */
     ValueResolverGenerator(IndexView index, ClassOutput classOutput, Map<ClassInfo, AnnotationInstance> uncontrolled) {
         this.analyzedTypes = new HashSet<>();
         this.generatedTypes = new HashSet<>();
@@ -105,7 +111,7 @@ public class ValueResolverGenerator {
         analyzedTypes.add(clazzName);
         boolean ignoreSuperclasses = false;
 
-        // @TemplateData declared on class has precedence
+        // @TemplateData declared on class takes precedence
         AnnotationInstance templateData = clazz.classAnnotation(TEMPLATE_DATA);
         if (templateData == null) {
             // Try to find @TemplateData declared on other classes

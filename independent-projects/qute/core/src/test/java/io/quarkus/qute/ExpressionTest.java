@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 public class ExpressionTest {
 
     @Test
-    public void testNamespace() throws InterruptedException, ExecutionException {
+    public void testExpressions() throws InterruptedException, ExecutionException {
         verify("data:name.value", "data", ImmutableList.of("name", "value"), null);
         verify("name.value", null, ImmutableList.of("name", "value"), null);
         verify("name[value]", null, ImmutableList.of("name", "value"), null);
@@ -26,6 +26,14 @@ public class ExpressionTest {
         verify("name ?: 'John Bug'", null, ImmutableList.of("name", "?:('John Bug')"), null);
         verify("name ? 'John' : 'Bug'", null, ImmutableList.of("name", "?('John')", ":('Bug')"), null);
         verify("name.func(data:foo)", null, ImmutableList.of("name", "func(data:foo)"), null);
+    }
+
+    @Test
+    public void testTypeCheckInfo() {
+        List<String> parts = Expressions.splitTypeCheckParts("|org.acme.Foo|.call(|java.util.List<org.acme.Label>|,bar)");
+        assertEquals(2, parts.size());
+        assertEquals("|org.acme.Foo|", parts.get(0));
+        assertEquals("call(|java.util.List<org.acme.Label>|,bar)", parts.get(1));
     }
 
     private void verify(String value, String namespace, List<String> parts, CompletableFuture<Object> literal)

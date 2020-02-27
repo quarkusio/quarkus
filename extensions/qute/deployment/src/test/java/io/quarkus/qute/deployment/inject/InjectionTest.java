@@ -1,4 +1,4 @@
-package io.quarkus.qute.deployment;
+package io.quarkus.qute.deployment.inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

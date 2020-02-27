@@ -6,11 +6,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLHandshakeException;
 
@@ -26,20 +23,19 @@ import io.quarkus.container.spi.ContainerImageResultBuildItem;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 
 public class KubernetesDeployer {
 
     private static final Logger LOG = Logger.getLogger(KubernetesDeployer.class);
 
     @BuildStep(onlyIf = { IsNormal.class, KubernetesDeploy.class })
-    public void deploy(KubernetesConfig kubernetesConfig,
-            KubernetesClientBuildItem kubernetesClient,
-            ApplicationInfoBuildItem applicationInfo,
+    public void deploy(KubernetesClientBuildItem kubernetesClient,
             Optional<ContainerImageResultBuildItem> containerImage,
+            List<KubernetesDeploymentTargetBuildItem> kubernetesDeploymentTargetBuildItems,
             OutputTargetBuildItem outputTarget,
             BuildProducer<DeploymentResultBuildItem> deploymentResult) {
 
@@ -48,26 +44,24 @@ public class KubernetesDeployer {
                     "A Kubernetes deployment was requested but no extension was found to build a container image. Consider adding one of following extensions: \"quarkus-container-image-jib\", \"quarkus-container-image-docker\" or \"quarkus-container-image-s2i\".");
         }
 
-        Map<String, Object> config = KubernetesConfigUtil.toMap();
-        Set<DeploymentTarget> deploymentTargets = new HashSet<>();
-        deploymentTargets.addAll(KubernetesConfigUtil.getDeploymentTargets(config).stream()
-                .map(String::toUpperCase)
-                .map(DeploymentTarget::valueOf)
-                .collect(Collectors.toList()));
-
-        deploymentTargets.addAll(kubernetesConfig.deploymentTarget);
+        //Get any build item but if the build was s2i, use openshift
+        KubernetesDeploymentTargetBuildItem deploymentTarget = kubernetesDeploymentTargetBuildItems
+                .stream()
+                .filter(d -> !"s2i".equals(containerImage.get().getProvider()) || "openshift".equals(d.getName()))
+                .findFirst()
+                .orElse(new KubernetesDeploymentTargetBuildItem("kubernetes", "Deployment"));
 
         final KubernetesClient client = Clients.fromConfig(kubernetesClient.getClient().getConfiguration());
-        DeploymentTarget target = deploymentTargets.stream().findFirst().orElse(DeploymentTarget.KUBERNETES);
-        deploymentResult.produce(deploy(target, client, outputTarget.getOutputDirectory()));
+        deploymentResult.produce(deploy(deploymentTarget, client, outputTarget.getOutputDirectory()));
     }
 
-    private DeploymentResultBuildItem deploy(DeploymentTarget deploymentTarget, KubernetesClient client, Path outputDir) {
+    private DeploymentResultBuildItem deploy(KubernetesDeploymentTargetBuildItem deploymentTarget, KubernetesClient client,
+            Path outputDir) {
         String namespace = Optional.ofNullable(client.getNamespace()).orElse("default");
-        LOG.info("Deploying to " + deploymentTarget.name().toLowerCase() + " server: " + client.getMasterUrl()
+        LOG.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()
                 + " in namespace:" + namespace + ".");
-        File manifest = outputDir.resolve("kubernetes")
-                .resolve(deploymentTarget.name().toLowerCase() + ".yml").toFile();
+        File manifest = outputDir.resolve("kubernetes").resolve(deploymentTarget.getName().toLowerCase() + ".yml").toFile();
+
         try (FileInputStream fis = new FileInputStream(manifest)) {
             KubernetesList list = Serialization.unmarshalAsList(fis);
             list.getItems().forEach(i -> {
@@ -79,7 +73,6 @@ public class KubernetesDeployer {
             HasMetadata m = list.getItems().stream().filter(r -> r.getKind().equals(deploymentTarget.getKind())).findFirst()
                     .orElseThrow(() -> new IllegalStateException(
                             "No " + deploymentTarget.getKind() + " found under: " + manifest.getAbsolutePath()));
-
             return new DeploymentResultBuildItem(m.getMetadata().getName(), m.getMetadata().getLabels());
         } catch (FileNotFoundException e) {
             throw new IllegalStateException(

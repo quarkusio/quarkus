@@ -1,7 +1,10 @@
 package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_TARGET;
+import static io.quarkus.kubernetes.deployment.Constants.DOCKER;
+import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
+import static io.quarkus.kubernetes.deployment.Constants.OLD_DEPLOYMENT_TARGET;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.S2I;
 
@@ -26,11 +29,14 @@ public class KubernetesConfigUtil {
     private static final String DEKORATE_PREFIX = "dekorate.";
 
     private static final Set<String> ALLOWED_GENERATORS = new HashSet<>(
-            Arrays.asList("kubernetes", "openshift", "knative", "docker", "s2i"));
-    private static final Set<String> IMAGE_GENERATORS = new HashSet<>(Arrays.asList("docker", "s2i"));
+            Arrays.asList(KUBERNETES, OPENSHIFT, KNATIVE, DOCKER, S2I));
+    private static final Set<String> IMAGE_GENERATORS = new HashSet<>(Arrays.asList(DOCKER, S2I));
 
-    public static List<String> getDeploymentTargets(Map<String, Object> map) {
-        return Arrays.stream(map.getOrDefault(DEKORATE_PREFIX + DEPLOYMENT_TARGET, KUBERNETES).toString().split(","))
+    public static List<String> getDeploymentTargets() {
+        Config config = ConfigProvider.getConfig();
+        return Arrays.stream(config.getOptionalValue(DEPLOYMENT_TARGET, String.class)
+                .orElse(config.getOptionalValue(OLD_DEPLOYMENT_TARGET, String.class).orElse(KUBERNETES))
+                .split(","))
                 .map(String::trim)
                 .map(String::toLowerCase)
                 .collect(Collectors.toList());

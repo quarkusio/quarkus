@@ -42,6 +42,7 @@ public class BasicOpenshiftTest {
         assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("basic-openshift");
+                assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");
             });
 
             assertThat(h).extracting("spec").extracting("template").extracting("spec").isInstanceOfSatisfying(PodSpec.class,

@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Generating Kubernetes resources
+= Quarkus - Kubernetes extension
 
 include::./attributes.adoc[]
 
@@ -386,6 +386,8 @@ If you need to generate resources for both platforms (vanilla Kubernetes and Ope
 ----
 quarkus.kubernetes.deployment-target=kubernetes, openshift
 ----
+
+Note: In latest versions of Quarkus a wrapper extension of link:openshift[Openshift] is provided. If you use it, there is no need to explicitly set this property.
 
 The OpenShift resources can be customized in a similar approach with Kubernetes.
 

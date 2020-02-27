@@ -57,6 +57,7 @@ import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 
 public class S2iProcessor {
 
+    private static final String S2I = "s2i";
     private static final String JAR_ARTIFACT_FORMAT = "%s%s.jar";
     private static final String NATIVE_ARTIFACT_FORMAT = "%s%s";
 
@@ -143,7 +144,7 @@ public class S2iProcessor {
                 out.getOutputDirectory().resolve("lib"));
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
         containerImageResultProducer.produce(
-                new ContainerImageResultBuildItem(null, ImageUtil.getRepository(image), ImageUtil.getTag(image)));
+                new ContainerImageResultBuildItem(S2I, null, ImageUtil.getRepository(image), ImageUtil.getTag(image)));
     }
 
     @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class, NativeBuild.class })
@@ -188,7 +189,7 @@ public class S2iProcessor {
         createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), applicationImagePath);
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
         containerImageResultProducer.produce(
-                new ContainerImageResultBuildItem(null, ImageUtil.getRepository(image), ImageUtil.getTag(image)));
+                new ContainerImageResultBuildItem(S2I, null, ImageUtil.getRepository(image), ImageUtil.getTag(image)));
     }
 
     public static void createContainerImage(KubernetesClientBuildItem kubernetesClient,

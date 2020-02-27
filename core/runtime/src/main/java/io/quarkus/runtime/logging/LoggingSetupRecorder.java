@@ -121,7 +121,7 @@ public class LoggingSetupRecorder {
             final Logger categoryLogger = logContext.getLogger(name);
             final CategoryConfig categoryConfig = entry.getValue();
             final String levelName = categoryConfig.level.toUpperCase(Locale.ROOT);
-            if (!"INHERIT".equals(categoryConfig.level)) {
+            if (!"INHERIT".equals(levelName)) {
                 categoryLogger.setLevelName(levelName);
             }
             categoryLogger.setUseParentHandlers(categoryConfig.useParentHandlers);

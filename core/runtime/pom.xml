@@ -109,6 +109,7 @@
                         <parentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</parentFirstArtifact>
                         <parentFirstArtifact>org.jboss.logging:jboss-logging</parentFirstArtifact>
                         <parentFirstArtifact>org.ow2.asm:asm</parentFirstArtifact>
+                        <parentFirstArtifact>org.apache.maven:maven-model</parentFirstArtifact>
                     </parentFirstArtifacts>
                     <excludedArtifacts>
                         <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>

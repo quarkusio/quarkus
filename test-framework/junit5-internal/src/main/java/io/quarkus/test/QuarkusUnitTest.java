@@ -3,8 +3,6 @@ package io.quarkus.test;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -12,11 +10,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,7 +25,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -53,6 +47,7 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildException;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.builder.item.BuildItem;
+import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
@@ -450,34 +445,7 @@ public class QuarkusUnitTest
             timeoutTask.cancel();
             timeoutTask = null;
             if (deploymentDir != null) {
-                Files.walkFileTree(deploymentDir, new FileVisitor<Path>() {
-                    @Override
-                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                            throws IOException {
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        Files.delete(file);
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                    @Override
-                    public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                    @Override
-                    public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                        if (exc == null) {
-                            Files.delete(dir);
-                            return FileVisitResult.CONTINUE;
-                        } else {
-                            throw exc;
-                        }
-                    }
-                });
+                FileUtil.deleteDirectory(deploymentDir);
             }
         }
         if (afterAllCustomizer != null) {
@@ -549,24 +517,5 @@ public class QuarkusUnitTest
         }
         customApplicationProperties.put(propertyKey, propertyValue);
         return this;
-    }
-
-    private static class PropertiesAsset implements Asset {
-        private final Properties props;
-
-        public PropertiesAsset(final Properties props) {
-            this.props = props;
-        }
-
-        @Override
-        public InputStream openStream() {
-            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream(128);
-            try {
-                props.store(outputStream, "Unit test Generated Application properties");
-            } catch (IOException e) {
-                throw new RuntimeException("Could not write application properties resource", e);
-            }
-            return new ByteArrayInputStream(outputStream.toByteArray());
-        }
     }
 }

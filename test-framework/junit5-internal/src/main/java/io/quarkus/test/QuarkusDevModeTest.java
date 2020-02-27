@@ -7,12 +7,9 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -166,38 +163,7 @@ public class QuarkusDevModeTest
             }
         } finally {
             if (deploymentDir != null) {
-                Files.walkFileTree(deploymentDir, new FileVisitor<Path>() {
-                    @Override
-                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                            throws IOException {
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        try {
-                            Files.delete(file);
-                        } catch (IOException e) {
-                            //ignore, this will be cleaned up on process exit anyway
-                        }
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                    @Override
-                    public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                    @Override
-                    public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                        try {
-                            Files.delete(dir);
-                        } catch (IOException e) {
-                            //ignore, this will be cleaned up on process exit anyway
-                        }
-                        return FileVisitResult.CONTINUE;
-                    }
-                });
+                FileUtil.deleteDirectory(deploymentDir);
             }
         }
     }

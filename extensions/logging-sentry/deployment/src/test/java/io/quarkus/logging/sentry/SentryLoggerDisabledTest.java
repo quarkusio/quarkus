@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.sentry.Sentry;
 import io.sentry.jul.SentryHandler;
 
 public class SentryLoggerDisabledTest {
@@ -22,6 +23,8 @@ public class SentryLoggerDisabledTest {
     public void sentryLoggerDisabledTest() {
         final SentryHandler sentryHandler = getSentryHandler();
         assertThat(sentryHandler).isNull();
+        assertThat(Sentry.getStoredClient()).isNotNull();
+        assertThat(Sentry.isInitialized()).isTrue();
     }
 
     @AfterAll

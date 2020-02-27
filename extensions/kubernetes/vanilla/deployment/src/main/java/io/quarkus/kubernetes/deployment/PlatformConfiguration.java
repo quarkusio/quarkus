@@ -20,6 +20,8 @@ public interface PlatformConfiguration {
 
     Map<String, String> getAnnotations();
 
+    boolean isAddBuildTimestamp();
+
     Map<String, EnvConfig> getEnvVars();
 
     Optional<String> getWorkingDir();

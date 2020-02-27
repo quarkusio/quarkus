@@ -15,6 +15,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -172,9 +175,10 @@ class KubernetesProcessor {
             session.resources().decorate(OPENSHIFT, new AddLabelDecorator(new Label(OPENSHIFT_APP_RUNTIME, QUARKUS)));
             //Apply configuration
             applyGlobalConfig(session, kubernetesConfig);
-            applyConfig(session, KUBERNETES, kubernetesConfig.name.orElse(applicationInfo.getName()), kubernetesConfig);
-            applyConfig(session, OPENSHIFT, openshiftConfig.name.orElse(applicationInfo.getName()), openshiftConfig);
-            applyConfig(session, KNATIVE, knativeConfig.name.orElse(applicationInfo.getName()), knativeConfig);
+            ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+            applyConfig(session, KUBERNETES, kubernetesConfig.name.orElse(applicationInfo.getName()), kubernetesConfig, now);
+            applyConfig(session, OPENSHIFT, openshiftConfig.name.orElse(applicationInfo.getName()), openshiftConfig, now);
+            applyConfig(session, KNATIVE, knativeConfig.name.orElse(applicationInfo.getName()), knativeConfig, now);
 
             //apply build item configurations to the dekorate session.
             applyBuildItems(session,
@@ -248,13 +252,14 @@ class KubernetesProcessor {
 
     /**
      * Apply changes to the target resource group
-     *
+     * 
      * @param session The session to apply the changes
      * @param target The deployment target (e.g. kubernetes, openshift, knative)
      * @param name The name of the resource to accept the configuration
      * @param config The {@link PlatformConfiguration} instance
+     * @param now
      */
-    private void applyConfig(Session session, String target, String name, PlatformConfiguration config) {
+    private void applyConfig(Session session, String target, String name, PlatformConfiguration config, ZonedDateTime now) {
         //Labels
         config.getLabels().forEach((key, value) -> {
             session.resources().decorate(target, new AddLabelDecorator(new Label(key, value)));
@@ -264,6 +269,11 @@ class KubernetesProcessor {
         config.getAnnotations().forEach((key, value) -> {
             session.resources().decorate(target, new AddAnnotationDecorator(new Annotation(key, value)));
         });
+        if (config.isAddBuildTimestamp()) {
+            session.resources().decorate(target,
+                    new AddAnnotationDecorator(new Annotation("build-timestamp",
+                            now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd - HH:mm:ss Z")))));
+        }
 
         //EnvVars
         config.getEnvVars().entrySet().forEach(e -> {

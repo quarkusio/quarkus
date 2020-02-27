@@ -43,6 +43,14 @@ public class KnativeConfig implements PlatformConfiguration {
     Map<String, String> annotations;
 
     /**
+     * Whether or not to add the build timestamp to the Kubernetes annotations
+     * This is a very useful way to have manifests of successive builds of the same
+     * application differ - thus ensuring that Kubernetes will apply the updated resources
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean addBuildTimestamp;
+
+    /**
      * Environment variables to add to all containers
      */
     @ConfigItem
@@ -95,7 +103,7 @@ public class KnativeConfig implements PlatformConfiguration {
     /**
      * Image pull policy
      */
-    @ConfigItem(defaultValue = "IfNotPresent")
+    @ConfigItem(defaultValue = "Always")
     ImagePullPolicy imagePullPolicy;
 
     /**
@@ -194,6 +202,11 @@ public class KnativeConfig implements PlatformConfiguration {
 
     public Map<String, String> getAnnotations() {
         return annotations;
+    }
+
+    @Override
+    public boolean isAddBuildTimestamp() {
+        return addBuildTimestamp;
     }
 
     public Map<String, EnvConfig> getEnvVars() {

@@ -103,7 +103,7 @@ public class KnativeConfig implements PlatformConfiguration {
     /**
      * Image pull policy
      */
-    @ConfigItem(defaultValue = "IfNotPresent")
+    @ConfigItem(defaultValue = "Always")
     ImagePullPolicy imagePullPolicy;
 
     /**

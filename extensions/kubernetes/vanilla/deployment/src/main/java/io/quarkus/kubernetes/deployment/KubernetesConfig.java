@@ -104,7 +104,7 @@ public class KubernetesConfig implements PlatformConfiguration {
     /**
      * Image pull policy
      */
-    @ConfigItem(defaultValue = "IfNotPresent")
+    @ConfigItem(defaultValue = "Always")
     ImagePullPolicy imagePullPolicy;
 
     /**

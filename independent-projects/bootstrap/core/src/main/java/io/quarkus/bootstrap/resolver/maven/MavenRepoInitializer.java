@@ -156,7 +156,6 @@ public class MavenRepoInitializer {
     }
 
     public static RepositorySystem getRepositorySystem(boolean offline, WorkspaceModelResolver wsModelResolver) {
-
         final DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
         if (!offline) {
             locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);

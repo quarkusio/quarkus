@@ -51,6 +51,10 @@
                     <groupId>javax.inject</groupId>
                     <artifactId>javax.inject</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.codehaus.plexus</groupId>
+                    <artifactId>plexus-classworlds</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

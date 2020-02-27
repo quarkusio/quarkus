@@ -265,7 +265,10 @@ public class SpringDIProcessor {
                 visitAnnotation(annotation, index, deps, visited, ret);
             }
         }
-        ret.add(index.getClassByName(clazz));
+        final ClassInfo classInfo = index.getClassByName(clazz);
+        if (classInfo != null) {
+            ret.add(classInfo);
+        }
     }
 
     /**

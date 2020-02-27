@@ -120,7 +120,7 @@ public class DockerProcessor {
         if (pushRequested || containerImageConfig.push) {
             // Check if we need to login first
             if (containerImageConfig.username.isPresent() && containerImageConfig.password.isPresent()) {
-                boolean loginSuccessful = ExecUtil.exec("docker", "-u", containerImageConfig.username.get(),
+                boolean loginSuccessful = ExecUtil.exec("docker", "login", "-u", containerImageConfig.username.get(),
                         "-p" + containerImageConfig.password.get());
                 if (!loginSuccessful) {
                     throw dockerException(new String[] { "-u", containerImageConfig.username.get(), "-p", "********" });

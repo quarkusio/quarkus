@@ -30,7 +30,7 @@ import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 
 public class KubernetesDeployer {
 
-    private static final Logger LOG = Logger.getLogger(KubernetesDeployer.class);
+    private static final Logger log = Logger.getLogger(KubernetesDeployer.class);
 
     @BuildStep(onlyIf = { IsNormal.class, KubernetesDeploy.class })
     public void deploy(KubernetesClientBuildItem kubernetesClient,
@@ -58,16 +58,16 @@ public class KubernetesDeployer {
     private DeploymentResultBuildItem deploy(KubernetesDeploymentTargetBuildItem deploymentTarget, KubernetesClient client,
             Path outputDir) {
         String namespace = Optional.ofNullable(client.getNamespace()).orElse("default");
-        LOG.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()
+        log.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()
                 + " in namespace:" + namespace + ".");
         File manifest = outputDir.resolve("kubernetes").resolve(deploymentTarget.getName().toLowerCase() + ".yml").toFile();
 
         try (FileInputStream fis = new FileInputStream(manifest)) {
             KubernetesList list = Serialization.unmarshalAsList(fis);
             list.getItems().forEach(i -> {
-                LOG.info("Applying: " + i.getKind() + " " + i.getMetadata().getName() + ".");
+                log.info("Applying: " + i.getKind() + " " + i.getMetadata().getName() + ".");
                 client.resource(i).inNamespace(namespace).createOrReplace();
-                LOG.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
+                log.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
             });
 
             HasMetadata m = list.getItems().stream().filter(r -> r.getKind().equals(deploymentTarget.getKind())).findFirst()
@@ -80,10 +80,10 @@ public class KubernetesDeployer {
         } catch (KubernetesClientException e) {
             if (e.getCause() instanceof SSLHandshakeException) {
                 String message = "The application could not be deployed to the cluster because the Kubernetes API Server certificates are not trusted. The certificates can be configured using the relevant configuration propertiers under the 'quarkus.kubernetes-client' config root, or \"quarkus.kubernetes-client.trust-certs=true\" can be set to explicitly trust the certificates (not recommended)";
-                LOG.error(message);
+                log.error(message);
                 throw new RuntimeException(e.getCause());
             }
-            LOG.error("Unable to deploy the application to the Kubernetes cluster: " + e.getMessage());
+            log.error("Unable to deploy the application to the Kubernetes cluster: " + e.getMessage());
             throw e;
         } catch (IOException e) {
             throw new RuntimeException("Error closing file: " + manifest.getAbsolutePath());

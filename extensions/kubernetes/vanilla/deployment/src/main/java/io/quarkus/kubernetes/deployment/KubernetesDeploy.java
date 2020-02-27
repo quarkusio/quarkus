@@ -17,7 +17,7 @@ import io.quarkus.kubernetes.client.runtime.KubernetesClientUtils;
 
 public class KubernetesDeploy implements BooleanSupplier {
 
-    private final Logger LOGGER = Logger.getLogger(KubernetesDeploy.class);
+    private static final Logger log = Logger.getLogger(KubernetesDeploy.class);
     private static boolean serverFound = false;
     private static boolean alreadyWarned = false;
 
@@ -35,16 +35,16 @@ public class KubernetesDeploy implements BooleanSupplier {
         try (final KubernetesClient client = KubernetesClientUtils.createClient()) {
             //Let's check id we can connect.
             RootPaths paths = client.rootPaths();
-            LOGGER.info("Found kubernetes server.");
+            log.info("Found kubernetes server.");
             serverFound = true;
             return true;
         } catch (Exception e) {
             if (!alreadyWarned) {
                 if (e.getCause() instanceof SSLHandshakeException) {
                     String message = "Although a Kubernetes deployment was requested, it will however not take place because the API Server certificates are not trusted. The certificates can be configured using the relevant configuration propertiers under the 'quarkus.kubernetes-client' config root, or \"quarkus.kubernetes-client.trust-certs=true\" can be set to explicitly trust the certificates (not recommended)";
-                    LOGGER.warn(message);
+                    log.warn(message);
                 } else {
-                    LOGGER.error(
+                    log.error(
                             "Although a Kubernetes deployment was requested, it will however not take place because there was an error during communication with the API Server: "
                                     + e.getMessage());
                 }

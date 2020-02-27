@@ -9,7 +9,7 @@ include::./attributes.adoc[]
 :change-log: src/main/resources/db/changeLog.xml
 :config-file: application.properties
 
-https://www.liquibase.org/[Liquibase] is the leading open source tool for database schema change management.
+https://www.liquibase.org/[Liquibase] is an open source tool for database schema change management.
 
 Quarkus provides first class support for using Liquibase as will be explained in this guide.
 
@@ -19,7 +19,7 @@ To start using Liquibase with your project, you just need to:
 
 * add your changeLog to the `{change-log}` file as you usually do with Liquibase
 * activate the `migrate-at-start` option to migrate the schema automatically or inject the `Liquibase` object and run
-your migration as you normally do
+your migration as you normally do.
 
 In your `pom.xml`, add the following dependencies:
 
@@ -27,7 +27,7 @@ In your `pom.xml`, add the following dependencies:
 * your JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
 
 [source,xml]
---
+----
 <dependencies>
     <!-- Liquibase specific dependencies -->
     <dependency>
@@ -41,7 +41,7 @@ In your `pom.xml`, add the following dependencies:
         <artifactId>quarkus-jdbc-postgresql</artifactId>
     </dependency>
 </dependencies>
---
+----
 
 Liquibase support relies on the Quarkus datasource config.
 It can be customized for the default datasource as well as for every <<multiple-datasources,named datasource>>.
@@ -51,7 +51,7 @@ in order to allow Liquibase to manage the schema.
 The following is an example for the `{config-file}` file:
 
 [source,properties]
---
+----
 # configure your datasource
 quarkus.datasource.url=jdbc:postgresql://localhost:5432/mydatabase
 quarkus.datasource.driver=org.postgresql.Driver
@@ -74,13 +74,13 @@ quarkus.liquibase.migrate-at-start=true
 # quarkus.liquibase.liquibase-catalog-name=liquibaseCatalog
 # quarkus.liquibase.liquibase-schema-name=liquibaseSchema
 # quarkus.liquibase.liquibase-tablespace-name=liquibaseSpace
---
+----
 
 Add a changeLog file to the default folder following the Liquibase naming conventions: `{change-log}`
 The yaml, json, xml and sql changeLog file formats are also supported.
 
 [source,xml]
---
+----
 <?xml version="1.1" encoding="UTF-8" standalone="no"?>
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
@@ -99,12 +99,12 @@ The yaml, json, xml and sql changeLog file formats are also supported.
         </createTable>
     </changeSet>
 </databaseChangeLog>
---
+----
 
 Now you can start your application and Quarkus will run the Liquibase's update method according to your config:
 
 [source,java]
---
+----
 import org.quarkus.liquibase.LiquibaseFactory; <1>
 
 @ApplicationScoped
@@ -120,9 +120,8 @@ public class MigrationService {
         }
     }
 }
---
-
-<1> The Quarkus extension wraps the Liquibase object in its own implementation
+----
+<1> The Quarkus extension provides a factory to initialize a Liquibase instance
 <2> Inject the Quarkus liquibase factory if you want to use the liquibase methods directly
 
 == Multiple datasources
@@ -131,7 +130,7 @@ Liquibase can be configured for multiple datasources.
 The Liquibase properties are prefixed exactly the same way as the named datasources, for example:
 
 [source,properties]
---
+----
 quarkus.datasource.driver=org.h2.Driver
 quarkus.datasource.url=jdbc:h2:tcp://localhost/mem:default
 quarkus.datasource.username=username-default
@@ -164,7 +163,7 @@ quarkus.liquibase.users.migrate-at-start=true
 quarkus.liquibase.inventory.schemas=INVENTORY_TEST_SCHEMA
 quarkus.liquibase.inventory.change-log=db/inventory.xml
 quarkus.liquibase.inventory.migrate-at-start=true
---
+----
 
 Notice there's an extra bit in the key.
 The syntax is as follows: `quarkus.liquibase.[optional name.][datasource property]`.
@@ -176,10 +175,10 @@ NOTE: Without configuration, Liquibase is set up for every datasource using the 
 In case you are interested in using the `Liquibase` object directly, you can inject it as follows:
 
 NOTE: If you enabled the `quarkus.liquibase.migrate-at-start` property, by the time you use the Liquibase instance,
-Quarkus will already have run the migrate operation
+Quarkus will already have run the migrate operation.
 
 [source,java]
---
+----
 import org.quarkus.liquibase.LiquibaseFactory;
 
 @ApplicationScoped
@@ -207,9 +206,8 @@ public class MigrationService {
         }
     }
 }
---
-
-<1> Inject the Liquibase object if you want to use it directly
+----
+<1> Inject the LiquibaseFactory object
 <2> Inject Liquibase for named datasources using the Quarkus `LiquibaseDataSource` qualifier
 <3> Inject Liquibase for named datasources
 <4> Use the Liquibase instance directly

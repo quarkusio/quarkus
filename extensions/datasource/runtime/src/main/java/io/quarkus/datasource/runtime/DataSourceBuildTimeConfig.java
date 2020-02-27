@@ -14,6 +14,6 @@ public class DataSourceBuildTimeConfig {
      */
     @ConfigItem
     @ConvertWith(DatabaseKindConverter.class)
-    public Optional<String> kind;
+    public Optional<String> kind = Optional.empty();
 
 }

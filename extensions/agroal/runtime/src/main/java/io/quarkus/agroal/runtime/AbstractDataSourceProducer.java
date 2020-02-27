@@ -17,6 +17,7 @@ import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration.ConnectionValidator;
+import io.agroal.api.configuration.AgroalDataSourceConfiguration;
 import io.agroal.api.configuration.supplier.AgroalConnectionFactoryConfigurationSupplier;
 import io.agroal.api.configuration.supplier.AgroalConnectionPoolConfigurationSupplier;
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
@@ -35,6 +36,8 @@ import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.datasource.runtime.LegacyDataSourceRuntimeConfig;
+import io.quarkus.datasource.runtime.LegacyDataSourcesRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vault.CredentialsProvider;
 
@@ -46,6 +49,11 @@ public abstract class AbstractDataSourceProducer {
     private DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
     private DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig;
     private DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig;
+
+    private LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig;
+    private LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig;
+    private LegacyDataSourcesJdbcRuntimeConfig legacyDataSourcesJdbcRuntimeConfig;
+
     private boolean disableSslSupport = false;
 
     private List<AgroalDataSource> dataSources = new ArrayList<>();
@@ -60,11 +68,19 @@ public abstract class AbstractDataSourceProducer {
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig,
+            LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig,
+            LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig,
+            LegacyDataSourcesJdbcRuntimeConfig legacyDataSourcesJdbcRuntimeConfig,
             boolean disableSslSupport) {
         this.dataSourcesBuildTimeConfig = dataSourcesBuildTimeConfig;
         this.dataSourcesJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig;
         this.dataSourcesRuntimeConfig = dataSourcesRuntimeConfig;
         this.dataSourcesJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig;
+
+        this.legacyDataSourcesJdbcBuildTimeConfig = legacyDataSourcesJdbcBuildTimeConfig;
+        this.legacyDataSourcesRuntimeConfig = legacyDataSourcesRuntimeConfig;
+        this.legacyDataSourcesJdbcRuntimeConfig = legacyDataSourcesJdbcRuntimeConfig;
+
         this.disableSslSupport = disableSslSupport;
     }
 
@@ -73,12 +89,23 @@ public abstract class AbstractDataSourceProducer {
             DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig,
+            LegacyDataSourceJdbcBuildTimeConfig legacyDataSourceJdbcBuildTimeConfig,
+            LegacyDataSourceRuntimeConfig legacyDataSourceRuntimeConfig,
+            LegacyDataSourceJdbcRuntimeConfig legacyDataSourceJdbcRuntimeConfig,
+            String resolvedKind,
             String resolvedDriverClass,
-            boolean mpMetricsPresent) {
+            boolean mpMetricsPresent,
+            boolean isLegacy) {
         checkConfigInjection();
 
-        if (!dataSourceJdbcRuntimeConfig.url.isPresent()) {
-            throw new ConfigurationException("URL is not defined for datasource " + dataSourceName);
+        if (!isLegacy) {
+            if (!dataSourceJdbcRuntimeConfig.url.isPresent()) {
+                throw new ConfigurationException("URL is not defined for datasource " + dataSourceName);
+            }
+        } else {
+            if (!legacyDataSourceRuntimeConfig.url.isPresent()) {
+                throw new ConfigurationException("URL is not defined for datasource " + dataSourceName);
+            }
         }
 
         // we first make sure that all available JDBC drivers are loaded in the current TCCL
@@ -94,21 +121,55 @@ public abstract class AbstractDataSourceProducer {
 
         InstanceHandle<AgroalConnectionConfigurer> agroalConnectionConfigurerHandle = Arc.container().instance(
                 AgroalConnectionConfigurer.class,
-                new JdbcDriverLiteral(dataSourceBuildTimeConfig.kind.get()));
-
-        String url = dataSourceJdbcRuntimeConfig.url.get();
+                new JdbcDriverLiteral(resolvedKind));
 
         AgroalDataSourceConfigurationSupplier dataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
 
         AgroalConnectionPoolConfigurationSupplier poolConfiguration = dataSourceConfiguration.connectionPoolConfiguration();
-        AgroalConnectionFactoryConfigurationSupplier agroalConnectionFactoryConfigurationSupplier = poolConfiguration
+        AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration = poolConfiguration
                 .connectionFactoryConfiguration();
-        agroalConnectionFactoryConfigurationSupplier.jdbcUrl(url);
-        agroalConnectionFactoryConfigurationSupplier.connectionProviderClass(driver);
-        agroalConnectionFactoryConfigurationSupplier.trackJdbcResources(dataSourceJdbcRuntimeConfig.detectStatementLeaks);
+
+        if (!isLegacy) {
+            applyNewConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver,
+                    dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, mpMetricsPresent);
+        } else {
+            applyLegacyConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver,
+                    dataSourceRuntimeConfig, legacyDataSourceJdbcBuildTimeConfig, legacyDataSourceRuntimeConfig,
+                    legacyDataSourceJdbcRuntimeConfig, mpMetricsPresent);
+        }
+
+        if (disableSslSupport) {
+            if (agroalConnectionConfigurerHandle.isAvailable()) {
+                agroalConnectionConfigurerHandle.get().disableSslSupport(dataSourceBuildTimeConfig.kind.get(),
+                        dataSourceConfiguration);
+            } else {
+                log.warnv("Agroal does not support disabling SSL for database kind {0}", dataSourceBuildTimeConfig.kind.get());
+            }
+        }
+
+        // Explicit reference to bypass reflection need of the ServiceLoader used by AgroalDataSource#from
+        AgroalDataSourceConfiguration agroalConfiguration = dataSourceConfiguration.get();
+        AgroalDataSource dataSource = new io.agroal.pool.DataSource(agroalConfiguration,
+                new AgroalEventLoggingListener(dataSourceName));
+        log.debugv("Started datasource {0} connected to {1}", dataSourceName,
+                agroalConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl());
+
+        this.dataSources.add(dataSource);
+
+        return dataSource;
+    }
+
+    private void applyNewConfiguration(AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+            AgroalConnectionPoolConfigurationSupplier poolConfiguration,
+            AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver,
+            DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+            DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig, boolean mpMetricsPresent) {
+        connectionFactoryConfiguration.jdbcUrl(dataSourceJdbcRuntimeConfig.url.get());
+        connectionFactoryConfiguration.connectionProviderClass(driver);
+        connectionFactoryConfiguration.trackJdbcResources(dataSourceJdbcRuntimeConfig.detectStatementLeaks);
 
         if (dataSourceJdbcRuntimeConfig.transactionIsolationLevel.isPresent()) {
-            agroalConnectionFactoryConfigurationSupplier
+            connectionFactoryConfiguration
                     .jdbcTransactionIsolation(
                             dataSourceJdbcRuntimeConfig.transactionIsolationLevel.get());
         }
@@ -121,7 +182,7 @@ public abstract class AbstractDataSourceProducer {
 
         // New connection SQL
         if (dataSourceJdbcRuntimeConfig.newConnectionSql.isPresent()) {
-            agroalConnectionFactoryConfigurationSupplier.initialSql(dataSourceJdbcRuntimeConfig.newConnectionSql.get());
+            connectionFactoryConfiguration.initialSql(dataSourceJdbcRuntimeConfig.newConnectionSql.get());
         }
 
         // metrics
@@ -134,11 +195,11 @@ public abstract class AbstractDataSourceProducer {
 
         // Authentication
         if (dataSourceRuntimeConfig.username.isPresent()) {
-            agroalConnectionFactoryConfigurationSupplier
+            connectionFactoryConfiguration
                     .principal(new NamePrincipal(dataSourceRuntimeConfig.username.get()));
         }
         if (dataSourceRuntimeConfig.password.isPresent()) {
-            agroalConnectionFactoryConfigurationSupplier
+            connectionFactoryConfiguration
                     .credential(new SimplePassword(dataSourceRuntimeConfig.password.get()));
         }
 
@@ -155,7 +216,7 @@ public abstract class AbstractDataSourceProducer {
             }
 
             String name = dataSourceRuntimeConfig.credentialsProvider.get();
-            agroalConnectionFactoryConfigurationSupplier
+            connectionFactoryConfiguration
                     .credential(new AgroalVaultCredentialsProviderPassword(name, credentialsProvider));
         }
 
@@ -199,24 +260,112 @@ public abstract class AbstractDataSourceProducer {
         if (dataSourceJdbcRuntimeConfig.maxLifetime.isPresent()) {
             poolConfiguration.maxLifetime(dataSourceJdbcRuntimeConfig.maxLifetime.get());
         }
+    }
 
-        if (disableSslSupport) {
-            if (agroalConnectionConfigurerHandle.isAvailable()) {
-                agroalConnectionConfigurerHandle.get().disableSslSupport(dataSourceBuildTimeConfig.kind.get(),
-                        dataSourceConfiguration);
-            } else {
-                log.warnv("Agroal does not support disabling SSL for database kind {0}", dataSourceBuildTimeConfig.kind.get());
-            }
+    private void applyLegacyConfiguration(AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+            AgroalConnectionPoolConfigurationSupplier poolConfiguration,
+            AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
+            LegacyDataSourceJdbcBuildTimeConfig legacyDataSourceJdbcBuildTimeConfig,
+            LegacyDataSourceRuntimeConfig legacyDataSourceRuntimeConfig,
+            LegacyDataSourceJdbcRuntimeConfig legacyDataSourceJdbcRuntimeConfig, boolean mpMetricsPresent) {
+        connectionFactoryConfiguration.jdbcUrl(legacyDataSourceRuntimeConfig.url.get());
+        connectionFactoryConfiguration.connectionProviderClass(driver);
+        connectionFactoryConfiguration.trackJdbcResources(legacyDataSourceJdbcRuntimeConfig.detectStatementLeaks);
+
+        if (legacyDataSourceJdbcRuntimeConfig.transactionIsolationLevel.isPresent()) {
+            connectionFactoryConfiguration
+                    .jdbcTransactionIsolation(
+                            legacyDataSourceJdbcRuntimeConfig.transactionIsolationLevel.get());
         }
 
-        // Explicit reference to bypass reflection need of the ServiceLoader used by AgroalDataSource#from
-        AgroalDataSource dataSource = new io.agroal.pool.DataSource(dataSourceConfiguration.get(),
-                new AgroalEventLoggingListener(dataSourceName));
-        log.debugv("Started data source {0} connected to {1}", dataSource, url);
+        if (legacyDataSourceJdbcBuildTimeConfig.transactions != io.quarkus.agroal.runtime.TransactionIntegration.DISABLED) {
+            TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
+                    transactionSynchronizationRegistry);
+            poolConfiguration.transactionIntegration(txIntegration);
+        }
 
-        this.dataSources.add(dataSource);
+        // New connection SQL
+        if (legacyDataSourceJdbcRuntimeConfig.newConnectionSql.isPresent()) {
+            connectionFactoryConfiguration.initialSql(legacyDataSourceJdbcRuntimeConfig.newConnectionSql.get());
+        }
 
-        return dataSource;
+        // metrics
+        if (legacyDataSourceJdbcBuildTimeConfig.enableMetrics.isPresent()) {
+            dataSourceConfiguration.metricsEnabled(legacyDataSourceJdbcBuildTimeConfig.enableMetrics.get());
+        } else {
+            // if the enable-metrics property is unspecified, treat it as true if MP Metrics are being exposed
+            dataSourceConfiguration.metricsEnabled(dataSourcesBuildTimeConfig.metricsEnabled && mpMetricsPresent);
+        }
+
+        // Authentication
+        if (dataSourceRuntimeConfig.username.isPresent()) {
+            connectionFactoryConfiguration
+                    .principal(new NamePrincipal(dataSourceRuntimeConfig.username.get()));
+        }
+        if (dataSourceRuntimeConfig.password.isPresent()) {
+            connectionFactoryConfiguration
+                    .credential(new SimplePassword(dataSourceRuntimeConfig.password.get()));
+        }
+
+        // Vault credentials provider
+        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
+            ArcContainer container = Arc.container();
+            String type = dataSourceRuntimeConfig.credentialsProviderType.orElse(null);
+            CredentialsProvider credentialsProvider = type != null
+                    ? (CredentialsProvider) container.instance(type).get()
+                    : container.instance(CredentialsProvider.class).get();
+
+            if (credentialsProvider == null) {
+                throw new RuntimeException("unable to find credentials provider of type " + (type == null ? "default" : type));
+            }
+
+            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            connectionFactoryConfiguration
+                    .credential(new AgroalVaultCredentialsProviderPassword(name, credentialsProvider));
+        }
+
+        // Pool size configuration:
+        poolConfiguration.minSize(legacyDataSourceJdbcRuntimeConfig.minSize);
+        poolConfiguration.maxSize(legacyDataSourceRuntimeConfig.maxSize);
+        if (legacyDataSourceJdbcRuntimeConfig.initialSize.isPresent()
+                && legacyDataSourceJdbcRuntimeConfig.initialSize.get() > 0) {
+            poolConfiguration.initialSize(legacyDataSourceJdbcRuntimeConfig.initialSize.get());
+        }
+
+        // Connection management
+        poolConfiguration.connectionValidator(ConnectionValidator.defaultValidator());
+        if (legacyDataSourceJdbcRuntimeConfig.acquisitionTimeout.isPresent()) {
+            poolConfiguration.acquisitionTimeout(legacyDataSourceJdbcRuntimeConfig.acquisitionTimeout.get());
+        }
+        if (legacyDataSourceJdbcRuntimeConfig.backgroundValidationInterval.isPresent()) {
+            poolConfiguration.validationTimeout(legacyDataSourceJdbcRuntimeConfig.backgroundValidationInterval.get());
+        }
+        if (legacyDataSourceJdbcRuntimeConfig.validationQuerySql.isPresent()) {
+            String validationQuery = legacyDataSourceJdbcRuntimeConfig.validationQuerySql.get();
+            poolConfiguration.connectionValidator(new ConnectionValidator() {
+
+                @Override
+                public boolean isValid(Connection connection) {
+                    try (Statement stmt = connection.createStatement()) {
+                        stmt.execute(validationQuery);
+                        return true;
+                    } catch (Exception e) {
+                        log.warn("Connection validation failed", e);
+                    }
+                    return false;
+                }
+            });
+        }
+        if (legacyDataSourceJdbcRuntimeConfig.idleRemovalInterval.isPresent()) {
+            poolConfiguration.reapTimeout(legacyDataSourceJdbcRuntimeConfig.idleRemovalInterval.get());
+        }
+        if (legacyDataSourceJdbcRuntimeConfig.leakDetectionInterval.isPresent()) {
+            poolConfiguration.leakTimeout(legacyDataSourceJdbcRuntimeConfig.leakDetectionInterval.get());
+        }
+        if (legacyDataSourceJdbcRuntimeConfig.maxLifetime.isPresent()) {
+            poolConfiguration.maxLifetime(legacyDataSourceJdbcRuntimeConfig.maxLifetime.get());
+        }
     }
 
     public DataSourceBuildTimeConfig getDataSourceBuildTimeConfig(String dataSourceName) {
@@ -259,6 +408,38 @@ public abstract class AbstractDataSourceProducer {
                 .get(dataSourceName);
 
         return namedOuterConfig != null ? namedOuterConfig.jdbc : new DataSourceJdbcRuntimeConfig();
+    }
+
+    public LegacyDataSourceJdbcBuildTimeConfig getLegacyDataSourceJdbcBuildTimeConfig(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource;
+        }
+
+        LegacyDataSourceJdbcBuildTimeConfig namedConfig = legacyDataSourcesJdbcBuildTimeConfig.namedDataSources
+                .get(dataSourceName);
+
+        return namedConfig != null ? namedConfig : new LegacyDataSourceJdbcBuildTimeConfig();
+    }
+
+    public LegacyDataSourceRuntimeConfig getLegacyDataSourceRuntimeConfig(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return legacyDataSourcesRuntimeConfig.defaultDataSource;
+        }
+
+        LegacyDataSourceRuntimeConfig namedConfig = legacyDataSourcesRuntimeConfig.namedDataSources.get(dataSourceName);
+
+        return namedConfig != null ? namedConfig : new LegacyDataSourceRuntimeConfig();
+    }
+
+    public LegacyDataSourceJdbcRuntimeConfig getLegacyDataSourceJdbcRuntimeConfig(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return legacyDataSourcesJdbcRuntimeConfig.defaultDataSource;
+        }
+
+        LegacyDataSourceJdbcRuntimeConfig namedConfig = legacyDataSourcesJdbcRuntimeConfig.namedDataSources
+                .get(dataSourceName);
+
+        return namedConfig != null ? namedConfig : new LegacyDataSourceJdbcRuntimeConfig();
     }
 
     private void checkConfigInjection() {

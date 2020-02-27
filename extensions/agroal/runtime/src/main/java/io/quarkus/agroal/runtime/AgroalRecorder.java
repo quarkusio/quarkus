@@ -9,8 +9,6 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class AgroalRecorder {
 
-    public static final String DEFAULT_DATASOURCE_NAME = "<default>";
-
     public void configureDatasources(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,

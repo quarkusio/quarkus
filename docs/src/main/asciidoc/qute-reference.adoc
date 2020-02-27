@@ -79,20 +79,20 @@ NOTE: In Quarkus, the caching is done automatically.
 
 The dynamic parts of a template include:
 
-* *comment* 
+* *Comment* 
 ** `{! This is a comment !}`,
-** could be multi-line,
-** may contain expressions and sections: `{! {#if true} !}`.
-* *expression*
-** outputs the evaluated value,
-** simple properties: `{foo}`, `{item.name}`,
-** virtual methods: `{item.get(name)}`, `{name ?: 'John'}`,
-** with namespace: `{inject:colors}`.
-* *section tag*
-** may contain expressions and sections: `{#if foo}{foo.name}{/if}`,
-** the name in the closing tag is optional: `{#if active}ACTIVE!{/}`,
-** can be empty: `{#myTag image=true /}`,
-** may declare nested section blocks: `{#if item.valid} Valid. {#else} Invalid. {/if}` and decide which block to render.
+** Could be multi-line,
+** May contain expressions and sections: `{! {#if true} !}`.
+* *Expression*
+** Outputs the evaluated value,
+** Simple properties: `{foo}`, `{item.name}`,
+** Virtual methods: `{item.get(name)}`, `{name ?: 'John'}`,
+** With namespace: `{inject:colors}`.
+* *Section*
+** May contain expressions and sections: `{#if foo}{foo.name}{/if}`,
+** The name in the closing tag is optional: `{#if active}ACTIVE!{/}`,
+** Can be empty: `{#myTag image=true /}`,
+** May declare nested section blocks: `{#if item.valid} Valid. {#else} Invalid. {/if}` and decide which block to render.
 
 === Identifiers
 
@@ -107,7 +107,7 @@ A closing curly bracket (`}`) is ignored if not inside an expression/tag.
 <html>
    <body>
    {_foo}       <1>
-   {  foo}       <2>
+   {  foo}      <2>
    {{foo}}      <3>
    {"foo":true} <4>
    </body>
@@ -124,19 +124,19 @@ TIP: It is also possible to use escape sequences `\{` and `\}` to insert delimit
 
 An expression consists of:
 
-* an optional namespace followed by a colon `:`, 
-* parts separated by dot `.`.
+* an optional namespace followed by a colon (`:`), 
+* one or more parts separated by dot (`.`).
 
 The first part of the expression is always resolved against the <<current_context_object, current context object>>.
 If no result is found for the first part it's resolved against the parent context object (if available).
-For an expression that starts with a namespace the current context object is found using the available ``NamespaceResolver``s.
+For an expression that starts with a namespace the current context object is found using all the available ``NamespaceResolver``s.
 For an expression that does not start with a namespace the current context object is *derived from the position* of the tag.
-All other parts are resolved using `ValueResolver` s against the result of the previous resolution.
+All other parts are resolved using ``ValueResolver``s against the result of the previous resolution.
 
-For example, expression `{name}` has no namespace and single part - "name".
+For example, expression `{name}` has no namespace and single part - `name`.
 The "name" will be resolved using all available value resolvers against the current context object.
-However, the expression `{global:colors}` has the namespace "global" and single part - "colors".
-First, all available `NamespaceResolver` s will be used to find the current context object.
+However, the expression `{global:colors}` has the namespace `global` and single part - `colors`.
+First, all available ``NamespaceResolver``s will be used to find the current context object.
 And afterwards value resolvers will be used to resolve "colors" against the context object found. 
 
 [source]
@@ -149,7 +149,7 @@ And afterwards value resolvers will be used to resolve "colors" against the cont
 <2> no namespace, two parts - `item`, `name`
 <3> namespace `global`, one part - `colors`
 
-An expression part could be a "virtual method" in which case the name can be followed by parameters in parentheses. 
+An expression part could be a "virtual method" in which case the name can be followed by a list of comma-separated parameters in parentheses: 
 
 [source]
 ----
@@ -207,6 +207,22 @@ This could be useful to access data for which the key is overriden:
 <4> Use the `data` namespace to access the `item` data object.
 
 ====
+
+===== Built-in Operators
+
+|===
+|Operator |Description	|Examples
+
+|Elvis 
+|Outputs the default value if the previous part cannot be resolved or resolves to `null`.
+|`{person.name ?: 'John'}`, `{person.name or 'John'}`
+
+|Ternary 
+|Shorthand for if-then-else statement. Unlike in <<if_section>> nested operators are not supported.
+|`{item.isActive ? item.name : 'Inactive item'}` outputs the value of `item.name` if `item.isActive` resolves to `true`.
+|===
+
+NOTE: In fact, the operators are implemented as "virtual methods" that consume one parameter and can be used with infix notation, i.e. `{person.name or 'John'}` is translated to `{person.name.or('John')}`.
 
 ===== Character Escapes
 
@@ -304,6 +320,7 @@ The output will be:
 1:2:3:
 ----
 
+[[if_section]]
 ===== If Section
 
 A basic control flow section.
@@ -406,24 +423,42 @@ You can add any number of `else` blocks:
 ===== With Section
 
 This section can be used to set the current context object.
-This could be useful to simplify the template structure.
+This could be useful to simplify the template structure:
 
-[source]
+[source,html]
 ----
 {#with item.parent}
-  {name}  <1>
+  <h1>{name}</h1>  <1>
+  <p>{description}</p> <2>
 {/with}
 ----
-<1> The name will be resolved against the `item.parent`.
+<1> The `name` will be resolved against the `item.parent`.
+<2> The `description` will be also resolved against the `item.parent`.
 
 It's also possible to specify an alias for the context object:
 
-[source]
+[source,html]
 ----
-{#with item.parent as myParent}
-  {myParent.name}
+{#with item.parent as myParent} <1>
+  <h1>{myParent.name}</h1>
 {/with}
 ----
+<1> `myParent` is the alias that can be used inside the tag.
+
+This section might also come in handy when we'd like to avoid multiple expensive invocations:
+
+[source,html]
+----
+{#with item.callExpensiveLogicToGetTheValue(true) as it}
+  {#if it is "fun"} <1>
+    <h1>Yay!</h1>
+  {#else}
+    <h1>{it} is not fun at all!</h1>
+  {/if}
+{/with}
+----
+<1> `it` is the result of `item.callExpensiveLogicToGetTheValue(1,'foo',bazinga)`. The method is only invoked once even though the result may be used in multiple expressions.
+
 
 [[include_helper]]
 ===== Include/Insert Sections

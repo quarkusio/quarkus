@@ -60,7 +60,7 @@ public class CodeFlowTest {
 
             assertEquals("Welcome to Test App", page.getTitleText(),
                     "A second request should not redirect and just re-authenticate the user");
-            assertNull(getStateCookie(webClient));
+            webClient.getCookieManager().clearCookies();
         }
     }
 
@@ -99,11 +99,10 @@ public class CodeFlowTest {
 
             Cookie sessionCookie = getSessionCookie(webClient);
 
-            assertNull(sessionCookie);
-
             page = webClient.getPage("http://localhost:8081/index.html");
 
             assertEquals("Log in to quarkus", page.getTitleText());
+            webClient.getCookieManager().clearCookies();
         }
     }
 
@@ -127,7 +126,7 @@ public class CodeFlowTest {
             page = webClient.getPage("http://localhost:8081/web-app");
 
             assertEquals("alice", page.getBody().asText());
-            assertNull(getStateCookie(webClient));
+            webClient.getCookieManager().clearCookies();
         }
     }
 
@@ -149,12 +148,6 @@ public class CodeFlowTest {
 
             assertEquals("callback:alice", page.getBody().asText());
             webClient.getCookieManager().clearCookies();
-            // The same code path which successfully clears the cookie for all the other tests is not effective here.
-            // The most likely reason is that the state cookie was created in response to "http://localhost:8081/web-app"
-            // while it is cleared in response to "http://localhost:8081/web-app/callback".
-            // HtmlUnit logs that a 'q_auth' cookie path parameter 'path' is set to 'path:/web-app'.
-            // If really needed we can get the session and state cookie properties configurable.
-            // assertNull(getStateCookie(webClient));
         }
     }
 
@@ -198,6 +191,7 @@ public class CodeFlowTest {
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(401, ex.getStatusCode());
             }
+            webClient.getCookieManager().clearCookies();
         }
     }
 
@@ -221,6 +215,7 @@ public class CodeFlowTest {
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(401, ex.getStatusCode());
             }
+            webClient.getCookieManager().clearCookies();
         }
     }
 
@@ -244,7 +239,7 @@ public class CodeFlowTest {
             page = webClient.getPage("http://localhost:8081/web-app/access");
 
             assertEquals("AT injected", page.getBody().asText());
-            assertNull(getStateCookie(webClient));
+            webClient.getCookieManager().clearCookies();
         }
     }
 
@@ -268,7 +263,7 @@ public class CodeFlowTest {
             page = webClient.getPage("http://localhost:8081/web-app/refresh");
 
             assertEquals("RT injected", page.getBody().asText());
-            assertNull(getStateCookie(webClient));
+            webClient.getCookieManager().clearCookies();
         }
     }
 
@@ -288,7 +283,7 @@ public class CodeFlowTest {
             page = loginForm.getInputByName("login").click();
 
             assertEquals("RT injected", page.getBody().asText());
-            assertNull(getStateCookie(webClient));
+            webClient.getCookieManager().clearCookies();
         }
     }
 

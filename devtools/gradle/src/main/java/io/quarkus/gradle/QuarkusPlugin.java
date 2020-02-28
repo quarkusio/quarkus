@@ -8,6 +8,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.ConfigurationContainer;
+import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -46,11 +47,14 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String NATIVE_TEST_IMPLEMENTATION_CONFIGURATION_NAME = "nativeTestImplementation";
     public static final String NATIVE_TEST_RUNTIME_ONLY_CONFIGURATION_NAME = "nativeTestRuntimeOnly";
 
+    private QuarkusPluginExtension extension;
+
     @Override
     public void apply(Project project) {
         verifyGradleVersion();
+
         // register extension
-        project.getExtensions().create(EXTENSION_NAME, QuarkusPluginExtension.class, project);
+        extension = project.getExtensions().create(EXTENSION_NAME, QuarkusPluginExtension.class, project);
 
         registerTasks(project);
     }
@@ -72,6 +76,8 @@ public class QuarkusPlugin implements Plugin<Project> {
         project.getPlugins().withType(
                 JavaPlugin.class,
                 javaPlugin -> {
+                    project.afterEvaluate(p -> afterEvaluate(p));
+
                     Task classesTask = tasks.getByName(JavaPlugin.CLASSES_TASK_NAME);
                     quarkusDev.dependsOn(classesTask);
                     quarkusBuild.dependsOn(classesTask, tasks.getByName(JavaPlugin.JAR_TASK_NAME));
@@ -122,5 +128,23 @@ public class QuarkusPlugin implements Plugin<Project> {
             throw new GradleException("Quarkus plugin requires Gradle 5.0 or later. Current version is: " +
                     GradleVersion.current());
         }
+    }
+
+    private void afterEvaluate(Project project) {
+        project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
+                .getIncoming().getDependencies()
+                .forEach(d -> {
+                    if (d instanceof ProjectDependency) {
+                        configProjectDependency(project, project.getRootProject().findProject(d.getName()));
+                    }
+                });
+    }
+
+    private void configProjectDependency(Project project, Project dep) {
+        project.getLogger().debug("Configuring %s task dependencies on %s tasks", project, dep);
+        final Task quarkusBuild = project.getTasks().findByName(QUARKUS_BUILD_TASK_NAME);
+        final Task jarTask = dep.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
+        quarkusBuild.dependsOn(jarTask);
+        extension.addProjectDepJarTask(dep, jarTask);
     }
 }

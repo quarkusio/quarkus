@@ -1,10 +1,12 @@
 package io.quarkus.it.mongodb.panache.reactive;
 
 import static io.restassured.RestAssured.get;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -203,8 +205,7 @@ class ReactiveMongodbPanacheResourceTest {
                 nbEvent.increment();
             });
             source.open();
-            Thread.sleep(100);//wait a little for the events to comes in
-            assertEquals(3, nbEvent.count());
+            await().atMost(Duration.ofSeconds(1)).until(() -> nbEvent.count() == 3);
         }
 
         //delete all

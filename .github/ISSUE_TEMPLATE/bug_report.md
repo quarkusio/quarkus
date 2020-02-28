@@ -37,6 +37,7 @@ Steps to reproduce the behavior:
  - Output of `java -version`: 
  - GraalVM version (if different from Java): 
  - Quarkus version or git rev: 
+ - Build tool (ie. output of `mvnw --version` or `gradlew --version`): 
 
 **Additional context**
 (Add any other context about the problem here.)

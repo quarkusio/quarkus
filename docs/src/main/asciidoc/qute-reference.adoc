@@ -493,7 +493,7 @@ These sections can be used to include another template and possibly override som
   {/body}
 {/include}
 ----
-<1> `include` section is used to specify the extended template.
+<1> `include` section is used to specify the extended template. If this template resides within `src/main/resources/templates/tags` you can reference it by name, otherwise you will need to specify its extension and relative path from `src/main/resources/templates`.
 <2> Nested blocks are used to specify the parts that should be overriden.
 
 NOTE: Section blocks can also define an optional end tag - `{/title}`.

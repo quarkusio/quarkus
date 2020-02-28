@@ -15,17 +15,17 @@ public class KubernetesMockServerTestResource implements QuarkusTestResourceLife
 
     @Override
     public Map<String, String> start() {
-        mockServer = new KubernetesMockServer(useHttps());
-        mockServer.init();
-
         final Map<String, String> systemProps = new HashMap<>();
-        try (NamespacedKubernetesClient client = mockServer.createClient()) {
-            systemProps.put(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY, client.getConfiguration().getMasterUrl());
-        }
         systemProps.put(Config.KUBERNETES_TRUST_CERT_SYSTEM_PROPERTY, "true");
         systemProps.put(Config.KUBERNETES_AUTH_TRYKUBECONFIG_SYSTEM_PROPERTY, "false");
         systemProps.put(Config.KUBERNETES_AUTH_TRYSERVICEACCOUNT_SYSTEM_PROPERTY, "false");
         systemProps.put(Config.KUBERNETES_NAMESPACE_SYSTEM_PROPERTY, "test");
+
+        mockServer = new KubernetesMockServer(useHttps());
+        mockServer.init();
+        try (NamespacedKubernetesClient client = mockServer.createClient()) {
+            systemProps.put(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY, client.getConfiguration().getMasterUrl());
+        }
 
         return systemProps;
     }

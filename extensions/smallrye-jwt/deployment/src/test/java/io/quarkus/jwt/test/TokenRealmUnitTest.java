@@ -16,6 +16,10 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.AnonymousIdentityProvider;
 import io.quarkus.security.runtime.QuarkusIdentityProviderManagerImpl;
+import io.quarkus.smallrye.jwt.runtime.auth.DefaultJwtParser;
+import io.quarkus.smallrye.jwt.runtime.auth.DefaultJwtRolesMapper;
+import io.quarkus.smallrye.jwt.runtime.auth.JwtParser;
+import io.quarkus.smallrye.jwt.runtime.auth.JwtRolesMapper;
 import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
@@ -30,7 +34,9 @@ public class TokenRealmUnitTest {
         PublicKey pk1 = keyPair.getPublic();
         PrivateKey pk1Priv = keyPair.getPrivate();
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) pk1, "https://server.example.com");
-        MpJwtValidator jwtValidator = new MpJwtValidator(contextInfo);
+        JwtParser jwtParser = new DefaultJwtParser();
+        JwtRolesMapper jwtRolesMapper = new DefaultJwtRolesMapper();
+        MpJwtValidator jwtValidator = new MpJwtValidator(contextInfo, jwtParser, jwtRolesMapper);
         QuarkusIdentityProviderManagerImpl authenticator = QuarkusIdentityProviderManagerImpl.builder()
                 .addProvider(new AnonymousIdentityProvider())
                 .setBlockingExecutor(new Executor() {

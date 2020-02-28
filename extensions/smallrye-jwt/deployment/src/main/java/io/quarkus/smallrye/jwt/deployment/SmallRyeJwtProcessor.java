@@ -30,8 +30,11 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.security.deployment.JCAProviderBuildItem;
+import io.quarkus.smallrye.jwt.runtime.auth.DefaultJwtParser;
+import io.quarkus.smallrye.jwt.runtime.auth.DefaultJwtRolesMapper;
 import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism;
 import io.quarkus.smallrye.jwt.runtime.auth.JwtPrincipalProducer;
+import io.quarkus.smallrye.jwt.runtime.auth.JwtTokenUtils;
 import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.quarkus.smallrye.jwt.runtime.auth.RawOptionalClaimCreator;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
@@ -79,6 +82,9 @@ class SmallRyeJwtProcessor {
         removable.addBeanClass(RawClaimTypeProducer.class);
         removable.addBeanClass(JsonValueProducer.class);
         removable.addBeanClass(JwtPrincipalProducer.class);
+        removable.addBeanClass(JwtTokenUtils.class);
+        removable.addBeanClass(DefaultJwtParser.class);
+        removable.addBeanClass(DefaultJwtRolesMapper.class);
         removable.addBeanClass(Claim.class);
         additionalBeans.produce(removable.build());
 

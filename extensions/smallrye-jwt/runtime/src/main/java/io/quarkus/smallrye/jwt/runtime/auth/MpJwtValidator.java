@@ -1,6 +1,5 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
-import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -18,7 +17,6 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
-import io.smallrye.jwt.auth.principal.DefaultJWTTokenParser;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.ParseException;
 
@@ -31,16 +29,14 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
     private static final Logger log = Logger.getLogger(MpJwtValidator.class);
 
     final JWTAuthContextInfo authContextInfo;
-
-    private final DefaultJWTTokenParser parser = new DefaultJWTTokenParser();
-
-    public MpJwtValidator() {
-        authContextInfo = null;
-    }
+    final JwtParser parser;
+    final JwtRolesMapper jwtRolesMapper;
 
     @Inject
-    public MpJwtValidator(JWTAuthContextInfo authContextInfo) {
+    public MpJwtValidator(JWTAuthContextInfo authContextInfo, JwtParser parser, JwtRolesMapper jwtRolesMapper) {
         this.authContextInfo = authContextInfo;
+        this.parser = parser;
+        this.jwtRolesMapper = jwtRolesMapper;
     }
 
     @Override
@@ -65,12 +61,12 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
             QuarkusJwtCallerPrincipal principal = new QuarkusJwtCallerPrincipal(name, claims);
             return CompletableFuture
                     .completedFuture(QuarkusSecurityIdentity.builder().setPrincipal(principal)
-                            .addRoles(new HashSet<>(claims.getStringListClaimValue("groups")))
+                            .addRoles(jwtRolesMapper.mapGroupsAndRoles(claims))
                             .addAttribute(SecurityIdentity.USER_ATTRIBUTE, principal).build());
 
         } catch (ParseException | MalformedClaimException e) {
             log.debug("Authentication failed", e);
-            CompletableFuture<SecurityIdentity> cf = new CompletableFuture<SecurityIdentity>();
+            CompletableFuture<SecurityIdentity> cf = new CompletableFuture<>();
             cf.completeExceptionally(new AuthenticationFailedException(e));
             return cf;
         }

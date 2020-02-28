@@ -32,9 +32,9 @@ All submissions, including submissions by project members, need to be reviewed b
 
 ### Continuous Integration
 
-Because we are all humans, and to ensure  Quarkus is stable for everyone, all changes must go through QUaarkus continuous integration. Quarkus CI is based on Github Actions, which means that everyone has the ablity to automatically execute CI in their forks as part of the process of making changes. We ask that all non-trivial changes go through this process, so that the  contributor gets immediate feedback, while at the same time keeping our CI fast and healthy for everyone.
+Because we are all humans, and to ensure  Quarkus is stable for everyone, all changes must go through Quarkus continuous integration. Quarkus CI is based on Github Actions, which means that everyone has the ablity to automatically execute CI in their forks as part of the process of making changes. We ask that all non-trivial changes go through this process, so that the contributor gets immediate feedback, while at the same time keeping our CI fast and healthy for everyone.
 
-The process requires only one additional step to enable Acitons on your fork (clicking the green button in the actions tab). [See the full video walkthrough](https://youtu.be/egqbx-Q-Cbg) for more details on how to do this.
+The process requires only one additional step to enable Actions on your fork (clicking the green button in the actions tab). [See the full video walkthrough](https://youtu.be/egqbx-Q-Cbg) for more details on how to do this.
 
 ### Tests and documentation are not optional
 

@@ -18,7 +18,7 @@ public class IncludeTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset("{#insert item}NOK{/}"), "templates/tags/base.html")
+                    .addAsResource(new StringAsset("{#insert item}NOK{/}"), "templates/base.html")
                     .addAsResource(new StringAsset("{#include base}{#item}OK{/}{/}"), "templates/detail.html"));
 
     @Inject

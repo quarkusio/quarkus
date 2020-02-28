@@ -12,11 +12,11 @@ public class UserTagTest {
     @Test
     public void testUserTag() {
         Engine engine = Engine.builder().addDefaultSectionHelpers().addDefaultValueResolvers()
-                .addSectionHelper(new UserTagSectionHelper.Factory("myTag"))
+                .addSectionHelper(new UserTagSectionHelper.Factory("myTag", "my-tag-id"))
                 .build();
 
         Template tag = engine.parse("{#if showImage}{it.name}{#else}nope{/if}");
-        engine.putTemplate("myTag", tag);
+        engine.putTemplate("my-tag-id", tag);
         Template template1 = engine.parse("{#myTag order showImage=true /}");
         Template template2 = engine.parse("{#myTag order /}");
         Template template3 = engine.parse("{#myTag showImage=false /}");

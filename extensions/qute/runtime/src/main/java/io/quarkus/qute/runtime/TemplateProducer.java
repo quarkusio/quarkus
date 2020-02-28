@@ -4,7 +4,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.AnnotatedParameter;
@@ -44,7 +43,7 @@ public class TemplateProducer {
             }
         }
         // Note that engine may not be initialized and so we inject a delegating template
-        return new InjectableTemplate(name, engineProducer.getSuffixes());
+        return new InjectableTemplate(name);
     }
 
     @Produces
@@ -61,54 +60,43 @@ public class TemplateProducer {
             throw new IllegalStateException("No template reource path specified");
         }
         // Note that engine may not be initialized and so we inject a delegating template
-        return new InjectableTemplate(path.value(), engineProducer.getSuffixes());
+        return new InjectableTemplate(path.value());
     }
 
     class InjectableTemplate implements Template {
 
-        private final Supplier<Template> template;
+        private final String path;
 
-        public InjectableTemplate(String path, Iterable<String> suffixes) {
-            this.template = new Supplier<Template>() {
+        public InjectableTemplate(String path) {
+            this.path = path;
+        }
 
-                @Override
-                public Template get() {
-                    Template template = engineProducer.getEngine().getTemplate(path);
-                    if (template == null) {
-                        // Try path with suffixes
-                        for (String suffix : suffixes) {
-                            template = engineProducer.getEngine().getTemplate(path + "." + suffix);
-                            if (template != null) {
-                                break;
-                            }
-                        }
-                        if (template == null) {
-                            throw new IllegalStateException("No template found for path: " + path);
-                        }
-                    }
-                    return template;
-                }
-            };
+        private Template template() {
+            Template template = engineProducer.getEngine().getTemplate(path);
+            if (template == null) {
+                throw new IllegalStateException("No template found for path: " + path);
+            }
+            return template;
         }
 
         @Override
         public TemplateInstance instance() {
-            return template.get().instance();
+            return template().instance();
         }
 
         @Override
         public Set<Expression> getExpressions() {
-            return template.get().getExpressions();
+            return template().getExpressions();
         }
 
         @Override
         public String getGeneratedId() {
-            return template.get().getGeneratedId();
+            return template().getGeneratedId();
         }
 
         @Override
         public Optional<Variant> getVariant() {
-            return template.get().getVariant();
+            return template().getVariant();
         }
 
     }

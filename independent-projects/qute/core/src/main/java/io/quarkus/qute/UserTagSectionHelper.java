@@ -51,9 +51,16 @@ public class UserTagSectionHelper implements SectionHelper {
     public static class Factory implements SectionHelperFactory<UserTagSectionHelper> {
 
         private final String name;
+        private final String templateId;
 
-        public Factory(String name) {
+        /**
+         * 
+         * @param name Identifies the tag
+         * @param templateId Used to locate the template
+         */
+        public Factory(String name, String templateId) {
             this.name = name;
+            this.templateId = templateId;
         }
 
         @Override
@@ -76,9 +83,9 @@ public class UserTagSectionHelper implements SectionHelper {
 
                 @Override
                 public Template get() {
-                    Template template = context.getEngine().getTemplate(name);
+                    Template template = context.getEngine().getTemplate(templateId);
                     if (template == null) {
-                        throw new IllegalStateException("Tag template not found: " + name);
+                        throw new IllegalStateException("Tag template not found: " + templateId);
                     }
                     return template;
                 }

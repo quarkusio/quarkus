@@ -58,7 +58,7 @@ public interface Engine {
     public Template putTemplate(String id, Template template);
 
     /**
-     * Obtain a template for the given identifier. The template could be registered using
+     * Obtain a template for the given identifier. A template may be registered using
      * {@link #putTemplate(String, Template)} or loaded by a template locator.
      * 
      * @param id

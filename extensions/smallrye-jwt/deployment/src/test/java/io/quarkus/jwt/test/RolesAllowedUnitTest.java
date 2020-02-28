@@ -16,7 +16,7 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
 public class RolesAllowedUnitTest {
-    private static Class[] testClasses = {
+    private static Class<?>[] testClasses = {
             RolesEndpoint.class,
             TokenUtils.class
     };
@@ -93,10 +93,9 @@ public class RolesAllowedUnitTest {
     /**
      * Verify that the injected authenticated principal is as expected
      *
-     * @throws Exception
      */
     @Test()
-    public void callEchoBASIC() throws Exception {
+    public void callEchoBASIC() {
         Response response = RestAssured.given().auth()
                 .basic("jdoe@example.com", "password")
                 .when()
@@ -109,10 +108,9 @@ public class RolesAllowedUnitTest {
     /**
      * Validate a request with MP-JWT succeeds with HTTP_OK, and replies with hello, user={token upn claim}
      *
-     * @throws Exception
      */
     @Test()
-    public void callEcho() throws Exception {
+    public void callEcho() {
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -128,10 +126,9 @@ public class RolesAllowedUnitTest {
     /**
      * Validate a request with MP-JWT but no associated role fails with HTTP_FORBIDDEN
      *
-     * @throws Exception
      */
     @Test()
-    public void callEcho2() throws Exception {
+    public void callEcho2() {
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -146,10 +143,9 @@ public class RolesAllowedUnitTest {
     /**
      * Validate a request with MP-JWT is able to access checkIsUserInRole with HTTP_OK
      *
-     * @throws Exception
      */
     @Test()
-    public void checkIsUserInRole() throws Exception {
+    public void checkIsUserInRole() {
 
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
@@ -222,10 +218,9 @@ public class RolesAllowedUnitTest {
     /**
      * Validate a request with MP-JWT SecurityContext.getUserPrincipal() is a JsonWebToken
      *
-     * @throws Exception
      */
     @Test()
-    public void getPrincipalClass() throws Exception {
+    public void getPrincipalClass() {
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -241,10 +236,9 @@ public class RolesAllowedUnitTest {
      * This test requires that the server provide a mapping from the group1 grant in the token to a Group1MappedRole
      * application declared role.
      *
-     * @throws Exception
      */
     @Test()
-    public void testNeedsGroup1Mapping() throws Exception {
+    public void testNeedsGroup1Mapping() {
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -258,10 +252,9 @@ public class RolesAllowedUnitTest {
     /**
      * Validate that accessing secured method has HTTP_OK and injected JsonWebToken principal
      *
-     * @throws Exception
      */
     @Test()
-    public void getInjectedPrincipal() throws Exception {
+    public void getInjectedPrincipal() {
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()

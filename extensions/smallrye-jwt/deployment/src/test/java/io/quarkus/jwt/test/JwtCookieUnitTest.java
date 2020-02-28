@@ -39,10 +39,9 @@ public class JwtCookieUnitTest {
     /**
      * Validate a request with MP-JWT token in a Cookie header is successful
      *
-     * @throws Exception
      */
     @Test
-    public void echoGroups() throws Exception {
+    public void echoGroups() {
         io.restassured.response.Response response = RestAssured.given()
                 .header("Cookie", "cookie_a=" + token)
                 .get("/endp/echo").andReturn();

@@ -40,10 +40,9 @@ public class DefaultGroupsUnitTest {
      * Validate a request with MP-JWT without a 'groups' claim is successful
      * due to the default value being provided in the configuration
      *
-     * @throws Exception
      */
     @Test
-    public void echoGroups() throws Exception {
+    public void echoGroups() {
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .get("/endp/echo").andReturn();

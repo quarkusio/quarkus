@@ -54,10 +54,9 @@ public class PrincipalInjectionUnitTest {
     /**
      * Verify that the injected authenticated principal is as expected
      *
-     * @throws Exception
      */
     @Test()
-    public void verifyInjectedPrincipal() throws Exception {
+    public void verifyInjectedPrincipal() {
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()

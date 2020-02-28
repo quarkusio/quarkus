@@ -16,12 +16,12 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.AnonymousIdentityProvider;
 import io.quarkus.security.runtime.QuarkusIdentityProviderManagerImpl;
-import io.quarkus.smallrye.jwt.runtime.auth.DefaultJwtParser;
 import io.quarkus.smallrye.jwt.runtime.auth.DefaultJwtRolesMapper;
-import io.quarkus.smallrye.jwt.runtime.auth.JwtParser;
 import io.quarkus.smallrye.jwt.runtime.auth.JwtRolesMapper;
 import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
+import io.smallrye.jwt.auth.principal.DefaultJWTParser;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
+import io.smallrye.jwt.auth.principal.JWTParser;
 
 /**
  * Validate usage of the bearer token based realm
@@ -33,10 +33,12 @@ public class TokenRealmUnitTest {
         KeyPair keyPair = generateKeyPair();
         PublicKey pk1 = keyPair.getPublic();
         PrivateKey pk1Priv = keyPair.getPrivate();
+
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) pk1, "https://server.example.com");
-        JwtParser jwtParser = new DefaultJwtParser();
+        JWTParser jwtParser = new DefaultJWTParser(contextInfo);
         JwtRolesMapper jwtRolesMapper = new DefaultJwtRolesMapper();
-        MpJwtValidator jwtValidator = new MpJwtValidator(contextInfo, jwtParser, jwtRolesMapper);
+        MpJwtValidator jwtValidator = new MpJwtValidator(jwtParser, jwtRolesMapper);
+
         QuarkusIdentityProviderManagerImpl authenticator = QuarkusIdentityProviderManagerImpl.builder()
                 .addProvider(new AnonymousIdentityProvider())
                 .setBlockingExecutor(new Executor() {

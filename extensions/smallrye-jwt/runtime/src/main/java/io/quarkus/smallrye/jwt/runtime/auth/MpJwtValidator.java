@@ -6,10 +6,8 @@ import java.util.concurrent.CompletionStage;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.MalformedClaimException;
-import org.jose4j.jwt.consumer.JwtContext;
 
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -17,7 +15,7 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
-import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
+import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
 
 /**
@@ -28,13 +26,11 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
 
     private static final Logger log = Logger.getLogger(MpJwtValidator.class);
 
-    final JWTAuthContextInfo authContextInfo;
-    final JwtParser parser;
+    final JWTParser parser;
     final JwtRolesMapper jwtRolesMapper;
 
     @Inject
-    public MpJwtValidator(JWTAuthContextInfo authContextInfo, JwtParser parser, JwtRolesMapper jwtRolesMapper) {
-        this.authContextInfo = authContextInfo;
+    public MpJwtValidator(JWTParser parser, JwtRolesMapper jwtRolesMapper) {
         this.parser = parser;
         this.jwtRolesMapper = jwtRolesMapper;
     }
@@ -48,23 +44,14 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
     public CompletionStage<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
         try {
-            JwtContext jwtContext = parser.parse(request.getToken().getToken(), authContextInfo);
+            JsonWebToken jwt = parser.parse(request.getToken().getToken());
 
-            JwtClaims claims = jwtContext.getJwtClaims();
-            String name = claims.getClaimValue("upn", String.class);
-            if (name == null) {
-                name = claims.getClaimValue("preferred_username", String.class);
-                if (name == null) {
-                    name = claims.getSubject();
-                }
-            }
-            QuarkusJwtCallerPrincipal principal = new QuarkusJwtCallerPrincipal(name, claims);
             return CompletableFuture
-                    .completedFuture(QuarkusSecurityIdentity.builder().setPrincipal(principal)
-                            .addRoles(jwtRolesMapper.mapGroupsAndRoles(claims))
-                            .addAttribute(SecurityIdentity.USER_ATTRIBUTE, principal).build());
+                    .completedFuture(QuarkusSecurityIdentity.builder().setPrincipal(jwt)
+                            .addRoles(jwtRolesMapper.mapGroupsAndRoles(jwt))
+                            .addAttribute(SecurityIdentity.USER_ATTRIBUTE, jwt).build());
 
-        } catch (ParseException | MalformedClaimException e) {
+        } catch (ParseException e) {
             log.debug("Authentication failed", e);
             CompletableFuture<SecurityIdentity> cf = new CompletableFuture<>();
             cf.completeExceptionally(new AuthenticationFailedException(e));

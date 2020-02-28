@@ -1,11 +1,10 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
-import java.util.HashSet;
+import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.MalformedClaimException;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.arc.DefaultBean;
 
@@ -14,7 +13,7 @@ import io.quarkus.arc.DefaultBean;
 public class DefaultJwtRolesMapper implements JwtRolesMapper {
 
     @Override
-    public HashSet<String> mapGroupsAndRoles(JwtClaims claims) throws MalformedClaimException {
-        return new HashSet<>(claims.getStringListClaimValue("groups"));
+    public Set<String> mapGroupsAndRoles(JsonWebToken token) {
+        return token.getGroups();
     }
 }

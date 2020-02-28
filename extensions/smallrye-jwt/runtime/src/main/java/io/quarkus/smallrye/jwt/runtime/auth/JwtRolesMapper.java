@@ -1,10 +1,9 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
-import java.util.HashSet;
+import java.util.Set;
 
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.MalformedClaimException;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 public interface JwtRolesMapper {
-    HashSet<String> mapGroupsAndRoles(JwtClaims claims) throws MalformedClaimException;
+    Set<String> mapGroupsAndRoles(JsonWebToken token);
 }

@@ -38,6 +38,7 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.DerbyTenSevenDialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
+import org.hibernate.dialect.SQLServer2012Dialect;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.loader.BatchFetchStyle;
@@ -50,13 +51,13 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 
-import io.quarkus.agroal.deployment.DataSourceDriverBuildItem;
-import io.quarkus.agroal.deployment.DataSourceInitializedBuildItem;
-import io.quarkus.agroal.deployment.DataSourceSchemaReadyBuildItem;
+import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
+import io.quarkus.agroal.deployment.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.ResourceAnnotationBuildItem;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -89,7 +90,7 @@ import io.quarkus.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionEntityManagers;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
-import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL95Dialect;
+import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
 import io.quarkus.hibernate.orm.runtime.metrics.HibernateCounter;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.metrics.deployment.spi.MetricBuildItem;
@@ -153,7 +154,7 @@ public final class HibernateOrmProcessor {
             CombinedIndexBuildItem index,
             ArchiveRootBuildItem archiveRoot,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            Optional<DataSourceDriverBuildItem> driverBuildItem,
+            List<JdbcDataSourceBuildItem> jdbcDataSourcesBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorProducer,
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
@@ -204,11 +205,16 @@ public final class HibernateOrmProcessor {
             return;
         }
 
+        // we only support the default datasource for now
+        Optional<JdbcDataSourceBuildItem> defaultJdbcDataSourceBuildItem = jdbcDataSourcesBuildItem.stream()
+                .filter(i -> i.isDefault())
+                .findFirst();
+
         // handle the implicit persistence unit
         List<ParsedPersistenceXmlDescriptor> allDescriptors = new ArrayList<>(explicitDescriptors.size() + 1);
         allDescriptors.addAll(explicitDescriptors);
         handleHibernateORMWithNoPersistenceXml(allDescriptors, resourceProducer, systemPropertyProducer, archiveRoot,
-                driverBuildItem, applicationArchivesBuildItem, launchMode.getLaunchMode());
+                defaultJdbcDataSourceBuildItem, applicationArchivesBuildItem, launchMode.getLaunchMode());
 
         for (ParsedPersistenceXmlDescriptor descriptor : allDescriptors) {
             persistenceUnitDescriptorProducer.produce(new PersistenceUnitDescriptorBuildItem(descriptor));
@@ -348,10 +354,10 @@ public final class HibernateOrmProcessor {
     @BuildStep
     @Record(RUNTIME_INIT)
     public void startPersistenceUnits(HibernateOrmRecorder recorder, BeanContainerBuildItem beanContainer,
-            Optional<DataSourceInitializedBuildItem> dataSourceInitialized,
+            List<JdbcDataSourceBuildItem> dataSourcesConfigured,
             JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels,
             List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationsRuntimeConfigured,
-            Optional<DataSourceSchemaReadyBuildItem> schemaReadyBuildItem) throws Exception {
+            Optional<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) throws Exception {
         if (!hasEntities(jpaEntities, nonJpaModels)) {
             return;
         }
@@ -557,14 +563,14 @@ public final class HibernateOrmProcessor {
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
             BuildProducer<SystemPropertyBuildItem> systemProperty,
             ArchiveRootBuildItem root,
-            Optional<DataSourceDriverBuildItem> driverBuildItem,
+            Optional<JdbcDataSourceBuildItem> driverBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode) {
         if (descriptors.isEmpty()) {
             //we have no persistence.xml so we will create a default one
             Optional<String> dialect = hibernateConfig.dialect;
             if (!dialect.isPresent()) {
-                dialect = guessDialect(driverBuildItem.map(DataSourceDriverBuildItem::getDriver));
+                dialect = guessDialect(driverBuildItem.map(JdbcDataSourceBuildItem::getDbKind));
             }
             dialect.ifPresent(s -> {
                 // we found one
@@ -710,32 +716,34 @@ public final class HibernateOrmProcessor {
         }
     }
 
-    private Optional<String> guessDialect(Optional<String> driver) {
+    private Optional<String> guessDialect(Optional<String> dbKind) {
         // For now select the latest dialect from the driver
         // later, we can keep doing that but also avoid DCE
         // of all the dialects we want in so that people can override them
-        String resolvedDriver = driver.orElse("NODRIVER");
-        if (resolvedDriver.contains("postgresql")) {
-            return Optional.of(QuarkusPostgreSQL95Dialect.class.getName());
+        String resolvedDbKind = dbKind.orElse("NO_DATABASE_KIND");
+        if (DatabaseKind.isPostgreSQL(resolvedDbKind)) {
+            return Optional.of(QuarkusPostgreSQL10Dialect.class.getName());
         }
-        if (resolvedDriver.contains("org.h2.Driver")) {
+        if (DatabaseKind.isH2(resolvedDbKind)) {
             return Optional.of(QuarkusH2Dialect.class.getName());
         }
-        if (resolvedDriver.contains("org.mariadb.jdbc.Driver")) {
+        if (DatabaseKind.isMariaDB(resolvedDbKind)) {
             return Optional.of(MariaDB103Dialect.class.getName());
         }
-
-        if (resolvedDriver.contains("com.mysql.cj.jdbc.Driver")) {
+        if (DatabaseKind.isMySQL(resolvedDbKind)) {
             return Optional.of(MySQL8Dialect.class.getName());
         }
-        if (resolvedDriver.contains("org.apache.derby.jdbc.ClientDriver")) {
+        if (DatabaseKind.isDerby(resolvedDbKind)) {
             return Optional.of((DerbyTenSevenDialect.class.getName()));
         }
+        if (DatabaseKind.isMsSQL(resolvedDbKind)) {
+            return Optional.of((SQLServer2012Dialect.class.getName()));
+        }
 
-        String error = driver.isPresent()
-                ? "Hibernate extension could not guess the dialect from the driver '" + resolvedDriver
+        String error = dbKind.isPresent()
+                ? "Hibernate extension could not guess the dialect from the database kind '" + resolvedDbKind
                         + "'. Add an explicit '" + HIBERNATE_ORM_CONFIG_PREFIX + "dialect' property."
-                : "Hibernate extension cannot guess the dialect as no JDBC driver is specified by 'quarkus.datasource.driver'";
+                : "Hibernate extension cannot guess the dialect as no database kind is specified by 'quarkus.datasource.db-kind'";
         throw new ConfigurationError(error);
     }
 

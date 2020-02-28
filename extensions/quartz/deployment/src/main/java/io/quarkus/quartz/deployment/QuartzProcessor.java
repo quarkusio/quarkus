@@ -22,10 +22,11 @@ import org.quartz.simpl.CascadingClassLoadHelper;
 import org.quartz.simpl.SimpleInstanceIdGenerator;
 import org.quartz.simpl.SimpleThreadPool;
 
-import io.quarkus.agroal.deployment.DataSourceDriverBuildItem;
-import io.quarkus.agroal.deployment.DataSourceSchemaReadyBuildItem;
+import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
+import io.quarkus.agroal.deployment.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -67,7 +68,7 @@ public class QuartzProcessor {
     }
 
     @BuildStep
-    QuartzJDBCDriverDialectBuildItem driver(Optional<DataSourceDriverBuildItem> dataSourceDriver,
+    QuartzJDBCDriverDialectBuildItem driver(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             QuartzBuildTimeConfig config) {
         if (config.storeType == StoreType.RAM) {
             if (config.clustered) {
@@ -77,30 +78,34 @@ public class QuartzProcessor {
             return new QuartzJDBCDriverDialectBuildItem(Optional.empty());
         }
 
-        if (!dataSourceDriver.isPresent()) {
+        Optional<JdbcDataSourceBuildItem> selectedJdbcDataSourceBuildItem = jdbcDataSourceBuildItems.stream()
+                .filter(i -> config.dataSourceName.isPresent() ? config.dataSourceName.get().equals(i.getName())
+                        : i.isDefault())
+                .findFirst();
+
+        if (!selectedJdbcDataSourceBuildItem.isPresent()) {
             String message = String.format(
                     "JDBC Store configured but '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource-guide",
                     config.dataSourceName.isPresent() ? config.dataSourceName.get() : "default");
             throw new ConfigurationError(message);
         }
 
-        return new QuartzJDBCDriverDialectBuildItem(Optional.of(guessDriver(dataSourceDriver)));
+        return new QuartzJDBCDriverDialectBuildItem(Optional.of(guessDriver(selectedJdbcDataSourceBuildItem)));
     }
 
-    private String guessDriver(Optional<DataSourceDriverBuildItem> dataSourceDriver) {
-        if (!dataSourceDriver.isPresent()) {
+    private String guessDriver(Optional<JdbcDataSourceBuildItem> jdbcDataSource) {
+        if (!jdbcDataSource.isPresent()) {
             return StdJDBCDelegate.class.getName();
         }
 
-        String resolvedDriver = dataSourceDriver.get().getDriver();
-        if (resolvedDriver.contains("postgresql")) {
+        String dataSourceKind = jdbcDataSource.get().getDbKind();
+        if (DatabaseKind.isPostgreSQL(dataSourceKind)) {
             return PostgreSQLDelegate.class.getName();
         }
-        if (resolvedDriver.contains("org.h2.Driver")) {
+        if (DatabaseKind.isH2(dataSourceKind)) {
             return HSQLDBDelegate.class.getName();
         }
-
-        if (resolvedDriver.contains("com.microsoft.sqlserver.jdbc.SQLServerDriver")) {
+        if (DatabaseKind.isMsSQL(dataSourceKind)) {
             return MSSQLDelegate.class.getName();
         }
 
@@ -169,7 +174,7 @@ public class QuartzProcessor {
     public void build(QuartzRuntimeConfig runtimeConfig, QuartzBuildTimeConfig buildTimeConfig, QuartzRecorder recorder,
             BeanContainerBuildItem beanContainer,
             BuildProducer<ServiceStartBuildItem> serviceStart, QuartzJDBCDriverDialectBuildItem driverDialect,
-            Optional<DataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
+            Optional<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
         recorder.initialize(runtimeConfig, buildTimeConfig, beanContainer.getValue(), driverDialect.getDriver());
         // Make sure that StartupEvent is fired after the init
         serviceStart.produce(new ServiceStartBuildItem("quartz"));

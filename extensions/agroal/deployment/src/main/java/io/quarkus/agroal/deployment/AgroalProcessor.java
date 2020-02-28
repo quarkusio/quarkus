@@ -1,12 +1,12 @@
 package io.quarkus.agroal.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.sql.Driver;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
@@ -14,7 +14,6 @@ import java.util.Set;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.DeploymentException;
 import javax.sql.XADataSource;
 
 import org.eclipse.microprofile.metrics.Metadata;
@@ -31,16 +30,28 @@ import io.quarkus.agroal.DataSource;
 import io.quarkus.agroal.metrics.AgroalCounter;
 import io.quarkus.agroal.metrics.AgroalGauge;
 import io.quarkus.agroal.runtime.AbstractDataSourceProducer;
-import io.quarkus.agroal.runtime.AgroalBuildTimeConfig;
 import io.quarkus.agroal.runtime.AgroalRecorder;
-import io.quarkus.agroal.runtime.AgroalRuntimeConfig;
-import io.quarkus.agroal.runtime.DataSourceBuildTimeConfig;
+import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
+import io.quarkus.agroal.runtime.DataSourceJdbcRuntimeConfig;
+import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig;
+import io.quarkus.agroal.runtime.DataSourcesJdbcRuntimeConfig;
+import io.quarkus.agroal.runtime.LegacyDataSourceJdbcBuildTimeConfig;
+import io.quarkus.agroal.runtime.LegacyDataSourceJdbcRuntimeConfig;
+import io.quarkus.agroal.runtime.LegacyDataSourcesJdbcBuildTimeConfig;
+import io.quarkus.agroal.runtime.LegacyDataSourcesJdbcRuntimeConfig;
 import io.quarkus.agroal.runtime.TransactionIntegration;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
+import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
+import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.datasource.runtime.LegacyDataSourceRuntimeConfig;
+import io.quarkus.datasource.runtime.LegacyDataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -58,9 +69,11 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.metrics.deployment.spi.MetricBuildItem;
 
+@SuppressWarnings("deprecation")
 class AgroalProcessor {
 
     private static final Logger log = Logger.getLogger(AgroalProcessor.class);
@@ -69,30 +82,44 @@ class AgroalProcessor {
             DotName.createSimple(AbstractDataSourceProducer.class.getName()),
             DotName.createSimple(javax.sql.DataSource.class.getName())));
 
-    /**
-     * The Agroal build time configuration.
-     */
-    AgroalBuildTimeConfig agroalBuildTimeConfig;
-
-    @SuppressWarnings("unchecked")
     @Record(STATIC_INIT)
     @BuildStep(loadsApplicationClasses = true)
-    BeanContainerListenerBuildItem build(
+    void build(
             RecorderContext recorderContext,
             AgroalRecorder recorder,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
+            LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig,
+            List<JdbcDriverBuildItem> jdbcDriverBuildItems,
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> resource,
-            BuildProducer<DataSourceDriverBuildItem> dataSourceDriver,
             SslNativeConfigBuildItem sslNativeConfig, BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
+            BuildProducer<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedConfig,
             Capabilities capabilities) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.AGROAL));
 
-        if (!agroalBuildTimeConfig.defaultDataSource.driver.isPresent() && agroalBuildTimeConfig.namedDataSources.isEmpty()) {
-            log.warn("Agroal dependency is present but no driver has been defined for the default datasource");
-            return null;
+        List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedDataSourceBuildTimeConfigs = getAggregatedConfigBuildItems(
+                dataSourcesBuildTimeConfig,
+                dataSourcesJdbcBuildTimeConfig,
+                legacyDataSourcesJdbcBuildTimeConfig,
+                jdbcDriverBuildItems);
+
+        if (aggregatedDataSourceBuildTimeConfigs.isEmpty()) {
+            log.warn("The Agroal dependency is present but no JDBC datasources have been defined.");
+            return;
+        }
+
+        for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedDataSourceBuildTimeConfigs) {
+            validateBuildTimeConfig(aggregatedDataSourceBuildTimeConfig);
+
+            reflectiveClass
+                    .produce(new ReflectiveClassBuildItem(true, false,
+                            aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass()));
+
+            aggregatedConfig.produce(aggregatedDataSourceBuildTimeConfig);
         }
 
         // For now, we can't push the security providers to Agroal so we need to include
@@ -111,25 +138,6 @@ class AgroalProcessor {
                 java.sql.ResultSet.class.getName(),
                 java.sql.ResultSet[].class.getName()));
 
-        validateBuildTimeConfig(null, agroalBuildTimeConfig.defaultDataSource);
-        agroalBuildTimeConfig.namedDataSources.forEach(AgroalProcessor::validateBuildTimeConfig);
-
-        // Add reflection for the drivers
-        if (agroalBuildTimeConfig.defaultDataSource.driver.isPresent()) {
-            reflectiveClass
-                    .produce(new ReflectiveClassBuildItem(true, false, agroalBuildTimeConfig.defaultDataSource.driver.get()));
-
-            // TODO: this will need to change to support multiple datasources but it can wait
-            dataSourceDriver.produce(new DataSourceDriverBuildItem(agroalBuildTimeConfig.defaultDataSource.driver.get()));
-        }
-        for (Entry<String, DataSourceBuildTimeConfig> namedDataSourceEntry : agroalBuildTimeConfig.namedDataSources
-                .entrySet()) {
-            if (namedDataSourceEntry.getValue().driver.isPresent()) {
-                reflectiveClass
-                        .produce(new ReflectiveClassBuildItem(true, false, namedDataSourceEntry.getValue().driver.get()));
-            }
-        }
-
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.AGROAL));
 
@@ -138,59 +146,43 @@ class AgroalProcessor {
                 + "DataSourceProducer";
 
         createDataSourceProducerBean(generatedBean, dataSourceProducerClassName,
+                aggregatedDataSourceBuildTimeConfigs,
                 capabilities.isCapabilityPresent(Capabilities.METRICS));
-
-        return new BeanContainerListenerBuildItem(recorder.addDataSource(
-                (Class<? extends AbstractDataSourceProducer>) recorderContext.classProxy(dataSourceProducerClassName),
-                agroalBuildTimeConfig,
-                sslNativeConfig.isExplicitlyDisabled()));
     }
 
-    private static void validateBuildTimeConfig(final String datasourceName, final DataSourceBuildTimeConfig ds) {
-        if (!ds.driver.isPresent()) {
-            // When the driver is not defined on the default datasource, we need to be more lenient as the datasource
-            // component might not be enabled at all so we only throw an exception for named datasources
-            if (datasourceName != null) {
-                throw new DeploymentException("Named datasource '" + datasourceName + "' doesn't have a driver defined.");
-            }
-            return;
-        }
+    private static void validateBuildTimeConfig(AggregatedDataSourceBuildTimeConfigBuildItem aggregatedConfig) {
+        DataSourceJdbcBuildTimeConfig jdbcBuildTimeConfig = aggregatedConfig.getJdbcConfig();
 
-        String driverName = ds.driver.get();
+        String fullDataSourceName = aggregatedConfig.isDefault() ? "default datasource"
+                : "datasource named '" + aggregatedConfig.getName() + "'";
+
+        String driverName = aggregatedConfig.getResolvedDriverClass();
         Class<?> driver;
         try {
             driver = Class.forName(driverName, true, Thread.currentThread().getContextClassLoader());
         } catch (ClassNotFoundException e) {
-            if (datasourceName == null) {
-                throw new DeploymentException("Unable to load the datasource driver for the default datasource", e);
-            } else {
-                throw new DeploymentException(
-                        "Unable to load the datasource driver for datasource named '" + datasourceName + "'",
-                        e);
-            }
+            throw new ConfigurationException(
+                    "Unable to load the datasource driver " + driverName + " for the " + fullDataSourceName, e);
         }
-        if (ds.transactions == TransactionIntegration.XA) {
+        if (jdbcBuildTimeConfig.transactions == TransactionIntegration.XA) {
             if (!XADataSource.class.isAssignableFrom(driver)) {
-                if (datasourceName == null) {
-                    throw new DeploymentException(
-                            "Driver is not an XA dataSource, while XA has been enabled in the configuration of the default datasource: either disable XA or switch the driver to an XADataSource");
-                } else {
-                    throw new DeploymentException(
-                            "Driver is not an XA dataSource, while XA has been enabled in the configuration of the datasource named '"
-                                    + datasourceName + "': either disable XA or switch the driver to an XADataSource");
-                }
+                throw new ConfigurationException(
+                        "Driver is not an XA dataSource, while XA has been enabled in the configuration of the "
+                                + fullDataSourceName + ": either disable XA or switch the driver to an XADataSource");
             }
         } else {
             if (driver != null && !javax.sql.DataSource.class.isAssignableFrom(driver)
                     && !Driver.class.isAssignableFrom(driver)) {
-                if (datasourceName == null) {
-                    throw new DeploymentException(
-                            "Driver is an XA dataSource, but XA transactions have not been enabled on the default datasource; please either set 'quarkus.datasource.xa=true' or switch to a standard non-XA JDBC driver implementation");
+                if (aggregatedConfig.isDefault()) {
+                    throw new ConfigurationException(
+                            "Driver " + driverName
+                                    + " is an XA datasource, but XA transactions have not been enabled on the default datasource; please either set 'quarkus.datasource.jdbc.transactions=xa' or switch to a standard non-XA JDBC driver implementation");
                 } else {
-                    throw new DeploymentException(
-                            "Driver is an XA dataSource, but XA transactions have not been enabled on the datasource named '"
-                                    + datasourceName + "'; please either set 'quarkus.datasource." + datasourceName
-                                    + ".xa=true' or switch to a standard non-XA JDBC driver implementation");
+                    throw new ConfigurationException(
+                            "Driver " + driverName
+                                    + " is an XA datasource, but XA transactions have not been enabled on the datasource named '"
+                                    + fullDataSourceName + "'; please either set 'quarkus.datasource." + fullDataSourceName
+                                    + ".jdbc.transactions=xa' or switch to a standard non-XA JDBC driver implementation");
                 }
             }
         }
@@ -198,30 +190,152 @@ class AgroalProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configureRuntimeProperties(AgroalRecorder recorder,
-            BuildProducer<DataSourceInitializedBuildItem> dataSourceInitialized,
-            AgroalRuntimeConfig agroalRuntimeConfig) {
-        Optional<String> defaultDataSourceDriver = agroalBuildTimeConfig.defaultDataSource.driver;
-        if (!defaultDataSourceDriver.isPresent() && agroalBuildTimeConfig.namedDataSources.isEmpty()) {
+    void configureDataSources(AgroalRecorder recorder,
+            BuildProducer<JdbcDataSourceBuildItem> jdbcDataSource,
+            List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedBuildTimeConfigBuildItems,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
+            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig,
+            LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig,
+            LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig,
+            LegacyDataSourcesJdbcRuntimeConfig legacyDataSourcesJdbcRuntimeConfig,
+            SslNativeConfigBuildItem sslNativeConfig) {
+        if (aggregatedBuildTimeConfigBuildItems.isEmpty()) {
             // No datasource has been configured so bail out
             return;
         }
 
-        recorder.configureRuntimeProperties(agroalRuntimeConfig);
+        recorder.configureDatasources(dataSourcesBuildTimeConfig, dataSourcesJdbcBuildTimeConfig, dataSourcesRuntimeConfig,
+                dataSourcesJdbcRuntimeConfig,
+                legacyDataSourcesJdbcBuildTimeConfig, legacyDataSourcesRuntimeConfig, legacyDataSourcesJdbcRuntimeConfig,
+                sslNativeConfig.isExplicitlyDisabled());
 
-        Set<String> dataSourceNames = agroalBuildTimeConfig.namedDataSources.keySet();
-        DataSourceInitializedBuildItem buildItem;
-        if (defaultDataSourceDriver.isPresent()) {
-            buildItem = DataSourceInitializedBuildItem.ofDefaultDataSourceAnd(dataSourceNames);
-        } else {
-            buildItem = DataSourceInitializedBuildItem.ofDataSources(dataSourceNames);
+        for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedBuildTimeConfigBuildItem : aggregatedBuildTimeConfigBuildItems) {
+            jdbcDataSource.produce(new JdbcDataSourceBuildItem(aggregatedBuildTimeConfigBuildItem.getName(),
+                    aggregatedBuildTimeConfigBuildItem.getResolvedDbKind(),
+                    DataSourceUtil.isDefault(aggregatedBuildTimeConfigBuildItem.getName())));
         }
-        dataSourceInitialized.produce(buildItem);
     }
 
     @BuildStep
     UnremovableBeanBuildItem markBeansAsUnremovable() {
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypesExclusion(UNREMOVABLE_BEANS));
+    }
+
+    private List<AggregatedDataSourceBuildTimeConfigBuildItem> getAggregatedConfigBuildItems(
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
+            LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig,
+            List<JdbcDriverBuildItem> jdbcDriverBuildItems) {
+        List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
+
+        // New configuration
+        if (dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()) {
+            if (dataSourcesJdbcBuildTimeConfig.jdbc.enabled) {
+                dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                        dataSourcesBuildTimeConfig.defaultDataSource,
+                        dataSourcesJdbcBuildTimeConfig.jdbc,
+                        null,
+                        dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get(),
+                        resolveDriver(null, dataSourcesBuildTimeConfig.defaultDataSource,
+                                dataSourcesJdbcBuildTimeConfig.jdbc, jdbcDriverBuildItems),
+                        false));
+            }
+        }
+        for (Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.namedDataSources.entrySet()) {
+            DataSourceJdbcBuildTimeConfig jdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig.namedDataSources
+                    .containsKey(entry.getKey()) ? dataSourcesJdbcBuildTimeConfig.namedDataSources.get(entry.getKey()).jdbc
+                            : new DataSourceJdbcBuildTimeConfig();
+            if (!jdbcBuildTimeConfig.enabled) {
+                continue;
+            }
+            dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(entry.getKey(),
+                    entry.getValue(),
+                    jdbcBuildTimeConfig,
+                    null,
+                    entry.getValue().dbKind.get(),
+                    resolveDriver(entry.getKey(), entry.getValue(), jdbcBuildTimeConfig, jdbcDriverBuildItems),
+                    false));
+        }
+
+        // Legacy configuration
+        if (legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource.driver.isPresent()) {
+            dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                    dataSourcesBuildTimeConfig.defaultDataSource,
+                    dataSourcesJdbcBuildTimeConfig.jdbc,
+                    legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource,
+                    resolveLegacyKind(legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource.driver.get()),
+                    legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource.driver.get(),
+                    true));
+        }
+        for (Entry<String, LegacyDataSourceJdbcBuildTimeConfig> entry : legacyDataSourcesJdbcBuildTimeConfig.namedDataSources
+                .entrySet()) {
+            DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig.namedDataSources
+                    .containsKey(entry.getKey()) ? dataSourcesBuildTimeConfig.namedDataSources.get(entry.getKey())
+                            : new DataSourceBuildTimeConfig();
+            DataSourceJdbcBuildTimeConfig jdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig.namedDataSources
+                    .containsKey(entry.getKey()) ? dataSourcesJdbcBuildTimeConfig.namedDataSources.get(entry.getKey()).jdbc
+                            : new DataSourceJdbcBuildTimeConfig();
+            dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(entry.getKey(),
+                    dataSourceBuildTimeConfig,
+                    jdbcBuildTimeConfig,
+                    entry.getValue(),
+                    resolveLegacyKind(entry.getValue().driver.get()),
+                    entry.getValue().driver.get(),
+                    true));
+        }
+
+        return dataSources;
+    }
+
+    private String resolveDriver(String dataSourceName, DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
+            DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, List<JdbcDriverBuildItem> jdbcDriverBuildItems) {
+        if (dataSourceJdbcBuildTimeConfig.driver.isPresent()) {
+            return dataSourceJdbcBuildTimeConfig.driver.get();
+        }
+
+        Optional<JdbcDriverBuildItem> matchingJdbcDriver = jdbcDriverBuildItems.stream()
+                .filter(i -> dataSourceBuildTimeConfig.dbKind.get().equals(i.getDbKind()))
+                .findFirst();
+
+        if (matchingJdbcDriver.isPresent()) {
+            if (io.quarkus.agroal.runtime.TransactionIntegration.XA == dataSourceJdbcBuildTimeConfig.transactions) {
+                if (matchingJdbcDriver.get().getDriverXAClass().isPresent()) {
+                    return matchingJdbcDriver.get().getDriverXAClass().get();
+                }
+            } else {
+                return matchingJdbcDriver.get().getDriverClass();
+            }
+        }
+
+        throw new ConfigurationException("Unable to determine the driver for " + (dataSourceName == null ? "default datasource"
+                : "datasource named " + dataSourceName));
+    }
+
+    private String resolveLegacyKind(String driver) {
+        switch (driver) {
+            case "org.apache.derby.jdbc.ClientDriver":
+            case "org.apache.derby.jdbc.ClientXADataSource":
+                return DatabaseKind.DERBY;
+            case "org.h2.Driver":
+            case "org.h2.jdbcx.JdbcDataSource":
+                return DatabaseKind.H2;
+            case "org.mariadb.jdbc.Driver":
+            case "org.mariadb.jdbc.MySQLDataSource":
+                return DatabaseKind.MARIADB;
+            case "com.microsoft.sqlserver.jdbc.SQLServerDriver":
+            case "com.microsoft.sqlserver.jdbc.SQLServerXADataSource":
+                return DatabaseKind.MSSQL;
+            case "com.mysql.cj.jdbc.Driver":
+            case "com.mysql.cj.jdbc.MysqlXADataSource":
+                return DatabaseKind.MYSQL;
+            case "org.postgresql.Driver":
+            case "org.postgresql.xa.PGXADataSource":
+                return DatabaseKind.POSTGRESQL;
+        }
+
+        return "other-legacy";
     }
 
     /**
@@ -230,7 +344,9 @@ class AgroalProcessor {
      * Build time and runtime configuration are both injected into this bean.
      */
     private void createDataSourceProducerBean(BuildProducer<GeneratedBeanBuildItem> generatedBean,
-            String dataSourceProducerClassName, boolean metricsCapabilityPresent) {
+            String dataSourceProducerClassName,
+            List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedDataSourceBuildTimeConfigs,
+            boolean metricsCapabilityPresent) {
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBean);
 
         ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
@@ -239,85 +355,102 @@ class AgroalProcessor {
                 .build();
         classCreator.addAnnotation(ApplicationScoped.class);
 
-        if (agroalBuildTimeConfig.defaultDataSource.driver.isPresent()) {
-            MethodCreator defaultDataSourceMethodCreator = classCreator.getMethodCreator("createDefaultDataSource",
+        for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedDataSourceBuildTimeConfigs) {
+            String dataSourceName = aggregatedDataSourceBuildTimeConfig.getName();
+
+            MethodCreator dataSourceMethodCreator = classCreator.getMethodCreator(
+                    "createDataSource_" + HashUtil.sha1(dataSourceName),
                     AgroalDataSource.class);
-            defaultDataSourceMethodCreator.addAnnotation(ApplicationScoped.class);
-            defaultDataSourceMethodCreator.addAnnotation(Produces.class);
-            defaultDataSourceMethodCreator.addAnnotation(Default.class);
-
-            ResultHandle dataSourceName = defaultDataSourceMethodCreator.load(AgroalRecorder.DEFAULT_DATASOURCE_NAME);
-            ResultHandle dataSourceBuildTimeConfig = defaultDataSourceMethodCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getDefaultBuildTimeConfig",
-                            DataSourceBuildTimeConfig.class),
-                    defaultDataSourceMethodCreator.getThis());
-            ResultHandle dataSourceRuntimeConfig = defaultDataSourceMethodCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getDefaultRuntimeConfig", Optional.class),
-                    defaultDataSourceMethodCreator.getThis());
-            ResultHandle mpMetricsEnabled = defaultDataSourceMethodCreator.load(metricsCapabilityPresent);
-
-            defaultDataSourceMethodCreator.returnValue(
-                    defaultDataSourceMethodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "createDataSource",
-                                    AgroalDataSource.class, String.class,
-                                    DataSourceBuildTimeConfig.class, Optional.class, boolean.class),
-                            defaultDataSourceMethodCreator.getThis(),
-                            dataSourceName,
-                            dataSourceBuildTimeConfig, dataSourceRuntimeConfig, mpMetricsEnabled));
-        }
-
-        for (Entry<String, DataSourceBuildTimeConfig> namedDataSourceEntry : agroalBuildTimeConfig.namedDataSources
-                .entrySet()) {
-            String namedDataSourceName = namedDataSourceEntry.getKey();
-
-            if (!namedDataSourceEntry.getValue().driver.isPresent()) {
-                log.warn("No driver defined for named datasource " + namedDataSourceName + ". Ignoring.");
-                continue;
+            dataSourceMethodCreator.addAnnotation(ApplicationScoped.class);
+            dataSourceMethodCreator.addAnnotation(Produces.class);
+            if (aggregatedDataSourceBuildTimeConfig.isDefault()) {
+                dataSourceMethodCreator.addAnnotation(Default.class);
+            } else {
+                dataSourceMethodCreator.addAnnotation(AnnotationInstance.create(DotNames.NAMED, null,
+                        new AnnotationValue[] { AnnotationValue.createStringValue("value", dataSourceName) }));
+                dataSourceMethodCreator
+                        .addAnnotation(AnnotationInstance.create(DotName.createSimple(DataSource.class.getName()), null,
+                                new AnnotationValue[] { AnnotationValue.createStringValue("value", dataSourceName) }));
             }
 
-            MethodCreator namedDataSourceMethodCreator = classCreator.getMethodCreator(
-                    "createNamedDataSource_" + HashUtil.sha1(namedDataSourceName),
-                    AgroalDataSource.class);
-            namedDataSourceMethodCreator.addAnnotation(ApplicationScoped.class);
-            namedDataSourceMethodCreator.addAnnotation(Produces.class);
-            namedDataSourceMethodCreator.addAnnotation(AnnotationInstance.create(DotNames.NAMED, null,
-                    new AnnotationValue[] { AnnotationValue.createStringValue("value", namedDataSourceName) }));
-            namedDataSourceMethodCreator
-                    .addAnnotation(AnnotationInstance.create(DotName.createSimple(DataSource.class.getName()), null,
-                            new AnnotationValue[] { AnnotationValue.createStringValue("value", namedDataSourceName) }));
+            ResultHandle dataSourceNameRH = dataSourceMethodCreator.load(dataSourceName);
 
-            ResultHandle namedDataSourceNameRH = namedDataSourceMethodCreator.load(namedDataSourceName);
-            ResultHandle namedDataSourceBuildTimeConfig = namedDataSourceMethodCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getBuildTimeConfig",
+            // New configuration
+            ResultHandle dataSourceBuildTimeConfig = dataSourceMethodCreator.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getDataSourceBuildTimeConfig",
                             DataSourceBuildTimeConfig.class, String.class),
-                    namedDataSourceMethodCreator.getThis(), namedDataSourceNameRH);
-            ResultHandle namedDataSourceRuntimeConfig = namedDataSourceMethodCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getRuntimeConfig", Optional.class,
-                            String.class),
-                    namedDataSourceMethodCreator.getThis(), namedDataSourceNameRH);
-            ResultHandle mpMetricsEnabled = namedDataSourceMethodCreator.load(metricsCapabilityPresent);
+                    dataSourceMethodCreator.getThis(), dataSourceNameRH);
+            ResultHandle dataSourceJdbcBuildTimeConfig = dataSourceMethodCreator.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getDataSourceJdbcBuildTimeConfig",
+                            DataSourceJdbcBuildTimeConfig.class, String.class),
+                    dataSourceMethodCreator.getThis(), dataSourceNameRH);
+            ResultHandle dataSourceRuntimeConfig = dataSourceMethodCreator.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getDataSourceRuntimeConfig",
+                            DataSourceRuntimeConfig.class, String.class),
+                    dataSourceMethodCreator.getThis(), dataSourceNameRH);
+            ResultHandle dataSourceJdbcRuntimeConfig = dataSourceMethodCreator.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getDataSourceJdbcRuntimeConfig",
+                            DataSourceJdbcRuntimeConfig.class, String.class),
+                    dataSourceMethodCreator.getThis(), dataSourceNameRH);
 
-            namedDataSourceMethodCreator.returnValue(
-                    namedDataSourceMethodCreator.invokeVirtualMethod(
+            // Legacy configuration
+            ResultHandle legacyDataSourceJdbcBuildTimeConfig = dataSourceMethodCreator.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getLegacyDataSourceJdbcBuildTimeConfig",
+                            LegacyDataSourceJdbcBuildTimeConfig.class, String.class),
+                    dataSourceMethodCreator.getThis(), dataSourceNameRH);
+            ResultHandle legacyDataSourceRuntimeConfig = dataSourceMethodCreator.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getLegacyDataSourceRuntimeConfig",
+                            LegacyDataSourceRuntimeConfig.class, String.class),
+                    dataSourceMethodCreator.getThis(), dataSourceNameRH);
+            ResultHandle legacyDataSourceJdbcRuntimeConfig = dataSourceMethodCreator.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getLegacyDataSourceJdbcRuntimeConfig",
+                            LegacyDataSourceJdbcRuntimeConfig.class, String.class),
+                    dataSourceMethodCreator.getThis(), dataSourceNameRH);
+
+            ResultHandle resolvedDbKind = dataSourceMethodCreator.load(aggregatedDataSourceBuildTimeConfig.getResolvedDbKind());
+            ResultHandle resolvedDriverClass = dataSourceMethodCreator
+                    .load(aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass());
+            ResultHandle mpMetricsEnabled = dataSourceMethodCreator.load(metricsCapabilityPresent);
+            ResultHandle isLegacy = dataSourceMethodCreator.load(aggregatedDataSourceBuildTimeConfig.isLegacy());
+
+            dataSourceMethodCreator.returnValue(
+                    dataSourceMethodCreator.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "createDataSource",
-                                    AgroalDataSource.class, String.class,
-                                    DataSourceBuildTimeConfig.class, Optional.class, boolean.class),
-                            namedDataSourceMethodCreator.getThis(),
-                            namedDataSourceNameRH,
-                            namedDataSourceBuildTimeConfig, namedDataSourceRuntimeConfig, mpMetricsEnabled));
+                                    AgroalDataSource.class,
+                                    String.class,
+                                    DataSourceBuildTimeConfig.class,
+                                    DataSourceJdbcBuildTimeConfig.class,
+                                    DataSourceRuntimeConfig.class,
+                                    DataSourceJdbcRuntimeConfig.class,
+                                    LegacyDataSourceJdbcBuildTimeConfig.class,
+                                    LegacyDataSourceRuntimeConfig.class,
+                                    LegacyDataSourceJdbcRuntimeConfig.class,
+                                    String.class,
+                                    String.class,
+                                    boolean.class,
+                                    boolean.class),
+                            dataSourceMethodCreator.getThis(),
+                            dataSourceNameRH,
+                            dataSourceBuildTimeConfig, dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig,
+                            dataSourceJdbcRuntimeConfig,
+                            legacyDataSourceJdbcBuildTimeConfig, legacyDataSourceRuntimeConfig,
+                            legacyDataSourceJdbcRuntimeConfig,
+                            resolvedDbKind, resolvedDriverClass, mpMetricsEnabled, isLegacy));
         }
 
         classCreator.close();
     }
 
     @BuildStep
-    HealthBuildItem addHealthCheck(AgroalBuildTimeConfig agroalBuildTimeConfig) {
+    HealthBuildItem addHealthCheck(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
         return new HealthBuildItem("io.quarkus.agroal.runtime.health.DataSourceHealthCheck",
-                agroalBuildTimeConfig.healthEnabled, "datasource");
+                dataSourcesBuildTimeConfig.healthEnabled, "datasource");
     }
 
     @BuildStep
-    void registerMetrics(AgroalBuildTimeConfig agroalBuildTimeConfig,
+    void registerMetrics(
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedDataSourceBuildTimeConfigs,
             BuildProducer<MetricBuildItem> metrics) {
         Metadata activeCountMetadata = Metadata.builder()
                 .withName("agroal.active.count")
@@ -411,18 +544,13 @@ class AgroalProcessor {
                 .withType(MetricType.COUNTER)
                 .build();
 
-        HashMap<String, DataSourceBuildTimeConfig> datasources = new HashMap<>(agroalBuildTimeConfig.namedDataSources);
-        if (agroalBuildTimeConfig.defaultDataSource != null) {
-            datasources.put(null, agroalBuildTimeConfig.defaultDataSource);
-        }
-
-        for (Entry<String, DataSourceBuildTimeConfig> dataSourceEntry : datasources.entrySet()) {
-            String dataSourceName = dataSourceEntry.getKey();
+        for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedDataSourceBuildTimeConfigs) {
+            String dataSourceName = aggregatedDataSourceBuildTimeConfig.getName();
             // expose metrics for this datasource if metrics are enabled both globally and for this data source
             // (they are enabled for each data source by default if they are also enabled globally)
-            boolean metricsEnabledForThisDatasource = agroalBuildTimeConfig.metricsEnabled &&
-                    dataSourceEntry.getValue().enableMetrics.orElse(true);
-            Tag tag = new Tag("datasource", dataSourceName != null ? dataSourceName : "default");
+            boolean metricsEnabledForThisDatasource = dataSourcesBuildTimeConfig.metricsEnabled &&
+                    aggregatedDataSourceBuildTimeConfig.getJdbcConfig().enableMetrics.orElse(true);
+            Tag tag = new Tag("datasource", DataSourceUtil.isDefault(dataSourceName) ? "default" : dataSourceName);
             String configRootName = "datasource";
             metrics.produce(new MetricBuildItem(activeCountMetadata,
                     new AgroalGauge(dataSourceName, "activeCount"),

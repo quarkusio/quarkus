@@ -2,6 +2,7 @@ package io.quarkus.agroal.runtime;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.agroal.api.configuration.AgroalConnectionFactoryConfiguration;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -22,7 +23,7 @@ public class DataSourceJdbcRuntimeConfig {
      * of the connections on boot, while being able to sustain a minimal pool size after boot.
      */
     @ConfigItem
-    public Optional<Integer> initialSize = Optional.empty();
+    public OptionalInt initialSize = OptionalInt.empty();
 
     /**
      * The datasource pool minimum size

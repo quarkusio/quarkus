@@ -24,7 +24,7 @@ import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.SourceType;
 
-public class QuarkusPluginFunctionalTest {
+public class QuarkusPluginFunctionalTest extends QuarkusGradleTestBase {
 
     private File projectRoot;
 
@@ -63,16 +63,6 @@ public class QuarkusPluginFunctionalTest {
         assertThat(build.task(":build").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
         // gradle build should not build the native image
         assertThat(build.task(":buildNative")).isNull();
-    }
-
-    private List<String> arguments(String... argument) {
-        List<String> arguments = new ArrayList<>();
-        arguments.addAll(Arrays.asList(argument));
-        String mavenRepoLocal = System.getProperty("maven.repo.local", System.getenv("MAVEN_LOCAL_REPO"));
-        if (mavenRepoLocal != null) {
-            arguments.add("-Dmaven.repo.local=" + mavenRepoLocal);
-        }
-        return arguments;
     }
 
     private void createProject(SourceType sourceType) throws IOException {

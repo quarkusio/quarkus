@@ -6,7 +6,6 @@ import java.io.ObjectOutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -30,11 +29,6 @@ public class QuarkusGradleUtils {
     }
 
     public static String getClassesDir(SourceSet sourceSet, AbstractTask context) {
-        final Set<String> sourcePaths = new HashSet<>();
-        for (File sourceDir : sourceSet.getAllJava().getSrcDirs()) {
-            sourcePaths.add(sourceDir.getAbsolutePath());
-        }
-
         FileCollection classesDirs = sourceSet.getOutput().getClassesDirs();
         Set<File> classDirFiles = classesDirs.getFiles();
         if (classDirFiles.size() == 1) {

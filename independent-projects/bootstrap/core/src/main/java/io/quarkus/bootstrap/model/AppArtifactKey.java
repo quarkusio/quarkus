@@ -173,12 +173,4 @@ public class AppArtifactKey implements Serializable {
         }
         return buf.toString();
     }
-
-    public static void main(String[] args) {
-        AppArtifactKey ga = fromString("g:a:c:t");
-        System.out.println(ga.getGroupId());
-        System.out.println(ga.getArtifactId());
-        System.out.println("'" + ga.getClassifier() + "'");
-        System.out.println(ga.getType());
-    }
 }

@@ -319,6 +319,12 @@ If you want to disable this behavior and map resources on-demand, you can use th
 quarkus.keycloak.policy-enforcer.lazy-load-paths=true
 ----
 
+== More About Configuring Protected Resources 
+
+In the default configuration, Keycloak is responsible for managing the roles and deciding who can access which routes. 
+
+To configure the protected routes using the `@RolesAllowed` annotation or the `application.properties` file, check the link:security-openid-connect[Using OpenID Connect Adapter to Protect JAX-RS Applications] guide. For more details, check the link:security[Security guide].
+
 == References
 
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]

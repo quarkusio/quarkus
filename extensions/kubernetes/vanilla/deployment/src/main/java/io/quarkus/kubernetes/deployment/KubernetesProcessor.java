@@ -8,6 +8,9 @@ import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_APP_RUNTIME;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS;
+import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP;
+import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_COMMIT_ID;
+import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_VCS_URL;
 import static io.quarkus.kubernetes.deployment.Constants.SERVICE;
 
 import java.io.File;
@@ -58,13 +61,16 @@ import io.dekorate.kubernetes.decorator.ApplyImageDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.kubernetes.decorator.ApplyServiceAccountNamedDecorator;
 import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
+import io.dekorate.kubernetes.decorator.RemoveAnnotationDecorator;
 import io.dekorate.processor.SimpleFileWriter;
 import io.dekorate.project.BuildInfo;
 import io.dekorate.project.FileProjectFactory;
 import io.dekorate.project.Project;
+import io.dekorate.project.ScmInfo;
 import io.dekorate.s2i.config.S2iBuildConfig;
 import io.dekorate.s2i.config.S2iBuildConfigBuilder;
 import io.dekorate.s2i.decorator.AddBuilderImageStreamResourceDecorator;
+import io.dekorate.utils.Annotations;
 import io.dekorate.utils.Maps;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
@@ -172,13 +178,14 @@ class KubernetesProcessor {
 
             session.feed(Maps.fromProperties(config));
 
-            session.resources().decorate(OPENSHIFT, new AddLabelDecorator(new Label(OPENSHIFT_APP_RUNTIME, QUARKUS)));
             //Apply configuration
             applyGlobalConfig(session, kubernetesConfig);
             ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
-            applyConfig(session, KUBERNETES, kubernetesConfig.name.orElse(applicationInfo.getName()), kubernetesConfig, now);
-            applyConfig(session, OPENSHIFT, openshiftConfig.name.orElse(applicationInfo.getName()), openshiftConfig, now);
-            applyConfig(session, KNATIVE, knativeConfig.name.orElse(applicationInfo.getName()), knativeConfig, now);
+            applyConfig(session, project, KUBERNETES, kubernetesConfig.name.orElse(applicationInfo.getName()), kubernetesConfig,
+                    now);
+            applyConfig(session, project, OPENSHIFT, openshiftConfig.name.orElse(applicationInfo.getName()), openshiftConfig,
+                    now);
+            applyConfig(session, project, KNATIVE, knativeConfig.name.orElse(applicationInfo.getName()), knativeConfig, now);
 
             //apply build item configurations to the dekorate session.
             applyBuildItems(session,
@@ -259,20 +266,36 @@ class KubernetesProcessor {
      * @param config The {@link PlatformConfiguration} instance
      * @param now
      */
-    private void applyConfig(Session session, String target, String name, PlatformConfiguration config, ZonedDateTime now) {
+    private void applyConfig(Session session, Project project, String target, String name, PlatformConfiguration config,
+            ZonedDateTime now) {
         //Labels
         config.getLabels().forEach((key, value) -> {
             session.resources().decorate(target, new AddLabelDecorator(new Label(key, value)));
         });
 
+        if (OPENSHIFT.equals(target)) {
+            session.resources().decorate(OPENSHIFT, new AddLabelDecorator(new Label(OPENSHIFT_APP_RUNTIME, QUARKUS)));
+        }
+
         //Annotations
         config.getAnnotations().forEach((key, value) -> {
             session.resources().decorate(target, new AddAnnotationDecorator(new Annotation(key, value)));
         });
+
+        ScmInfo scm = project.getScmInfo();
+        String vcsUrl = scm != null ? scm.getUrl() : Annotations.UNKNOWN;
+        String commitId = scm != null ? scm.getCommit() : Annotations.UNKNOWN;
+
+        session.resources().decorate(target, new RemoveAnnotationDecorator(Annotations.VCS_URL));
+        session.resources().decorate(target, new RemoveAnnotationDecorator(Annotations.COMMIT_ID));
+        //Add quarkus vcs annotations
+        session.resources().decorate(target,
+                new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_COMMIT_ID, commitId)));
+        session.resources().decorate(target, new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_VCS_URL, vcsUrl)));
+
         if (config.isAddBuildTimestamp()) {
-            session.resources().decorate(target,
-                    new AddAnnotationDecorator(new Annotation("build-timestamp",
-                            now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd - HH:mm:ss Z")))));
+            session.resources().decorate(target, new AddAnnotationDecorator(new Annotation(QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP,
+                    now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd - HH:mm:ss Z")))));
         }
 
         //EnvVars

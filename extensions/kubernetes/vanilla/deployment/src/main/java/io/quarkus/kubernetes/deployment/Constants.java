@@ -19,4 +19,10 @@ public class Constants {
     static final String DEPLOY = "quarkus.kubernetes.deploy";
 
     static final String QUARKUS = "quarkus";
+
+    static final String QUARKUS_ANNOTATIONS_COMMIT_ID = "app.quarkus.io/commit-id";
+    static final String QUARKUS_ANNOTATIONS_VCS_URL = "app.quarkus.io/vcs-url";
+    static final String QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP = "app.quarkus.io/build-timestamp";
+
+    static final String OPENSHIFT_ANNOTATIONS_VCS_URL = "app.openshift.io/vcs-url";
 }

@@ -3,7 +3,6 @@ package io.quarkus.vault;
 import java.util.OptionalInt;
 
 import org.jboss.jandex.DotName;
-import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -25,8 +24,6 @@ import io.quarkus.vault.runtime.config.VaultConfigSource;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 
 public class VaultProcessor {
-
-    private static final Logger log = Logger.getLogger(VaultProcessor.class);
 
     @BuildStep
     void build(

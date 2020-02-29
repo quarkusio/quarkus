@@ -12,10 +12,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
 import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.channel.EventLoopGroup;
@@ -135,7 +135,7 @@ public class VertxCoreRecorder {
     }
 
     private static Vertx logVertxInitialization(Vertx vertx) {
-        LOGGER.info(() -> String.format("Vertx has Native Transport Enabled: %s", vertx.isNativeTransportEnabled()));
+        LOGGER.debugf("Vertx has Native Transport Enabled: %s", vertx.isNativeTransportEnabled());
         return vertx;
     }
 

@@ -27,6 +27,7 @@ import io.dekorate.deps.kubernetes.client.KubernetesClient;
 import io.dekorate.deps.kubernetes.client.KubernetesClientException;
 import io.dekorate.utils.Clients;
 import io.dekorate.utils.Serialization;
+import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageResultBuildItem;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -46,6 +47,7 @@ public class KubernetesDeployer {
 
     @BuildStep(onlyIf = { IsNormal.class, KubernetesDeploy.class })
     public void deploy(KubernetesClientBuildItem kubernetesClient,
+            ContainerImageInfoBuildItem containerImageInfo,
             List<ContainerImageResultBuildItem> containerImageResults,
             List<KubernetesDeploymentTargetBuildItem> kubernetesDeploymentTargetBuildItems,
             OutputTargetBuildItem outputTarget,
@@ -73,7 +75,7 @@ public class KubernetesDeployer {
         //Get any build item but if the build was s2i, use openshift
         KubernetesDeploymentTargetBuildItem deploymentTarget = kubernetesDeploymentTargetBuildItems
                 .stream()
-                .filter(d -> !"s2i".equals(containerImageResult.getProvider()) || OPENSHIFT.equals(d.getName()))
+                .filter(d -> !S2I.equals(containerImageResult.getProvider()) || OPENSHIFT.equals(d.getName()))
                 .findFirst()
                 .orElse(new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT));
 

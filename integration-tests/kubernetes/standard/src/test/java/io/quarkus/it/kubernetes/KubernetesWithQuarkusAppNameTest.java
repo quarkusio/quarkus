@@ -42,7 +42,8 @@ public class KubernetesWithQuarkusAppNameTest {
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("foo");
-                assertThat(m.getLabels()).contains(entry("app", "foo"), entry("version", "1.0-kube"));
+                assertThat(m.getLabels()).contains(entry("app.kubernetes.io/name", "foo"),
+                        entry("app.kubernetes.io/version", "1.0-kube"));
             });
         });
 
@@ -50,7 +51,8 @@ public class KubernetesWithQuarkusAppNameTest {
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
         assertThat(openshiftList).allSatisfy(h -> {
             assertThat(h.getMetadata().getName()).isIn("ofoo", "s2ifoo", "s2i-java");
-            assertThat(h.getMetadata().getLabels()).contains(entry("app", "ofoo"), entry("version", "1.0-openshift"));
+            assertThat(h.getMetadata().getLabels()).contains(entry("app.kubernetes.io/name", "ofoo"),
+                    entry("app.kubernetes.io/version", "1.0-openshift"));
         });
     }
 }

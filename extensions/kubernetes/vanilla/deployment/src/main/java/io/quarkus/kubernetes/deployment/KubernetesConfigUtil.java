@@ -48,7 +48,7 @@ public class KubernetesConfigUtil {
     }
 
     public static Optional<String> getGroup(Map<String, Object> map) {
-        return ALLOWED_GENERATORS.stream().map(g -> map.get(DEKORATE_PREFIX + g + ".group")).filter(Objects::nonNull)
+        return ALLOWED_GENERATORS.stream().map(g -> map.get(DEKORATE_PREFIX + g + ".part-of")).filter(Objects::nonNull)
                 .map(String::valueOf).findFirst();
     }
 
@@ -73,7 +73,7 @@ public class KubernetesConfigUtil {
         // We just need group, name & version parsed here, as we don't have decorators for these (low level properties).
         Map<String, Object> quarkusPrefixed = new HashMap<>();
         Arrays.stream(platformConfigurations).forEach(p -> {
-            p.getGroup().ifPresent(g -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".group", g));
+            p.getPartOf().ifPresent(g -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".part-of", g));
             p.getName().ifPresent(n -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".name", n));
             p.getVersion().ifPresent(v -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".version", v));
         });

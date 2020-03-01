@@ -35,7 +35,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 cd kubernetes-quickstart
 ----
 
-=== Kubernetes
+== Kubernetes
 
 Quarkus offers the ability to automatically generate Kubernetes resources based on sane defaults and user supplied configuration. The implementation that takes care
 of generating the actual Kubernetes resources is provided by https://github.com/dekorateio/dekorate/[dekorate]. Currently it supports the generation of resources for
@@ -51,19 +51,8 @@ When we added the `kubernetes` extension to the command line invocation above, t
     </dependency>
 ----
 
-By adding this dependency, we now have the ability to configure the Kubernetes resource generation and application using the usual `application.properties` approach that Quarkus provides.
-The configuration items that are available can be found in: `io.quarkus.kubernetes.deployment.KubernetesConfig` class.
-Furthermore, the items provided by `io.quarkus.deployment.ApplicationConfig` affect the Kubernetes resources.
-
-By using the following configuration for example:
-
-[source]
-----
-quarkus.kubernetes.group=yourDockerUsername # this is optional and defaults to your username if not set.
-quarkus.application.name=test-quarkus-app # this is also optional and defaults to the project name if not set
-----
-
-and following the execution of `./mvnw package` you will notice amongst the other files that are created, two files named
+By adding this dependency, we enable the generation of Kubernetes manifests each time we perform a build.
+For example, following the execution of `./mvnw package` you will notice amongst the other files that are created, two files named
 `kubernetes.json` and `kubernetes.yml` in the `target/kubernetes/` directory.
 
 If you look at either file you will see that it contains both a Kubernetes `Deployment` and a `Service`.
@@ -73,16 +62,17 @@ The full source of the `kubernetes.json` file looks something like this:
 [source,json]
 ----
 {
-  "apiVersion" : "v1",
-  "kind" : "List",
-  "items" : [ {
+  {
     "apiVersion" : "apps/v1",
     "kind" : "Deployment",
     "metadata" : {
+      "annotations": {
+       "app.quarkus.io/vcs-url" : "<some url>",
+       "app.quarkus.io/commit-id" : "<some git SHA>",
+      },
       "labels" : {
-        "app" : "test-quarkus-app",
-        "version" : "1.0-SNAPSHOT",
-        "group" : "yourDockerUsername"
+        "app.kubernetes.io/name" : "test-quarkus-app",
+        "app.kubernetes.io/version" : "1.0-SNAPSHOT",
       },
       "name" : "test-quarkus-app"
     },
@@ -90,17 +80,15 @@ The full source of the `kubernetes.json` file looks something like this:
       "replicas" : 1,
       "selector" : {
         "matchLabels" : {
-          "app" : "test-quarkus-app",
-          "version" : "1.0-SNAPSHOT",
-          "group" : "yourDockerUsername"
+          "app.kubernetes.io/name" : "test-quarkus-app",
+          "app.kubernetes.io/version" : "1.0-SNAPSHOT",
         }
       },
       "template" : {
         "metadata" : {
           "labels" : {
-            "app" : "test-quarkus-app",
-            "version" : "1.0-SNAPSHOT",
-            "group" : "yourDockerUsername"
+            "app.kubernetes.io/name" : "test-quarkus-app",
+            "app.kubernetes.io/version" : "1.0-SNAPSHOT"
           }
         },
         "spec" : {
@@ -120,17 +108,204 @@ The full source of the `kubernetes.json` file looks something like this:
         }
       }
     }
-  } ]
+  },
+  {
+  "apiVersion" : "v1",
+  "kind" : "Service",
+    "metadata" : {
+      "annotations": {
+       "app.quarkus.io/vcs-url" : "<some url>",
+       "app.quarkus.io/commit-id" : "<some git SHA>",
+      },
+      "labels" : {
+        "app.kubernetes.io/name" : "test-quarkus-app",
+        "app.kubernetes.io/version" : "1.0-SNAPSHOT",
+      },
+      "name" : "test-quarkus-app"
+    },
+  "spec" : {
+    "ports" : [ {
+      "name" : "http",
+      "port" : 8080,
+      "targetPort" : 8080
+    } ],
+    "selector" : {
+      "app.kubernetes.io/name" : "test-quarkus-app",
+      "app.kubernetes.io/version" : "1.0-SNAPSHOT"
+    },
+    "type" : "ClusterIP"
+  }
+ }
 }
 ----
 
 An important thing to note about the `Deployment` is that is uses `yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT` as the Docker image of the `Pod`.
+The name of the image is controlled by the container-image extension and can be customized using the usual `application.properties`.
 
-Also the `Service` is configured to use container port `8080` (which is automatically picked up by the standard Quarkus configuration).
+For example with a configuration like:
+
+[source]
+----
+quarkus.container-image.group=quarkus #optional, default to the system user name
+quarkus.container-image.name=demo-app #optional, defaults to the application name
+quarkus.container-image.tag=1.0       #optional, defaults to the application version
+----
+
+The image that will be used in the generated manifests will be `quarkus/demo-app:1.0`
+
+=== Defining a Docker registry
+
+The Docker registry can be specified with the following property:
+
+[source]
+----
+quarkus.container-image.registry=http://my.docker-registry.net
+----
+
+By adding this property along with the rest of the container-image properties of the previous section, the generated manifests will use the image `http://my.docker-registry.net/quarkus/demo-app:1.0`.
+
+
+The image is not the only thing that can be customized in the generated manifests. The kubernetes extension provides a rich set of configuration properties that allow customization.
+
+=== Labels and Annotations
+
+==== Labels
+
+The generated manifests use the Kubernetes link:https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels[recommended labels].
+These labels can be customized using `quarkus.kubernetes.name`, `quarkus.kubernetes.version` and `quarkus.kubernetes.part-of`.
+For example by adding the following configuration to your `application.properties`:
+
+[source]
+----
+quarkus.kubernetes.part-of=todo-app
+quarkus.kubernetes.name=todo-rest
+quarkus.kubernetes.version=1.0-rc.1
+----
+
+The generated generated resources will have the labels:
+
+[source, json]
+----
+  "labels" : {
+    "app.kubernetes.io/part-of" : "todo-app",
+    "app.kubernetes.io/name" : "todo-rest",
+    "app.kubernetes.io/version" : "1.0-rc.1"
+  }
+----
+
+==== Custom Labels
+
+To add additional custom labels, for example `foo=bar`:
+
+[source]
+----
+quarkus.kubernetes.labels.foo=bar
+----
+
+====  Annotations
+
+Out of the box, the generated resources will be annotated with version control related information that can be used either by tooling, or by the user for troubleshooting purposes.
+
+[source, json]
+----
+  "annotations": {
+    "app.quarkus.io/vcs-url" : "<some url>",
+    "app.quarkus.io/commit-id" : "<some git SHA>",
+   }
+----
+
+==== Custom Annotations
+
+Custom annotations can be added in a way similar to labels. For example to add the annotation `foo=bar`:
+
+
+[source]
+----
+quarkus.kubernetes.annotations.foo=bar
+----
+
+==== Environment variables
+
+Kubernetes provides multiple ways of defining environment variables:
+
+- key value pairs
+- from Secret
+- from ConfigMap
+- from fields
+
+To add a key value pair as an environment variable in the generated resources:
+
+[source]
+----
+quarkus.kubernetes.env-vars.my-env-var.value=foobar
+----
+
+The command above will add `MY_ENV_VAR=foobar` as an environment variable.
+Please note that the key `my-env-var` will be converted to uppercase and dashes will be replaced by underscores resulting in `MY_ENV_VAR`.
+
+You may also have noticed that in contrast to labels and annotations for environment variables you don't just use a `key=value` approach.
+That is because for environment variables there are additional options rather than just setting a value.
+
+===== Environment variables from Secret
+
+To add all key value pairs of a `Secret` as environment variables:
+
+[source]
+----
+quarkus.kubernetes.env-vars.my-env-var.secret=my-secret
+----
+
+===== Environment variables from ConfigMap
+
+To add all key value pairs of a `ConfigMap` as environment variables:
+
+[source]
+----
+quarkus.kubernetes.env-vars.my-env-var.configmap=my-secret
+----
+
+
+==== Mounting volumes
+
+The Kubernetes extension allows the user to configure both volumes and mounts for the application.
+
+Any volume can be mounted with a simple configuration:
+
+[source]
+----
+quarkus.kubernetes.mounts.my-volume.path=/where/to/mount
+----
+
+This will add a mount to my pod for volume `my-volume` to path `/where/to/mount`.
+
+The volumes themselves can be configured as shown in the sections below:
+
+===== Secret volumes
+
+[source]
+----
+quarkus.kubernetes.secret-volumes.my-volume.secret-name=my-secret
+----
+
+===== ConfigMap volumes
+
+[source]
+----
+quarkus.kubernetes.config-map-volumes.my-volume.config-map-name=my-secret
+----
+
+=== Changing the number of replicas:
+
+To change the number of replicas from 1 to 3:
+
+[source]
+----
+quarkus.kubernetes.replicas=3
+----
 
 === Add readiness and liveness probes
 
-By default the Kubernetes resources do not contain readiness and liveness probes in the generated `Deployment`. Adding them however is just a matter of adding the Smallrye Health extension like so:
+By default the Kubernetes resources do not contain readiness and liveness probes in the generated `Deployment`. Adding them however is just a matter of adding the SmallRye Health extension like so:
 
 [source,xml]
 ----
@@ -143,9 +318,20 @@ By default the Kubernetes resources do not contain readiness and liveness probes
 The values of the generated probes will be determined by the configured health properties: `quarkus.smallrye-health.root-path`, `quarkus.smallrye-health.liveness-path` and `quarkus.smallrye-health.readiness-path`.
 More information about the health extension can be found in the relevant link:microprofile-health[guide].
 
+=== Customizing the readiness probe:
+To set the initial delay of the probe to 20 seconds and the period to 45:
+
+[source]
+----
+quarkus.kubernetes.readiness-probe.initial-delay-seconds=20
+quarkus.kubernetes.readiness-probe.period-seconds=45
+----
+
+Here you can find a complete reference to all the available configuration options:
+
 === Using the Kubernetes client
 
-Applications that are deployed to Kubernetes and need to access the API server, will usually make use of the `kubernetes-client` extension:
+Applications that are deployed to Kubernetes and need to access the API server will usually make use of the `kubernetes-client` extension:
 
 [source,xml]
 ----
@@ -164,55 +350,16 @@ If more roles are required, they will have to be added manually.
 The Kubernetes extension allows tuning the generated manifest, using the `application.properties` file.
 Here are some examples:
 
-=== Changing the number of replicas:
-To change the number of replicas from 1 to  3:
-
-[source]
-----
-quarkus.kubernetes.replicas=3
-----
-
-=== Defining a docker registry and repository
-
-The docker registry and the user of the docker image can be specified, with the following properties:
-
-[source]
-----
-quarkus.kubernetes.group=myUser
-quarkus.docker.registry=http://my.docker-registry.net
-----
-
-Note: These options used to be `quarkus.kubernetes.docker.registry` and `quarkus.kubernetes.group` respectively.
-
-=== Adding labels:
-To add a new label to all generated resources, say `foo=bar`:
-
-[source]
-----
-quarkus.kubernetes.labels.foo=bar
-----
-
-=== Customizing the readiness probe:
-To set the initial delay of the probe to 20 seconds and the period to 45:
-
-[source]
-----
-quarkus.kubernetes.readiness-probe.initial-delay-seconds=20
-quarkus.kubernetes.readiness-probe.period-seconds=45
-----
-
-Here you can find a complete reference to all the available configuration options:
-
-==== Configuration options
+== Configuration options
 
 The table below describe all the available configuration options.
 
 .Kubernetes
 |====
 | Property                                           | Type                                      | Description | Default Value
-| quarkus.kubernetes.group                           | String                                    |             | ${quarkus.container-image.group} 
 | quarkus.kubernetes.name                            | String                                    |             | ${quarkus.container-image.name}
 | quarkus.kubernetes.version                         | String                                    |             | ${quarkus.container-image.tag}
+| quarkus.kubernetes.part-of                         | String                                    |             |
 | quarkus.kubernetes.init-containers                 | Map<String, Container>                    |             | 
 | quarkus.kubernetes.labels                          | Map                                       |             |
 | quarkus.kubernetes.annotations                     | Map                                       |             |
@@ -255,7 +402,7 @@ In this example `initial-delay` and `period-seconds` are fields of the type `Pro
 Below you will find tables describing all available types.
 
 
-===== Basic Types
+=== Basic Types
 
 .Env
 |====
@@ -302,7 +449,7 @@ Below you will find tables describing all available types.
 |====
 
 
-== Mounts and Volumes
+=== Mounts and Volumes
 
 .Mount
 |====
@@ -371,7 +518,7 @@ Below you will find tables describing all available types.
 | read-only   | boolean |             | false        
 |====
 
-=== OpenShift
+== OpenShift
 
 To enable the generation of OpenShift resources, you need to include OpenShift in the target platforms:
 
@@ -394,9 +541,9 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 .Openshift
 |====
 | Property                                          | Type                                      | Description | Default Value
-| quarkus.openshift.group                           | String                                    |             | ${quarkus.container-image.group} 
 | quarkus.openshift.name                            | String                                    |             | ${quarkus.container-image.name}
 | quarkus.openshift.version                         | String                                    |             | ${quarkus.container-image.tag}
+| quarkus.openshift.part-of                         | String                                    |             |
 | quarkus.openshift.init-containers                 | Map<String, Container>                    |             |
 | quarkus.openshift.labels                          | Map                                       |             |
 | quarkus.openshift.annotations                     | Map                                       |             |
@@ -426,13 +573,13 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 | quarkus.openshift.headless                        | boolean                                   |             | false
 |====
 
-=== Knative
+== Knative
     
 To enable the generation of Quarkus.Knative.resources, you need to include Knative in the target platforms:
 
 [source]
 ----
-quarkus.kubernetes.deployment.target=knative
+quarkus.kubernetes.deployment-target=knative
 ----
 
 Following the execution of `./mvnw package` you will notice amongst the other files that are created, two files named
@@ -445,16 +592,17 @@ The full source of the `quarkus.knative.json` file looks something like this:
 [source,json]
 ----
 {
-  "apiVersion" : "v1",
-  "kind" : "List",
-  "items" : [ {
+  {
     "apiVersion" : "serving.quarkus.knative.dev/v1alpha1",
     "kind" : "Service",
     "metadata" : {
+      "annotations": {
+       "app.quarkus.io/vcs-url" : "<some url>",
+       "app.quarkus.io/commit-id" : "<some git SHA>"
+      },
       "labels" : {
-        "app" : "test-quarkus-app",
-        "version" : "0.1-SNAPSHOT",
-        "group" : "yourDockerUsername"
+        "app.kubernetes.io/name" : "test-quarkus-app",
+        "app.kubernetes.io/version" : "1.0-SNAPSHOT"
       },
       "name" : "quarkus.knative.
     },
@@ -472,7 +620,7 @@ The full source of the `quarkus.knative.json` file looks something like this:
         }
       }
     }
-  } ]
+  }
 }
 ----
 
@@ -481,9 +629,9 @@ The generated service can be customized using the following properties:
 .Knative
 |====
 | Property                                        | Type                                      | Description | Default Value
-| quarkus.knative.group                           | String                                    |             | ${quarkus.container-image.group} 
 | quarkus.knative.name                            | String                                    |             | ${quarkus.container-image.name}
 | quarkus.knative.version                         | String                                    |             | ${quarkus.container-image.tag}
+| quarkus.knative.part-of                         | String                                    |             |
 | quarkus.knative.init-containers                 | Map<String, Container>                    |             |
 | quarkus.knative.labels                          | Map                                       |             |
 | quarkus.knative.annotations                     | Map                                       |             |
@@ -534,7 +682,7 @@ The code below demonstrates the change in `labels` config:
 ----
 # Old labels config:
 kubernetes.labels[0].name=foo
-kubernetes.labels[0].name=bar
+kubernetes.labels[0].value=bar
 
 # New labels
 quarkus.kubernetes.labels.foo=bar

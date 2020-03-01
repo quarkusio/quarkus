@@ -37,7 +37,7 @@ class GenerateConfigIT extends QuarkusPlatformAwareMojoTestBase {
 
         String file = loadFile("test.properties");
         Assertions.assertTrue(file.contains("#quarkus.log.level"));
-        Assertions.assertTrue(file.contains("The default log level"));
+        Assertions.assertTrue(file.contains("The log level of the root category"));
         Assertions.assertTrue(file.contains("#quarkus.thread-pool.growth-resistance=0"));
         Assertions.assertTrue(file.contains("The executor growth resistance"));
 
@@ -45,7 +45,7 @@ class GenerateConfigIT extends QuarkusPlatformAwareMojoTestBase {
         //the existing file should not add properties that already exist
         file = loadFile("application.properties");
         Assertions.assertTrue(file.contains("quarkus.log.level=INFO"));
-        Assertions.assertFalse(file.contains("The default log level"));
+        Assertions.assertFalse(file.contains("The log level of the root category"));
         Assertions.assertTrue(file.contains("#quarkus.thread-pool.growth-resistance=0"));
         Assertions.assertTrue(file.contains("The executor growth resistance"));
     }

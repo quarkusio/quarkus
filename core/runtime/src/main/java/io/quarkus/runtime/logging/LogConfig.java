@@ -1,7 +1,6 @@
 package io.quarkus.runtime.logging;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Level;
 
 import io.quarkus.runtime.annotations.ConfigDocSection;
@@ -16,10 +15,10 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public final class LogConfig {
 
     /**
-     * The default log level
+     * The log level of the root category, which is used as the default log level for all categories.
      */
-    @ConfigItem
-    public Optional<Level> level;
+    @ConfigItem(defaultValue = "INFO")
+    public Level level;
 
     /**
      * The default minimum log level

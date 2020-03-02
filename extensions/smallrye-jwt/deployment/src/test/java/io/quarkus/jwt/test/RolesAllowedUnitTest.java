@@ -18,6 +18,9 @@ import io.restassured.response.Response;
 public class RolesAllowedUnitTest {
     private static Class<?>[] testClasses = {
             RolesEndpoint.class,
+            AuthenticatedEndpoint.class,
+            PermitAllEndpoint.class,
+            GreetingService.class,
             TokenUtils.class
     };
     /**
@@ -75,6 +78,37 @@ public class RolesAllowedUnitTest {
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
         Assertions.assertEquals("jdoe@example.com", replyString);
+    }
+
+    @Test()
+    public void testAuthenticatedAnnotationOnClass() {
+        RestAssured.given()
+                .when()
+                .queryParam("input", "hello")
+                .get("/authenticated-endpoint/greet")
+                .then()
+                .statusCode(HttpURLConnection.HTTP_UNAUTHORIZED);
+
+        io.restassured.response.Response response = RestAssured.given().auth()
+                .oauth2(token)
+                .when()
+                .get("/authenticated-endpoint/greet").andReturn();
+
+        Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
+        String replyString = response.body().asString();
+        Assertions.assertEquals("hello", replyString);
+    }
+
+    @Test()
+    public void testPermitAllOnClass() {
+        io.restassured.response.Response response = RestAssured.given().auth()
+                .oauth2(token)
+                .when()
+                .get("/permit-all-endpoint/greet").andReturn();
+
+        Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
+        String replyString = response.body().asString();
+        Assertions.assertEquals("hello", replyString);
     }
 
     /**

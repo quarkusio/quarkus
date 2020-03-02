@@ -143,8 +143,12 @@ public abstract class AbstractDataSourceProducer {
                 agroalConnectionConfigurerHandle.get().disableSslSupport(dataSourceBuildTimeConfig.dbKind.get(),
                         dataSourceConfiguration);
             } else {
-                log.warnv("Agroal does not support disabling SSL for database kind {0}",
-                        dataSourceBuildTimeConfig.dbKind.get());
+                if (dataSourceBuildTimeConfig.dbKind.isPresent()) {
+                    log.warnv("Agroal does not support disabling SSL for database kind {0}",
+                            dataSourceBuildTimeConfig.dbKind.get());
+                } else {
+                    log.warn("Agroal does not support disabling SSL");
+                }
             }
         }
 

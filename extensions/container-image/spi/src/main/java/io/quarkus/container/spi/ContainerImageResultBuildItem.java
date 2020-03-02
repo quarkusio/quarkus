@@ -1,8 +1,8 @@
 package io.quarkus.container.spi;
 
-import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.builder.item.MultiBuildItem;
 
-public final class ContainerImageResultBuildItem extends SimpleBuildItem {
+public final class ContainerImageResultBuildItem extends MultiBuildItem {
 
     private final String provider;
     private final String imageId;

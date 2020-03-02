@@ -95,16 +95,18 @@ you need manual context propagation. You can do that by injecting a `ThreadConte
 or `ManagedExecutor` that will propagate every context. For example, here we use the link:vertx[Vert.x Web Client]
 to get the list of Star Wars people, then store them in the database using
 link:hibernate-orm-panache[Hibernate ORM with Panache] (all in the same transaction) before returning
-them to the client:
+them to the client as JSON using link:rest-json[JSON-B or Jackson]:
 
 [source,java]
 --
     @Inject ThreadContext threadContext;
+    @Inject ManagedExecutor managedExecutor;
     @Inject Vertx vertx;
 
     @Transactional
     @GET
     @Path("/people")
+    @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<List<Person>> people() throws SystemException {
         // Create a REST client to the Star Wars API
         WebClient client = WebClient.create(vertx,
@@ -114,19 +116,19 @@ them to the client:
                           .setSsl(true));
         // get the list of Star Wars people, with context capture
         return threadContext.withContextCapture(client.get("/api/people/").send())
-                .thenApply(response -> {
+                .thenApplyAsync(response -> {
                     JsonObject json = response.bodyAsJsonObject();
                     List<Person> persons = new ArrayList<>(json.getInteger("count"));
                     // Store them in the DB
                     // Note that we're still in the same transaction as the outer method
                     for (Object element : json.getJsonArray("results")) {
                         Person person = new Person();
-                        person.name = ((JsonObject)element).getString("name");
+                        person.name = ((JsonObject) element).getString("name");
                         person.persist();
                         persons.add(person);
                     }
                     return persons;
-                });
+                }, managedExecutor);
     }
 --
 

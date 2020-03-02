@@ -105,7 +105,7 @@ them to the client:
     @Transactional
     @GET
     @Path("/people")
-    public CompletionStage<Person> people() throws SystemException {
+    public CompletionStage<List<Person>> people() throws SystemException {
         // Create a REST client to the Star Wars API
         WebClient client = WebClient.create(vertx,
                          new WebClientOptions()

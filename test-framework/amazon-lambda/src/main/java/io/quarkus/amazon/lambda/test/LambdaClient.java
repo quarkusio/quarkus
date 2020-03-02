@@ -9,6 +9,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InstanceHandle;
+
 public class LambdaClient {
 
     private static final AtomicInteger REQUEST_ID_GENERATOR = new AtomicInteger();
@@ -46,7 +50,7 @@ public class LambdaClient {
             throw new RuntimeException(problem);
         }
         try {
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = getObjectMapper();
             String id = "aws-request-" + REQUEST_ID_GENERATOR.incrementAndGet();
             CompletableFuture<String> result = new CompletableFuture<>();
             REQUESTS.put(id, result);
@@ -80,6 +84,18 @@ public class LambdaClient {
             }
             throw new RuntimeException(e);
         }
+    }
+
+    private static ObjectMapper getObjectMapper() {
+        ArcContainer container = Arc.container();
+        if (container == null) {
+            return new ObjectMapper();
+        }
+        InstanceHandle<ObjectMapper> instance = container.instance(ObjectMapper.class);
+        if (instance.isAvailable()) {
+            return instance.get();
+        }
+        return new ObjectMapper();
     }
 
 }

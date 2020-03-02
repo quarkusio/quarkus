@@ -32,6 +32,7 @@ public class JDBCDerbyProcessor {
         if (capabilities.isCapabilityPresent(Capabilities.AGROAL)) {
             additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(DerbyAgroalConnectionConfigurer.class)
                     .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                    .setUnremovable()
                     .build());
         }
     }

@@ -34,6 +34,7 @@ public class JDBCMySQLProcessor {
         if (capabilities.isCapabilityPresent(Capabilities.AGROAL)) {
             additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(MySQLAgroalConnectionConfigurer.class)
                     .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                    .setUnremovable()
                     .build());
         }
     }

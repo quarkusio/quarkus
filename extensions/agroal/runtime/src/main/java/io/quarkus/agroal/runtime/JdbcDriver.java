@@ -22,20 +22,20 @@ import javax.inject.Qualifier;
 @Qualifier
 public @interface JdbcDriver {
 
-    String name();
+    String value();
 
     class JdbcDriverLiteral extends AnnotationLiteral<io.quarkus.agroal.runtime.JdbcDriver>
             implements io.quarkus.agroal.runtime.JdbcDriver {
 
-        private String name;
+        private String value;
 
-        public JdbcDriverLiteral(String name) {
-            this.name = name;
+        public JdbcDriverLiteral(String value) {
+            this.value = value;
         }
 
         @Override
-        public String name() {
-            return name;
+        public String value() {
+            return value;
         }
     }
 

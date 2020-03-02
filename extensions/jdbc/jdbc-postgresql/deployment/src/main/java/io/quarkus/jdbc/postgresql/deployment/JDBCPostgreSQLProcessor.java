@@ -32,6 +32,7 @@ public class JDBCPostgreSQLProcessor {
             additionalBeans
                     .produce(new AdditionalBeanBuildItem.Builder().addBeanClass(PostgreSQLAgroalConnectionConfigurer.class)
                             .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                            .setUnremovable()
                             .build());
         }
     }

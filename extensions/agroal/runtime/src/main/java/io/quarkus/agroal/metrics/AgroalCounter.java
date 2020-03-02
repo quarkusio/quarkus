@@ -4,6 +4,7 @@ import org.eclipse.microprofile.metrics.Counter;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalDataSourceMetrics;
+import io.quarkus.agroal.DataSource.DataSourceLiteral;
 import io.quarkus.arc.Arc;
 
 public class AgroalCounter implements Counter {

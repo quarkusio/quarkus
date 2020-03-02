@@ -48,7 +48,7 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
 
             return CompletableFuture
                     .completedFuture(QuarkusSecurityIdentity.builder().setPrincipal(jwt)
-                            .addRoles(jwtRolesMapper.mapGroupsAndRoles(jwt))
+                            .addRoles(jwtRolesMapper.mapRoles(jwt))
                             .addAttribute(SecurityIdentity.USER_ATTRIBUTE, jwt).build());
 
         } catch (ParseException e) {

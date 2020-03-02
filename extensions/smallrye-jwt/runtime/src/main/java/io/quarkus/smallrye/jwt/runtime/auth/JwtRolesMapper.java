@@ -5,5 +5,5 @@ import java.util.Set;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 public interface JwtRolesMapper {
-    Set<String> mapGroupsAndRoles(JsonWebToken token);
+    Set<String> mapRoles(JsonWebToken token);
 }

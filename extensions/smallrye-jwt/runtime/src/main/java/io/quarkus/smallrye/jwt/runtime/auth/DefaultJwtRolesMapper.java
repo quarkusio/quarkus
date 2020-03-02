@@ -13,7 +13,7 @@ import io.quarkus.arc.DefaultBean;
 public class DefaultJwtRolesMapper implements JwtRolesMapper {
 
     @Override
-    public Set<String> mapGroupsAndRoles(JsonWebToken token) {
+    public Set<String> mapRoles(JsonWebToken token) {
         return token.getGroups();
     }
 }

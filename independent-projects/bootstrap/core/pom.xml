@@ -37,6 +37,12 @@
         <dependency>
             <groupId>org.apache.maven.resolver</groupId>
             <artifactId>maven-resolver-transport-wagon</artifactId>
+            <exclusions>
+                <exclusion><!-- let's prefer the wagon-provider-api pulled by wagon-http and wagon-file -->
+                    <groupId>org.apache.maven.wagon</groupId>
+                    <artifactId>wagon-provider-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.maven.wagon</groupId>

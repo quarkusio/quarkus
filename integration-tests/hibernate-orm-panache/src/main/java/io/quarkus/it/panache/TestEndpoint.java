@@ -152,6 +152,19 @@ public class TestEndpoint {
         Assertions.assertEquals(person, Person.find("name", "stef").firstResult());
         Assertions.assertEquals(person, Person.find("name", "stef").singleResult());
 
+        //named query
+        persons = Person.find("#Person.getByName", Parameters.with("name", "stef")).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        //empty query
+        persons = Person.find("").list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+        persons = Person.find(null).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
         Person byId = Person.findById(person.id);
         Assertions.assertEquals(person, byId);
         Assertions.assertEquals("Person<" + person.id + ">", byId.toString());
@@ -600,6 +613,19 @@ public class TestEndpoint {
         Assertions.assertEquals(person, personDao.find("name", "stef").firstResult());
         Assertions.assertEquals(person, personDao.find("name", "stef").singleResult());
         Assertions.assertEquals(person, personDao.find("name", "stef").singleResultOptional().get());
+
+        // named query
+        persons = personDao.find("#Person.getByName", Parameters.with("name", "stef")).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        //empty query
+        persons = personDao.find("").list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+        persons = personDao.find(null).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
 
         Person byId = personDao.findById(person.id);
         Assertions.assertEquals(person, byId);

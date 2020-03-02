@@ -15,6 +15,7 @@ import javax.persistence.Query;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
+import io.quarkus.panache.common.exception.PanacheQueryException;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
@@ -141,6 +142,10 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     @SuppressWarnings("unchecked")
     public long count() {
+        if (JpaOperations.isNamedQuery(query)) {
+            throw new PanacheQueryException("Unable to perform a count operation on a named query");
+        }
+
         if (count == null) {
             // FIXME: this is crude but good enough for a first version
             String lcQuery = query.toLowerCase();

@@ -518,6 +518,25 @@ Order.find("select distinct o from Order o left join fetch o.lineItems");
 Order.update("update from Person set name = 'Mortal' where status = ?", Status.Alive);
 ----
 
+=== Named queries
+
+You can reference a named query instead of a (simplified) HQL query by prefixing its name with the '#' character.
+
+[source,java]
+----
+@Entity
+@NamedQuery(name = "Person.getByName", query = "from Person where name = :name")
+public class Person extends PanacheEntity {
+    public String name;
+    public LocalDate birth;
+    public Status status;
+
+    public static Person findByName(String name){
+        return find("#Person.getByName", name).firstResult();
+    }
+}
+----
+
 === Query parameters
 
 You can pass query parameters by index (1-based) as shown below:

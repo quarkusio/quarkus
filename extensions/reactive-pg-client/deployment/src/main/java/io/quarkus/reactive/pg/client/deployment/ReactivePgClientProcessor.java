@@ -21,6 +21,7 @@ import io.quarkus.reactive.pg.client.runtime.PgPoolProducer;
 import io.quarkus.reactive.pg.client.runtime.PgPoolRecorder;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
+@SuppressWarnings("deprecation")
 class ReactivePgClientProcessor {
 
     @BuildStep

@@ -41,6 +41,7 @@ import io.quarkus.datasource.runtime.LegacyDataSourcesRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vault.CredentialsProvider;
 
+@SuppressWarnings("deprecation")
 public abstract class AbstractDataSourceProducer {
 
     private static final Logger log = Logger.getLogger(AbstractDataSourceProducer.class.getName());

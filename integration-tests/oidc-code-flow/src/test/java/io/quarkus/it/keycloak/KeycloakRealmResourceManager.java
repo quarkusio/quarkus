@@ -89,10 +89,10 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         ClientRepresentation client = new ClientRepresentation();
 
         client.setClientId(clientId);
-        client.setPublicClient(true);
-        client.setDirectAccessGrantsEnabled(true);
         client.setEnabled(true);
         client.setRedirectUris(Arrays.asList("*"));
+        client.setClientAuthenticatorType("client-secret");
+        client.setSecret("secret");
 
         return client;
     }

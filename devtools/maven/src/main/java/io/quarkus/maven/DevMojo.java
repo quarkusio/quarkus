@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
@@ -602,6 +603,12 @@ public class DevMojo extends AbstractMojo {
             wiringClassesDirectory.mkdirs();
 
             addToClassPaths(classPathManifest, devModeContext, wiringClassesDirectory);
+
+            //in most cases these are not used, however they need to be present for some
+            //parent-first cases such as logging
+            for (Artifact appDep : project.getArtifacts()) {
+                addToClassPaths(classPathManifest, devModeContext, appDep.getFile());
+            }
 
             //we also want to add the maven plugin jar to the class path
             //this allows us to just directly use classes, without messing around copying them

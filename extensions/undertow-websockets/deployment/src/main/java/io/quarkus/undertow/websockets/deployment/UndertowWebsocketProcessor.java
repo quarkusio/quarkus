@@ -13,6 +13,7 @@ import javax.websocket.ContainerProvider;
 import javax.websocket.Endpoint;
 import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -35,6 +36,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.undertow.deployment.ServletContextAttributeBuildItem;
 import io.quarkus.undertow.websockets.runtime.UndertowWebsocketRecorder;
+import io.undertow.websockets.jsr.DefaultContainerConfigurator;
 import io.undertow.websockets.jsr.JsrWebSocketFilter;
 import io.undertow.websockets.jsr.UndertowContainerProvider;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
@@ -49,6 +51,12 @@ public class UndertowWebsocketProcessor {
     @BuildStep
     void holdConfig(BuildProducer<FeatureBuildItem> feature, HotReloadConfig hotReloadConfig) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.UNDERTOW_WEBSOCKETS));
+    }
+
+    @BuildStep
+    ServiceProviderBuildItem registerConfiguratorServiceProvider() {
+        return new ServiceProviderBuildItem(ServerEndpointConfig.Configurator.class.getName(),
+                DefaultContainerConfigurator.class.getName());
     }
 
     @BuildStep

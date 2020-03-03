@@ -14,10 +14,10 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.deployment.ResteasyJaxrsConfigBuildItem;
-import io.smallrye.openapi.runtime.scanner.DefaultAnnotationScannerExtension;
+import io.smallrye.openapi.runtime.scanner.AnnotationScannerExtension;
 import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
 
-public class RESTEasyExtension extends DefaultAnnotationScannerExtension {
+public class RESTEasyExtension implements AnnotationScannerExtension {
 
     private static final DotName DOTNAME_PROVIDER = DotName.createSimple("javax.ws.rs.ext.Provider");
     private static final DotName DOTNAME_ASYNC_RESPONSE_PROVIDER = DotName
@@ -98,15 +98,17 @@ public class RESTEasyExtension extends DefaultAnnotationScannerExtension {
         if (type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && asyncTypes.contains(type.name())) {
             ParameterizedType pType = type.asParameterizedType();
-            if (pType.arguments().size() == 1)
+            if (pType.arguments().size() == 1) {
                 return pType.arguments().get(0);
+            }
         }
-        return super.resolveAsyncType(type);
+        return null;
     }
 
     @Override
     public void processJaxRsApplications(OpenApiAnnotationScanner scanner, Collection<ClassInfo> applications) {
-        if (applications.isEmpty())
+        if (applications.isEmpty()) {
             scanner.setCurrentAppPath(defaultPath);
+        }
     }
 }

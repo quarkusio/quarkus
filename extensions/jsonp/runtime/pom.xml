@@ -34,6 +34,10 @@
                         <excludedArtifact>javax.json:javax.json-api</excludedArtifact>
                         <excludedArtifact>org.glassfish:javax.json</excludedArtifact>
                     </excludedArtifacts>
+                    <parentFirstArtifacts>
+                        <parentFirstArtifact>org.glassfish:jakarta.json</parentFirstArtifact>
+                        <parentFirstArtifact>jakarta.json:jakarta.json-api</parentFirstArtifact>
+                    </parentFirstArtifacts>
                 </configuration>
             </plugin>
             <plugin>

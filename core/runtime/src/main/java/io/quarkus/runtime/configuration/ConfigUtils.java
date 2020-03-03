@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -69,7 +70,7 @@ public final class ConfigUtils {
         final ApplicationPropertiesConfigSource.InFileSystem inFileSystem = new ApplicationPropertiesConfigSource.InFileSystem();
         final ApplicationPropertiesConfigSource.InJar inJar = new ApplicationPropertiesConfigSource.InJar();
         final ApplicationPropertiesConfigSource.MpConfigInJar mpConfig = new ApplicationPropertiesConfigSource.MpConfigInJar();
-        builder.withSources(inFileSystem, inJar, mpConfig);
+        builder.withSources(inFileSystem, inJar, mpConfig, new DotEnvConfigSource());
         final ExpandingConfigSource.Cache cache = new ExpandingConfigSource.Cache();
         builder.withWrapper(ExpandingConfigSource.wrapper(cache));
         builder.withWrapper(DeploymentProfileConfigSource.wrapper());
@@ -84,7 +85,6 @@ public final class ConfigUtils {
             sources.addAll(
                     new PropertiesConfigSourceProvider("WEB-INF/classes/META-INF/microprofile-config.properties", true,
                             classLoader).getConfigSources(classLoader));
-            sources.add(new DotEnvConfigSource());
             sources.add(new EnvConfigSource());
             sources.add(new SysPropConfigSource());
             builder.withSources(sources);
@@ -121,7 +121,9 @@ public final class ConfigUtils {
         }
     }
 
-    static class EnvConfigSource implements ConfigSource {
+    static class EnvConfigSource implements ConfigSource, Serializable {
+        private static final long serialVersionUID = 8786096039970882529L;
+
         static final Pattern REP_PATTERN = Pattern.compile("[^a-zA-Z0-9_]");
 
         EnvConfigSource() {
@@ -149,6 +151,8 @@ public final class ConfigUtils {
     }
 
     static class DotEnvConfigSource extends EnvConfigSource {
+        private static final long serialVersionUID = -6718168105190376482L;
+
         private final Map<String, String> values;
 
         DotEnvConfigSource() {

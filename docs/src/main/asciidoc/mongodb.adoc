@@ -276,6 +276,7 @@ You can now interact with your REST service:
  * open a browser to `http://localhost:8080/fruits.html`
  * add new fruits to the list via the form
 
+[[reactive]]
 == Reactive MongoDB Client
 A reactive MongoDB Client is included in Quarkus.
 Using it is as easy as using the classic MongoDB Client.

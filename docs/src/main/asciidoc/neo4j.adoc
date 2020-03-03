@@ -408,6 +408,7 @@ This behavior can be disabled by setting the `quarkus.neo4j.health.enabled` prop
 There are tons of options to model your domain within a Graph.
 The https://neo4j.com/docs/[Neo4j docs], the sandboxes and more are a good starting point.
 
+[[reactive]]
 === Going reactive
 
 If you have access to Neo4j 4.0, you can go fully reactive.

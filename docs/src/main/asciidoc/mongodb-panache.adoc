@@ -689,6 +689,7 @@ data class Person (
 ): PanacheMongoEntity()
 ----
 
+[[reactive]]]]
 == Reactive Entities and Repositories
 
 MongoDB with Panache allows using reactive style implementation for both entities and repositories.

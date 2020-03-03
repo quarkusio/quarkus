@@ -6,6 +6,7 @@ import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalDataSourceMetrics;
 import io.quarkus.agroal.DataSource.DataSourceLiteral;
 import io.quarkus.arc.Arc;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 
 public class AgroalCounter implements Counter {
 
@@ -41,7 +42,7 @@ public class AgroalCounter implements Counter {
             synchronized (this) {
                 dsLocal = dataSource;
                 if (dsLocal == null) {
-                    if (dataSourceName == null) {
+                    if (dataSourceName == null || DataSourceUtil.isDefault(dataSourceName)) {
                         dataSource = dsLocal = Arc.container().instance(AgroalDataSource.class).get();
                     } else {
                         dataSource = dsLocal = Arc.container()

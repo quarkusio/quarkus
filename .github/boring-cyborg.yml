@@ -125,7 +125,7 @@ labelPRBasedOnFilePath:
         - integration-tests/infinispan-cache-jpa/**/*
         - integration-tests/infinispan-client/**/*
         - integration-tests/infinispan-embedded/**/*
-     area/infra-automation:
+    area/infra-automation:
         - .github/**/*
         - azure-mvn-settings.xml
         - azure-pipelines.yml

@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.ShutdownContext;
@@ -45,12 +47,20 @@ public class AmazonLambdaRecorder {
     public void setHandlerClass(Class<? extends RequestHandler<?, ?>> handler, BeanContainer container) {
         handlerClass = handler;
         beanContainer = container;
-        objectMapper = new ObjectMapper()
+        AmazonLambdaRecorder.objectMapper = getObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
         Method handlerMethod = discoverHandlerMethod(handlerClass);
         objectReader = objectMapper.readerFor(handlerMethod.getParameterTypes()[0]);
         objectWriter = objectMapper.writerFor(handlerMethod.getReturnType());
+    }
+
+    private ObjectMapper getObjectMapper() {
+        InstanceHandle<ObjectMapper> instance = Arc.container().instance(ObjectMapper.class);
+        if (instance.isAvailable()) {
+            return instance.get().copy();
+        }
+        return new ObjectMapper();
     }
 
     /**

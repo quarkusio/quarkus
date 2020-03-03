@@ -10,6 +10,7 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Qualifier;
 
 /**
@@ -22,4 +23,18 @@ import javax.inject.Qualifier;
 public @interface DataSource {
 
     String value();
+
+    class DataSourceLiteral extends AnnotationLiteral<DataSource> implements DataSource {
+
+        private String name;
+
+        public DataSourceLiteral(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String value() {
+            return name;
+        }
+    }
 }

@@ -31,6 +31,7 @@ public class JDBCH2Processor {
         if (capabilities.isCapabilityPresent(Capabilities.AGROAL)) {
             additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(H2AgroalConnectionConfigurer.class)
                     .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                    .setUnremovable()
                     .build());
         }
     }

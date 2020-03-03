@@ -41,6 +41,7 @@ import io.quarkus.datasource.runtime.LegacyDataSourcesRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vault.CredentialsProvider;
 
+@SuppressWarnings("deprecation")
 public abstract class AbstractDataSourceProducer {
 
     private static final Logger log = Logger.getLogger(AbstractDataSourceProducer.class.getName());
@@ -140,11 +141,11 @@ public abstract class AbstractDataSourceProducer {
 
         if (disableSslSupport) {
             if (agroalConnectionConfigurerHandle.isAvailable()) {
-                agroalConnectionConfigurerHandle.get().disableSslSupport(dataSourceBuildTimeConfig.dbKind.get(),
+                agroalConnectionConfigurerHandle.get().disableSslSupport(resolvedDbKind,
                         dataSourceConfiguration);
             } else {
-                log.warnv("Agroal does not support disabling SSL for database kind {0}",
-                        dataSourceBuildTimeConfig.dbKind.get());
+                log.warnv("Agroal does not support disabling SSL for database kind: {0}",
+                        resolvedDbKind);
             }
         }
 

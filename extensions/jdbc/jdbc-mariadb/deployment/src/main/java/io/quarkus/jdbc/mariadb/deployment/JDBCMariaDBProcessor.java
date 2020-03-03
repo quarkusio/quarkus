@@ -31,6 +31,7 @@ public class JDBCMariaDBProcessor {
         if (capabilities.isCapabilityPresent(Capabilities.AGROAL)) {
             additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(MariaDBAgroalConnectionConfigurer.class)
                     .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                    .setUnremovable()
                     .build());
         }
     }

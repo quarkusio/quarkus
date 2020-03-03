@@ -34,6 +34,7 @@ public class MsSQLProcessor {
         if (capabilities.isCapabilityPresent(Capabilities.AGROAL)) {
             additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(MsSQLAgroalConnectionConfigurer.class)
                     .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                    .setUnremovable()
                     .build());
         }
     }

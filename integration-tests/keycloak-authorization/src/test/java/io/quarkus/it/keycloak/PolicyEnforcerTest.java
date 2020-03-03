@@ -98,6 +98,24 @@ public class PolicyEnforcerTest {
                 .statusCode(204);
     }
 
+    @Test
+    public void testPathConfigurationPrecedenceWhenPathCacheNotDefined() {
+        RestAssured.given()
+                .when().get("/api2/resource")
+                .then()
+                .statusCode(401);
+
+        RestAssured.given()
+                .when().get("/hello")
+                .then()
+                .statusCode(404);
+
+        RestAssured.given()
+                .when().get("/")
+                .then()
+                .statusCode(404);
+    }
+
     private String getAccessToken(String userName) {
         return RestAssured
                 .given()

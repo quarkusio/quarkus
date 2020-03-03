@@ -56,7 +56,7 @@ public class KeycloakPolicyEnforcerConfig {
          * protected resources
          */
         @ConfigItem
-        public PathCacheConfig pathCache;
+        public Optional<PathCacheConfig> pathCache;
 
         /**
          * Specifies how the adapter should fetch the server for resources associated with paths in your application. If true,

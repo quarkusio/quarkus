@@ -114,6 +114,7 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
         configureClaimBasedPermission(authorizationSettings);
         configureHttpResponseClaimBasedPermission(authorizationSettings);
         configureBodyClaimBasedPermission(authorizationSettings);
+        configurePaths(authorizationSettings);
 
         client.setAuthorizationSettings(authorizationSettings);
 
@@ -167,6 +168,12 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
                 "/api/permission/body-claim"), policy);
     }
 
+    private static void configurePaths(ResourceServerRepresentation settings) {
+        createResource(settings, "Root", null);
+        createResource(settings, "API", "/api2/*");
+        createResource(settings, "Hello", "/hello");
+    }
+
     private static void createPermission(ResourceServerRepresentation settings, ResourceRepresentation resource,
             PolicyRepresentation policy) {
         PolicyRepresentation permission = new PolicyRepresentation();
@@ -185,7 +192,9 @@ public class KeycloakTestResource implements QuarkusTestResourceLifecycleManager
             String uri) {
         ResourceRepresentation resource = new ResourceRepresentation(name);
 
-        resource.setUris(Collections.singleton(uri));
+        if (uri != null) {
+            resource.setUris(Collections.singleton(uri));
+        }
 
         authorizationSettings.getResources().add(resource);
         return resource;

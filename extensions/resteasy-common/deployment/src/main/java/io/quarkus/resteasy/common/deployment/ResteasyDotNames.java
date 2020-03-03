@@ -73,11 +73,15 @@ public final class ResteasyDotNames {
             DotName.createSimple("javax.json.JsonObject"),
             DotName.createSimple("javax.json.JsonArray"),
 
+            // Jackson
+            DotName.createSimple("com.fasterxml.jackson.databind.JsonNode"),
+
             // JAX-RS
             DotName.createSimple("javax.ws.rs.core.Response"),
             DotName.createSimple("javax.ws.rs.container.AsyncResponse"),
             DotName.createSimple("javax.ws.rs.core.StreamingOutput"),
             DotName.createSimple("javax.ws.rs.core.Form"),
+            DotName.createSimple("javax.ws.rs.core.MultivaluedMap"),
 
             // RESTEasy
             DotName.createSimple("org.jboss.resteasy.plugins.providers.multipart.MultipartInput"),

@@ -27,8 +27,6 @@ import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
-import io.quarkus.agroal.metrics.AgroalCounter;
-import io.quarkus.agroal.metrics.AgroalGauge;
 import io.quarkus.agroal.runtime.AbstractDataSourceProducer;
 import io.quarkus.agroal.runtime.AgroalRecorder;
 import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
@@ -40,6 +38,8 @@ import io.quarkus.agroal.runtime.LegacyDataSourceJdbcRuntimeConfig;
 import io.quarkus.agroal.runtime.LegacyDataSourcesJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.LegacyDataSourcesJdbcRuntimeConfig;
 import io.quarkus.agroal.runtime.TransactionIntegration;
+import io.quarkus.agroal.runtime.metrics.AgroalCounter;
+import io.quarkus.agroal.runtime.metrics.AgroalGauge;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;

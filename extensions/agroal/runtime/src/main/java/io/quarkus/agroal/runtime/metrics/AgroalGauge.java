@@ -1,4 +1,4 @@
-package io.quarkus.agroal.metrics;
+package io.quarkus.agroal.runtime.metrics;
 
 import org.eclipse.microprofile.metrics.Gauge;
 

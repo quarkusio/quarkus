@@ -1,4 +1,4 @@
-package io.quarkus.banner.deployment;
+package io.quarkus.deployment.steps;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,28 +8,31 @@ import java.nio.charset.StandardCharsets;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.banner.runtime.BannerRecorder;
+import io.quarkus.banner.BannerConfig;
 import io.quarkus.builder.Version;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.runtime.BannerRecorder;
+import io.quarkus.runtime.BannerRuntimeConfig;
 
 public class BannerProcessor {
 
     private static final Logger logger = Logger.getLogger(BannerProcessor.class);
 
-    @BuildStep(loadsApplicationClasses = true, onlyIf = { IsBanner.class, IsDevelopment.class })
+    @BuildStep(loadsApplicationClasses = true, onlyIfNot = { IsTest.class })
     @Record(ExecutionTime.RUNTIME_INIT)
-    public ConsoleFormatterBannerBuildItem recordBanner(BannerRecorder recorder, BannerConfig config) {
+    public ConsoleFormatterBannerBuildItem recordBanner(BannerRecorder recorder, BannerConfig config,
+            BannerRuntimeConfig bannerRuntimeConfig) {
         String bannerText = readBannerFile(config);
-        return new ConsoleFormatterBannerBuildItem(recorder.provideBannerSupplier(bannerText));
+        return new ConsoleFormatterBannerBuildItem(recorder.provideBannerSupplier(bannerText, bannerRuntimeConfig));
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep
     HotDeploymentWatchedFileBuildItem watchBannerChanges(BannerConfig config) {
         return new HotDeploymentWatchedFileBuildItem(config.path);
     }
@@ -39,8 +42,12 @@ public class BannerProcessor {
         if (resource != null) {
             try (InputStream is = resource.openStream()) {
                 byte[] content = FileUtil.readFileContents(is);
-                String bannerTitle = new String(content, StandardCharsets.UTF_8);
-                return bannerTitle + "\n:: Quarkus :: v" + Version.getVersion() + '\n';
+                StringBuilder bannerTitle = new StringBuilder(new String(content, StandardCharsets.UTF_8));
+                bannerTitle.append('\n');
+                if (!config.isDefaultPath()) {
+                    bannerTitle.append("Powered by Quarkus v").append(Version.getVersion()).append('\n');
+                }
+                return bannerTitle.toString();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

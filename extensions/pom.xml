@@ -155,8 +155,6 @@
         
         <!-- Templating -->
         <module>qute</module>
-        
-        <module>banner</module>
     </modules>
 
     <!-- Unfortunately the config below introduces a build dependency on the maven plugin

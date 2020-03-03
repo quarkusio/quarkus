@@ -709,11 +709,6 @@
                 <artifactId>quarkus-vertx-graphql-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-banner-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

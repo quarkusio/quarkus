@@ -16,11 +16,11 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kubernetes-spi</artifactId>
+            <artifactId>quarkus-kubernetes-client-deployment-internal</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kubernetes-client-spi</artifactId>
+            <artifactId>quarkus-kubernetes-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

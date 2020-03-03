@@ -17,8 +17,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import javax.net.ssl.SSLHandshakeException;
-
 import org.jboss.logging.Logger;
 
 import io.dekorate.deps.kubernetes.api.model.HasMetadata;
@@ -34,6 +32,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHanlder;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
 
@@ -106,12 +105,7 @@ public class KubernetesDeployer {
         } catch (FileNotFoundException e) {
             throw new IllegalStateException("Can't find generated kubernetes manifest: " + manifest.getAbsolutePath());
         } catch (KubernetesClientException e) {
-            if (e.getCause() instanceof SSLHandshakeException) {
-                String message = "The application could not be deployed to the cluster because the Kubernetes API Server certificates are not trusted. The certificates can be configured using the relevant configuration propertiers under the 'quarkus.kubernetes-client' config root, or \"quarkus.kubernetes-client.trust-certs=true\" can be set to explicitly trust the certificates (not recommended)";
-                log.error(message);
-                throw new RuntimeException(e.getCause());
-            }
-            log.error("Unable to deploy the application to the Kubernetes cluster: " + e.getMessage());
+            KubernetesClientErrorHanlder.handle(e);
             throw e;
         } catch (IOException e) {
             throw new RuntimeException("Error closing file: " + manifest.getAbsolutePath());

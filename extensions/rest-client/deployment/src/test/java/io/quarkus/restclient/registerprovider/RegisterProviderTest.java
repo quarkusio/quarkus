@@ -1,0 +1,39 @@
+package io.quarkus.restclient.registerprovider;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import javax.inject.Inject;
+
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusUnitTest;
+
+public class RegisterProviderTest {
+
+    @RegisterExtension
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(EchoResource.class, EchoClient.class, MyFilter.class, MethodsCollector.class)
+                    .addAsResource(new StringAsset("io.quarkus.restclient.registerprovider.EchoClient/mp-rest/url=${test.url}"),
+                            "application.properties"));
+
+    @RestClient
+    EchoClient client;
+
+    @Inject
+    MethodsCollector collector;
+
+    @Test
+    public void testProvider() {
+        collector.getMethods().clear();
+        assertEquals("ping", client.echo("ping"));
+        assertEquals(1, collector.getMethods().size());
+        assertEquals("GET", collector.getMethods().get(0));
+    }
+
+}

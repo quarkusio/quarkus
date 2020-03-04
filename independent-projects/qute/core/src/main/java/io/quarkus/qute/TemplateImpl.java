@@ -57,7 +57,11 @@ class TemplateImpl implements Template {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException(e);
             } catch (ExecutionException | TimeoutException e) {
-                throw new IllegalStateException(e);
+                if (e.getCause() instanceof RuntimeException) {
+                    throw (RuntimeException) e.getCause();
+                } else {
+                    throw new IllegalStateException(e.getCause());
+                }
             }
         }
 

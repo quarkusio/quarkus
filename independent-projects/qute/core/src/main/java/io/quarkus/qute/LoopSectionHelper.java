@@ -4,6 +4,7 @@ import static io.quarkus.qute.Parameter.EMPTY;
 
 import io.quarkus.qute.Results.Result;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -35,23 +36,15 @@ public class LoopSectionHelper implements SectionHelper {
     @Override
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
         return context.resolutionContext().evaluate(iterable).thenCompose(it -> {
-            // Ideally, we should not block here but we still need to retain the order of results 
-            List<CompletionStage<ResultNode>> results = new ArrayList<>();
-            Iterator<?> iterator;
-            if (it instanceof Iterable) {
-                iterator = ((Iterable<?>) it).iterator();
-            } else if (it instanceof Map) {
-                iterator = ((Map<?, ?>) it).entrySet().iterator();
-            } else if (it instanceof Stream) {
-                iterator = ((Stream<?>) it).sequential().iterator();
-            } else if (it instanceof Integer) {
-                iterator = IntStream.rangeClosed(1, (Integer) it).iterator();
-            } else {
-                throw new IllegalStateException(
-                        String.format("Cannot iterate over [%s] resolved for [%s] in template %s on line %s", it,
-                                iterable.toOriginalString(), iterable.origin.getTemplateId(), iterable.origin.getLine()));
+            if (it == null) {
+                throw new TemplateException(String.format(
+                        "Loop section error in template %s on line %s: [%s] resolved to [null] which is not iterable",
+                        iterable.origin.getTemplateId(), iterable.origin.getLine(), iterable.toOriginalString()));
             }
+            List<CompletionStage<ResultNode>> results = new ArrayList<>();
+            Iterator<?> iterator = extractIterator(it);
             int idx = 0;
+            // Ideally, we should not block here but we still need to retain the order of results
             while (iterator.hasNext()) {
                 results.add(nextElement(iterator.next(), idx++, iterator.hasNext(), context));
             }
@@ -75,6 +68,27 @@ public class LoopSectionHelper implements SectionHelper {
                     });
             return result;
         });
+    }
+
+    private Iterator<?> extractIterator(Object it) {
+        if (it instanceof Iterable) {
+            return ((Iterable<?>) it).iterator();
+        } else if (it instanceof Iterator) {
+            return (Iterator<?>) it;
+        } else if (it instanceof Map) {
+            return ((Map<?, ?>) it).entrySet().iterator();
+        } else if (it instanceof Stream) {
+            return ((Stream<?>) it).sequential().iterator();
+        } else if (it instanceof Integer) {
+            return IntStream.rangeClosed(1, (Integer) it).iterator();
+        } else if (it.getClass().isArray()) {
+            return Arrays.stream((Object[]) it).iterator();
+        } else {
+            throw new TemplateException(String.format(
+                    "Loop section error in template %s on line %s: [%s] resolved to [%s] which is not iterable",
+                    iterable.origin.getTemplateId(), iterable.origin.getLine(), iterable.toOriginalString(),
+                    it.getClass().getName()));
+        }
     }
 
     CompletionStage<ResultNode> nextElement(Object element, int index, boolean hasNext, SectionResolutionContext context) {

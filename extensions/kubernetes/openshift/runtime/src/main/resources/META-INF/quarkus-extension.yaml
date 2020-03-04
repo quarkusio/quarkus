@@ -1,8 +1,8 @@
 ---
-name: "Kubernetes"
+name: "Openshift"
 metadata:
   keywords:
-  - "kubernetes"
+  - "openshift"
   guide: "https://quarkus.io/guides/openshift"
   categories:
   - "cloud"

@@ -157,6 +157,8 @@ labelPRBasedOnFilePath:
         - extensions/logging-json/**/*
         - extensions/logging-sentry/**/*
         - integration-tests/logging-gelf/**/*
+        - core/runtime/src/main/java/io/quarkus/runtime/logging/**/*
+        - core/deployment/src/main/java/io/quarkus/logging/**/*
     area/maven:
         - integration-tests/maven/**/*
         - independent-projects/bootstrap/maven-plugin/**/*

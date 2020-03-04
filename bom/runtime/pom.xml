@@ -59,7 +59,7 @@
         <jakarta.transaction-api.version>1.3.3</jakarta.transaction-api.version>
         <jakarta.validation-api.version>2.0.2</jakarta.validation-api.version>
         <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
-        <jaxb-runtime.version>2.3.3-b01</jaxb-runtime.version>
+        <jaxb-runtime.version>2.3.3-b02</jaxb-runtime.version>
         <!-- just for test dependency convergence -->
         <jaxb-api.version>2.3.1</jaxb-api.version>
         <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>

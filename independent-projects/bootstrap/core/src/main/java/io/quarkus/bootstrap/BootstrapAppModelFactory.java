@@ -46,7 +46,7 @@ public class BootstrapAppModelFactory {
 
     private static final String QUARKUS = "quarkus";
     private static final String BOOTSTRAP = "bootstrap";
-    private static final String DEPLOYMENT_CP = "deployment.cp";
+    private static final String APP_MODEL_DAT = "app-model.dat";
 
     public static final String CREATOR_APP_GROUP_ID = "creator.app.groupId";
     public static final String CREATOR_APP_ARTIFACT_ID = "creator.app.artifactId";
@@ -441,8 +441,10 @@ public class BootstrapAppModelFactory {
         }
     }
 
-    private static Path resolveCachedCpPath(LocalProject project) {
-        return project.getOutputDir().resolve(QUARKUS).resolve(BOOTSTRAP).resolve(DEPLOYMENT_CP);
+    private Path resolveCachedCpPath(LocalProject project) {
+        final String filePrefix = test ? "test-" : (devMode ? "dev-" : null);
+        return project.getOutputDir().resolve(QUARKUS).resolve(BOOTSTRAP)
+                .resolve(filePrefix == null ? APP_MODEL_DAT : filePrefix + APP_MODEL_DAT);
     }
 
     private static void debug(String msg, Object... args) {

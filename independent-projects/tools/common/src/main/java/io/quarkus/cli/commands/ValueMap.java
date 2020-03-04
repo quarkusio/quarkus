@@ -48,6 +48,11 @@ public class ValueMap<V extends ValueMap<V>> {
         return Boolean.parseBoolean(value.toString());
     }
 
+    public boolean valueIs(String name, Object o) {
+        final Object value = values.get(name);
+        return o == null ? value == null : o.equals(value);
+    }
+
     public boolean hasValue(String name) {
         return values.getOrDefault(name, NOT_SET) != NOT_SET;
     }

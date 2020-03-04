@@ -1,13 +1,13 @@
 package io.quarkus.maven;
 
-import java.io.IOException;
-
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 import io.quarkus.cli.commands.ListExtensions;
 import io.quarkus.cli.commands.file.BuildFile;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.tools.MessageWriter;
 
 /**
  * List the available extensions.
@@ -38,10 +38,15 @@ public class ListExtensionsMojo extends BuildFileMojoBase {
     protected String searchPattern;
 
     @Override
-    public void doExecute(BuildFile buildFile) throws MojoExecutionException {
+    public void doExecute(BuildFile buildFile, QuarkusPlatformDescriptor platformDescr, MessageWriter log)
+            throws MojoExecutionException {
         try {
-            new ListExtensions(buildFile).listExtensions(all, format, searchPattern);
-        } catch (IOException e) {
+            new ListExtensions(buildFile, platformDescr)
+                    .all(all)
+                    .format(format)
+                    .search(searchPattern)
+                    .execute();
+        } catch (Exception e) {
             throw new MojoExecutionException("Failed to list extensions", e);
         }
     }

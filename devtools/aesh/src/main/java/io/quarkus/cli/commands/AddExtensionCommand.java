@@ -13,9 +13,10 @@ import org.aesh.command.option.Argument;
 import org.aesh.command.option.Option;
 import org.aesh.io.Resource;
 
-import io.quarkus.cli.commands.legacy.LegacyQuarkusCommandInvocation;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.dependencies.Extension;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -38,17 +39,18 @@ public class AddExtensionCommand implements Command<CommandInvocation> {
             commandInvocation.println(commandInvocation.getHelpInfo("quarkus add-extension"));
             return CommandResult.SUCCESS;
         } else {
-            final QuarkusCommandInvocation quarkusInvocation = new LegacyQuarkusCommandInvocation();
-            if (!findExtension(extension, quarkusInvocation.getPlatformDescriptor().getExtensions())) {
+
+            final QuarkusPlatformDescriptor platformDescr = QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor();
+            if (!findExtension(extension, platformDescr.getExtensions())) {
                 commandInvocation.println("Can not find any extension named: " + extension);
                 return CommandResult.SUCCESS;
             }
             if (pom.isLeaf()) {
                 try {
-                    quarkusInvocation.setValue(AddExtensions.EXTENSIONS, Collections.singleton(extension));
                     final File pomFile = new File(pom.getAbsolutePath());
-                    AddExtensions project = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()));
-                    QuarkusCommandOutcome result = project.execute(quarkusInvocation);
+                    AddExtensions project = new AddExtensions(new FileProjectWriter(pomFile.getParentFile()), platformDescr)
+                            .extensions(Collections.singleton(extension));
+                    QuarkusCommandOutcome result = project.execute();
                     if (!result.isSuccess()) {
                         throw new CommandException("Unable to add an extension matching " + extension);
                     }

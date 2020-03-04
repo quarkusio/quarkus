@@ -4,9 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.contentOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.cli.commands.file.GradleBuildFile;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.cli.commands.writer.ZipProjectWriter;
+import io.quarkus.generators.BuildTool;
+import io.quarkus.generators.ProjectGenerator;
 import io.quarkus.maven.utilities.MojoUtils;
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,10 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -40,14 +38,10 @@ import org.junit.jupiter.api.Timeout;
 
 public class CreateProjectTest extends PlatformAwareTestBase {
     @Test
-    public void create() throws IOException {
+    public void create() throws Exception {
         final File file = new File("target/basic-rest");
         delete(file);
-        final CreateProject createProject = new CreateProject(new FileProjectWriter(file)).groupId("io.quarkus")
-                .artifactId("basic-rest")
-                .version("1.0.0-SNAPSHOT");
-
-        assertTrue(createProject.doCreateProject(new HashMap<>()));
+        createProject(file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT");
 
         final File gitignore = new File(file, ".gitignore");
         assertTrue(gitignore.exists());
@@ -56,16 +50,10 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     }
 
     @Test
-    public void createGradle() throws IOException {
+    public void createGradle() throws Exception {
         final File file = new File("target/basic-rest-gradle");
         delete(file);
-        FileProjectWriter writer = new FileProjectWriter(file);
-        final CreateProject createProject = new CreateProject(writer).groupId("io.quarkus")
-                .artifactId("basic-rest")
-                .version("1.0.0-SNAPSHOT")
-                .buildFile(new GradleBuildFile(writer));
-
-        assertTrue(createProject.doCreateProject(new HashMap<>()));
+        createProject(BuildTool.GRADLE, file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT");
 
         final File gitignore = new File(file, ".gitignore");
         assertTrue(gitignore.exists());
@@ -79,7 +67,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     }
 
     @Test
-    public void createGradleOnExisting() throws IOException {
+    public void createGradleOnExisting() throws Exception {
         final File testDir = new File("target/existing");
         delete(testDir);
         testDir.mkdirs();
@@ -89,13 +77,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         final File settingsGradle = new File(testDir, "settings.gradle");
         settingsGradle.createNewFile();
 
-        FileProjectWriter writer = new FileProjectWriter(testDir);
-        final CreateProject createProject = new CreateProject(writer).groupId("io.quarkus")
-                .artifactId("basic-rest")
-                .version("1.0.0-SNAPSHOT")
-                .buildFile(new GradleBuildFile(writer));
-
-        assertTrue(createProject.doCreateProject(new HashMap<>()));
+        createProject(BuildTool.GRADLE, testDir, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT");
 
         final File gitignore = new File(testDir, ".gitignore");
         assertTrue(gitignore.exists());
@@ -121,7 +103,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     }
 
     @Test
-    public void createOnTopPomWithoutResource() throws IOException {
+    public void createOnTopPomWithoutResource() throws Exception {
         final File testDir = new File("target/existing");
         delete(testDir);
         testDir.mkdirs();
@@ -133,11 +115,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         model.setVersion("10.1.2");
         final File pom = new File(testDir, "pom.xml");
         MojoUtils.write(model, pom);
-        final CreateProject createProject = new CreateProject(new FileProjectWriter(testDir)).groupId("something.is")
-                .artifactId("wrong")
-                .version("1.0.0-SNAPSHOT");
-
-        assertTrue(createProject.doCreateProject(new HashMap<>()));
+        createProject(testDir, "something.is", "wrong", "1.0.0-SNAPSHOT");
 
         assertThat(contentOf(pom, "UTF-8"))
                 .contains(getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
@@ -164,7 +142,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     }
 
     @Test
-    public void createOnTopPomWithResource() throws IOException {
+    public void createOnTopPomWithResource() throws Exception {
         final File testDir = new File("target/existing");
         delete(testDir);
         testDir.mkdirs();
@@ -176,12 +154,14 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         model.setVersion("10.1.2");
         final File pom = new File(testDir, "pom.xml");
         MojoUtils.write(model, pom);
-        final CreateProject createProject = new CreateProject(new FileProjectWriter(testDir)).groupId("something.is")
-                .artifactId("wrong")
-                .className("org.foo.MyResource")
-                .version("1.0.0-SNAPSHOT");
 
-        assertTrue(createProject.doCreateProject(new HashMap<>()));
+        final QuarkusCommandOutcome result = new CreateProject(new FileProjectWriter(testDir), getPlatformDescriptor())
+                .groupId("something.is")
+                .artifactId("wrong")
+                .version("1.0.0-SNAPSHOT")
+                .className("org.foo.MyResource")
+                .execute();
+        assertTrue(result.isSuccess());
 
         assertThat(contentOf(pom, "UTF-8"))
                 .contains(getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
@@ -206,7 +186,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     }
 
     @Test
-    public void createOnTopPomWithSpringController() throws IOException {
+    public void createOnTopPomWithSpringController() throws Exception {
         final File testDir = new File("target/existing");
         delete(testDir);
         testDir.mkdirs();
@@ -218,15 +198,15 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         model.setVersion("10.1.2");
         final File pom = new File(testDir, "pom.xml");
         MojoUtils.write(model, pom);
-        HashSet<String> extensions = new HashSet<>();
-        extensions.add("spring-web");
-        final CreateProject createProject = new CreateProject(new FileProjectWriter(testDir)).groupId("something.is")
-                .artifactId("wrong")
-                .className("org.foo.MyResource")
-                .version("1.0.0-SNAPSHOT")
-                .extensions(extensions);
 
-        assertTrue(createProject.doCreateProject(new HashMap<>()));
+        final QuarkusCommandOutcome result = new CreateProject(new FileProjectWriter(testDir), getPlatformDescriptor())
+                .groupId("something.is")
+                .artifactId("wrong")
+                .version("1.0.0-SNAPSHOT")
+                .className("org.foo.MyResource")
+                .setValue(ProjectGenerator.IS_SPRING, true)
+                .execute();
+        assertTrue(result.isSuccess());
 
         assertThat(contentOf(pom, "UTF-8"))
                 .contains(getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
@@ -251,29 +231,24 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     }
 
     @Test
-    public void createNewWithCustomizations() throws IOException {
+    public void createNewWithCustomizations() throws Exception {
         final File testDir = new File("target/existing");
         delete(testDir);
         testDir.mkdirs();
 
-        final File pom = new File(testDir, "pom.xml");
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("projectGroupId", "org.acme");
-        properties.put("projectArtifactId", "acme");
-        properties.put("className", "org.acme.MyResource");
-        properties.put("extensions", "commons-io:commons-io:2.5");
-
-        assertTrue(new CreateProject(new FileProjectWriter(testDir)).groupId("org.acme")
+        final QuarkusCommandOutcome result = new CreateProject(new FileProjectWriter(testDir), getPlatformDescriptor())
+                .groupId("org.acme")
                 .artifactId("acme")
                 .version("1.0.0-SNAPSHOT")
                 .className("org.acme.MyResource")
-                .doCreateProject(properties));
+                .execute();
+        assertTrue(result.isSuccess());
 
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
         assertThat(new File(testDir, "src/main/java/org/acme/MyApplication.java")).doesNotExist();
 
-        assertThat(contentOf(pom, "UTF-8"))
+        assertThat(contentOf(new File(testDir, "pom.xml"), "UTF-8"))
                 .contains(getPluginArtifactId(), MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLUGIN_VERSION_VALUE, getPluginGroupId());
 
         assertThat(new File(testDir, "src/main/java")).isDirectory();
@@ -293,18 +268,17 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     void createMultipleTimes() throws InterruptedException {
         final ExecutorService executorService = Executors.newFixedThreadPool(4);
         final CountDownLatch latch = new CountDownLatch(20);
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("extensions", "commons-io:commons-io:2.5");
 
         List<Callable<Void>> collect = IntStream.range(0, 20).boxed().map(i -> (Callable<Void>) () -> {
             File tempDir = Files.createTempDirectory("test").toFile();
             FileProjectWriter write = new FileProjectWriter(tempDir);
-            new CreateProject(write)
+            final QuarkusCommandOutcome result = new CreateProject(new FileProjectWriter(tempDir), getPlatformDescriptor())
                     .groupId("org.acme")
                     .artifactId("acme")
                     .version("1.0.0-SNAPSHOT")
                     .className("org.acme.MyResource")
-                    .doCreateProject(properties);
+                    .execute();
+            assertTrue(result.isSuccess());
             latch.countDown();
             write.close();
             tempDir.delete();
@@ -329,7 +303,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     }
 
     @Test
-    public void createZip() throws IOException {
+    public void createZip() throws Exception {
         final File file = new File("target/zip");
         delete(file);
         file.mkdirs();
@@ -337,10 +311,12 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         try (FileOutputStream fos = new FileOutputStream(zipFile);
                 ZipOutputStream zos = new ZipOutputStream(fos);
                 ZipProjectWriter zipWriter = new ZipProjectWriter(zos)) {
-            final CreateProject createProject = new CreateProject(zipWriter).groupId("io.quarkus")
+            final QuarkusCommandOutcome result = new CreateProject(zipWriter, getPlatformDescriptor())
+                    .groupId("org.acme")
                     .artifactId("basic-rest")
-                    .version("1.0.0-SNAPSHOT");
-            assertTrue(createProject.doCreateProject(new HashMap<>()));
+                    .version("1.0.0-SNAPSHOT")
+                    .execute();
+            assertTrue(result.isSuccess());
         }
         assertTrue(zipFile.exists());
         File unzipProject = new File(file, "unzipProject");
@@ -368,6 +344,22 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         assertTrue(gitignore.exists());
         final String gitignoreContent = new String(Files.readAllBytes(gitignore.toPath()), StandardCharsets.UTF_8);
         assertTrue(gitignoreContent.contains("\ntarget/\n"));
+    }
+
+    private void createProject(final File file, String groupId, String artifactId, String version)
+            throws IOException, QuarkusCommandException {
+        createProject(BuildTool.MAVEN, file, groupId, artifactId, version);
+    }
+
+    private void createProject(BuildTool buildTool, File file, String groupId, String artifactId, String version)
+            throws IOException, QuarkusCommandException {
+        final QuarkusCommandOutcome result = new CreateProject(new FileProjectWriter(file), getPlatformDescriptor())
+                .buildTool(buildTool)
+                .groupId(groupId)
+                .artifactId(artifactId)
+                .version(version)
+                .execute();
+        assertTrue(result.isSuccess());
     }
 
     private static File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {

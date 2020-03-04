@@ -11,11 +11,13 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-import io.quarkus.cli.commands.AddExtensionResult;
 import io.quarkus.cli.commands.AddExtensions;
+import io.quarkus.cli.commands.QuarkusCommandOutcome;
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.generators.BuildTool;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.tools.MessageWriter;
 
 /**
  * Allow adding an extension to an existing pom.xml file.
@@ -47,7 +49,8 @@ public class AddExtensionMojo extends BuildFileMojoBase {
     }
 
     @Override
-    public void doExecute(BuildFile buildFile) throws MojoExecutionException {
+    public void doExecute(BuildFile buildFile, QuarkusPlatformDescriptor platformDescr, MessageWriter log)
+            throws MojoExecutionException {
 
         if (buildFile == null) {
             try {
@@ -66,12 +69,13 @@ public class AddExtensionMojo extends BuildFileMojoBase {
         }
 
         try {
-            final AddExtensionResult result = new AddExtensions(buildFile)
-                    .addExtensions(ext.stream().map(String::trim).collect(Collectors.toSet()));
-            if (!result.succeeded()) {
+            final QuarkusCommandOutcome outcome = new AddExtensions(buildFile, platformDescr)
+                    .extensions(ext.stream().map(String::trim).collect(Collectors.toSet()))
+                    .execute();
+            if (!outcome.isSuccess()) {
                 throw new MojoExecutionException("Unable to add extensions");
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new MojoExecutionException("Unable to update the pom.xml file", e);
         }
     }

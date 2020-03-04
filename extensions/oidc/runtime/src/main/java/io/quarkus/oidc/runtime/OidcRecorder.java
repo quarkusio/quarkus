@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 
 import org.jboss.logging.Logger;
@@ -119,16 +120,22 @@ public class OidcRecorder {
 
                 auth = cf.join();
                 break;
-            } catch (OIDCException ex) {
-                if (i + 1 < connectionRetryCount) {
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException iex) {
-                        // continue connecting
+            } catch (Throwable throwable) {
+                while (throwable instanceof CompletionException && throwable.getCause() != null) {
+                    throwable = throwable.getCause();
+                }
+                if (throwable instanceof OIDCException) {
+                    if (i + 1 < connectionRetryCount) {
+                        try {
+                            Thread.sleep(2000);
+                        } catch (InterruptedException iex) {
+                            // continue connecting
+                        }
+                    } else {
+                        throw (OIDCException) throwable;
                     }
-
                 } else {
-                    throw ex;
+                    throw new OIDCException(throwable);
                 }
             }
         }

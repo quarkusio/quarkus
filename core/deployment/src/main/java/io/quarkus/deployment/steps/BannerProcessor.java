@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
 
 import org.jboss.logging.Logger;
 
@@ -42,12 +43,20 @@ public class BannerProcessor {
         if (resource != null) {
             try (InputStream is = resource.openStream()) {
                 byte[] content = FileUtil.readFileContents(is);
-                StringBuilder bannerTitle = new StringBuilder(new String(content, StandardCharsets.UTF_8));
-                bannerTitle.append('\n');
-                if (!config.isDefaultPath()) {
-                    bannerTitle.append("Powered by Quarkus v").append(Version.getVersion()).append('\n');
+                String bannerTitle = new String(content, StandardCharsets.UTF_8);
+
+                int width = 0;
+                Scanner scanner = new Scanner(bannerTitle);
+                while (scanner.hasNextLine()) {
+                    width = Math.max(width, scanner.nextLine().length());
                 }
-                return bannerTitle.toString();
+
+                String tagline = "\n";
+                if (!config.isDefaultPath()) {
+                    tagline = String.format("\n%" + width + "s\n", "Powered by Quarkus v" + Version.getVersion());
+                }
+
+                return bannerTitle + tagline;
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

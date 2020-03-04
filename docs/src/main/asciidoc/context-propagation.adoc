@@ -53,6 +53,12 @@ With this, you will get context propagation for ArC, RESTEasy and transactions, 
 
 == Usage example with Mutiny
 
+[TIP]
+.Mutiny
+====
+This section uses Mutiny reactive types, if you're not familiar with them, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
+====
+
 Let's write a REST endpoint that reads the next 3 items from a link:kafka[Kafka topic], stores them in a database using
 link:hibernate-orm-panache[Hibernate ORM with Panache] (all in the same transaction) before returning
 them to the client, you can do it like this:

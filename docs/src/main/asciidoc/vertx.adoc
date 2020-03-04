@@ -203,6 +203,12 @@ vertx.fileSystem().readFile("lorem-ipsum.txt")
     });
 ----
 
+[TIP]
+.Mutiny
+====
+If you're not familiar with Mutiny, we recommend to read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
+====
+
 == Using Vert.x in Reactive JAX-RS resources
 
 Quarkus web resources support asynchronous processing and streaming results over https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events[server-sent events].

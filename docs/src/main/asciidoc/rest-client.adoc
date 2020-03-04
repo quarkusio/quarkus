@@ -390,6 +390,12 @@ public class CountriesResource {
 }
 ----
 
+[TIP]
+.Mutiny
+====
+The previous snippet uses Mutiny reactive types, if you're not familiar with them, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
+====
+
 == Package and run the application
 
 Run the application with: `./mvnw compile quarkus:dev`.

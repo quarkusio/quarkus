@@ -327,14 +327,14 @@ public class SmallRyeReactiveMessagingProcessor {
      *
      * <pre>
      * public class SomeName implements Invoker {
-     *     private Object beanInstance;
+     *     private BeanType beanInstance;
      *
      *     public SomeName(Object var1) {
      *         this.beanInstance = var1;
      *     }
      *
      *     public Object invoke(Object[] args) {
-     *         return ((BeanType) this.beanInstance).process(var1);
+     *         return this.beanInstance.doSomething(var1);
      *     }
      * }
      * </pre>
@@ -360,16 +360,18 @@ public class SmallRyeReactiveMessagingProcessor {
                 .interfaces(Invoker.class)
                 .build()) {
 
-            FieldDescriptor beanInstanceField = invoker.getFieldCreator("beanInstance", Object.class)
+            String beanInstanceType = method.declaringClass().name().toString();
+            FieldDescriptor beanInstanceField = invoker.getFieldCreator("beanInstance", beanInstanceType)
                     .getFieldDescriptor();
 
-            // generate a constructor that bean instance an argument
+            // generate a constructor that takes the bean instance as an argument
+            // the method type needs to be Object because that is what is used as the call site in Smallrye Reactive Messaging
             try (MethodCreator ctor = invoker.getMethodCreator("<init>", void.class, Object.class)) {
                 ctor.setModifiers(Modifier.PUBLIC);
                 ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), ctor.getThis());
                 ResultHandle self = ctor.getThis();
-                ResultHandle config = ctor.getMethodParam(0);
-                ctor.writeInstanceField(beanInstanceField, self, config);
+                ResultHandle beanInstance = ctor.getMethodParam(0);
+                ctor.writeInstanceField(beanInstanceField, self, beanInstance);
                 ctor.returnValue(null);
             }
 
@@ -386,7 +388,7 @@ public class SmallRyeReactiveMessagingProcessor {
                     argTypes[i] = method.parameters().get(i).name().toString();
                 }
                 ResultHandle result = invoke.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(method.declaringClass().name().toString(), method.name(),
+                        MethodDescriptor.ofMethod(beanInstanceType, method.name(),
                                 method.returnType().name().toString(), argTypes),
                         invoke.readInstanceField(beanInstanceField, invoke.getThis()), args);
                 if (ReactiveMessagingDotNames.VOID.equals(method.returnType().name())) {

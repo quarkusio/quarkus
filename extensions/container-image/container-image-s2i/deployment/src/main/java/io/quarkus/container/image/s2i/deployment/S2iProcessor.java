@@ -210,9 +210,11 @@ public class S2iProcessor {
             throw new RuntimeException("Error creating the s2i binary build archive.", e);
         }
 
-        KubernetesClient client = Clients.fromConfig(kubernetesClient.getClient().getConfiguration());
-        KubernetesList kubernetesList = Serialization
-                .unmarshalAsList(new ByteArrayInputStream(openshiftManifests.getData()));
+        Config config = kubernetesClient.getClient().getConfiguration();
+        //Let's disable http2 as it causes issues with duplicate build triggers.
+        config.setHttp2Disable(true);
+        KubernetesClient client = Clients.fromConfig(config);
+        KubernetesList kubernetesList = Serialization.unmarshalAsList(new ByteArrayInputStream(openshiftManifests.getData()));
 
         List<HasMetadata> buildResources = kubernetesList.getItems().stream()
                 .filter(i -> i instanceof BuildConfig || i instanceof ImageStream || i instanceof Secret)

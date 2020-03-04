@@ -653,16 +653,26 @@ See this part of the documentation: link:mongodb#simplifying-mongodb-client-usag
 Another option is to use the `@BsonCreator` annotation to tell the `PojoCodec` to use the Kotlin data class default constructor,
 in this case all constructor parameters have to be annotated with `@BsonProperty`: see link:{mongodb-doc-root-url}/bson/pojos/#supporting-pojos-without-no-args-constructors[Supporting pojos without no args constructor].
 
+This will only work when the entity extends `PanacheMongoEntityBase` and not `PanacheMongoEntity`, as the ID field also needs to be included in the constructor.
+
 An example of a `Person` class defined as a Kotlin data class would look like:
 
 [source,kotlin]
 ----
 data class Person @BsonCreator constructor (
+    @BsonId var id: ObjectId,
     @BsonProperty("name") var name: String,
     @BsonProperty("birth") var birth: LocalDate,
     @BsonProperty("status") var status: Status
-): PanacheMongoEntity()
+): PanacheMongoEntityBase()
 ----
+
+[TIP]
+====
+Here we use `var` but note that `val` can also be used.
+
+The `@BsonId` annotation is used instead of `@BsonProperty("_id")` for brevity's sake, but use of either is valid.
+====
 
 The last option is to the use the link:https://kotlinlang.org/docs/reference/compiler-plugins.html#no-arg-compiler-plugin[no-arg] compiler plugin.
 This plugin is configured with a list of annotations, and the end result is the generation of no-args constructor for each class annotated with them.

@@ -170,7 +170,7 @@ final class Types {
             types.add(OBJECT_TYPE);
             return types;
         } else {
-            ClassInfo returnTypeClassInfo = getClassByName(beanDeployment.getIndex(), returnType.name());
+            ClassInfo returnTypeClassInfo = getClassByName(beanDeployment.getIndex(), returnType);
             if (returnTypeClassInfo == null) {
                 throw new IllegalArgumentException(
                         "Producer method return type not found in index: " + producerMethod.returnType().name());
@@ -197,7 +197,7 @@ final class Types {
             types.add(fieldType);
             types.add(OBJECT_TYPE);
         } else {
-            ClassInfo fieldClassInfo = getClassByName(beanDeployment.getIndex(), producerField.type().name());
+            ClassInfo fieldClassInfo = getClassByName(beanDeployment.getIndex(), producerField.type());
             if (fieldClassInfo == null) {
                 throw new IllegalArgumentException("Producer field type not found in index: " + producerField.type().name());
             }

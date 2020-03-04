@@ -1,10 +1,12 @@
 package io.quarkus.arc.processor;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 
 final class IndexClassLookupUtils {
@@ -12,23 +14,29 @@ final class IndexClassLookupUtils {
     private static final Logger LOGGER = Logger.getLogger(IndexClassLookupUtils.class);
 
     // set of already encountered and logged DotNames that are missing in the index
-    private static Set<DotName> alreadyKnown = new HashSet<>();
+    private static final Set<DotName> alreadyKnown = ConcurrentHashMap.newKeySet();
 
     private IndexClassLookupUtils() {
     }
 
-    static ClassInfo getClassByName(IndexView index, DotName dotName) {
-        return lookupClassInIndex(index, dotName, true);
-    }
-
     /**
-     * Used by {@code BeanArchives.IndexWrapper#getClassByName()} while gathering additional classes for indexing
+     * 
+     * @param index
+     * @param type
+     * @return the class for the given type or {@code null} for primitives, arrays and
      */
-    static ClassInfo getClassByNameNoLogging(IndexView index, DotName dotName) {
-        return lookupClassInIndex(index, dotName, false);
+    static ClassInfo getClassByName(IndexView index, Type type) {
+        if (type != null && (type.kind() == Kind.CLASS || type.kind() == Kind.PARAMETERIZED_TYPE)) {
+            return getClassByName(index, type.name());
+        }
+        return null;
     }
 
-    private static ClassInfo lookupClassInIndex(IndexView index, DotName dotName, boolean withLogging) {
+    static ClassInfo getClassByName(IndexView index, DotName dotName) {
+        return getClassByName(index, dotName, true);
+    }
+
+    static ClassInfo getClassByName(IndexView index, DotName dotName, boolean withLogging) {
         if (dotName == null) {
             throw new IllegalArgumentException("Cannot lookup class, provided DotName was null.");
         }
@@ -38,8 +46,8 @@ final class IndexClassLookupUtils {
         ClassInfo info = index.getClassByName(dotName);
         if (info == null && withLogging && !alreadyKnown.contains(dotName)) {
             // class not in index, log info as this may cause the application to blow up or behave weirdly
-            LOGGER.info("Class for name: " + dotName + " was not found in Jandex index. Please ensure the class " +
-                    "is part of the index.");
+            LOGGER.infof("Class for name: %s was not found in Jandex index. Please ensure the class " +
+                    "is part of the index.", dotName);
             alreadyKnown.add(dotName);
         }
         return info;

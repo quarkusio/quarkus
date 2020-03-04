@@ -83,15 +83,23 @@ class NettyProcessor {
             Class.forName("io.netty.handler.codec.http.HttpObjectEncoder");
             builder
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpObjectEncoder")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2CodecUtil")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ClientUpgradeCodec")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.DefaultHttp2FrameWriter")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ConnectionHandler")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder");
         } catch (ClassNotFoundException e) {
             //ignore
             log.debug("Not registering Netty HTTP classes as they were not found");
+        }
+
+        try {
+            Class.forName("io.netty.handler.codec.http2.Http2CodecUtil");
+            builder
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2CodecUtil")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ClientUpgradeCodec")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.DefaultHttp2FrameWriter")
+                    .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2ConnectionHandler");
+        } catch (ClassNotFoundException e) {
+            //ignore
+            log.debug("Not registering Netty HTTP2 classes as they were not found");
         }
 
         try {

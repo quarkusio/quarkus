@@ -231,11 +231,11 @@ public class ClientProxyGenerator extends AbstractGenerator {
                     methods);
         } else if (bean.isProducerMethod()) {
             MethodInfo producerMethod = bean.getTarget().get().asMethod();
-            ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getIndex(), producerMethod.returnType().name());
+            ClassInfo returnTypeClass = getClassByName(bean.getDeployment().getIndex(), producerMethod.returnType());
             Methods.addDelegatingMethods(bean.getDeployment().getIndex(), returnTypeClass, methods);
         } else if (bean.isProducerField()) {
             FieldInfo producerField = bean.getTarget().get().asField();
-            ClassInfo fieldClass = getClassByName(bean.getDeployment().getIndex(), producerField.type().name());
+            ClassInfo fieldClass = getClassByName(bean.getDeployment().getIndex(), producerField.type());
             Methods.addDelegatingMethods(bean.getDeployment().getIndex(), fieldClass, methods);
         } else if (bean.isSynthetic()) {
             Methods.addDelegatingMethods(bean.getDeployment().getIndex(), bean.getImplClazz(), methods);

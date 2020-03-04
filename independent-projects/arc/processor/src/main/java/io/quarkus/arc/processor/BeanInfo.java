@@ -384,7 +384,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
         } else if (isProducerField() || isProducerMethod()) {
             ClassInfo returnTypeClass = getClassByName(beanDeployment.getIndex(),
-                    (isProducerMethod() ? target.get().asMethod().returnType() : target.get().asField().type()).name());
+                    isProducerMethod() ? target.get().asMethod().returnType() : target.get().asField().type());
             // can be null for primitive types
             if (returnTypeClass != null && scope.isNormal() && !Modifier.isInterface(returnTypeClass.flags())) {
                 String methodOrField = isProducerMethod() ? "method" : "field";
@@ -594,19 +594,9 @@ public class BeanInfo implements InjectionTargetInfo {
             case CLASS:
                 return target.asClass();
             case FIELD:
-                Type fieldType = target.asField().type();
-                if (fieldType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE
-                        && fieldType.kind() != org.jboss.jandex.Type.Kind.ARRAY) {
-                    return getClassByName(beanDeployment.getIndex(), fieldType.name());
-                }
-                break;
+                return getClassByName(beanDeployment.getIndex(), target.asField().type());
             case METHOD:
-                Type returnType = target.asMethod().returnType();
-                if (returnType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE
-                        && returnType.kind() != org.jboss.jandex.Type.Kind.ARRAY) {
-                    return getClassByName(beanDeployment.getIndex(), returnType.name());
-                }
-                break;
+                return getClassByName(beanDeployment.getIndex(), target.asMethod().returnType());
             default:
                 break;
         }

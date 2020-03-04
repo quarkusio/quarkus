@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-jdbc-mariadb</artifactId>
     <name>Quarkus - JDBC - MariaDB - Runtime</name>
-    <description>MariaDB database connector</description>
+    <description>Connect to the MariaDB database via JDBC</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

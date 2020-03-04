@@ -11,8 +11,8 @@
     </parent>
 
     <artifactId>quarkus-openshift</artifactId>
-    <name>Quarkus - Kubernetes - Openshift - Runtime</name>
-    <description>Generate Openshift resources from annotations</description>
+    <name>Quarkus - Kubernetes - OpenShift - Runtime</name>
+    <description>Generate OpenShift resources from annotations</description>
 
     <dependencies>
         <!-- We need the config to be on the runtime classpath because it's referenced from the config generation -->

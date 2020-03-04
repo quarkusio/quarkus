@@ -1,5 +1,5 @@
 ---
-name: "Properties File based Security"
+name: "Elytron Security Properties File"
 metadata:
   keywords:
   - "security"

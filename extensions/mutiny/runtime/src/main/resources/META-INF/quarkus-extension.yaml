@@ -1,0 +1,12 @@
+---
+name: "Mutiny"
+metadata:
+  keywords:
+  - "reactive streams"
+  - "reactive programming"
+  - "reactive"
+  - "RXJava"
+  - "Reactor"
+  categories:
+  - "reactive"
+  status: "preview"

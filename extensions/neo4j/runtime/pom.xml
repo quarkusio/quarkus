@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-neo4j</artifactId>
     <name>Quarkus - Neo4j - Runtime</name>
-    <description>A client for the Neo4j graph datastore</description>
+    <description>Connect to Neo4j graph datastore</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

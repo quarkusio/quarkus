@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-jdbc-mssql</artifactId>
     <name>Quarkus - JDBC - MSSQL - Runtime</name>
-    <description>Microsoft SQL Server database connector</description>
+    <description>Connect to the Microsoft SQL Server database via JDBC</description>
 
     <dependencies>
         <dependency>

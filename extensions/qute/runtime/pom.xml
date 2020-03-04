@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-qute</artifactId>
     <name>Quarkus - Qute - Runtime</name>
-    <description>Qute is a templating engine designed specifically to meet the Quarkus needs</description>
+    <description>Offer templating support for web, email, etc in a build time, type-safe way</description>
 
     <dependencies>
         <dependency>

@@ -1,5 +1,5 @@
 ---
-name: "Elytron Security JDBC Realm"
+name: "Elytron Security JDBC"
 metadata:
   keywords:
   - "security"

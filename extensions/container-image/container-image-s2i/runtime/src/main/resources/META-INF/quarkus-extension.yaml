@@ -1,5 +1,5 @@
 ---
-name: "Container Image S2i"
+name: "Container Image S2I"
 metadata:
   keywords:
     - "s2i"

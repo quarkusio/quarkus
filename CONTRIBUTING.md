@@ -146,6 +146,31 @@ then change into the `coverage-report` directory and run `mvn package`. The code
 This currently does not work on Windows as it uses a shell script to copy all the classes and files into the code coverage
 module.
 
+## Extensions
+
+### Descriptions
+
+Extensions descriptions (in the `runtime/pom.xml` description or in the YAML `quarkus-extension.yaml`)
+are used to describe the extension and are visible in https://code.quarkus.io.
+Try and pay attention to it.
+Here are a few recommendation guidelines:
+
+- keep it relatively short so that no hover is required to read it
+- describe the function over the technology
+- use an action / verb to start the sentence
+- do no conjugate the action verb (`Connect foo`, not `Connects foo` nor `Connecting foo`)
+- connectors (JDBC / reactive) etc tend to start with Connect
+- do not mention `Quarkus`
+- do not mention `extension`
+- avoid repeating the extension name
+
+Bad examples and the corresponding good example:
+
+- "AWS Lambda" (use "Write AWS Lambda functions")
+- "Extension for building container images with Docker" (use "Build container images with Docker")
+- "PostgreSQL database connector" (use "Connect to the PostgreSQL database via JDBC")
+- "Asynchronous messaging for Reactive Streams" (use "Produce and consume messages and implement event driven and data streaming applications")
+
 ## The small print
 
 This project is an open source project, please act responsibly, be nice, polite and enjoy!

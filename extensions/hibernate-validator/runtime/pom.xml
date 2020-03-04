@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-hibernate-validator</artifactId>
     <name>Quarkus - Hibernate Validator - Runtime</name>
-    <description>Validate data coming to your REST endpoints</description>
+    <description>Validate object properties (field, getter) and method parameters for your beans (REST, CDI, JPA)</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

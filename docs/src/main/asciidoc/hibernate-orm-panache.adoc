@@ -204,14 +204,17 @@ All `list` methods have equivalent `stream` versions.
 
 [source,java]
 ----
-Stream<Person> persons = Person.streamAll();
-List<String> namesButEmmanuels = persons
-    .map(p -> p.name.toLowerCase() )
-    .filter( n -> ! "emmanuel".equals(n) )
-    .collect(Collectors.toList());
+try (Stream<Person> persons = Person.streamAll()) {
+    List<String> namesButEmmanuels = persons
+        .map(p -> p.name.toLowerCase() )
+        .filter( n -> ! "emmanuel".equals(n) )
+        .collect(Collectors.toList());
+}
 ----
 
-NOTE: The `stream` methods require a transaction to work.
+NOTE: The `stream` methods require a transaction to work. +
+As they perform I/O operations, they should be closed via the `close()` method or via a try-with-resource to close the underlying `ResultSet`.
+If not, you will see warnings from Agroal that will close the underlying `ResultSet` for you.
 
 === Adding entity methods
 

@@ -18,7 +18,10 @@ function cmd_invoke() {
   echo Invoking function
   aws lambda invoke response.txt \
     --function-name ${FUNCTION_NAME} \
-    --payload file://payload.json
+    --payload file://payload.json \
+    --log-type Tail \
+    --query 'LogResult' \
+    --output text |  base64 -d
 }
 
 function cmd_update() {

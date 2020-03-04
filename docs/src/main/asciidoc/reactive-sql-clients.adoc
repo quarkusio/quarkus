@@ -92,6 +92,12 @@ Read the link:vertx[Using Eclipse Vert.x] guide to understand the differences be
 The RxJava and Axle API are deprecated, and are planned for removal.
 It is recommended to switch to Mutiny.
 
+[TIP]
+.Mutiny
+====
+The recommended API uses Mutiny reactive types, if you're not familiar with them, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
+====
+
 === JSON Binding
 
 We will expose `Fruit` instances over HTTP in the JSON format.

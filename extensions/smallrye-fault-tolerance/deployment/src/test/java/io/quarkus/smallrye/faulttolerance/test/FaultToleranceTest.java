@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -97,7 +98,7 @@ public class FaultToleranceTest {
     }
 
     @Test
-    public void testAsynchronous() {
-        asynchronous.asynchronous().thenAccept(s -> assertEquals("hello", s));
+    public void testAsynchronous() throws ExecutionException, InterruptedException {
+        assertEquals("hello", asynchronous.asynchronous().toCompletableFuture().get());
     }
 }

@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-undertow-websockets</artifactId>
     <name>Quarkus - Undertow - WebSockets - Runtime</name>
-    <description>WebSocket support</description>
+    <description>WebSocket communication channel support</description>
 
     <dependencies>
         <dependency>

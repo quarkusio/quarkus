@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-smallrye-reactive-messaging-mqtt</artifactId>
     <name>Quarkus - SmallRye Reactive Messaging - MQTT - Runtime</name>
-    <description>MQTT reactive messaging connector</description>
+    <description>Connect to MQTT with Reactive Messaging</description>
     <dependencies>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>

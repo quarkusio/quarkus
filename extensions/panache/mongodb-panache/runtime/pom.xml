@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-mongodb-panache</artifactId>
     <name>Quarkus - MongoDB with Panache - Runtime</name>
-    <description>Use an active record or repository pattern with MongoDB</description>
+    <description>Simplify your persistence code for MongoDB via the active record or the repository pattern</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-smallrye-reactive-messaging-amqp</artifactId>
     <name>Quarkus - SmallRye Reactive Messaging - AMQP 1.0 - Runtime</name>
-    <description>AMQP reactive messaging connector</description>
+    <description>Connect to AMQP with Reactive Messaging</description>
     <dependencies>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>

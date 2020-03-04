@@ -7,6 +7,5 @@ metadata:
     - "jackson"
   categories:
     - "business-automation"
-    - "web"
     - "serialization"
   status: "preview"

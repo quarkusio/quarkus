@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-artemis-jms</artifactId>
     <name>Quarkus - Artemis - JMS - Runtime</name>
-    <description>Use ActiveMQ Artemis as a JMS implementation</description>
+    <description>Use JMS APIs to connect to ActiveMQ Artemis via its native protocol</description>
 
     <dependencies>
         <dependency>

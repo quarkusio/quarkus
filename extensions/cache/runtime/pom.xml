@@ -13,7 +13,7 @@
 
     <artifactId>quarkus-cache</artifactId>
     <name>Quarkus - Cache - Runtime</name>
-    <description>Enable application data caching in any CDI managed bean of your Quarkus application</description>
+    <description>Enable application data caching in CDI beans</description>
 
     <dependencies>
         <dependency>

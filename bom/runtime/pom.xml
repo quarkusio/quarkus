@@ -2893,13 +2893,6 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <!-- Quarkus Banner -->
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-banner</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
             <!-- Jib -->
             <dependency>
                 <groupId>com.google.cloud.tools</groupId>

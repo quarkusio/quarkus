@@ -355,6 +355,21 @@ class RestClientProcessor {
         }
     }
 
+    @BuildStep
+    AdditionalBeanBuildItem registerProviderBeans(CombinedIndexBuildItem combinedIndex) {
+        IndexView index = combinedIndex.getIndex();
+        List<AnnotationInstance> allInstances = new ArrayList<>(index.getAnnotations(REGISTER_PROVIDER));
+        for (AnnotationInstance annotation : index.getAnnotations(REGISTER_PROVIDERS)) {
+            allInstances.addAll(Arrays.asList(annotation.value().asNestedArray()));
+        }
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
+        for (AnnotationInstance annotationInstance : allInstances) {
+            // Make sure all providers not annotated with @Provider but used in @RegisterProvider are registered as beans
+            builder.addBeanClass(annotationInstance.value().asClass().toString());
+        }
+        return builder.build();
+    }
+
     private boolean isRestClientInterface(IndexView index, ClassInfo classInfo) {
         return Modifier.isInterface(classInfo.flags())
                 && index.getAllKnownImplementors(classInfo.name()).isEmpty();

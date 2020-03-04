@@ -10,7 +10,7 @@ metadata:
     - "vehicle-routing-problem"
     - "maintenance-scheduling"
     - "timetabling"
-  # guide: "https://quarkus.io/guides/constraint-solving-ai-optaplanner"
+  guide: "https://quarkus.io/guides/optaplanner"
   categories:
     - "business-automation"
   status: "preview"

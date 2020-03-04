@@ -1,8 +1,11 @@
 package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,9 +61,7 @@ public class LoopSectionTest {
         data.add("bravo");
         data.add("charlie");
 
-        Engine engine = Engine.builder()
-                .addSectionHelper(new LoopSectionHelper.Factory()).addDefaultValueResolvers()
-                .build();
+        Engine engine = Engine.builder().addDefaults().build();
 
         assertEquals("alpha:charlie:",
                 engine.parse("{#each this}{it}:{/each}").render(data.stream().filter(e -> !e.startsWith("b"))));
@@ -104,12 +105,46 @@ public class LoopSectionTest {
 
     @Test
     public void testIntegerStream() {
-        Engine engine = Engine.builder()
-                .addSectionHelper(new LoopSectionHelper.Factory()).addDefaultValueResolvers()
-                .build();
+        Engine engine = Engine.builder().addDefaults().build();
 
         assertEquals("1:2:3:",
                 engine.parse("{#for i in total}{i}:{/for}").data("total", 3).render());
+    }
+
+    @Test
+    public void testIterator() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("1:2:3:",
+                engine.parse("{#for i in items}{i}:{/for}").data("items", Arrays.asList("1", "2", "3").iterator()).render());
+    }
+
+    @Test
+    public void testArray() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("1:2:3:",
+                engine.parse("{#for i in items}{i}:{/for}").data("items", new Integer[] { 1, 2, 3 }).render());
+    }
+
+    @Test
+    public void testNull() {
+        Engine engine = Engine.builder().addDefaults().build();
+        try {
+            engine.parse("{#for i in items}{i}:{/for}").data("items", null).render();
+            fail();
+        } catch (TemplateException expected) {
+            assertTrue(expected.getMessage().contains("[items] resolved to [null]"), expected.getMessage());
+        }
+    }
+
+    @Test
+    public void testNoniterable() {
+        Engine engine = Engine.builder().addDefaults().build();
+        try {
+            engine.parse("{#for i in items}{i}:{/for}").data("items", Boolean.TRUE).render();
+            fail();
+        } catch (TemplateException expected) {
+            assertTrue(expected.getMessage().contains("[items] resolved to [java.lang.Boolean]"), expected.getMessage());
+        }
     }
 
 }

@@ -113,9 +113,8 @@ public class QuteProcessor {
     public static final DotName VARIANT_TEMPLATE = DotName.createSimple(VariantTemplate.class.getName());
 
     static final DotName ITERABLE = DotName.createSimple(Iterable.class.getName());
-
+    static final DotName ITERATOR = DotName.createSimple(Iterator.class.getName());
     static final DotName STREAM = DotName.createSimple(Stream.class.getName());
-
     static final DotName MAP = DotName.createSimple(Map.class.getName());
 
     static final DotName MAP_ENTRY = DotName.createSimple(Entry.class.getName());
@@ -307,7 +306,9 @@ public class QuteProcessor {
                             if (match.type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE) {
                                 break;
                             }
-                            match.clazz = index.getClassByName(match.type.name());
+                            if (match.type.kind() == Type.Kind.CLASS || match.type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                                match.clazz = index.getClassByName(match.type.name());
+                            }
                             if (part.isProperty()) {
                                 String hint = part.asProperty().hint;
                                 if (hint != null) {
@@ -483,7 +484,9 @@ public class QuteProcessor {
                                 if (match.type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE) {
                                     break;
                                 }
-                                match.clazz = index.getClassByName(match.type.name());
+                                if (match.type.kind() == Type.Kind.CLASS || match.type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                                    match.clazz = index.getClassByName(match.type.name());
+                                }
                                 if (part.isProperty()) {
                                     String hint = part.asProperty().hint;
                                     if (hint != null) {
@@ -821,36 +824,45 @@ public class QuteProcessor {
     }
 
     void processLoopHint(Match match, IndexView index) {
-        Set<Type> closure = Types.getTypeClosure(match.clazz, Types.buildResolvedMap(
-                match.getParameterizedTypeArguments(), match.getTypeParameters(), new HashMap<>(), index), index);
         Type matchType = null;
-        Type iterableType = closure.stream().filter(t -> t.name().equals(ITERABLE)).findFirst().orElse(null);
-        if (iterableType != null) {
+        if (match.type.kind() == Type.Kind.ARRAY) {
+            matchType = match.type.asArrayType().component();
+        } else if (match.type.kind() == Type.Kind.CLASS || match.type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            Set<Type> closure = Types.getTypeClosure(match.clazz, Types.buildResolvedMap(
+                    match.getParameterizedTypeArguments(), match.getTypeParameters(), new HashMap<>(), index), index);
+            Function<Type, Type> firstParamType = t -> t.asParameterizedType().arguments().get(0);
             // Iterable<Item> => Item
-            matchType = iterableType.asParameterizedType().arguments().get(0);
-        } else {
-            Type streamType = closure.stream().filter(t -> t.name().equals(STREAM)).findFirst().orElse(null);
-            if (streamType != null) {
+            matchType = extractMatchType(closure, ITERABLE, firstParamType);
+            if (matchType == null) {
                 // Stream<Long> => Long
-                matchType = streamType.asParameterizedType().arguments().get(0);
-            } else {
-                Type mapType = closure.stream().filter(t -> t.name().equals(MAP)).findFirst().orElse(null);
-                if (mapType != null) {
-                    // Entry<K,V> => Entry<String,Item>
+                matchType = extractMatchType(closure, STREAM, firstParamType);
+            }
+            if (matchType == null) {
+                // Entry<K,V> => Entry<String,Item>
+                matchType = extractMatchType(closure, MAP, t -> {
                     Type[] args = new Type[2];
-                    args[0] = mapType.asParameterizedType().arguments().get(0);
-                    args[1] = mapType.asParameterizedType().arguments().get(1);
-                    matchType = ParameterizedType.create(MAP_ENTRY, args, null);
-                }
+                    args[0] = t.asParameterizedType().arguments().get(0);
+                    args[1] = t.asParameterizedType().arguments().get(1);
+                    return ParameterizedType.create(MAP_ENTRY, args, null);
+                });
+            }
+            if (matchType == null) {
+                // Iterator<Item> => Item
+                matchType = extractMatchType(closure, ITERATOR, firstParamType);
             }
         }
         if (matchType != null) {
             match.type = matchType;
             match.clazz = index.getClassByName(match.type.name());
         } else {
-            // TODO better error reporting
-            throw new IllegalStateException("Unable to process the loop section hint for type: " + match.type);
+            throw new IllegalStateException(
+                    "Unable to extract matching type for loop section hint - unsupported iterable type: " + match.type);
         }
+    }
+
+    Type extractMatchType(Set<Type> closure, DotName matchName, Function<Type, Type> extractFun) {
+        Type type = closure.stream().filter(t -> t.name().equals(matchName)).findFirst().orElse(null);
+        return type != null ? extractFun.apply(type) : null;
     }
 
     static class Match {

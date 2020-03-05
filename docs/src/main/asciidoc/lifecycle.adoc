@@ -42,7 +42,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=lifecycle-quickstart \
-    -DclassName="org.acme.events.GreetingResource" \
+    -DclassName="org.acme.lifecycle.GreetingResource" \
     -Dpath="/hello"
 cd lifecycle-quickstart
 ----
@@ -53,17 +53,17 @@ It generates:
 * a landing page accessible on `http://localhost:8080`
 * example `Dockerfile` files for both `native` and `jvm` modes
 * the application configuration file
-* an `org.acme.events.GreetingResource` resource
+* an `org.acme.lifecycle.GreetingResource` resource
 * an associated test
 
 == Listening for startup and shutdown events
 
-Create a new class named `AppLifecycleBean` (or pick another name) in the `org.acme.events` package, and copy the
+Create a new class named `AppLifecycleBean` (or pick another name) in the `org.acme.lifecycle` package, and copy the
 following content:
 
 [source,java]
 ----
-package org.acme.events;
+package org.acme.lifecycle;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -92,7 +92,7 @@ public class AppLifecycleBean {
 
 TIP: The events are also called in _dev mode_ between each redeployment.
 
-NOTE: The methods can access injected beans. Check the {quickstarts-blob-url}/lifecycle-quickstart/src/main/java/org/acme/events/AppLifecycleBean.java[AppLifecycleBean.java] class for details.
+NOTE: The methods can access injected beans. Check the {quickstarts-blob-url}/lifecycle-quickstart/src/main/java/org/acme/lifecycle/AppLifecycleBean.java[AppLifecycleBean.java] class for details.
 
 === What is the difference from `@Initialized(ApplicationScoped.class)` and `@Destroyed(ApplicationScoped.class)`
 
@@ -108,7 +108,7 @@ A bean represented by a class, producer method or field annotated with `@Startup
 
 [source,java]
 ----
-package org.acme.events;
+package org.acme.lifecycle;
 
 import javax.enterprise.context.ApplicationScoped;
 

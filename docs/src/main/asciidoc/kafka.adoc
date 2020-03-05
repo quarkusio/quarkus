@@ -99,11 +99,11 @@ NOTE: This is a development cluster, do not use in production.
 
 == The price generator
 
-Create the `src/main/java/org/acme/quarkus/sample/PriceGenerator.java` file, with the following content:
+Create the `src/main/java/org/acme/kafka/PriceGenerator.java` file, with the following content:
 
 [source, java]
 ----
-package org.acme.quarkus.sample;
+package org.acme.kafka;
 
 import io.reactivex.Flowable;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
@@ -138,11 +138,11 @@ This stream is mapped to Kafka using the `application.properties` file that we w
 == The price converter
 
 The price converter reads the prices from Kafka, and transforms them.
-Create the `src/main/java/org/acme/quarkus/sample/PriceConverter.java` file with the following content:
+Create the `src/main/java/org/acme/kafka/PriceConverter.java` file with the following content:
 
 [source, java]
 ----
-package org.acme.quarkus.sample;
+package org.acme.kafka;
 
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -178,11 +178,11 @@ Every result is sent to the `my-data-stream` in-memory stream.
 == The price resource
 
 Finally, let's bind our stream to a JAX-RS resource.
-Creates the `src/main/java/org/acme/quarkus/sample/PriceResource.java` file with the following content:
+Creates the `src/main/java/org/acme/kafka/PriceResource.java` file with the following content:
 
 [source, java]
 ----
-package org.acme.quarkus.sample;
+package org.acme.kafka;
 
 import io.smallrye.reactive.messaging.annotations.Channel;
 import org.reactivestreams.Publisher;

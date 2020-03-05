@@ -67,7 +67,7 @@ First, an application serving a hello endpoint:
 
 [source,java]
 ----
-package org.acme.quickstart;
+package org.acme.testcoverage;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -105,7 +105,7 @@ This endpoint uses a greeting service:
 
 [source,java]
 ----
-package org.acme.quickstart;
+package org.acme.testcoverage;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -123,7 +123,7 @@ The project will also need some tests. First a simple JUnit:
 
 [source,java]
 ----
-package org.acme.quickstart;
+package org.acme.testcoverage;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -142,7 +142,7 @@ But also a `@QuarkusTest`:
 
 [source,java]
 ----
-package org.acme.quickstart;
+package org.acme.testcoverage;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
@@ -358,7 +358,7 @@ During the report generation, you may have noticed a warning:
 [source,shell,subs=attributes+]
 ----
 [WARNING] Classes in bundle '***' do no match with execution data. For report generation the same class files must be used as at runtime.
-[WARNING] Execution data for class org/acme/quickstart/GreetingResource does not match.
+[WARNING] Execution data for class org/acme/testcoverage/GreetingResource does not match.
 ----
 
 It seems that Quarkus and JaCoCo step on each other's toes. What happens is that Quarkus transforms the JAX-RS resources (and also the Panache files).

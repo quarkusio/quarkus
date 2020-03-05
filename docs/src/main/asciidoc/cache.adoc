@@ -47,7 +47,7 @@ First, we need to create a new Quarkus project using Maven with the following co
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=cache-quickstart \
-    -DclassName="org.acme.caching.WeatherForecastResource" \
+    -DclassName="org.acme.cache.WeatherForecastResource" \
     -Dpath="/weather" \
     -Dextensions="cache,resteasy-jsonb"
 ----
@@ -57,11 +57,11 @@ This command generates the Maven project with a REST endpoint and imports the `c
 == Creating the REST API
 
 Let's start by creating a service that will simulate an extremely slow call to the external meteorological service.
-Create `src/main/java/org/acme/caching/WeatherForecastService.java` with the following content:
+Create `src/main/java/org/acme/cache/WeatherForecastService.java` with the following content:
 
 [source,java]
 ----
-package org.acme.caching;
+package org.acme.cache;
 
 import java.time.LocalDate;
 
@@ -98,11 +98,11 @@ public class WeatherForecastService {
 <1> This is where the slowness comes from.
 
 We also need a class that will contain the response sent to the users when they ask for the next three days weather forecast.
-Create `src/main/java/org/acme/caching/WeatherForecast.java` this way:
+Create `src/main/java/org/acme/cache/WeatherForecast.java` this way:
 
 [source,java]
 ----
-package org.acme.caching;
+package org.acme.cache;
 
 import java.util.List;
 
@@ -131,7 +131,7 @@ Now, we just need to update the generated `WeatherForecastResource` class to use
 
 [source,java]
 ----
-package org.acme.caching;
+package org.acme.cache;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -194,7 +194,7 @@ Update the `WeatherForecastService` class like this:
 
 [source,java]
 ----
-package org.acme.caching;
+package org.acme.cache;
 
 import java.time.LocalDate;
 
@@ -337,7 +337,7 @@ quarkus.cache.caffeine."bar".maximum-size=1000 <2>
 
 [source,java]
 ----
-package org.acme.caching;
+package org.acme.cache;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -368,7 +368,7 @@ public class CachedService {
 
 [source,java]
 ----
-package org.acme.caching;
+package org.acme.cache;
 
 import javax.enterprise.context.Dependent;
 
@@ -400,7 +400,7 @@ public class CachedService {
 
 [source,java]
 ----
-package org.acme.caching;
+package org.acme.cache;
 
 import javax.enterprise.context.Dependent;
 
@@ -431,7 +431,7 @@ public class CachedService {
 
 [source,java]
 ----
-package org.acme.caching;
+package org.acme.cache;
 
 import javax.inject.Singleton;
 

@@ -80,7 +80,7 @@ For Linux & MacOS users
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=getting-started \
-    -DclassName="org.acme.quickstart.GreetingResource" \
+    -DclassName="org.acme.getting.started.GreetingResource" \
     -Dpath="/hello"
 cd getting-started
 ----
@@ -91,20 +91,20 @@ For Windows users
 
 [source,shell,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started -DclassName="org.acme.quickstart.GreetingResource" -Dpath="/hello"
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create -DprojectGroupId=org.acme -DprojectArtifactId=getting-started -DclassName="org.acme.getting.started.GreetingResource" -Dpath="/hello"
 ----
 
 - If using Powershell , wrap `-D` parameters in double quotes
 
 [source,shell,subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started" "-DclassName=org.acme.quickstart.GreetingResource" "-Dpath=/hello"
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create "-DprojectGroupId=org.acme" "-DprojectArtifactId=getting-started" "-DclassName=org.acme.getting.started.GreetingResource" "-Dpath=/hello"
 ----
 
 It generates the following in  `./getting-started`:
 
 * the Maven structure
-* an `org.acme.quickstart.GreetingResource` resource exposed on `/hello`
+* an `org.acme.getting.started.GreetingResource` resource exposed on `/hello`
 * an associated unit test
 * a landing page that is accessible on `http://localhost:8080` after starting the application
 * example `Dockerfile` files for both `native` and `jvm` modes in `src/main/docker`
@@ -158,11 +158,11 @@ If we focus on the dependencies section, you can see the extension allowing the 
 
 === The JAX-RS resources
 
-During the project creation, the `src/main/java/org/acme/quickstart/GreetingResource.java` file has been created with the following content:
+During the project creation, the `src/main/java/org/acme/getting/started/GreetingResource.java` file has been created with the following content:
 
 [source,java]
 ----
-package org.acme.quickstart;
+package org.acme.getting.started;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -240,11 +240,11 @@ You can learn more about it in the link:cdi-reference[Contexts and Dependency In
 ArC comes as a dependency of `quarkus-resteasy` so you already have it handy.
 
 Let's modify the application and add a companion bean.
-Create the `src/main/java/org/acme/quickstart/GreetingService.java` file with the following content:
+Create the `src/main/java/org/acme/getting/started/GreetingService.java` file with the following content:
 
 [source, java]
 ----
-package org.acme.quickstart;
+package org.acme.getting.started;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -262,7 +262,7 @@ Edit the `GreetingResource` class to inject the `GreetingService` and create a n
 
 [source, java]
 ----
-package org.acme.quickstart;
+package org.acme.getting.started;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -356,11 +356,11 @@ be set, as the default version does not support Junit 5:
 We also set the `java.util.logging` system property to make sure tests will use the correct logmanager.
 
 The generated project contains a simple test.
-Edit the `src/test/java/org/acme/quickstart/GreetingResourceTest.java` to match the following content:
+Edit the `src/test/java/org/acme/getting/started/GreetingResourceTest.java` to match the following content:
 
 [source,java]
 ----
-package org.acme.quickstart;
+package org.acme.getting.started;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;

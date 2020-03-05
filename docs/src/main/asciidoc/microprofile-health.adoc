@@ -84,11 +84,11 @@ any health check procedure yet so let's define some.
 
 In this section, we create our first simple health check procedure.
 
-Create the `org.acme.health.SimpleHealthCheck` class:
+Create the `org.acme.microprofile.health.SimpleHealthCheck` class:
 
 [source,java]
 ----
-package org.acme.health;
+package org.acme.microprofile.health;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
@@ -138,11 +138,11 @@ We will create another health check procedure that simulates a connection to
 an external service provider such as a database. For starters, we will always return 
 the response indicating the application is ready.
 
-Create `org.acme.health.DatabaseConnectionHealthCheck` class:
+Create `org.acme.microprofile.health.DatabaseConnectionHealthCheck` class:
 
 [source,java]
 ----
-package org.acme.health;
+package org.acme.microprofile.health;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
@@ -184,11 +184,11 @@ stating that our application is not ready to process requests as the underlying
 database connection cannot be established. For simplicity reasons, we only determine 
 whether the database is accessible or not by a configuration property.
 
-Update the `org.acme.health.DatabaseConnectionHealthCheck` class:
+Update the `org.acme.microprofile.health.DatabaseConnectionHealthCheck` class:
 
 [source,java]
 ----
-package org.acme.health;
+package org.acme.microprofile.health;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.health.HealthCheck;
@@ -255,11 +255,11 @@ arbitrary data in the form of key-value pairs sent to the consuming end. This ca
 done by using the `withData(key, value)` method of the health check response 
 builder API.
 
-Let's create a new health check procedure `org.acme.health.DataHealthCheck`:
+Let's create a new health check procedure `org.acme.microprofile.health.DataHealthCheck`:
 
 [source,java]
 ----
-package org.acme.health;
+package org.acme.microprofile.health;
 
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.HealthCheck;

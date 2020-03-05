@@ -31,7 +31,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=security-jwt-quickstart \
-    -DclassName="org.acme.jwt.TokenSecuredResource" \
+    -DclassName="org.acme.security.jwt.TokenSecuredResource" \
     -Dpath="/secured" \
     -Dextensions="resteasy-jsonb, jwt"
 cd security-jwt-quickstart
@@ -41,12 +41,12 @@ This command generates the Maven project with a REST endpoint and imports the `s
 
 === Examine the JAX-RS resource
 
-Open the `src/main/java/org/acme/jwt/TokenSecuredResource.java` file and see the following content:
+Open the `src/main/java/org/acme/security/jwt/TokenSecuredResource.java` file and see the following content:
 
 .Basic REST Endpoint
 [source,java]
 ----
-package org.acme.jwt;
+package org.acme.security.jwt;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -73,7 +73,7 @@ this quickstart. See https://github.com/eclipse/microprofile-jwt-auth/releases/d
 .REST Endpoint V1
 [source,java]
 ----
-package org.acme.jwt;
+package org.acme.security.jwt;
 
 import java.security.Principal;
 
@@ -172,7 +172,7 @@ So now let's actually secure something. Take a look at the new endpoint method `
 .REST Endpoint V2
 [source,java]
 ----
-package org.acme.jwt;
+package org.acme.security.jwt;
 
 import java.security.Principal;
 
@@ -298,13 +298,13 @@ nQIDAQAB
 
 === Generating a JWT
 
-Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt` (see <<generate-jwt-tokens, Generate JWT tokens with Smallrye JWT>> for more infomation) and the TokenUtils class shown in the following listing. Take this source and place it into `security-jwt-quickstart/src/test/java/org/acme/jwt/TokenUtils.java`.
+Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the JWT generation API provided by `smallrye-jwt` (see <<generate-jwt-tokens, Generate JWT tokens with Smallrye JWT>> for more infomation) and the TokenUtils class shown in the following listing. Take this source and place it into `security-jwt-quickstart/src/test/java/org/acme/security/jwt/TokenUtils.java`.
 
 
 .JWT utility class
 [source, java]
 ----
-package org.acme.jwt;
+package org.acme.security.jwt;
 
 import java.io.InputStream;
 import java.security.KeyFactory;
@@ -416,12 +416,12 @@ public class TokenUtils {
 }
 ----
 
-Next take the code from the following listing and place into `security-jwt-quickstart/src/test/java/org/acme/jwt/GenerateToken.java`:
+Next take the code from the following listing and place into `security-jwt-quickstart/src/test/java/org/acme/security/jwt/GenerateToken.java`:
 
 .GenerateToken main Driver Class
 [source, java]
 ----
-package org.acme.jwt;
+package org.acme.security.jwt;
 
 import java.util.HashMap;
 
@@ -429,7 +429,7 @@ import org.eclipse.microprofile.jwt.Claims;
 
 /**
  * A simple utility class to generate and print a JWT token string to stdout. Can be run with:
- * mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScope=test
+ * mvn exec:java -Dexec.mainClass=org.acme.security.jwt.GenerateToken -Dexec.classpathScope=test
  */
 public class GenerateToken {
     /**
@@ -562,7 +562,7 @@ Now we can generate a JWT to use with `TokenSecuredResource` endpoint. To do thi
 .Command to Generate JWT
 [source,shell]
 ----
-mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScope=test
+mvn exec:java -Dexec.mainClass=org.acme.security.jwt.GenerateToken -Dexec.classpathScope=test
 ----
 
 TIP: You may need to run `./mvnw test-compile` before this if you are working strictly from the command line and not an IDE that
@@ -571,7 +571,7 @@ automatically compiles code as you write it.
 .Sample JWT Generation Output
 [source,shell]
 ----
-$ mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScope=test
+$ mvn exec:java -Dexec.mainClass=org.acme.security.jwt.GenerateToken -Dexec.classpathScope=test
 [INFO] Scanning for projects...
 [INFO]
 [INFO] ----------------------< org.acme:security-jwt-quickstart >-----------------------
@@ -613,7 +613,7 @@ the JWT, and should be '/JwtClaims.json' for this quickstart.
 .Example Command to Generate JWT with Lifetime of 3600 Seconds
 [source,shell]
 ----
-$ mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScope=test -Dexec.args="/JwtClaims.json 3600"
+$ mvn exec:java -Dexec.mainClass=org.acme.security.jwt.GenerateToken -Dexec.classpathScope=test -Dexec.args="/JwtClaims.json 3600"
 [INFO] Scanning for projects...
 [INFO]
 [INFO] ----------------------< org.acme: >-----------------------
@@ -681,7 +681,7 @@ Let's expand our `TokenSecuredResource` with another endpoint /secured/winners. 
 .TokenSecuredResource#winners Method Addition
 [source, java]
 ----
-package org.acme.jwt;
+package org.acme.security.jwt;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -774,7 +774,7 @@ version of the `winners()` method that injects the `birthday` claim value as an 
 .TokenSecuredResource#winners2 Method Addition
 [source, java]
 ----
-package org.acme.jwt;
+package org.acme.security.jwt;
 
 import java.security.Principal;
 import java.time.LocalDate;

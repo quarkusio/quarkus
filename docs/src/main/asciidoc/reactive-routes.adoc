@@ -43,7 +43,7 @@ Then in a _bean_, you can use the `@Route` annotation as follows:
 
 [source,java]
 ----
-package org.acme.quarkus.sample;
+package org.acme.reactive.routes;
 
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RoutingExchange;
@@ -156,7 +156,7 @@ For example, the following code snippet registers a filter adding an HTTP header
 
 [source,java]
 ----
-package org.acme.quarkus.sample;
+package org.acme.reactive.routes;
 
 import io.vertx.ext.web.RoutingContext;
 

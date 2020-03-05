@@ -39,7 +39,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=rest-client-quickstart \
-    -DclassName="org.acme.restclient.CountriesResource" \
+    -DclassName="org.acme.rest.client.CountriesResource" \
     -Dpath="/country" \
     -Dextensions="rest-client, resteasy-jsonb"
 cd rest-client-quickstart
@@ -53,11 +53,11 @@ This command generates the Maven project with a REST endpoint and imports the `r
 In this guide we will be demonstrating how to consume part of the REST API supplied by the link:https://restcountries.eu[restcountries.eu] service.
 Our first order of business is to setup the model we will be using, in the form of a `Country` POJO.
 
-Create a `src/main/java/org/acme/restclient/Country.java` file and set the following content:
+Create a `src/main/java/org/acme/rest/client/Country.java` file and set the following content:
 
 [source,java]
 ----
-package org.acme.restclient;
+package org.acme.rest.client;
 
 import java.util.List;
 
@@ -80,11 +80,11 @@ The model above is only a subset of the fields provided by the service, but it s
 
 == Create the interface
 
-Using the MicroProfile REST Client is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/restclient/CountriesService.java` and have the following content:
+Using the MicroProfile REST Client is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/CountriesService.java` and have the following content:
 
 [source, java]
 ----
-package org.acme.restclient;
+package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
@@ -130,16 +130,16 @@ The name of the property needs to follow a certain convention which is best disp
 [source,shell]
 ----
 # Your configuration properties
-org.acme.restclient.CountriesService/mp-rest/url=https://restcountries.eu/rest # // <1>
-org.acme.restclient.CountriesService/mp-rest/scope=javax.inject.Singleton # // <2>
+org.acme.rest.client.CountriesService/mp-rest/url=https://restcountries.eu/rest # // <1>
+org.acme.rest.client.CountriesService/mp-rest/scope=javax.inject.Singleton # // <2>
 ----
 
-<1> Having this configuration means that all requests performed using `org.acme.restclient.CountriesService` will use `https://restcountries.eu/rest` as the base URL.
+<1> Having this configuration means that all requests performed using `org.acme.rest.client.CountriesService` will use `https://restcountries.eu/rest` as the base URL.
 Using the configuration above, calling the `getByName` method of `CountriesService` with a value of `France` would result in an HTTP GET request being made to `https://restcountries.eu/rest/v2/name/France`.
-<2> Having this configuration means that the default scope of `org.acme.restclient.CountriesService` will be `@Singleton`. Supported scope values are `@Singleton`, `@Dependent`, `@ApplicationScoped` and `@RequestScoped`. The default scope is `@Dependent`.
+<2> Having this configuration means that the default scope of `org.acme.rest.client.CountriesService` will be `@Singleton`. Supported scope values are `@Singleton`, `@Dependent`, `@ApplicationScoped` and `@RequestScoped`. The default scope is `@Dependent`.
 The default scope can also be defined on the interface.
 
-Note that `org.acme.restclient.CountriesService` _must_ match the fully qualified name of the `CountriesService` interface we created in the previous section.
+Note that `org.acme.rest.client.CountriesService` _must_ match the fully qualified name of the `CountriesService` interface we created in the previous section.
 
 To facilitate the configuration, you can use the `@RegisterRestClient` `configKey` property that allows to use another configuration root than the fully qualified name of your interface.
 
@@ -161,7 +161,7 @@ country-api/mp-rest/scope=javax.inject.Singleton # /
 
 == Update the JAX-RS resource
 
-Open the `src/main/java/org/acme/restclient/CountriesResource.java` file and update it with the following content:
+Open the `src/main/java/org/acme/rest/client/CountriesResource.java` file and update it with the following content:
 
 [source,java]
 ----
@@ -197,12 +197,12 @@ Note that in addition to the standard CDI `@Inject` annotation, we also need to 
 == Update the test
 
 We also need to update the functional test to reflect the changes made to the endpoint.
-Edit the `src/test/java/org/acme/restclient/CountriesResourceTest.java` file and change the content of the `testCountryNameEndpoint` method to:
+Edit the `src/test/java/org/acme/rest/client/CountriesResourceTest.java` file and change the content of the `testCountryNameEndpoint` method to:
 
 
 [source, java]
 ----
-package org.acme.restclient;
+package org.acme.rest.client;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
@@ -240,7 +240,7 @@ Let's see it in action by adding a `getByNameAsync` method in our `CountriesServ
 
 [source, java]
 ----
-package org.acme.restclient;
+package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
@@ -267,11 +267,11 @@ public interface CountriesService {
 }
 ----
 
-Open the `src/main/java/org/acme/restclient/CountriesResource.java` file and update it with the following content:
+Open the `src/main/java/org/acme/rest/client/CountriesResource.java` file and update it with the following content:
 
 [source,java]
 ----
-package org.acme.restclient;
+package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
@@ -330,7 +330,7 @@ The `Uni` version is very similar:
 
 [source, java]
 ----
-package org.acme.restclient;
+package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
@@ -358,7 +358,7 @@ The `CountriesResource` becomes:
 
 [source,java]
 ----
-package org.acme.restclient;
+package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.annotations.jaxrs.PathParam;

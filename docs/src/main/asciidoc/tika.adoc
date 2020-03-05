@@ -71,7 +71,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme.example \
     -DprojectArtifactId=tika-quickstart \
-    -DclassName="org.acme.quickstart.tika.TikaParserResource" \
+    -DclassName="org.acme.tika.TikaParserResource" \
     -Dpath="/parse" \
     -Dextensions="tika,resteasy"
 cd tika-quickstart
@@ -103,11 +103,11 @@ This will add the following to your pom.xml:
 
 === Examine the generated JAX-RS resource
 
-Open the `src/main/java/org/acme/quickstart/tika/TikaParserResource.java` file and see the following content:
+Open the `src/main/java/org/acme/tika/TikaParserResource.java` file and see the following content:
 
 [source,java]
 ----
-package org.acme.quickstart.tika;
+package org.acme.tika;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -131,7 +131,7 @@ Next update `TikaParserResource` to accept and parse PDF and OpenDocument format
 
 [source,java]
 ----
-package org.acme.quickstart.tika;
+package org.acme.tika;
 
 import java.io.InputStream;
 import java.time.Duration;

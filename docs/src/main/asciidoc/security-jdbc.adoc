@@ -67,7 +67,7 @@ Let's start by implementing the `/api/public` endpoint. As you can see from the 
 
 [source,java]
 ----
-package org.acme.elytron.security.jdbc;
+package org.acme.security.jdbc;
 
 import javax.annotation.security.PermitAll;
 import javax.ws.rs.GET;
@@ -92,7 +92,7 @@ The source code for the `/api/admin` endpoint is also very simple. The main diff
 
 [source,java]
 ----
-package org.acme.elytron.security.jdbc;
+package org.acme.security.jdbc;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
@@ -117,7 +117,7 @@ We are using `SecurityContext` to get access to the current authenticated Princi
 
 [source,java]
 ----
-package org.acme.elytron.security.jdbc;
+package org.acme.security.jdbc;
 
 import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;

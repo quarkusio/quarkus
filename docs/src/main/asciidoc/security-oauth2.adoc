@@ -37,7 +37,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=security-oauth2-quickstart \
-    -DclassName="org.acme.oauth2.TokenSecuredResource" \
+    -DclassName="org.acme.security.oauth2.TokenSecuredResource" \
     -Dpath="/secured" \
     -Dextensions="resteasy-jsonb, security-oauth2"
 cd security-oauth2-quickstart
@@ -60,12 +60,12 @@ If you don't want to use the Maven plugin, you can just include the dependency i
 
 === Examine the JAX-RS resource
 
-Open the `src/main/java/org/acme/oauth2/TokenSecuredResource.java` file and see the following content:
+Open the `src/main/java/org/acme/security/oauth2/TokenSecuredResource.java` file and see the following content:
 
 .Basic REST Endpoint
 [source,java]
 ----
-package org.acme.oauth2;
+package org.acme.security.oauth2;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -89,7 +89,7 @@ We will use the JSR 250 common security annotations, they are described in the l
 
 [source,java]
 ----
-package org.acme.oauth2;
+package org.acme.security.oauth2;
 
 import java.security.Principal;
 
@@ -173,7 +173,7 @@ So now let's actually secure something. Take a look at the new endpoint method `
 
 [source,java]
 ----
-package org.acme.oauth2;
+package org.acme.security.oauth2;
 
 import java.security.Principal;
 

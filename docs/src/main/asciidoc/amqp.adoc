@@ -87,11 +87,11 @@ NOTE: This is a development cluster, do not use in production.
 
 == The price generator
 
-Create the `src/main/java/org/acme/quarkus/sample/PriceGenerator.java` file, with the following content:
+Create the `src/main/java/org/acme/amqp/PriceGenerator.java` file, with the following content:
 
 [source, java]
 ----
-package org.acme.quarkus.sample;
+package org.acme.amqp;
 
 import io.reactivex.Flowable;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
@@ -127,11 +127,11 @@ This stream is mapped to an AMQP queue using the `application.properties` file t
 == The price converter
 
 The price converter reads the prices from AMQP, and transforms them.
-Create the `src/main/java/org/acme/quarkus/sample/PriceConverter.java` file with the following content:
+Create the `src/main/java/org/acme/amqp/PriceConverter.java` file with the following content:
 
 [source, java]
 ----
-package org.acme.quarkus.sample;
+package org.acme.amqp;
 
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -168,11 +168,11 @@ Every result is sent to the `my-data-stream` in-memory stream.
 == The price resource
 
 Finally, let's bind our stream to a JAX-RS resource.
-Creates the `src/main/java/org/acme/quarkus/sample/PriceResource.java` file with the following content:
+Creates the `src/main/java/org/acme/amqp/PriceResource.java` file with the following content:
 
 [source, java]
 ----
-package org.acme.quarkus.sample;
+package org.acme.amqp;
 
 import io.smallrye.reactive.messaging.annotations.Channel;
 import org.reactivestreams.Publisher;

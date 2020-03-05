@@ -75,7 +75,7 @@ The full source code looks like this:
 
 [source,java]
 ----
-package org.acme.metrics;
+package org.acme.microprofile.metrics;
 
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.Counted;
@@ -153,7 +153,7 @@ You will receive a response such as:
 
 ```
 {
-  "org.acme.metrics.PrimeNumberChecker.checksTimer" : {
+  "org.acme.microprofile.metrics.PrimeNumberChecker.checksTimer" : {
     "p50": 217.231273,
     "p75": 217.231273,
     "p95": 217.231273,
@@ -170,8 +170,8 @@ You will receive a response such as:
     "fiveMinRate": 0.3559527083952095,
     "fifteenMinRate": 0.38474303050928976
   },
-  "org.acme.metrics.PrimeNumberChecker.performedChecks" : 2,
-  "org.acme.metrics.PrimeNumberChecker.highestPrimeNumberSoFar" : 629521085409773
+  "org.acme.microprofile.metrics.PrimeNumberChecker.performedChecks" : 2,
+  "org.acme.microprofile.metrics.PrimeNumberChecker.highestPrimeNumberSoFar" : 629521085409773
 }
 ```
 

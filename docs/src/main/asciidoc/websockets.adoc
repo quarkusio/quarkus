@@ -54,12 +54,12 @@ This command generates the Maven project (without any classes) and import the `u
 == Handling web sockets
 
 Our application contains a single class that handles the web sockets.
-Create the `org.acme.websocket.ChatSocket` class in the `src/main/java` directory.
+Create the `org.acme.websockets.ChatSocket` class in the `src/main/java` directory.
 Copy the following content into the created file:
 
 [source,java]
 ----
-package org.acme.websocket;
+package org.acme.websockets;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -142,4 +142,4 @@ image:websocket-guide-screenshot.png[alt=Application]
 As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
 You can also build the native executable using `./mvnw package -Pnative`.
 
-You can also test your web socket applications using the approach detailed {quickstarts-blob-url}/websockets-quickstart/src/test/java/org/acme/websocket/ChatTestCase.java[here].
+You can also test your web socket applications using the approach detailed {quickstarts-blob-url}/websockets-quickstart/src/test/java/org/acme/websockets/ChatTestCase.java[here].

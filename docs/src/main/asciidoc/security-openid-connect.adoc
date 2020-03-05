@@ -73,7 +73,7 @@ Let's start by implementing the `/api/users/me` endpoint. As you can see from th
 
 [source,java]
 ----
-package org.acme.keycloak;
+package org.acme.security.openid.connect;
 
 import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
@@ -119,7 +119,7 @@ The source code for the `/api/admin` endpoint is also very simple. The main diff
 
 [source,java]
 ----
-package org.acme.keycloak;
+package org.acme.security.openid.connect;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;

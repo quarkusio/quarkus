@@ -40,7 +40,7 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=rest-client-multipart-quickstart \
-    -DclassName="org.acme.restclient.multipart.MultipartClientResource" \
+    -DclassName="org.acme.rest.client.multipart.MultipartClientResource" \
     -Dpath="/client" \
     -Dextensions="rest-client, resteasy"
 cd rest-client-multipart-quickstart
@@ -70,11 +70,11 @@ If the payload is unknown, you can also use the RESTEasy custom API instead. If 
 
 Our first order of business is to setup the model we will be using to define the `multipart/form-data` payload, in the form of a `MultipartBody` POJO.
 
-Create a `src/main/java/org/acme/restclient/multipart/MultipartBody.java` file and set the following content:
+Create a `src/main/java/org/acme/rest/client/multipart/MultipartBody.java` file and set the following content:
 
 [source,java]
 ----
-package org.acme.restclient.multipart;
+package org.acme.rest.client.multipart;
 
 import java.io.InputStream;
 
@@ -102,11 +102,11 @@ The purpose of the annotations in the code above is the following:
 
 == Create the interface
 
-Using the MicroProfile REST Client is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/restclient/multipart/MultipartService.java` and have the following content:
+Using the MicroProfile REST Client is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/rest/client/multipart/MultipartService.java` and have the following content:
 
 [source, java]
 ----
-package org.acme.restclient.multipart;
+package org.acme.rest.client.multipart;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -159,20 +159,20 @@ The name of the property needs to follow a certain convention which is best disp
 [source,shell]
 ----
 # Your configuration properties
-org.acme.restclient.multipart.MultipartService/mp-rest/url=http://localhost:8080/
+org.acme.rest.client.multipart.MultipartService/mp-rest/url=http://localhost:8080/
 ----
 
-Having this configuration means that all requests performed using `org.acme.restclient.multipart.MultipartService` will use `http://localhost:8080/ ` as the base URL.
+Having this configuration means that all requests performed using `org.acme.rest.client.multipart.MultipartService` will use `http://localhost:8080/ ` as the base URL.
 
-Note that `org.acme.restclient.multipart.MultipartService` _must_ match the fully qualified name of the `MultipartService` interface we created in the previous section.
+Note that `org.acme.rest.client.multipart.MultipartService` _must_ match the fully qualified name of the `MultipartService` interface we created in the previous section.
 
 == Update the JAX-RS resource
 
-Open the `src/main/java/org/acme/restclient/multipart/MultipartClientResource.java` file and update it with the following content:
+Open the `src/main/java/org/acme/rest/client/multipart/MultipartClientResource.java` file and update it with the following content:
 
 [source,java]
 ----
-package org.acme.restclient.multipart;
+package org.acme.rest.client.multipart;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -211,11 +211,11 @@ Note that in addition to the standard CDI `@Inject` annotation, we also need to 
 
 For demo purposes, let's create a simple Echo endpoint that will act as the server part.
 
-Create the directory `src/main/java/org/acme/restclient/multipart/server` and include a `EchoService.java` file with the following content:
+Create the directory `src/main/java/org/acme/rest/client/multipart/server` and include a `EchoService.java` file with the following content:
 
 [source,java]
 ----
-package org.acme.restclient.multipart.server;
+package org.acme.rest.client.multipart.server;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -240,11 +240,11 @@ This will just return the request body and it's useful for testing purposes.
 == Update the test
 
 We also need to update the functional test to reflect the changes made to the endpoint.
-Edit the `src/test/java/org/acme/restclient/multipart/MultipartResourceTest.java` file to:
+Edit the `src/test/java/org/acme/rest/client/multipart/MultipartResourceTest.java` file to:
 
 [source, java]
 ----
-package org.acme.restclient.multipart;
+package org.acme.rest.client.multipart;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
@@ -277,7 +277,7 @@ Because the test runs in a different port, we also need to include an `applicati
 [source,shell]
 ----
 # Your configuration properties
-org.acme.restclient.multipart.MultipartService/mp-rest/url=http://localhost:8081/
+org.acme.rest.client.multipart.MultipartService/mp-rest/url=http://localhost:8081/
 ----
 
 == Package and run the application

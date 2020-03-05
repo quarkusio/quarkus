@@ -98,7 +98,7 @@ The project should also contain a simple test:
 
 [source,java]
 ----
-package org.acme.quickstart;
+package org.acme.getting.started.testing;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
@@ -181,7 +181,7 @@ We will create a simple test to ensure that this is being served correctly:
 
 [source,java]
 ----
-package org.acme.quickstart;
+package org.acme.getting.started.testing;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -236,7 +236,7 @@ service directly without using HTTP:
 
 [source,java]
 ----
-package org.acme.quickstart;
+package org.acme.getting.started.testing;
 
 import javax.inject.Inject;
 

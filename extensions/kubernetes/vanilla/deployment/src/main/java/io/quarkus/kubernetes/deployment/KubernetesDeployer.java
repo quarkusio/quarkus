@@ -64,7 +64,7 @@ public class KubernetesDeployer {
         }
 
         ContainerImageResultBuildItem containerImageResult = containerImageResults.get(0);
-        if (!hasRegistry(containerImageResult.getImageId()) && !S2I.equals(containerImageResult.getProvider())) {
+        if (!hasRegistry(containerImageInfo.getImage()) && !S2I.equals(containerImageResult.getProvider())) {
             log.warn(
                     "A Kubernetes deployment was requested, but the container image to be built will not be pushed to any registry"
                             + " because \"quarkus.container-image.registry\" has not been set. The Kubernetes deployment will only work properly"

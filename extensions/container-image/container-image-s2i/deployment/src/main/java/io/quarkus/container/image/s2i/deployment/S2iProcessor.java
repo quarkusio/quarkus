@@ -2,8 +2,10 @@ package io.quarkus.container.image.s2i.deployment;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -13,8 +15,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
@@ -22,7 +27,7 @@ import io.dekorate.deps.kubernetes.api.model.HasMetadata;
 import io.dekorate.deps.kubernetes.api.model.KubernetesList;
 import io.dekorate.deps.kubernetes.api.model.Secret;
 import io.dekorate.deps.kubernetes.client.KubernetesClient;
-import io.dekorate.deps.okhttp3.internal.http2.StreamResetException;
+import io.dekorate.deps.kubernetes.client.dsl.LogWatch;
 import io.dekorate.deps.openshift.api.model.Build;
 import io.dekorate.deps.openshift.api.model.BuildConfig;
 import io.dekorate.deps.openshift.api.model.ImageStream;
@@ -31,6 +36,7 @@ import io.dekorate.s2i.util.S2iUtils;
 import io.dekorate.utils.Clients;
 import io.dekorate.utils.Packaging;
 import io.dekorate.utils.Serialization;
+import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
@@ -52,7 +58,6 @@ import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
-import io.quarkus.deployment.util.ExecUtil;
 import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHanlder;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
@@ -62,6 +67,8 @@ public class S2iProcessor {
     private static final String S2I = "s2i";
     private static final String JAR_ARTIFACT_FORMAT = "%s%s.jar";
     private static final String NATIVE_ARTIFACT_FORMAT = "%s%s";
+    private static final String BUILD_CONFIG_NAME = "openshift.io/build-config.name";
+    private static final String RUNNING = "Running";
 
     private static final Logger LOG = Logger.getLogger(S2iProcessor.class);
 
@@ -210,9 +217,11 @@ public class S2iProcessor {
             throw new RuntimeException("Error creating the s2i binary build archive.", e);
         }
 
-        KubernetesClient client = Clients.fromConfig(kubernetesClient.getClient().getConfiguration());
-        KubernetesList kubernetesList = Serialization
-                .unmarshalAsList(new ByteArrayInputStream(openshiftManifests.getData()));
+        Config config = kubernetesClient.getClient().getConfiguration();
+        //Let's disable http2 as it causes issues with duplicate build triggers.
+        config.setHttp2Disable(true);
+        KubernetesClient client = Clients.fromConfig(config);
+        KubernetesList kubernetesList = Serialization.unmarshalAsList(new ByteArrayInputStream(openshiftManifests.getData()));
 
         List<HasMetadata> buildResources = kubernetesList.getItems().stream()
                 .filter(i -> i instanceof BuildConfig || i instanceof ImageStream || i instanceof Secret)
@@ -276,26 +285,52 @@ public class S2iProcessor {
                     .withTimeoutInMillis(s2iConfig.buildTimeout.toMillis())
                     .fromFile(binaryFile);
         } catch (Exception e) {
-            if (e.getCause() instanceof StreamResetException) {
-                LOG.warn("Stream was reset while building. Falling back to building with the 'oc' binary.");
-                if (!ExecUtil.exec("oc", "start-build", buildConfig.getMetadata().getName(), "--from-archive",
-                        binaryFile.toPath().toAbsolutePath().toString())) {
-                    throw s2iException(e);
-                }
-                return;
+            Optional<Build> running = runningBuildsOf(client, buildConfig).findFirst();
+            if (running.isPresent()) {
+                LOG.warn("An exception: '" + e.getMessage()
+                        + " ' occurred while instantiating the build, however the build has been started.");
+                build = running.get();
             } else {
                 throw s2iException(e);
             }
         }
 
-        try (BufferedReader reader = new BufferedReader(
-                client.builds().withName(build.getMetadata().getName()).getLogReader())) {
+        final String buildName = build.getMetadata().getName();
+        try (LogWatch w = client.builds().withName(build.getMetadata().getName()).withPrettyOutput().watchLog();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(w.getOutput()))) {
+            waitForBuildComplete(client, s2iConfig, buildName, w);
             for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-                System.out.println(line);
+                LOG.info(line);
             }
         } catch (IOException e) {
             throw s2iException(e);
         }
+    }
+
+    private static void waitForBuildComplete(OpenShiftClient client, S2iConfig s2iConfig, String buildName, Closeable watch) {
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                client.builds().withName(buildName).waitUntilCondition(b -> !RUNNING.equalsIgnoreCase(b.getStatus().getPhase()),
+                        s2iConfig.buildTimeout.toMillis(), TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                s2iException(e);
+            } finally {
+                try {
+                    watch.close();
+                } catch (IOException e) {
+                    LOG.debug("Error closing log reader.");
+                }
+            }
+        });
+    }
+
+    private static List<Build> buildsOf(OpenShiftClient client, BuildConfig config) {
+        return client.builds().withLabel(BUILD_CONFIG_NAME, config.getMetadata().getName()).list().getItems();
+    }
+
+    private static Stream<Build> runningBuildsOf(OpenShiftClient client, BuildConfig config) {
+        return buildsOf(client, config).stream().filter(b -> RUNNING.equalsIgnoreCase(b.getStatus().getPhase()));
     }
 
     private static RuntimeException s2iException(Throwable t) {

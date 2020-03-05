@@ -3,11 +3,13 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Using Artemis JMS extension
+= Quarkus - Using JMS
 include::./attributes.adoc[]
 :extension-status: preview
 
-This guide demonstrates how your Quarkus application can use Artemis JMS messaging.
+
+This guide demonstrates how your Quarkus application can use JMS messaging via the
+Apache Qpid JMS AMQP client, or alternatively the Apache ActiveMQ Artemis JMS client.
 
 include::./status-include.adoc[]
 
@@ -19,26 +21,40 @@ To complete this guide, you need:
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
-* A running Artemis server, or Docker Compose to start one
-* GraalVM installed if you want to run in native mode.
+* A running Artemis server, or Docker to start one
+* GraalVM, or Docker, installed if you want to run in native mode.
 
 == Architecture
 
 In this guide, we are going to generate (random) prices in one component.
-These prices are written in an JMS queue (`prices`).
-Another component reads from the `prices` queue and stores the last price.
-The data can be fetch from a browser using a fetch button from a JAX-RS resource.
+These prices are written to a queue (`prices`) using a JMS client.
+Another component reads from the `prices` queue and stores the latest price.
+The data can be fetched from a browser using a fetch button from a JAX-RS resource.
 
-== Solution
+
+The guide can be used either via the Apache Qpid JMS AMQP client as detailed immediately below, or
+alternatively with the Apache ActiveMQ Artemis JMS client given some different configuration
+as <<artemis-jms, detailed later>>.
+
+[#qpid-jms-amqp]
+== Qpid JMS - AMQP
+
+In the detailed steps below we will use the https://qpid.apache.org/components/jms/[Apache Qpid JMS]
+client via the https://github.com/amqphub/quarkus-qpid-jms/[Quarkus Qpid JMS extension]. Qpid JMS
+uses the AMQP 1.0 ISO standard as its wire protocol, allowing it to be used with a variety of
+AMQP 1.0 servers and services such as ActiveMQ Artemis, ActiveMQ 5, Qpid Broker-J, Qpid Dispatch router,
+Azure Service Bus, and more.
+
+=== Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+Clone the Git repository: `git clone https://github.com/amqphub/quarkus-qpid-jms-quickstart.git`,
+or download an https://github.com/amqphub/quarkus-qpid-jms-quickstart/archive/master.zip[archive].
 
-The solution is located in the `jms-quickstart` {quickstarts-tree-url}/jms-quickstart[directory].
 
-== Creating the Maven Project
+=== Creating the Maven Project
 
 First, we need a new project. Create a new project with the following command:
 
@@ -47,23 +63,31 @@ First, we need a new project. Create a new project with the following command:
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=jms-quickstart \
-    -Dextensions="artemis-jms"
+    -Dextensions="qpid-jms"
 cd jms-quickstart
 ----
 
-This command generates a Maven project, importing the Artemis JMS extension.
+This command generates a Maven project, with its pom.xml importing the quarkus-qpid-jms extension:
+[source]
+----
+<dependency>
+  <groupId>org.amqphub.quarkus</groupId>
+  <artifactId>quarkus-qpid-jms</artifactId>
+</dependency>
+----
 
-== Starting an Artemis server
+[#starting-the-broker]
+=== Starting the broker
 
-Then, we need an Artemis server.
-You can follow the instructions from the https://activemq.apache.org/components/artemis/[Apache Artemis web site] or via docker:
+Then, we need an AMQP broker. In this case we will use an ActiveMQ Artemis server.
+You can follow the instructions from the https://activemq.apache.org/components/artemis/[Apache Artemis web site] or start a broker via docker:
 
 [source]
 ----
-docker run -it --rm -p 8161:8161 -p 61616:61616 -e ARTEMIS_USERNAME=quarkus -e ARTEMIS_PASSWORD=quarkus vromero/activemq-artemis:2.9.0-alpine
+docker run -it --rm -p 8161:8161 -p 61616:61616 -p 5672:5672 -e ARTEMIS_USERNAME=quarkus -e ARTEMIS_PASSWORD=quarkus vromero/activemq-artemis:2.11.0-alpine
 ----
 
-== The price producer
+=== The price producer
 
 Create the `src/main/java/org/acme/jms/PriceProducer.java` file, with the following content:
 
@@ -115,7 +139,7 @@ public class PriceProducer implements Runnable {
 }
 ----
 
-== The price consumer
+=== The price consumer
 
 The price consumer reads the prices from JMS, and stores the last one.
 Create the `src/main/java/org/acme/jms/PriceConsumer.java` file with the following content:
@@ -181,10 +205,10 @@ public class PriceConsumer implements Runnable {
 }
 ----
 
-== The price resource
+=== The price resource
 
 Finally, let's create a simple JAX-RS resource to show the last price.
-Creates the `src/main/java/org/acme/jms/PriceResource.java` file with the following content:
+Create the `src/main/java/org/acme/jms/PriceResource.java` file with the following content:
 
 [source, java]
 ----
@@ -214,20 +238,7 @@ public class PriceResource {
 }
 ----
 
-== Configuring the Artemis properties
-
-We need to configure the Artemis connection properties.
-This is done in the `application.properties` file.
-
-[source]
-----
-# Configures the Artemis properties.
-quarkus.artemis.url=tcp://localhost:61616
-quarkus.artemis.username=quarkus
-quarkus.artemis.password=quarkus
-----
-
-== The HTML page
+=== The HTML page
 
 Final touch, the HTML page reading the converted prices using SSE.
 
@@ -269,7 +280,25 @@ Create the `src/main/resources/META-INF/resources/prices.html` file, with the fo
 
 Nothing spectacular here. On each fetch, it updates the page.
 
-== Get it running
+=== Configure the Qpid JMS properties
+
+We need to configure the Qpid JMS properties used by the extension when
+injecting the ConnectionFactory.
+
+This is done in the `src/main/resources/application.properties` file.
+
+[source]
+----
+# Configures the Qpid JMS properties.
+quarkus.qpid-jms.url=amqp://localhost:5672
+quarkus.qpid-jms.username=quarkus
+quarkus.qpid-jms.password=quarkus
+----
+
+More detail about the configuration are available in the https://github.com/amqphub/quarkus-qpid-jms#configuration[Quarkus Qpid JMS] documentation.
+
+[#get-it-running]
+=== Get it running
 
 If you followed the instructions, you should have the Artemis server running.
 Then, you just need to run the application using:
@@ -281,7 +310,7 @@ Then, you just need to run the application using:
 
 Open `http://localhost:8080/prices.html` in your browser.
 
-== Running Native
+=== Running Native
 
 You can build the native executable with:
 
@@ -290,6 +319,83 @@ You can build the native executable with:
 ./mvnw package -Pnative
 ----
 
-== Configuration Reference
+Or, if you don't have GraalVM installed, you can instead use Docker to build the native executable using:
+[source, shell]
+----
+./mvnw package -Pnative -Dquarkus.native.container-build=true
+----
+
+and then run with:
+
+[source, shell]
+----
+./target/jms-quickstart-1.0-SNAPSHOT-runner
+----
+
+Open `http://localhost:8080/prices.html` in your browser.
+
+'''
+
+
+[#artemis-jms]
+== Artemis JMS
+
+The above steps detailed using the Qpid JMS AMQP client, however the guide can also be used
+with the Artemis JMS client. Many of the individual steps are exactly as previously
+<<qpid-jms-amqp, detailed above for Qpid JMS>>. The individual component code is the same.
+The only differences are in the dependency for the initial project creation, and the
+configuration properties used. These changes are detailed below and should be substituted
+for the equivalent step during the sequence above.
+
+=== Solution
+
+You can go can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The Artemis JMS solution is located in the `jms-quickstart` {quickstarts-tree-url}/jms-quickstart[directory].
+
+=== Creating the Maven Project
+
+Create a new project with the following command:
+
+[source, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=jms-quickstart \
+    -Dextensions="artemis-jms"
+cd jms-quickstart
+----
+
+This creates a Maven project, with its pom.xml importing the quarkus-artemis-jms extension:
+[source]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-artemis-jms</artifactId>
+</dependency>
+----
+
+With the project created, you can resume from <<starting-the-broker>> in the detailed steps above
+and proceed until configuring the `application.properties` file, when you should use the Artemis
+configuration below instead.
+
+=== Configure the Artemis properties
+
+We need to configure the Artemis connection properties.
+This is done in the `src/main/resources/application.properties` file.
+
+[source]
+----
+# Configures the Artemis properties.
+quarkus.artemis.url=tcp://localhost:61616
+quarkus.artemis.username=quarkus
+quarkus.artemis.password=quarkus
+----
+
+With the Artemis properties configured, you can resume the steps above from <<get-it-running>>.
+
+=== Configuration Reference
 
 include::{generated-dir}/config/quarkus-artemis-core.adoc[opts=optional, leveloffset=+1]

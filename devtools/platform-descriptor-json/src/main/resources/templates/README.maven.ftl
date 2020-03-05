@@ -13,8 +13,8 @@ You can run your application in dev mode that enables live coding using:
 
 ## Packaging and running the application
 
-The application is packageable using `./mvnw package`.
-It produces the executable `${project_artifactId}-${project_version}-runner.jar` file in `/target` directory.
+The application can be packaged using `./mvnw package`.
+It produces the `${project_artifactId}-${project_version}-runner.jar` file in the `/target` directory.
 Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/lib` directory.
 
 The application is now runnable using `java -jar target/${project_artifactId}-${project_version}-runner.jar`.
@@ -23,8 +23,8 @@ The application is now runnable using `java -jar target/${project_artifactId}-${
 
 You can create a native executable using: `./mvnw package -Pnative`.
 
-Or you can use Docker to build the native executable using: `./mvnw package -Pnative -Dquarkus.native.container-build=true`.
+Or, if you don't have GraalVM installed, you can run the native executable build in a container using: `./mvnw package -Pnative -Dquarkus.native.container-build=true`.
 
-You can then execute your binary: `./target/${project_artifactId}-${project_version}-runner`
+You can then execute your native executable with: `./target/${project_artifactId}-${project_version}-runner`
 
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/building-native-image-guide .
+If you want to learn more about building native executables, please consult https://quarkus.io/guides/building-native-image-guide.

@@ -16,6 +16,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Probe;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.builder.Version;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -30,7 +31,7 @@ public class KubernetesWithRootAndHealthTest {
             .withConfigurationResource("kubernetes-with-root-and-health.properties")
             .setForcedDependencies(
                     Collections.singletonList(
-                            new AppArtifact("io.quarkus", "quarkus-smallrye-health", TestUtil.getProjectVersion())));
+                            new AppArtifact("io.quarkus", "quarkus-smallrye-health", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;

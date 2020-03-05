@@ -9,11 +9,21 @@ include::./attributes.adoc[]
 
 This guide explains logging and how to configure it.
 
-== Run Time Configuration
+== Runtime configuration
 
-Run time configuration of logging is done through the normal `application.properties` file.
+Run time logging is configured in the `application.properties` file,
+for example to set everything to `INFO` logging except Hibernate:
 
-include::{generated-dir}/config/quarkus-log-logging-log-config.adoc[opts=optional, leveloffset=+1]
+[source, properties]
+----
+quarkus.log.level=INFO
+quarkus.log.category."org.hibernate".level=DEBUG
+----
+
+All possible properties are listed in <<loggingConfigurationReference, the logging configuration reference>>.
+
+NOTE: If you are adding these properties via command line make sure `"` is escaped.
+For example `-Dquarkus.log.category.\"org.hibernate\".level=DEBUG`.
 
 === Logging categories
 
@@ -187,3 +197,8 @@ Applications and components may use any of the following APIs for logging, and t
 == Centralized log management
 
 If you want to send your logs to a centralized tool like Graylog, Logstash or Fluentd, you can follow the link:centralized-log-management[Centralized log management guide].
+
+[[loggingConfigurationReference]]
+== Logging configuration reference
+
+include::{generated-dir}/config/quarkus-log-logging-log-config.adoc[opts=optional, leveloffset=+1]

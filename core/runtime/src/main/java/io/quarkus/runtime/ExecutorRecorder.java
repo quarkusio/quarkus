@@ -55,6 +55,7 @@ public class ExecutorRecorder {
             Runtime.getRuntime().addShutdownHook(new Thread(shutdownTask, "Executor shutdown thread"));
         } else {
             shutdownContext.addShutdownTask(shutdownTask);
+            underlying.prestartAllCoreThreads();
             executor = underlying;
         }
         current = executor;

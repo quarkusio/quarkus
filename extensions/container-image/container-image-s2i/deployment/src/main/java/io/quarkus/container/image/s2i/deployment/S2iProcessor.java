@@ -72,7 +72,7 @@ public class S2iProcessor {
 
     private static final Logger LOG = Logger.getLogger(S2iProcessor.class);
 
-    @BuildStep(onlyIf = S2iBuild.class, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
     public void s2iRequirementsJvm(S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
@@ -97,7 +97,7 @@ public class S2iProcessor {
         commandProducer.produce(new KubernetesCommandBuildItem("java", args.toArray(new String[args.size()])));
     }
 
-    @BuildStep(onlyIf = { S2iBuild.class, NativeBuild.class })
+    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class, NativeBuild.class })
     public void s2iRequirementsNative(S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,

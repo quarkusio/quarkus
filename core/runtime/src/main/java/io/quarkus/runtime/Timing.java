@@ -84,7 +84,7 @@ public class Timing {
         if (UNSET_VALUE.equals(safeAppName) || UNSET_VALUE.equals(safeAppVersion)) {
             logger.infof("Quarkus %s started in %ss. %s", quarkusVersion, secondsRepresentation, httpServerInfo);
         } else {
-            logger.infof("%s %s (running on Quarkus %s) started in %ss. %s", name, version, quarkusVersion,
+            logger.infof("%s %s (powered by Quarkus %s) started in %ss. %s", name, version, quarkusVersion,
                     secondsRepresentation, httpServerInfo);
         }
         logger.infof("Profile %s activated. %s", profile, liveCoding ? "Live Coding activated." : "");

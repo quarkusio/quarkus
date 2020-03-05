@@ -5,8 +5,10 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.flywaydb.core.api.configuration.Configuration;
+import org.flywaydb.core.api.migration.JavaMigration;
 import org.flywaydb.core.api.resolver.MigrationResolver;
 import org.flywaydb.core.internal.clazz.ClassProvider;
+import org.flywaydb.core.internal.parser.ParsingContext;
 import org.flywaydb.core.internal.resolver.java.FixedJavaMigrationResolver;
 import org.flywaydb.core.internal.resolver.java.ScanningJavaMigrationResolver;
 import org.flywaydb.core.internal.resolver.sql.SqlMigrationResolver;
@@ -34,14 +36,15 @@ public final class CompositeMigrationResolverSubstitutions {
      */
     @Substitute
     public CompositeMigrationResolverSubstitutions(ResourceProvider resourceProvider,
-            ClassProvider classProvider,
+            ClassProvider<JavaMigration> classProvider,
             Configuration configuration,
             SqlScriptExecutorFactory sqlScriptExecutorFactory,
             SqlScriptFactory sqlScriptFactory,
+            ParsingContext parsingContext,
             MigrationResolver... customMigrationResolvers) {
         if (!configuration.isSkipDefaultResolvers()) {
             migrationResolvers.add(new SqlMigrationResolver(resourceProvider, sqlScriptExecutorFactory, sqlScriptFactory,
-                    configuration));
+                    configuration, parsingContext));
             migrationResolvers.add(new ScanningJavaMigrationResolver(classProvider, configuration));
         }
         migrationResolvers.add(new FixedJavaMigrationResolver(configuration.getJavaMigrations()));

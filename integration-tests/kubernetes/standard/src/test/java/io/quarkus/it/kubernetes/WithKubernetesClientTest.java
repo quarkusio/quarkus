@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.builder.Version;
 import io.quarkus.test.LogFile;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
@@ -32,7 +33,7 @@ public class WithKubernetesClientTest {
             .setLogFileName("k8s.log")
             .setForcedDependencies(
                     Collections.singletonList(
-                            new AppArtifact("io.quarkus", "quarkus-kubernetes-client", TestUtil.getProjectVersion())));
+                            new AppArtifact("io.quarkus", "quarkus-kubernetes-client", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;

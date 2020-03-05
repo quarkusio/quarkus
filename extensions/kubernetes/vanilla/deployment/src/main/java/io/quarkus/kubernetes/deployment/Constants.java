@@ -10,6 +10,7 @@ public class Constants {
     static final String OPENSHIFT_APP_RUNTIME = "app.openshift.io/runtime";
     static final String DEPLOYMENT_CONFIG = "DeploymentConfig";
     static final String S2I = "s2i";
+    static final String DEFAULT_S2I_IMAGE_NAME = "s2i-java";
 
     static final String KNATIVE = "knative";
     static final String SERVICE = "Service";

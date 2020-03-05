@@ -1,5 +1,6 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_S2I_IMAGE_NAME;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOY;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG;
@@ -71,6 +72,7 @@ import io.dekorate.s2i.config.S2iBuildConfigBuilder;
 import io.dekorate.s2i.decorator.AddBuilderImageStreamResourceDecorator;
 import io.dekorate.utils.Annotations;
 import io.dekorate.utils.Maps;
+import io.quarkus.container.image.deployment.util.ImageUtil;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.IsNormal;
@@ -171,8 +173,7 @@ class KubernetesProcessor {
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
         applyConfig(session, project, KUBERNETES, kubernetesConfig.name.orElse(applicationInfo.getName()), kubernetesConfig,
                 now);
-        applyConfig(session, project, OPENSHIFT, openshiftConfig.name.orElse(applicationInfo.getName()), openshiftConfig,
-                now);
+        applyConfig(session, project, OPENSHIFT, openshiftConfig.name.orElse(applicationInfo.getName()), openshiftConfig, now);
         applyConfig(session, project, KNATIVE, knativeConfig.name.orElse(applicationInfo.getName()), knativeConfig, now);
 
         //apply build item configurations to the dekorate session.
@@ -414,7 +415,12 @@ class KubernetesProcessor {
         //Handle custom s2i builder images
         if (deploymentTargets.contains(OPENSHIFT)) {
             baseImageBuildItem.map(BaseImageInfoBuildItem::getImage).ifPresent(builderImage -> {
+                String builderImageName = ImageUtil.getName(builderImage);
                 S2iBuildConfig s2iBuildConfig = new S2iBuildConfigBuilder().withBuilderImage(builderImage).build();
+                if (!DEFAULT_S2I_IMAGE_NAME.equals(builderImageName)) {
+                    log.warn("Replacing " + DEFAULT_S2I_IMAGE_NAME + " builder image with " + builderImageName);
+                    session.resources().decorate(OPENSHIFT, new RemoveBuilderImageResourceDecorator(DEFAULT_S2I_IMAGE_NAME));
+                }
                 session.resources().decorate(OPENSHIFT, new AddBuilderImageStreamResourceDecorator(s2iBuildConfig));
                 session.resources().decorate(OPENSHIFT, new ApplyBuilderImageDecorator(openshiftName, builderImage));
             });

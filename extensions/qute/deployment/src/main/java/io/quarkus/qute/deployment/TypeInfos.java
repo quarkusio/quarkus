@@ -1,6 +1,7 @@
 package io.quarkus.qute.deployment;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -14,79 +15,71 @@ import org.jboss.jandex.Type.Kind;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expressions;
 import io.quarkus.qute.TemplateException;
+import io.quarkus.qute.TemplateNode.Origin;
 
-class TypeCheckInfo {
+final class TypeInfos {
 
-    static TypeCheckInfo create(Expression expression, IndexView index, Function<String, String> templateIdToPathFun) {
-        String value = expression.typeCheckInfo;
-        List<Part> parts = new ArrayList<>();
-        // Complex example: |java.util.List<org.acme.Item>|<for-element>.bar.call(|org.acme.Foo|).items<for-element>
-        // Expected results:
-        // * root type info based on |java.util.List<org.acme.Item>|
-        // * root hint is <for-element>
-        // * 3 parts:
-        // ** property "bar"
-        // ** virtual method "call" with type info param based on |org.acme.Foo|
-        // ** property "items" with hint <for-element>
-        for (String partStr : Expressions.splitTypeCheckParts(value)) {
-            parts.add(createPart(partStr, index, templateIdToPathFun, expression));
+    static List<Info> create(Expression expression, IndexView index, Function<String, String> templateIdToPathFun) {
+        if (expression.isLiteral()) {
+            Expression.Part literalPart = expression.getParts().get(0);
+            return Collections
+                    .singletonList(create(literalPart.getTypeInfo(), literalPart, index,
+                            templateIdToPathFun, expression.getOrigin()));
         }
-        return new TypeCheckInfo(parts);
+        List<Info> infos = new ArrayList<>();
+        boolean splitParts = true;
+        for (Expression.Part part : expression.getParts()) {
+            if (splitParts) {
+                List<String> infoParts = Expressions.splitTypeInfoParts(part.getTypeInfo());
+                for (String infoPart : infoParts) {
+                    infos.add(create(infoPart, part, index, templateIdToPathFun, expression.getOrigin()));
+                }
+            } else {
+                infos.add(create(part.getTypeInfo(), part, index, templateIdToPathFun, expression.getOrigin()));
+            }
+            splitParts = false;
+        }
+        return infos;
     }
 
-    private static Part createPart(String value, IndexView index, Function<String, String> templateIdToPathFun,
-            Expression expression) {
-        if (value.startsWith(TYPE_INFO_SEPARATOR)) {
-            int endIdx = value.substring(1, value.length()).indexOf(Expressions.TYPE_INFO_SEPARATOR);
+    static Info create(String typeInfo, Expression.Part part, IndexView index, Function<String, String> templateIdToPathFun,
+            Origin expressionOrigin) {
+        if (typeInfo.startsWith(TYPE_INFO_SEPARATOR)) {
+            int endIdx = typeInfo.substring(1, typeInfo.length()).indexOf(Expressions.TYPE_INFO_SEPARATOR);
             if (endIdx < 1) {
-                throw new IllegalArgumentException("Invalid type info: " + value);
+                throw new IllegalArgumentException("Invalid type info: " + typeInfo);
             }
-            String classStr = value.substring(1, endIdx + 1);
+            String classStr = typeInfo.substring(1, endIdx + 1);
             if (classStr.equals(Expressions.TYPECHECK_NAMESPACE_PLACEHOLDER)) {
-                return new Part(value);
+                return new Info(typeInfo, part);
             } else {
                 DotName rawClassName = rawClassName(classStr);
                 ClassInfo rawClass = index.getClassByName(rawClassName);
                 if (rawClass == null) {
                     throw new TemplateException(
                             "Class [" + rawClassName + "] used in the parameter declaration in template ["
-                                    + templateIdToPathFun.apply(expression.origin.getTemplateGeneratedId()) + "] on line "
-                                    + expression.origin.getLine()
+                                    + templateIdToPathFun.apply(expressionOrigin.getTemplateGeneratedId()) + "] on line "
+                                    + expressionOrigin.getLine()
                                     + " was not found in the application index. Make sure it is spelled correctly.");
                 }
                 Type resolvedType = resolveType(classStr);
-                return new TypeInfoPart(value, helperHint(value.substring(endIdx, value.length())), resolvedType, rawClass);
+                return new TypeInfo(typeInfo, part, helperHint(typeInfo.substring(endIdx, typeInfo.length())), resolvedType,
+                        rawClass);
             }
-        } else if (Expressions.isVirtualMethod(value)) {
-            List<String> params = Expressions.parseVirtualMethodParams(value);
-            List<Part> paramParts = new ArrayList<>(params.size());
-            for (String param : params) {
-                paramParts.add(createPart(param, index, templateIdToPathFun, expression));
-            }
-            return new VirtualMethodPart(value, Expressions.parseVirtualMethodName(value), paramParts);
+        } else if (part.isVirtualMethod()) {
+            return new VirtualMethodInfo(typeInfo, part.asVirtualMethod());
         } else {
-            String hint = helperHint(value);
+            String hint = helperHint(typeInfo);
             if (hint != null) {
-                value = value.substring(0, value.indexOf(LEFT_ANGLE));
+                typeInfo = typeInfo.substring(0, typeInfo.indexOf(LEFT_ANGLE));
             }
-            return new PropertyPart(value, hint);
+            return new PropertyInfo(typeInfo, part, hint);
         }
     }
 
     static final String LEFT_ANGLE = "<";
     static final String RIGHT_ANGLE = ">";
-    static final String ROOT_HINT = "$$root$$";
     static final String TYPE_INFO_SEPARATOR = "" + Expressions.TYPE_INFO_SEPARATOR;
-
-    final List<Part> parts;
-
-    TypeCheckInfo(List<Part> parts) {
-        this.parts = parts;
-    }
-
-    TypeInfoPart getRoot() {
-        return parts.get(0).asTypeInfo();
-    }
 
     private static DotName rawClassName(String value) {
         int angleIdx = value.indexOf(LEFT_ANGLE);
@@ -121,12 +114,17 @@ class TypeCheckInfo {
         }
     }
 
-    static class Part {
+    private TypeInfos() {
+    }
+
+    static class Info {
 
         final String value;
+        final Expression.Part part;
 
-        public Part(String value) {
+        public Info(String value, Expression.Part part) {
             this.value = value;
+            this.part = part;
         }
 
         boolean isVirtualMethod() {
@@ -141,16 +139,16 @@ class TypeCheckInfo {
             return false;
         }
 
-        VirtualMethodPart asVirtualMethod() {
+        VirtualMethodInfo asVirtualMethod() {
             throw new IllegalArgumentException("Not a virtual method");
         }
 
-        PropertyPart asProperty() {
+        PropertyInfo asProperty() {
             throw new IllegalArgumentException("Not a property");
         }
 
-        TypeInfoPart asTypeInfo() {
-            throw new IllegalArgumentException("Not a type info");
+        TypeInfo asTypeInfo() {
+            throw new IllegalArgumentException("Not a type info: " + getClass().getName() + ":" + toString());
         }
 
         @Override
@@ -160,24 +158,24 @@ class TypeCheckInfo {
 
     }
 
-    static abstract class HintPart extends Part {
+    static abstract class HintInfo extends Info {
 
         final String hint;
 
-        public HintPart(String value, String hint) {
-            super(value);
+        public HintInfo(String value, Expression.Part part, String hint) {
+            super(value, part);
             this.hint = hint;
         }
 
     }
 
-    static class TypeInfoPart extends HintPart {
+    static class TypeInfo extends HintInfo {
 
         final Type resolvedType;
         final ClassInfo rawClass;
 
-        public TypeInfoPart(String value, String hint, Type resolvedType, ClassInfo rawClass) {
-            super(value, hint);
+        public TypeInfo(String value, Expression.Part part, String hint, Type resolvedType, ClassInfo rawClass) {
+            super(value, part, hint);
             this.resolvedType = resolvedType;
             this.rawClass = rawClass;
         }
@@ -188,18 +186,18 @@ class TypeCheckInfo {
         }
 
         @Override
-        TypeInfoPart asTypeInfo() {
+        TypeInfo asTypeInfo() {
             return this;
         }
 
     }
 
-    static class PropertyPart extends HintPart {
+    static class PropertyInfo extends HintInfo {
 
         final String name;
 
-        public PropertyPart(String name, String hint) {
-            super(name, hint);
+        public PropertyInfo(String name, Expression.Part part, String hint) {
+            super(name, part, hint);
             this.name = name;
         }
 
@@ -209,21 +207,19 @@ class TypeCheckInfo {
         }
 
         @Override
-        public PropertyPart asProperty() {
+        public PropertyInfo asProperty() {
             return this;
         }
 
     }
 
-    static class VirtualMethodPart extends Part {
+    static class VirtualMethodInfo extends Info {
 
         final String name;
-        final List<Part> parameters;
 
-        public VirtualMethodPart(String value, String name, List<Part> parameters) {
-            super(value);
-            this.name = name;
-            this.parameters = parameters;
+        public VirtualMethodInfo(String value, Expression.VirtualMethodPart part) {
+            super(value, part);
+            this.name = part.getName();
         }
 
         @Override
@@ -232,7 +228,7 @@ class TypeCheckInfo {
         }
 
         @Override
-        public VirtualMethodPart asVirtualMethod() {
+        public VirtualMethodInfo asVirtualMethod() {
             return this;
         }
 

@@ -47,8 +47,9 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 /**
+ * Generates value resolvers backed by classes.
  * 
- * 
+ * @see ValueResolver
  */
 public class ValueResolverGenerator {
 

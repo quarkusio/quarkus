@@ -242,6 +242,57 @@ If you need to render the unescaped value:
 <1> `title` that resolves to `Expressions & Escapes` will be rendered as `Expressions &amp;amp; Escapes`
 <2> `paragraph` that resolves to `<p>My text!</p>` will be rendered as `<p>My text!</p>`
 
+===== Virtual Methods
+
+A virtual method is a *part of an expression* that looks like a regular Java method invocation.
+It's called "virtual" because it does not have to match the actual method of a Java class.
+In fact, like normal properties a virtual method is also handled by a value resolver.
+The only difference is that for virtual methods a value resolver consumes parameters that are also expressions.
+
+.Virtual Method Example
+[source,html]
+----
+<html>
+<h1>{item.buildName(item.name,5)}</h1> <1>
+</html>
+----
+<1> `buildName(item.name,5)` represents a virtual method with name `buildName` and two parameters: `item.name` and `5` . The virtual method could be evaluated by a value resolver generated for the following Java class:   
++
+[source,java]
+----
+class Item {
+   String buildName(String name, int age) {
+      return name + ":" + age;
+   }
+}
+----
+
+NOTE: Virtual methods are usually evaluated by value resolvers generated for <<template_extension_methods,@TemplateExtension methods>>, <<template_data,@TemplateData>> or classes used in <<parameter_declarations,parameter declarations>>. However, a custom value resolver that is not backed by any Java class/method can be registered as well.
+
+A virtual method with single parameter can be called using the infix notation:
+
+.Infix Notation Example
+[source,html]
+----
+<html>
+<p>{item.price or 5}</p>  <1>
+</html>
+----
+<1> `item.price or 5` is translated to `item.price.or(5)`.
+
+Virtual method parameters can be "nested" virtual method invocations.
+
+.Nested Virtual Method Example
+[source,html]
+----
+<html>
+<p>{item.subtractPrice(item.calculateDiscount(10))}</p>  <1>
+</html>
+----
+<1> `item.calculateDiscount(10)` is evaluated first and then passed as an argument to `item.subtractPrice()`.
+
+
+
 ==== Sections
 
 A section:
@@ -600,6 +651,7 @@ For the expression `inject:foo.price` the implementation class of the injected b
 
 NOTE: A `ValueResolver` is also generated for all beans annotated with `@Named` so that it's possible to access its properties without reflection.
 
+[[parameter_declarations]]
 === Parameter Declarations
 
 It is possible to specify optional parameter declarations in a template.
@@ -758,6 +810,7 @@ Quarkus provides a set of built-in extension methods.
 * `mod`: Modulo operation
 ** `{#if counter.mod(5) == 0}`
 
+[[template_data]]
 === @TemplateData
 
 A value resolver is automatically generated for a type annotated with `@TemplateData`.

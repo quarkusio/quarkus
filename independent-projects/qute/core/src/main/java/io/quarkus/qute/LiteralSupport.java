@@ -13,53 +13,58 @@ class LiteralSupport {
     static final Pattern DOUBLE_LITERAL_PATTERN = Pattern.compile("[-+]?[0-9]*\\.?[0-9]+(d|D)");
     static final Pattern FLOAT_LITERAL_PATTERN = Pattern.compile("[-+]?[0-9]*\\.?[0-9]+(f|F)");
 
-    static Object getLiteral(String value) {
-        if (value == null || value.isEmpty()) {
+    /**
+     * 
+     * @param literal
+     * @return {@link Result#NOT_FOUND} if no literal was found, otherwise the literal value
+     */
+    static Object getLiteralValue(String literal) {
+        if (literal == null || literal.isEmpty()) {
             return Result.NOT_FOUND;
         }
-        Object literal = Result.NOT_FOUND;
-        if (Parser.isStringLiteralSeparator(value.charAt(0))) {
-            literal = value.substring(1, value.length() - 1);
-        } else if (value.equals("true")) {
-            literal = Boolean.TRUE;
-        } else if (value.equals("false")) {
-            literal = Boolean.FALSE;
-        } else if (value.equals("null")) {
-            literal = null;
+        Object value = Result.NOT_FOUND;
+        if (Parser.isStringLiteralSeparator(literal.charAt(0))) {
+            value = literal.substring(1, literal.length() - 1);
+        } else if (literal.equals("true")) {
+            value = Boolean.TRUE;
+        } else if (literal.equals("false")) {
+            value = Boolean.FALSE;
+        } else if (literal.equals("null")) {
+            value = null;
         } else {
-            char firstChar = value.charAt(0);
+            char firstChar = literal.charAt(0);
             if (Character.isDigit(firstChar) || firstChar == '-' || firstChar == '+') {
-                if (INTEGER_LITERAL_PATTERN.matcher(value).matches()) {
+                if (INTEGER_LITERAL_PATTERN.matcher(literal).matches()) {
                     try {
-                        literal = Integer.parseInt(value);
+                        value = Integer.parseInt(literal);
                     } catch (NumberFormatException e) {
-                        LOGGER.warn("Unable to parse integer literal: " + value, e);
+                        LOGGER.warn("Unable to parse integer literal: " + literal, e);
                     }
-                } else if (LONG_LITERAL_PATTERN.matcher(value).matches()) {
+                } else if (LONG_LITERAL_PATTERN.matcher(literal).matches()) {
                     try {
-                        literal = Long
-                                .parseLong(value.substring(0, value.length() - 1));
+                        value = Long
+                                .parseLong(literal.substring(0, literal.length() - 1));
                     } catch (NumberFormatException e) {
-                        LOGGER.warn("Unable to parse long literal: " + value, e);
+                        LOGGER.warn("Unable to parse long literal: " + literal, e);
                     }
-                } else if (DOUBLE_LITERAL_PATTERN.matcher(value).matches()) {
+                } else if (DOUBLE_LITERAL_PATTERN.matcher(literal).matches()) {
                     try {
-                        literal = Double
-                                .parseDouble(value.substring(0, value.length() - 1));
+                        value = Double
+                                .parseDouble(literal.substring(0, literal.length() - 1));
                     } catch (NumberFormatException e) {
-                        LOGGER.warn("Unable to parse double literal: " + value, e);
+                        LOGGER.warn("Unable to parse double literal: " + literal, e);
                     }
-                } else if (FLOAT_LITERAL_PATTERN.matcher(value).matches()) {
+                } else if (FLOAT_LITERAL_PATTERN.matcher(literal).matches()) {
                     try {
-                        literal = Float
-                                .parseFloat(value.substring(0, value.length() - 1));
+                        value = Float
+                                .parseFloat(literal.substring(0, literal.length() - 1));
                     } catch (NumberFormatException e) {
-                        LOGGER.warn("Unable to parse float literal: " + value, e);
+                        LOGGER.warn("Unable to parse float literal: " + literal, e);
                     }
                 }
             }
         }
-        return literal;
+        return value;
     }
 
 }

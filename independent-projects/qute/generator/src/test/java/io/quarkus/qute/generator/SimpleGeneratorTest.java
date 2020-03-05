@@ -5,9 +5,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EngineBuilder;
-import io.quarkus.qute.EvalContext;
-import io.quarkus.qute.Expression;
-import io.quarkus.qute.ImmutableList;
+import io.quarkus.qute.TestEvalContext;
 import io.quarkus.qute.ValueResolver;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,7 +16,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
@@ -63,22 +60,23 @@ public class SimpleGeneratorTest {
                 .loadClass("io.quarkus.qute.generator.MyService_ValueResolver");
         ValueResolver resolver = (ValueResolver) clazz.newInstance();
         assertEquals("Foo",
-                resolver.resolve(new TestEvalContext(new MyService(), "getName", Collections.emptyList(), null))
+                resolver.resolve(new TestEvalContext(new MyService(), "getName", null))
                         .toCompletableFuture().get(1, TimeUnit.SECONDS).toString());
         assertEquals("[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]",
-                resolver.resolve(new TestEvalContext(new MyService(), "getList", ImmutableList.of("1", "foo"),
-                        e -> "foo".equals(e.parts.get(0)) ? CompletableFuture.completedFuture("foo")
-                                : CompletableFuture.completedFuture(Integer.valueOf(10))))
+                resolver.resolve(new TestEvalContext(new MyService(), "getList",
+                        e -> "foo".equals(e.getParts().get(0).getName()) ? CompletableFuture.completedFuture("foo")
+                                : CompletableFuture.completedFuture(Integer.valueOf(10)),
+                        "1", "foo"))
                         .toCompletableFuture().get(1, TimeUnit.SECONDS).toString());
         assertEquals("oof",
-                resolver.resolve(new TestEvalContext(new MyService(), "getTestName", Collections.emptyList(), null))
+                resolver.resolve(new TestEvalContext(new MyService(), "getTestName", null))
                         .toCompletableFuture().get(1, TimeUnit.SECONDS).toString());
         assertEquals("Emma",
-                resolver.resolve(new TestEvalContext(new MyService(), "getAnotherTestName", Collections.singletonList("Emma"),
-                        v -> CompletableFuture.completedFuture(v.parts.get(0))))
+                resolver.resolve(new TestEvalContext(new MyService(), "getAnotherTestName",
+                        v -> CompletableFuture.completedFuture(v.getParts().get(0).getName()), "Emma"))
                         .toCompletableFuture().get(1, TimeUnit.SECONDS).toString());
         assertEquals("NOT_FOUND",
-                resolver.resolve(new TestEvalContext(new MyService(), "surname", Collections.emptyList(), null))
+                resolver.resolve(new TestEvalContext(new MyService(), "surname", null))
                         .toCompletableFuture().get(1, TimeUnit.SECONDS).toString());
     }
 
@@ -131,48 +129,6 @@ public class SimpleGeneratorTest {
             }
         }
         return indexer.complete();
-    }
-
-    static class TestEvalContext implements EvalContext {
-
-        private final Object base;
-        private final String name;
-        private final List<String> params;
-        private Function<Expression, CompletionStage<Object>> evaluate;
-
-        public TestEvalContext(Object base, String name, List<String> params,
-                Function<Expression, CompletionStage<Object>> evaluate) {
-            this.base = base;
-            this.name = name;
-            this.params = params;
-            this.evaluate = evaluate;
-        }
-
-        @Override
-        public Object getBase() {
-            return base;
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public List<String> getParams() {
-            return params;
-        }
-
-        @Override
-        public CompletionStage<Object> evaluate(String expression) {
-            return evaluate(Expression.from(expression));
-        }
-
-        @Override
-        public CompletionStage<Object> evaluate(Expression expression) {
-            return evaluate.apply(expression);
-        }
-
     }
 
 }

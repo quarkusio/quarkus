@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Evaluation context of a specific part of an {@link Expression}.
+ * Evaluation context of a specific part of an expression.
  * 
- * @see Expression#parts
+ * @see Expression
  */
 public interface EvalContext {
 
@@ -24,12 +24,14 @@ public interface EvalContext {
     String getName();
 
     /**
-     * E.g. {@code name} and {@code age} if it represents a method invocation such as {@code foo(name,age)}. It is up to the
-     * consumer to evaluate the params if needed.
+     * A virtual method may accept any number of parameters.
+     * <p>
+     * E.g. for a virtual method {@code foo(name.length,age)} the list of two expressions is returned, one for
+     * {@code name.length} and the other one for {@code age}. It is up to the consumer to evaluate the params if needed.
      * 
-     * @return the parameters
+     * @return the list of parameters, is never {@code null}
      */
-    List<String> getParams();
+    List<Expression> getParams();
 
     /**
      * Parse and evaluate the given expression using the relevant {@link ResolutionContext}

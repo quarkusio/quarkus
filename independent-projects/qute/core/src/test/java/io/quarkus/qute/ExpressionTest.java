@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import io.quarkus.qute.Expression.Part;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -13,40 +15,85 @@ public class ExpressionTest {
 
     @Test
     public void testExpressions() throws InterruptedException, ExecutionException {
-        verify("data:name.value", "data", ImmutableList.of("name", "value"), null);
-        verify("name.value", null, ImmutableList.of("name", "value"), null);
-        verify("name[value]", null, ImmutableList.of("name", "value"), null);
-        verify("0", null, ImmutableList.of("0"), CompletableFuture.completedFuture(Integer.valueOf(0)));
-        verify("false", null, ImmutableList.of("false"), CompletableFuture.completedFuture(Boolean.FALSE));
-        verify("null", null, ImmutableList.of("null"), CompletableFuture.completedFuture(null));
-        verify("name.orElse('John')", null, ImmutableList.of("name", "orElse('John')"), null);
-        verify("name or 'John'", null, ImmutableList.of("name", "or('John')"), null);
-        verify("item.name or 'John'", null, ImmutableList.of("item", "name", "or('John')"), null);
-        verify("name.func('John', 1)", null, ImmutableList.of("name", "func('John', 1)"), null);
-        verify("name ?: 'John Bug'", null, ImmutableList.of("name", "?:('John Bug')"), null);
-        verify("name ? 'John' : 'Bug'", null, ImmutableList.of("name", "?('John')", ":('Bug')"), null);
-        verify("name.func(data:foo)", null, ImmutableList.of("name", "func(data:foo)"), null);
+        verify("data:name.value", "data", null, name("name", "name"), name("value", "value"));
+        verify("name.value", null, null, name("name"), name("value"));
+        verify("name[value]", null, null, name("name"), name("value"));
+        verify("0", null, CompletableFuture.completedFuture(Integer.valueOf(0)), name("0", "|java.lang.Integer|"));
+        verify("false", null, CompletableFuture.completedFuture(Boolean.FALSE), name("false", "|java.lang.Boolean|"));
+        verify("null", null, CompletableFuture.completedFuture(null), name("null"));
+        verify("name.orElse('John')", null, null, name("name"), virtualMethod("orElse", ExpressionImpl.from("'John'")));
+        verify("name or 'John'", null, null, name("name"), virtualMethod("or", ExpressionImpl.from("'John'")));
+        verify("item.name or 'John'", null, null, name("item"), name("name"),
+                virtualMethod("or", ExpressionImpl.from("'John'")));
+        verify("name.func('John', 1)", null, null, name("name"),
+                virtualMethod("func", ExpressionImpl.literalFrom("'John'"), ExpressionImpl.literalFrom("1")));
+        verify("name ?: 'John Bug'", null, null, name("name"),
+                virtualMethod("?:", ExpressionImpl.literalFrom("'John Bug'")));
+        verify("name ? 'John' : 'Bug'", null, null, name("name"), virtualMethod("?", ExpressionImpl.literalFrom("'John'")),
+                virtualMethod(":", ExpressionImpl.literalFrom("'Bug'")));
+        verify("name.func(data:foo)", null, null, name("name"), virtualMethod("func", ExpressionImpl.from("data:foo")));
+        verify("this.getList(5).size", null, null, name("this"), virtualMethod("getList", ExpressionImpl.literalFrom("5")),
+                name("size"));
+        verify("foo.call(bar.baz)", null, null, name("foo"), virtualMethod("call", ExpressionImpl.from("bar.baz")));
+        verify("foo.call(bar.call(1))", null, null, name("foo"), virtualMethod("call", ExpressionImpl.from("bar.call(1)")));
+        verify("foo.call(bar.alpha(1),bar.alpha('ping'))", null, null, name("foo"),
+                virtualMethod("call", ExpressionImpl.from("bar.alpha(1)"), ExpressionImpl.from("bar.alpha('ping')")));
     }
 
     @Test
-    public void testTypeCheckInfo() {
-        List<String> parts = Expressions.splitTypeCheckParts("|org.acme.Foo|.call(|java.util.List<org.acme.Label>|,bar)");
+    public void testNestedVirtualMethods() {
+        Expression exp = ExpressionImpl.from("movie.findServices(movie.name,movie.toNumber(movie.getName))");
+        assertNull(exp.getNamespace());
+        List<Expression.Part> parts = exp.getParts();
+        assertEquals(2, parts.size());
+        assertEquals("movie", parts.get(0).getName());
+        Expression.VirtualMethodPart findServicesPart = parts.get(1).asVirtualMethod();
+        List<Expression> findServicesParams = findServicesPart.getParameters();
+        assertEquals(2, findServicesParams.size());
+        Expression findServicesParam2 = findServicesParams.get(1);
+        parts = findServicesParam2.getParts();
+        assertEquals(2, parts.size());
+        Expression.VirtualMethodPart toNumberPart = parts.get(1).asVirtualMethod();
+        List<Expression> toNumberParams = toNumberPart.getParameters();
+        assertEquals(1, toNumberParams.size());
+        Expression movieGetName = toNumberParams.get(0);
+        parts = movieGetName.getParts();
+        assertEquals(2, parts.size());
+        assertEquals("movie", parts.get(0).getName());
+        assertEquals("getName", parts.get(1).getName());
+    }
+
+    @Test
+    public void testTypeInfo() {
+        List<String> parts = Expressions.splitTypeInfoParts("|org.acme.Foo|.call(|java.util.List<org.acme.Label>|,bar)");
         assertEquals(2, parts.size());
         assertEquals("|org.acme.Foo|", parts.get(0));
         assertEquals("call(|java.util.List<org.acme.Label>|,bar)", parts.get(1));
     }
 
-    private void verify(String value, String namespace, List<String> parts, CompletableFuture<Object> literal)
+    private void verify(String value, String namespace, CompletableFuture<Object> literalValue, Part... parts)
             throws InterruptedException, ExecutionException {
-        Expression exp = Expression.from(value);
-        assertEquals(namespace, exp.namespace);
-        assertEquals(parts, exp.parts);
-        if (literal == null) {
-            assertNull(exp.literal);
+        ExpressionImpl exp = ExpressionImpl.from(value);
+        assertEquals(namespace, exp.getNamespace());
+        assertEquals(Arrays.asList(parts), exp.getParts());
+        if (literalValue == null) {
+            assertNull(exp.getLiteralValue());
         } else {
-            assertNotNull(exp.literal);
-            assertEquals(literal.get(), exp.literal.get());
+            assertNotNull(exp.getLiteralValue());
+            assertEquals(literalValue.get(), exp.getLiteralValue().get());
         }
+    }
+
+    private Part name(String name) {
+        return name(name, null);
+    }
+
+    private Part name(String name, String typeInfo) {
+        return new ExpressionImpl.ExpressionPartImpl(name, typeInfo);
+    }
+
+    private Part virtualMethod(String name, Expression... params) {
+        return new ExpressionImpl.VirtualMethodExpressionPartImpl(name, Arrays.asList(params));
     }
 
 }

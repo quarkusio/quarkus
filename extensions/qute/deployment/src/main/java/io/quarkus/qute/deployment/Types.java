@@ -12,6 +12,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
@@ -112,7 +113,7 @@ public final class Types {
 
     static boolean isAssignableFrom(Type type1, Type type2, IndexView index) {
         // TODO consider type params in assignability rules
-        return Types.isAssignableFrom(type1.name(), type2.name(), index);
+        return Types.isAssignableFrom(box(type1).name(), box(type2).name(), index);
     }
 
     static boolean isAssignableFrom(DotName class1, DotName class2, IndexView index) {
@@ -135,6 +136,36 @@ public final class Types {
             assignables.add(implementor.name());
         }
         return assignables.contains(class2);
+    }
+
+    static Type box(Type type) {
+        if (type.kind() == Kind.PRIMITIVE) {
+            return box(type.asPrimitiveType().primitive());
+        }
+        return type;
+    }
+
+    static Type box(Primitive primitive) {
+        switch (primitive) {
+            case BOOLEAN:
+                return Type.create(DotNames.BOOLEAN, Kind.CLASS);
+            case DOUBLE:
+                return Type.create(DotNames.DOUBLE, Kind.CLASS);
+            case FLOAT:
+                return Type.create(DotNames.FLOAT, Kind.CLASS);
+            case LONG:
+                return Type.create(DotNames.LONG, Kind.CLASS);
+            case INT:
+                return Type.create(DotNames.INTEGER, Kind.CLASS);
+            case BYTE:
+                return Type.create(DotNames.BYTE, Kind.CLASS);
+            case CHAR:
+                return Type.create(DotNames.CHARACTER, Kind.CLASS);
+            case SHORT:
+                return Type.create(DotNames.SHORT, Kind.CLASS);
+            default:
+                throw new IllegalArgumentException("Unsupported primitive: " + primitive);
+        }
     }
 
 }

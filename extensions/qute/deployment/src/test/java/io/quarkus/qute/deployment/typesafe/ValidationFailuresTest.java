@@ -27,6 +27,7 @@ public class ValidationFailuresTest {
                             + "{movie.getName('foo')}"
                             // Name and number of params ok; the parameter type does not match
                             + "{movie.findService(age)}"
+                            + "{movie.findService(10l)} "
                             // Name and number of params ok; the parameter type does not match
                             + "{movie.findServices(age,name)}"
                             // Name and number of params ok for extension method; the parameter type does not match
@@ -44,10 +45,11 @@ public class ValidationFailuresTest {
                     e = e.getCause();
                 }
                 assertNotNull(te);
-                assertTrue(te.getMessage().contains("Found template problems (6)"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found template problems (7)"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.foo"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.getName('foo')"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.findService(age)"), te.getMessage());
+                assertTrue(te.getMessage().contains("movie.findService(10l)"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.findServices(age,name)"), te.getMessage());
                 assertTrue(te.getMessage().contains("movie.toNumber(age)"), te.getMessage());
                 assertTrue(te.getMessage().contains("it.boom(1)"), te.getMessage());

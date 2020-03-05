@@ -69,7 +69,7 @@ public class SetSectionHelper implements SectionHelper {
                 Map<String, String> typeInfos = new HashMap<String, String>(outerNameTypeInfos);
                 for (Entry<String, String> entry : block.getParameters().entrySet()) {
                     Expression expr = block.addExpression(entry.getKey(), entry.getValue());
-                    typeInfos.put(entry.getKey(), expr.typeCheckInfo);
+                    typeInfos.put(entry.getKey(), expr.collectTypeInfo());
                 }
                 return typeInfos;
             } else {

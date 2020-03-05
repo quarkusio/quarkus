@@ -57,6 +57,9 @@ public class ExecutorRecorder {
             shutdownContext.addShutdownTask(shutdownTask);
             executor = underlying;
         }
+        if (threadPoolConfig.prefill) {
+            underlying.prestartAllCoreThreads();
+        }
         current = executor;
         return executor;
     }

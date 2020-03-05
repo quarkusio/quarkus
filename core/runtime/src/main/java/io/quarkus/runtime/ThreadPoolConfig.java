@@ -22,6 +22,13 @@ public class ThreadPoolConfig {
     public int coreThreads;
 
     /**
+     * Prefill core thread pool.
+     * The core thread pool will be initialised with the core number of threads at startup
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean prefill;
+
+    /**
      * The maximum number of threads. If this is not specified then
      * it will be automatically sized to 8 * the number of available processors
      */

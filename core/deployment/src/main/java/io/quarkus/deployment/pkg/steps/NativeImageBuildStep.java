@@ -88,7 +88,8 @@ public class NativeImageBuildStep {
             if (IS_WINDOWS) {
                 outputPath = FileUtil.translateToVolumePath(outputPath);
             }
-            Collections.addAll(nativeImage, containerRuntime, "run", "-v", outputPath + ":/project:z");
+            Collections.addAll(nativeImage, containerRuntime, "run", "-v", outputPath + ":/project:z",
+                    "--env", "LANG=en_US.UTF-8");
 
             if (IS_LINUX) {
                 if ("docker".equals(containerRuntime)) {

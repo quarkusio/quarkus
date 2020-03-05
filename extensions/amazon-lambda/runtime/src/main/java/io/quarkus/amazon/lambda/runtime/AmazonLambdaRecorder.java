@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
@@ -49,7 +50,8 @@ public class AmazonLambdaRecorder {
         beanContainer = container;
         AmazonLambdaRecorder.objectMapper = getObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+                .registerModule(new JodaModule());
         Method handlerMethod = discoverHandlerMethod(handlerClass);
         objectReader = objectMapper.readerFor(handlerMethod.getParameterTypes()[0]);
         objectWriter = objectMapper.writerFor(handlerMethod.getReturnType());

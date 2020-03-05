@@ -16,6 +16,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
+import org.joda.time.DateTime;
 
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
@@ -141,6 +142,8 @@ public final class AmazonLambdaProcessor {
                         .produce(new ReflectiveClassBuildItem(true, true, true, method.getParameterTypes()[0].getName()));
                 reflectiveClassBuildItemBuildProducer
                         .produce(new ReflectiveClassBuildItem(true, true, true, method.getReturnType().getName()));
+                reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, true, true,
+                        DateTime.class));
                 break;
             }
         }

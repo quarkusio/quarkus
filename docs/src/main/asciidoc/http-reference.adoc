@@ -107,6 +107,18 @@ This will also work in tandem with link:https://kubernetes.io/docs/concepts/conf
 
 _Note: in order to remain compatible with earlier versions of Quarkus (before 0.16) the default password is set to "password". It is therefore not a mandatory parameter!_
 
+=== Disable the HTTP port
+
+It is possible to disable the HTTP port and only support secure requests. This is done via the
+`quarkus.http.insecure-requests` property in `application.properties`. There are three possible
+values:
+
+`enabled`:: The default, HTTP works as normal
+`redirect`:: HTTP requests will be redirected to the HTTPS port
+`disabled`:: The HTTP port will not be opened.
+
+NOTE: if you use `redirect` or `disabled` and have not added a SSL certificate or keystore, your server will not start!
+
 == CORS filter
 
 link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin resource sharing] (CORS) is a mechanism that

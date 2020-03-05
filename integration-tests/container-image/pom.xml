@@ -8,7 +8,10 @@
     <version>999-SNAPSHOT</version>
   </parent>
   <artifactId>quarkus-integration-test-container-image</artifactId>
-  <name>Quarkus - Integration Tests - Jib extension</name>
+  <name>Quarkus - Integration Tests - Container Image</name>
+  <properties>
+    <skipTests>true</skipTests>
+  </properties>
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -77,13 +80,17 @@
 
   <profiles>
     <profile>
+      <id>container-image-docker</id>
       <activation>
+        <property>
+          <name>docker</name>
+        </property>
         <os>
-          <family>windows</family>
+          <family>linux</family>
         </os>
       </activation>
       <properties>
-        <skipTests>true</skipTests>
+        <skipTests>false</skipTests>
       </properties>
     </profile>
   </profiles>

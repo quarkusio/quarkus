@@ -11,11 +11,12 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot
 public class KnativeConfig implements PlatformConfiguration {
+
     /**
-     * The group of the application.
+     * The name of the group this component belongs too
      */
-    @ConfigItem(defaultValue = "${quarkus.container-image.group}")
-    Optional<String> group;
+    @ConfigItem
+    Optional<String> partOf;
 
     /**
      * The name of the application. This value will be used for naming Kubernetes
@@ -184,8 +185,8 @@ public class KnativeConfig implements PlatformConfiguration {
     @ConfigItem
     Map<String, ContainerConfig> containers;
 
-    public Optional<String> getGroup() {
-        return group;
+    public Optional<String> getPartOf() {
+        return partOf;
     }
 
     public Optional<String> getName() {

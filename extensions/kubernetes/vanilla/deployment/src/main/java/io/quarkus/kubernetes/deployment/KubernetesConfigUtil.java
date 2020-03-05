@@ -13,8 +13,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -30,7 +28,6 @@ public class KubernetesConfigUtil {
 
     private static final Set<String> ALLOWED_GENERATORS = new HashSet<>(
             Arrays.asList(KUBERNETES, OPENSHIFT, KNATIVE, DOCKER, S2I));
-    private static final Set<String> IMAGE_GENERATORS = new HashSet<>(Arrays.asList(DOCKER, S2I));
 
     public static List<String> getDeploymentTargets() {
         Config config = ConfigProvider.getConfig();
@@ -40,21 +37,6 @@ public class KubernetesConfigUtil {
                 .map(String::trim)
                 .map(String::toLowerCase)
                 .collect(Collectors.toList());
-    }
-
-    public static Optional<String> getDockerRegistry(Map<String, Object> map) {
-        return IMAGE_GENERATORS.stream().map(g -> map.get(DEKORATE_PREFIX + g + ".registry")).filter(Objects::nonNull)
-                .map(String::valueOf).findFirst();
-    }
-
-    public static Optional<String> getGroup(Map<String, Object> map) {
-        return ALLOWED_GENERATORS.stream().map(g -> map.get(DEKORATE_PREFIX + g + ".group")).filter(Objects::nonNull)
-                .map(String::valueOf).findFirst();
-    }
-
-    public static Optional<String> getName(Map<String, Object> map) {
-        return ALLOWED_GENERATORS.stream().map(g -> map.get(DEKORATE_PREFIX + g + ".name")).filter(Objects::nonNull)
-                .map(String::valueOf).findFirst();
     }
 
     /*
@@ -72,8 +54,9 @@ public class KubernetesConfigUtil {
         // Most of quarkus prefixed properties are handled directly by the config items (KubernetesConfig, OpenshiftConfig, KnativeConfig)
         // We just need group, name & version parsed here, as we don't have decorators for these (low level properties).
         Map<String, Object> quarkusPrefixed = new HashMap<>();
+
         Arrays.stream(platformConfigurations).forEach(p -> {
-            p.getGroup().ifPresent(g -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".group", g));
+            p.getPartOf().ifPresent(g -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".part-of", g));
             p.getName().ifPresent(n -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".name", n));
             p.getVersion().ifPresent(v -> quarkusPrefixed.put(DEKORATE_PREFIX + p.getConfigName() + ".version", v));
         });
@@ -82,6 +65,14 @@ public class KubernetesConfigUtil {
                 .filter(k -> ALLOWED_GENERATORS.contains(generatorName(k)))
                 .filter(k -> config.getOptionalValue(k, String.class).isPresent())
                 .collect(Collectors.toMap(k -> DEKORATE_PREFIX + k, k -> config.getValue(k, String.class)));
+
+        for (String generator : ALLOWED_GENERATORS) {
+            String oldKey = DEKORATE_PREFIX + generator + ".group";
+            String newKey = DEKORATE_PREFIX + generator + ".part-of";
+            if (unPrefixed.containsKey(oldKey)) {
+                unPrefixed.put(newKey, unPrefixed.get(oldKey));
+            }
+        }
 
         result.putAll(unPrefixed);
         result.putAll(quarkusPrefixed);

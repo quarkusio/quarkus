@@ -41,7 +41,7 @@ public class KubernetesWithSysGroupTest {
 
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getLabels()).contains(entry("group", "grp"));
+                assertThat(m.getLabels()).contains(entry("app.kubernetes.io/part-of", "grp"));
             });
         });
     }

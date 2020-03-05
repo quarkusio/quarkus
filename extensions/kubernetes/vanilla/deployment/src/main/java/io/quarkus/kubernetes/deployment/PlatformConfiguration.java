@@ -10,7 +10,7 @@ import io.dekorate.kubernetes.annotation.ServiceType;
 
 public interface PlatformConfiguration {
 
-    Optional<String> getGroup();
+    Optional<String> getPartOf();
 
     Optional<String> getName();
 

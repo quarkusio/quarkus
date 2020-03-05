@@ -13,6 +13,7 @@ import org.wildfly.common.lock.Locks;
 import com.oracle.svm.core.OS;
 
 import io.quarkus.runtime.graal.DiagnosticPrinter;
+import io.quarkus.runtime.shutdown.ShutdownRecorder;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
@@ -167,6 +168,7 @@ public abstract class Application implements Closeable {
         }
         Timing.staticInitStopped();
         try {
+            ShutdownRecorder.runShutdown();
             doStop();
         } finally {
             currentApplication = null;

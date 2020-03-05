@@ -1,4 +1,4 @@
-package io.quarkus.vertx.runtime;
+package io.quarkus.resteasy.runtime.vertx;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

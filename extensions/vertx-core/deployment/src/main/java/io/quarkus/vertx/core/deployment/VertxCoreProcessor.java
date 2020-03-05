@@ -20,7 +20,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.core.runtime.VertxCoreProducer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
@@ -78,15 +77,6 @@ class VertxCoreProcessor {
                 launchMode.getLaunchMode(), shutdown);
 
         return new CoreVertxBuildItem(vertx);
-    }
-
-    @BuildStep
-    @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
-    InternalWebVertxBuildItem buildWeb(VertxCoreRecorder recorder, VertxConfiguration config,
-            ShutdownContextBuildItem context,
-            LaunchModeBuildItem launchModeBuildItem) {
-        RuntimeValue<Vertx> vertx = recorder.initializeWeb(config, context, launchModeBuildItem.getLaunchMode());
-        return new InternalWebVertxBuildItem(vertx);
     }
 
     @BuildStep

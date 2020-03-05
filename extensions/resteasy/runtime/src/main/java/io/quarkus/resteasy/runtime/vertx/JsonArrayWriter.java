@@ -1,16 +1,19 @@
-package io.quarkus.vertx.runtime;
+package io.quarkus.resteasy.runtime.vertx;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.concurrent.CompletionStage;
 
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
+
+import org.jboss.resteasy.spi.AsyncMessageBodyWriter;
+import org.jboss.resteasy.spi.AsyncOutputStream;
 
 import io.vertx.core.json.JsonArray;
 
@@ -21,7 +24,7 @@ import io.vertx.core.json.JsonArray;
  */
 @Provider
 @Produces(MediaType.APPLICATION_JSON)
-public class JsonArrayWriter implements MessageBodyWriter<JsonArray> {
+public class JsonArrayWriter implements AsyncMessageBodyWriter<JsonArray> {
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -34,5 +37,13 @@ public class JsonArrayWriter implements MessageBodyWriter<JsonArray> {
         entityStream.write(jsonArray.toBuffer().getBytes());
         entityStream.flush();
         entityStream.close();
+    }
+
+    @Override
+    public CompletionStage<Void> asyncWriteTo(JsonArray jsonArray, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType,
+            MultivaluedMap<String, Object> httpHeaders,
+            AsyncOutputStream entityStream) {
+        return entityStream.asyncWrite(jsonArray.toBuffer().getBytes());
     }
 }

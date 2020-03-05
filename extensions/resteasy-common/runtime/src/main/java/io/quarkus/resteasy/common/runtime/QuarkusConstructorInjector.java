@@ -1,8 +1,6 @@
 package io.quarkus.resteasy.common.runtime;
 
 import java.lang.reflect.Constructor;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import javax.ws.rs.WebApplicationException;
 
@@ -28,7 +26,7 @@ public class QuarkusConstructorInjector implements ConstructorInjector {
     }
 
     @Override
-    public CompletionStage<Object> construct(boolean unwrapAsync) {
+    public Object construct(boolean unwrapAsync) {
         if (QuarkusInjectorFactory.CONTAINER == null) {
             return this.delegate.construct(unwrapAsync);
         }
@@ -38,11 +36,11 @@ public class QuarkusConstructorInjector implements ConstructorInjector {
         if (factory == null) {
             return delegate.construct(unwrapAsync);
         }
-        return CompletableFuture.completedFuture(factory.create().get());
+        return factory.create().get();
     }
 
     @Override
-    public CompletionStage<Object> construct(HttpRequest request, HttpResponse response, boolean unwrapAsync)
+    public Object construct(HttpRequest request, HttpResponse response, boolean unwrapAsync)
             throws Failure, WebApplicationException, ApplicationException {
         if (QuarkusInjectorFactory.CONTAINER == null) {
             return delegate.construct(request, response, unwrapAsync);
@@ -53,16 +51,16 @@ public class QuarkusConstructorInjector implements ConstructorInjector {
         if (factory == null) {
             return delegate.construct(request, response, unwrapAsync);
         }
-        return CompletableFuture.completedFuture(factory.create().get());
+        return factory.create().get();
     }
 
     @Override
-    public CompletionStage<Object[]> injectableArguments(boolean unwrapAsync) {
+    public Object injectableArguments(boolean unwrapAsync) {
         return this.delegate.injectableArguments(unwrapAsync);
     }
 
     @Override
-    public CompletionStage<Object[]> injectableArguments(HttpRequest request, HttpResponse response, boolean unwrapAsync)
+    public Object injectableArguments(HttpRequest request, HttpResponse response, boolean unwrapAsync)
             throws Failure {
         return this.delegate.injectableArguments(request, response, unwrapAsync);
     }

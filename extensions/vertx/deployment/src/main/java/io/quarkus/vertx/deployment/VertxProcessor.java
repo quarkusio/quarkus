@@ -70,7 +70,7 @@ class VertxProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    VertxBuildItem build(CoreVertxBuildItem internalVertx, VertxRecorder recorder, BeanContainerBuildItem beanContainer,
+    VertxBuildItem build(CoreVertxBuildItem vertx, VertxRecorder recorder, BeanContainerBuildItem beanContainer,
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
@@ -94,11 +94,11 @@ class VertxProcessor {
                     recorderContext.classProxy(messageCodecItem.getCodec()));
         }
 
-        recorder.configureVertx(internalVertx.getVertx(), messageConsumerConfigurations,
+        recorder.configureVertx(vertx.getVertx(), messageConsumerConfigurations,
                 launchMode.getLaunchMode(),
                 shutdown, codecByClass);
         serviceStart.produce(new ServiceStartBuildItem("vertx"));
-        return new VertxBuildItem(recorder.forceStart(internalVertx.getVertx()));
+        return new VertxBuildItem(recorder.forceStart(vertx.getVertx()));
     }
 
     @BuildStep

@@ -69,7 +69,7 @@ public class BannerProcessor {
                 String tagline = "\n";
                 Boolean isDefaultBanner = entry.getValue();
                 if (!isDefaultBanner) {
-                    tagline = String.format("\n%" + width + "s\n", "Powered by Quarkus v" + Version.getVersion());
+                    tagline = String.format("\n%" + width + "s\n", "Powered by Quarkus " + Version.getVersion());
                 }
 
                 return bannerTitle + tagline;

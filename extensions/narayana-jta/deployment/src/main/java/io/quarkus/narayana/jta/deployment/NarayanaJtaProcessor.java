@@ -99,7 +99,7 @@ class NarayanaJtaProcessor {
             public void register(RegistrationContext registrationContext) {
                 registrationContext.configure(TransactionScoped.class).normal().contextClass(TransactionContext.class).done();
             }
-        }));
+        }, TransactionScoped.class));
     }
 
 }

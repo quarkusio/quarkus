@@ -30,6 +30,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
@@ -38,7 +39,6 @@ import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
-import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.Capabilities;
@@ -86,7 +86,8 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     @BuildStep
-    AnnotationsTransformerBuildItem transformBeanScope(BeanArchiveIndexBuildItem index) {
+    AnnotationsTransformerBuildItem transformBeanScope(BeanArchiveIndexBuildItem index,
+            CustomScopeAnnotationsBuildItem scopes) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
             @Override
             public boolean appliesTo(AnnotationTarget.Kind kind) {
@@ -98,7 +99,7 @@ public class SmallRyeReactiveMessagingProcessor {
                 if (ctx.isClass()) {
                     ClassInfo clazz = ctx.getTarget().asClass();
                     Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
-                    if (BuiltinScope.isDeclaredOn(clazz)
+                    if (scopes.isScopeDeclaredOn(clazz)
                             || annotations.containsKey(ReactiveMessagingDotNames.JAXRS_PATH)
                             || annotations.containsKey(ReactiveMessagingDotNames.REST_CONTROLLER)
                             || annotations.containsKey(ReactiveMessagingDotNames.JAXRS_PROVIDER)) {

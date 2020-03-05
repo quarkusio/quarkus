@@ -47,6 +47,7 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
 import io.quarkus.arc.processor.AnnotationsTransformer;
@@ -377,7 +378,8 @@ public class ResteasyServerCommonProcessor {
     @BuildStep
     void processPathInterfaceImplementors(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            CustomScopeAnnotationsBuildItem scopes) {
         // NOTE: we cannot process @Path interface implementors within the ResteasyServerCommonProcessor.build() method because of build cycles
         IndexView index = combinedIndexBuildItem.getIndex();
         Set<DotName> pathInterfaces = new HashSet<>();
@@ -401,8 +403,8 @@ public class ResteasyServerCommonProcessor {
                     .setDefaultScope(resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName() : null)
                     .setUnremovable();
             for (ClassInfo implementor : pathInterfaceImplementors) {
-                if (BuiltinScope.isDeclaredOn(implementor)) {
-                    // It has a built-in scope - just mark it as unremovable
+                if (scopes.isScopeDeclaredOn(implementor)) {
+                    // It has a scope defined - just mark it as unremovable
                     unremovableBeans
                             .produce(new UnremovableBeanBuildItem(new BeanClassNameExclusion(implementor.name().toString())));
                 } else {

@@ -31,6 +31,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
@@ -93,7 +94,7 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    AnnotationsTransformerBuildItem annotationTransformer() {
+    AnnotationsTransformerBuildItem annotationTransformer(CustomScopeAnnotationsBuildItem scopes) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
 
             @Override
@@ -103,8 +104,8 @@ public class SchedulerProcessor {
 
             @Override
             public void transform(TransformationContext context) {
-                if (context.isClass() && !BuiltinScope.isDeclaredOn(context.getTarget().asClass())) {
-                    // Class with no built-in scope annotation but with @Scheduled method
+                if (context.isClass() && !scopes.isScopeDeclaredOn(context.getTarget().asClass())) {
+                    // Class with no scope annotation but with @Scheduled method
                     if (context.getTarget().asClass().annotations().containsKey(SCHEDULED_NAME)
                             || context.getTarget().asClass().annotations().containsKey(SCHEDULES_NAME)) {
                         LOGGER.debugf("Found scheduled business methods on a class %s with no annotations - adding @Singleton",

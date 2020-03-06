@@ -76,11 +76,15 @@ public class PanacheFunctionalityTest {
     }
 
     /**
-     * This test is disabled in native mode as there is no interaction with the quarkus integration test endpoint.
+     * _PanacheEntityBase_ has the method _isPersistent_. This method is used by Jackson to serialize the attribute *peristent*
+     * in the JSON which is not intended. This test ensures that the attribute *persistent* is not generated when using Jackson.
+     * 
+     * This test does not interact with the Quarkus application itself. It is just using the Jackson ObjectMapper with a
+     * PanacheEntity. Thus this test is disabled in native mode. The test code runs the JVM and not native.
      */
     @DisabledOnNativeImage
     @Test
-    public void jacksonDeserilazationIgnoresPersitantAttribute() throws JsonProcessingException {
+    public void jacksonDeserializationIgnoresPersistentAttribute() throws JsonProcessingException {
         // set Up
         Person person = new Person();
         person.name = "max";

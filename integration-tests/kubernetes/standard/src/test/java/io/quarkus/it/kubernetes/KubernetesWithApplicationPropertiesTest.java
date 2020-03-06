@@ -17,6 +17,7 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.extensions.Ingress;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -42,24 +43,26 @@ public class KubernetesWithApplicationPropertiesTest {
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
 
-        assertThat(kubernetesList).hasSize(3);
+        assertThat(kubernetesList).hasSize(4);
 
-        assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
-            assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("test-it");
-                assertThat(m.getLabels()).contains(entry("foo", "bar"));
-            });
+        assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+            assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
+                assertThat(d.getMetadata()).satisfies(m -> {
+                    assertThat(m.getName()).isEqualTo("test-it");
+                    assertThat(m.getLabels()).contains(entry("foo", "bar"));
+                });
 
-            assertThat(d.getSpec()).satisfies(deploymentSpec -> {
-                assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
-                    assertThat(t.getSpec()).satisfies(podSpec -> {
-                        assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
-                            assertThat(container.getEnv()).extracting("name", "value")
-                                    .contains(tuple("MY_ENV_VAR", "SOMEVALUE"));
-                            assertThat(container.getImage())
-                                    .isEqualTo("quay.io/grp/kubernetes-with-application-properties:0.1-SNAPSHOT");
-                            assertThat(container.getPorts()).hasOnlyOneElementSatisfying(p -> {
-                                assertThat(p.getContainerPort()).isEqualTo(9090);
+                assertThat(d.getSpec()).satisfies(deploymentSpec -> {
+                    assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
+                        assertThat(t.getSpec()).satisfies(podSpec -> {
+                            assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                                assertThat(container.getEnv()).extracting("name", "value")
+                                        .contains(tuple("MY_ENV_VAR", "SOMEVALUE"));
+                                assertThat(container.getImage())
+                                        .isEqualTo("quay.io/grp/kubernetes-with-application-properties:0.1-SNAPSHOT");
+                                assertThat(container.getPorts()).hasOnlyOneElementSatisfying(p -> {
+                                    assertThat(p.getContainerPort()).isEqualTo(9090);
+                                });
                             });
                         });
                     });
@@ -67,15 +70,21 @@ public class KubernetesWithApplicationPropertiesTest {
             });
         });
 
-        assertThat(kubernetesList.get(1)).isInstanceOfSatisfying(Service.class, s -> {
-            assertThat(s.getSpec()).satisfies(spec -> {
-                assertThat(spec.getPorts()).hasSize(1).hasOnlyOneElementSatisfying(p -> {
-                    assertThat(p.getPort()).isEqualTo(9090);
+        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+            assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
+                assertThat(s.getSpec()).satisfies(spec -> {
+                    assertThat(spec.getPorts()).hasSize(1).hasOnlyOneElementSatisfying(p -> {
+                        assertThat(p.getPort()).isEqualTo(9090);
+                    });
                 });
             });
         });
 
-        assertThat(kubernetesList.get(2)).isInstanceOf(ServiceAccount.class);
+        assertThat(kubernetesList).filteredOn(i -> "ServiceAccount".equals(i.getKind())).hasSize(1)
+                .hasOnlyElementsOfType(ServiceAccount.class);
+
+        assertThat(kubernetesList).filteredOn(i -> "Ingress".equals(i.getKind())).hasSize(1)
+                .hasOnlyElementsOfType(Ingress.class);
     }
 
 }

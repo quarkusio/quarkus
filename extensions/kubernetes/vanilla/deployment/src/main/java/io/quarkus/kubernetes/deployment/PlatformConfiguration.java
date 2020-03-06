@@ -66,6 +66,10 @@ public interface PlatformConfiguration {
 
     Map<String, ContainerConfig> getContainers();
 
+    default boolean isExpose() {
+        return false;
+    }
+
     default String getConfigName() {
         return getClass().getSimpleName().replaceAll("Config$", "").toLowerCase();
     }

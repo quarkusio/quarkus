@@ -96,7 +96,7 @@
         <jboss-logging-annotations.version>2.1.0.Final</jboss-logging-annotations.version>
         <slf4j.version>1.7.29</slf4j.version>
         <slf4j-jboss-logging.version>1.2.0.Final</slf4j-jboss-logging.version>
-        <wildfly-common.version>1.5.3.Final-format-001</wildfly-common.version>
+        <wildfly-common.version>1.5.4.Final-format-001</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>1.11.2.Final</wildfly-elytron.version>
         <jboss-modules.version>1.8.7.Final</jboss-modules.version>

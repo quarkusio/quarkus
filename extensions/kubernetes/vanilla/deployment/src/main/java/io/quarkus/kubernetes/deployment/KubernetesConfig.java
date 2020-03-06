@@ -193,6 +193,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     @ConfigItem(defaultValue = "kubernetes")
     List<String> deploymentTarget;
 
+    /**
+     * If true, a Kubernetes Ingress will be created
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean expose;
+
     public Optional<String> getPartOf() {
         return partOf;
     }
@@ -306,4 +312,8 @@ public class KubernetesConfig implements PlatformConfiguration {
         return containers;
     }
 
+    @Override
+    public boolean isExpose() {
+        return expose;
+    }
 }

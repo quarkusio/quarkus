@@ -50,6 +50,7 @@ import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.logmanager.Level;
 
 import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.deployment.JdbcDataSourceSchemaReadyBuildItem;
@@ -71,6 +72,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -713,6 +715,13 @@ public final class HibernateOrmProcessor {
                                 + "If you use persistence.xml remove all " + HIBERNATE_ORM_CONFIG_PREFIX
                                 + "* properties from the Quarkus config file.");
             }
+        }
+    }
+
+    @BuildStep
+    public void produceLoggingCategories(BuildProducer<LogCategoryBuildItem> categories) {
+        if (hibernateConfig.log.bindParam) {
+            categories.produce(new LogCategoryBuildItem("org.hibernate.type.descriptor.sql.BasicBinder", Level.TRACE));
         }
     }
 

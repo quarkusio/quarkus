@@ -7,6 +7,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.plugins.BasePlugin;
@@ -141,10 +142,14 @@ public class QuarkusPlugin implements Plugin<Project> {
     }
 
     private void configProjectDependency(Project project, Project dep) {
-        project.getLogger().debug("Configuring %s task dependencies on %s tasks", project, dep);
-        final Task quarkusBuild = project.getTasks().findByName(QUARKUS_BUILD_TASK_NAME);
-        final Task jarTask = dep.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
-        quarkusBuild.dependsOn(jarTask);
-        extension.addProjectDepJarTask(dep, jarTask);
+        try {
+            final Task quarkusBuild = project.getTasks().findByName(QUARKUS_BUILD_TASK_NAME);
+            final Task jarTask = dep.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
+            project.getLogger().debug("Configuring %s task dependencies on %s tasks", project, dep);
+            quarkusBuild.dependsOn(jarTask);
+            extension.addProjectDepJarTask(dep, jarTask);
+        } catch (UnknownTaskException e) {
+            // expected tasks aren't present
+        }
     }
 }

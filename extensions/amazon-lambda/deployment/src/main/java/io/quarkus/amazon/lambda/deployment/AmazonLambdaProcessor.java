@@ -199,6 +199,17 @@ public final class AmazonLambdaProcessor {
     }
 
     @BuildStep
+    void tmpdirs(BuildProducer<SystemPropertyBuildItem> systemProperty,
+            LaunchModeBuildItem launchModeBuildItem) {
+        LaunchMode mode = launchModeBuildItem.getLaunchMode();
+        if (mode.isDevOrTest()) {
+            return; // just in case we're on windows.
+        }
+        systemProperty.produce(new SystemPropertyBuildItem("java.io.tmpdir", "/tmp"));
+        systemProperty.produce(new SystemPropertyBuildItem("vertx.cacheDirBase", "/tmp/vertx"));
+    }
+
+    @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT)
     void enableNativeEventLoop(LambdaBuildTimeConfig config,
             AmazonLambdaRecorder recorder,

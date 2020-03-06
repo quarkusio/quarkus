@@ -89,10 +89,6 @@ jobs:
         with:
           name: maven-repo
           path: maven-repo.tgz
-      - name: Cleanup Cache
-        shell: bash
-        run: |
-          find ~/.m2/repositoiry/io/quarkus/ -mindepth 1 -maxdepth 1 \( ! -name http -a ! -name gizmo -a ! -name security \) -exec echo {} \; -exec rm -rf {} \; || true
 
   linux-jvm-tests:
     name: JDK ${{matrix.java-version}} JVM Tests

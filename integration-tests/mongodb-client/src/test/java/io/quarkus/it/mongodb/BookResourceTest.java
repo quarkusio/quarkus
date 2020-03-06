@@ -118,7 +118,7 @@ public class BookResourceTest {
     }
 
     @Test
-    public void testLEgacyReactiveClients() {
+    public void testLegacyReactiveClients() {
         callTheEndpoint("/legacy-reactive-books");
     }
 

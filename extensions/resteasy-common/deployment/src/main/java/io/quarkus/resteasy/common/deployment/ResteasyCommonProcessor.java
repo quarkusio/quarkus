@@ -24,8 +24,11 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.AnnotationValue.Kind;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.MediaTypeMap;
 import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
@@ -131,6 +134,7 @@ public class ResteasyCommonProcessor {
             if (i.target().kind() == AnnotationTarget.Kind.CLASS) {
                 contributedProviders.add(i.target().asClass().name().toString());
             }
+            checkProperConfigAccessInProvider(i);
         }
 
         Set<String> availableProviders = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
@@ -185,6 +189,29 @@ public class ResteasyCommonProcessor {
         }
 
         return new JaxrsProvidersToRegisterBuildItem(providersToRegister, contributedProviders, useBuiltinProviders);
+    }
+
+    private void checkProperConfigAccessInProvider(AnnotationInstance instance) {
+        List<AnnotationInstance> configPropertyInstances = instance.target().asClass().annotations()
+                .get(ResteasyDotNames.CONFIG_PROPERTY);
+        if (configPropertyInstances == null) {
+            return;
+        }
+        for (AnnotationInstance configPropertyInstance : configPropertyInstances) {
+            if (configPropertyInstance.target().kind() != AnnotationTarget.Kind.FIELD) {
+                continue;
+            }
+            FieldInfo field = configPropertyInstance.target().asField();
+            Type fieldType = field.type();
+            if (ResteasyDotNames.CDI_INSTANCE.equals(fieldType.name())) {
+                continue;
+            }
+            LOGGER.warn(
+                    "Directly injecting a @" + ResteasyDotNames.CONFIG_PROPERTY.withoutPackagePrefix()
+                            + " into a JAX-RS provider may lead to unexpected results. To ensure proper results, please change the type of the field to "
+                            + ParameterizedType.create(ResteasyDotNames.CDI_INSTANCE, new Type[] { fieldType }, null)
+                            + ". Offending field is '" + field.name() + "' of class '" + field.declaringClass() + "'");
+        }
     }
 
     private boolean restJsonSupportNeeded(CombinedIndexBuildItem indexBuildItem, DotName mediaTypeAnnotation) {

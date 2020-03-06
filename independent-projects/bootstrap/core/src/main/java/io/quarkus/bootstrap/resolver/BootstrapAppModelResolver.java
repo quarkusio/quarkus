@@ -201,7 +201,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             deploymentInjector.injectDeploymentDependencies(resolvedDeps);
         } catch (BootstrapDependencyProcessingException e) {
             throw new AppModelResolverException(
-                    "Failed to inject extension deployment dependencies for " + resolvedDeps.getArtifact(), e.getCause());
+                    "Failed to inject extension deployment dependencies for " + resolvedDeps.getArtifact(), e);
         }
 
         List<AppDependency> deploymentDeps = Collections.emptyList();

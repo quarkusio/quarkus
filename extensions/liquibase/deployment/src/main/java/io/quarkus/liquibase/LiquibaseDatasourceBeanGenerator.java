@@ -1,7 +1,7 @@
 package io.quarkus.liquibase;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
@@ -17,6 +17,7 @@ import org.jboss.jandex.DotName;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -48,12 +49,14 @@ class LiquibaseDatasourceBeanGenerator {
 
     private static final int ACCESS_PACKAGE_PROTECTED = 0;
 
-    private final Collection<String> dataSourceNames = new HashSet<>();
+    private final Collection<String> namedDataSourceNames;
     private final BuildProducer<GeneratedBeanBuildItem> generatedBean;
 
     public LiquibaseDatasourceBeanGenerator(Collection<String> dataSourceNames,
             BuildProducer<GeneratedBeanBuildItem> generatedBean) {
-        this.dataSourceNames.addAll(dataSourceNames);
+        this.namedDataSourceNames = dataSourceNames.stream()
+                .filter(n -> !DataSourceUtil.isDefault(n))
+                .collect(Collectors.toSet());
         this.generatedBean = generatedBean;
     }
 
@@ -75,26 +78,26 @@ class LiquibaseDatasourceBeanGenerator {
         defaultProducerField.setModifiers(ACCESS_PACKAGE_PROTECTED);
         defaultProducerField.addAnnotation(Inject.class);
 
-        for (String dataSourceName : dataSourceNames) {
-            String dataSourceFieldName = "dataSource" + hashed(dataSourceName);
+        for (String namedDataSourceName : namedDataSourceNames) {
+            String dataSourceFieldName = "dataSource" + hashed(namedDataSourceName);
             FieldCreator dataSourceField = classCreator.getFieldCreator(dataSourceFieldName, DataSource.class);
             dataSourceField.setModifiers(ACCESS_PACKAGE_PROTECTED);
             dataSourceField.addAnnotation(Inject.class);
-            dataSourceField.addAnnotation(annotatedWithNamed(dataSourceName));
+            dataSourceField.addAnnotation(annotatedWithNamed(namedDataSourceName));
 
-            String producerMethodName = "createLiquibaseForDataSource" + hashed(dataSourceName);
+            String producerMethodName = "createLiquibaseForDataSource" + hashed(namedDataSourceName);
             MethodCreator liquibaseProducerMethod = classCreator.getMethodCreator(producerMethodName, LiquibaseFactory.class);
             liquibaseProducerMethod.addAnnotation(Produces.class);
             liquibaseProducerMethod.addAnnotation(Dependent.class);
-            liquibaseProducerMethod.addAnnotation(annotatedWithLiquibaseDatasource(dataSourceName));
-            liquibaseProducerMethod.addAnnotation(annotatedWithNamed(LIQUIBASE_BEAN_NAME_PREFIX + dataSourceName));
+            liquibaseProducerMethod.addAnnotation(annotatedWithLiquibaseDatasource(namedDataSourceName));
+            liquibaseProducerMethod.addAnnotation(annotatedWithNamed(LIQUIBASE_BEAN_NAME_PREFIX + namedDataSourceName));
 
             liquibaseProducerMethod.returnValue(
                     liquibaseProducerMethod.invokeVirtualMethod(
                             createLiquibaseMethod(),
                             resultHandleFor(defaultProducerField, liquibaseProducerMethod),
                             resultHandleFor(dataSourceField, liquibaseProducerMethod),
-                            liquibaseProducerMethod.load(dataSourceName)));
+                            liquibaseProducerMethod.load(namedDataSourceName)));
         }
         classCreator.close();
     }
@@ -132,7 +135,7 @@ class LiquibaseDatasourceBeanGenerator {
 
     @Override
     public String toString() {
-        return "LiquibaseDatasourceBeanGenerator [dataSourceNames=" + dataSourceNames + ", generatedBean=" + generatedBean
+        return "LiquibaseDatasourceBeanGenerator [dataSourceNames=" + namedDataSourceNames + ", generatedBean=" + generatedBean
                 + "]";
     }
 }

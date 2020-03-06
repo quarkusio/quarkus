@@ -16,12 +16,13 @@ import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.agroal.deployment.DataSourceInitializedBuildItem;
-import io.quarkus.agroal.deployment.DataSourceSchemaReadyBuildItem;
+import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
+import io.quarkus.agroal.deployment.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -78,12 +79,6 @@ class LiquibaseProcessor {
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("liquibase.servicelocator.ServiceLocator"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("liquibase.diff.compare.CompareControl"));
 
-        //Classes that use reflection
-        reflective.produce(new ReflectiveClassBuildItem(true, false, false,
-                "com.sun.org.apache.xerces.internal.impl.dv.xs.SchemaDVFactoryImpl",
-                "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl",
-                "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl"));
-
         reflective.produce(new ReflectiveClassBuildItem(false, true, false,
                 "liquibase.change.AbstractSQLChange",
                 "liquibase.database.jvm.JdbcConnection"));
@@ -128,7 +123,7 @@ class LiquibaseProcessor {
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
             BuildProducer<BeanContainerListenerBuildItem> containerListenerProducer,
             LiquibaseRecorder recorder,
-            DataSourceInitializedBuildItem dataSourceInitializedBuildItem,
+            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItem,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
 
@@ -137,15 +132,16 @@ class LiquibaseProcessor {
         AdditionalBeanBuildItem unremovableProducer = AdditionalBeanBuildItem.unremovableOf(LiquibaseProducer.class);
         additionalBeanProducer.produce(unremovableProducer);
 
-        Collection<String> dataSourceNames = DataSourceInitializedBuildItem
-                .dataSourceNamesOf(dataSourceInitializedBuildItem);
+        Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
+                .map(i -> i.getName())
+                .collect(Collectors.toSet());
         new LiquibaseDatasourceBeanGenerator(dataSourceNames, generatedBeanBuildItem).createLiquibaseProducerBean();
 
         containerListenerProducer.produce(
                 new BeanContainerListenerBuildItem(recorder.setLiquibaseBuildConfig(liquibaseBuildConfig)));
 
         resourceProducer.produce(
-                new NativeImageResourceBuildItem(getChangeLogs(dataSourceInitializedBuildItem).toArray(new String[0])));
+                new NativeImageResourceBuildItem(getChangeLogs(dataSourceNames).toArray(new String[0])));
 
         // liquibase XSD
         resourceProducer.produce(new NativeImageResourceBuildItem(
@@ -160,12 +156,6 @@ class LiquibaseProcessor {
 
         // liquibase resource bundles
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("liquibase/i18n/liquibase-core"));
-        resourceBundle.produce(
-                new NativeImageResourceBundleBuildItem("com.sun.org.apache.xerces.internal.impl.msg.XMLSchemaMessages"));
-        resourceBundle
-                .produce(new NativeImageResourceBundleBuildItem("com.sun.org.apache.xerces.internal.impl.xpath.regex.message"));
-        resourceBundle
-                .produce(new NativeImageResourceBundleBuildItem("com.sun.org.apache.xerces.internal.impl.msg.XMLMessages"));
     }
 
     /**
@@ -179,15 +169,16 @@ class LiquibaseProcessor {
     ServiceStartBuildItem configureRuntimeProperties(LiquibaseRecorder recorder,
             LiquibaseRuntimeConfig liquibaseRuntimeConfig,
             BeanContainerBuildItem beanContainer,
-            DataSourceInitializedBuildItem dataSourceInitializedBuildItem,
-            BuildProducer<DataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
+            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
+            BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
         recorder.configureLiquibaseProperties(liquibaseRuntimeConfig, beanContainer.getValue());
         recorder.doStartActions(liquibaseRuntimeConfig, beanContainer.getValue());
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"
-        final Collection<String> dataSourceNames = DataSourceInitializedBuildItem
-                .dataSourceNamesOf(dataSourceInitializedBuildItem);
-        schemaReadyBuildItem.produce(new DataSourceSchemaReadyBuildItem(dataSourceNames));
+        Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
+                .map(i -> i.getName())
+                .collect(Collectors.toSet());
+        schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(dataSourceNames));
         return new ServiceStartBuildItem("liquibase");
     }
 
@@ -247,9 +238,9 @@ class LiquibaseProcessor {
      * @param dataSourceInitializedBuildItem {@link DataSourceInitializedBuildItem}
      * @return {@link Collection} of {@link String}s
      */
-    private List<String> getChangeLogs(DataSourceInitializedBuildItem dataSourceInitializedBuildItem) {
-        Collection<String> dataSourceNames = DataSourceInitializedBuildItem.dataSourceNamesOf(dataSourceInitializedBuildItem);
+    private List<String> getChangeLogs(Collection<String> dataSourceNames) {
         Collection<String> changeLogs = dataSourceNames.stream()
+                .filter(n -> !DataSourceUtil.isDefault(n))
                 .map(liquibaseBuildConfig::getConfigForDataSourceName)
                 .map(c -> c.changeLog)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -262,7 +253,7 @@ class LiquibaseProcessor {
         for (String tmp : changeLogs) {
             resources.addAll(findAllChangeLogs(tmp, classLoaderResourceAccessor, changeLogParameters));
         }
-        if (DataSourceInitializedBuildItem.isDefaultDataSourcePresent(dataSourceInitializedBuildItem)) {
+        if (DataSourceUtil.hasDefault(dataSourceNames)) {
             resources.addAll(findAllChangeLogs(liquibaseBuildConfig.defaultDataSource.changeLog, classLoaderResourceAccessor,
                     changeLogParameters));
         }

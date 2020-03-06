@@ -58,6 +58,9 @@ public class NativeImageBuildStep {
      */
     private static final String PATH = "PATH";
 
+    private static final int OOM_ERROR_VALUE = 137;
+    private static final String QUARKUS_XMX_PROPERTY = "quarkus.native.native-image-xmx";
+
     @BuildStep(onlyIf = NativeBuild.class)
     ArtifactResultBuildItem result(NativeImageBuildItem image) {
         return new ArtifactResultBuildItem(image.getPath(), PackageConfig.NATIVE, Collections.emptyMap());
@@ -328,8 +331,9 @@ public class NativeImageBuildStep {
                     errorReportLatch));
             executor.shutdown();
             errorReportLatch.await();
-            if (process.waitFor() != 0) {
-                throw new RuntimeException("Image generation failed. Exit code: " + process.exitValue());
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw imageGenerationFailed(exitCode, command);
             }
             Path generatedImage = outputDir.resolve(executableName);
             Path finalPath = outputTargetBuildItem.getOutputDirectory().resolve(executableName);
@@ -340,6 +344,22 @@ public class NativeImageBuildStep {
             return new NativeImageBuildItem(finalPath);
         } catch (Exception e) {
             throw new RuntimeException("Failed to build native image", e);
+        }
+    }
+
+    private RuntimeException imageGenerationFailed(int exitValue, List<String> command) {
+        if (exitValue == OOM_ERROR_VALUE) {
+            if (command.contains("docker") && !IS_LINUX) {
+                return new RuntimeException("Image generation failed. Exit code was " + exitValue
+                        + " which indicates an out of memory error. The most likely cause is Docker not being given enough memory. Also consider increasing the Xmx value for native image generation by setting the \""
+                        + QUARKUS_XMX_PROPERTY + "\" property");
+            } else {
+                return new RuntimeException("Image generation failed. Exit code was " + exitValue
+                        + " which indicates an out of memory error. Consider increasing the Xmx value for native image generation by setting the \""
+                        + QUARKUS_XMX_PROPERTY + "\" property");
+            }
+        } else {
+            return new RuntimeException("Image generation failed. Exit code: " + exitValue);
         }
     }
 

@@ -37,7 +37,7 @@
             <artifactId>quarkus-narayana-jta</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
             <exclusions>
                 <exclusion>
@@ -112,7 +112,7 @@
             <artifactId>svm</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>org.hibernate.orm</groupId>
             <artifactId>quarkus-local-cache</artifactId>
         </dependency>
         <!-- Technically the quarkus-caffeine-runtime belongs as a dependency to the Quarkus Caching layer,

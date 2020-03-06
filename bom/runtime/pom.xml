@@ -82,7 +82,9 @@
         <commons-lang3.version>3.9</commons-lang3.version>
         <commons-codec.version>1.13</commons-codec.version>
         <classmate.version>1.3.4</classmate.version>
-        <hibernate-orm.version>5.4.12.Final</hibernate-orm.version>
+        <hibernate-orm.version>6.0.0.Alpha4</hibernate-orm.version>
+        <!--this is a workaround because -hibernate-graalvm hasnt moved the repo yet-->
+        <hibernate-graalvm-orm.version>5.4.12.Final</hibernate-graalvm-orm.version>
         <hibernate-validator.version>6.1.2.Final</hibernate-validator.version>
         <hibernate-search.version>6.0.0.Beta5</hibernate-search.version>
         <narayana.version>5.10.1.Final</narayana.version>
@@ -2117,27 +2119,27 @@
                 <version>${hibernate-validator.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hibernate</groupId>
+                <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
                 <version>${hibernate-orm.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate</groupId>
                 <artifactId>hibernate-graalvm</artifactId>
-                <version>${hibernate-orm.version}</version>
+                <version>${hibernate-graalvm-orm.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hibernate</groupId>
+                <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-envers</artifactId>
                 <version>${hibernate-orm.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hibernate</groupId>
+                <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-jpamodelgen</artifactId>
                 <version>${hibernate-orm.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hibernate</groupId>
+                <groupId>org.hibernate.orm</groupId>
                 <artifactId>quarkus-local-cache</artifactId>
                 <version>${hibernate-quarkus-local-cache.version}</version>
             </dependency>

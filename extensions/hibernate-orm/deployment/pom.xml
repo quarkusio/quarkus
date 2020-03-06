@@ -79,7 +79,7 @@
         </dependency>
         <!-- To test Hibernate Envers -->
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-envers</artifactId>
             <scope>test</scope>
          </dependency>

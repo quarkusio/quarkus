@@ -297,7 +297,7 @@ jobs:
         include:
           - category: Main
             postgres: "true"
-            timeout: 25
+            timeout: 30
             test-modules: main
           - category: Data1
             mariadb: "true"
@@ -312,7 +312,7 @@ jobs:
           - category: Data2
             mysql: "true"
             postgres: "true"
-            timeout: 25
+            timeout: 30
             test-modules: >
               jpa
               jpa-postgresql
@@ -333,14 +333,14 @@ jobs:
               mongodb-panache
               neo4j
           - category: Data5
-            timeout: 25
+            timeout: 30
             test-modules: >
               hibernate-search-elasticsearch
               narayana-stm
               narayana-jta
           - category: Amazon
             dynamodb: "true"
-            timeout: 15
+            timeout: 20
             test-modules: >
               amazon-dynamodb
               amazon-lambda
@@ -353,7 +353,7 @@ jobs:
               kafka
               kafka-streams
           - category: Security1
-            timeout: 20
+            timeout: 30
             keycloak: "true"
             test-modules: >
               elytron-security-oauth2
@@ -405,9 +405,9 @@ jobs:
               logging-gelf
               bootstrap-config
               optaplanner-jackson
-          # kubernetes-client alone takes 16mn+
+          # kubernetes-client alone takes 30mn+
           - category: Misc3
-            timeout: 35
+            timeout: 50
             test-modules: >
               kogito
               kubernetes-client

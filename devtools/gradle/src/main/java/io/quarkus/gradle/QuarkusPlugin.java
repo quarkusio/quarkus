@@ -77,7 +77,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         project.getPlugins().withType(
                 JavaPlugin.class,
                 javaPlugin -> {
-                    project.afterEvaluate(p -> afterEvaluate(p));
+                    project.afterEvaluate(this::afterEvaluate);
 
                     Task classesTask = tasks.getByName(JavaPlugin.CLASSES_TASK_NAME);
                     quarkusDev.dependsOn(classesTask);
@@ -120,7 +120,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                         t.useJUnitPlatform();
                     };
                     tasks.withType(Test.class).forEach(configureTestTask);
-                    tasks.withType(Test.class).whenTaskAdded(t -> configureTestTask.accept(t));
+                    tasks.withType(Test.class).whenTaskAdded(configureTestTask::accept);
                 });
     }
 
@@ -136,20 +136,22 @@ public class QuarkusPlugin implements Plugin<Project> {
                 .getIncoming().getDependencies()
                 .forEach(d -> {
                     if (d instanceof ProjectDependency) {
-                        configProjectDependency(project, project.getRootProject().findProject(d.getName()));
+                        configProjectDependency(project, ((ProjectDependency) d).getDependencyProject());
                     }
                 });
     }
 
     private void configProjectDependency(Project project, Project dep) {
         try {
-            final Task quarkusBuild = project.getTasks().findByName(QUARKUS_BUILD_TASK_NAME);
             final Task jarTask = dep.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
+            final Task quarkusBuild = project.getTasks().findByName(QUARKUS_BUILD_TASK_NAME);
             project.getLogger().debug("Configuring %s task dependencies on %s tasks", project, dep);
-            quarkusBuild.dependsOn(jarTask);
+            if (quarkusBuild != null) {
+                quarkusBuild.dependsOn(jarTask);
+            }
             extension.addProjectDepJarTask(dep, jarTask);
         } catch (UnknownTaskException e) {
-            // expected tasks aren't present
+            project.getLogger().debug("Expected tasks not present", e);
         }
     }
 }

@@ -5,6 +5,9 @@ import java.net.URL;
 import java.nio.channels.spi.AsynchronousChannelProvider;
 import java.util.function.Function;
 
+import org.graalvm.nativeimage.Platform;
+import org.graalvm.nativeimage.Platforms;
+
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.InjectAccessors;
 import com.oracle.svm.core.annotate.Substitute;
@@ -92,6 +95,7 @@ final class Package_jdk_internal_loader implements Function<TargetClass, String>
 
 @Substitute
 @TargetClass(className = "sun.nio.ch.WindowsAsynchronousFileChannelImpl", innerClass = "DefaultIocpHolder", onlyWith = JDK11OrLater.class)
+@Platforms({ Platform.WINDOWS.class })
 final class Target_sun_nio_ch_WindowsAsynchronousFileChannelImpl_DefaultIocpHolder {
 
     @Alias
@@ -100,6 +104,7 @@ final class Target_sun_nio_ch_WindowsAsynchronousFileChannelImpl_DefaultIocpHold
 }
 
 @TargetClass(className = "sun.nio.ch.Iocp", onlyWith = JDK11OrLater.class)
+@Platforms({ Platform.WINDOWS.class })
 final class Target_sun_nio_ch_Iocp {
 
     @Alias
@@ -113,6 +118,7 @@ final class Target_sun_nio_ch_Iocp {
 }
 
 @TargetClass(className = "sun.nio.ch.ThreadPool", onlyWith = JDK11OrLater.class)
+@Platforms({ Platform.WINDOWS.class })
 final class Target_sun_nio_ch_ThreadPool {
 
     @Alias

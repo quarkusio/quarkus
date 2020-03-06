@@ -418,7 +418,6 @@ class KubernetesProcessor {
                 String builderImageName = ImageUtil.getName(builderImage);
                 S2iBuildConfig s2iBuildConfig = new S2iBuildConfigBuilder().withBuilderImage(builderImage).build();
                 if (!DEFAULT_S2I_IMAGE_NAME.equals(builderImageName)) {
-                    log.warn("Replacing " + DEFAULT_S2I_IMAGE_NAME + " builder image with " + builderImageName);
                     session.resources().decorate(OPENSHIFT, new RemoveBuilderImageResourceDecorator(DEFAULT_S2I_IMAGE_NAME));
                 }
                 session.resources().decorate(OPENSHIFT, new AddBuilderImageStreamResourceDecorator(s2iBuildConfig));

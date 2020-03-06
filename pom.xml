@@ -45,7 +45,8 @@
         <module>independent-projects/bootstrap</module>
         <module>independent-projects/tools</module>
         <module>independent-projects/qute</module>
-       
+        <module>independent-projects/utilities</module>
+
         <!-- BOMs and parent POM -->
         <module>bom/runtime</module>
         <module>bom/deployment</module>

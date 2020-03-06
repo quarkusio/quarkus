@@ -335,6 +335,7 @@ stages:
           timeoutInMinutes: 30
           modules:
             - flyway
+            - liquibase
             - hibernate-orm-panache
             - reactive-pg-client
           name: data_3

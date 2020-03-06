@@ -152,6 +152,9 @@
         <jgit.version>5.6.1.202002131546-r</jgit.version>
         <flyway.version>6.3.0</flyway.version>
         <yasson.version>1.0.6</yasson.version>
+        <liquibase.version>3.8.7</liquibase.version>
+        <snakeyaml.version>1.25</snakeyaml.version>
+        <osgi.version>6.0.0</osgi.version>
         <neo4j-java-driver.version>4.0.0</neo4j-java-driver.version>
         <mongo-client.version>3.12.0</mongo-client.version>
         <mongo-reactivestreams-client.version>1.13.0</mongo-reactivestreams-client.version>
@@ -396,6 +399,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-flyway</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-liquibase</artifactId>
                 <version>${project.version}</version>
              </dependency>
             <dependency>
@@ -2714,6 +2722,31 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-core</artifactId>
                 <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.liquibase</groupId>
+                <artifactId>liquibase-core</artifactId>
+                <version>${liquibase.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>ch.qos.logback</groupId>
+                        <artifactId>logback-classic</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.xml.bind</groupId>
+                        <artifactId>jaxb-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>${snakeyaml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.core</artifactId>
+                <version>${osgi.version}</version>
             </dependency>
 
             <dependency>

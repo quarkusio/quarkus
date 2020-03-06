@@ -43,6 +43,7 @@ import org.jboss.resteasy.microprofile.client.async.AsyncInterceptorRxInvokerPro
 import org.jboss.resteasy.spi.ResteasyConfiguration;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrarBuildItem;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanRegistrar;
@@ -94,6 +95,12 @@ class RestClientProcessor {
 
         proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem("javax.ws.rs.ext.Providers"));
         resources.produce(new NativeImageResourceBuildItem(PROVIDERS_SERVICE_FILE));
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    BeanContainerListenerBuildItem fixExtension(RestClientRecorder restClientRecorder) {
+        return new BeanContainerListenerBuildItem(restClientRecorder.hackAroundExtension());
     }
 
     @BuildStep

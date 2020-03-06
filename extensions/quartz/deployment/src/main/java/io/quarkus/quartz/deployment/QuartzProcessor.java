@@ -174,7 +174,7 @@ public class QuartzProcessor {
     public void build(QuartzRuntimeConfig runtimeConfig, QuartzBuildTimeConfig buildTimeConfig, QuartzRecorder recorder,
             BeanContainerBuildItem beanContainer,
             BuildProducer<ServiceStartBuildItem> serviceStart, QuartzJDBCDriverDialectBuildItem driverDialect,
-            Optional<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
+            List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
         recorder.initialize(runtimeConfig, buildTimeConfig, beanContainer.getValue(), driverDialect.getDriver());
         // Make sure that StartupEvent is fired after the init
         serviceStart.produce(new ServiceStartBuildItem("quartz"));

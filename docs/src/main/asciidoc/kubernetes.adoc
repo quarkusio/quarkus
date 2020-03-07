@@ -8,7 +8,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 include::./attributes.adoc[]
 
 This guide covers generating and deploying Kubernetes resources based on sane defaults and user supplied configuration.
-In detail, it supports generating resources for <<Kubernetes>>, <<OpenShift>> and <<Knative>>. Also it supports automatically <<Deployment>> these resources to the target platform.
+In detail, it supports generating resources for <<#kubernetes,Kubernetes>>, <<#openshift,OpenShift>> and <<#knative,Knative>>. Also it supports automatic deployment of these resources to the target platform.
 
 == Prerequisites
 
@@ -35,6 +35,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 cd kubernetes-quickstart
 ----
 
+[#kubernetes]
 == Kubernetes
 
 Quarkus offers the ability to automatically generate Kubernetes resources based on sane defaults and user supplied configuration. The implementation that takes care
@@ -163,9 +164,7 @@ quarkus.container-image.registry=http://my.docker-registry.net
 ----
 
 By adding this property along with the rest of the container-image properties of the previous section, the generated manifests will use the image `http://my.docker-registry.net/quarkus/demo-app:1.0`.
-
-
-The image is not the only thing that can be customized in the generated manifests. The kubernetes extension provides a rich set of configuration properties that allow customization.
+The image is not the only thing that can be customized in the generated manifests, as will become evident in the following sections.
 
 === Labels and Annotations
 
@@ -182,7 +181,7 @@ quarkus.kubernetes.name=todo-rest
 quarkus.kubernetes.version=1.0-rc.1
 ----
 
-The generated generated resources will have the labels:
+The labels in generated resources will look like:
 
 [source, json]
 ----
@@ -195,7 +194,7 @@ The generated generated resources will have the labels:
 
 ==== Custom Labels
 
-To add additional custom labels, for example `foo=bar`:
+To add additional custom labels, for example `foo=bar` just apply the following configuration:
 
 [source]
 ----
@@ -216,7 +215,7 @@ Out of the box, the generated resources will be annotated with version control r
 
 ==== Custom Annotations
 
-Custom annotations can be added in a way similar to labels. For example to add the annotation `foo=bar`:
+Custom annotations can be added in a way similar to labels. For example to add the annotation `foo=bar` just apply the following configuration:
 
 
 [source]
@@ -228,12 +227,12 @@ quarkus.kubernetes.annotations.foo=bar
 
 Kubernetes provides multiple ways of defining environment variables:
 
-- key value pairs
-- from Secret
-- from ConfigMap
+- key/value pairs
+- from a Secret
+- from a ConfigMap
 - from fields
 
-To add a key value pair as an environment variable in the generated resources:
+To add a key/value pair as an environment variable in the generated resources:
 
 [source]
 ----
@@ -248,7 +247,7 @@ That is because for environment variables there are additional options rather th
 
 ===== Environment variables from Secret
 
-To add all key value pairs of a `Secret` as environment variables:
+To add all key/value pairs of a `Secret` as environment variables just apply the following configuration:
 
 [source]
 ----
@@ -257,7 +256,7 @@ quarkus.kubernetes.env-vars.my-env-var.secret=my-secret
 
 ===== Environment variables from ConfigMap
 
-To add all key value pairs of a `ConfigMap` as environment variables:
+To add all key/value pairs of a `ConfigMap` as environment variables just apply the following configuration:
 
 [source]
 ----
@@ -268,7 +267,6 @@ quarkus.kubernetes.env-vars.my-env-var.configmap=my-secret
 ==== Mounting volumes
 
 The Kubernetes extension allows the user to configure both volumes and mounts for the application.
-
 Any volume can be mounted with a simple configuration:
 
 [source]
@@ -277,8 +275,7 @@ quarkus.kubernetes.mounts.my-volume.path=/where/to/mount
 ----
 
 This will add a mount to my pod for volume `my-volume` to path `/where/to/mount`.
-
-The volumes themselves can be configured as shown in the sections below:
+The volumes themselves can be configured as shown in the sections below.
 
 ===== Secret volumes
 
@@ -326,8 +323,6 @@ To set the initial delay of the probe to 20 seconds and the period to 45:
 quarkus.kubernetes.readiness-probe.initial-delay-seconds=20
 quarkus.kubernetes.readiness-probe.period-seconds=45
 ----
-
-Here you can find a complete reference to all the available configuration options:
 
 === Using the Kubernetes client
 
@@ -518,6 +513,7 @@ Below you will find tables describing all available types.
 | read-only   | boolean |             | false        
 |====
 
+[#openshift]
 == OpenShift
 
 To enable the generation of OpenShift resources, you need to include OpenShift in the target platforms:
@@ -527,18 +523,19 @@ To enable the generation of OpenShift resources, you need to include OpenShift i
 quarkus.kubernetes.deployment-target=openshift
 ----
 
-If you need to generate resources for both platforms (vanilla Kubernetes and OpenShift), then you need to include both (coma separated).
+If you need to generate resources for both platforms (vanilla Kubernetes and OpenShift), then you need to include both (comma separated).
 
 [source]
 ----
 quarkus.kubernetes.deployment-target=kubernetes, openshift
 ----
 
-Note: In latest versions of Quarkus a wrapper extension of link:openshift[Openshift] is provided. If you use it, there is no need to explicitly set this property.
+NOTE: Quarkus also provides the link:openshift[OpenShift] extension. This extension is basically wrapper around the Kubernetes extension and
+relieves OpenShift users of the necessity of setting the `deployment-target` property to `openshift`
 
 The OpenShift resources can be customized in a similar approach with Kubernetes.
 
-.Openshift
+.OpenShift
 |====
 | Property                                          | Type                                      | Description | Default Value
 | quarkus.openshift.name                            | String                                    |             | ${quarkus.container-image.name}
@@ -573,6 +570,7 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 | quarkus.openshift.headless                        | boolean                                   |             | false
 |====
 
+[#knative]
 == Knative
     
 To enable the generation of Quarkus.Knative.resources, you need to include Knative in the target platforms:
@@ -674,7 +672,7 @@ The properties for configuring `docker` and `s2i` are also deprecated in favor o
 
 ==== Config group arrays
 
-Properties refering to config group arrays (e.g. kubernetes.labels[0], kubernetes.env-vars[0] etc) have been converted to maps, to align with the rest of the quarkus ecosystem.
+Properties referring to config group arrays (e.g. `kubernetes.labels[0]`, `kubernetes.env-vars[0]` etc) have been converted to maps, to align with the rest of the Quarkus ecosystem.
 
 The code below demonstrates the change in `labels` config:
 
@@ -703,8 +701,8 @@ quarkus.kubernetes.env-vars.foo.configmap=myconfigmap
 
 == Deployment
 
-To trigger building and deploying a container image you need to enable the `quarkus.container.deploy` flag.
-This can be easily done from the command line:
+To trigger building and deploying a container image you need to enable the `quarkus.kubernetes.deploy` flag.
+This can be easily done with the command line:
 
 [source, subs=attributes+]
 ----
@@ -719,7 +717,7 @@ Building is possible, using any of the 3 available `container-image` extensions:
 - link:container-image#jib[Jib]
 - link:container-image#s2i[s2i]
 
-Each time deployment is requested, a container build will be implicitly triggered (no additional properties are required).
+Each time deployment is requested, a container image build will be implicitly triggered (no additional properties are required).
 
 === Deploying
 

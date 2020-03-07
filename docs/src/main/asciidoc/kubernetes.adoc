@@ -708,7 +708,7 @@ This can be easily done from the command line:
 
 [source, subs=attributes+]
 ----
-mvn clean package -Dquarkus.kubernetes.deploy=true
+./mvnw clean package -Dquarkus.kubernetes.deploy=true
 ----
 
 === Building

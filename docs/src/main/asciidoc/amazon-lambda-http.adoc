@@ -56,7 +56,7 @@ Build the project using maven.
 
 [source, subs=attributes+]
 ----
-mvn clean install
+./mvnw clean install
 ----
 
 This will compile the code and run the unit tests included within the generated project.
@@ -68,7 +68,7 @@ to the build
 
 [source, subs=attributes+]
 ----
-mvn clean install -Dnative
+./mvnw clean install -Dnative
 ----
 
 == Simulate Amazon Lambda Deployment

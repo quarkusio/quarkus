@@ -97,7 +97,7 @@ Build the project using maven.
 
 [source, subs=attributes+]
 ----
-mvn clean install
+./mvnw clean install
 ----
 
 This will compile and package your code.
@@ -198,7 +198,7 @@ Lambda requires linux binaries.  You can do this by passing this property to you
 
 [source, subs=attributes+]
 ----
-mvn clean install -Pnative -Dnative-image.docker-build=true
+./mvnw clean install -Pnative -Dnative-image.docker-build=true
 ----
 
 Either of these commands will compile and create a native executable image.  It also generates a zip file `target/function.zip`.

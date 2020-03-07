@@ -62,7 +62,7 @@ Building is handled by the link:container-image#s2i[container-image-s2i] extensi
 
 [source, subs=attributes+]
 ----
-mvn clean package -Dquarkus.container-image.build=true
+./mvnw clean package -Dquarkus.container-image.build=true
 ----
 
 The command above will trigger an s2i binary build.
@@ -73,7 +73,7 @@ To trigger a deployment:
 
 [source, subs=attributes+]
 ----
-mvn clean package -Dquarkus.kubernetes.deploy=true
+./mvnw clean package -Dquarkus.kubernetes.deploy=true
 ----
 
 The command above will trigger a container image build and will apply the generated Openshift resources, right after.
@@ -99,7 +99,7 @@ Tip: You don't necesserily need to add this property in the `application.propert
 
 [source, subs=attributes+]
 ----
-mvn clean package -Dquarkus.openshift.expose=true
+./mvnw clean package -Dquarkus.openshift.expose=true
 ----
 
 The same applies to all properties listed below.

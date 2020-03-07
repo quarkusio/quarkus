@@ -2,6 +2,7 @@
 
 function cmd_create() {
   echo Creating function
+  set -x
   aws lambda create-function \
     --function-name ${FUNCTION_NAME} \
     --zip-file ${ZIP_FILE} \
@@ -13,11 +14,13 @@ function cmd_create() {
 
 function cmd_delete() {
   echo Deleting function
+  set -x
   aws lambda delete-function --function-name ${FUNCTION_NAME}
 }
 
 function cmd_invoke() {
   echo Invoking function
+  set -x
   aws lambda invoke response.txt \
     --function-name ${FUNCTION_NAME} \
     --payload file://payload.json \
@@ -28,6 +31,7 @@ function cmd_invoke() {
 
 function cmd_update() {
   echo Updating function
+  set -x
   aws lambda update-function-code \
     --function-name ${FUNCTION_NAME} \
     --zip-file ${ZIP_FILE}
@@ -64,6 +68,7 @@ fi
 while [ "$1" ]
 do
   eval cmd_${1}
+  { set +x; } 2>/dev/null
   shift
 done
 

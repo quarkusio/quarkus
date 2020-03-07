@@ -91,7 +91,7 @@ public class NativeImageBuildStep {
             if (IS_WINDOWS) {
                 outputPath = FileUtil.translateToVolumePath(outputPath);
             }
-            Collections.addAll(nativeImage, containerRuntime, "run", "-v", outputPath + ":/project:z");
+            Collections.addAll(nativeImage, containerRuntime, "run", "-v", outputPath + ":/project:z", "--env", "LANG=C");
 
             if (IS_LINUX) {
                 if ("docker".equals(containerRuntime)) {
@@ -218,6 +218,9 @@ public class NativeImageBuildStep {
                     }
                 }
             }
+            command.add("-J-Duser.language=" + System.getProperty("user.language"));
+            command.add("-J-Dfile.encoding=" + System.getProperty("file.encoding"));
+
             if (enableSslNative) {
                 nativeConfig.enableHttpsUrlHandler = true;
                 nativeConfig.enableAllSecurityServices = true;

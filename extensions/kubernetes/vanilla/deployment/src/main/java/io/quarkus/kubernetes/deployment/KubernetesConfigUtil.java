@@ -25,9 +25,13 @@ import io.dekorate.utils.Strings;
 public class KubernetesConfigUtil {
 
     private static final String DEKORATE_PREFIX = "dekorate.";
+    private static final String QUARKUS_PREFIX = "quarkus.";
 
     private static final Set<String> ALLOWED_GENERATORS = new HashSet<>(
             Arrays.asList(KUBERNETES, OPENSHIFT, KNATIVE, DOCKER, S2I));
+
+    private static final String EXPOSE_PROPERTY_NAME = "expose";
+    private static final String[] EXPOSABLE_GENERATORS = { OPENSHIFT, KUBERNETES };
 
     public static List<String> getDeploymentTargets() {
         Config config = ConfigProvider.getConfig();
@@ -74,10 +78,26 @@ public class KubernetesConfigUtil {
             }
         }
 
+        // hard-coded support for exposed
+        handleExpose(config, unPrefixed);
+
         result.putAll(unPrefixed);
         result.putAll(quarkusPrefixed);
         result.putAll(toS2iProperties(quarkusPrefixed));
         return result;
+    }
+
+    private static void handleExpose(Config config, Map<String, Object> unPrefixed) {
+        for (String generator : EXPOSABLE_GENERATORS) {
+            boolean unprefixedExpose = config.getOptionalValue(generator + "." + EXPOSE_PROPERTY_NAME, Boolean.class)
+                    .orElse(false);
+            boolean prefixedExpose = config
+                    .getOptionalValue(QUARKUS_PREFIX + generator + "." + EXPOSE_PROPERTY_NAME, Boolean.class)
+                    .orElse(false);
+            if (unprefixedExpose || prefixedExpose) {
+                unPrefixed.put(DEKORATE_PREFIX + generator + "." + EXPOSE_PROPERTY_NAME, true);
+            }
+        }
     }
 
     /**

@@ -64,5 +64,7 @@ public class OpenshiftWithApplicationPropertiesTest {
                 });
             });
         });
+
+        assertThat(openshiftList).filteredOn(h -> "Route".equals(h.getKind())).hasSize(1);
     }
 }

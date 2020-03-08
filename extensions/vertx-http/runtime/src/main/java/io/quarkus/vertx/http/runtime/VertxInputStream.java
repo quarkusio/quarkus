@@ -147,6 +147,7 @@ public class VertxInputStream extends InputStream {
         protected Deque<Buffer> inputOverflow;
         protected boolean waiting = false;
         protected boolean eof = false;
+        protected Throwable readException;
 
         public VertxBlockingInput(HttpServerRequest request) throws IOException {
             this.request = request;
@@ -162,11 +163,30 @@ public class VertxInputStream extends InputStream {
                                 request.connection().notify();
                             }
                         }
-                        if (input1 == null) {
-                            terminateRequest();
-                        }
-
                     }
+                });
+                request.exceptionHandler(new Handler<Throwable>() {
+                    @Override
+                    public void handle(Throwable event) {
+                        synchronized (request.connection()) {
+                            readException = new IOException(event);
+                            if (input1 != null) {
+                                input1.getByteBuf().release();
+                                input1 = null;
+                            }
+                            if (inputOverflow != null) {
+                                Buffer d = inputOverflow.poll();
+                                while (d != null) {
+                                    d.getByteBuf().release();
+                                    d = inputOverflow.poll();
+                                }
+                            }
+                            if (waiting) {
+                                request.connection().notify();
+                            }
+                        }
+                    }
+
                 });
                 request.fetch(1);
             } else {
@@ -174,13 +194,9 @@ public class VertxInputStream extends InputStream {
             }
         }
 
-        public void terminateRequest() {
-
-        }
-
         protected ByteBuf readBlocking() throws IOException {
             synchronized (request.connection()) {
-                while (input1 == null && !eof) {
+                while (input1 == null && !eof && readException == null) {
                     try {
                         if (Context.isOnEventLoopThread()) {
                             throw new IOException("Attempting a blocking read on io thread");
@@ -193,6 +209,9 @@ public class VertxInputStream extends InputStream {
                         waiting = false;
                     }
                 }
+                if (readException != null) {
+                    throw new IOException(readException);
+                }
                 Buffer ret = input1;
                 input1 = null;
                 if (inputOverflow != null) {
@@ -202,10 +221,6 @@ public class VertxInputStream extends InputStream {
                     }
                 } else if (!eof) {
                     request.fetch(1);
-                }
-
-                if (ret == null) {
-                    terminateRequest();
                 }
                 return ret == null ? null : ret.getByteBuf();
             }

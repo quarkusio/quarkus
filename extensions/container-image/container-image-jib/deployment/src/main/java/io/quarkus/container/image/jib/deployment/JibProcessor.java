@@ -135,6 +135,9 @@ public class JibProcessor {
         ImageReference imageReference = getImageReference(containerImageConfig, applicationInfo);
 
         if (pushRequested || containerImageConfig.push) {
+            if (!containerImageConfig.registry.isPresent()) {
+                log.info("No container image registry was set, so 'docker.io' will be used");
+            }
             CredentialRetrieverFactory credentialRetrieverFactory = CredentialRetrieverFactory.forImage(imageReference,
                     log::info);
             RegistryImage registryImage = RegistryImage.named(imageReference);

@@ -26,7 +26,7 @@ public class ReactiveMySQLReloadTest {
                 .get("/dev/error")
                 .then()
                 .statusCode(200)
-                .body(Matchers.allOf(Matchers.startsWith("Connection refused"), Matchers.endsWith(":6033")));
+                .body(Matchers.endsWith(":6033"));
 
         test.modifyResourceFile("application.properties", s -> s.replace(":6033", ":9366"));
 
@@ -34,6 +34,6 @@ public class ReactiveMySQLReloadTest {
                 .get("/dev/error")
                 .then()
                 .statusCode(200)
-                .body(Matchers.allOf(Matchers.startsWith("Connection refused"), Matchers.endsWith(":9366")));
+                .body(Matchers.endsWith(":9366"));
     }
 }

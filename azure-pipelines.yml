@@ -2,8 +2,8 @@ trigger:
   batch: true
   branches:
     include:
-      - master
-      - '1.1'
+      - non-existing-branch 
+#      - master
 
 pr: none
 

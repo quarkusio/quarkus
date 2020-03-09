@@ -2,20 +2,16 @@ package io.quarkus.deployment.steps;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.jar.JarFile;
 
 import org.jboss.logging.Logger;
 
@@ -105,16 +101,14 @@ public class BannerProcessor {
             return false;
         }
 
+        String thisClassName = this.getClass().getName();
+        String jarPath = url.getPath().substring(0, url.getPath().lastIndexOf('!'));
+
         // We determine whether the banner is the default by checking to see if the jar that contains it also
         // contains this class. This way although somewhat complicated guarantees that any rename of artifacts
         // won't affect the check
-        try (FileSystem fileSystem = FileSystems.newFileSystem(url.toURI(), Collections.emptyMap())) {
-            String thisClassName = this.getClass().getName();
-            String[] parts = thisClassName.split("\\.");
-            List<String> rest = new ArrayList<>(parts.length - 1);
-            rest.addAll(Arrays.asList(parts).subList(1, parts.length - 1));
-            rest.add(parts[parts.length - 1] + ".class");
-            return Files.exists(fileSystem.getPath(parts[0], rest.toArray(new String[] {})));
+        try (JarFile jarFile = new JarFile(Paths.get(new URI(jarPath)).toFile())) {
+            return jarFile.getJarEntry(thisClassName.replace('.', '/') + ".class") != null;
         } catch (URISyntaxException e) {
             return false;
         }

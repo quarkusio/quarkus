@@ -103,6 +103,9 @@ public class KubernetesClientProcessor {
         // we also ignore some classes that are annotated with @JsonDeserialize that would force the registration of the entire model
         ignoredJsonDeserializationClasses.produce(
                 new IgnoreJsonDeserializeClassBuildItem(DotName.createSimple("io.fabric8.kubernetes.api.model.KubeSchema")));
+        ignoredJsonDeserializationClasses.produce(
+                new IgnoreJsonDeserializeClassBuildItem(
+                        DotName.createSimple("io.fabric8.kubernetes.api.model.KubernetesResourceList")));
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE));
 
         final String[] doneables = combinedIndexBuildItem.getIndex()

@@ -28,8 +28,8 @@ public class Pods {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{namespace}")
-    public List<Pod> pods(@PathParam("namespace") String namespace) {
-        return kubernetesClient.pods().inNamespace(namespace).list().getItems();
+    public Response pods(@PathParam("namespace") String namespace) {
+        return Response.ok(kubernetesClient.pods().inNamespace(namespace).list().getItems()).build();
     }
 
     @DELETE
@@ -66,8 +66,10 @@ public class Pods {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{namespace}")
-    public Pod createNew(@PathParam("namespace") String namespace) {
-        return kubernetesClient.pods().inNamespace(namespace).createNew().withNewMetadata().withResourceVersion("12345")
-                .endMetadata().done();
+    public Response createNew(@PathParam("namespace") String namespace) {
+        return Response
+                .ok(kubernetesClient.pods().inNamespace(namespace).createNew().withNewMetadata().withResourceVersion("12345")
+                        .endMetadata().done())
+                .build();
     }
 }

@@ -731,7 +731,7 @@ public abstract class PanacheEntityBase {
     }
 
     /**
-     * Update all entities of this type matching the given query, with mandatory indexed parameters.
+     * Update all entities of this type matching the given query, with optional indexed parameters.
      *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}
      * @param params optional sequence of indexed parameters

@@ -26,6 +26,9 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolutionException;
+import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 import org.opentest4j.TestAbortedException;
@@ -51,7 +54,8 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 //todo: share common core with QuarkusUnitTest
 public class QuarkusTestExtension
-        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor, AfterAllCallback {
+        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor, AfterAllCallback,
+        ParameterResolver {
 
     protected static final String TEST_LOCATION = "test-location";
     private static boolean failedBoot;
@@ -247,9 +251,15 @@ public class QuarkusTestExtension
         }
         T result;
         ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
         try {
-            Thread.currentThread().setContextClassLoader(extensionContext.getRequiredTestClass().getClassLoader());
+            Thread.currentThread().setContextClassLoader(requiredTestClass.getClassLoader());
             result = invocation.proceed();
+        } catch (NullPointerException e) {
+            throw new RuntimeException(
+                    "When using constructor injection in a test, the only legal operation is to assign the constructor values to fields. Offending class is "
+                            + requiredTestClass,
+                    e);
         } finally {
             Thread.currentThread().setContextClassLoader(old);
         }
@@ -395,6 +405,45 @@ public class QuarkusTestExtension
     public void afterAll(ExtensionContext context) throws Exception {
         if (originalCl != null) {
             setCCL(originalCl);
+        }
+    }
+
+    /**
+     * By returning true, we allow a QuarkusTest to use constructor injection
+     */
+    @Override
+    public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+            throws ParameterResolutionException {
+        return true;
+    }
+
+    /**
+     * We don't actually have to resolve the parameter (thus the default values in the implementation)
+     * since the class instance that is passed to JUnit isn't really used.
+     * The actual test instance that is used is the one that is pulled from Arc, which of course will already have its
+     * constructor parameters properly resolved
+     */
+    @Override
+    public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+            throws ParameterResolutionException {
+        String className = parameterContext.getParameter().getType().getName();
+        switch (className) {
+            case "boolean":
+                return false;
+            case "byte":
+            case "short":
+            case "int":
+                return 0;
+            case "long":
+                return 0L;
+            case "float":
+                return 0.0f;
+            case "double":
+                return 0.0d;
+            case "char":
+                return '\u0000';
+            default:
+                return null;
         }
     }
 

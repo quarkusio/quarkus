@@ -178,10 +178,20 @@ public class OidcTenantConfig {
     public static class Credentials {
 
         /**
-         * The client secret
+         * Client secret which is used for a 'client_secret_basic' authentication method.
+         * Note that a 'client-secret' can be used instead but both properties are mutually exclusive.
          */
         @ConfigItem
         Optional<String> secret = Optional.empty();
+
+        /**
+         * Client secret credentials which can be used for the 'client_secret_basic' (default)
+         * and 'client_secret_post' authentication methods.
+         * Note that a 'secret.value' property can be used instead to support the 'client_secret_basic' method
+         * but both properties are mutually exclusive.
+         */
+        @ConfigItem
+        Secret clientSecret = new Secret();
 
         public Optional<String> getSecret() {
             return secret;
@@ -189,6 +199,64 @@ public class OidcTenantConfig {
 
         public void setSecret(String secret) {
             this.secret = Optional.of(secret);
+        }
+
+        public Secret getClientSecret() {
+            return clientSecret;
+        }
+
+        public void setClientSecret(Secret clientSecret) {
+            this.clientSecret = clientSecret;
+        }
+
+        @ConfigGroup
+        public static class Secret {
+
+            /**
+             * Client secret authentication methods which specify how a client id and client secret
+             * have to be used to authenticate a client.
+             *
+             * @see <a href=
+             *      "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication</a>
+             */
+            public static enum Method {
+                /**
+                 * client_secret_basic (default)
+                 */
+                BASIC,
+                /**
+                 * client_secret_post
+                 */
+                POST
+            }
+
+            /**
+             * The client secret
+             */
+            @ConfigItem
+            Optional<String> value = Optional.empty();
+
+            /**
+             * Authentication method.
+             */
+            @ConfigItem
+            Optional<Method> method = Optional.empty();
+
+            public Optional<String> getValue() {
+                return value;
+            }
+
+            public void setValue(String value) {
+                this.value = Optional.of(value);
+            }
+
+            public Optional<Method> getMethod() {
+                return method;
+            }
+
+            public void setMethod(Method method) {
+                this.method = Optional.of(method);
+            }
         }
     }
 

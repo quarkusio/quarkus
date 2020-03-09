@@ -97,8 +97,6 @@ public class CodeFlowTest {
 
             webClient.getPage("http://localhost:8081/index.html");
 
-            Cookie sessionCookie = getSessionCookie(webClient);
-
             page = webClient.getPage("http://localhost:8081/index.html");
 
             assertEquals("Log in to quarkus", page.getTitleText());

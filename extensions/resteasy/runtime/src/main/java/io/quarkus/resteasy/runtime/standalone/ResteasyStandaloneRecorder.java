@@ -15,6 +15,7 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.ThreadLocalHandler;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -92,7 +93,7 @@ public class ResteasyStandaloneRecorder {
             ShutdownContext shutdown,
             BeanContainer beanContainer,
             boolean isVirtual, boolean isDefaultResourcesPath,
-            Executor executor) {
+            Executor executor, HttpConfiguration httpConfiguration) {
 
         shutdown.addShutdownTask(new Runnable() {
             @Override
@@ -150,7 +151,7 @@ public class ResteasyStandaloneRecorder {
         }
 
         if (deployment != null && isDefaultResourcesPath) {
-            handlers.add(vertxRequestHandler(vertx, beanContainer, executor));
+            handlers.add(vertxRequestHandler(vertx, beanContainer, executor, httpConfiguration));
         }
         return new Consumer<Route>() {
 
@@ -164,9 +165,10 @@ public class ResteasyStandaloneRecorder {
     }
 
     public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx,
-            BeanContainer beanContainer, Executor executor) {
+            BeanContainer beanContainer, Executor executor, HttpConfiguration readTimeout) {
         if (deployment != null) {
-            return new VertxRequestHandler(vertx.get(), beanContainer, deployment, contextPath, ALLOCATOR, executor);
+            return new VertxRequestHandler(vertx.get(), beanContainer, deployment, contextPath, ALLOCATOR, executor,
+                    readTimeout.readTimeout.toMillis());
         }
         return null;
     }

@@ -44,12 +44,13 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     protected final CurrentIdentityAssociation association;
     protected final CurrentVertxRequest currentVertxRequest;
     protected final Executor executor;
+    protected final long readTimeout;
 
     public VertxRequestHandler(Vertx vertx,
             BeanContainer beanContainer,
             ResteasyDeployment deployment,
             String rootPath,
-            BufferAllocator allocator, Executor executor) {
+            BufferAllocator allocator, Executor executor, long readTimeout) {
         this.vertx = vertx;
         this.beanContainer = beanContainer;
         this.dispatcher = new RequestDispatcher((SynchronousDispatcher) deployment.getDispatcher(),
@@ -57,6 +58,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         this.rootPath = rootPath;
         this.allocator = allocator;
         this.executor = executor;
+        this.readTimeout = readTimeout;
         Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);
         this.association = association.isResolvable() ? association.get() : null;
         currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
@@ -71,7 +73,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             if (request.getBody() != null) {
                 is = new ByteArrayInputStream(request.getBody().getBytes());
             } else {
-                is = new VertxInputStream(request);
+                is = new VertxInputStream(request, readTimeout);
             }
         } catch (IOException e) {
             request.fail(e);

@@ -111,6 +111,12 @@ public class HttpConfiguration {
     public Duration idleTimeout;
 
     /**
+     * Http connection read timeout
+     */
+    @ConfigItem(defaultValue = "60s", name = "read-timeout")
+    public Duration readTimeout;
+
+    /**
      * Request body related settings
      */
     public BodyConfig body;

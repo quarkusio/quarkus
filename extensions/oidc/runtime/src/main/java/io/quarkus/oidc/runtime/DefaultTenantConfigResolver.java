@@ -104,7 +104,11 @@ public class DefaultTenantConfigResolver {
             if (context.get(CURRENT_TENANT_CONFIG) != null) {
                 tenantConfig = context.get(CURRENT_TENANT_CONFIG);
             } else {
-                tenantConfig = this.tenantConfigResolver.get().resolve(context);
+                OidcTenantConfig newTenantConfig = this.tenantConfigResolver.get().resolve(context);
+                if (newTenantConfig != null && !newTenantConfig.tenantEnabled) {
+                    newTenantConfig = null;
+                }
+                tenantConfig = newTenantConfig;
                 context.put(CURRENT_TENANT_CONFIG, tenantConfig);
             }
 

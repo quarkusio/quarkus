@@ -20,6 +20,12 @@ public class OidcTenantConfig {
     Optional<String> tenantId = Optional.empty();
 
     /**
+     * If this tenant configuration is enabled.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean tenantEnabled = true;
+
+    /**
      * The application type, which can be one of the following values from enum {@link ApplicationType}.
      */
     @ConfigItem(defaultValue = "service")

@@ -121,6 +121,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         private boolean methods;
         private boolean fields;
         private boolean finalFieldsWritable;
+        private boolean weak;
 
         private Builder() {
         }
@@ -150,8 +151,13 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
             return this;
         }
 
+        public Builder weak(boolean weak) {
+            this.weak = weak;
+            return this;
+        }
+
         public ReflectiveClassBuildItem build() {
-            return new ReflectiveClassBuildItem(constructors, methods, fields, finalFieldsWritable, false, className);
+            return new ReflectiveClassBuildItem(constructors, methods, fields, finalFieldsWritable, weak, className);
         }
     }
 }

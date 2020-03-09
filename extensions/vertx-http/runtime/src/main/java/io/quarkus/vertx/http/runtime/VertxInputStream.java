@@ -26,9 +26,9 @@ public class VertxInputStream extends InputStream {
     private ByteBuf pooled;
     private final long limit;
 
-    public VertxInputStream(RoutingContext request) throws IOException {
+    public VertxInputStream(RoutingContext request, long timeout) throws IOException {
 
-        this.exchange = new VertxBlockingInput(request.request());
+        this.exchange = new VertxBlockingInput(request.request(), timeout);
         Long limitObj = request.get(VertxHttpRecorder.MAX_REQUEST_SIZE_KEY);
         if (limitObj == null) {
             limit = -1;
@@ -148,9 +148,11 @@ public class VertxInputStream extends InputStream {
         protected boolean waiting = false;
         protected boolean eof = false;
         protected Throwable readException;
+        private final long timeout;
 
-        public VertxBlockingInput(HttpServerRequest request) throws IOException {
+        public VertxBlockingInput(HttpServerRequest request, long timeout) throws IOException {
             this.request = request;
+            this.timeout = timeout;
             if (!request.isEnded()) {
                 request.pause();
                 request.handler(this);
@@ -195,14 +197,25 @@ public class VertxInputStream extends InputStream {
         }
 
         protected ByteBuf readBlocking() throws IOException {
+            long expire = System.currentTimeMillis() + timeout;
             synchronized (request.connection()) {
                 while (input1 == null && !eof && readException == null) {
+                    long rem = expire - System.currentTimeMillis();
+                    if (rem <= 0) {
+                        //everything is broken, if read has timed out we can assume that the underling connection
+                        //is wrecked, so just close it
+                        request.connection().close();
+                        IOException throwable = new IOException("Read timed out");
+                        readException = throwable;
+                        throw throwable;
+                    }
+
                     try {
                         if (Context.isOnEventLoopThread()) {
                             throw new IOException("Attempting a blocking read on io thread");
                         }
                         waiting = true;
-                        request.connection().wait();
+                        request.connection().wait(rem);
                     } catch (InterruptedException e) {
                         throw new InterruptedIOException(e.getMessage());
                     } finally {

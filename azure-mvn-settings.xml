@@ -8,10 +8,17 @@
           <name>GCS Maven Central mirror EU</name>
           <url>https://maven-central-eu.storage-download.googleapis.com/repos/central/data/</url>
         </repository>
+        <!-- Add the JBoss Nexus second to mirror Maven Central, as sometimes the Google mirrors aren't fresh enough for our needs -->
         <repository>
           <id>jboss-maven-central-proxy</id>
           <name>JBoss Maven Central proxy</name>
           <url>https://repository.jboss.org/nexus/content/repositories/central/</url>
+        </repository>
+        <!-- Also explicitly list the custom JBoss content for plugins: currently necessary for custom patches to maven-compiler-plugin -->
+        <repository>
+          <id>jboss-public-</id>
+          <name>JBoss Maven Central proxy</name>
+          <url>https://repository.jboss.org/nexus/content/repositories/public-jboss/</url>
         </repository>
         <repository>
             <id>gradle-official-repository</id>
@@ -25,10 +32,17 @@
           <name>GCS Maven Central mirror EU</name>
           <url>https://maven-central-eu.storage-download.googleapis.com/repos/central/data/</url>
         </pluginRepository>
+        <!-- Add the JBoss Nexus second to mirror Maven Central, as sometimes the Google mirrors aren't fresh enough for our needs -->
         <pluginRepository>
           <id>jboss-maven-central-proxy</id>
           <name>JBoss Maven Central proxy</name>
           <url>https://repository.jboss.org/nexus/content/repositories/central/</url>
+        </pluginRepository>
+        <!-- Also explicitly list the custom JBoss content for plugins: currently necessary for custom patches to maven-compiler-plugin -->
+        <pluginRepository>
+          <id>jboss-public-</id>
+          <name>JBoss Maven Central proxy</name>
+          <url>https://repository.jboss.org/nexus/content/repositories/public-jboss/</url>
         </pluginRepository>
       </pluginRepositories>
     </profile>

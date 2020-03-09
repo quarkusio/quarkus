@@ -36,6 +36,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
@@ -50,6 +51,7 @@ public class JacksonProcessor {
 
     private static final DotName JSON_DESERIALIZE = DotName.createSimple(JsonDeserialize.class.getName());
     private static final DotName JSON_SERIALIZE = DotName.createSimple(JsonSerialize.class.getName());
+    private static final DotName JSON_CREATOR = DotName.createSimple("com.fasterxml.jackson.annotation.JsonCreator");
     private static final DotName BUILDER_VOID = DotName.createSimple(Void.class.getName());
 
     private static final String TIME_MODULE = "com.fasterxml.jackson.datatype.jsr310.JavaTimeModule";
@@ -65,6 +67,9 @@ public class JacksonProcessor {
 
     @Inject
     BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass;
+
+    @Inject
+    BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod;
 
     @Inject
     BuildProducer<AdditionalBeanBuildItem> additionalBeans;
@@ -123,6 +128,13 @@ public class JacksonProcessor {
                     // the Deserializers are constructed internally by Jackson using a no-args constructor
                     reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, usingValue.asClass().toString()));
                 }
+            }
+        }
+
+        // make sure we register the constructors and methods marked with @JsonCreator for reflection
+        for (AnnotationInstance creatorInstance : index.getAnnotations(JSON_CREATOR)) {
+            if (METHOD == creatorInstance.target().kind()) {
+                reflectiveMethod.produce(new ReflectiveMethodBuildItem(creatorInstance.target().asMethod()));
             }
         }
 

@@ -58,6 +58,9 @@ public class NativeImageBuildStep {
      */
     private static final String PATH = "PATH";
 
+    private static final int OOM_ERROR_VALUE = 137;
+    private static final String QUARKUS_XMX_PROPERTY = "quarkus.native.native-image-xmx";
+
     @BuildStep(onlyIf = NativeBuild.class)
     ArtifactResultBuildItem result(NativeImageBuildItem image) {
         return new ArtifactResultBuildItem(image.getPath(), PackageConfig.NATIVE, Collections.emptyMap());
@@ -88,7 +91,7 @@ public class NativeImageBuildStep {
             if (IS_WINDOWS) {
                 outputPath = FileUtil.translateToVolumePath(outputPath);
             }
-            Collections.addAll(nativeImage, containerRuntime, "run", "-v", outputPath + ":/project:z");
+            Collections.addAll(nativeImage, containerRuntime, "run", "-v", outputPath + ":/project:z", "--env", "LANG=C");
 
             if (IS_LINUX) {
                 if ("docker".equals(containerRuntime)) {
@@ -215,6 +218,9 @@ public class NativeImageBuildStep {
                     }
                 }
             }
+            command.add("-J-Duser.language=" + System.getProperty("user.language"));
+            command.add("-J-Dfile.encoding=" + System.getProperty("file.encoding"));
+
             if (enableSslNative) {
                 nativeConfig.enableHttpsUrlHandler = true;
                 nativeConfig.enableAllSecurityServices = true;
@@ -328,8 +334,12 @@ public class NativeImageBuildStep {
                     errorReportLatch));
             executor.shutdown();
             errorReportLatch.await();
-            if (process.waitFor() != 0) {
-                throw new RuntimeException("Image generation failed. Exit code: " + process.exitValue());
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw imageGenerationFailed(exitCode, command);
+            }
+            if (IS_WINDOWS) { //once image is generated it gets added .exe on windows
+                executableName = executableName + ".exe";
             }
             Path generatedImage = outputDir.resolve(executableName);
             Path finalPath = outputTargetBuildItem.getOutputDirectory().resolve(executableName);
@@ -343,13 +353,29 @@ public class NativeImageBuildStep {
         }
     }
 
+    private RuntimeException imageGenerationFailed(int exitValue, List<String> command) {
+        if (exitValue == OOM_ERROR_VALUE) {
+            if (command.contains("docker") && !IS_LINUX) {
+                return new RuntimeException("Image generation failed. Exit code was " + exitValue
+                        + " which indicates an out of memory error. The most likely cause is Docker not being given enough memory. Also consider increasing the Xmx value for native image generation by setting the \""
+                        + QUARKUS_XMX_PROPERTY + "\" property");
+            } else {
+                return new RuntimeException("Image generation failed. Exit code was " + exitValue
+                        + " which indicates an out of memory error. Consider increasing the Xmx value for native image generation by setting the \""
+                        + QUARKUS_XMX_PROPERTY + "\" property");
+            }
+        } else {
+            return new RuntimeException("Image generation failed. Exit code: " + exitValue);
+        }
+    }
+
     private void checkGraalVMVersion(String version) {
         log.info("Running Quarkus native-image plugin on " + version);
         final List<String> obsoleteGraalVmVersions = Arrays.asList("1.0.0", "19.0.", "19.1.", "19.2.", "19.3.0");
         final boolean vmVersionIsObsolete = obsoleteGraalVmVersions.stream().anyMatch(v -> version.contains(" " + v));
         if (vmVersionIsObsolete) {
-            throw new IllegalStateException(
-                    "Out of date version of GraalVM detected: " + version + ". Please upgrade to GraalVM 19.3.1.");
+            throw new IllegalStateException("Out of date version of GraalVM detected: " + version + "."
+                    + " Quarkus currently supports GraalVM 19.3.1 and 20.0.0. Please upgrade GraalVM to one of these versions.");
         }
     }
 

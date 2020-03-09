@@ -447,8 +447,8 @@ We now can build the `producer` and `aggregator` applications:
 
 [source, subs=attributes+]
 ----
-mvn clean package -f producer/pom.xml
-mvn clean package -f aggregator/pom.xml
+./mvnw clean package -f producer/pom.xml
+./mvnw clean package -f aggregator/pom.xml
 ----
 
 Instead of running them directly on the host machine using the Quarkus dev mode,
@@ -739,7 +739,7 @@ With this code in place, it's time to rebuild the application and the `aggregato
 
 [source, subs=attributes+]
 ----
-mvn clean package -f aggregator/pom.xml
+./mvnw clean package -f aggregator/pom.xml
 docker-compose stop aggregator
 docker-compose up --build -d
 ----
@@ -989,7 +989,7 @@ Then let's spin up three instances of it:
 
 [source, subs=attributes+]
 ----
-mvn clean package -f aggregator/pom.xml
+./mvnw clean package -f aggregator/pom.xml
 docker-compose stop aggregator
 docker-compose up --build -d --scale aggregator=3
 ----
@@ -1087,8 +1087,8 @@ the Maven builds can be executed using the `native` profile:
 
 [source, shell]
 ----
-mvn clean package -f producer/pom.xml -Pnative -Dnative-image.container-runtime=docker
-mvn clean package -f aggregator/pom.xml -Pnative -Dnative-image.container-runtime=docker
+./mvnw clean package -f producer/pom.xml -Pnative -Dnative-image.container-runtime=docker
+./mvnw clean package -f aggregator/pom.xml -Pnative -Dnative-image.container-runtime=docker
 ----
 
 Now create an environment variable named `QUARKUS_MODE` and with value set to "native":

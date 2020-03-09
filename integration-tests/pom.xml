@@ -55,6 +55,7 @@
         <module>elytron-resteasy</module>
         <module>elytron-undertow</module>
         <module>flyway</module>
+        <module>liquibase</module>
         <module>oidc</module>
         <module>oidc-code-flow</module>
         <module>oidc-tenancy</module>

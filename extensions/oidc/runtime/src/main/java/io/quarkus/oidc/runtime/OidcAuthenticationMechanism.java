@@ -5,6 +5,7 @@ import java.util.concurrent.CompletionStage;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
+import io.quarkus.oidc.OIDCException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
@@ -33,7 +34,11 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     private boolean isWebApp(RoutingContext context) {
-        return OidcTenantConfig.ApplicationType.WEB_APP == resolver.resolve(context, false).oidcConfig.applicationType;
+        TenantConfigContext tenantContext = resolver.resolve(context, false);
+        if (tenantContext == null) {
+            throw new OIDCException("Tenant configuration context has not been resolved");
+        }
+        return OidcTenantConfig.ApplicationType.WEB_APP == tenantContext.oidcConfig.applicationType;
     }
 
 }

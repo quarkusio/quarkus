@@ -219,11 +219,22 @@ public class MavenArtifactResolver {
 
     public ArtifactDescriptorResult resolveDescriptor(final Artifact artifact)
             throws AppModelResolverException {
+        return resolveDescriptorInternal(artifact, remoteRepos);
+    }
+
+    public ArtifactDescriptorResult resolveDescriptor(final Artifact artifact, List<RemoteRepository> mainRepos)
+            throws AppModelResolverException {
+        return resolveDescriptorInternal(artifact, aggregateRepositories(mainRepos, remoteRepos));
+    }
+
+    private ArtifactDescriptorResult resolveDescriptorInternal(final Artifact artifact, List<RemoteRepository> aggregatedRepos)
+            throws AppModelResolverException {
         try {
             return repoSystem.readArtifactDescriptor(repoSession,
                     new ArtifactDescriptorRequest()
                             .setArtifact(artifact)
-                            .setRepositories(remoteRepos));
+                            .setRepositories(
+                                    aggregatedRepos));
         } catch (ArtifactDescriptorException e) {
             throw new AppModelResolverException("Failed to read descriptor of " + artifact, e);
         }
@@ -317,7 +328,8 @@ public class MavenArtifactResolver {
 
     private CollectRequest newCollectManagedRequest(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
             List<RemoteRepository> mainRepos, String... excludedScopes) throws AppModelResolverException {
-        final ArtifactDescriptorResult descr = resolveDescriptor(artifact);
+        final List<RemoteRepository> aggregatedRepos = aggregateRepositories(mainRepos, remoteRepos);
+        final ArtifactDescriptorResult descr = resolveDescriptorInternal(artifact, aggregatedRepos);
         Collection<String> excluded;
         if (excludedScopes.length == 0) {
             excluded = Collections.emptyList();
@@ -356,12 +368,11 @@ public class MavenArtifactResolver {
             }
         }
 
-        final List<RemoteRepository> repos = aggregateRepositories(mainRepos, remoteRepos);
         return new CollectRequest()
                 .setRootArtifact(artifact)
                 .setDependencies(mergeDeps(deps, originalDeps, managedVersions))
                 .setManagedDependencies(mergedManagedDeps)
-                .setRepositories(aggregateRepositories(repos, newResolutionRepositories(descr.getRepositories())));
+                .setRepositories(aggregateRepositories(aggregatedRepos, newResolutionRepositories(descr.getRepositories())));
     }
 
     public List<RemoteRepository> newResolutionRepositories(List<RemoteRepository> repos) {

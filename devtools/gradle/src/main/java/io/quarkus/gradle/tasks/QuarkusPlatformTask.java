@@ -1,11 +1,15 @@
 package io.quarkus.gradle.tasks;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Properties;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.gradle.api.GradleException;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.attributes.Category;
+import org.gradle.api.plugins.JavaPlugin;
+
+import io.quarkus.platform.descriptor.CombinedQuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
 
@@ -16,35 +20,43 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
     }
 
     protected QuarkusPlatformDescriptor platformDescriptor() {
-        final Path currentDir = getProject().getProjectDir().toPath();
 
-        final Path gradlePropsPath = currentDir.resolve("gradle.properties");
-        if (!Files.exists(gradlePropsPath)) {
-            getProject().getLogger()
-                    .warn("Failed to locate " + gradlePropsPath + " to determine the Quarkus Platform BOM coordinates");
-            return null;
-        }
-        final Properties props = new Properties();
-        try (InputStream is = Files.newInputStream(gradlePropsPath)) {
-            props.load(is);
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to load " + gradlePropsPath, e);
-        }
-
-        return QuarkusJsonPlatformDescriptorResolver.newInstance()
+        final QuarkusJsonPlatformDescriptorResolver platformResolver = QuarkusJsonPlatformDescriptorResolver.newInstance()
                 .setArtifactResolver(extension().getAppModelResolver())
-                .setMessageWriter(new GradleMessageWriter(getProject().getLogger()))
-                .resolveFromBom(
-                        getRequiredProperty(props, "quarkusPlatformGroupId"),
-                        getRequiredProperty(props, "quarkusPlatformArtifactId"),
-                        getRequiredProperty(props, "quarkusPlatformVersion"));
-    }
+                .setMessageWriter(new GradleMessageWriter(getProject().getLogger()));
 
-    private static String getRequiredProperty(Properties props, String name) {
-        final String value = props.getProperty(name);
-        if (value == null) {
-            throw new IllegalStateException("Required property " + name + " is missing from gradle.properties");
+        List<QuarkusPlatformDescriptor> platforms = new ArrayList<>(2);
+        final Configuration impl = getProject().getConfigurations().getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
+        impl.getIncoming().getDependencies()
+                .forEach(d -> {
+                    if (!(d instanceof ModuleDependency)) {
+                        return;
+                    }
+                    final ModuleDependency module = (ModuleDependency) d;
+                    final Category category = module.getAttributes().getAttribute(Category.CATEGORY_ATTRIBUTE);
+                    if (category == null || !Category.ENFORCED_PLATFORM.equals(category.getName())) {
+                        return;
+                    }
+                    try {
+                        platforms
+                                .add(platformResolver.resolveFromBom(module.getGroup(), module.getName(), module.getVersion()));
+                    } catch (Exception e) {
+                        // not a platform
+                    }
+                });
+
+        if (platforms.isEmpty()) {
+            throw new GradleException("Failed to determine Quarkus platform for the project");
         }
-        return value;
+
+        if (platforms.size() == 1) {
+            return platforms.get(0);
+        }
+
+        final CombinedQuarkusPlatformDescriptor.Builder builder = CombinedQuarkusPlatformDescriptor.builder();
+        for (QuarkusPlatformDescriptor platform : platforms) {
+            platforms.add(platform);
+        }
+        return builder.build();
     }
 }

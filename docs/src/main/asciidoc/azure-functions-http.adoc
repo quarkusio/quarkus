@@ -74,7 +74,7 @@ how to execute it.
 
 [source, subs=attributes+]
 ----
-mvn clean install azure-functions:deploy
+./mvnw clean install azure-functions:deploy
 ----
 
 If you haven't already created your function up at azure, the will build an uber-jar, package it, create the function

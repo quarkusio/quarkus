@@ -16,6 +16,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
+import org.joda.time.DateTime;
 
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
@@ -141,6 +142,8 @@ public final class AmazonLambdaProcessor {
                         .produce(new ReflectiveClassBuildItem(true, true, true, method.getParameterTypes()[0].getName()));
                 reflectiveClassBuildItemBuildProducer
                         .produce(new ReflectiveClassBuildItem(true, true, true, method.getReturnType().getName()));
+                reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, true, true,
+                        DateTime.class));
                 break;
             }
         }
@@ -193,6 +196,17 @@ public final class AmazonLambdaProcessor {
     void ipv4Only(BuildProducer<SystemPropertyBuildItem> systemProperty) {
         // lambda custom runtime does not like IPv6
         systemProperty.produce(new SystemPropertyBuildItem("java.net.preferIPv4Stack", "true"));
+    }
+
+    @BuildStep
+    void tmpdirs(BuildProducer<SystemPropertyBuildItem> systemProperty,
+            LaunchModeBuildItem launchModeBuildItem) {
+        LaunchMode mode = launchModeBuildItem.getLaunchMode();
+        if (mode.isDevOrTest()) {
+            return; // just in case we're on windows.
+        }
+        systemProperty.produce(new SystemPropertyBuildItem("java.io.tmpdir", "/tmp"));
+        systemProperty.produce(new SystemPropertyBuildItem("vertx.cacheDirBase", "/tmp/vertx"));
     }
 
     @BuildStep

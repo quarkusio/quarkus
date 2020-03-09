@@ -26,9 +26,9 @@ public class VertxInputStream extends InputStream {
     private ByteBuf pooled;
     private final long limit;
 
-    public VertxInputStream(RoutingContext request) throws IOException {
+    public VertxInputStream(RoutingContext request, long timeout) throws IOException {
 
-        this.exchange = new VertxBlockingInput(request.request());
+        this.exchange = new VertxBlockingInput(request.request(), timeout);
         Long limitObj = request.get(VertxHttpRecorder.MAX_REQUEST_SIZE_KEY);
         if (limitObj == null) {
             limit = -1;
@@ -147,9 +147,12 @@ public class VertxInputStream extends InputStream {
         protected Deque<Buffer> inputOverflow;
         protected boolean waiting = false;
         protected boolean eof = false;
+        protected Throwable readException;
+        private final long timeout;
 
-        public VertxBlockingInput(HttpServerRequest request) throws IOException {
+        public VertxBlockingInput(HttpServerRequest request, long timeout) throws IOException {
             this.request = request;
+            this.timeout = timeout;
             if (!request.isEnded()) {
                 request.pause();
                 request.handler(this);
@@ -162,11 +165,30 @@ public class VertxInputStream extends InputStream {
                                 request.connection().notify();
                             }
                         }
-                        if (input1 == null) {
-                            terminateRequest();
-                        }
-
                     }
+                });
+                request.exceptionHandler(new Handler<Throwable>() {
+                    @Override
+                    public void handle(Throwable event) {
+                        synchronized (request.connection()) {
+                            readException = new IOException(event);
+                            if (input1 != null) {
+                                input1.getByteBuf().release();
+                                input1 = null;
+                            }
+                            if (inputOverflow != null) {
+                                Buffer d = inputOverflow.poll();
+                                while (d != null) {
+                                    d.getByteBuf().release();
+                                    d = inputOverflow.poll();
+                                }
+                            }
+                            if (waiting) {
+                                request.connection().notify();
+                            }
+                        }
+                    }
+
                 });
                 request.fetch(1);
             } else {
@@ -174,24 +196,34 @@ public class VertxInputStream extends InputStream {
             }
         }
 
-        public void terminateRequest() {
-
-        }
-
         protected ByteBuf readBlocking() throws IOException {
+            long expire = System.currentTimeMillis() + timeout;
             synchronized (request.connection()) {
-                while (input1 == null && !eof) {
+                while (input1 == null && !eof && readException == null) {
+                    long rem = expire - System.currentTimeMillis();
+                    if (rem <= 0) {
+                        //everything is broken, if read has timed out we can assume that the underling connection
+                        //is wrecked, so just close it
+                        request.connection().close();
+                        IOException throwable = new IOException("Read timed out");
+                        readException = throwable;
+                        throw throwable;
+                    }
+
                     try {
                         if (Context.isOnEventLoopThread()) {
                             throw new IOException("Attempting a blocking read on io thread");
                         }
                         waiting = true;
-                        request.connection().wait();
+                        request.connection().wait(rem);
                     } catch (InterruptedException e) {
                         throw new InterruptedIOException(e.getMessage());
                     } finally {
                         waiting = false;
                     }
+                }
+                if (readException != null) {
+                    throw new IOException(readException);
                 }
                 Buffer ret = input1;
                 input1 = null;
@@ -202,10 +234,6 @@ public class VertxInputStream extends InputStream {
                     }
                 } else if (!eof) {
                     request.fetch(1);
-                }
-
-                if (ret == null) {
-                    terminateRequest();
                 }
                 return ret == null ? null : ret.getByteBuf();
             }

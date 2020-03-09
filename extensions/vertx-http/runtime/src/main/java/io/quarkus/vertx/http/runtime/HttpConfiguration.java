@@ -111,6 +111,15 @@ public class HttpConfiguration {
     public Duration idleTimeout;
 
     /**
+     * Http connection read timeout for blocking IO. This is the maximum amount of time
+     * a thread will wait for data, before an IOException will be thrown and the connection
+     * closed.
+     *
+     */
+    @ConfigItem(defaultValue = "60s", name = "read-timeout")
+    public Duration readTimeout;
+
+    /**
      * Request body related settings
      */
     public BodyConfig body;

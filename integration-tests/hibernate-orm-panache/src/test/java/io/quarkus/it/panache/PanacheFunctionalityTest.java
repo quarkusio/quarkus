@@ -80,7 +80,7 @@ public class PanacheFunctionalityTest {
      */
     @DisabledOnNativeImage
     @Test
-    public void jacksonDeserilazationIgnoresPersitantAttribute() throws JsonProcessingException {
+    public void jacksonDeserializationIgnoresPersistentAttribute() throws JsonProcessingException {
         // set Up
         Person person = new Person();
         person.name = "max";

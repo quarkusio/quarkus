@@ -14,6 +14,7 @@ import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.Provider;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.DotName;
 
 public final class ResteasyDotNames {
@@ -46,6 +47,10 @@ public final class ResteasyDotNames {
             .createSimple(org.jboss.resteasy.annotations.jaxrs.MatrixParam.class.getName());
     public static final DotName RESTEASY_SSE_ELEMENT_TYPE = DotName
             .createSimple(org.jboss.resteasy.annotations.SseElementType.class.getName());
+    public static final DotName CONFIG_PROPERTY = DotName
+            .createSimple(ConfigProperty.class.getName());
+    public static final DotName CDI_INSTANCE = DotName
+            .createSimple(javax.enterprise.inject.Instance.class.getName());
 
     public static final IgnoreForReflectionPredicate IGNORE_FOR_REFLECTION_PREDICATE = new IgnoreForReflectionPredicate();
 

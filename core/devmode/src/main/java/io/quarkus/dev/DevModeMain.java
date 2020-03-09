@@ -112,6 +112,8 @@ public class DevModeMain implements Closeable {
 
     @Override
     public void close() throws IOException {
-        realCloseable.close();
+        if (realCloseable != null) {
+            realCloseable.close();
+        }
     }
 }

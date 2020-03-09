@@ -97,7 +97,7 @@ Build the project using maven.
 
 [source, subs=attributes+]
 ----
-mvn clean install
+./mvnw clean install
 ----
 
 This will compile and package your code.
@@ -118,11 +118,10 @@ LAMBDA_ROLE_ARN="arn:aws:iam::1234567890:role/lambda-role"
 == Create the function
 
 The `manage.sh` script is for managing your lambda using the AWS Lambda Java runtime.  This script is provided only for
-your convenience.  Should you choose to use Amazon provided tools, you can freely skip these sections and consult the
-appropriate Amazon documentation.
+your convenience. Examine the output of the `manage.sh` script if you want to learn what aws commands are executed
+to create, delete, and update your lambdas.
 
-`manage.sh` supports four operation:  `create`, `delete`, `update`, and `invoke`.  You can create your function using
-the following command:
+`manage.sh` supports four operation:  `create`, `delete`, `update`, and `invoke`.  You can create your function using the following command:
 
 [source, subs=attributes+]
 ----
@@ -186,20 +185,27 @@ sh manage.sh update
 == Deploy to AWS Lambda Custom (native) Runtime
 
 If you want a lower memory footprint and faster initialization times for your lambda, you can compile your Java
-code to a native executable.  Just make sure to rebuild your project with the `-Pnative` switch.  If you are building
-on a non-linux system, you will need to also pass in a property instructing quarkus to use a docker build as Amazon
+code to a native executable.  Just make sure to rebuild your project with the `-Pnative` switch.
+
+[source, subs=attributes+]
+----
+mvn clean install -Pnative
+----
+
+If you are building on a non-linux system, you will need to also pass in a property instructing quarkus to use a docker build as Amazon
 Lambda requires linux binaries.  You can do this by passing this property to your maven build:
 `-Dnative-image.docker-build=true`.  This requires you to have docker installed locally, however.
 
 [source, subs=attributes+]
 ----
-mvn clean install -Pnative -Dnative-image.docker-build=true
+./mvnw clean install -Pnative -Dnative-image.docker-build=true
 ----
 
-This will compile and create a native executable image.  It also generates a zip file `target/function.zip`.
+Either of these commands will compile and create a native executable image.  It also generates a zip file `target/function.zip`.
 This zip file contains your native executable image renamed to `bootstrap`.  This is a requirement of Amazon Lambda
-Custom Runtime.  If you are building on Linux, the `native-image.docker-build` property is mildly redundant but its primary
-cost is a slightly longer build cycle.
+Custom Runtime.
+
+
 
 The instructions here are exactly as above with one change:  you'll need to add `native` as the first parameter to the
 `manage.sh` script:
@@ -212,6 +218,17 @@ sh manage.sh native create
 As above, commands can be stacked.  The only requirement is that `native` be the first parameter should you wish
 to work with native image builds.  The script will take care of the rest of the details necessary to manage your native
 image function deployments.
+
+Examine the output of the `manage.sh` script if you want to learn what aws commands are executed
+to create, delete, and update your lambdas.
+
+One thing to note about the create command for native is that the `aws lambda create-function`
+call must set a specific environment variable:
+
+[source, subs=attributes+]
+----
+--environment 'Variables={DISABLE_SIGNAL_HANDLERS=true}'
+----
 
 == Examine the POM
 

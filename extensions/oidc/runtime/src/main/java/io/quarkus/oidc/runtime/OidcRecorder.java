@@ -11,7 +11,10 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials.Secret;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -39,27 +42,35 @@ public class OidcRecorder {
                 throw new OIDCException("Configuration has 2 different tenant-id values: '"
                         + tenant.getKey() + "' and '" + tenant.getValue().getTenantId().get() + "'");
             }
-            tenantsConfig.put(tenant.getKey(), createTenantContext(vertxValue, tenant.getValue()));
+            tenantsConfig.put(tenant.getKey(), createTenantContext(vertxValue, tenant.getValue(), tenant.getKey()));
         }
 
         DefaultTenantConfigResolver resolver = beanContainer.instance(DefaultTenantConfigResolver.class);
 
-        resolver.setDefaultTenant(createTenantContext(vertxValue, config.defaultTenant));
+        resolver.setDefaultTenant(createTenantContext(vertxValue, config.defaultTenant, "Default"));
         resolver.setTenantsConfig(tenantsConfig);
         resolver.setTenantConfigContextFactory(new Function<OidcTenantConfig, TenantConfigContext>() {
             @Override
             public TenantConfigContext apply(OidcTenantConfig config) {
-                return createTenantContext(vertxValue, config);
+                // OidcTenantConfig resolved by TenantConfigResolver must have its optional tenantId
+                // initialized which is also enforced by DefaultTenantConfigResolver
+                return createTenantContext(vertxValue, config, config.getTenantId().get());
             }
         });
     }
 
-    private TenantConfigContext createTenantContext(Vertx vertx, OidcTenantConfig oidcConfig) {
-        OAuth2ClientOptions options = new OAuth2ClientOptions();
-
-        if (!oidcConfig.getAuthServerUrl().isPresent()) {
+    private TenantConfigContext createTenantContext(Vertx vertx, OidcTenantConfig oidcConfig, String tenantId) {
+        if (!oidcConfig.tenantEnabled) {
+            LOG.debugf("%s tenant configuration is disabled", tenantId);
             return null;
         }
+
+        if (!oidcConfig.getAuthServerUrl().isPresent() || !oidcConfig.getClientId().isPresent()) {
+            throw new ConfigurationException(
+                    "auth-server-url and client-id must be configured when the quarkus-oidc extension is enabled");
+        }
+
+        OAuth2ClientOptions options = new OAuth2ClientOptions();
 
         // Base IDP server URL
         options.setSite(oidcConfig.getAuthServerUrl().get());
@@ -77,9 +88,25 @@ public class OidcRecorder {
             options.setClientID(oidcConfig.getClientId().get());
         }
 
-        if (oidcConfig.getCredentials().secret.isPresent()) {
-            options.setClientSecret(oidcConfig.getCredentials().secret.get());
+        Credentials creds = oidcConfig.getCredentials();
+        if (creds.secret.isPresent() && (creds.clientSecret.value.isPresent() || creds.clientSecret.method.isPresent())) {
+            throw new ConfigurationException(
+                    "'credentials.secret' and 'credentials.client-secret' properties are mutually exclusive");
         }
+        // TODO: The workaround to support client_secret_post is added below and have to be removed once
+        // it is supported again in VertX OAuth2.
+
+        if (creds.secret.isPresent()
+                || creds.clientSecret.value.isPresent()
+                        && creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC) == Secret.Method.BASIC) {
+            // If it is set for client_secret_post as well then VertX OAuth2 will only use client_secret_basic
+            options.setClientSecret(creds.secret.orElseGet(() -> creds.clientSecret.value.get()));
+        } else {
+            // Avoid the client_secret set in CodeAuthenticationMechanism when client_secret_post is enabled
+            // from being reset to null in VertX OAuth2
+            options.setClientSecretParameterName(null);
+        }
+
         if (oidcConfig.getPublicKey().isPresent()) {
             options.addPubSecKey(new PubSecKeyOptions()
                     .setAlgorithm("RS256")

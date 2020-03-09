@@ -147,6 +147,7 @@ public class QuarkusDevModeTest
             DevModeContext context = exportArchive(deploymentDir, projectSourceRoot);
             context.setTest(true);
             context.setAbortOnFailedStart(true);
+            context.getBuildSystemProperties().put("quarkus.banner.enabled", "false");
             devModeMain = new DevModeMain(context);
             devModeMain.start();
         } catch (Exception e) {

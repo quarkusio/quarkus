@@ -17,6 +17,8 @@ import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials.Secret;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
@@ -180,11 +182,22 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             return cf;
         }
 
+        // Code grant request
+        // 'code': the code grant value returned from IDP
         params.put("code", code);
+
+        // 'redirect_uri': typically it must match the 'redirect_uri' query parameter which was used during the code request.
         String redirectPath = getRedirectPath(configContext, absoluteUri);
         String redirectUriParam = buildRedirectUri(context, absoluteUri, redirectPath);
         LOG.debugf("Token request redirect_uri parameter: %s", redirectUriParam);
         params.put("redirect_uri", redirectUriParam);
+
+        // Client secret has to be posted as a form parameter if OIDC requires the client_secret_post authentication
+        Credentials creds = configContext.oidcConfig.getCredentials();
+        if (creds.clientSecret.value.isPresent() && creds.clientSecret.method.isPresent()
+                && Secret.Method.POST == creds.clientSecret.method.get()) {
+            params.put("client_secret", creds.clientSecret.value.get());
+        }
 
         configContext.auth.authenticate(params, userAsyncResult -> {
             if (userAsyncResult.failed()) {

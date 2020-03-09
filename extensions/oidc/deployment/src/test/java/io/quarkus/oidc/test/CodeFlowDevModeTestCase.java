@@ -36,13 +36,28 @@ public class CodeFlowDevModeTestCase {
     @Test
     public void testAccessAndRefreshTokenInjectionDevMode() throws IOException, InterruptedException {
         try (final WebClient webClient = createWebClient()) {
+            // Default tenant is disabled and client-id is wrong
             try {
                 webClient.getPage("http://localhost:8080/web-app");
-                fail("Exception is expected because the invalid client_id is used");
+                fail("Exception is expected because the tenant is disabled and invalid client_id is used");
             } catch (FailingHttpStatusCodeException ex) {
+                // Reported by Quarkus
+                assertEquals(500, ex.getStatusCode());
+            }
+
+            // Enable the default tenant
+            test.modifyResourceFile("application.properties", s -> s.replace("tenant-enabled=false", "tenant-enabled=true"));
+            // Default tenant is enabled, client-id is wrong
+            try {
+                webClient.getPage("http://localhost:8080/web-app");
+                fail("Exception is expected because the tenant is disabled and invalid client_id is used");
+            } catch (FailingHttpStatusCodeException ex) {
+                // Reported by Keycloak
+                assertEquals(400, ex.getStatusCode());
                 assertTrue(ex.getResponse().getContentAsString().contains("Client not found"));
             }
 
+            // Now set the correct client-id
             test.modifyResourceFile("application.properties", s -> s.replace("client-dev", "client-dev-mode"));
 
             HtmlPage page = webClient.getPage("http://localhost:8080/web-app");

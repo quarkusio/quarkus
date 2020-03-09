@@ -186,6 +186,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
     @ConfigItem
     Map<String, ContainerConfig> containers;
 
+    /**
+     * If true, an Openshift Route will be created
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean expose;
+
     public Optional<String> getPartOf() {
         return partOf;
     }
@@ -299,4 +305,8 @@ public class OpenshiftConfig implements PlatformConfiguration {
         return containers;
     }
 
+    @Override
+    public boolean isExpose() {
+        return false;
+    }
 }

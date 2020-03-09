@@ -9,6 +9,7 @@ import io.quarkus.mongodb.FindOptions;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Range;
 import io.quarkus.panache.common.exception.PanacheQueryException;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -25,6 +26,8 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     private Page page;
     private Uni<Long> count;
 
+    private Range range;
+
     ReactivePanacheQueryImpl(ReactiveMongoCollection<? extends Entity> collection, Class<? extends Entity> entityClass,
             Document mongoQuery,
             Document sort) {
@@ -40,6 +43,7 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     @SuppressWarnings("unchecked")
     public <T extends Entity> ReactivePanacheQuery<T> page(Page page) {
         this.page = page;
+        this.range = null; // reset the range to be able to switch from range to page
         return (ReactivePanacheQuery<T>) this;
     }
 
@@ -50,36 +54,43 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
 
     @Override
     public <T extends Entity> ReactivePanacheQuery<T> nextPage() {
+        checkNotInRange();
         return page(page.next());
     }
 
     @Override
     public <T extends Entity> ReactivePanacheQuery<T> previousPage() {
+        checkNotInRange();
         return page(page.previous());
     }
 
     @Override
     public <T extends Entity> ReactivePanacheQuery<T> firstPage() {
+        checkNotInRange();
         return page(page.first());
     }
 
     @Override
     public <T extends Entity> Uni<ReactivePanacheQuery<T>> lastPage() {
+        checkNotInRange();
         return pageCount().map(pageCount -> page(page.index(pageCount - 1)));
     }
 
     @Override
     public Uni<Boolean> hasNextPage() {
+        checkNotInRange();
         return pageCount().map(pageCount -> page.index < (pageCount - 1));
     }
 
     @Override
     public boolean hasPreviousPage() {
+        checkNotInRange();
         return page.index > 0;
     }
 
     @Override
     public Uni<Integer> pageCount() {
+        checkNotInRange();
         return count().map(count -> {
             if (count == 0)
                 return 1; // a single page of zero results
@@ -89,7 +100,23 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
 
     @Override
     public Page page() {
+        checkNotInRange();
         return page;
+    }
+
+    private void checkNotInRange() {
+        if (range != null) {
+            throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, " +
+                    "call page(Page) or page(int, int) to initiate pagination first");
+        }
+    }
+
+    @Override
+    public <T extends Entity> ReactivePanacheQuery<T> range(int startIndex, int lastIndex) {
+        this.range = Range.of(startIndex, lastIndex);
+        // reset the page to its default to be able to switch from page to range
+        this.page = new Page(0, Integer.MAX_VALUE);
+        return (ReactivePanacheQuery<T>) this;
     }
 
     // Results
@@ -106,8 +133,7 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Entity> Uni<List<T>> list() {
-        FindOptions options = new FindOptions();
-        options.sort(sort).skip(page.index).limit(page.size);
+        FindOptions options = buildOptions();
         Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
         return results.collectItems().asList();
     }
@@ -115,10 +141,8 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Entity> Multi<T> stream() {
-        FindOptions options = new FindOptions();
-        options.sort(sort).skip(page.index).limit(page.size);
-        return mongoQuery == null ? collection.find(options)
-                : collection.find(mongoQuery, options);
+        FindOptions options = buildOptions();
+        return mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
     }
 
     @Override
@@ -129,8 +153,7 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
 
     @Override
     public <T extends Entity> Uni<Optional<T>> firstResultOptional() {
-        FindOptions options = new FindOptions();
-        options.sort(sort).skip(page.index).limit(1);
+        FindOptions options = buildOptions(1);
         Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
         return results.collectItems().first().map(o -> Optional.ofNullable(o));
     }
@@ -138,11 +161,10 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Entity> Uni<T> singleResult() {
-        FindOptions options = new FindOptions();
-        options.sort(sort).skip(page.index).limit(2);
+        FindOptions options = buildOptions(2);
         Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
         return results.collectItems().asList().map(list -> {
-            if (list.size() == 0 || list.size() > 1) {
+            if (list.size() != 1) {
                 throw new PanacheQueryException("There should be only one result");
             } else {
                 return list.get(0);
@@ -152,8 +174,7 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
 
     @Override
     public <T extends Entity> Uni<Optional<T>> singleResultOptional() {
-        FindOptions options = new FindOptions();
-        options.sort(sort).skip(page.index).limit(2);
+        FindOptions options = buildOptions(2);
         Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
         return results.collectItems().asList().map(list -> {
             if (list.size() == 2) {
@@ -161,5 +182,29 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
             }
             return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
         });
+    }
+
+    private FindOptions buildOptions() {
+        FindOptions options = new FindOptions();
+        options.sort(sort);
+        if (range != null) {
+            // range is 0 based, so we add 1 to the limit
+            options.skip(range.getStartIndex()).limit(range.getLastIndex() - range.getStartIndex() + 1);
+        } else {
+            options.skip(page.index * page.size).limit(page.size);
+        }
+        return options;
+    }
+
+    private FindOptions buildOptions(int maxResults) {
+        FindOptions options = new FindOptions();
+        options.sort(sort);
+        if (range != null) {
+            // range is 0 based, so we add 1 to the limit
+            options.skip(range.getStartIndex()).limit(maxResults);
+        } else {
+            options.skip(page.index * page.size).limit(maxResults);
+        }
+        return options;
     }
 }

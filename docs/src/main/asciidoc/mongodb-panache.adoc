@@ -441,6 +441,31 @@ return Person.find("status", Status.Alive)
 
 The `PanacheQuery` type has many other methods to deal with paging and returning streams.
 
+=== Using a range instead of pages
+
+`PanacheQuery` also allows range-based queries.
+
+[source,java]
+----
+// create a query for all living persons
+PanacheQuery<Person> livingPersons = Person.find("status", Status.Alive);
+
+// make it use a range: start at index 0 until index 24 (inclusive).
+livingPersons.range(0, 24);
+
+// get the range
+List<Person> firstRange = livingPersons.list();
+
+// to get the next range, you need to call range again
+List<Person> secondRange = livingPersons.range(25, 49).list();
+----
+
+[WARNING]
+----
+You cannot mix ranges and pages: if you use a range, all methods that depend on having a current page will throw an `UnsupportedOperationException`;
+you can switch back to paging using `page(Page)` or `page(int, int)`.
+----
+
 === Sorting
 
 All methods accepting a query string also accept an optional `Sort` parameter, which allows you to abstract your sorting:

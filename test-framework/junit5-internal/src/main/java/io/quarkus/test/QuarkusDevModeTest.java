@@ -31,10 +31,11 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
+import io.quarkus.deployment.dev.CompilationProvider;
+import io.quarkus.deployment.dev.DevModeContext;
+import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.util.FileUtil;
-import io.quarkus.dev.CompilationProvider;
-import io.quarkus.dev.DevModeContext;
-import io.quarkus.dev.DevModeMain;
+import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.TestResourceManager;
@@ -150,6 +151,7 @@ public class QuarkusDevModeTest
             context.getBuildSystemProperties().put("quarkus.banner.enabled", "false");
             devModeMain = new DevModeMain(context);
             devModeMain.start();
+            ApplicationStateNotification.waitForApplicationStart();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

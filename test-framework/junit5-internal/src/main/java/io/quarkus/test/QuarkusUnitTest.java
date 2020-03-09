@@ -93,6 +93,7 @@ public class QuarkusUnitTest
 
     private Class<?> actualTestClass;
     private Object actualTestInstance;
+    private String[] commandLineParameters = new String[0];
 
     private boolean allowTestClassOutsideDeployment;
 
@@ -171,6 +172,15 @@ public class QuarkusUnitTest
      */
     public QuarkusUnitTest setForcedDependencies(List<AppArtifact> forcedDependencies) {
         this.forcedDependencies = forcedDependencies;
+        return this;
+    }
+
+    public String[] getCommandLineParameters() {
+        return commandLineParameters;
+    }
+
+    public QuarkusUnitTest setCommandLineParameters(String... commandLineParameters) {
+        this.commandLineParameters = commandLineParameters;
         return this;
     }
 
@@ -384,7 +394,7 @@ public class QuarkusUnitTest
 
                 runningQuarkusApplication = new AugmentActionImpl(curatedApplication, customizers)
                         .createInitialRuntimeApplication()
-                        .run(new String[0]);
+                        .run(commandLineParameters);
                 //we restore the CL at the end of the test
                 Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
                 if (assertException != null) {

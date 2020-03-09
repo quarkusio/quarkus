@@ -19,7 +19,7 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector;
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler;
 import org.jetbrains.kotlin.config.Services;
 
-import io.quarkus.dev.CompilationProvider;
+import io.quarkus.deployment.dev.CompilationProvider;
 
 public class KotlinCompilationProvider implements CompilationProvider {
 

@@ -16,6 +16,12 @@
 
     <dependencies>
         <dependency>
+            <!-- TMP workaround for IDE problem, DO NOT MERGE-->
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bootstrap-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
           <groupId>jakarta.annotation</groupId>
           <artifactId>jakarta.annotation-api</artifactId>
         </dependency>
@@ -26,6 +32,14 @@
         <dependency>
             <groupId>jakarta.inject</groupId>
             <artifactId>jakarta.inject-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-ide-launcher</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-development-mode-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.config</groupId>

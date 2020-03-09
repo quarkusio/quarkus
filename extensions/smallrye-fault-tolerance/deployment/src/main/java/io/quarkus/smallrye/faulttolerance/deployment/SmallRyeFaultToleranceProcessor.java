@@ -205,6 +205,12 @@ public class SmallRyeFaultToleranceProcessor {
     }
 
     private boolean hasFTAnnotations(IndexView index, AnnotationStore annotationStore, ClassInfo info) {
+        if (info == null) {
+            //should not happen, but guard against it
+            //happens in this case due to a bug involving array types
+
+            return false;
+        }
         // first check annotations on type
         if (annotationStore.hasAnyAnnotation(info, FT_ANNOTATIONS)) {
             return true;

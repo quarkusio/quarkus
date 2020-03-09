@@ -415,7 +415,11 @@ public class SmallRyeMetricsProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndex) {
         IndexView index = beanArchiveIndex.getIndex();
         for (io.quarkus.arc.processor.BeanInfo bean : validationPhase.getContext().beans().producers()) {
-            MetricType metricType = getMetricType(bean.getImplClazz());
+            ClassInfo implClazz = bean.getImplClazz();
+            if (implClazz == null) {
+                continue;
+            }
+            MetricType metricType = getMetricType(implClazz);
             if (metricType != null) {
                 AnnotationTarget target = bean.getTarget().get();
                 AnnotationInstance metricAnnotation = null;

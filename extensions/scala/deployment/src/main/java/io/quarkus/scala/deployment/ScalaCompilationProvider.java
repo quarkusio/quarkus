@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.quarkus.dev.CompilationProvider;
+import io.quarkus.deployment.dev.CompilationProvider;
 import scala.collection.JavaConverters;
 import scala.tools.nsc.Global;
 import scala.tools.nsc.Settings;

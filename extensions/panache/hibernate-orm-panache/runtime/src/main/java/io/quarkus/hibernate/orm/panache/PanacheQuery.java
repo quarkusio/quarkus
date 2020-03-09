@@ -117,6 +117,16 @@ public interface PanacheQuery<Entity> {
     public Page page();
 
     /**
+     * Switch the query to use a fixed range (start index - last index) instead of a page.
+     * As the range is fixed, subsequent pagination of the query is not possible.
+     *
+     * @param startIndex the index of the first element, starting at 0
+     * @param lastIndex the index of the last element
+     * @return this query, modified
+     */
+    public <T extends Entity> PanacheQuery<T> range(int startIndex, int lastIndex);
+
+    /**
      * Define the locking strategy used for this query.
      *
      * @param lockModeType the locking strategy to be used for this query.

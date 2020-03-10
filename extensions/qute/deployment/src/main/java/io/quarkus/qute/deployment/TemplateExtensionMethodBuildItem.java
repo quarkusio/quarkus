@@ -16,11 +16,17 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
     private final MethodInfo method;
     private final String matchName;
     private final ClassInfo matchClass;
+    private final int priority;
 
     public TemplateExtensionMethodBuildItem(MethodInfo method, String matchName, ClassInfo matchClass) {
+        this(method, matchName, matchClass, TemplateExtension.DEFAULT_PRIORITY);
+    }
+
+    public TemplateExtensionMethodBuildItem(MethodInfo method, String matchName, ClassInfo matchClass, int priority) {
         this.method = method;
         this.matchName = matchName;
         this.matchClass = matchClass;
+        this.priority = priority;
     }
 
     public MethodInfo getMethod() {
@@ -33,6 +39,10 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
 
     public ClassInfo getMatchClass() {
         return matchClass;
+    }
+
+    public int getPriority() {
+        return priority;
     }
 
     boolean matchesClass(ClassInfo clazz) {

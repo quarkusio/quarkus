@@ -79,6 +79,7 @@ import io.quarkus.qute.SectionHelper;
 import io.quarkus.qute.SectionHelperFactory;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateException;
+import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.Variant;
@@ -121,6 +122,7 @@ public class QuteProcessor {
     static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
 
     private static final String MATCH_NAME = "matchName";
+    private static final String PRIORITY = "priority";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -351,6 +353,7 @@ public class QuteProcessor {
             }
         }
 
+        // Method-level annotations
         for (Entry<MethodInfo, AnnotationInstance> entry : methods.entrySet()) {
             MethodInfo method = entry.getKey();
             ExtensionMethodGenerator.validate(method);
@@ -359,11 +362,18 @@ public class QuteProcessor {
                     method.declaringClass().name());
         }
 
+        // Class-level annotations
         for (Entry<ClassInfo, AnnotationInstance> entry : classes.entrySet()) {
             ClassInfo clazz = entry.getKey();
             for (MethodInfo method : clazz.methods()) {
                 if (!Modifier.isStatic(method.flags()) || method.returnType().kind() == org.jboss.jandex.Type.Kind.VOID
-                        || method.parameters().isEmpty() || Modifier.isPrivate(method.flags()) || methods.containsKey(method)) {
+                        || method.parameters().isEmpty() || Modifier.isPrivate(method.flags())
+                        || ValueResolverGenerator.isSynthetic(method.flags())) {
+                    // Filter out non-static, synthetic, private and void methods with no params
+                    continue;
+                }
+                if (methods.containsKey(method)) {
+                    // Skip methods annotated with @TemplateExtension - method-level annotation takes precedence
                     continue;
                 }
                 produceExtensionMethod(index, extensionMethods, method, entry.getValue());
@@ -375,6 +385,7 @@ public class QuteProcessor {
 
     private void produceExtensionMethod(IndexView index, BuildProducer<TemplateExtensionMethodBuildItem> extensionMethods,
             MethodInfo method, AnnotationInstance extensionAnnotation) {
+        // Analyze matchName and priority so that it could be used during validation 
         String matchName = null;
         AnnotationValue matchNameValue = extensionAnnotation.value(MATCH_NAME);
         if (matchNameValue != null) {
@@ -383,8 +394,13 @@ public class QuteProcessor {
         if (matchName == null) {
             matchName = method.name();
         }
+        int priority = TemplateExtension.DEFAULT_PRIORITY;
+        AnnotationValue priorityValue = extensionAnnotation.value(PRIORITY);
+        if (priorityValue != null) {
+            priority = priorityValue.asInt();
+        }
         extensionMethods.produce(new TemplateExtensionMethodBuildItem(method, matchName,
-                index.getClassByName(method.parameters().get(0).name())));
+                index.getClassByName(method.parameters().get(0).name()), priority));
     }
 
     @BuildStep
@@ -616,7 +632,8 @@ public class QuteProcessor {
 
         ExtensionMethodGenerator extensionMethodGenerator = new ExtensionMethodGenerator(classOutput);
         for (TemplateExtensionMethodBuildItem templateExtension : templateExtensionMethods) {
-            extensionMethodGenerator.generate(templateExtension.getMethod(), templateExtension.getMatchName());
+            extensionMethodGenerator.generate(templateExtension.getMethod(), templateExtension.getMatchName(),
+                    templateExtension.getPriority());
         }
         generatedTypes.addAll(extensionMethodGenerator.getGeneratedTypes());
 

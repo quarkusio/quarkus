@@ -8,6 +8,11 @@ public class Foo {
 
     public Charlie charlie;
 
+    // ValueResolverGenerator.DEFAULT_PRIORITY
+    public String pong() {
+        return "foo";
+    }
+
     public Foo(String name, Long age) {
         this.name = name;
         this.age = age;

@@ -74,6 +74,8 @@ public class ValueResolverGenerator {
     public static final String IGNORE = "ignore";
     public static final String PROPERTIES = "properties";
 
+    public static final int DEFAULT_PRIORITY = 10;
+
     private final Set<String> analyzedTypes;
     private final Set<String> generatedTypes;
     private final IndexView index;
@@ -159,7 +161,7 @@ public class ValueResolverGenerator {
     private void implementGetPriority(ClassCreator valueResolver) {
         MethodCreator getPriority = valueResolver.getMethodCreator("getPriority", int.class)
                 .setModifiers(ACC_PUBLIC);
-        getPriority.returnValue(getPriority.load(10));
+        getPriority.returnValue(getPriority.load(DEFAULT_PRIORITY));
     }
 
     private void implementResolve(ClassCreator valueResolver, String clazzName, ClassInfo clazz,

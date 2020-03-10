@@ -2,8 +2,6 @@ package io.quarkus.it.jackson;
 
 import static org.assertj.core.api.Assertions.*;
 
-import javax.inject.Inject;
-
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,8 +18,11 @@ public class ObjectMapperModulesTest {
     private static final Object JAVA_TIME_MODULE_TYPE_ID = new JavaTimeModule().getTypeId();
     private static final Object PARAMETER_NAMES_MODULE_TYPE_ID = new ParameterNamesModule().getTypeId();
 
-    @Inject
-    ObjectMapper objectMapper;
+    final ObjectMapper objectMapper;
+
+    public ObjectMapperModulesTest(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Test
     public void testExpectedModulesAreRegistered() {

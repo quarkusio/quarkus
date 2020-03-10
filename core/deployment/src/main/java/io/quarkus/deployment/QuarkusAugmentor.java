@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -74,6 +76,12 @@ public class QuarkusAugmentor {
     }
 
     public BuildResult run() throws Exception {
+        Pattern pattern = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
+        Matcher matcher = pattern.matcher(System.getProperty("java.version", ""));
+        if (matcher.matches() && Integer.parseInt(matcher.group(1)) < 11) {
+            log.warn("Using Java versions older than 11 to build"
+                    + " Quarkus applications is deprecated and will be disallowed in a future release!");
+        }
         long time = System.currentTimeMillis();
         log.debug("Beginning Quarkus augmentation");
         ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();

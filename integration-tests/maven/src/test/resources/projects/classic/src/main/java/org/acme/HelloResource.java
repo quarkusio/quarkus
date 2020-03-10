@@ -20,6 +20,9 @@ public class HelloResource {
     @ConfigProperty(name = "quarkus.application.name")
     String applicationName;
 
+    @ConfigProperty(name = "other.greeting", defaultValue = "other")
+    String otherGreeting;
+
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
@@ -45,6 +48,13 @@ public class HelloResource {
     @Produces(MediaType.TEXT_PLAIN)
     public String nameAndVersion() {
         return applicationName + "/" +  applicationVersion;
+    }
+
+    @GET
+    @Path("/otherGreeting")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String otherGreeting() {
+        return otherGreeting;
     }
 
 

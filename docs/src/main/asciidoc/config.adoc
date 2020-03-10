@@ -388,7 +388,7 @@ You can override these runtime properties with the following mechanisms (in decr
 2. using environment variables:
   * for a runner jar: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; java -jar target/myapp-runner.jar`
   * for a native executable: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; ./target/myapp-runner`
-3. using an environment file named `.env` placed in the current working directory containing the line `QUARKUS_DATASOURCE_PASSWORD=youshallnotpass`
+3. using an environment file named `.env` placed in the current working directory containing the line `QUARKUS_DATASOURCE_PASSWORD=youshallnotpass` (for dev mode, this file can be placed in the root of the project, but it is advised to not check it in to version control)
 4. using a configuration file placed in `$PWD/config/application.properties`
   * By placing an `application.properties` file inside a directory named `config` which resides in the directory where the application runs, any runtime properties defined
 in that file will override the default configuration. Furthermore any runtime properties added to this file that were not part of the original `application.properties` file

@@ -20,3 +20,6 @@ dependencies {
 group '${project_groupId}'
 version '${project_version}'
 
+compileScala {
+  scalaCompileOptions.encoding = 'UTF-8'
+}

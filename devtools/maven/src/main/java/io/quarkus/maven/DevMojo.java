@@ -7,12 +7,12 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -56,6 +57,7 @@ import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
+import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.twdata.maven.mojoexecutor.MojoExecutor;
@@ -294,7 +296,7 @@ public class DevMojo extends AbstractMojo {
                 args.add("-Xverify:none");
             }
 
-            DevModeRunner runner = new DevModeRunner(args, pluginDef);
+            DevModeRunner runner = new DevModeRunner(args);
 
             runner.prepare();
             runner.run();
@@ -319,7 +321,7 @@ public class DevMojo extends AbstractMojo {
                         }
                     }
                     if (changed) {
-                        DevModeRunner newRunner = new DevModeRunner(args, pluginDef);
+                        DevModeRunner newRunner = new DevModeRunner(args);
                         try {
                             newRunner.prepare();
                         } catch (Exception e) {
@@ -472,11 +474,9 @@ public class DevMojo extends AbstractMojo {
         private final List<String> args;
         private Process process;
         private Set<Path> pomFiles = new HashSet<>();
-        private final Plugin pluginDef;
 
-        DevModeRunner(List<String> args, Plugin pluginDef) {
+        DevModeRunner(List<String> args) {
             this.args = new ArrayList<>(args);
-            this.pluginDef = pluginDef;
         }
 
         /**
@@ -582,18 +582,7 @@ public class DevMojo extends AbstractMojo {
                 }
             }
 
-            final DefaultArtifact devModeJar = new DefaultArtifact("io.quarkus", "quarkus-development-mode", "jar",
-                    pluginDef.getVersion());
-            final DependencyResult cpRes = repoSystem.resolveDependencies(repoSession,
-                    new DependencyRequest()
-                            .setCollectRequest(
-                                    new CollectRequest()
-                                            .setRoot(new org.eclipse.aether.graph.Dependency(devModeJar, JavaScopes.RUNTIME))
-                                            .setRepositories(repos)));
-
-            for (ArtifactResult appDep : cpRes.getArtifactResults()) {
-                addToClassPaths(classPathManifest, devModeContext, appDep.getArtifact().getFile());
-            }
+            addQuarkusDevModeDeps(classPathManifest, devModeContext);
 
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
             //wiring devmode is used for CDI beans that are not part of the user application (i.e. beans in 3rd party jars)
@@ -609,31 +598,6 @@ public class DevMojo extends AbstractMojo {
             for (Artifact appDep : project.getArtifacts()) {
                 addToClassPaths(classPathManifest, devModeContext, appDep.getFile());
             }
-
-            //we also want to add the maven plugin jar to the class path
-            //this allows us to just directly use classes, without messing around copying them
-            //to the runner jar
-            URL classFile = DevModeMain.class.getClassLoader()
-                    .getResource(DevModeMain.class.getName().replace('.', '/') + ".class");
-            File path;
-            if (classFile == null) {
-                throw new MojoFailureException("No DevModeMain class found");
-            }
-            URI classUri = classFile.toURI();
-            if (classUri.getScheme().equals("jar")) {
-                String jarPath = classUri.getRawSchemeSpecificPart();
-                final int marker = jarPath.indexOf('!');
-                if (marker != -1) {
-                    jarPath = jarPath.substring(0, marker);
-                }
-                URI jarUri = new URI(jarPath);
-                path = Paths.get(jarUri).toFile();
-            } else if (classUri.getScheme().equals("file")) {
-                path = Paths.get(classUri).toFile();
-            } else {
-                throw new MojoFailureException("Unsupported DevModeMain artifact URL:" + classFile);
-            }
-            addToClassPaths(classPathManifest, devModeContext, path);
 
             //now we need to build a temporary jar to actually run
 
@@ -673,6 +637,46 @@ public class DevMojo extends AbstractMojo {
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
 
+        }
+
+        private void addQuarkusDevModeDeps(StringBuilder classPathManifest, final DevModeContext devModeContext)
+                throws MojoExecutionException, DependencyResolutionException {
+            final String pomPropsPath = "META-INF/maven/io.quarkus/quarkus-development-mode/pom.properties";
+            final InputStream devModePomPropsIs = DevModeMain.class.getClassLoader().getResourceAsStream(pomPropsPath);
+            if (devModePomPropsIs == null) {
+                throw new MojoExecutionException("Failed to locate " + pomPropsPath + " on the classpath");
+            }
+            final Properties devModeProps = new Properties();
+            try (InputStream is = devModePomPropsIs) {
+                devModeProps.load(is);
+            } catch (IOException e) {
+                throw new MojoExecutionException("Failed to load " + pomPropsPath + " from the classpath", e);
+            }
+            final String devModeGroupId = devModeProps.getProperty("groupId");
+            if (devModeGroupId == null) {
+                throw new MojoExecutionException("Classpath resource " + pomPropsPath + " is missing groupId");
+            }
+            final String devModeArtifactId = devModeProps.getProperty("artifactId");
+            if (devModeArtifactId == null) {
+                throw new MojoExecutionException("Classpath resource " + pomPropsPath + " is missing artifactId");
+            }
+            final String devModeVersion = devModeProps.getProperty("version");
+            if (devModeVersion == null) {
+                throw new MojoExecutionException("Classpath resource " + pomPropsPath + " is missing version");
+            }
+
+            final DefaultArtifact devModeJar = new DefaultArtifact(devModeGroupId, devModeArtifactId, "jar", devModeVersion);
+            final DependencyResult cpRes = repoSystem.resolveDependencies(repoSession,
+                    new DependencyRequest()
+                            .setCollectRequest(
+                                    new CollectRequest()
+                                            .setRoot(new org.eclipse.aether.graph.Dependency(devModeJar, JavaScopes.RUNTIME))
+                                            .setRepositories(repos)));
+
+            for (ArtifactResult appDep : cpRes.getArtifactResults()) {
+                File file = appDep.getArtifact().getFile();
+                addToClassPaths(classPathManifest, devModeContext, file);
+            }
         }
 
         private void setKotlinSpecificFlags(DevModeContext devModeContext) {

@@ -5,8 +5,6 @@ import static io.quarkus.qute.Parameter.EMPTY;
 import io.quarkus.qute.Results.Result;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -126,7 +124,7 @@ public class LoopSectionHelper implements SectionHelper {
         }
 
         @Override
-        public Map<String, String> initializeBlock(Map<String, String> outerNameTypeInfos, BlockInfo block) {
+        public Scope initializeBlock(Scope previousScope, BlockInfo block) {
             if (block.getLabel().equals(MAIN_BLOCK_NAME)) {
                 String iterable = block.getParameters().get(ITERABLE);
                 if (iterable == null) {
@@ -136,17 +134,17 @@ public class LoopSectionHelper implements SectionHelper {
                 String alias = block.getParameters().get(ALIAS);
                 if (iterableExpr.getParts().get(0).getTypeInfo() != null) {
                     alias = alias.equals(Parameter.EMPTY) ? DEFAULT_ALIAS : alias;
-                    Map<String, String> typeInfos = new HashMap<String, String>(outerNameTypeInfos);
-                    typeInfos.put(alias, iterableExpr.collectTypeInfo() + HINT);
-                    return typeInfos;
+                    Scope newScope = new Scope(previousScope);
+                    newScope.put(alias, iterableExpr.collectTypeInfo() + HINT);
+                    return newScope;
                 } else {
-                    Map<String, String> typeInfos = new HashMap<String, String>(outerNameTypeInfos);
                     // Make sure we do not try to validate against the parent context
-                    typeInfos.put(alias, null);
-                    return typeInfos;
+                    Scope newScope = new Scope(previousScope);
+                    newScope.put(alias, null);
+                    return newScope;
                 }
             } else {
-                return Collections.emptyMap();
+                return previousScope;
             }
         }
     }

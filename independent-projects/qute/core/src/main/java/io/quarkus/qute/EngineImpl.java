@@ -40,10 +40,12 @@ class EngineImpl implements Engine {
     private final List<ResultMapper> resultMappers;
     private final PublisherFactory publisherFactory;
     private final AtomicLong idGenerator = new AtomicLong(0);
+    private final List<ParserHook> parserHooks;
 
     EngineImpl(Map<String, SectionHelperFactory<?>> sectionHelperFactories, List<ValueResolver> valueResolvers,
             List<NamespaceResolver> namespaceResolvers, List<TemplateLocator> locators,
-            List<ResultMapper> resultMappers, Function<String, SectionHelperFactory<?>> sectionHelperFunc) {
+            List<ResultMapper> resultMappers, Function<String, SectionHelperFactory<?>> sectionHelperFunc,
+            List<ParserHook> parserHooks) {
         this.sectionHelperFactories = Collections.unmodifiableMap(new HashMap<>(sectionHelperFactories));
         this.valueResolvers = sort(valueResolvers);
         this.namespaceResolvers = ImmutableList.copyOf(namespaceResolvers);
@@ -64,12 +66,21 @@ class EngineImpl implements Engine {
         }
         this.resultMappers = sort(resultMappers);
         this.sectionHelperFunc = sectionHelperFunc;
+        this.parserHooks = parserHooks;
     }
 
     @Override
     public Template parse(String content, Variant variant) {
         String generatedId = generateId();
-        return new Parser(this).parse(new StringReader(content), Optional.ofNullable(variant), generatedId, generatedId);
+        return newParser(null).parse(new StringReader(content), Optional.ofNullable(variant), generatedId, generatedId);
+    }
+
+    private Parser newParser(String id) {
+        Parser parser = new Parser(this);
+        for (ParserHook parserHook : parserHooks) {
+            parserHook.beforeParsing(parser, id);
+        }
+        return parser;
     }
 
     @Override
@@ -132,7 +143,7 @@ class EngineImpl implements Engine {
             Optional<TemplateLocation> location = locator.locate(id);
             if (location.isPresent()) {
                 try (Reader r = location.get().read()) {
-                    return new Parser(this).parse(ensureBufferedReader(r), location.get().getVariant(), id, generateId());
+                    return newParser(id).parse(ensureBufferedReader(r), location.get().getVariant(), id, generateId());
                 } catch (IOException e) {
                     LOGGER.warn("Unable to close the reader for " + id, e);
                 }

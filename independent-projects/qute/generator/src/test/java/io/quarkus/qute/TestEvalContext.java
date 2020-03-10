@@ -1,7 +1,6 @@
 package io.quarkus.qute;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -18,7 +17,7 @@ public class TestEvalContext implements EvalContext {
             Function<Expression, CompletionStage<Object>> evaluate, String... params) {
         this.base = base;
         this.name = name;
-        this.params = Arrays.stream(params).map(p -> Parser.parseExpression(p, Collections.emptyMap(), null))
+        this.params = Arrays.stream(params).map(p -> Parser.parseExpression(p, Scope.EMPTY, null))
                 .collect(Collectors.toList());
         this.evaluate = evaluate;
     }
@@ -40,7 +39,7 @@ public class TestEvalContext implements EvalContext {
 
     @Override
     public CompletionStage<Object> evaluate(String expression) {
-        return evaluate(Parser.parseExpression(expression, Collections.emptyMap(), null));
+        return evaluate(Parser.parseExpression(expression, Scope.EMPTY, null));
     }
 
     @Override

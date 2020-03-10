@@ -138,7 +138,7 @@ final class ExpressionImpl implements Expression {
         if (value == null || value.isEmpty()) {
             return EMPTY;
         }
-        return Parser.parseExpression(value, Collections.emptyMap(), Parser.SYNTHETIC_ORIGIN);
+        return Parser.parseExpression(value, Scope.EMPTY, Parser.SYNTHETIC_ORIGIN);
     }
 
     static ExpressionImpl literalFrom(String literal) {

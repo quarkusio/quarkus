@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -100,7 +99,7 @@ public class IfSectionHelper implements SectionHelper {
         }
 
         @Override
-        public Map<String, String> initializeBlock(Map<String, String> outerNameTypeInfos, BlockInfo block) {
+        public Scope initializeBlock(Scope previousScope, BlockInfo block) {
             List<Object> params = null;
             if (MAIN_BLOCK_NAME.equals(block.getLabel())) {
                 params = parseParams(new ArrayList<>(block.getParameters().values()), block);
@@ -113,7 +112,7 @@ public class IfSectionHelper implements SectionHelper {
             }
             addExpressions(params, block);
             // {#if} never changes the scope
-            return Collections.emptyMap();
+            return previousScope;
         }
 
         @SuppressWarnings("unchecked")

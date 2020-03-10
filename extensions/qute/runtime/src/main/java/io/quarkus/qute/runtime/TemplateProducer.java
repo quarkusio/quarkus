@@ -87,6 +87,13 @@ public class TemplateProducer {
         return new InjectableTemplate(path.value(), templateVariants, engine);
     }
 
+    /**
+     * Used by NativeCheckedTemplateEnhancer to inject calls to this method in the native type-safe methods.
+     */
+    public Template getInjectableTemplate(String path) {
+        return new InjectableTemplate(path, templateVariants, engine);
+    }
+
     static class InjectableTemplate implements Template {
 
         private final String path;
@@ -182,6 +189,10 @@ public class TemplateProducer {
             this.defaultTemplate = defaultTemplate;
         }
 
+        @Override
+        public String toString() {
+            return "TemplateVariants{default=" + defaultTemplate + ", variants=" + variantToTemplate + "}";
+        }
     }
 
     static String parseMediaType(String suffix) {

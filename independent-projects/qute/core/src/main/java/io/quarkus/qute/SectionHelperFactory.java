@@ -62,11 +62,11 @@ public interface SectionHelperFactory<T extends SectionHelper> {
     /**
      * Initialize a section block.
      * 
-     * @return a map of name to type infos
+     * @return a new scope if this section introduces a new scope, or the outer scope
      * @see BlockInfo#addExpression(String, String)
      */
-    default Map<String, String> initializeBlock(Map<String, String> outerNameTypeInfos, BlockInfo block) {
-        return Collections.emptyMap();
+    default Scope initializeBlock(Scope outerScope, BlockInfo block) {
+        return outerScope;
     }
 
     interface ParserDelegate {

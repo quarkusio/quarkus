@@ -15,7 +15,7 @@ public class ConfigMapVolumeConverter {
     public static ConfigMapVolumeBuilder convert(ConfigMapVolumeConfig cm) {
         ConfigMapVolumeBuilder b = new ConfigMapVolumeBuilder();
         b.withConfigMapName(cm.configMapName);
-        b.withDefaultMode(cm.defaultMode);
+        b.withDefaultMode(FilePermissionUtil.parseInt(cm.defaultMode));
         b.withOptional(cm.optional);
         return b;
     }

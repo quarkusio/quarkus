@@ -55,7 +55,7 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
 
         final CombinedQuarkusPlatformDescriptor.Builder builder = CombinedQuarkusPlatformDescriptor.builder();
         for (QuarkusPlatformDescriptor platform : platforms) {
-            platforms.add(platform);
+            builder.addPlatform(platform);
         }
         return builder.build();
     }

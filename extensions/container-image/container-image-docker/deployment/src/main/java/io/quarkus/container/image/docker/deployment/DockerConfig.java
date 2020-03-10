@@ -2,6 +2,7 @@ package io.quarkus.container.image.docker.deployment;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -14,6 +15,7 @@ public class DockerConfig {
      * If set to an absolute path then the absolute path will be used, otherwise the path
      * will be considered relative to the project root
      */
+    @ConfigItem
     public Optional<String> dockerfileJvmPath;
 
     /**
@@ -22,5 +24,6 @@ public class DockerConfig {
      * If set to an absolute path then the absolute path will be used, otherwise the path
      * will be considered relative to the project root
      */
+    @ConfigItem
     public Optional<String> dockerfileNativePath;
 }

@@ -38,6 +38,11 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
+/**
+ * Generates value resolvers for static extension methods.
+ * 
+ * @see ValueResolver
+ */
 public class ExtensionMethodGenerator {
 
     public static final DotName TEMPLATE_EXTENSION = DotName.createSimple(TemplateExtension.class.getName());

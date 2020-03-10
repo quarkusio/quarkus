@@ -53,14 +53,14 @@ public class ParserTest {
     }
 
     @Test
-    public void testTypeCheckInfos() {
+    public void testTypeInfos() {
         Engine engine = Engine.builder().addDefaultSectionHelpers()
                 .build();
         Template template = engine.parse("{@org.acme.Foo foo}"
                 + "{@java.util.List<org.acme.Label> labels}"
                 + "{foo.name}"
                 + "{#for item in foo.items}"
-                + "{item.name}{bar}"
+                + "{item.name}{bar.name}"
                 + "{/}"
                 + "{#each labels}"
                 + "{it.name}"
@@ -84,18 +84,18 @@ public class ParserTest {
         assertExpr(expressions, "foo.name", 2, "|org.acme.Foo|.name");
         assertExpr(expressions, "foo.items", 2, "|org.acme.Foo|.items");
         assertExpr(expressions, "item.name", 2, "|org.acme.Foo|.items<for-element>.name");
-        assertExpr(expressions, "bar", 1, null);
+        assertExpr(expressions, "bar.name", 2, null);
         assertExpr(expressions, "labels", 1, "|java.util.List<org.acme.Label>|");
         assertExpr(expressions, "it.name", 2, "|java.util.List<org.acme.Label>|<for-element>.name");
-        assertExpr(expressions, "inject:bean.name", 2, Parser.TYPE_CHECK_NAMESPACE + "bean.name");
-        assertExpr(expressions, "inject:bean.labels", 2, Parser.TYPE_CHECK_NAMESPACE + "bean.labels");
-        assertExpr(expressions, "it.value", 2, Parser.TYPE_CHECK_NAMESPACE + "bean.labels<for-element>.value");
+        assertExpr(expressions, "inject:bean.name", 2, "bean.name");
+        assertExpr(expressions, "inject:bean.labels", 2, "bean.labels");
+        assertExpr(expressions, "it.value", 2, "bean.labels<for-element>.value");
         assertExpr(expressions, "foo.bar", 2, "|org.acme.Foo|.bar");
         assertExpr(expressions, "baz.name", 2, "|org.acme.Foo|.bar.name");
         assertExpr(expressions, "foo.bravo", 2, "|org.acme.Foo|.bravo");
         assertExpr(expressions, "delta.id", 2, "|org.acme.Foo|.bravo.id");
         assertExpr(expressions, "foo.baz", 2, null);
-        assertExpr(expressions, "foo.call(labels,bar)", 2, "|org.acme.Foo|.call(|java.util.List<org.acme.Label>|,bar)");
+        assertExpr(expressions, "foo.call(labels,bar)", 2, "|org.acme.Foo|.call(labels,bar)");
     }
 
     @Test
@@ -110,8 +110,8 @@ public class ParserTest {
                 + "{#for item in foo.items}\n\n"
                 + "{item.name}"
                 + "{/}");
-        assertEquals(6, find(template.getExpressions(), "foo.items").origin.getLine());
-        assertEquals(8, find(template.getExpressions(), "item.name").origin.getLine());
+        assertEquals(6, find(template.getExpressions(), "foo.items").getOrigin().getLine());
+        assertEquals(8, find(template.getExpressions(), "item.name").getOrigin().getLine());
     }
 
     @Test
@@ -119,7 +119,7 @@ public class ParserTest {
         Engine engine = Engine.builder().addDefaultSectionHelpers()
                 .build();
         Template template = engine.parse("12{foo}");
-        Origin origin = find(template.getExpressions(), "foo").origin;
+        Origin origin = find(template.getExpressions(), "foo").getOrigin();
         assertEquals(1, origin.getLine());
     }
 
@@ -176,11 +176,11 @@ public class ParserTest {
         }
     }
 
-    private void assertExpr(Set<Expression> expressions, String value, int parts, String typeCheckInfo) {
+    private void assertExpr(Set<Expression> expressions, String value, int parts, String typeInfo) {
         Expression expr = find(expressions, value);
-        assertEquals(parts, expr.parts.size());
-        assertEquals(typeCheckInfo,
-                expr.typeCheckInfo);
+        assertEquals(parts, expr.getParts().size());
+        assertEquals(typeInfo,
+                expr.collectTypeInfo());
     }
 
     private Expression find(Set<Expression> expressions, String val) {

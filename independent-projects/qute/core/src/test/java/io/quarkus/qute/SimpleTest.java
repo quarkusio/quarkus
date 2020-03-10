@@ -44,7 +44,9 @@ public class SimpleTest {
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
                 List<?> list = (List<?>) context.getBase();
-                return CompletableFuture.completedFuture(list.get(Integer.valueOf(context.getParams().get(0))));
+                return context.evaluate(context.getParams().get(0)).thenCompose(index -> {
+                    return CompletableFuture.completedFuture(list.get((Integer) index));
+                });
             }
 
         }).build();

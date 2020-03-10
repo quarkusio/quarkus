@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.Results.Result;
 import java.util.Collections;
 import java.util.Iterator;
@@ -23,16 +24,16 @@ class EvaluatorImpl implements Evaluator {
 
     @Override
     public CompletionStage<Object> evaluate(Expression expression, ResolutionContext resolutionContext) {
-        Iterator<String> parts;
-        if (expression.namespace != null) {
-            parts = expression.parts.iterator();
-            NamespaceResolver resolver = findNamespaceResolver(expression.namespace, resolutionContext);
+        Iterator<Part> parts;
+        if (expression.hasNamespace()) {
+            parts = expression.getParts().iterator();
+            NamespaceResolver resolver = findNamespaceResolver(expression.getNamespace(), resolutionContext);
             if (resolver == null) {
-                LOGGER.errorf("No namespace resolver found for: %s", expression.namespace);
-                return Futures.failure(new IllegalStateException("No resolver for namespace: " + expression.namespace));
+                LOGGER.errorf("No namespace resolver found for: %s", expression.getNamespace());
+                return Futures.failure(new IllegalStateException("No resolver for namespace: " + expression.getNamespace()));
             }
             EvalContext context = new EvalContextImpl(false, null, parts.next(), resolutionContext);
-            LOGGER.debugf("Found '%s' namespace resolver: %s", expression.namespace, resolver.getClass());
+            LOGGER.debugf("Found '%s' namespace resolver: %s", expression.getNamespace(), resolver.getClass());
             return resolver.resolve(context).thenCompose(r -> {
                 if (parts.hasNext()) {
                     return resolveReference(false, r, parts, resolutionContext);
@@ -41,10 +42,10 @@ class EvaluatorImpl implements Evaluator {
                 }
             });
         } else {
-            if (expression.literal != null) {
-                return expression.literal;
+            if (expression.isLiteral()) {
+                return expression.getLiteralValue();
             } else {
-                parts = expression.parts.iterator();
+                parts = expression.getParts().iterator();
                 return resolveReference(true, resolutionContext.getData(), parts, resolutionContext);
             }
         }
@@ -64,9 +65,9 @@ class EvaluatorImpl implements Evaluator {
         return findNamespaceResolver(namespace, resolutionContext.getParent());
     }
 
-    private CompletionStage<Object> resolveReference(boolean tryParent, Object ref, Iterator<String> parts,
+    private CompletionStage<Object> resolveReference(boolean tryParent, Object ref, Iterator<Part> parts,
             ResolutionContext resolutionContext) {
-        String part = parts.next();
+        Part part = parts.next();
         EvalContextImpl evalContext = new EvalContextImpl(tryParent, ref, part, resolutionContext);
         if (!parts.hasNext()) {
             // The last part - no need to compose
@@ -89,7 +90,7 @@ class EvaluatorImpl implements Evaluator {
             if (evalContext.tryParent && parent != null) {
                 // Continue with parent context
                 return resolve(
-                        new EvalContextImpl(true, parent.getData(), evalContext.name, parent),
+                        new EvalContextImpl(true, parent.getData(), evalContext.name, evalContext.params, parent),
                         this.resolvers.iterator());
             }
             LOGGER.tracef("Unable to resolve %s", evalContext);
@@ -115,20 +116,22 @@ class EvaluatorImpl implements Evaluator {
         final boolean tryParent;
         final Object base;
         final String name;
-        final List<String> params;
+        final List<Expression> params;
         final ResolutionContext resolutionContext;
 
-        public EvalContextImpl(boolean tryParent, Object base, String name, ResolutionContext resolutionContext) {
+        EvalContextImpl(boolean tryParent, Object base, Part part, ResolutionContext resolutionContext) {
+            this(tryParent, base, part.getName(),
+                    part.isVirtualMethod() ? part.asVirtualMethod().getParameters() : Collections.emptyList(),
+                    resolutionContext);
+        }
+
+        EvalContextImpl(boolean tryParent, Object base, String name, List<Expression> params,
+                ResolutionContext resolutionContext) {
             this.tryParent = tryParent;
             this.base = base;
             this.resolutionContext = resolutionContext;
-            if (Expressions.isVirtualMethod(name)) {
-                this.params = Expressions.parseVirtualMethodParams(name);
-                this.name = Expressions.parseVirtualMethodName(name);
-            } else {
-                this.params = Collections.emptyList();
-                this.name = name;
-            }
+            this.params = params;
+            this.name = name;
         }
 
         @Override
@@ -142,13 +145,13 @@ class EvaluatorImpl implements Evaluator {
         }
 
         @Override
-        public List<String> getParams() {
+        public List<Expression> getParams() {
             return params;
         }
 
         @Override
         public CompletionStage<Object> evaluate(String value) {
-            return evaluate(Expression.from(value));
+            return evaluate(ExpressionImpl.from(value));
         }
 
         @Override

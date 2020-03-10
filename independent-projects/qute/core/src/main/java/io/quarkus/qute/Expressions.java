@@ -47,7 +47,7 @@ public final class Expressions {
      * @param value
      * @return the parts
      */
-    public static List<String> splitTypeCheckParts(String value) {
+    public static List<String> splitTypeInfoParts(String value) {
         return splitParts(value, Parser::isSeparator, new Predicate<Character>() {
 
             @Override
@@ -64,8 +64,8 @@ public final class Expressions {
         }
         boolean literal = false;
         boolean separator = false;
-        char infix = 0;
-        boolean brackets = false;
+        byte infix = 0;
+        byte brackets = 0;
         ImmutableList.Builder<String> builder = ImmutableList.builder();
         StringBuilder buffer = new StringBuilder();
         for (int i = 0; i < value.length(); i++) {
@@ -73,7 +73,7 @@ public final class Expressions {
             if (separatorPredicate.test(c)) {
                 // Adjacent separators are ignored
                 if (!separator) {
-                    if (!literal) {
+                    if (!literal && brackets == 0) {
                         if (buffer.length() > 0) {
                             builder.add(buffer.toString());
                             buffer = new StringBuilder();
@@ -89,7 +89,7 @@ public final class Expressions {
                 }
                 // Non-separator char
                 if (!literal) {
-                    if (!brackets && c == ' ') {
+                    if (brackets == 0 && buffer.length() > 0 && c == ' ') {
                         if (infix == 1) {
                             // The second space after the infix method
                             buffer.append(LEFT_BRACKET);
@@ -109,8 +109,10 @@ public final class Expressions {
                             }
                         }
                     } else {
-                        if (Parser.isBracket(c)) {
-                            brackets = !brackets;
+                        if (Parser.isLeftBracket(c)) {
+                            brackets++;
+                        } else if (Parser.isRightBracket(c)) {
+                            brackets--;
                         }
                         buffer.append(c);
                     }

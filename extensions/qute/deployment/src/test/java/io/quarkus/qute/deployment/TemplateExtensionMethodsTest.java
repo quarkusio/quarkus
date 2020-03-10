@@ -29,7 +29,7 @@ public class TemplateExtensionMethodsTest {
                     .addClasses(Foo.class, Extensions.class, PrioritizedExtensions.class)
                     .addAsResource(new StringAsset("{foo.name.toLower} {foo.name.ignored} {foo.callMe(1)} {foo.baz}"),
                             "templates/foo.txt")
-                    .addAsResource(new StringAsset("{baz.setScale(2,roundingMode)}"),
+                    .addAsResource(new StringAsset("{baz.setScale(baz.defaultScale,roundingMode)}"),
                             "templates/baz.txt")
                     .addAsResource(new StringAsset("{anyInt.foo('bing')}"),
                             "templates/any.txt")
@@ -106,6 +106,10 @@ public class TemplateExtensionMethodsTest {
         @TemplateExtension(matchName = ANY)
         static String any(Integer val, String name, String info) {
             return val + "=" + info;
+        }
+
+        static int defaultScale(BigDecimal val) {
+            return 2;
         }
     }
 

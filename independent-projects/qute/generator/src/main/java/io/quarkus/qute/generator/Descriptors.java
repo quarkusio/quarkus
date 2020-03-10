@@ -3,6 +3,7 @@ package io.quarkus.qute.generator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.qute.EvalContext;
+import io.quarkus.qute.Expression;
 import io.quarkus.qute.Results;
 import java.util.Collection;
 import java.util.List;
@@ -22,7 +23,7 @@ class Descriptors {
     static final MethodDescriptor GET_BASE = MethodDescriptor.ofMethod(EvalContext.class, "getBase", Object.class);
     static final MethodDescriptor GET_PARAMS = MethodDescriptor.ofMethod(EvalContext.class, "getParams", List.class);
     static final MethodDescriptor EVALUATE = MethodDescriptor.ofMethod(EvalContext.class, "evaluate",
-            CompletionStage.class, String.class);
+            CompletionStage.class, Expression.class);
     static final MethodDescriptor INTEGER_COMPARE = MethodDescriptor.ofMethod(Integer.class, "compare", int.class,
             int.class, int.class);
     static final MethodDescriptor LIST_GET = MethodDescriptor.ofMethod(List.class, "get", Object.class, int.class);

@@ -26,7 +26,7 @@ public interface NamespaceResolver extends Resolver {
     /**
      * 
      * @return the namespace
-     * @see Expression#namespace
+     * @see ExpressionImpl#namespace
      */
     String getNamespace();
 

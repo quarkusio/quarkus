@@ -77,11 +77,11 @@ public class WithSectionHelper implements SectionHelper {
                     throw new IllegalStateException("Object param not present");
                 }
                 Expression objectExpr = block.addExpression(OBJECT, object);
-                if (objectExpr.namespace == null && block.hasParameter(ALIAS)) {
+                if (!objectExpr.hasNamespace() && block.hasParameter(ALIAS)) {
                     // Only validate expressions if alias param is set
                     String alias = block.getParameters().get(ALIAS);
                     Map<String, String> typeInfos = new HashMap<String, String>(outerNameTypeInfos);
-                    typeInfos.put(alias, objectExpr.typeCheckInfo);
+                    typeInfos.put(alias, objectExpr.collectTypeInfo());
                     return typeInfos;
                 } else {
                     return outerNameTypeInfos;

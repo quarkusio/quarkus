@@ -10,11 +10,11 @@ import java.util.concurrent.CompletionStage;
  */
 class ExpressionNode implements TemplateNode {
 
-    final Expression expression;
+    final ExpressionImpl expression;
     private final Engine engine;
     private final Origin origin;
 
-    public ExpressionNode(Expression expression, Engine engine, Origin origin) {
+    public ExpressionNode(ExpressionImpl expression, Engine engine, Origin origin) {
         this.expression = expression;
         this.engine = engine;
         this.origin = origin;

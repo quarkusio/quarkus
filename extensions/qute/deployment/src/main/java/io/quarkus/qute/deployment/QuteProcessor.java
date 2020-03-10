@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -72,6 +71,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
+import io.quarkus.qute.Expression.VirtualMethodPart;
 import io.quarkus.qute.LoopSectionHelper;
 import io.quarkus.qute.PublisherFactory;
 import io.quarkus.qute.ResultNode;
@@ -87,9 +87,7 @@ import io.quarkus.qute.api.ResourcePath;
 import io.quarkus.qute.api.VariantTemplate;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.Check;
-import io.quarkus.qute.deployment.TypeCheckInfo.Part;
-import io.quarkus.qute.deployment.TypeCheckInfo.TypeInfoPart;
-import io.quarkus.qute.deployment.TypeCheckInfo.VirtualMethodPart;
+import io.quarkus.qute.deployment.TypeInfos.Info;
 import io.quarkus.qute.generator.ExtensionMethodGenerator;
 import io.quarkus.qute.generator.ValueResolverGenerator;
 import io.quarkus.qute.mutiny.MutinyPublisherFactory;
@@ -248,84 +246,9 @@ public class QuteProcessor {
 
         for (TemplateAnalysis analysis : templatesAnalysis.getAnalysis()) {
             for (Expression expression : analysis.expressions) {
-                if (expression.namespace != null || expression.typeCheckInfo == null) {
-                    // No type info available or a namespace expression
-                    continue;
-                }
-                TypeCheckInfo typeCheckInfo = TypeCheckInfo.create(expression, index, templateIdToPathFun);
-                Iterator<Part> parts = typeCheckInfo.parts.iterator();
-                TypeInfoPart root = parts.next().asTypeInfo();
-                Match match = new Match();
-                match.clazz = root.rawClass;
-                match.type = root.resolvedType;
-                if (root.hint != null) {
-                    processHints(root.hint, match, index);
-                }
-
-                while (parts.hasNext()) {
-                    // Now iterate over all parts of the expression and check each part against the current "match class"
-                    Part part = parts.next();
-                    if (match.clazz != null) {
-                        // By default, we only consider properties
-                        implicitClassToMethodUsed.putIfAbsent(match.clazz, false);
-                        AnnotationTarget member = null;
-                        // First try to find java members
-                        if (part.isVirtualMethod()) {
-                            member = findMethod(part.asVirtualMethod(), match.clazz, expression, index, templateIdToPathFun);
-                            if (member != null) {
-                                implicitClassToMethodUsed.put(match.clazz, true);
-                            }
-                        } else if (part.isProperty()) {
-                            member = findProperty(part.asProperty().name, match.clazz, index);
-                        }
-                        // Java member not found - try extension methods
-                        if (member == null) {
-                            member = findTemplateExtensionMethod(part, match.clazz, templateExtensionMethods, expression, index,
-                                    templateIdToPathFun);
-                        }
-
-                        if (member == null) {
-                            // Test whether the validation should be skipped
-                            Check check = new Check(part.isProperty() ? part.asProperty().name : part.asVirtualMethod().name,
-                                    match.clazz, part.isVirtualMethod() ? part.asVirtualMethod().parameters.size() : -1);
-                            if (isExcluded(check, excludes)) {
-                                LOGGER.debugf(
-                                        "Expression part [%s] excluded from validation of [%s] against class [%s]",
-                                        part.value,
-                                        expression.toOriginalString(), match.clazz);
-                                break;
-                            }
-                        }
-
-                        if (member == null) {
-                            // No member found - incorrect expression
-                            incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                                    part.value, match.clazz.toString(), expression.origin.getLine(),
-                                    expression.origin.getTemplateGeneratedId()));
-                            break;
-                        } else if (parts.hasNext()) {
-                            match.type = resolveType(member, match, index);
-                            if (match.type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE) {
-                                break;
-                            }
-                            if (match.type.kind() == Type.Kind.CLASS || match.type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-                                match.clazz = index.getClassByName(match.type.name());
-                            }
-                            if (part.isProperty()) {
-                                String hint = part.asProperty().hint;
-                                if (hint != null) {
-                                    // For example a loop section needs to validate the type of an element
-                                    processHints(hint, match, index);
-                                }
-                            }
-                        }
-                    } else {
-                        LOGGER.debugf(
-                                "No match class available - skip further validation for [%s] in expression [%s] in template [%s] on line %s",
-                                part, expression.toOriginalString(), expression.origin.getTemplateId(),
-                                expression.origin.getLine());
-                        break;
-                    }
+                if (!expression.hasNamespace()) {
+                    validateNestedExpressions(null, new HashMap<>(), templateExtensionMethods, excludes, incorrectExpressions,
+                            expression, index, implicitClassToMethodUsed, templateIdToPathFun);
                 }
             }
         }
@@ -335,6 +258,119 @@ public class QuteProcessor {
                     ? new ImplicitValueResolverBuildItem(implicit.getKey(), new TemplateDataBuilder().properties(false).build())
                     : new ImplicitValueResolverBuildItem(implicit.getKey()));
         }
+    }
+
+    void validateNestedExpressions(ClassInfo rootClazz, Map<String, Match> results,
+            List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
+            List<TypeCheckExcludeBuildItem> excludes,
+            BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions, Expression expression, IndexView index,
+            Map<ClassInfo, Boolean> implicitClassToMethodUsed, Function<String, String> templateIdToPathFun) {
+
+        // First validate nested virtual methods
+        for (Expression.Part part : expression.getParts()) {
+            if (part.isVirtualMethod()) {
+                for (Expression param : part.asVirtualMethod().getParameters()) {
+                    if (!results.containsKey(param.toOriginalString())) {
+                        validateNestedExpressions(null, results, templateExtensionMethods, excludes, incorrectExpressions,
+                                param, index, implicitClassToMethodUsed, templateIdToPathFun);
+                    }
+                }
+            }
+        }
+        // Then validate the expression itself
+        Match match = new Match();
+        if (rootClazz == null && !expression.hasTypeInfo()) {
+            // No type info available or a namespace expression
+            results.put(expression.toOriginalString(), match);
+            return;
+        }
+
+        Iterator<Info> parts = TypeInfos.create(expression, index, templateIdToPathFun).iterator();
+
+        if (rootClazz == null) {
+            Info root = parts.next();
+            match.clazz = root.asTypeInfo().rawClass;
+            match.type = root.asTypeInfo().resolvedType;
+            if (root.asTypeInfo().hint != null) {
+                processHints(root.asTypeInfo().hint, match, index);
+            }
+        } else {
+            // The first part is the name of the bean
+            parts.next();
+            match.clazz = rootClazz;
+            match.type = Type.create(rootClazz.name(), org.jboss.jandex.Type.Kind.CLASS);
+        }
+
+        while (parts.hasNext()) {
+            // Now iterate over all parts of the expression and check each part against the current "match class"
+            Info info = parts.next();
+            if (match.clazz != null) {
+                // By default, we only consider properties
+                implicitClassToMethodUsed.putIfAbsent(match.clazz, false);
+                AnnotationTarget member = null;
+                // First try to find java members
+                if (info.isVirtualMethod()) {
+                    member = findMethod(info.part.asVirtualMethod(), match.clazz, expression, index, templateIdToPathFun,
+                            results);
+                    if (member != null) {
+                        implicitClassToMethodUsed.put(match.clazz, true);
+                    }
+                } else if (info.isProperty()) {
+                    member = findProperty(info.asProperty().name, match.clazz, index);
+                }
+                // Java member not found - try extension methods
+                if (member == null) {
+                    member = findTemplateExtensionMethod(info, match.clazz, templateExtensionMethods, expression, index,
+                            templateIdToPathFun, results);
+                }
+
+                if (member == null) {
+                    // Test whether the validation should be skipped
+                    Check check = new Check(info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name,
+                            match.clazz, info.part.isVirtualMethod() ? info.part.asVirtualMethod().getParameters().size() : -1);
+                    if (isExcluded(check, excludes)) {
+                        LOGGER.debugf(
+                                "Expression part [%s] excluded from validation of [%s] against class [%s]",
+                                info.value,
+                                expression.toOriginalString(), match.clazz);
+                        match.clear();
+                        break;
+                    }
+                }
+
+                if (member == null) {
+                    // No member found - incorrect expression
+                    incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
+                            info.value, match.clazz.toString(), expression.getOrigin().getLine(),
+                            expression.getOrigin().getTemplateGeneratedId()));
+                    match.clear();
+                    break;
+                } else {
+                    match.type = resolveType(member, match, index);
+                    if (match.type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE) {
+                        break;
+                    }
+                    if (match.type.kind() == Type.Kind.CLASS || match.type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                        match.clazz = index.getClassByName(match.type.name());
+                    }
+                    if (info.isProperty()) {
+                        String hint = info.asProperty().hint;
+                        if (hint != null) {
+                            // For example a loop section needs to validate the type of an element
+                            processHints(hint, match, index);
+                        }
+                    }
+                }
+            } else {
+                LOGGER.debugf(
+                        "No match class available - skip further validation for [%s] in expression [%s] in template [%s] on line %s",
+                        info.part, expression.toOriginalString(), expression.getOrigin().getTemplateId(),
+                        expression.getOrigin().getLine());
+                match.clear();
+                break;
+            }
+        }
+        results.put(expression.toOriginalString(), match);
     }
 
     @BuildStep
@@ -437,95 +473,21 @@ public class QuteProcessor {
 
             for (Expression expression : expressions) {
 
-                String beanName = expression.parts.get(0);
+                String beanName = expression.getParts().get(0).getName();
                 BeanInfo bean = namedBeans.get(beanName);
                 if (bean != null) {
-                    if (expression.parts.size() == 1) {
+                    if (expression.getParts().size() == 1) {
+                        // Only the bean needs to be validated
                         continue;
                     }
-
-                    TypeCheckInfo typeCheckInfo = TypeCheckInfo.create(expression, index, templateIdToPathFun);
-                    // Skip the first two parts - namespace placeholder + bean name; ie. "inject:hello" from "inject:hello.ping"
-                    Iterator<Part> parts = typeCheckInfo.parts.listIterator(2);
-                    Match match = new Match();
-                    // First match the bean implementation class
-                    match.clazz = bean.getImplClazz();
-
-                    while (parts.hasNext()) {
-                        // Now iterate over all parts of the expression and check each part against the current "match class"
-                        Part part = parts.next();
-                        if (match.clazz != null) {
-                            // By default, we only consider properties
-                            implicitClassToMethodUsed.putIfAbsent(match.clazz, false);
-                            AnnotationTarget member = null;
-                            // First try to find java members
-                            if (part.isVirtualMethod()) {
-                                member = findMethod(part.asVirtualMethod(), match.clazz, expression, index,
-                                        templateIdToPathFun);
-                                if (member != null) {
-                                    implicitClassToMethodUsed.put(match.clazz, true);
-                                }
-                            } else if (part.isProperty()) {
-                                member = findProperty(part.asProperty().name, match.clazz, index);
-                            }
-                            // Java member not found - try extension methods
-                            if (member == null) {
-                                member = findTemplateExtensionMethod(part, match.clazz, templateExtensionMethods, expression,
-                                        index,
-                                        templateIdToPathFun);
-                            }
-
-                            if (member == null) {
-                                // Test whether the validation should be skipped
-                                Check check = new Check(
-                                        part.isProperty() ? part.asProperty().name : part.asVirtualMethod().name,
-                                        match.clazz, part.isVirtualMethod() ? part.asVirtualMethod().parameters.size() : -1);
-                                if (isExcluded(check, excludes)) {
-                                    LOGGER.debugf(
-                                            "Expression part [%s] excluded from validation of [%s] against class [%s]",
-                                            part.value,
-                                            expression.toOriginalString(), match.clazz);
-                                    break;
-                                }
-                            }
-
-                            if (member == null) {
-                                // No member found - incorrect expression
-                                incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                                        part.value, match.clazz.toString(), expression.origin.getLine(),
-                                        expression.origin.getTemplateGeneratedId()));
-                                break;
-                            } else if (parts.hasNext()) {
-                                match.type = resolveType(member, match, index);
-                                if (match.type.kind() == org.jboss.jandex.Type.Kind.PRIMITIVE) {
-                                    break;
-                                }
-                                if (match.type.kind() == Type.Kind.CLASS || match.type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-                                    match.clazz = index.getClassByName(match.type.name());
-                                }
-                                if (part.isProperty()) {
-                                    String hint = part.asProperty().hint;
-                                    if (hint != null) {
-                                        // For example a loop section needs to validate the type of an element
-                                        processHints(hint, match, index);
-                                    }
-                                }
-                            }
-
-                        } else {
-                            LOGGER.debugf(
-                                    "No match class available - skip further validation for [%s] in expression [%s] in template [%s] on line %s",
-                                    part, expression.toOriginalString(), expression.origin.getTemplateId(),
-                                    expression.origin.getLine());
-                            break;
-                        }
-                    }
+                    validateNestedExpressions(bean.getImplClazz(), new HashMap<>(), templateExtensionMethods, excludes,
+                            incorrectExpressions, expression, index, implicitClassToMethodUsed, templateIdToPathFun);
 
                 } else {
                     // User is injecting a non-existing bean
                     incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
-                            beanName, null, expression.origin.getLine(),
-                            expression.origin.getTemplateGeneratedId()));
+                            beanName, null, expression.getOrigin().getLine(),
+                            expression.getOrigin().getTemplateGeneratedId()));
                 }
             }
 
@@ -883,8 +845,8 @@ public class QuteProcessor {
     }
 
     static class Match {
-        ClassInfo clazz;
 
+        ClassInfo clazz;
         Type type;
 
         List<Type> getParameterizedTypeArguments() {
@@ -895,15 +857,24 @@ public class QuteProcessor {
         List<TypeVariable> getTypeParameters() {
             return clazz.typeParameters();
         }
+
+        void clear() {
+            clazz = null;
+            type = null;
+        }
+
+        boolean isEmpty() {
+            return clazz == null;
+        }
     }
 
-    private AnnotationTarget findTemplateExtensionMethod(Part part, ClassInfo matchClass,
+    private AnnotationTarget findTemplateExtensionMethod(Info info, ClassInfo matchClass,
             List<TemplateExtensionMethodBuildItem> templateExtensionMethods, Expression expression, IndexView index,
-            Function<String, String> templateIdToPathFun) {
-        if (!part.isProperty() && !part.isVirtualMethod()) {
+            Function<String, String> templateIdToPathFun, Map<String, Match> results) {
+        if (!info.isProperty() && !info.isVirtualMethod()) {
             return null;
         }
-        String name = part.isProperty() ? part.asProperty().name : part.asVirtualMethod().name;
+        String name = info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name;
         for (TemplateExtensionMethodBuildItem extensionMethod : templateExtensionMethods) {
             if (!Types.isAssignableFrom(extensionMethod.getMatchClass().name(), matchClass.name(), index)) {
                 // If "Bar extends Foo" then Bar should be matched for extension method "int get(Foo)"   
@@ -913,33 +884,34 @@ public class QuteProcessor {
                 // Name does not match
                 continue;
             }
-            if (part.isVirtualMethod()) {
+            if (info.isVirtualMethod()) {
                 // For virtual method validate the number of params and attempt to validate the parameter types if available
-                VirtualMethodPart virtualMethod = part.asVirtualMethod();
-                if (virtualMethod.parameters.size() != (extensionMethod.getMethod().parameters().size() - 1)) {
+                VirtualMethodPart virtualMethod = info.part.asVirtualMethod();
+                if (virtualMethod.getParameters().size() != (extensionMethod.getMethod().parameters().size() - 1)) {
                     // Check number of parameters; the first param of an extension method must be ignored
                     continue;
                 }
+                // Check parameter types if available
                 boolean matches = true;
-                for (ListIterator<Type> iterator = extensionMethod.getMethod().parameters().listIterator(1); iterator
-                        .hasNext();) {
-                    Type paramType = iterator.next();
-                    Part paramPart = virtualMethod.parameters.get(iterator.previousIndex() - 1);
-                    if (paramPart.isTypeInfo()) {
-                        // TODO consider type params in assignability rules
-                        if (!Types.isAssignableFrom(paramPart.asTypeInfo().resolvedType,
-                                paramType, index)) {
+                byte idx = 0;
+                for (Expression param : virtualMethod.getParameters()) {
+                    idx++;
+                    Match result = results.get(param.toOriginalString());
+                    if (result != null && !result.isEmpty()) {
+                        // Type info available - validate parameter type
+                        if (!Types.isAssignableFrom(result.type,
+                                extensionMethod.getMethod().parameters().get(idx), index)) {
                             matches = false;
                             break;
                         }
                     } else {
                         LOGGER.debugf(
                                 "Type info not available - skip validation for parameter [%s] of extension method [%s] for expression [%s] in template [%s] on line %s",
-                                extensionMethod.getMethod().parameterName(iterator.previousIndex() + 1),
-                                extensionMethod.getMethod().declaringClass().name() + "#" + extensionMethod.getMethod().name(),
+                                extensionMethod.getMethod().parameterName(idx + 1),
+                                extensionMethod.getMethod().declaringClass().name() + "#" + extensionMethod.getMethod(),
                                 expression.toOriginalString(),
-                                templateIdToPathFun.apply(expression.origin.getTemplateId()),
-                                expression.origin.getLine());
+                                templateIdToPathFun.apply(expression.getOrigin().getTemplateId()),
+                                expression.getOrigin().getLine());
                     }
                 }
                 if (!matches) {
@@ -990,36 +962,42 @@ public class QuteProcessor {
     /**
      * Find a non-static non-synthetic method with the given name, matching number of params and assignable parameter types.
      * 
-     * @param method
+     * @param virtualMethod
      * @param clazz
+     * @param expression
      * @param index
+     * @param templateIdToPathFun
+     * @param results
      * @return the method or null
      */
     private AnnotationTarget findMethod(VirtualMethodPart virtualMethod, ClassInfo clazz, Expression expression,
-            IndexView index, Function<String, String> templateIdToPathFun) {
+            IndexView index, Function<String, String> templateIdToPathFun, Map<String, Match> results) {
         while (clazz != null) {
             for (MethodInfo method : clazz.methods()) {
                 if (Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags())
-                        && !ValueResolverGenerator.isSynthetic(method.flags()) && method.name().equals(virtualMethod.name)
-                        && virtualMethod.parameters.size() == method.parameters().size()) {
+                        && !ValueResolverGenerator.isSynthetic(method.flags()) && method.name().equals(virtualMethod.getName())
+                        && virtualMethod.getParameters().size() == method.parameters().size()) {
+                    // Check parameter types if available
                     boolean matches = true;
-                    for (ListIterator<Part> iterator = virtualMethod.parameters.listIterator(); iterator.hasNext();) {
-                        Part parameter = iterator.next();
-                        if (parameter.isTypeInfo()) {
+                    byte idx = 0;
+                    for (Expression param : virtualMethod.getParameters()) {
+                        idx++;
+                        Match result = results.get(param.toOriginalString());
+                        if (result != null && !result.isEmpty()) {
                             // Type info available - validate parameter type
-                            if (!Types.isAssignableFrom(parameter.asTypeInfo().resolvedType,
-                                    method.parameters().get(iterator.previousIndex()), index)) {
+                            if (!Types.isAssignableFrom(result.type,
+                                    method.parameters().get(idx - 1), index)) {
                                 matches = false;
                                 break;
                             }
                         } else {
                             LOGGER.debugf(
                                     "Type info not available - skip validation for parameter [%s] of method [%s] for expression [%s] in template [%s] on line %s",
-                                    method.parameterName(iterator.previousIndex()),
+                                    method.parameterName(idx),
                                     method.declaringClass().name() + "#" + method,
                                     expression.toOriginalString(),
-                                    templateIdToPathFun.apply(expression.origin.getTemplateId()),
-                                    expression.origin.getLine());
+                                    templateIdToPathFun.apply(expression.getOrigin().getTemplateId()),
+                                    expression.getOrigin().getLine());
                         }
                     }
                     return matches ? method : null;
@@ -1076,14 +1054,25 @@ public class QuteProcessor {
     private Set<Expression> collectInjectExpressions(TemplateAnalysis analysis) {
         Set<Expression> injectExpressions = new HashSet<>();
         for (Expression expression : analysis.expressions) {
-            if (expression.literal != null) {
-                continue;
-            }
-            if (EngineProducer.INJECT_NAMESPACE.equals(expression.namespace)) {
-                injectExpressions.add(expression);
-            }
+            collectInjectExpressions(expression, injectExpressions);
         }
         return injectExpressions;
+    }
+
+    private void collectInjectExpressions(Expression expression, Set<Expression> injectExpressions) {
+        if (expression.isLiteral()) {
+            return;
+        }
+        if (EngineProducer.INJECT_NAMESPACE.equals(expression.getNamespace())) {
+            injectExpressions.add(expression);
+        }
+        for (Expression.Part part : expression.getParts()) {
+            if (part.isVirtualMethod()) {
+                for (Expression param : part.asVirtualMethod().getParameters()) {
+                    collectInjectExpressions(param, injectExpressions);
+                }
+            }
+        }
     }
 
     public static String getName(InjectionPointInfo injectionPoint) {

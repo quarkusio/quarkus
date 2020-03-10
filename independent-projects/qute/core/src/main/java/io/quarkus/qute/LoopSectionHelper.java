@@ -39,7 +39,7 @@ public class LoopSectionHelper implements SectionHelper {
             if (it == null) {
                 throw new TemplateException(String.format(
                         "Loop section error in template %s on line %s: [%s] resolved to [null] which is not iterable",
-                        iterable.origin.getTemplateId(), iterable.origin.getLine(), iterable.toOriginalString()));
+                        iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString()));
             }
             List<CompletionStage<ResultNode>> results = new ArrayList<>();
             Iterator<?> iterator = extractIterator(it);
@@ -86,7 +86,7 @@ public class LoopSectionHelper implements SectionHelper {
         } else {
             throw new TemplateException(String.format(
                     "Loop section error in template %s on line %s: [%s] resolved to [%s] which is not iterable",
-                    iterable.origin.getTemplateId(), iterable.origin.getLine(), iterable.toOriginalString(),
+                    iterable.getOrigin().getTemplateId(), iterable.getOrigin().getLine(), iterable.toOriginalString(),
                     it.getClass().getName()));
         }
     }
@@ -134,10 +134,10 @@ public class LoopSectionHelper implements SectionHelper {
                 }
                 Expression iterableExpr = block.addExpression(ITERABLE, iterable);
                 String alias = block.getParameters().get(ALIAS);
-                if (iterableExpr.typeCheckInfo != null) {
+                if (iterableExpr.getParts().get(0).getTypeInfo() != null) {
                     alias = alias.equals(Parameter.EMPTY) ? DEFAULT_ALIAS : alias;
                     Map<String, String> typeInfos = new HashMap<String, String>(outerNameTypeInfos);
-                    typeInfos.put(alias, iterableExpr.typeCheckInfo + HINT);
+                    typeInfos.put(alias, iterableExpr.collectTypeInfo() + HINT);
                     return typeInfos;
                 } else {
                     Map<String, String> typeInfos = new HashMap<String, String>(outerNameTypeInfos);

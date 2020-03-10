@@ -42,8 +42,8 @@ final class SectionInitContextImpl implements SectionInitContext {
     }
 
     @Override
-    public Expression parseValue(String value) {
-        return Expression.from(value);
+    public ExpressionImpl parseValue(String value) {
+        return ExpressionImpl.from(value);
     }
 
     public List<SectionBlock> getBlocks() {

@@ -1,5 +1,7 @@
 package io.quarkus.amazon.lambda.test;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,6 +45,50 @@ public class LambdaClient {
         REQUESTS = requests;
         REQUEST_QUEUE = requestQueue;
 
+    }
+
+    public static void invoke(InputStream inputStream, OutputStream outputStream) {
+        if (problem != null) {
+            throw new RuntimeException(problem);
+        }
+        try {
+            String id = "aws-request-" + REQUEST_ID_GENERATOR.incrementAndGet();
+            CompletableFuture<String> result = new CompletableFuture<>();
+            REQUESTS.put(id, result);
+            StringBuilder requestBody = new StringBuilder();
+            int i = 0;
+            while ((i = inputStream.read()) != -1) {
+                requestBody.append((char) i);
+            }
+            REQUEST_QUEUE.add(new Map.Entry<String, String>() {
+
+                @Override
+                public String getKey() {
+                    return id;
+                }
+
+                @Override
+                public String getValue() {
+                    return requestBody.toString();
+                }
+
+                @Override
+                public String setValue(String value) {
+                    return null;
+                }
+            });
+            String output = result.get();
+            outputStream.write(output.getBytes());
+        } catch (Exception e) {
+            if (e instanceof ExecutionException) {
+                Throwable ex = e.getCause();
+                if (ex instanceof RuntimeException) {
+                    throw (RuntimeException) ex;
+                }
+                throw new RuntimeException(ex);
+            }
+            throw new RuntimeException(e);
+        }
     }
 
     public static <T> T invoke(Class<T> returnType, Object input) {

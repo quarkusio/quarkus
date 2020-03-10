@@ -97,4 +97,9 @@ public class PanacheFunctionalityTest {
                 "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
                 personAsString);
     }
+
+    @Test
+    public void testBug7721() {
+        RestAssured.when().get("/test/7721").then().body(is("OK"));
+    }
 }

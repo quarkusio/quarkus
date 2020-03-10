@@ -52,13 +52,13 @@ public class KubernetesClientTest {
 
         // same here, the content itself doesn't really matter
         mockServer.expect().post().withPath("/api/v1/namespaces/test/pods").andReturn(201, new PodBuilder()
-                .withNewMetadata().withResourceVersion("12345").and().build()).once();
+                .withNewMetadata().withResourceVersion("54321").and().build()).once();
     }
 
     @Test
     public void testInteractionWithAPIServer() {
         RestAssured.when().get("/pod/test").then()
-                .body("size()", is(2));
+                .body("size()", is(2)).body(containsString("pod1"), containsString("pod2"));
 
         RestAssured.when().delete("/pod/test").then()
                 .statusCode(204);
@@ -67,7 +67,7 @@ public class KubernetesClientTest {
                 .body(containsString("value1"));
 
         RestAssured.when().post("/pod/test").then()
-                .body(containsString("12345"));
+                .body(containsString("54321"));
     }
 
 }

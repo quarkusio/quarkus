@@ -98,11 +98,15 @@ public class KubernetesClientProcessor {
                 .map(c -> c.name().toString())
                 .filter(c -> !watchedClasses.contains(c))
                 .toArray(String[]::new);
-        reflectiveClasses.produce(ReflectiveClassBuildItem.weakClass(modelClasses));
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(modelClasses).weak(true).methods(true).fields(false).build());
 
         // we also ignore some classes that are annotated with @JsonDeserialize that would force the registration of the entire model
         ignoredJsonDeserializationClasses.produce(
                 new IgnoreJsonDeserializeClassBuildItem(DotName.createSimple("io.fabric8.kubernetes.api.model.KubeSchema")));
+        ignoredJsonDeserializationClasses.produce(
+                new IgnoreJsonDeserializeClassBuildItem(
+                        DotName.createSimple("io.fabric8.kubernetes.api.model.KubernetesResourceList")));
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE));
 
         final String[] doneables = combinedIndexBuildItem.getIndex()

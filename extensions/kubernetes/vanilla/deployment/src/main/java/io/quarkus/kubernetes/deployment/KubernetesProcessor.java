@@ -135,8 +135,7 @@ class KubernetesProcessor {
             Optional<KubernetesCommandBuildItem> commandBuildItem,
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem,
-            BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer,
-            BuildProducer<FeatureBuildItem> featureProducer) {
+            BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer) {
 
         if (kubernetesPortBuildItems.isEmpty()) {
             log.debug("The service is not an HTTP service so no Kubernetes manifests will be generated");
@@ -223,7 +222,11 @@ class KubernetesProcessor {
         } catch (IOException e) {
             log.debug("Unable to delete temporary directory " + root, e);
         }
-        featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.KUBERNETES));
+    }
+
+    @BuildStep
+    FeatureBuildItem produceFeature() {
+        return new FeatureBuildItem(FeatureBuildItem.KUBERNETES);
     }
 
     /**

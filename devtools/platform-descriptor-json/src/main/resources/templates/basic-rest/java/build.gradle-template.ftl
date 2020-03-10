@@ -20,12 +20,16 @@ group '${project_groupId}'
 version '${project_version}'
 
 compileJava {
+    options.encoding = 'UTF-8'
     options.compilerArgs << '-parameters'
+}
+
+compileTestJava {
+    options.encoding = 'UTF-8'
 }
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 }
-
 

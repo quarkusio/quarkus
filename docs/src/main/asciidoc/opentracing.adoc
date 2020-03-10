@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 
 include::./attributes.adoc[]
 
-This guide explains how your Quarkus application can utilize opentracing to provide distributed tracing for
+This guide explains how your Quarkus application can utilize OpenTracing to provide distributed tracing for
 interactive web applications.
 
 == Prerequisites
@@ -65,13 +65,17 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import org.jboss.logging.Logger;
 
 @Path("/hello")
 public class TracedResource {
 
+    private static final Logger LOG = Logger.getLogger(TracedResource.class);
+
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
+        LOG.info("hello");
         return "hello";
     }
 }
@@ -91,11 +95,13 @@ The first approach is by providing the properties within the `src/main/resources
 quarkus.jaeger.service-name=myservice // <1>
 quarkus.jaeger.sampler-type=const // <2>
 quarkus.jaeger.sampler-param=1 // <3>
+quarkus.log.console.format=%d{HH:mm:ss} %-5p traceId=%X{traceId}, spanId=%X{spanId}, sampled=%X{sampled} [%c{2.}] (%t) %s%e%n // <4>
 ----
 
 <1> If the `quarkus.jaeger.service-name` property (or `JAEGER_SERVICE_NAME` environment variable) is not provided then a "no-op" tracer will be configured, resulting in no tracing data being reported to the backend.
 <2> Setup a sampler, that uses a constant sampling strategy.
 <3> Sample all requests. Set sampler-param to somewhere between 0 and 1, e.g. 0.50, if you do not wish to sample all requests.
+<4> Add trace IDs into log message.
 
 The second approach is to supply the properties as https://www.jaegertracing.io/docs/latest/client-features/[environment variables]. These can be specified as `jvm.args` as shown in the following section.
 
@@ -105,7 +111,7 @@ The first step is to start the tracing system to collect and display the capture
 
 [source, text]
 ----
-docker run -e COLLECTOR_ZIPKIN_HTTP_PORT=9411 -p 5775:5775/udp -p 6831:6831/udp -p 6832:6832/udp -p 5778:5778 -p 16686:16686 -p 14268:14268 -p 9411:9411 jaegertracing/all-in-one:latest
+docker run -p 5775:5775/udp -p 6831:6831/udp -p 6832:6832/udp -p 5778:5778 -p 16686:16686 -p 14268:14268 jaegertracing/all-in-one:latest
 ----
 
 Now we are ready to run our application. If using `application.properties` to configure the tracer:
@@ -131,6 +137,7 @@ hello
 When the first request has been submitted, the Jaeger tracer within the app will be initialized:
 ```
 2019-10-16 09:35:23,464 INFO  [io.jae.Configuration] (executor-thread-1) Initialized tracer=JaegerTracer(version=Java-0.34.0, serviceName=myservice, reporter=RemoteReporter(sender=UdpSender(), closeEnqueueTimeout=1000), sampler=ConstSampler(decision=true, tags={sampler.type=const, sampler.param=true}), tags={hostname=localhost.localdomain, jaeger.version=Java-0.34.0, ip=127.0.0.1}, zipkinSharedRpcSpan=false, expandExceptionLogs=false, useTraceId128Bit=false)
+13:20:11 INFO  traceId=1336b2b0a76a96a3, spanId=1336b2b0a76a96a3, sampled=true [or.ac.qu.TracedResource] (executor-thread-63) hello
 ```
 
 Then visit the http://localhost:16686[Jaeger UI] to see the tracing information.

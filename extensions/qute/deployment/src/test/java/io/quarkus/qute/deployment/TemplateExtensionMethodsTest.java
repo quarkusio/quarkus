@@ -26,13 +26,15 @@ public class TemplateExtensionMethodsTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Foo.class, Extensions.class)
+                    .addClasses(Foo.class, Extensions.class, PrioritizedExtensions.class)
                     .addAsResource(new StringAsset("{foo.name.toLower} {foo.name.ignored} {foo.callMe(1)} {foo.baz}"),
                             "templates/foo.txt")
                     .addAsResource(new StringAsset("{baz.setScale(2,roundingMode)}"),
                             "templates/baz.txt")
                     .addAsResource(new StringAsset("{anyInt.foo('bing')}"),
-                            "templates/any.txt"));
+                            "templates/any.txt")
+                    .addAsResource(new StringAsset("{foo.pong}::{foo.name}"),
+                            "templates/priority.txt"));
 
     @Inject
     Template foo;
@@ -72,6 +74,11 @@ public class TemplateExtensionMethodsTest {
 
     }
 
+    @Test
+    public void testPriority() {
+        assertEquals("bravo::baz", engine.getTemplate("priority").data("foo", new Foo("baz", 10l)).render());
+    }
+
     @TemplateExtension
     public static class Extensions {
 
@@ -100,6 +107,28 @@ public class TemplateExtensionMethodsTest {
         static String any(Integer val, String name, String info) {
             return val + "=" + info;
         }
+    }
+
+    @TemplateExtension(matchName = "pong")
+    public static class PrioritizedExtensions {
+
+        // default priority - class-level annotation
+        static String alpha(Foo foo) {
+            return "alpha";
+        }
+
+        // Explicit priority, higher than ValueResolverGenerator.DEFAULT_PRIORITY
+        @TemplateExtension(matchName = "pong", priority = 100)
+        static String bravo(Foo foo) {
+            return "bravo";
+        }
+
+        // default priority - method-level annotation
+        @TemplateExtension(matchName = "pong")
+        static String charlie(Foo foo) {
+            return "charlie";
+        }
+
     }
 
 }

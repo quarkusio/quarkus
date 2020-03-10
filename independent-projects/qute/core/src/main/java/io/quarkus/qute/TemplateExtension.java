@@ -36,8 +36,31 @@ import java.lang.annotation.Target;
 @Target({ METHOD, TYPE })
 public @interface TemplateExtension {
 
-    static final String ANY = "*";
+    /**
+     * Constant value for {@link #matchName()} indicating that the method name should be used.
+     */
+    String METHOD_NAME = "<<method name>>";
 
-    String matchName() default "";
+    /**
+     * Constant value for {@link #matchName()} indicating that any name matches.
+     */
+    String ANY = "*";
+
+    /**
+     * Constant value for {{@link #priority()}.
+     */
+    int DEFAULT_PRIORITY = 5;
+
+    /**
+     * 
+     * @return the name is used to match the property name
+     */
+    String matchName() default METHOD_NAME;
+
+    /**
+     * 
+     * @return the priority used by the generated value resolver
+     */
+    int priority() default DEFAULT_PRIORITY;
 
 }

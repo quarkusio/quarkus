@@ -1,4 +1,4 @@
-name: "Quarkus Cron Native image"
+name: "Quarkus CI - JDK 8 Native Build"
 on:
   schedule:
     - cron: '0 2 * * *'
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        java: [ 11 ]
+        java: [ 8 ]
     name: build-and-testing
     steps:
 

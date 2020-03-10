@@ -25,10 +25,14 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String fieldName, String descriptor) {
-        // FIXME: do not substitute to accessors to this or super fields inside constructor?
+        String ownerName = owner.replace('/', '.');
         if ((opcode == Opcodes.GETFIELD
                 || opcode == Opcodes.PUTFIELD)
-                && isEntityField(owner.replace('/', '.'), fieldName)) {
+                // if we're in the constructor, do not replace field accesses to this type and its supertypes
+                // otherwise we risk running setters that depend on initialisation
+                && (!this.methodName.equals("<init>")
+                        || !targetIsInHierarchy(this.owner.replace('/', '.'), ownerName))
+                && isEntityField(ownerName, fieldName)) {
             String methodName;
             String methodDescriptor;
             if (opcode == Opcodes.GETFIELD) {
@@ -52,7 +56,22 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
     }
 
     /**
-     * @param className a dot-separated class name
+     * Make sure that the target class is in the (superclass, since interfaces have no fields)
+     * hierarchy of the current class
+     */
+    private boolean targetIsInHierarchy(String currentClass, String targetClass) {
+        if (currentClass.equals(targetClass))
+            return true;
+        EntityModel<?> entityModel = modelInfo.getEntityModel(currentClass);
+        if (entityModel == null)
+            return false;
+        if (entityModel.superClassName != null)
+            return targetIsInHierarchy(entityModel.superClassName, targetClass);
+        return false;
+    }
+
+    /**
+     * Checks that the given field belongs to an entity (any entity)
      */
     boolean isEntityField(String className, String fieldName) {
         EntityModel<?> entityModel = modelInfo.getEntityModel(className);

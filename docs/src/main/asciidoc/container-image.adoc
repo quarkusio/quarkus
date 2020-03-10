@@ -105,16 +105,16 @@ include::{generated-dir}/config/quarkus-container-image.adoc[opts=optional, leve
 
 In addition to the generic container image options, the `container-image-jib` also provides the following options:
 
-include::{generated-dir}/config/quarkus-jib-jib-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-container-image-jib.adoc[opts=optional, leveloffset=+1]
 
 === Docker Options
 
 In addition to the generic container image options, the `container-image-docker` also provides the following options:
 
-include::{generated-dir}/config/quarkus-docker-docker-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-container-image-docker.adoc[opts=optional, leveloffset=+1]
 
 === S2I  Options
 
 In addition to the generic container image options, the `container-image-s2i` also provides the following options:
 
-include::{generated-dir}/config/quarkus-s2i-s2i-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-container-image-s2i.adoc[opts=optional, leveloffset=+1]

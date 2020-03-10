@@ -12,8 +12,8 @@ public class CXFServletRecorder {
 
     public void registerCXFServlet(String path, String className,
             List<String> inInterceptors, List<String> outInterceptors, List<String> outFaultInterceptors,
-            List<String> inFaultInterceptors, List<String> features) {
-        CXFServletInfo cfg = new CXFServletInfo(path, className);
+            List<String> inFaultInterceptors, List<String> features, String sei, String wsdlPath) {
+        CXFServletInfo cfg = new CXFServletInfo(path, className, sei, wsdlPath);
         cfg.getInInterceptors().addAll(inInterceptors);
         cfg.getOutInterceptors().addAll(outInterceptors);
         cfg.getOutFaultInterceptors().addAll(outFaultInterceptors);

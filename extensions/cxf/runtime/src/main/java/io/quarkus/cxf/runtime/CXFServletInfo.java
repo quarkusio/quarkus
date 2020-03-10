@@ -11,8 +11,10 @@ public class CXFServletInfo {
     private List<String> outFaultInterceptors;
     private List<String> inFaultInterceptors;
     private List<String> features;
+    private String sei;
+    private String wsdlPath;
 
-    public CXFServletInfo(String path, String className) {
+    public CXFServletInfo(String path, String className, String sei, String wsdlPath) {
         super();
         this.path = path;
         this.className = className;
@@ -21,6 +23,8 @@ public class CXFServletInfo {
         this.outFaultInterceptors = new ArrayList<>();
         this.inFaultInterceptors = new ArrayList<>();
         this.features = new ArrayList<>();
+        this.sei = sei;
+        this.wsdlPath = wsdlPath;
     }
 
     public String getClassName() {
@@ -29,6 +33,14 @@ public class CXFServletInfo {
 
     public String getPath() {
         return path;
+    }
+
+    public String getWsdlPath() {
+        return wsdlPath;
+    }
+
+    public String getSei() {
+        return sei;
     }
 
     public List<String> getFeatures() {

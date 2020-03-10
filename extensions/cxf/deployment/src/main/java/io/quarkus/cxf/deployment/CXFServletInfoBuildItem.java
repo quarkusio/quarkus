@@ -14,8 +14,10 @@ public final class CXFServletInfoBuildItem extends MultiBuildItem {
     private List<String> outFaultInterceptors;
     private List<String> inFaultInterceptors;
     private List<String> features;
+    private String sei;
+    private String wsdlPath;
 
-    public CXFServletInfoBuildItem(String path, String className) {
+    public CXFServletInfoBuildItem(String path, String className, String sei, String wsdlPath) {
         this.path = path;
         this.className = className;
         this.inInterceptors = new ArrayList<>();
@@ -23,14 +25,24 @@ public final class CXFServletInfoBuildItem extends MultiBuildItem {
         this.outFaultInterceptors = new ArrayList<>();
         this.inFaultInterceptors = new ArrayList<>();
         this.features = new ArrayList<>();
+        this.sei = sei;
+        this.wsdlPath = wsdlPath;
     }
 
     public String getClassName() {
         return className;
     }
 
+    public String getSei() {
+        return sei;
+    }
+
     public String getPath() {
         return path;
+    }
+
+    public String getWsdlPath() {
+        return wsdlPath;
     }
 
     public List<String> getFeatures() {

@@ -63,9 +63,27 @@ public class CxfServiceTest {
     }
 
     @Test
+    public void whenCheckingWsdl()
+            throws XPathExpressionException, IOException, SAXException, ParserConfigurationException {
+
+        Response response = RestAssured.given().when().get("/fruit?wsdl");
+        response.then().statusCode(200);
+        //DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        //DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        //Document doc = dBuilder.parse(response.body().asInputStream());
+        //doc.getDocumentElement().normalize();
+        //XPath xpath = XPathFactory.newInstance().newXPath();
+
+        //cnt = xpath.compile("/Envelope/Body/countResponse/return").evaluate(doc);
+
+        //Assertions.assertEquals("2", cnt);
+        Assertions.assertEquals("", response.body().asString());
+    }
+
+    @Test
     public void whenUsingHelloMethod_thenCorrect()
             throws XPathExpressionException, IOException, SAXException, ParserConfigurationException {
-        String xml = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:tem=\"http://tempuri.org/\">\n"
+        String xml = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:tem=\"http://test.deployment.cxf.quarkus.io/\">\n"
                 +
                 "   <soapenv:Header/>\n" +
                 "   <soapenv:Body>\n" +

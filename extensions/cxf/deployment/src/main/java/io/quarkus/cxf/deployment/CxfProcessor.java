@@ -108,6 +108,15 @@ public class CxfProcessor {
     CxfConfig cxfConfig;
 
     @BuildStep
+    public void generateWSDL(BuildProducer<NativeImageResourceBuildItem> ressources) {
+        for (CxfEndpointConfig endpointCfg : cxfConfig.endpoints.values()) {
+            if (endpointCfg.wsdlPath.isPresent()) {
+                ressources.produce(new NativeImageResourceBuildItem(endpointCfg.wsdlPath.get()));
+            }
+        }
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void build(List<CXFServletInfoBuildItem> cxfServletInfos,
             BuildProducer<RouteBuildItem> routes,
@@ -116,7 +125,8 @@ public class CxfProcessor {
             recorder.registerCXFServlet(cxfServletInfo.getPath(),
                     cxfServletInfo.getClassName(), cxfServletInfo.getInInterceptors(),
                     cxfServletInfo.getOutInterceptors(), cxfServletInfo.getOutFaultInterceptors(),
-                    cxfServletInfo.getInFaultInterceptors(), cxfServletInfo.getFeatures());
+                    cxfServletInfo.getInFaultInterceptors(), cxfServletInfo.getFeatures(), cxfServletInfo.getSei(),
+                    cxfServletInfo.getWsdlPath());
         }
     }
 
@@ -691,11 +701,25 @@ public class CxfProcessor {
 
         for (Entry<String, CxfEndpointConfig> webServicesByPath : cxfConfig.endpoints.entrySet()) {
 
+            CxfEndpointConfig cxfEndPointConfig = webServicesByPath.getValue();
+            DotName webServiceImplementor = DotName.createSimple(cxfEndPointConfig.implementor);
+            ClassInfo wsclass = index.getClassByName(webServiceImplementor);
+            String sei = null;
+            if (wsclass != null) {
+                for (Type wsInterfaceType : wsclass.interfaceTypes()) {
+                    //TODO annotation is not seen do not know why so comment it for moment
+                    //if (wsInterfaceType.hasAnnotation(WEBSERVICE_ANNOTATION)) {
+                    sei = wsInterfaceType.name().toString();
+                    //}
+                }
+            }
+            String wsdlPath = null;
+            if (cxfEndPointConfig.wsdlPath.isPresent()) {
+                wsdlPath = cxfEndPointConfig.wsdlPath.get();
+            }
             CXFServletInfoBuildItem cxfServletInfo = new CXFServletInfoBuildItem(webServicesByPath.getKey(),
-                    webServicesByPath.getValue().implementor);
-
-            DotName webServiceImplementor = DotName.createSimple(webServicesByPath.getValue().implementor);
-            for (AnnotationInstance annotation : index.getClassByName(webServiceImplementor).classAnnotations()) {
+                    webServicesByPath.getValue().implementor, sei, wsdlPath);
+            for (AnnotationInstance annotation : wsclass.classAnnotations()) {
                 switch (annotation.name().toString()) {
                     case "org.apache.cxf.feature.Features":
                         HashSet<String> features = new HashSet<>(

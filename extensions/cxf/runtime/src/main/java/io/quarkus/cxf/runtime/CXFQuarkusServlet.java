@@ -1,6 +1,5 @@
 package io.quarkus.cxf.runtime;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,11 +9,14 @@ import org.apache.cxf.Bus;
 import org.apache.cxf.BusFactory;
 import org.apache.cxf.endpoint.Server;
 import org.apache.cxf.feature.Feature;
-import org.apache.cxf.frontend.ServerFactoryBean;
 import org.apache.cxf.interceptor.Interceptor;
+import org.apache.cxf.jaxws.JaxWsServerFactoryBean;
 import org.apache.cxf.message.Message;
 import org.apache.cxf.transport.servlet.CXFNonSpringServlet;
 import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
 
 public class CXFQuarkusServlet extends CXFNonSpringServlet {
 
@@ -22,21 +24,17 @@ public class CXFQuarkusServlet extends CXFNonSpringServlet {
 
     private static final List<CXFServletInfo> WEB_SERVICES = new ArrayList<>();
 
-    private Object loadClass(String className) {
+    private Class<?> loadClass(String className) {
         try {
-            return Class.forName(className).getDeclaredConstructor().newInstance();
-        } catch (InstantiationException e) {
-            LOGGER.warn(e);
-        } catch (IllegalAccessException e) {
-            LOGGER.warn(e);
-        } catch (InvocationTargetException e) {
-            LOGGER.warn(e);
-        } catch (NoSuchMethodException e) {
-            LOGGER.warn(e);
+            return Class.forName(className);
         } catch (ClassNotFoundException e) {
-            LOGGER.warn(e);
+            LOGGER.warn("failed to load class " + className);
+            return null;
         }
-        return null;
+    }
+
+    private Object getIntance(String className) {
+        return ((ClientProxy) Arc.container().instance(className).get()).arc_contextualInstance();
     }
 
     @Override
@@ -47,17 +45,30 @@ public class CXFQuarkusServlet extends CXFNonSpringServlet {
         Bus bus = getBus();
         BusFactory.setDefaultBus(bus);
 
-        ServerFactoryBean factory = new ServerFactoryBean();
+        //ServerFactoryBean factory = new ServerFactoryBean();
+        JaxWsServerFactoryBean factory = new JaxWsServerFactoryBean();
         factory.setBus(bus);
+
         for (CXFServletInfo servletInfo : WEB_SERVICES) {
-            Object instanceService = loadClass(servletInfo.getClassName());
+            Object instanceService = getIntance(servletInfo.getClassName());
             if (instanceService != null) {
-                factory.setServiceBean(instanceService);
+                Class<?> seiClass = null;
+                if (servletInfo.getSei() != null) {
+                    seiClass = loadClass(servletInfo.getSei());
+                    factory.setServiceClass(seiClass);
+                }
+                if (seiClass == null) {
+                    LOGGER.warn("sei not found: " + servletInfo.getSei());
+                }
                 factory.setAddress(servletInfo.getPath());
+                factory.setServiceBean(instanceService);
+                if (servletInfo.getWsdlPath() != null) {
+                    factory.setWsdlLocation(servletInfo.getWsdlPath());
+                }
                 if (servletInfo.getFeatures().size() > 0) {
                     List<Feature> features = new ArrayList<>();
                     for (String feature : servletInfo.getFeatures()) {
-                        Feature instanceFeature = (Feature) loadClass(feature);
+                        Feature instanceFeature = (Feature) getIntance(feature);
                         features.add(instanceFeature);
                     }
                     factory.setFeatures(features);
@@ -65,19 +76,19 @@ public class CXFQuarkusServlet extends CXFNonSpringServlet {
 
                 Server server = factory.create();
                 for (String className : servletInfo.getInFaultInterceptors()) {
-                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) loadClass(className);
+                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) getIntance(className);
                     server.getEndpoint().getInFaultInterceptors().add(interceptor);
                 }
                 for (String className : servletInfo.getInInterceptors()) {
-                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) loadClass(className);
+                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) getIntance(className);
                     server.getEndpoint().getInInterceptors().add(interceptor);
                 }
                 for (String className : servletInfo.getOutFaultInterceptors()) {
-                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) loadClass(className);
+                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) getIntance(className);
                     server.getEndpoint().getOutFaultInterceptors().add(interceptor);
                 }
                 for (String className : servletInfo.getOutInterceptors()) {
-                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) loadClass(className);
+                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) getIntance(className);
                     server.getEndpoint().getOutInterceptors().add(interceptor);
                 }
 

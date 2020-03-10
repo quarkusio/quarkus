@@ -7,7 +7,7 @@ import java.util.Set;
 import javax.jws.WebParam;
 import javax.jws.WebService;
 
-@WebService(endpointInterface = "org.acme.cxf.FruitWebService", targetNamespace = "http://test.deployment.cxf.quarkus.io/", portName = "FruitWebServiceImplPortType", serviceName = "FruitWebServiceImpl")
+@WebService(endpointInterface = "io.quarkus.cxf.deployment.test.FruitWebService", targetNamespace = "http://test.deployment.cxf.quarkus.io/", portName = "FruitWebServiceImplPortType", serviceName = "FruitWebServiceImpl")
 public class FruitWebServiceImpl implements FruitWebService {
 
     private Set<Fruit> fruits = Collections.newSetFromMap(Collections.synchronizedMap(new LinkedHashMap<>()));

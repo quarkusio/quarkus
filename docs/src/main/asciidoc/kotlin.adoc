@@ -100,7 +100,7 @@ To make the test pass, we also need to update `GreetingResourceTest.kt` like so:
 [source,kotlin]
 ----
 @QuarkusTest
-open class GreetingResourceTest {
+class GreetingResourceTest {
 
     @Test
     fun testHelloEndpoint() {

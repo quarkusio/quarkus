@@ -559,4 +559,37 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
 
         runAndCheck();
     }
+
+    @Test
+    public void testThatTheApplicationIsReloadedOnDotEnvConfigChange() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic", "projects/project-dotenv");
+        assertThat(testDir).isDirectory();
+        running = new RunningInvoker(testDir, false);
+        final Properties mvnRunProps = new Properties();
+        mvnRunProps.setProperty("debug", "false");
+        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
+
+        String resp = getHttpResponse();
+
+        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
+                .containsIgnoringCase("1.0-SNAPSHOT");
+
+        String greeting = getHttpResponse("/app/hello/otherGreeting");
+        assertThat(greeting).containsIgnoringCase("Hola");
+
+        File source = new File(testDir, ".env");
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
+        String uuid = UUID.randomUUID().toString();
+        filter(source, ImmutableMap.of("Hola", uuid));
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> getHttpResponse("/app/hello/otherGreeting").contains(uuid));
+    }
 }

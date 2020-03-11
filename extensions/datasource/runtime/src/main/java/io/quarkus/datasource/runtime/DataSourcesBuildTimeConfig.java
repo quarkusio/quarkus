@@ -26,15 +26,20 @@ public class DataSourcesBuildTimeConfig {
     public Map<String, DataSourceBuildTimeConfig> namedDataSources;
 
     /**
-     * Whether or not an health check is published in case the smallrye-health extension is present
+     * Whether or not an health check is published in case the smallrye-health extension is present.
+     * <p>
+     * This is a global setting and is not specific to a datasource.
      */
     @ConfigItem(name = "health.enabled", defaultValue = "true")
     public boolean healthEnabled;
 
     /**
-     * Whether or not datasource metrics are published in case the smallrye-metrics extension is present (default to false).
-     * NOTE: This is different from the "enable-metrics" property that needs to be set on data source level to enable
-     * collection of metrics for that data source.
+     * Whether or not datasource metrics are published in case the smallrye-metrics extension is present.
+     * <p>
+     * This is a global setting and is not specific to a datasource.
+     * <p>
+     * NOTE: This is different from the "jdbc.enable-metrics" property that needs to be set on the JDBC datasource level to
+     * enable collection of metrics for that datasource.
      */
     @ConfigItem(name = "metrics.enabled", defaultValue = "false")
     public boolean metricsEnabled;

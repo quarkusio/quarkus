@@ -29,12 +29,14 @@ import io.smallrye.config.SmallRyeConfig;
 public class NativeImageLauncher implements Closeable {
 
     private static final int DEFAULT_PORT = 8081;
+    private static final int DEFAULT_HTTPS_PORT = 8444;
     private static final long DEFAULT_IMAGE_WAIT_TIME = 60;
 
     private final Class<?> testClass;
     private final String profile;
     private Process quarkusProcess;
     private final int port;
+    private final int httpsPort;
     private final long imageWaitTime;
     private final Map<String, String> systemProps = new HashMap<>();
     private List<NativeImageStartedNotifier> startedNotifiers;
@@ -42,6 +44,7 @@ public class NativeImageLauncher implements Closeable {
     private NativeImageLauncher(Class<?> testClass, Config config) {
         this(testClass,
                 config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
+                config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
                 config.getValue("quarkus.test.native-image-wait-time", OptionalLong.class).orElse(DEFAULT_IMAGE_WAIT_TIME),
                 config.getOptionalValue("quarkus.test.native-image-profile", String.class)
                         .orElse(null));
@@ -66,9 +69,10 @@ public class NativeImageLauncher implements Closeable {
         return config;
     }
 
-    public NativeImageLauncher(Class<?> testClass, int port, long imageWaitTime, String profile) {
+    public NativeImageLauncher(Class<?> testClass, int port, int httpsPort, long imageWaitTime, String profile) {
         this.testClass = testClass;
         this.port = port;
+        this.httpsPort = httpsPort;
         this.imageWaitTime = imageWaitTime;
         List<NativeImageStartedNotifier> startedNotifiers = new ArrayList<>();
         for (NativeImageStartedNotifier i : ServiceLoader.load(NativeImageStartedNotifier.class)) {
@@ -89,6 +93,7 @@ public class NativeImageLauncher implements Closeable {
         List<String> args = new ArrayList<>();
         args.add(path);
         args.add("-Dquarkus.http.port=" + port);
+        args.add("-Dquarkus.http.ssl-port=" + httpsPort);
         args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
         args.add("-Dquarkus.log.file.path=" + PropertyTestUtil.getLogFileLocation());
         if (profile != null) {

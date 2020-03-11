@@ -312,7 +312,8 @@ You should see:
 123456
 ----
 
-== Fetching credentials from Vault with Hibernate ORM
+[[datasource]]
+== Fetching credentials from Vault for a datasource
 
 Start a PostgreSQL database:
 
@@ -412,11 +413,10 @@ property:
 [source, properties]
 ----
 # configure your datasource
-quarkus.datasource.url = jdbc:postgresql://localhost:5432/mydatabase
-quarkus.datasource.driver = org.postgresql.Driver
+quarkus.datasource.db-kind = postgresql
 quarkus.datasource.username = sarah
-#quarkus.datasource.password = connor
 quarkus.datasource.credentials-provider = mydatabase
+quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/mydatabase
 
 # drop and create the database at startup (use `update` to only update the schema)
 quarkus.hibernate-orm.database.generation=drop-and-create
@@ -426,14 +426,17 @@ quarkus.hibernate-orm.database.generation=drop-and-create
 ====
 Another way to specify the datasource password is with property indirection. Assuming that vault path
 `myapps/vault-quickstart/config` contains key `my-db-password`, all is required on the datasource configuration is:
-```
+
+[source, properties]
+----
 quarkus.datasource.username = sarah
 quarkus.datasource.password = ${my-db-password}
-```
-The only drawback is that the password will never be fetched again from vault after the initial property loading.
+----
+
+The only drawback is that the password will never be fetched again from Vault after the initial property loading.
 This means that if the db password was changed while running, the application would have to be restarted after
 vault has been updated with the new password.
-This contrasts with the credentials provider approach, which fetches the password from vault everytime a connection
+This contrasts with the credentials provider approach, which fetches the password from Vault every time a connection
 creation is attempted.
 ====
 

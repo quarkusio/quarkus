@@ -166,10 +166,11 @@ As it uses a dedicated JDBC driver, you must configure your datasource and Hiber
 
 [source, properties]
 ----
+quarkus.datasource.db-kind=postgresql
 # add ':tracing' to your database URL
-quarkus.datasource.url=jdbc:tracing:postgresql://localhost:5432/mydatabase
+quarkus.datasource.jdbc.url=jdbc:tracing:postgresql://localhost:5432/mydatabase
 # use the 'TracingDriver' instead of the one for your database
-quarkus.datasource.driver=io.opentracing.contrib.jdbc.TracingDriver
+quarkus.datasource.jdbc.driver=io.opentracing.contrib.jdbc.TracingDriver
 # configure Hibernate dialect
 quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQLDialect
 ----

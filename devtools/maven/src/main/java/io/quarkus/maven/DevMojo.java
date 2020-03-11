@@ -420,8 +420,11 @@ public class DevMojo extends AbstractMojo {
         String classesPath = null;
         String resourcePath = null;
 
-        final MavenProject mavenProject = session.getProjectMap().get(
-                String.format("%s:%s:%s", localProject.getGroupId(), localProject.getArtifactId(), localProject.getVersion()));
+        final MavenProject mavenProject = session.getProjects().stream().filter( (project) ->
+                (project.getGroupId().equals(localProject.getGroupId())) &&
+                (project.getArtifactId().equals(localProject.getArtifactId()) &&
+                (project.getVersion().equals(localProject.getVersion())))
+            ).findFirst().orElse(null);
 
         if (mavenProject == null) {
             projectDirectory = localProject.getDir().toAbsolutePath().toString();

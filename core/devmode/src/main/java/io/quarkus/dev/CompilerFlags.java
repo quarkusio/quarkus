@@ -6,8 +6,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import io.quarkus.runtime.util.StringUtil;
-
 /**
  * A set of compiler flags for javac.
  *
@@ -70,6 +68,6 @@ public class CompilerFlags {
 
     @Override
     public String toString() {
-        return "CompilerFlags@{" + StringUtil.join(", ", toList().iterator()) + "}";
+        return String.format("CompilerFlags@{%s}", String.join(", ", toList()));
     }
 }

@@ -1,6 +1,7 @@
 package io.quarkus.restclient.runtime;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.KeyStore;
@@ -68,10 +69,10 @@ public class RestClientBase {
     private void registerHostnameVerifier(String verifier, RestClientBuilder builder) {
         try {
             Class<?> verifierClass = Class.forName(verifier, true, Thread.currentThread().getContextClassLoader());
-            builder.hostnameVerifier((HostnameVerifier) verifierClass.newInstance());
+            builder.hostnameVerifier((HostnameVerifier) verifierClass.getConstructor().newInstance());
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Could not find hostname verifier class" + verifier, e);
-        } catch (InstantiationException | IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new RuntimeException(
                     "Failed to instantiate hostname verifier class. Make sure it has a public, no-argument constructor", e);
         } catch (ClassCastException e) {

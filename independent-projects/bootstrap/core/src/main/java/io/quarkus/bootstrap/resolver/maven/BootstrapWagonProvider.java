@@ -34,11 +34,11 @@ public class BootstrapWagonProvider implements WagonProvider {
         final Class<?> cls = loadClass(impl, roleHint);
         final Object wagon;
         try {
-            wagon = cls.newInstance();
+            wagon = cls.getConstructor().newInstance();
         } catch (Throwable t) {
             throw new IllegalStateException("Failed to instantiate Wagon impl " + impl, t);
         }
-        return Wagon.class.cast(wagon);
+        return (Wagon) wagon;
     }
 
     @Override

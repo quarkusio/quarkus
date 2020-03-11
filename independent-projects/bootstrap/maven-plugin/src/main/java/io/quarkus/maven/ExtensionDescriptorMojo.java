@@ -1,6 +1,7 @@
 package io.quarkus.maven;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -289,7 +290,8 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                     .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
         } else {
             return new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
-                    .enable(JsonParser.Feature.ALLOW_COMMENTS).enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS)
+                    .enable(JsonParser.Feature.ALLOW_COMMENTS)
+                    .enable(JsonReadFeature.ALLOW_LEADING_ZEROS_FOR_NUMBERS.mappedFeature())
                     .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
         }
     }

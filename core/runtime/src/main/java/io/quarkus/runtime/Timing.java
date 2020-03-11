@@ -1,6 +1,7 @@
 package io.quarkus.runtime;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.logging.Handler;
 
 import org.jboss.logging.Logger;
@@ -115,8 +116,8 @@ public class Timing {
 
     public static BigDecimal convertToBigDecimalSeconds(final long timeNanoSeconds) {
         final BigDecimal secondsRepresentation = BigDecimal.valueOf(timeNanoSeconds) // As nanoseconds
-                .divide(BigDecimal.valueOf(1_000_000), BigDecimal.ROUND_HALF_UP) // Convert to milliseconds, discard remaining digits while rounding
-                .divide(BigDecimal.valueOf(1_000), 3, BigDecimal.ROUND_HALF_UP); // Convert to seconds, while preserving 3 digits
+                .divide(BigDecimal.valueOf(1_000_000), RoundingMode.HALF_UP) // Convert to milliseconds, discard remaining digits while rounding
+                .divide(BigDecimal.valueOf(1_000), 3, RoundingMode.HALF_UP); // Convert to seconds, while preserving 3 digits
         return secondsRepresentation;
     }
 

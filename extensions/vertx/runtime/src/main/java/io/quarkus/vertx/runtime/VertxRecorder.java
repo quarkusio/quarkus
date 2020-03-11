@@ -149,12 +149,12 @@ public class VertxRecorder {
             Class<?> codec = codecEntry.getValue();
             try {
                 if (MessageCodec.class.isAssignableFrom(codec)) {
-                    MessageCodec messageCodec = (MessageCodec) codec.newInstance();
+                    MessageCodec messageCodec = (MessageCodec) codec.getConstructor().newInstance();
                     eventBus.registerDefaultCodec(target, messageCodec);
                 } else {
                     LOGGER.error(String.format("The codec %s does not inherit from MessageCodec ", target.toString()));
                 }
-            } catch (InstantiationException | IllegalAccessException e) {
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 LOGGER.error("Cannot instantiate the MessageCodec " + target.toString(), e);
             }
         }

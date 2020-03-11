@@ -1,5 +1,6 @@
 package io.quarkus.dynamodb.runtime;
 
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
@@ -217,10 +218,8 @@ public class DynamodbClientProducer {
         if (config.eventLoop.override) {
             SdkEventLoopGroup.Builder eventLoopBuilder = SdkEventLoopGroup.builder();
             config.eventLoop.numberOfThreads.ifPresent(eventLoopBuilder::numberOfThreads);
-            if (config.eventLoop.threadNamePrefix.isPresent()) {
-                eventLoopBuilder.threadFactory(
-                        new ThreadFactoryBuilder().threadNamePrefix(config.eventLoop.threadNamePrefix.get()).build());
-            }
+            config.eventLoop.threadNamePrefix.ifPresent(s -> eventLoopBuilder.threadFactory(
+                new ThreadFactoryBuilder().threadNamePrefix(s).build()));
             builder.eventLoopGroupBuilder(eventLoopBuilder);
         }
 
@@ -230,8 +229,8 @@ public class DynamodbClientProducer {
     private ExecutionInterceptor createInterceptor(Class<?> interceptorClass) {
         try {
             return (ExecutionInterceptor) Class
-                    .forName(interceptorClass.getName(), true, Thread.currentThread().getContextClassLoader()).newInstance();
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                    .forName(interceptorClass.getName(), true, Thread.currentThread().getContextClassLoader()).getConstructor().newInstance();
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             LOG.error("Unable to create interceptor", e);
             return null;
         }

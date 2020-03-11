@@ -3,6 +3,7 @@ package io.quarkus.qute.runtime;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -146,10 +147,10 @@ public class EngineProducer {
             Class<?> resolverClazz = Thread.currentThread()
                     .getContextClassLoader().loadClass(resolverClassName);
             if (ValueResolver.class.isAssignableFrom(resolverClazz)) {
-                return (ValueResolver) resolverClazz.newInstance();
+                return (ValueResolver) resolverClazz.getConstructor().newInstance();
             }
             throw new IllegalStateException("Not a value resolver: " + resolverClassName);
-        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException | InvocationTargetException e) {
             throw new IllegalStateException("Unable to create resolver: " + resolverClassName, e);
         }
     }

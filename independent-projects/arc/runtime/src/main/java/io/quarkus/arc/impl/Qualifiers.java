@@ -86,9 +86,7 @@ public final class Qualifiers {
 
     private static Object invoke(Method method, Object instance) {
         try {
-            if (!method.isAccessible()) {
-                method.setAccessible(true);
-            }
+            method.setAccessible(true);
             return method.invoke(instance);
         } catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(

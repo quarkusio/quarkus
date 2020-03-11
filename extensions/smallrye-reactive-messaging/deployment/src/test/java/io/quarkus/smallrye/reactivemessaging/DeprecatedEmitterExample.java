@@ -11,6 +11,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import io.smallrye.reactive.messaging.annotations.Channel;
 import io.smallrye.reactive.messaging.annotations.Emitter;
 
+@SuppressWarnings("deprecation")
 @ApplicationScoped
 public class DeprecatedEmitterExample {
 

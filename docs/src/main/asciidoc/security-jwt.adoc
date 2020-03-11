@@ -947,6 +947,7 @@ Smallrye JWT provides more properties which can be used to customize the token p
 |smallrye.jwt.verify.algorithm|`RS256`|Signature algorithm. Set it to `ES256` to support the Elliptic Curve signature algorithm.
 |smallrye.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token.
 |smallrye.jwt.token.cookie|none|Name of the cookie containing a token. This property will be effective only if  `smallrye.jwt.token.header` is set to `Cookie`.
+|smallrye.jwt.always-check-authorization|false|Set this property to true for Authorization header be checked even if the smallrye.jwt.token.header is set to Cookie but no cookie with a smallrye.jwt.token.cookie name exists.
 |smallrye.jwt.token.schemes|`Bearer`|Comma-separated list containing an alternative single or multiple schemes, for example, `DPoP`.
 |smallrye.jwt.token.kid|none|Key identifier. If it is set then the verification JWK key as well every JWT token must have a matching `kid` header.
 |smallrye.jwt.time-to-live|none|The maximum number of seconds that a JWT may be issued for use. Effectively, the difference between the expiration date of the JWT and the issued at date must not exceed this value.

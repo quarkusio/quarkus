@@ -284,7 +284,7 @@ class KubernetesProcessor {
 
         //EnvVars
         config.getEnvVars().entrySet().forEach(e -> {
-            session.resources().decorate(target, new AddEnvVarDecorator(EnvConverter.convert(e)));
+            session.resources().decorate(target, new ApplyEnvVarDecorator(EnvConverter.convert(e)));
         });
 
         config.getWorkingDir().ifPresent(w -> {

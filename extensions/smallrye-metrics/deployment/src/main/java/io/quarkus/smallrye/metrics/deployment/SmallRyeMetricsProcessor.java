@@ -14,6 +14,7 @@ import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.MET
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRIC_INTERFACE;
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.SIMPLE_TIMER_INTERFACE;
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.TIMER_INTERFACE;
+import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.isMetricAnnotation;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -51,6 +52,7 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -318,7 +320,18 @@ public class SmallRyeMetricsProcessor {
         Set<MethodInfo> collectedMetricsMethods = new HashSet<>();
         Map<DotName, ClassInfo> collectedMetricsClasses = new HashMap<>();
 
-        for (DotName metricAnnotation : METRICS_ANNOTATIONS) {
+        // find stereotypes that contain metric annotations so we can include them in the search
+        Set<DotName> metricAndStereotypeAnnotations = new HashSet<>();
+        metricAndStereotypeAnnotations.addAll(METRICS_ANNOTATIONS);
+        for (ClassInfo candidate : beanArchiveIndex.getIndex().getKnownClasses()) {
+            if (candidate.classAnnotation(DotNames.STEREOTYPE) != null &&
+                    candidate.classAnnotations().stream()
+                            .anyMatch(SmallRyeMetricsDotNames::isMetricAnnotation)) {
+                metricAndStereotypeAnnotations.add(candidate.name());
+            }
+        }
+
+        for (DotName metricAnnotation : metricAndStereotypeAnnotations) {
             Collection<AnnotationInstance> metricAnnotationInstances = index.getAnnotations(metricAnnotation);
             for (AnnotationInstance metricAnnotationInstance : metricAnnotationInstances) {
                 AnnotationTarget metricAnnotationTarget = metricAnnotationInstance.target();

@@ -347,7 +347,7 @@ In this guide we will use the first stage to generate the native executable usin
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/centos-quarkus-maven:{graalvm-version}-java8 AS build
+FROM quay.io/quarkus/centos-quarkus-maven:{graalvm-flavor} AS build
 COPY src /usr/src/app/src
 COPY pom.xml /usr/src/app
 USER root
@@ -369,8 +369,6 @@ Save this file in `src/main/docker/Dockerfile.multistage` as it is not included 
 
 [WARNING]
 ====
-Replace the -java8 in the base image with -java11 if you want to use Java 11.
-
 Before launching our Docker build, we need to update the default `.dockerignore` file as it filters everything except the `target` directory and as we plan to build inside a container we need to be able to copy the `src` directory. So edit your `.dockerignore` and remove or comment its content.
 ====
 

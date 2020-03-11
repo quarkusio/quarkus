@@ -37,7 +37,7 @@ We are going to create an OpenShift `build` executing it:
 [source,shell, subs="attributes"]
 ----
 # To build the image on OpenShift
-oc new-app quay.io/quarkus/ubi-quarkus-native-s2i:{graalvm-version}-java8~{quickstarts-clone-url} --context-dir=getting-started --name=quarkus-quickstart-native
+oc new-app quay.io/quarkus/ubi-quarkus-native-s2i:{graalvm-flavor}~{quickstarts-clone-url} --context-dir=getting-started --name=quarkus-quickstart-native
 oc logs -f bc/quarkus-quickstart-native
 
 # To create the route
@@ -48,12 +48,6 @@ export URL="http://$(oc get route | grep quarkus-quickstart-native | awk '{print
 echo $URL
 curl $URL/hello/greeting/quarkus
 ----
-
-[TIP]
-====
-The `oc new-app` command above uses a builder image compatible with JDK 8.
-In order to create a JDK 11 native compatible image use `quay.io/quarkus/ubi-quarkus-native-s2i:{graalvm-version}-java11` as a builder image.
-====
 
 Your application is accessible at the printed URL.
 
@@ -117,11 +111,9 @@ The end result is an image that is less than 40 MB in size (compressed) and does
 The minimal build is depending on the S2I build since it is using the output (native runnable application) from the S2I build. However, you do not need to create an application with `oc new-app`. Instead you could use `oc new-build` like this:
 [source, shell, subs="attributes"]
 ----
-oc new-build quay.io/quarkus/ubi-quarkus-native-s2i:{graalvm-version}-java8~{quickstarts-clone-url} \
+oc new-build quay.io/quarkus/ubi-quarkus-native-s2i:{graalvm-flavor}~{quickstarts-clone-url} \
     --context-dir=getting-started --name=quarkus-quickstart-native
 ----
-
-Like in previous commands, use `quay.io/quarkus/ubi-quarkus-native-s2i:{graalvm-version}-java11` for building a JDK 11 compatible image.
 ====
 
 == Deploying the application as Java application in OpenShift

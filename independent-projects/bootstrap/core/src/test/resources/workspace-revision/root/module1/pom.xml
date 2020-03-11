@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.acme</groupId>
         <artifactId>root</artifactId>
-        <version>1.0</version>
+        <version>${revision}</version>
         <relativePath>../</relativePath>
     </parent>
 

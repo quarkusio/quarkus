@@ -235,30 +235,26 @@ public class BootstrapAppModelFactory {
             return createAppModelForJar(appClasses);
         }
 
-        final LocalProject localProject = isWorkspaceDiscoveryEnabled() || enableClasspathCache
-                ? loadAppClassesWorkspace()
-                : LocalProject.load(appClasses, false);
-        LocalWorkspace workspace = null;
+        LocalProject localProject = null;
         AppArtifact appArtifact = this.appArtifact;
-        if (localProject == null) {
-            log.warn("Unable to locate maven project, falling back to classpath discovery");
-            if (appArtifact == null) {
+        if (appArtifact == null) {
+            localProject = enableClasspathCache ? loadAppClassesWorkspace() : LocalProject.load(appClasses, false);
+            if (localProject == null) {
+                log.warn("Unable to locate the maven project on the filesystem");
                 throw new BootstrapException("Failed to determine the Maven artifact associated with the application");
             }
-        } else {
-            workspace = localProject.getWorkspace();
-            if (appArtifact == null) {
-                appArtifact = localProject.getAppArtifact();
-            } else if (!appArtifact.equals(localProject.getAppArtifact())) {
-                log.warn("Provided application artifact attributes " + appArtifact +
-                        " do not match the actual project loaded from the disk " + localProject.getAppArtifact());
-            }
+            appArtifact = localProject.getAppArtifact();
         }
 
         try {
             Path cachedCpPath = null;
 
-            if (workspace != null && enableClasspathCache) {
+            LocalWorkspace workspace = null;
+            if (enableClasspathCache) {
+                if (localProject == null) {
+                    localProject = loadAppClassesWorkspace();
+                }
+                workspace = localProject.getWorkspace();
                 cachedCpPath = resolveCachedCpPath(localProject);
                 if (Files.exists(cachedCpPath)
                         && workspace.getLastModified() < Files.getLastModifiedTime(cachedCpPath).toMillis()) {

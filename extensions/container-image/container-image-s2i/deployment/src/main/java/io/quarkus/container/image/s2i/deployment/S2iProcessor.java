@@ -12,12 +12,16 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -246,14 +250,15 @@ public class S2iProcessor {
         //Let's disable http2 as it causes issues with duplicate build triggers.
         config.setHttp2Disable(true);
         KubernetesClient client = Clients.fromConfig(config);
+        OpenShiftClient openShiftClient = client.adapt(OpenShiftClient.class);
         KubernetesList kubernetesList = Serialization.unmarshalAsList(new ByteArrayInputStream(openshiftManifests.getData()));
 
         List<HasMetadata> buildResources = kubernetesList.getItems().stream()
                 .filter(i -> i instanceof BuildConfig || i instanceof ImageStream || i instanceof Secret)
                 .collect(Collectors.toList());
 
-        applyS2iResources(client, buildResources);
-        s2iBuild(client, buildResources, tar, s2iConfig);
+        applyS2iResources(openShiftClient, buildResources);
+        s2iBuild(openShiftClient, buildResources, tar, s2iConfig);
     }
 
     /**
@@ -262,10 +267,10 @@ public class S2iProcessor {
      * @param client the client instance
      * @param the resources to apply
      */
-    private static void applyS2iResources(KubernetesClient client, List<HasMetadata> buildResources) {
+    private static void applyS2iResources(OpenShiftClient client, List<HasMetadata> buildResources) {
         // Apply build resource requirements
         try {
-            buildResources.forEach(i -> {
+            for (HasMetadata i : distinct(buildResources)) {
                 if (i instanceof BuildConfig) {
                     client.resource(i).cascading(true).delete();
                     try {
@@ -276,10 +281,21 @@ public class S2iProcessor {
                     } catch (InterruptedException e) {
                         s2iException(e);
                     }
+                } else if (i instanceof ImageStream) {
+                    ImageStream is = (ImageStream) i;
+                    ImageStream existing = client.imageStreams().withName(i.getMetadata().getName()).get();
+                    if (existing != null &&
+                            existing.getSpec() != null &&
+                            existing.getSpec().getDockerImageRepository() != null &&
+                            existing.getSpec().getDockerImageRepository().equals(is.getSpec().getDockerImageRepository())) {
+                        LOG.info("Found: " + i.getKind() + " " + i.getMetadata().getName() + " repository: "
+                                + existing.getSpec().getDockerImageRepository());
+                        continue;
+                    }
                 }
                 client.resource(i).createOrReplace();
                 LOG.info("Applied: " + i.getKind() + " " + i.getMetadata().getName());
-            });
+            }
             S2iUtils.waitForImageStreamTags(buildResources, 2, TimeUnit.MINUTES);
 
         } catch (KubernetesClientException e) {
@@ -287,10 +303,10 @@ public class S2iProcessor {
         }
     }
 
-    private static void s2iBuild(KubernetesClient client, List<HasMetadata> buildResources, File binaryFile,
+    private static void s2iBuild(OpenShiftClient client, List<HasMetadata> buildResources, File binaryFile,
             S2iConfig s2iConfig) {
-        buildResources.stream().filter(i -> i instanceof BuildConfig).map(i -> (BuildConfig) i)
-                .forEach(bc -> s2iBuild(client.adapt(OpenShiftClient.class), bc, binaryFile, s2iConfig));
+        distinct(buildResources).stream().filter(i -> i instanceof BuildConfig).map(i -> (BuildConfig) i)
+                .forEach(bc -> s2iBuild(client, bc, binaryFile, s2iConfig));
     }
 
     /**
@@ -348,6 +364,16 @@ public class S2iProcessor {
                 }
             }
         });
+    }
+
+    public static Predicate<HasMetadata> distictByResourceKey() {
+        Map<Object, Boolean> seen = new ConcurrentHashMap<>();
+        return t -> seen.putIfAbsent(t.getApiVersion() + "/" + t.getKind() + ":" + t.getMetadata().getName(),
+                Boolean.TRUE) == null;
+    }
+
+    private static Collection<HasMetadata> distinct(Collection<HasMetadata> resources) {
+        return resources.stream().filter(distictByResourceKey()).collect(Collectors.toList());
     }
 
     private static List<Build> buildsOf(OpenShiftClient client, BuildConfig config) {

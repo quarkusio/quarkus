@@ -35,6 +35,7 @@ import org.jboss.logging.Logger;
 import io.dekorate.Session;
 import io.dekorate.SessionWriter;
 import io.dekorate.kubernetes.config.Annotation;
+import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.Label;
 import io.dekorate.kubernetes.config.PortBuilder;
 import io.dekorate.kubernetes.config.ProbeBuilder;
@@ -44,7 +45,6 @@ import io.dekorate.kubernetes.decorator.AddAwsElasticBlockStoreVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddAzureDiskVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddAzureFileVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddConfigMapVolumeDecorator;
-import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddImagePullSecretDecorator;
 import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
@@ -87,6 +87,7 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthLivenessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesHealthReadinessPathBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
@@ -127,6 +128,7 @@ class KubernetesProcessor {
             KubernetesConfig kubernetesConfig,
             OpenshiftConfig openshiftConfig,
             KnativeConfig knativeConfig,
+            List<KubernetesEnvBuildItem> kubernetesEnvBuildItems,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
             List<KubernetesDeploymentTargetBuildItem> kubernetesDeploymentTargetBuildItems,
@@ -182,6 +184,7 @@ class KubernetesProcessor {
                 openshiftConfig,
                 knativeConfig,
                 deploymentTargets,
+                kubernetesEnvBuildItems,
                 kubernetesRoleBuildItems,
                 kubernetesPortBuildItems,
                 baseImageBuildItem,
@@ -365,6 +368,7 @@ class KubernetesProcessor {
             OpenshiftConfig openshiftConfig,
             KnativeConfig knativeConfig,
             Set<String> deploymentTargets,
+            List<KubernetesEnvBuildItem> kubernetesEnvBuildItems,
             List<KubernetesRoleBuildItem> kubernetesRoleBuildItems,
             List<KubernetesPortBuildItem> kubernetesPortBuildItems,
             Optional<BaseImageInfoBuildItem> baseImageBuildItem,
@@ -383,6 +387,13 @@ class KubernetesProcessor {
             session.resources().decorate(OPENSHIFT, new ApplyContainerImageDecorator(openshiftName, c.getImage()));
             session.resources().decorate(KUBERNETES, new ApplyContainerImageDecorator(kubernetesName, c.getImage()));
             session.resources().decorate(KNATIVE, new ApplyContainerImageDecorator(knativeName, c.getImage()));
+        });
+
+        kubernetesEnvBuildItems.forEach(e -> {
+            session.resources().decorate(e.getTarget(), new ApplyEnvVarDecorator(new EnvBuilder()
+                    .withName(e.getKey())
+                    .withValue(e.getValue())
+                    .build()));
         });
 
         //Handle Command and arguments

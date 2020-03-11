@@ -61,28 +61,29 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHanlder;
 import io.quarkus.kubernetes.client.spi.KubernetesClientBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesCommandBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesEnvBuildItem;
 
 public class S2iProcessor {
 
     private static final String S2I = "s2i";
+    private static final String OPENSHIFT = "openshift";
     private static final String BUILD_CONFIG_NAME = "openshift.io/build-config.name";
     private static final String RUNNING = "Running";
 
     private static final Logger LOG = Logger.getLogger(S2iProcessor.class);
 
-    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
+    @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
     public void s2iRequirementsJvm(S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
             PackageConfig packageConfig,
             JarBuildItem jarBuildItem,
+            BuildProducer<KubernetesEnvBuildItem> envProducer,
             BuildProducer<BaseImageInfoBuildItem> builderImageProducer,
             BuildProducer<KubernetesCommandBuildItem> commandProducer) {
 
         final List<AppDependency> appDeps = curateOutcomeBuildItem.getEffectiveModel().getUserDependencies();
-
         String outputJarFileName = jarBuildItem.getPath().getFileName().toString();
-
         String classpath = appDeps.stream()
                 .map(d -> String.valueOf(d.getArtifact().getGroupId() + "." + d.getArtifact().getPath().getFileName()))
                 .map(s -> Paths.get(s2iConfig.jarDirectory).resolve("lib").resolve(s).toAbsolutePath()
@@ -98,18 +99,29 @@ public class S2iProcessor {
         args.addAll(Arrays.asList("-jar", pathToJar, "-cp", classpath));
         args.addAll(s2iConfig.jvmArguments);
 
-        if (!s2iConfig.hasDefaultBaseJvmImage()) {
-            builderImageProducer.produce(new BaseImageInfoBuildItem(s2iConfig.baseJvmImage));
+        builderImageProducer.produce(new BaseImageInfoBuildItem(s2iConfig.baseJvmImage));
+        Optional<S2iBaseJavaImage> baseImage = S2iBaseJavaImage.findMatching(s2iConfig.baseJvmImage);
+        baseImage.ifPresent(b -> {
+            envProducer.produce(new KubernetesEnvBuildItem(OPENSHIFT, b.getJarEnvVar(), pathToJar));
+            envProducer.produce(new KubernetesEnvBuildItem(OPENSHIFT, b.getJarLibEnvVar(),
+                    Paths.get(pathToJar).resolveSibling("lib").toAbsolutePath().toString()));
+            envProducer.produce(new KubernetesEnvBuildItem(OPENSHIFT, b.getClasspathEnvVar(), classpath));
+            envProducer.produce(new KubernetesEnvBuildItem(OPENSHIFT, b.getJvmOptionsEnvVar(),
+                    s2iConfig.jvmArguments.stream().collect(Collectors.joining("  "))));
+        });
+
+        if (!baseImage.isPresent()) {
+            commandProducer.produce(new KubernetesCommandBuildItem("java", args.toArray(new String[args.size()])));
         }
-        commandProducer.produce(new KubernetesCommandBuildItem("java", args.toArray(new String[args.size()])));
     }
 
-    @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class, NativeBuild.class })
+    @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class })
     public void s2iRequirementsNative(S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
             PackageConfig packageConfig,
             NativeImageBuildItem nativeImage,
+            BuildProducer<KubernetesEnvBuildItem> envProducer,
             BuildProducer<BaseImageInfoBuildItem> builderImageProducer,
             BuildProducer<KubernetesCommandBuildItem> commandProducer) {
 
@@ -132,8 +144,17 @@ public class S2iProcessor {
                 .toString();
 
         builderImageProducer.produce(new BaseImageInfoBuildItem(s2iConfig.baseNativeImage));
-        commandProducer.produce(new KubernetesCommandBuildItem(pathToNativeBinary,
-                s2iConfig.nativeArguments.toArray(new String[s2iConfig.nativeArguments.size()])));
+        Optional<S2iBaseNativeImage> baseImage = S2iBaseNativeImage.findMatching(s2iConfig.baseNativeImage);
+        baseImage.ifPresent(b -> {
+            envProducer.produce(new KubernetesEnvBuildItem(OPENSHIFT, b.getHomeDirEnvVar(), s2iConfig.nativeBinaryDirectory));
+            envProducer.produce(new KubernetesEnvBuildItem(OPENSHIFT, b.getOptsEnvVar(),
+                    s2iConfig.nativeArguments.stream().collect(Collectors.joining(" "))));
+        });
+
+        if (!baseImage.isPresent()) {
+            commandProducer.produce(new KubernetesCommandBuildItem(pathToNativeBinary,
+                    s2iConfig.nativeArguments.toArray(new String[s2iConfig.nativeArguments.size()])));
+        }
     }
 
     @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)

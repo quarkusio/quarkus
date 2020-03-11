@@ -1,3 +1,0 @@
-io.quarkus.kogito.deployment.ProcessCompilationProvider
-io.quarkus.kogito.deployment.RulesCompilationProvider
-io.quarkus.kogito.deployment.DecisionTablesCompilationProvider

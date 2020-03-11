@@ -167,8 +167,8 @@
         <bootstrap.version>3.1.0</bootstrap.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kogito.version>0.7.1</kogito.version>
         <kubernetes-client.version>4.8.0</kubernetes-client.version>
+        <kogito.version>0.8.0</kogito.version>
         <optaplanner.version>7.34.0.Final</optaplanner.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
@@ -252,14 +252,7 @@
                 <type>pom</type>
             </dependency>
 
-            <!-- Kogito dependencies, imported as a BOM -->
-            <dependency>
-                <groupId>org.kie.kogito</groupId>
-                <artifactId>kogito-bom</artifactId>
-                <version>${kogito.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
+                <!-- Optaplanner dependencies, imported as a BOM -->
             <dependency>
                 <groupId>org.optaplanner</groupId>
                 <artifactId>optaplanner-bom</artifactId>
@@ -770,11 +763,6 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kubernetes-client-internal</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-kogito</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2772,53 +2760,6 @@
                 <version>${error-prone-annotations.version}</version>
             </dependency>
 
-            <!-- Kogito -->
-            <dependency>
-                <groupId>org.kie.kogito</groupId>
-                <artifactId>kogito-codegen</artifactId>
-                <version>${kogito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.kie.kogito</groupId>
-                <artifactId>drools-core-static</artifactId>
-                <version>${kogito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.kie.kogito</groupId>
-                <artifactId>drools-model-compiler</artifactId>
-                <version>${kogito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.kie.kogito</groupId>
-                <artifactId>kogito-api</artifactId>
-                <version>${kogito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.kie.kogito</groupId>
-                <artifactId>drools-core</artifactId>
-                <version>${kogito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.kie.kogito</groupId>
-                <artifactId>drools-decisiontables</artifactId>
-                <version>${kogito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.kie.kogito</groupId>
-                <artifactId>jbpm-flow</artifactId>
-                <version>${kogito.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mvel</groupId>
-                <artifactId>mvel2</artifactId>
-                <version>${mvel2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.kie.kogito</groupId>
-                <artifactId>jbpm-bpmn2</artifactId>
-                <version>${kogito.version}</version>
-            </dependency>
-
             <!-- Spring -->
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -2926,6 +2867,23 @@
                 <groupId>com.google.http-client</groupId>
                 <artifactId>google-http-client</artifactId>
                 <version>${google-http-client.version}</version>
+            </dependency>
+
+            <!-- Kogito -->
+            <dependency>
+                <groupId>org.kie.kogito</groupId>
+                <artifactId>kogito-api</artifactId>
+                <version>${kogito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.kie.kogito</groupId>
+                <artifactId>kogito-drools</artifactId>
+                <version>${kogito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.kie.kogito</groupId>
+                <artifactId>drools-core-static</artifactId>
+                <version>${kogito.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -372,6 +372,12 @@
       "artifact-id": "camel-quarkus-pdf",
       "version": "0.3.1",
       "description": "Camel PDF support"
+    },
+    {
+      "group-id": "org.kie.kogito",
+      "artifact-id": "kogito-quarkus",
+      "version": "0.8.0",
+      "description": "Kogito extension"
     }
   ]
 }

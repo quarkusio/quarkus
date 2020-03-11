@@ -137,10 +137,6 @@ labelPRBasedOnFilePath:
     area/kafka-streams:
         - extensions/kafka-streams/**/*
         - integration-tests/kafka-streams/**/*
-    area/kogito:
-        - extensions/kogito/**/*
-        - integration-tests/kogito/**/*
-        - integration-tests/kogito-maven/**/*
     area/kotlin:
         - extensions/kotlin/**/*
         - integration-tests/kotlin/**/*
@@ -160,7 +156,6 @@ labelPRBasedOnFilePath:
         - integration-tests/maven/**/*
         - independent-projects/bootstrap/maven-plugin/**/*
         - integration-tests/maven/**/*
-        - integration-tests/kogito-maven/**/*
         - test-framework/maven/**/*
         - devtools/maven/**/*
     area/mongodb:

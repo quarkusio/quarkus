@@ -41,14 +41,8 @@ public enum ConfigPhase implements Comparable<ConfigPhase> {
                 }
                 case BOOTSTRAP: {
                     switch (secondPhase) {
-                        case BUILD_TIME:
-                            return 1;
-                        case BUILD_AND_RUN_TIME_FIXED:
-                            return 1;
                         case BOOTSTRAP:
                             return 0;
-                        case RUN_TIME:
-                            return 1;
                         default:
                             return 1;
                     }

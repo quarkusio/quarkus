@@ -3,6 +3,7 @@ package io.quarkus.qute.deployment;
 import java.util.function.Predicate;
 
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
@@ -44,13 +45,21 @@ public final class TypeCheckExcludeBuildItem extends MultiBuildItem {
             this.numberOfParameters = parameters;
         }
 
-        public boolean nameEquals(String... values) {
+        public boolean nameIn(String... values) {
             for (String value : values) {
                 if (name.equals(value)) {
                     return true;
                 }
             }
             return false;
+        }
+
+        public boolean isProperty() {
+            return numberOfParameters == -1;
+        }
+
+        public boolean classNameEquals(DotName name) {
+            return clazz.name().equals(name);
         }
 
     }

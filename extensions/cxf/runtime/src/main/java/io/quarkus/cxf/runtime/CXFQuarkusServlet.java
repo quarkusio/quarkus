@@ -3,6 +3,8 @@ package io.quarkus.cxf.runtime;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.enterprise.inject.Instance;
+import javax.inject.Inject;
 import javax.servlet.ServletConfig;
 
 import org.apache.cxf.Bus;
@@ -15,26 +17,37 @@ import org.apache.cxf.message.Message;
 import org.apache.cxf.transport.servlet.CXFNonSpringServlet;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ClientProxy;
-
 public class CXFQuarkusServlet extends CXFNonSpringServlet {
 
     private static final Logger LOGGER = Logger.getLogger(CXFQuarkusServlet.class);
 
     private static final List<CXFServletInfo> WEB_SERVICES = new ArrayList<>();
 
+    @Inject
+    Instance<Object> instance;
+
     private Class<?> loadClass(String className) {
         try {
-            return Class.forName(className);
+            return Thread.currentThread().getContextClassLoader().loadClass(className);
+            //return Class.forName(className, true, classLoader);
         } catch (ClassNotFoundException e) {
             LOGGER.warn("failed to load class " + className);
             return null;
         }
     }
 
-    private Object getIntance(String className) {
-        return ((ClientProxy) Arc.container().instance(className).get()).arc_contextualInstance();
+    private Object getInstance(String className) {
+        Class<?> classObj = loadClass(className);
+        if (classObj == null) {
+            LOGGER.warn("DUFF class<> is null");
+        }
+        try {
+            return instance.select(classObj).get();
+            //return classObj.getConstructor().newInstance();
+        } catch (Exception e) {
+            LOGGER.warn("Failed to instanciate class " + className + e);
+            return null;
+        }
     }
 
     @Override
@@ -50,7 +63,7 @@ public class CXFQuarkusServlet extends CXFNonSpringServlet {
         factory.setBus(bus);
 
         for (CXFServletInfo servletInfo : WEB_SERVICES) {
-            Object instanceService = getIntance(servletInfo.getClassName());
+            Object instanceService = getInstance(servletInfo.getClassName());
             if (instanceService != null) {
                 Class<?> seiClass = null;
                 if (servletInfo.getSei() != null) {
@@ -68,7 +81,7 @@ public class CXFQuarkusServlet extends CXFNonSpringServlet {
                 if (servletInfo.getFeatures().size() > 0) {
                     List<Feature> features = new ArrayList<>();
                     for (String feature : servletInfo.getFeatures()) {
-                        Feature instanceFeature = (Feature) getIntance(feature);
+                        Feature instanceFeature = (Feature) getInstance(feature);
                         features.add(instanceFeature);
                     }
                     factory.setFeatures(features);
@@ -76,19 +89,19 @@ public class CXFQuarkusServlet extends CXFNonSpringServlet {
 
                 Server server = factory.create();
                 for (String className : servletInfo.getInFaultInterceptors()) {
-                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) getIntance(className);
+                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) getInstance(className);
                     server.getEndpoint().getInFaultInterceptors().add(interceptor);
                 }
                 for (String className : servletInfo.getInInterceptors()) {
-                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) getIntance(className);
+                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) getInstance(className);
                     server.getEndpoint().getInInterceptors().add(interceptor);
                 }
                 for (String className : servletInfo.getOutFaultInterceptors()) {
-                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) getIntance(className);
+                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) getInstance(className);
                     server.getEndpoint().getOutFaultInterceptors().add(interceptor);
                 }
                 for (String className : servletInfo.getOutInterceptors()) {
-                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) getIntance(className);
+                    Interceptor<? extends Message> interceptor = (Interceptor<? extends Message>) getInstance(className);
                     server.getEndpoint().getOutInterceptors().add(interceptor);
                 }
 

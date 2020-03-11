@@ -44,4 +44,8 @@ public class MyEntity {
         this.name = name;
     }
 
+    @Override
+    public String toString() {
+        return "MyEntity:" + name;
+    }
 }

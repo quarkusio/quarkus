@@ -10,14 +10,12 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.IOThreadDetector;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
@@ -56,15 +54,6 @@ public class VertxRecorder {
                 }
             });
         }
-    }
-
-    public IOThreadDetector detector() {
-        return new IOThreadDetector() {
-            @Override
-            public boolean isInIOThread() {
-                return Context.isOnEventLoopThread();
-            }
-        };
     }
 
     public static Vertx getVertx() {

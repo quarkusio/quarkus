@@ -66,12 +66,4 @@ public class S2iConfig {
         return baseJvmImage.equals(DEFAULT_BASE_JVM_IMAGE);
     }
 
-    /**
-     * Check if baseNativeImage is the default
-     * 
-     * @returns true if baseJvmImage is the default
-     */
-    public boolean hasDefaultBaseNativeImage() {
-        return baseNativeImage.equals(DEFAULT_BASE_NATIVE_IMAGE);
-    }
 }

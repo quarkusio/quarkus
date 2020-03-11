@@ -129,6 +129,11 @@ public class BytecodeRecorderTestCase {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.bean(new TestJavaBean("A string", 99));
         }, new TestJavaBean("A string", 99));
+
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.bean(new TestJavaBeanSubclass("A string", 99, "PUT"));
+        }, new TestJavaBeanSubclass("A string", 99, "PUT"));
     }
 
     @Test

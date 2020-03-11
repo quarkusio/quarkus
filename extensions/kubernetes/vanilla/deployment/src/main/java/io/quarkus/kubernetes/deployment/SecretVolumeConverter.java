@@ -14,7 +14,7 @@ public class SecretVolumeConverter {
     public static SecretVolumeBuilder convert(SecretVolumeConfig c) {
         SecretVolumeBuilder b = new SecretVolumeBuilder();
         b.withSecretName(c.secretName);
-        b.withDefaultMode(c.defaultMode);
+        b.withDefaultMode(FilePermissionUtil.parseInt(c.defaultMode));
         b.withOptional(c.optional);
         return b;
     }

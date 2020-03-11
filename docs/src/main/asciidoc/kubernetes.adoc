@@ -464,7 +464,7 @@ Below you will find tables describing all available types.
 |====
 | Property        | Type    | Description | Default Value
 | config-map-name | String  |             |
-| default-mode    | int     |             | 384
+| default-mode    | int     |             | 0600
 | optional        | boolean |             | false
 |====
 
@@ -472,7 +472,7 @@ Below you will find tables describing all available types.
 |====
 | Property     | Type    | Description | Default Value
 | secret-name  | String  |             |
-| default-mode | int     |             | 384           
+| default-mode | int     |             | 0600
 | optional     | boolean |             | false
 |====
 

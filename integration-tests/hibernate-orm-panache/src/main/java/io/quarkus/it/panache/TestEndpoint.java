@@ -1059,4 +1059,14 @@ public class TestEndpoint {
         assertNull(f.getAnnotation(XmlAttribute.class));
         assertNotNull(f.getAnnotation(XmlTransient.class));
     }
+
+    @GET
+    @Path("7721")
+    @Transactional
+    public String testBug7721() {
+        Bug7721Entity entity = new Bug7721Entity();
+        entity.persist();
+        entity.delete();
+        return "OK";
+    }
 }

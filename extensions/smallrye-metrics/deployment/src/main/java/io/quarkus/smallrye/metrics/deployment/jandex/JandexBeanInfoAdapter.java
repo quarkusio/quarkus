@@ -3,11 +3,14 @@ package io.quarkus.smallrye.metrics.deployment.jandex;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames;
 import io.smallrye.metrics.elementdesc.AnnotationInfo;
 import io.smallrye.metrics.elementdesc.BeanInfo;
@@ -42,6 +45,14 @@ public class JandexBeanInfoAdapter implements BeanInfoAdapter<ClassInfo> {
                     .map(annotationInfoAdapter::convert)
                     .collect(Collectors.toList());
             annotations.addAll(annotationsSuper);
+
+            // a metric annotation can also be added through a CDI stereotype, so look into stereotypes
+            List<AnnotationInfo> annotationsThroughStereotypes = clazz.classAnnotations()
+                    .stream()
+                    .flatMap(a -> getMetricAnnotationsThroughStereotype(a, indexView))
+                    .collect(Collectors.toList());
+            annotations.addAll(annotationsThroughStereotypes);
+
             clazz = indexView.getClassByName(clazz.superName());
         }
 
@@ -49,5 +60,19 @@ public class JandexBeanInfoAdapter implements BeanInfoAdapter<ClassInfo> {
                 input.name().prefix().toString(),
                 annotations,
                 superClassInfo);
+    }
+
+    private Stream<AnnotationInfo> getMetricAnnotationsThroughStereotype(AnnotationInstance stereotypeInstance,
+            IndexView indexView) {
+        ClassInfo annotationType = indexView.getClassByName(stereotypeInstance.name());
+        if (annotationType.classAnnotation(DotNames.STEREOTYPE) != null) {
+            JandexAnnotationInfoAdapter adapter = new JandexAnnotationInfoAdapter(indexView);
+            return annotationType.classAnnotations()
+                    .stream()
+                    .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
+                    .map(adapter::convert);
+        } else {
+            return Stream.empty();
+        }
     }
 }

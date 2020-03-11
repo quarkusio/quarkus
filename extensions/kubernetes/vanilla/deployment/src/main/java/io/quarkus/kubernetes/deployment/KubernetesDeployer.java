@@ -13,8 +13,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
@@ -92,8 +96,7 @@ public class KubernetesDeployer {
 
         try (FileInputStream fis = new FileInputStream(manifest)) {
             KubernetesList list = Serialization.unmarshalAsList(fis);
-            list.getItems().forEach(i -> {
-                log.info("Applying: " + i.getKind() + " " + i.getMetadata().getName() + ".");
+            distinct(list.getItems()).forEach(i -> {
                 client.resource(i).inNamespace(namespace).createOrReplace();
                 log.info("Applied: " + i.getKind() + " " + i.getMetadata().getName() + ".");
             });
@@ -111,5 +114,15 @@ public class KubernetesDeployer {
             throw new RuntimeException("Error closing file: " + manifest.getAbsolutePath());
         }
 
+    }
+
+    public static Predicate<HasMetadata> distictByResourceKey() {
+        Map<Object, Boolean> seen = new ConcurrentHashMap<>();
+        return t -> seen.putIfAbsent(t.getApiVersion() + "/" + t.getKind() + ":" + t.getMetadata().getName(),
+                Boolean.TRUE) == null;
+    }
+
+    private static Collection<HasMetadata> distinct(Collection<HasMetadata> resources) {
+        return resources.stream().filter(distictByResourceKey()).collect(Collectors.toList());
     }
 }

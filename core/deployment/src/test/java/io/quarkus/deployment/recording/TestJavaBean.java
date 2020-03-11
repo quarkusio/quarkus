@@ -27,8 +27,9 @@ public class TestJavaBean {
         return sval;
     }
 
-    public void setSval(String sval) {
+    public TestJavaBean setSval(String sval) {
         this.sval = sval;
+        return this;
     }
 
     public int getIval() {

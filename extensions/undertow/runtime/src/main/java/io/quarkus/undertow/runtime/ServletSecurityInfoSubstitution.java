@@ -17,6 +17,7 @@ public class ServletSecurityInfoSubstitution implements ObjectSubstitution<Servl
             ns.setTransportGuaranteeType(i.getTransportGuaranteeType());
             ns.setEmptyRoleSemantic(i.getEmptyRoleSemantic());
             ns.getRolesAllowed().addAll(i.getRolesAllowed());
+            ns.setMethod(i.getMethod());
             sub.getHttpMethodSecurityInfo().add(ns);
         }
         return sub;
@@ -34,7 +35,8 @@ public class ServletSecurityInfoSubstitution implements ObjectSubstitution<Servl
             ns.setTransportGuaranteeType(i.getTransportGuaranteeType());
             ns.setEmptyRoleSemantic(i.getEmptyRoleSemantic());
             ns.addRolesAllowed(i.getRolesAllowed());
-            sub.getHttpMethodSecurityInfo().add(ns);
+            ns.setMethod(i.getMethod());
+            sub.addHttpMethodSecurityInfo(ns);
         }
         return sub;
     }

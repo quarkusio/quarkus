@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<kmodule xmlns="http://www.drools.org/xsd/kmodule" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <kbase name="canDrinkKB" packages="org.drools.simple.candrink">
-    <ksession name="canDrinkKS" default="true" />
-  </kbase>
-</kmodule>

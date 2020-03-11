@@ -67,8 +67,6 @@
         <module>amazon-lambda</module>
         <module>amazon-lambda-http</module>
         <module>amazon-lambda-http-resteasy</module>
-        <module>kogito</module>
-        <module>kogito-maven</module>
         <module>container-image</module>
         <module>optaplanner-jackson</module>
         <module>kubernetes</module>

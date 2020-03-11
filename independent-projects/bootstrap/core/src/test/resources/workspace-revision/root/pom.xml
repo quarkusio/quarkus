@@ -4,8 +4,12 @@
 
     <groupId>org.acme</groupId>
     <artifactId>root</artifactId>
-    <version>1.0</version>
+    <version>${revision}</version>
     <packaging>pom</packaging>
+
+    <properties>
+        <revision>1.2.3</revision>
+    </properties>
 
     <modules>
         <module>module1</module>

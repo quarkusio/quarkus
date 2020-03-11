@@ -28,6 +28,9 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
     private long lastModified;
     private int id = 1;
 
+    // value of ${revision} property
+    private String revision;
+
     protected void addProject(LocalProject project, long lastModified) {
         projects.put(project.getKey(), project);
         if (lastModified > this.lastModified) {
@@ -80,7 +83,10 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
     @Override
     public File findArtifact(Artifact artifact) {
         final LocalProject lp = getProject(artifact.getGroupId(), artifact.getArtifactId());
-        if (lp == null || !lp.getVersion().equals(artifact.getVersion())) {
+        if (lp == null
+                || !lp.getVersion().equals(artifact.getVersion())
+                        && !(LocalProject.REVISION_EXPR.equals(artifact.getVersion())
+                                && lp.getVersion().equals(revision))) {
             return null;
         }
         final String type = artifact.getExtension();
@@ -112,5 +118,13 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
             return Collections.emptyList();
         }
         return lastFindVersions = Collections.singletonList(artifact.getVersion());
+    }
+
+    public String getRevision() {
+        return revision;
+    }
+
+    void setRevision(String revision) {
+        this.revision = revision;
     }
 }

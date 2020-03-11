@@ -9,7 +9,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
 @Entity
-public class MyEntity {
+public class OtherEntity {
     public static final String ENTITY_NAME_TOO_LONG = "entity name too long";
     public static final String ENTITY_NAME_CANNOT_BE_EMPTY = "entity name cannot be empty";
     private long id;
@@ -19,10 +19,10 @@ public class MyEntity {
     @Size(max = 50, message = ENTITY_NAME_TOO_LONG)
     private String name;
 
-    public MyEntity() {
+    public OtherEntity() {
     }
 
-    public MyEntity(String name) {
+    public OtherEntity(String name) {
         this.name = name;
     }
 
@@ -46,6 +46,6 @@ public class MyEntity {
 
     @Override
     public String toString() {
-        return "MyEntity:" + name;
+        return "OtherEntity:" + name;
     }
 }

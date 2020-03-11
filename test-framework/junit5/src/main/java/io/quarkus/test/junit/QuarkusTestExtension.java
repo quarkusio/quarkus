@@ -315,7 +315,8 @@ public class QuarkusTestExtension
         invocation.skip();
     }
 
-    private void runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) {
+    private void runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext)
+            throws Throwable {
         Method newMethod = null;
 
         try {
@@ -340,10 +341,7 @@ public class QuarkusTestExtension
             newMethod.setAccessible(true);
             newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
         } catch (InvocationTargetException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            }
-            throw new RuntimeException(e.getCause());
+            throw e.getCause();
         } catch (IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }

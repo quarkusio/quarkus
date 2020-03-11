@@ -288,7 +288,7 @@ class KubernetesProcessor {
         });
 
         config.getWorkingDir().ifPresent(w -> {
-            session.resources().decorate(target, new ApplyWorkingDirDecorator(name, DEPLOY));
+            session.resources().decorate(target, new ApplyWorkingDirDecorator(name, w));
         });
 
         config.getCommand().ifPresent(c -> {

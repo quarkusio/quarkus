@@ -1,13 +1,14 @@
 package io.quarkus.platform.tools.config;
 
+import java.util.Iterator;
+import java.util.ServiceLoader;
+import java.util.concurrent.atomic.AtomicReference;
+
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoader;
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
 import io.quarkus.platform.tools.DefaultMessageWriter;
 import io.quarkus.platform.tools.MessageWriter;
-import java.util.Iterator;
-import java.util.ServiceLoader;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class QuarkusPlatformConfig {
 

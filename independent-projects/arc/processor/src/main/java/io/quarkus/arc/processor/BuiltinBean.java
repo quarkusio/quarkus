@@ -2,6 +2,16 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
+import java.lang.reflect.Member;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.impl.BeanManagerProvider;
 import io.quarkus.arc.impl.BeanMetadataProvider;
@@ -17,14 +27,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import java.lang.reflect.Member;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
 
 /**
  *

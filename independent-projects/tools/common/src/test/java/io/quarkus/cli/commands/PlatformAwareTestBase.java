@@ -1,9 +1,10 @@
 package io.quarkus.cli.commands;
 
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 import java.io.IOException;
 import java.util.Properties;
+
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 
 public class PlatformAwareTestBase {
 

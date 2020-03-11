@@ -4,11 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
@@ -20,8 +18,13 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class RemoveUnusedBeansTest {
 

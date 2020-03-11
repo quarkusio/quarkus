@@ -1,11 +1,5 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.BeanCreator;
-import io.quarkus.arc.BeanDestroyer;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Inherited;
 import java.util.Collections;
@@ -15,13 +9,22 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+
 import javax.enterprise.context.NormalScope;
 import javax.enterprise.context.spi.CreationalContext;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
+
+import io.quarkus.arc.BeanCreator;
+import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 /**
  * This construct is not thread-safe.

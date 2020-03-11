@@ -1,7 +1,8 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.bootstrap.BootstrapConstants;
 import java.io.Serializable;
+
+import io.quarkus.bootstrap.BootstrapConstants;
 
 /**
  * GroupId, artifactId, classifier, type, version

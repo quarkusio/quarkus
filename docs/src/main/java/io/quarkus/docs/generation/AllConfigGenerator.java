@@ -1,18 +1,5 @@
 package io.quarkus.docs.generation;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.json.JsonReadFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import io.quarkus.annotation.processor.generate_doc.ConfigDocGeneratedOutput;
-import io.quarkus.annotation.processor.generate_doc.ConfigDocItem;
-import io.quarkus.annotation.processor.generate_doc.ConfigDocItemScanner;
-import io.quarkus.annotation.processor.generate_doc.ConfigDocSection;
-import io.quarkus.annotation.processor.generate_doc.ConfigDocWriter;
-import io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.docs.generation.ExtensionJson.Extension;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -28,10 +15,26 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResult;
+
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+
+import io.quarkus.annotation.processor.generate_doc.ConfigDocGeneratedOutput;
+import io.quarkus.annotation.processor.generate_doc.ConfigDocItem;
+import io.quarkus.annotation.processor.generate_doc.ConfigDocItemScanner;
+import io.quarkus.annotation.processor.generate_doc.ConfigDocSection;
+import io.quarkus.annotation.processor.generate_doc.ConfigDocWriter;
+import io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.docs.generation.ExtensionJson.Extension;
 
 public class AllConfigGenerator {
     public static void main(String[] args) throws AppModelResolverException, IOException {

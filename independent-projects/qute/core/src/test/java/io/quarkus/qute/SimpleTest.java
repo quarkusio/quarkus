@@ -2,8 +2,6 @@ package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.qute.Results.Result;
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,7 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.TemplateNode.Origin;
 
 public class SimpleTest {
 

@@ -1,7 +1,5 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableBean;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Collections;
@@ -9,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
 import javax.el.ELResolver;
 import javax.el.ExpressionFactory;
 import javax.enterprise.context.ContextNotActiveException;
@@ -38,6 +37,9 @@ import javax.enterprise.inject.spi.ObserverMethod;
 import javax.enterprise.inject.spi.ProducerFactory;
 import javax.enterprise.util.TypeLiteral;
 import javax.interceptor.InterceptorBinding;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableBean;
 
 /**
  * @author Martin Kouba

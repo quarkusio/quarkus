@@ -1,17 +1,5 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.Components;
-import io.quarkus.arc.ComponentsProvider;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableContext;
-import io.quarkus.arc.InjectableInterceptor;
-import io.quarkus.arc.InjectableObserverMethod;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.ManagedContext;
-import io.quarkus.arc.ResourceReferenceProvider;
-import io.quarkus.arc.impl.ArcCDIProvider.ArcCDI;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -33,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Dependent;
@@ -51,7 +40,21 @@ import javax.enterprise.inject.spi.InterceptionType;
 import javax.enterprise.inject.spi.Interceptor;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Singleton;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.Components;
+import io.quarkus.arc.ComponentsProvider;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.arc.InjectableInterceptor;
+import io.quarkus.arc.InjectableObserverMethod;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.ManagedContext;
+import io.quarkus.arc.ResourceReferenceProvider;
+import io.quarkus.arc.impl.ArcCDIProvider.ArcCDI;
 
 /**
  *

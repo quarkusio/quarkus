@@ -1,8 +1,10 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Results.Result;
 import java.util.regex.Pattern;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.qute.Results.Result;
 
 class LiteralSupport {
 

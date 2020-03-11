@@ -1,9 +1,5 @@
 package io.quarkus.bootstrap.resolver.maven.workspace;
 
-import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.BootstrapException;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,10 +9,16 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.Resource;
+
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.BootstrapException;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 
 /**
  *

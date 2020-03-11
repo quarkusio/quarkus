@@ -7,18 +7,20 @@ import static io.quarkus.generators.ProjectGenerator.PROJECT_GROUP_ID;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_VERSION;
 import static io.quarkus.generators.ProjectGenerator.SOURCE_TYPE;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import javax.lang.model.SourceVersion;
+
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.SourceType;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import javax.lang.model.SourceVersion;
 
 /**
  * Instances of this class are not thread-safe. They are created per invocation.

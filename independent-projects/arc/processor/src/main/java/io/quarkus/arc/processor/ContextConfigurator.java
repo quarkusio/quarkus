@@ -1,10 +1,5 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.ContextCreator;
-import io.quarkus.arc.InjectableContext;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +8,12 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import io.quarkus.arc.ContextCreator;
+import io.quarkus.arc.InjectableContext;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 /**
  * Custom context configurator.

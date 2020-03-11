@@ -7,10 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.resolver.maven.MavenRepoInitializer;
 import java.util.Arrays;
 import java.util.List;
+
 import org.apache.maven.settings.Mirror;
 import org.apache.maven.settings.Profile;
 import org.apache.maven.settings.Proxy;
@@ -20,6 +19,9 @@ import org.apache.maven.settings.Settings;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.maven.MavenRepoInitializer;
 
 class MavenRepoInitializerTest {
     private static Mirror mirrorA;

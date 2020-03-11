@@ -8,6 +8,20 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.util.AnnotationLiteral;
+import javax.inject.Qualifier;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.processor.BeanConfigurator;
@@ -16,17 +30,6 @@ import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.util.Map;
-import java.util.Optional;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Qualifier;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class BeanRegistrarTest {
 

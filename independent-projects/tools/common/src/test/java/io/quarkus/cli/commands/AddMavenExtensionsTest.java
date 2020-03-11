@@ -1,13 +1,15 @@
 package io.quarkus.cli.commands;
 
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.maven.utilities.MojoUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+
 import org.apache.maven.model.Model;
+
+import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.maven.utilities.MojoUtils;
 
 class AddMavenExtensionsTest extends AbstractAddExtensionsTest<Model> {
 

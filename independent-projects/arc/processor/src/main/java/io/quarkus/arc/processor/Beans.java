@@ -2,8 +2,6 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
-import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
-import io.quarkus.arc.processor.InjectionTargetInfo.TargetKind;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,9 +10,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.inject.spi.DefinitionException;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -26,6 +26,9 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
+
+import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
+import io.quarkus.arc.processor.InjectionTargetInfo.TargetKind;
 
 final class Beans {
 

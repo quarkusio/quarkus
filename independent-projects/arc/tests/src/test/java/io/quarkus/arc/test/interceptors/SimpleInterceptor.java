@@ -1,11 +1,12 @@
 package io.quarkus.arc.test.interceptors;
 
-import io.quarkus.arc.ArcInvocationContext;
 import javax.annotation.Priority;
 import javax.inject.Inject;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
+
+import io.quarkus.arc.ArcInvocationContext;
 
 @Simple
 @Priority(1)

@@ -7,6 +7,12 @@ import static io.quarkus.platform.tools.ToolsConstants.QUARKUS_CORE_ARTIFACT_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.nio.file.Path;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.ResolverSetupCleanup;
 import io.quarkus.bootstrap.resolver.TsArtifact;
@@ -17,10 +23,6 @@ import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescripto
 import io.quarkus.platform.tools.DefaultMessageWriter;
 import io.quarkus.platform.tools.MessageWriter;
 import io.quarkus.platform.tools.ToolsConstants;
-import java.nio.file.Path;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 public class QuarkusJsonPlatformDescriptorResolverTest extends ResolverSetupCleanup {
 

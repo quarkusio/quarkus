@@ -16,13 +16,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.cli.commands.PlatformAwareTestBase;
-import io.quarkus.cli.commands.QuarkusCommandInvocation;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.generators.SourceType;
-import io.quarkus.maven.utilities.MojoUtils;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.List;
@@ -32,9 +25,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+
+import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.cli.commands.PlatformAwareTestBase;
+import io.quarkus.cli.commands.QuarkusCommandInvocation;
+import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.generators.SourceType;
+import io.quarkus.maven.utilities.MojoUtils;
 
 class BasicRestProjectGeneratorTest extends PlatformAwareTestBase {
 

@@ -4,11 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.contentOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.cli.commands.writer.ZipProjectWriter;
-import io.quarkus.generators.BuildTool;
-import io.quarkus.generators.ProjectGenerator;
-import io.quarkus.maven.utilities.MojoUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -30,11 +25,18 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+
 import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+
+import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.cli.commands.writer.ZipProjectWriter;
+import io.quarkus.generators.BuildTool;
+import io.quarkus.generators.ProjectGenerator;
+import io.quarkus.maven.utilities.MojoUtils;
 
 public class CreateProjectTest extends PlatformAwareTestBase {
     @Test

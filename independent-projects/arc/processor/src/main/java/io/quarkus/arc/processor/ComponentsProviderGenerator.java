@@ -4,14 +4,6 @@ import static java.util.stream.Collectors.toList;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.Components;
-import io.quarkus.arc.ComponentsProvider;
-import io.quarkus.arc.processor.ResourceOutput.Resource;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,10 +18,20 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.objectweb.asm.Type;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.Components;
+import io.quarkus.arc.ComponentsProvider;
+import io.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 /**
  *

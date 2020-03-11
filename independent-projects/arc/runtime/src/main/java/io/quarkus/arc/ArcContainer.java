@@ -5,6 +5,7 @@ import java.lang.reflect.Type;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
+
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.util.TypeLiteral;

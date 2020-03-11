@@ -3,6 +3,7 @@ package io.quarkus.bootstrap.resolver;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Exclusion;
 

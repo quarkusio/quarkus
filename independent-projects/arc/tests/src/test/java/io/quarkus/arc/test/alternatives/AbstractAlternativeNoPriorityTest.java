@@ -3,14 +3,16 @@ package io.quarkus.arc.test.alternatives;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Alternative;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.Vetoed;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.test.ArcTestContainer;
 
 /**
  * Tests that in Arc alternatives (class beans, producer methods/fields) without @Priority cause an exception.

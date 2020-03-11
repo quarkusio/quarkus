@@ -8,17 +8,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.bootstrap.util.IoUtils;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Parent;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.util.IoUtils;
 
 public class LocalWorkspaceDiscoveryTest {
 

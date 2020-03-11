@@ -1,10 +1,7 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.AlternativePriority;
-import io.quarkus.arc.DefaultBean;
-import io.quarkus.arc.InjectableInstance;
-import io.quarkus.arc.impl.ComputingCache;
 import java.util.Optional;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
@@ -38,8 +35,14 @@ import javax.interceptor.AroundConstruct;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InterceptorBinding;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+
+import io.quarkus.arc.AlternativePriority;
+import io.quarkus.arc.DefaultBean;
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.impl.ComputingCache;
 
 public final class DotNames {
 

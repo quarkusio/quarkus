@@ -4,6 +4,23 @@ import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+
+import javax.enterprise.context.ContextNotActiveException;
+import javax.enterprise.context.spi.Contextual;
+
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
+
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.impl.CreationalContextImpl;
@@ -17,20 +34,6 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
-import javax.enterprise.context.ContextNotActiveException;
-import javax.enterprise.context.spi.Contextual;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
 
 /**
  *

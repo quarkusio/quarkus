@@ -1,17 +1,20 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.gizmo.MethodCreator;
 import java.lang.annotation.Annotation;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
+
 import javax.enterprise.event.TransactionPhase;
 import javax.enterprise.inject.spi.ObserverMethod;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
+
+import io.quarkus.gizmo.MethodCreator;
 
 /**
  * This construct is not thread-safe.

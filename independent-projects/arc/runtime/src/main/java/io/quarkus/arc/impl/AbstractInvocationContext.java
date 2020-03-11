@@ -1,6 +1,5 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.ArcInvocationContext;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -12,6 +11,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
+
+import io.quarkus.arc.ArcInvocationContext;
 
 abstract class AbstractInvocationContext implements ArcInvocationContext, Supplier<Map<String, Object>> {
 

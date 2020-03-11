@@ -1,7 +1,5 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableReferenceProvider;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
@@ -15,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.Annotated;
 import javax.enterprise.inject.spi.AnnotatedCallable;
@@ -25,6 +24,9 @@ import javax.enterprise.inject.spi.AnnotatedParameter;
 import javax.enterprise.inject.spi.AnnotatedType;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.InjectionPoint;
+
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableReferenceProvider;
 
 /**
  *

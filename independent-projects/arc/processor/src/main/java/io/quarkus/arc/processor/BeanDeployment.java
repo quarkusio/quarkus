@@ -2,13 +2,6 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
-import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
-import io.quarkus.arc.processor.BeanProcessor.BuildContextImpl;
-import io.quarkus.arc.processor.BeanRegistrar.RegistrationContext;
-import io.quarkus.arc.processor.BuildExtension.BuildContext;
-import io.quarkus.arc.processor.BuildExtension.Key;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.ResultHandle;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -29,10 +22,12 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import javax.enterprise.event.Reception;
 import javax.enterprise.inject.Model;
 import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.DeploymentException;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -45,6 +40,14 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
+
+import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
+import io.quarkus.arc.processor.BeanProcessor.BuildContextImpl;
+import io.quarkus.arc.processor.BeanRegistrar.RegistrationContext;
+import io.quarkus.arc.processor.BuildExtension.BuildContext;
+import io.quarkus.arc.processor.BuildExtension.Key;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.ResultHandle;
 
 public class BeanDeployment {
 

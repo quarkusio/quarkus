@@ -2,19 +2,22 @@ package io.quarkus.arc.test.producer.generic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.annotation.Annotation;
 import java.util.Optional;
+
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.test.ArcTestContainer;
 
 /**
  * Test for https://github.com/quarkus-project/quarkus/issues/120

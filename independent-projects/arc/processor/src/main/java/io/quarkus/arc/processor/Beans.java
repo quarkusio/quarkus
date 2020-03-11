@@ -51,17 +51,21 @@ final class Beans {
         String name = null;
 
         for (AnnotationInstance annotation : beanDeployment.getAnnotations(beanClass)) {
-            if (beanDeployment.getQualifier(annotation.name()) != null) {
-                // Qualifiers
-                qualifiers.add(annotation);
-                if (DotNames.NAMED.equals(annotation.name())) {
-                    AnnotationValue nameValue = annotation.value();
-                    if (nameValue != null) {
-                        name = nameValue.asString();
-                    } else {
-                        name = getDefaultName(beanClass);
-                    }
+            if (DotNames.NAMED.equals(annotation.name())) {
+                AnnotationValue nameValue = annotation.value();
+                if (nameValue != null) {
+                    name = nameValue.asString();
+                } else {
+                    name = getDefaultName(beanClass);
                 }
+            }
+            Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
+            for (AnnotationInstance qualifierAnnotation : qualifierCollection) {
+                // Qualifiers
+                qualifiers.add(qualifierAnnotation);
+            }
+            if (!qualifierCollection.isEmpty()) {
+                // we needn't process it further, the annotation was a qualifier (or multiple repeating ones)
                 continue;
             }
             if (annotation.name()
@@ -182,16 +186,21 @@ final class Beans {
             if (annotation.target().kind() != AnnotationTarget.Kind.METHOD) {
                 continue;
             }
-            if (beanDeployment.getQualifier(annotation.name()) != null) {
-                qualifiers.add(annotation);
-                if (DotNames.NAMED.equals(annotation.name())) {
-                    AnnotationValue nameValue = annotation.value();
-                    if (nameValue != null) {
-                        name = nameValue.asString();
-                    } else {
-                        name = getDefaultName(producerMethod);
-                    }
+            if (DotNames.NAMED.equals(annotation.name())) {
+                AnnotationValue nameValue = annotation.value();
+                if (nameValue != null) {
+                    name = nameValue.asString();
+                } else {
+                    name = getDefaultName(producerMethod);
                 }
+            }
+            Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
+            for (AnnotationInstance qualifierAnnotation : qualifierCollection) {
+                // Qualifiers
+                qualifiers.add(qualifierAnnotation);
+            }
+            if (!qualifierCollection.isEmpty()) {
+                // we needn't process it further, the annotation was a qualifier (or multiple repeating ones)
                 continue;
             }
             if (DotNames.ALTERNATIVE.equals(annotation.name())) {
@@ -280,16 +289,21 @@ final class Beans {
         String name = null;
 
         for (AnnotationInstance annotation : beanDeployment.getAnnotations(producerField)) {
-            if (beanDeployment.getQualifier(annotation.name()) != null) {
-                qualifiers.add(annotation);
-                if (DotNames.NAMED.equals(annotation.name())) {
-                    AnnotationValue nameValue = annotation.value();
-                    if (nameValue != null) {
-                        name = nameValue.asString();
-                    } else {
-                        name = producerField.name();
-                    }
+            if (DotNames.NAMED.equals(annotation.name())) {
+                AnnotationValue nameValue = annotation.value();
+                if (nameValue != null) {
+                    name = nameValue.asString();
+                } else {
+                    name = producerField.name();
                 }
+            }
+            Collection<AnnotationInstance> qualifierCollection = beanDeployment.extractQualifiers(annotation);
+            for (AnnotationInstance qualifierAnnotation : qualifierCollection) {
+                // Qualifiers
+                qualifiers.add(qualifierAnnotation);
+            }
+            if (!qualifierCollection.isEmpty()) {
+                // we needn't process it further, the annotation was a qualifier (or multiple repeating ones)
                 continue;
             }
             if (DotNames.ALTERNATIVE.equals(annotation.name())) {

@@ -57,6 +57,8 @@ public class BeanDeployment {
 
     private final Map<DotName, ClassInfo> qualifiers;
 
+    private final Map<DotName, ClassInfo> repeatingQualifierAnnotations;
+
     private final Map<DotName, ClassInfo> interceptorBindings;
 
     private final Map<DotName, Set<String>> nonBindingFields;
@@ -132,6 +134,7 @@ public class BeanDeployment {
         this.customContexts = new ConcurrentHashMap<>();
 
         this.qualifiers = findQualifiers(index);
+        this.repeatingQualifierAnnotations = findContainerAnnotations(qualifiers, index);
         buildContextPut(Key.QUALIFIERS.asString(), Collections.unmodifiableMap(qualifiers));
 
         this.interceptorBindings = findInterceptorBindings(index);
@@ -363,6 +366,30 @@ public class BeanDeployment {
         return qualifiers.get(name);
     }
 
+    /**
+     * Extracts qualifiers from given annotation instance.
+     * This returns a collection because in case of repeating qualifiers there can be multiple.
+     * For most instances this will be a singleton instance (if given annotatation is a qualifier) or an empty list for
+     * cases where the annotation is not a qualifier.
+     *
+     * @param annotation instance to be inspected
+     * @return a collection of qualifiers or an empty collection
+     */
+    Collection<AnnotationInstance> extractQualifiers(AnnotationInstance annotation) {
+        DotName annotationName = annotation.name();
+        if (qualifiers.get(annotationName) != null) {
+            return Collections.singleton(annotation);
+        } else {
+            if (repeatingQualifierAnnotations.get(annotationName) != null) {
+                // container annotation, we need to extract actual qualifiers
+                return new ArrayList<>(Arrays.asList(annotation.value().asNestedArray()));
+            } else {
+                // neither qualifier, nor container annotation, return empty collection
+                return Collections.EMPTY_LIST;
+            }
+        }
+    }
+
     ClassInfo getInterceptorBinding(DotName name) {
         return interceptorBindings.get(name);
     }
@@ -415,6 +442,18 @@ public class BeanDeployment {
             qualifiers.put(qualifier.target().asClass().name(), qualifier.target().asClass());
         }
         return qualifiers;
+    }
+
+    private static Map<DotName, ClassInfo> findContainerAnnotations(Map<DotName, ClassInfo> qualifiers, IndexView index) {
+        Map<DotName, ClassInfo> containerAnnotations = new HashMap<>();
+        for (ClassInfo qualifier : qualifiers.values()) {
+            AnnotationInstance instance = qualifier.classAnnotation(DotNames.REPEATABLE);
+            if (instance != null) {
+                DotName annotationName = instance.value().asClass().name();
+                containerAnnotations.put(annotationName, getClassByName(index, annotationName));
+            }
+        }
+        return containerAnnotations;
     }
 
     private static Map<DotName, ClassInfo> findInterceptorBindings(IndexView index) {
@@ -819,25 +858,23 @@ public class BeanDeployment {
     private DisposerInfo findDisposer(BeanInfo declaringBean, AnnotationTarget annotationTarget, List<DisposerInfo> disposers) {
         List<DisposerInfo> found = new ArrayList<>();
         Type beanType;
-        Set<AnnotationInstance> qualifiers;
+        Set<AnnotationInstance> qualifiers = new HashSet<>();
+        List<AnnotationInstance> allAnnotations;
         if (Kind.FIELD.equals(annotationTarget.kind())) {
+            allAnnotations = annotationTarget.asField().annotations();
             beanType = annotationTarget.asField().type();
-            qualifiers = annotationTarget.asField().annotations().stream().filter(a -> getQualifier(a.name()) != null)
-                    .collect(Collectors.toSet());
         } else if (Kind.METHOD.equals(annotationTarget.kind())) {
+            allAnnotations = annotationTarget.asMethod().annotations();
             beanType = annotationTarget.asMethod().returnType();
-            qualifiers = annotationTarget.asMethod().annotations().stream()
-                    .filter(a -> Kind.METHOD.equals(a.target().kind()) && getQualifier(a.name()) != null)
-                    .collect(Collectors.toSet());
         } else {
             throw new RuntimeException("Unsupported annotation target: " + annotationTarget);
         }
+        allAnnotations.forEach(a -> extractQualifiers(a).forEach(qualifiers::add));
         for (DisposerInfo disposer : disposers) {
             if (disposer.getDeclaringBean().equals(declaringBean)) {
                 boolean hasQualifier = true;
-                for (AnnotationInstance qualifier : qualifiers) {
-                    if (!Beans.hasQualifier(getQualifier(qualifier.name()), qualifier,
-                            disposer.getDisposedParameterQualifiers())) {
+                for (AnnotationInstance disposerQualifier : disposer.getDisposedParameterQualifiers()) {
+                    if (!Beans.hasQualifier(getQualifier(disposerQualifier.name()), disposerQualifier, qualifiers)) {
                         hasQualifier = false;
                     }
                 }

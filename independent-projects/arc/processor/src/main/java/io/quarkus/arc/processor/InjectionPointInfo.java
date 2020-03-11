@@ -31,9 +31,7 @@ public class InjectionPointInfo {
             InjectionPointModifier transformer) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         for (AnnotationInstance annotation : beanDeployment.getAnnotations(field)) {
-            if (beanDeployment.getQualifier(annotation.name()) != null) {
-                qualifiers.add(annotation);
-            }
+            beanDeployment.extractQualifiers(annotation).forEach(qualifiers::add);
         }
         Type type = resolveType(field.type(), beanClass, field.declaringClass(), beanDeployment);
         return new InjectionPointInfo(type,
@@ -66,9 +64,7 @@ public class InjectionPointInfo {
             }
             Set<AnnotationInstance> paramQualifiers = new HashSet<>();
             for (AnnotationInstance paramAnnotation : paramAnnotations) {
-                if (beanDeployment.getQualifier(paramAnnotation.name()) != null) {
-                    paramQualifiers.add(paramAnnotation);
-                }
+                beanDeployment.extractQualifiers(paramAnnotation).forEach(paramQualifiers::add);
             }
             Type type = resolveType(paramType, beanClass, method.declaringClass(), beanDeployment);
             injectionPoints.add(new InjectionPointInfo(type,

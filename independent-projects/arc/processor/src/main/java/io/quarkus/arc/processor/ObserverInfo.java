@@ -274,9 +274,8 @@ public class ObserverInfo implements InjectionTargetInfo {
             MethodParameterInfo eventParameter) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         for (AnnotationInstance annotation : beanDeployment.getAnnotations(observerMethod)) {
-            if (annotation.target().equals(eventParameter)
-                    && beanDeployment.getQualifier(annotation.name()) != null) {
-                qualifiers.add(annotation);
+            if (annotation.target().equals(eventParameter)) {
+                beanDeployment.extractQualifiers(annotation).forEach(qualifiers::add);
             }
         }
         return qualifiers;

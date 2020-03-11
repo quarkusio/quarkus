@@ -118,6 +118,7 @@ public class QuteProcessor {
 
     static final DotName MAP_ENTRY = DotName.createSimple(Entry.class.getName());
     static final DotName COLLECTION = DotName.createSimple(Collection.class.getName());
+    static final DotName STRING = DotName.createSimple(String.class.getName());
 
     private static final String MATCH_NAME = "matchName";
     private static final String PRIORITY = "priority";
@@ -711,16 +712,21 @@ public class QuteProcessor {
 
     @BuildStep
     void excludeTypeChecks(BuildProducer<TypeCheckExcludeBuildItem> excludes) {
-        // Exclude all checks that involve built-in value resolvers that accept at least one parameter
+        // Exclude all checks that involve built-in value resolvers
+        // TODO we need a better way to exclude value resolvers that are not template extension methods
         excludes.produce(new TypeCheckExcludeBuildItem(new Predicate<Check>() {
             @Override
             public boolean test(Check check) {
+                // RawString
+                if (check.isProperty() && check.classNameEquals(STRING) && check.nameIn("raw", "safe")) {
+                    return true;
+                }
                 // Elvis and ternary operators
-                if (check.numberOfParameters == 1 && check.nameEquals("?:", "or", ":", "?")) {
+                if (check.numberOfParameters == 1 && check.nameIn("?:", "or", ":", "?")) {
                     return true;
                 }
                 // Collection.contains()
-                if (check.numberOfParameters == 1 && check.clazz.name().equals(COLLECTION) && check.name.equals("contains")) {
+                if (check.numberOfParameters == 1 && check.classNameEquals(COLLECTION) && check.name.equals("contains")) {
                     return true;
                 }
                 return false;

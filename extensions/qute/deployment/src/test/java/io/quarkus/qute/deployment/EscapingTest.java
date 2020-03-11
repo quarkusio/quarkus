@@ -10,6 +10,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.qute.Engine;
 import io.quarkus.qute.RawString;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateData;
@@ -26,7 +27,9 @@ public class EscapingTest {
                     .addAsResource(new StringAsset("{item} {item.raw}"),
                             "templates/item.html")
                     .addAsResource(new StringAsset("{text} {other} {text.raw} {text.safe} {item.foo}"),
-                            "templates/bar.txt"));
+                            "templates/bar.txt")
+                    .addAsResource(new StringAsset("{@java.lang.String text}{text} {text.raw} {text.safe}"),
+                            "templates/validation.html"));
 
     @Inject
     Template foo;
@@ -36,6 +39,9 @@ public class EscapingTest {
 
     @Inject
     Template item;
+
+    @Inject
+    Engine engine;
 
     @Test
     public void testEscaper() {
@@ -47,6 +53,12 @@ public class EscapingTest {
         // Item.toString() is escaped too
         assertEquals("&lt;h1&gt;Item&lt;/h1&gt; <h1>Item</h1>",
                 item.data("item", new Item()).render());
+    }
+
+    @Test
+    public void testValidation() {
+        assertEquals("&lt;div&gt; <div> <div>",
+                engine.getTemplate("validation").data("text", "<div>").render());
     }
 
     @TemplateData

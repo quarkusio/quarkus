@@ -14,6 +14,7 @@ public class ServletSecurityInfoProxy {
     private volatile SecurityInfo.EmptyRoleSemantic emptyRoleSemantic = SecurityInfo.EmptyRoleSemantic.DENY;
     private final Set<String> rolesAllowed = new HashSet<>();
     private volatile TransportGuaranteeType transportGuaranteeType = TransportGuaranteeType.NONE;
+    private String method;
 
     public List<ServletSecurityInfoProxy> getHttpMethodSecurityInfo() {
         return httpMethodSecurityInfo;
@@ -25,6 +26,15 @@ public class ServletSecurityInfoProxy {
 
     public ServletSecurityInfoProxy setEmptyRoleSemantic(SecurityInfo.EmptyRoleSemantic emptyRoleSemantic) {
         this.emptyRoleSemantic = emptyRoleSemantic;
+        return this;
+    }
+
+    public String getMethod() {
+        return method;
+    }
+
+    public ServletSecurityInfoProxy setMethod(String method) {
+        this.method = method;
         return this;
     }
 

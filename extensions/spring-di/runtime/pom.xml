@@ -33,6 +33,13 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>org.springframework:spring-core</excludedArtifact>
+                        <excludedArtifact>org.springframework:spring-beans</excludedArtifact>
+                        <excludedArtifact>org.springframework:spring-context</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -42,6 +42,12 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>org.springframework.data:spring-data-jpa</excludedArtifact>
+                        <excludedArtifact>org.springframework.data:spring-data-commons</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -31,6 +31,13 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 NOTE: If you just launch `mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create` the Maven plugin asks
 for user inputs. You can disable (and use default values) this interactive mode by passing `-B` to the Maven command.
 
+[NOTE]
+====
+Quarkus project scaffolding automatically installs the Gradle wrapper (`./gradlew`) in your project.
+
+If you prefer to use a standalone Gradle installation, please use Gradle {gradle-version}.
+====
+
 The following table lists the attributes you can pass to the `create` command:
 
 [cols=3*,options="header"]
@@ -146,7 +153,7 @@ If no extension is found or if more than one extensions match, you will see a re
 [...]
 ----
 
-You can install all extensions wich match a globbing pattern :
+You can install all extensions which match a globbing pattern:
 
 [source,shell]
 ----
@@ -178,6 +185,7 @@ Hit `CTRL+C` to stop the application.
 
 You can change the working directory the development environment runs on:
 
+[source,groovy]
 ----
 quarkusDev {
     workingDir = rootProject.projectDir

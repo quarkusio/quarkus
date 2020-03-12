@@ -127,9 +127,6 @@ labelPRBasedOnFilePath:
         - integration-tests/infinispan-embedded/**/*
     area/infra-automation:
         - .github/**/*
-        - azure-mvn-settings.xml
-        - azure-pipelines.yml
-        - ci-templates/**/*
     area/jaeger:
         - extensions/jaeger/**/*
     area/jaxb:

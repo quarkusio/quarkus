@@ -29,6 +29,11 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>org.springframework.boot:spring-boot</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
         </plugins>
     </build>

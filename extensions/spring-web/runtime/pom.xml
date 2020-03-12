@@ -60,6 +60,12 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>org.springframework:spring-web</excludedArtifact>
+                        <excludedArtifact>org.springframework:spring-webmvc</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
         </plugins>
     </build>

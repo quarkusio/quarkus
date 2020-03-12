@@ -1,0 +1,18 @@
+buildscript {
+     repositories {
+          mavenLocal()
+          mavenCentral()
+     }
+}
+
+allprojects {
+     group 'org.acme'
+     version '1.0.0-SNAPSHOT'
+}
+
+subprojects{
+     repositories {
+          mavenLocal()
+          mavenCentral()
+     }
+}

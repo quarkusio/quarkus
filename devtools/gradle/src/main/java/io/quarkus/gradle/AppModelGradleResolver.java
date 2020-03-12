@@ -286,13 +286,15 @@ public class AppModelGradleResolver implements AppModelResolver {
                 }
             }
 
+            boolean addChildExtensions = firstLevelExt;
             if (extDep != null && firstLevelExt) {
-                firstLevelExt = false;
                 firstLevelExtensions.add(extDep);
+                addChildExtensions = false;
             }
             final Set<ResolvedDependency> resolvedChildren = dep.getChildren();
             if (!resolvedChildren.isEmpty()) {
-                collectExtensionDeps(resolvedChildren, versionMap, appBuilder, firstLevelExtensions, firstLevelExt, visited);
+                collectExtensionDeps(resolvedChildren, versionMap, appBuilder, firstLevelExtensions, addChildExtensions,
+                        visited);
             }
         }
     }

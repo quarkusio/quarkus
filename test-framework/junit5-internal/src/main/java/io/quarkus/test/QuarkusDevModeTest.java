@@ -404,10 +404,27 @@ public class QuarkusDevModeTest
      */
     public void deleteResourceFile(String path) {
         final Path resourceFilePath = deploymentResourcePath.resolve(path);
-        try {
-            Files.delete(resourceFilePath);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        long timeout = System.currentTimeMillis() + 5000;
+        //in general there is a potential race here
+        //if you serve a file you will send the data to the client, then close the resource
+        //this means that by the time the client request is run the file may not 
+        //have been closed yet, as the test sees the response as being complete after the last data is send
+        //we wait up to 5s for this condition to be resolved
+        for (;;) {
+            try {
+                Files.delete(resourceFilePath);
+                break;
+            } catch (IOException e) {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException ex) {
+                    //ignore
+                }
+                if (System.currentTimeMillis() < timeout) {
+                    continue;
+                }
+                throw new UncheckedIOException(e);
+            }
         }
         // wait for last modified time of the parent to get updated
         sleepForFileChanges(resourceFilePath.getParent());

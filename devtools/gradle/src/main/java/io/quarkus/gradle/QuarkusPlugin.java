@@ -143,12 +143,13 @@ public class QuarkusPlugin implements Plugin<Project> {
     }
 
     private void configProjectDependency(Project project, Project dep) {
-        dep.afterEvaluate(p -> {
-            setupTaskDependencies(project, p);
-            for (Map.Entry<String, Project> entry : dep.getChildProjects().entrySet()) {
-                configProjectDependency(project, entry.getValue());
-            }
-        });
+        if (dep.getState().getExecuted()) {
+            setupTaskDependencies(project, dep);
+        } else {
+            dep.afterEvaluate(p -> {
+                setupTaskDependencies(project, p);
+            });
+        }
     }
 
     private void setupTaskDependencies(Project project, Project dep) {
@@ -162,6 +163,9 @@ public class QuarkusPlugin implements Plugin<Project> {
             extension.addProjectDepJarTask(dep, jarTask);
         } catch (UnknownTaskException e) {
             project.getLogger().debug("Project %s does not include %s task", dep, JavaPlugin.JAR_TASK_NAME, e);
+        }
+        for (Map.Entry<String, Project> entry : dep.getChildProjects().entrySet()) {
+            configProjectDependency(project, entry.getValue());
         }
     }
 

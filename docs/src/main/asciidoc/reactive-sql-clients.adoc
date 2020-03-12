@@ -12,7 +12,7 @@ The Reactive SQL Clients have a straightforward API focusing on scalability and 
 Currently, the following database servers are supported:
 
 * PostgreSQL
-* MySQL
+* MariaDB/MySQL
 
 In this guide, you will learn how to implement a simple CRUD application exposing data stored in *PostgreSQL* over a RESTful API.
 
@@ -122,18 +122,16 @@ Of course, this is only a requirement for this guide, not any application using 
 
 == Configuring
 
-The Reactive PostgreSQL Client can be configured with standard Quarkus datasource properties:
+The Reactive PostgreSQL Client can be configured with standard Quarkus datasource properties and a reactive URL:
 
 [source]
 .src/main/resources/application.properties
 ----
-quarkus.datasource.url=vertx-reactive:postgresql://localhost:5432/quarkus_test
+quarkus.datasource.db-kind=postgresql
 quarkus.datasource.username=quarkus_test
 quarkus.datasource.password=quarkus_test
+quarkus.datasource.reactive.url=postgresql://localhost:5432/quarkus_test
 ----
-
-IMPORTANT: The eagle eyes among you might have noticed the `url` prefix is different from usual JDBC urls.
-It is required to use the `vertx-reactive:` prefix otherwise the Reactive PostgreSQL Client extension will not use the `quarkus.datasource.url` config property.
 
 With that you may create your `FruitResource` skeleton and `@Inject` a `io.vertx.mutiny.pgclient.PgPool` instance:
 
@@ -478,14 +476,22 @@ Navigate to http://localhost:8080/fruits.html and read/create/delete some fruits
 |`quarkus-reactive-pg-client`
 |`io.vertx.mutiny.pgclient.PgPool`
 
-|MySQL
+|MariaDB/MySQL
 |`quarkus-reactive-mysql-client`
 |`io.vertx.mutiny.mysqlclient.MySQLPool`
 |===
 
 == Configuration Reference
 
-=== MySQL
+=== Common Datasource
+
+include::{generated-dir}/config/quarkus-datasource.adoc[opts=optional, leveloffset=+1]
+
+=== Reactive Datasource
+
+include::{generated-dir}/config/quarkus-reactive-datasource.adoc[opts=optional, leveloffset=+1]
+
+=== MariaDB/MySQL
 
 include::{generated-dir}/config/quarkus-reactive-mysql-client.adoc[opts=optional, leveloffset=+1]
 

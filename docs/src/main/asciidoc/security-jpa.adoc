@@ -202,10 +202,10 @@ The `security-jpa` extension requires at least one datasource to access to your 
 
 [source,properties]
 ----
-quarkus.datasource.url=jdbc:postgresql:security_jpa
-quarkus.datasource.driver=org.postgresql.Driver
+quarkus.datasource.db-kind=postgresql
 quarkus.datasource.username=quarkus
 quarkus.datasource.password=quarkus
+quarkus.datasource.jdbc.url=jdbc:postgresql:security_jpa
 
 quarkus.hibernate-orm.database.generation=drop-and-create
 ----

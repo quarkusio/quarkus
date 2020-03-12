@@ -147,10 +147,10 @@ The `elytron-security-jdbc` extension requires at least one datasource to access
 
 [source,properties]
 ----
-quarkus.datasource.url=jdbc:postgresql:elytron-security-jdbc
-quarkus.datasource.driver=org.postgresql.Driver
+quarkus.datasource.db-kind=postgresql
 quarkus.datasource.username=quarkus
 quarkus.datasource.password=quarkus
+quarkus.datasource.jdbc.url=jdbc:postgresql:elytron-security-jdbc
 ----
 
 In our context, we are using PostgreSQL as identity store and we init the database with users and roles.
@@ -266,15 +266,15 @@ This guide only covered an easy use case, the extension offers multiple datasour
 
 [source,properties]
 --
-quarkus.datasource.url=jdbc:postgresql:multiple-data-sources-users
-quarkus.datasource.driver=org.postgresql.Driver
+quarkus.datasource.db-kind=postgresql
 quarkus.datasource.username=quarkus
 quarkus.datasource.password=quarkus
+quarkus.datasource.jdbc.url=jdbc:postgresql:multiple-data-sources-users
 
-quarkus.datasource.permissions.url=jdbc:postgresql:multiple-data-sources-permissions
-quarkus.datasource.permissions.driver=org.postgresql.Driver
+quarkus.datasource.permissions.db-kind=postgresql
 quarkus.datasource.permissions.username=quarkus
 quarkus.datasource.permissions.password=quarkus
+quarkus.datasource.permissions.jdbc.url=jdbc:postgresql:multiple-data-sources-permissions
 
 quarkus.security.jdbc.enabled=true
 quarkus.security.jdbc.principal-query.sql=SELECT u.password FROM test_user u WHERE u.username=?

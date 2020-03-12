@@ -527,10 +527,10 @@ Edit `src/main/resources/application.properties` and inject the following config
 ----
 quarkus.ssl.native=false <1>
 
-quarkus.datasource.url=jdbc:postgresql:quarkus_test <2>
-quarkus.datasource.driver=org.postgresql.Driver
+quarkus.datasource.db-kind=postgresql <2>
 quarkus.datasource.username=quarkus_test
 quarkus.datasource.password=quarkus_test
+quarkus.datasource.jdbc.url=jdbc:postgresql:quarkus_test
 
 quarkus.hibernate-orm.database.generation=drop-and-create <3>
 quarkus.hibernate-orm.sql-load-script=import.sql <4>

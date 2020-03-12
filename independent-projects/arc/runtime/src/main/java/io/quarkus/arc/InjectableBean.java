@@ -1,14 +1,16 @@
 package io.quarkus.arc;
 
-import io.quarkus.arc.impl.Qualifiers;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.Set;
+
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.InjectionPoint;
+
+import io.quarkus.arc.impl.Qualifiers;
 
 /**
  * Quarkus representation of an injectable bean.

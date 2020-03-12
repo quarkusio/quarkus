@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+
 import org.jboss.jandex.DotName;
 
 public interface InterceptorBindingRegistrar extends BuildExtension {

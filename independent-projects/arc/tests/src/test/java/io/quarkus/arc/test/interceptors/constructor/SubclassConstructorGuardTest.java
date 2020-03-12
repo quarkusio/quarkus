@@ -2,17 +2,20 @@ package io.quarkus.arc.test.interceptors.constructor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.arc.test.interceptors.Simple;
 import java.io.IOException;
+
 import javax.annotation.Priority;
 import javax.inject.Singleton;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.interceptors.Simple;
 
 public class SubclassConstructorGuardTest {
 

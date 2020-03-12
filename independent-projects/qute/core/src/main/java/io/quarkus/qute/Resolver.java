@@ -1,7 +1,8 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Results.Result;
 import java.util.concurrent.CompletionStage;
+
+import io.quarkus.qute.Results.Result;
 
 /**
  * 

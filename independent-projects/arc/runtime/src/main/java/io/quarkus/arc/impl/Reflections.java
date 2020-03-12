@@ -98,26 +98,18 @@ public final class Reflections {
 
     public static Object newInstance(Class<?> clazz, Class<?>[] parameterTypes, Object[] args) {
         Constructor<?> constructor = findConstructor(clazz, parameterTypes);
-        if (constructor != null) {
-            if (!constructor.isAccessible()) {
-                constructor.setAccessible(true);
-            }
-            try {
-                return constructor.newInstance(args);
-            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                throw new RuntimeException("Cannot invoke constructor: " + clazz.getName(), e);
-            }
+        constructor.setAccessible(true);
+        try {
+            return constructor.newInstance(args);
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            throw new RuntimeException("Cannot invoke constructor: " + clazz.getName(), e);
         }
-        throw new RuntimeException(
-                "No " + clazz.getName() + "constructor found for params: " + Arrays.toString(parameterTypes));
     }
 
     public static Object readField(Class<?> clazz, String name, Object instance) {
         try {
             Field field = clazz.getDeclaredField(name);
-            if (!field.isAccessible()) {
-                field.setAccessible(true);
-            }
+            field.setAccessible(true);
             return field.get(instance);
         } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
             throw new RuntimeException("Cannot read field value: " + clazz.getName() + "#" + name, e);
@@ -127,9 +119,7 @@ public final class Reflections {
     public static void writeField(Class<?> clazz, String name, Object instance, Object value) {
         try {
             Field field = clazz.getDeclaredField(name);
-            if (!field.isAccessible()) {
-                field.setAccessible(true);
-            }
+            field.setAccessible(true);
             field.set(instance, value);
         } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e) {
             throw new RuntimeException("Cannot set field value: " + clazz.getName() + "#" + name, e);
@@ -139,9 +129,7 @@ public final class Reflections {
     public static Object invokeMethod(Class<?> clazz, String name, Class<?>[] paramTypes, Object instance, Object[] args) {
         try {
             Method method = clazz.getDeclaredMethod(name, paramTypes);
-            if (!method.isAccessible()) {
-                method.setAccessible(true);
-            }
+            method.setAccessible(true);
             return method.invoke(instance, args);
         } catch (InvocationTargetException e) {
             Throwable t = e.getTargetException();

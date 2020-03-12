@@ -1,11 +1,5 @@
 package io.quarkus.test.platform.descriptor.loader;
 
-import io.quarkus.dependencies.Category;
-import io.quarkus.dependencies.Extension;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
-import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoader;
-import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -16,7 +10,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+
 import org.apache.maven.model.Dependency;
+
+import io.quarkus.dependencies.Category;
+import io.quarkus.dependencies.Extension;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
+import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoader;
+import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
 
 public class QuarkusTestPlatformDescriptorLoader
         implements QuarkusPlatformDescriptorLoader<QuarkusPlatformDescriptor, QuarkusPlatformDescriptorLoaderContext> {

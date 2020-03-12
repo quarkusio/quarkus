@@ -1,6 +1,5 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.InjectableBean;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -8,9 +7,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.enterprise.util.Nonbinding;
+
+import io.quarkus.arc.InjectableBean;
 
 public final class Qualifiers {
 
@@ -86,9 +88,7 @@ public final class Qualifiers {
 
     private static Object invoke(Method method, Object instance) {
         try {
-            if (!method.isAccessible()) {
-                method.setAccessible(true);
-            }
+            method.setAccessible(true);
             return method.invoke(instance);
         } catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(

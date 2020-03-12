@@ -206,7 +206,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 }
                 cf.completeExceptionally(new AuthenticationCompletionException(userAsyncResult.cause()));
             } else {
-                AccessToken result = AccessToken.class.cast(userAsyncResult.result());
+                AccessToken result = (AccessToken) userAsyncResult.result();
 
                 authenticate(identityProviderManager, new IdTokenCredential(result.opaqueIdToken(), context))
                         .whenCompleteAsync((securityIdentity, throwable) -> {

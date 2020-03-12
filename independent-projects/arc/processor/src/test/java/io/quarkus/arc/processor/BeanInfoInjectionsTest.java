@@ -5,15 +5,13 @@ import static io.quarkus.arc.processor.Basics.name;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.arc.processor.types.Bar;
-import io.quarkus.arc.processor.types.Foo;
-import io.quarkus.arc.processor.types.FooQualifier;
 import java.io.IOException;
 import java.util.AbstractCollection;
 import java.util.AbstractList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
@@ -21,6 +19,10 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.arc.processor.types.Bar;
+import io.quarkus.arc.processor.types.Foo;
+import io.quarkus.arc.processor.types.FooQualifier;
 
 /**
  *

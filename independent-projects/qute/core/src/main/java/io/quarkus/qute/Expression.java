@@ -1,9 +1,10 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.TemplateNode.Origin;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
+import io.quarkus.qute.TemplateNode.Origin;
 
 /**
  * Represents a value expression. It could be a literal such as {@code 'foo'}. It could have a namespace such as {@code data}

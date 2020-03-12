@@ -5,8 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.qute.TemplateLocator.TemplateLocation;
-import io.quarkus.qute.TemplateNode.Origin;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -15,7 +13,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.qute.TemplateLocator.TemplateLocation;
+import io.quarkus.qute.TemplateNode.Origin;
 
 public class ParserTest {
 

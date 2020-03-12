@@ -2,6 +2,7 @@ package io.quarkus.arc.processor;
 
 import java.util.Collection;
 import java.util.Map;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;

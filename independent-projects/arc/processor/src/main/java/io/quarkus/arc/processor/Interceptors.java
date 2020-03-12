@@ -2,7 +2,9 @@ package io.quarkus.arc.processor;
 
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.enterprise.inject.spi.DefinitionException;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.logging.Logger;

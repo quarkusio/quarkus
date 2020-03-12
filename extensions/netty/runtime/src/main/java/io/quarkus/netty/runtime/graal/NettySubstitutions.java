@@ -20,9 +20,9 @@ import com.oracle.svm.core.jdk.JDK11OrLater;
 import com.oracle.svm.core.jdk.JDK8OrEarlier;
 
 import io.netty.bootstrap.AbstractBootstrapConfig;
-import io.netty.bootstrap.ChannelFactory;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFactory;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.DefaultChannelPromise;
 import io.netty.handler.ssl.ApplicationProtocolConfig;

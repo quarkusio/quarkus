@@ -72,9 +72,7 @@ public class ReflectionValueResolver implements ValueResolver {
         Method foundMethod = findMethod(key.getClazz(), key.getName());
 
         if (foundMethod != null) {
-            if (!foundMethod.isAccessible()) {
-                foundMethod.setAccessible(true);
-            }
+            foundMethod.setAccessible(true);
             return Optional.of(new MethodWrapper(foundMethod));
         }
 
@@ -82,9 +80,7 @@ public class ReflectionValueResolver implements ValueResolver {
         Field foundField = findField(key.getClazz(), key.getName());
 
         if (foundField != null) {
-            if (!foundField.isAccessible()) {
-                foundField.setAccessible(true);
-            }
+            foundField.setAccessible(true);
             return Optional.of(new FieldWrapper(foundField));
         }
         // Member not found

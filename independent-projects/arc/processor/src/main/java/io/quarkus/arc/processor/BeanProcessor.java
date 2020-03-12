@@ -1,10 +1,5 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
-import io.quarkus.arc.processor.BuildExtension.BuildContext;
-import io.quarkus.arc.processor.BuildExtension.Key;
-import io.quarkus.arc.processor.ResourceOutput.Resource;
-import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,10 +13,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
+
+import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
+import io.quarkus.arc.processor.BuildExtension.BuildContext;
+import io.quarkus.arc.processor.BuildExtension.Key;
+import io.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 
 /**
  * An integrator should create a new instance of the bean processor using the convenient {@link Builder} and then invoke the

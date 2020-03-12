@@ -1,15 +1,5 @@
 package io.quarkus.bootstrap.app;
 
-import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.classloading.ClassPathElement;
-import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
-import io.quarkus.bootstrap.classloading.JarClassPathElement;
-import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.model.AppModel;
 import java.io.Closeable;
 import java.io.Serializable;
 import java.nio.file.Files;
@@ -23,7 +13,19 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
 import org.objectweb.asm.ClassVisitor;
+
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
+import io.quarkus.bootstrap.classloading.JarClassPathElement;
+import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.bootstrap.model.AppModel;
 
 /**
  * The result of the curate step that is done by QuarkusBootstrap.
@@ -112,7 +114,7 @@ public class CuratedApplication implements Serializable, Closeable {
         try {
             Class<?> augmentor = getAugmentClassLoader().loadClass(AUGMENTOR);
             Function<Object, List<?>> function = (Function<Object, List<?>>) getAugmentClassLoader().loadClass(functionName)
-                    .newInstance();
+                    .getConstructor().newInstance();
             List<?> res = function.apply(props);
             return (AugmentAction) augmentor.getConstructor(CuratedApplication.class, List.class).newInstance(this, res);
         } catch (Exception e) {
@@ -127,7 +129,7 @@ public class CuratedApplication implements Serializable, Closeable {
             Thread.currentThread().setContextClassLoader(cl);
             Class<? extends BiConsumer<CuratedApplication, Map<String, Object>>> clazz = (Class<? extends BiConsumer<CuratedApplication, Map<String, Object>>>) cl
                     .loadClass(consumerName);
-            BiConsumer<CuratedApplication, Map<String, Object>> biConsumer = clazz.newInstance();
+            BiConsumer<CuratedApplication, Map<String, Object>> biConsumer = clazz.getConstructor().newInstance();
             biConsumer.accept(this, params);
             return biConsumer;
         } catch (Exception e) {

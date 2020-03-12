@@ -2,11 +2,13 @@ package io.quarkus.cli.commands;
 
 import static java.util.Arrays.asList;
 
-import io.quarkus.dependencies.Extension;
 import java.util.Collections;
 import java.util.List;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.dependencies.Extension;
 
 class AddExtensionsSelectTest {
 

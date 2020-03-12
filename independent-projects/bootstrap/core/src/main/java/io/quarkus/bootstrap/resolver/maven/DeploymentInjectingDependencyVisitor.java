@@ -1,10 +1,5 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
-import io.quarkus.bootstrap.model.AppModel;
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.util.ZipUtils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.graph.Dependency;
@@ -22,6 +18,12 @@ import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.BootstrapDependencyProcessingException;
+import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.util.ZipUtils;
 
 /**
  *

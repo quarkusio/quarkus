@@ -1,13 +1,12 @@
 package io.quarkus.platform.descriptor.loader.json.impl;
 
-import java.io.IOException;
-
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoader;
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoaderContext;
+import java.io.IOException;
 
 public class QuarkusJsonPlatformDescriptorLoaderImpl
         implements QuarkusJsonPlatformDescriptorLoader<QuarkusJsonPlatformDescriptor> {
@@ -20,7 +19,7 @@ public class QuarkusJsonPlatformDescriptorLoaderImpl
                     try {
                         ObjectMapper mapper = new ObjectMapper()
                                 .enable(JsonParser.Feature.ALLOW_COMMENTS)
-                                .enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS)
+                                .enable(JsonReadFeature.ALLOW_LEADING_ZEROS_FOR_NUMBERS.mappedFeature())
                                 .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
                         return mapper.readValue(is, QuarkusJsonPlatformDescriptor.class);
                     } catch (IOException e) {

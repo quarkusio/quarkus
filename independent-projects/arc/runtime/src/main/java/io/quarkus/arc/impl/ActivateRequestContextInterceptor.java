@@ -1,12 +1,13 @@
 package io.quarkus.arc.impl;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ManagedContext;
 import javax.annotation.Priority;
 import javax.enterprise.context.control.ActivateRequestContext;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ManagedContext;
 
 @Interceptor
 @ActivateRequestContext

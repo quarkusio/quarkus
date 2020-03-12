@@ -1,20 +1,23 @@
 package io.quarkus.platform.descriptor.resolver.json.test;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
+
+import org.apache.maven.model.Dependency;
+
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.JsonValue;
+
 import io.quarkus.dependencies.Category;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoader;
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoaderContext;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.List;
-import org.apache.maven.model.Dependency;
 
 public class TestJsonPlatformDescriptorLoader implements QuarkusJsonPlatformDescriptorLoader<QuarkusPlatformDescriptor> {
 

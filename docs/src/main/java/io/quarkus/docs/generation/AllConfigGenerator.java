@@ -22,6 +22,7 @@ import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResult;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 
@@ -53,7 +54,7 @@ public class AllConfigGenerator {
         }
         ObjectMapper mapper = new ObjectMapper()
                 .enable(JsonParser.Feature.ALLOW_COMMENTS)
-                .enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS)
+                .enable(JsonReadFeature.ALLOW_LEADING_ZEROS_FOR_NUMBERS.mappedFeature())
                 .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
         MavenArtifactResolver resolver = MavenArtifactResolver.builder().build();
 

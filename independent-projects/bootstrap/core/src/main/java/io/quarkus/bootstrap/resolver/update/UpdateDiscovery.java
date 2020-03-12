@@ -1,7 +1,8 @@
 package io.quarkus.bootstrap.resolver.update;
 
-import io.quarkus.bootstrap.model.AppArtifact;
 import java.util.List;
+
+import io.quarkus.bootstrap.model.AppArtifact;
 
 /**
  *

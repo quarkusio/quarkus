@@ -1,10 +1,5 @@
 package io.quarkus.cli.commands.file;
 
-import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.dependencies.Extension;
-import io.quarkus.generators.BuildTool;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.tools.ToolsUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -14,7 +9,14 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Scanner;
 import java.util.function.Consumer;
+
 import org.apache.maven.model.Dependency;
+
+import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.dependencies.Extension;
+import io.quarkus.generators.BuildTool;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.tools.ToolsUtils;
 
 public class GradleBuildFile extends BuildFile {
 

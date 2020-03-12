@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.resolver.maven.options;
 
-import io.quarkus.bootstrap.util.PropertyUtils;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -17,6 +16,8 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import io.quarkus.bootstrap.util.PropertyUtils;
 
 /**
  * This class resolves relevant Maven command line options in case it's called

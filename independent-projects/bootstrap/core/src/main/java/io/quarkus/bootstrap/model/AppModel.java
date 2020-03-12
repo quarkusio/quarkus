@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.model;
 
-import io.quarkus.bootstrap.BootstrapConstants;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -9,7 +8,10 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.bootstrap.BootstrapConstants;
 
 /**
  * A representation of the Quarkus dependency model for a given application.

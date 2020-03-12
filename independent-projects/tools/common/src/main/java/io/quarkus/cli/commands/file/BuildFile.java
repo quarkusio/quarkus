@@ -3,13 +3,6 @@ package io.quarkus.cli.commands.file;
 import static io.quarkus.maven.utilities.MojoUtils.credentials;
 import static java.util.stream.Collectors.toList;
 
-import io.quarkus.cli.commands.Printer;
-import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.dependencies.Extension;
-import io.quarkus.generators.BuildTool;
-import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
@@ -17,7 +10,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
+
 import org.apache.maven.model.Dependency;
+
+import io.quarkus.cli.commands.Printer;
+import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.dependencies.Extension;
+import io.quarkus.generators.BuildTool;
+import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
 public abstract class BuildFile implements Closeable {
 

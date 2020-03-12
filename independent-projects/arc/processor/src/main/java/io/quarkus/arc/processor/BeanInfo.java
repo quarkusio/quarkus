@@ -2,9 +2,6 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
-import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationRule;
-import io.quarkus.arc.processor.Methods.MethodKey;
-import io.quarkus.gizmo.MethodCreator;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,9 +17,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
 import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.DeploymentException;
 import javax.enterprise.inject.spi.InterceptionType;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -30,6 +29,10 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+
+import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationRule;
+import io.quarkus.arc.processor.Methods.MethodKey;
+import io.quarkus.gizmo.MethodCreator;
 
 /**
  *

@@ -1,8 +1,9 @@
 package io.quarkus.platform.tools;
 
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import java.io.IOException;
 import java.util.Properties;
+
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 
 public class ToolsUtils {
 

@@ -1,8 +1,5 @@
 package io.quarkus.cli.commands;
 
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.cli.commands.file.GradleBuildFile;
-import io.quarkus.dependencies.Extension;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -12,7 +9,12 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.apache.maven.model.Dependency;
+
+import io.quarkus.cli.commands.file.BuildFile;
+import io.quarkus.cli.commands.file.GradleBuildFile;
+import io.quarkus.dependencies.Extension;
 
 /**
  * Instances of this class are thread-safe. It lists extensions according to the options passed in as properties of

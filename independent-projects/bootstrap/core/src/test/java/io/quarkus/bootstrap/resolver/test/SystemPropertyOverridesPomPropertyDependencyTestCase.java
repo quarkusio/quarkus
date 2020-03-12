@@ -1,13 +1,14 @@
 package io.quarkus.bootstrap.resolver.test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
  *

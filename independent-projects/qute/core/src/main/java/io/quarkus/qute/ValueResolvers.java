@@ -1,11 +1,12 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.Results.Result;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
+import io.quarkus.qute.Results.Result;
 
 /**
  * Common value resolvers.

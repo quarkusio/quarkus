@@ -3,14 +3,16 @@ package io.quarkus.test.platform.descriptor;
 import static io.quarkus.test.platform.descriptor.loader.QuarkusTestPlatformDescriptorLoader.addCategory;
 import static io.quarkus.test.platform.descriptor.loader.QuarkusTestPlatformDescriptorLoader.addExtension;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.maven.model.Dependency;
+
 import io.quarkus.dependencies.Category;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.ResourceInputStreamConsumer;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.maven.model.Dependency;
 
 public class TestDominatingQuarkusPlatformDescriptor implements QuarkusPlatformDescriptor {
 

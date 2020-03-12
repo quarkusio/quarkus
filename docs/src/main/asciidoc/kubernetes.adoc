@@ -326,8 +326,8 @@ To set the initial delay of the probe to 20 seconds and the period to 45:
 
 [source]
 ----
-quarkus.kubernetes.readiness-probe.initial-delay-seconds=20
-quarkus.kubernetes.readiness-probe.period-seconds=45
+quarkus.kubernetes.readiness-probe.initial-delay=20s
+quarkus.kubernetes.readiness-probe.period=45s
 ----
 
 === Using the Kubernetes client
@@ -395,11 +395,11 @@ For example to define a `kubernetes-readiness-probe` which is of type `Probe`:
 
 [source]
 ----
-quarkus.kubernetes.readiness-probe.initial-delay-seconds=20
-quarkus.kubernetes.readiness-probe.period-seconds=45
+quarkus.kubernetes.readiness-probe.initial-delay=20s
+quarkus.kubernetes.readiness-probe.period=45s
 ----
 
-In this example `initial-delay` and `period-seconds` are fields of the type `Probe`.
+In this example `initial-delay` and `period` are fields of the type `Probe`.
 Below you will find tables describing all available types.
 
 
@@ -416,13 +416,13 @@ Below you will find tables describing all available types.
 
 .Probe
 |====
-| Property              | Type   | Description | Default Value
-| http-action-path      | String |             |
-| exec-action           | String |             |
-| tcp-socket-action     | String |             |               
-| initial-delay-seconds | int    |             |             0 
-| period-seconds        | int    |             |            30
-| timeout-seconds       | int    |             |            10
+| Property              | Type     | Description | Default Value
+| http-action-path      | String   |             |
+| exec-action           | String   |             |
+| tcp-socket-action     | String   |             |              
+| initial-delay         | Duration |             |             0
+| period                | Duration |             |           30s
+| timeout               | Duration |             |           10s
 |====
 
 .Port
@@ -511,6 +511,7 @@ Below you will find tables describing all available types.
 | claim-name  | String  |             |
 | read-only   | boolean |             | false        
 |====
+
 .AzureFileVolume
 |====
 | Property    | Type    | Description | Default Value

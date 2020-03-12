@@ -47,6 +47,7 @@ import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.LaunchModeProducer;
 import io.quarkus.arc.runtime.LifecycleEventRunner;
+import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -56,6 +57,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -436,5 +438,49 @@ public class ArcProcessor {
             }
             return false;
         }
+    }
+
+    @BuildStep
+    public void splitPackageValidation(ValidationPhaseBuildItem validationPhaseBuildItem,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            BuildProducer<ValidationErrorBuildItem> validationErrorBuildItemBuildProducer) {
+        for (BeanInfo bean : validationPhaseBuildItem.getContext().beans()) {
+            DotName className = bean.getBeanClass();
+            ClassInfo classByName = combinedIndexBuildItem.getIndex().getClassByName(className);
+            if (classByName == null) {
+                continue;
+            }
+            for (;;) {
+                String superName = classByName.superName().toString();
+                if (superName.startsWith("java.")) {
+                    break;
+                }
+                String superPackage = superName.substring(0, superName.lastIndexOf('.'));
+                String classPackage = className.toString().substring(0, className.toString().lastIndexOf('.'));
+                if (!classPackage.equals(superPackage)) {
+                    break;
+                }
+                //inherits from class in same package, make sure they are in the same archive
+                for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
+                    if (i.getIndex().getClassByName(className) != null) {
+                        ClassInfo superClassInfo = i.getIndex().getClassByName(classByName.superName());
+                        if (superClassInfo == null) {
+                            validationErrorBuildItemBuildProducer.produce(new ValidationErrorBuildItem(new RuntimeException(
+                                    "Split package detected for bean " + bean.getBeanClass() + " the class " + className
+                                            + " extends " + superName + " which is not packaged in the same archive")));
+                            break;
+                        } else {
+                            //check recursivly
+                            className = superClassInfo.name();
+                            classByName = superClassInfo;
+                        }
+                    }
+                }
+                break;
+            }
+
+        }
+
     }
 }

@@ -3,11 +3,10 @@ package io.quarkus.qute;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import io.quarkus.qute.TemplateData.Container;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-
-import io.quarkus.qute.TemplateData.Container;
 
 /**
  * This annotation is used to mark a target type for which a value resolver should be automatically generated. Note that

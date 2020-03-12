@@ -1,10 +1,9 @@
 package io.quarkus.arc.processor;
 
-import java.util.Set;
-
 import io.quarkus.arc.impl.AnnotationLiterals;
 import io.quarkus.arc.impl.Qualifiers;
 import io.quarkus.gizmo.FieldDescriptor;
+import java.util.Set;
 
 /**
  *

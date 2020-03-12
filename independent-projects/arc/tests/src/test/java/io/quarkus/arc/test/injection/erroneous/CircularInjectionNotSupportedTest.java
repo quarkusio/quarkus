@@ -1,14 +1,12 @@
 package io.quarkus.arc.test.injection.erroneous;
 
+import io.quarkus.arc.test.ArcTestContainer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.wildfly.common.Assert;
-
-import io.quarkus.arc.test.ArcTestContainer;
 
 public class CircularInjectionNotSupportedTest {
 

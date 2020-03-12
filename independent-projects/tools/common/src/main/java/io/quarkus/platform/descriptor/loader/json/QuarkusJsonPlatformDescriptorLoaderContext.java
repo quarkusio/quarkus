@@ -1,11 +1,10 @@
 package io.quarkus.platform.descriptor.loader.json;
 
-import java.io.InputStream;
-import java.util.function.Function;
-
 import io.quarkus.platform.descriptor.loader.QuarkusPlatformDescriptorLoaderContext;
 import io.quarkus.platform.tools.DefaultMessageWriter;
 import io.quarkus.platform.tools.MessageWriter;
+import java.io.InputStream;
+import java.util.function.Function;
 
 public abstract class QuarkusJsonPlatformDescriptorLoaderContext implements QuarkusPlatformDescriptorLoaderContext {
 

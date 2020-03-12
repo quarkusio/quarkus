@@ -1,9 +1,8 @@
 package io.quarkus.arc.impl;
 
-import javax.enterprise.context.spi.CreationalContext;
-
 import io.quarkus.arc.ContextInstanceHandle;
 import io.quarkus.arc.InjectableBean;
+import javax.enterprise.context.spi.CreationalContext;
 
 /**
  * 

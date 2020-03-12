@@ -4,18 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.impl.InstanceImpl;
+import io.quarkus.arc.test.ArcTestContainer;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.impl.InstanceImpl;
-import io.quarkus.arc.test.ArcTestContainer;
 
 public class DependentCreationalContextTest {
 

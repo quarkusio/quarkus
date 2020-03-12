@@ -3,6 +3,8 @@ package io.quarkus.arc.test.alternatives.priority;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.quarkus.arc.AlternativePriority;
+import io.quarkus.arc.test.ArcTestContainer;
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
@@ -11,12 +13,8 @@ import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.Vetoed;
 import javax.enterprise.inject.spi.CDI;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import io.quarkus.arc.AlternativePriority;
-import io.quarkus.arc.test.ArcTestContainer;
 
 /**
  * Tests {@link io.quarkus.arc.AlternativePriority} annotation.

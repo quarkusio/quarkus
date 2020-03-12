@@ -1,15 +1,13 @@
 package io.quarkus.platform.descriptor;
 
+import io.quarkus.dependencies.Category;
+import io.quarkus.dependencies.Extension;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.maven.model.Dependency;
-
-import io.quarkus.dependencies.Category;
-import io.quarkus.dependencies.Extension;
 
 /**
  * Platform descriptor that is composed of multiple platform descriptors.

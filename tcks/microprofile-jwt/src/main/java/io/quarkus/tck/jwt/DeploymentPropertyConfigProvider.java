@@ -3,6 +3,7 @@ package io.quarkus.tck.jwt;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.*;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;

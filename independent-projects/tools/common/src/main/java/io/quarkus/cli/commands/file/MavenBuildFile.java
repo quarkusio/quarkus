@@ -3,6 +3,13 @@ package io.quarkus.cli.commands.file;
 import static io.quarkus.maven.utilities.MojoUtils.configuration;
 import static io.quarkus.maven.utilities.MojoUtils.plugin;
 
+import io.quarkus.cli.commands.writer.ProjectWriter;
+import io.quarkus.dependencies.Extension;
+import io.quarkus.generators.BuildTool;
+import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.MojoUtils.Element;
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.tools.ToolsUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -10,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-
 import org.apache.maven.model.Activation;
 import org.apache.maven.model.ActivationProperty;
 import org.apache.maven.model.Build;
@@ -22,14 +28,6 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.PluginManagement;
 import org.apache.maven.model.Profile;
-
-import io.quarkus.cli.commands.writer.ProjectWriter;
-import io.quarkus.dependencies.Extension;
-import io.quarkus.generators.BuildTool;
-import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.maven.utilities.MojoUtils.Element;
-import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
-import io.quarkus.platform.tools.ToolsUtils;
 
 public class MavenBuildFile extends BuildFile {
 

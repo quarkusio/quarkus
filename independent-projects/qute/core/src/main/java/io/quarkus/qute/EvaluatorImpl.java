@@ -1,15 +1,13 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.Expression.Part;
+import io.quarkus.qute.Results.Result;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
 import org.jboss.logging.Logger;
-
-import io.quarkus.qute.Expression.Part;
-import io.quarkus.qute.Results.Result;
 
 /**
  * 

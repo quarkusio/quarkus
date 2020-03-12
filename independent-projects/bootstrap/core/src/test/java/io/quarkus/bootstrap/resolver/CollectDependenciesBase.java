@@ -2,15 +2,13 @@ package io.quarkus.bootstrap.resolver;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.quarkus.bootstrap.model.AppDependency;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import io.quarkus.bootstrap.model.AppDependency;
 
 /**
  *

@@ -1,15 +1,13 @@
 package io.quarkus.cli.commands;
 
-import java.io.IOException;
-import java.util.Map;
-
-import org.apache.maven.model.Dependency;
-
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
+import java.io.IOException;
+import java.util.Map;
+import org.apache.maven.model.Dependency;
 
 /**
  * Instances of this class are not thread-safe. They are created per single invocation.

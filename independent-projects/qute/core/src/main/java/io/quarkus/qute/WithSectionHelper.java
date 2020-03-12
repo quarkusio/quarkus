@@ -1,13 +1,12 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-
-import io.quarkus.qute.Results.Result;
-import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 
 /**
  * Basic {@code with} statement.

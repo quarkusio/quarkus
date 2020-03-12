@@ -1,7 +1,6 @@
 package io.quarkus.arc.processor;
 
 import java.util.function.BiFunction;
-
 import org.objectweb.asm.ClassVisitor;
 
 public class BytecodeTransformer {

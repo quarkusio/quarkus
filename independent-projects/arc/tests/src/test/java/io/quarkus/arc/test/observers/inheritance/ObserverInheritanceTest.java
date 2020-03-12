@@ -2,16 +2,13 @@ package io.quarkus.arc.test.observers.inheritance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.annotation.Annotation;
-
 import javax.enterprise.util.AnnotationLiteral;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com

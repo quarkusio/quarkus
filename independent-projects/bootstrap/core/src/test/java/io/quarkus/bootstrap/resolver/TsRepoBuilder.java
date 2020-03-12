@@ -1,13 +1,12 @@
 package io.quarkus.bootstrap.resolver;
 
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
-
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 
 /**
  *

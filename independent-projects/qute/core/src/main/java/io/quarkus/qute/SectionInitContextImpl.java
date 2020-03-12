@@ -1,10 +1,9 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
-import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 
 /**
  * 

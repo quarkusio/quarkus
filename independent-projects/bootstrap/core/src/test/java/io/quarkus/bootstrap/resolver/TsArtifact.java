@@ -1,17 +1,15 @@
 package io.quarkus.bootstrap.resolver;
 
+import io.quarkus.bootstrap.model.AppArtifact;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Profile;
-
-import io.quarkus.bootstrap.model.AppArtifact;
 
 /**
  *

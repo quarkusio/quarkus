@@ -2,15 +2,13 @@ package io.quarkus.arc.test.buildextension.annotations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.enterprise.context.Dependent;
-
-import org.jboss.jandex.AnnotationTarget.Kind;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.test.ArcTestContainer;
+import javax.enterprise.context.Dependent;
+import org.jboss.jandex.AnnotationTarget.Kind;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class AnnotationsTransformerInterceptorBindingTest {
 

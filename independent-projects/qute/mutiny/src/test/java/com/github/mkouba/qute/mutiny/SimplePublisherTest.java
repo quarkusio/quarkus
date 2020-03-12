@@ -3,18 +3,16 @@ package com.github.mkouba.qute.mutiny;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import io.quarkus.qute.Engine;
+import io.quarkus.qute.Template;
+import io.smallrye.mutiny.Multi;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
-
-import io.quarkus.qute.Engine;
-import io.quarkus.qute.Template;
-import io.smallrye.mutiny.Multi;
 
 public class SimplePublisherTest {
 

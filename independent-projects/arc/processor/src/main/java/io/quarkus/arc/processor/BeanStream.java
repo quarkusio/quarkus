@@ -10,7 +10,6 @@ import java.util.Optional;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 

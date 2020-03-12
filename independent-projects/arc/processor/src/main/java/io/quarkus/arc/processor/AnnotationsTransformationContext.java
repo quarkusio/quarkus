@@ -1,12 +1,10 @@
 package io.quarkus.arc.processor;
 
-import java.util.Collection;
-
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.BuildExtension.Key;
+import java.util.Collection;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 
 /**
  * Transformation context base for an {@link AnnotationsTransformation}.

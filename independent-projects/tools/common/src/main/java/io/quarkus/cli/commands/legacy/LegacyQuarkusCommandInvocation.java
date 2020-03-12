@@ -1,10 +1,9 @@
 package io.quarkus.cli.commands.legacy;
 
-import java.util.Map;
-import java.util.Properties;
-
 import io.quarkus.cli.commands.QuarkusCommandInvocation;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * @deprecated since 1.3.0.CR1

@@ -2,7 +2,6 @@ package io.quarkus.qute;
 
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
-
 import org.reactivestreams.Publisher;
 
 /**

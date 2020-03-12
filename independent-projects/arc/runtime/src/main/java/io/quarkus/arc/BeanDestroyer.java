@@ -1,7 +1,6 @@
 package io.quarkus.arc;
 
 import java.util.Map;
-
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 

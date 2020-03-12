@@ -1,14 +1,12 @@
 package io.quarkus.arc.impl;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
-import java.util.Set;
-
-import javax.enterprise.context.spi.CreationalContext;
-
 import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ResourceReferenceProvider;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.util.Set;
+import javax.enterprise.context.spi.CreationalContext;
 
 /**
  * Represents a placeholder for all suppored non-CDI injection points.

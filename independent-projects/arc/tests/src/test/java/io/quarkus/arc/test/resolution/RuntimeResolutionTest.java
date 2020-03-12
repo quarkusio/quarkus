@@ -3,20 +3,17 @@ package io.quarkus.arc.test.resolution;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.IOException;
-import java.util.AbstractList;
-import java.util.List;
-
-import javax.enterprise.util.TypeLiteral;
-import javax.inject.Singleton;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
+import java.io.IOException;
+import java.util.AbstractList;
+import java.util.List;
+import javax.enterprise.util.TypeLiteral;
+import javax.inject.Singleton;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class RuntimeResolutionTest {
 

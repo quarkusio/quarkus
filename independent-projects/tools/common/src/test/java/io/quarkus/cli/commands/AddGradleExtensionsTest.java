@@ -1,15 +1,13 @@
 package io.quarkus.cli.commands;
 
+import io.quarkus.cli.commands.file.GradleBuildFile;
+import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.generators.BuildTool;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
-
 import org.junit.jupiter.api.Disabled;
-
-import io.quarkus.cli.commands.file.GradleBuildFile;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.generators.BuildTool;
 
 class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
 

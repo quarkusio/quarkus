@@ -1,7 +1,6 @@
 package io.quarkus.arc.processor.types;
 
 import java.util.List;
-
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;

@@ -12,9 +12,6 @@ import static io.quarkus.generators.ProjectGenerator.PROJECT_VERSION;
 import static io.quarkus.generators.ProjectGenerator.QUARKUS_VERSION;
 import static io.quarkus.generators.ProjectGenerator.SOURCE_TYPE;
 
-import java.io.IOException;
-import java.util.Properties;
-
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.generators.ProjectGeneratorRegistry;
@@ -22,6 +19,8 @@ import io.quarkus.generators.SourceType;
 import io.quarkus.generators.rest.BasicRestProjectGenerator;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.ToolsUtils;
+import java.io.IOException;
+import java.util.Properties;
 
 /**
  * Instances of this class are thread-safe. They create a new project extracting all the necessary properties from an instance

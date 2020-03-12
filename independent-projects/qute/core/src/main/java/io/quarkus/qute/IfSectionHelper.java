@@ -1,5 +1,8 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
+import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -13,10 +16,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
-
-import io.quarkus.qute.Results.Result;
-import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
-import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
 
 /**
  * Basic {@code if} statement.

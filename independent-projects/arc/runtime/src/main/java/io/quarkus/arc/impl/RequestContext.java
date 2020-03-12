@@ -1,5 +1,10 @@
 package io.quarkus.arc.impl;
 
+import io.quarkus.arc.ContextInstanceHandle;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.ManagedContext;
+import io.quarkus.arc.impl.EventImpl.Notifier;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -7,7 +12,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
-
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.Destroyed;
@@ -16,14 +20,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Any;
-
 import org.jboss.logging.Logger;
-
-import io.quarkus.arc.ContextInstanceHandle;
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.ManagedContext;
-import io.quarkus.arc.impl.EventImpl.Notifier;
 
 /**
  * The built-in context for {@link RequestScoped}.

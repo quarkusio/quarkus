@@ -1,18 +1,15 @@
 package io.quarkus.platform.descriptor.resolver.json.test;
 
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonObject;
+import io.quarkus.bootstrap.resolver.TsArtifact;
+import io.quarkus.platform.tools.ToolsConstants;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
-
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonObject;
-
-import io.quarkus.bootstrap.resolver.TsArtifact;
-import io.quarkus.platform.tools.ToolsConstants;
 
 public class TestPlatformJsonDescriptorProvider implements TsArtifact.ContentProvider {
 

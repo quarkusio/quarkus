@@ -3,6 +3,10 @@ package io.quarkus.qute.generator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import io.quarkus.qute.Engine;
+import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.TestEvalContext;
+import io.quarkus.qute.ValueResolver;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -12,7 +16,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
@@ -23,11 +26,6 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import io.quarkus.qute.Engine;
-import io.quarkus.qute.EngineBuilder;
-import io.quarkus.qute.TestEvalContext;
-import io.quarkus.qute.ValueResolver;
 
 public class SimpleGeneratorTest {
 

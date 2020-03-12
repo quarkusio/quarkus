@@ -1,5 +1,6 @@
 package io.quarkus.qute.generator;
 
+import io.quarkus.qute.TemplateData;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -8,8 +9,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import io.quarkus.qute.TemplateData;
 
 @TemplateData(ignore = "surname")
 public class MyService {

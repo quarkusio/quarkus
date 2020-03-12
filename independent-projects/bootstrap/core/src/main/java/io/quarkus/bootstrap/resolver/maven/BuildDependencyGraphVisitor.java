@@ -3,17 +3,15 @@
  */
 package io.quarkus.bootstrap.resolver.maven;
 
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.resolution.ArtifactRequest;
-
-import io.quarkus.bootstrap.model.AppArtifactKey;
 
 public class BuildDependencyGraphVisitor {
 

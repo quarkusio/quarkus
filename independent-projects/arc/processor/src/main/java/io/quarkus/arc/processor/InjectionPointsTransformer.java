@@ -3,7 +3,6 @@ package io.quarkus.arc.processor;
 import java.util.Collection;
 import java.util.Set;
 import java.util.function.Consumer;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.Type;

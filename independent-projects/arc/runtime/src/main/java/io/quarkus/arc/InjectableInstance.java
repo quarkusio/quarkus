@@ -1,7 +1,6 @@
 package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
-
 import javax.enterprise.inject.Instance;
 import javax.enterprise.util.TypeLiteral;
 

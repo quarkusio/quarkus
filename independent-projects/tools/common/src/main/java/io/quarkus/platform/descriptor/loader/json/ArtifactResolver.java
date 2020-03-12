@@ -1,12 +1,10 @@
 package io.quarkus.platform.descriptor.loader.json;
 
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Function;
-
 import org.apache.maven.model.Dependency;
-
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 
 public interface ArtifactResolver {
 

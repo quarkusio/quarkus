@@ -1,8 +1,5 @@
 package io.quarkus.cli.commands;
 
-import java.io.IOException;
-import java.util.Set;
-
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
@@ -11,6 +8,8 @@ import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
+import java.io.IOException;
+import java.util.Set;
 
 /**
  * Instances of this class are not thread-safe. They are created per single invocation.

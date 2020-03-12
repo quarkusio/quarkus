@@ -1,17 +1,19 @@
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.processor.BuildExtension.BuildContext;
+import io.quarkus.arc.processor.ObserverTransformer.ObserverTransformation;
+import io.quarkus.arc.processor.ObserverTransformer.TransformationContext;
+import io.quarkus.gizmo.MethodCreator;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 import java.util.function.Consumer;
-
 import javax.enterprise.event.Reception;
 import javax.enterprise.event.TransactionPhase;
 import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.ObserverMethod;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -21,11 +23,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
-
-import io.quarkus.arc.processor.BuildExtension.BuildContext;
-import io.quarkus.arc.processor.ObserverTransformer.ObserverTransformation;
-import io.quarkus.arc.processor.ObserverTransformer.TransformationContext;
-import io.quarkus.gizmo.MethodCreator;
 
 /**
  * Represents an observer method.

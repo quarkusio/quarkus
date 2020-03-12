@@ -1,5 +1,7 @@
 package io.quarkus.cli.commands;
 
+import io.quarkus.cli.commands.file.BuildFile;
+import io.quarkus.dependencies.Extension;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -8,9 +10,6 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
-
-import io.quarkus.cli.commands.file.BuildFile;
-import io.quarkus.dependencies.Extension;
 
 /**
  * This class is thread-safe. It extracts extensions to be added to the project from an instance of

@@ -3,7 +3,6 @@ package io.quarkus.qute;
 import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

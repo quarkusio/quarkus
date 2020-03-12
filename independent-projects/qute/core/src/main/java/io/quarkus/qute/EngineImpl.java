@@ -1,5 +1,6 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -20,10 +21,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
 import org.jboss.logging.Logger;
-
-import io.quarkus.qute.TemplateLocator.TemplateLocation;
 
 /**
  * 

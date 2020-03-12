@@ -1,5 +1,9 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.Expression.Part;
+import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
+import io.quarkus.qute.TemplateNode.Origin;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayDeque;
@@ -16,13 +20,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.jboss.logging.Logger;
-
-import io.quarkus.qute.Expression.Part;
-import io.quarkus.qute.Results.Result;
-import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
-import io.quarkus.qute.TemplateNode.Origin;
 
 /**
  * Simple non-reusable parser.

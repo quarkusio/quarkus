@@ -3,14 +3,12 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.Basics.index;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.quarkus.arc.processor.DotNamesTest.Nested.NestedNested;
 import java.io.IOException;
-
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import io.quarkus.arc.processor.DotNamesTest.Nested.NestedNested;
 
 public class DotNamesTest {
 

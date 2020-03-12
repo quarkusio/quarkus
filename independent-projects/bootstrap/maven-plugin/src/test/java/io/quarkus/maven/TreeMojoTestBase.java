@@ -2,6 +2,13 @@ package io.quarkus.maven;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.TsArtifact;
+import io.quarkus.bootstrap.resolver.TsDependency;
+import io.quarkus.bootstrap.resolver.TsQuarkusExt;
+import io.quarkus.bootstrap.resolver.TsRepoBuilder;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.util.IoUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -11,7 +18,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.model.Model;
@@ -19,14 +25,6 @@ import org.apache.maven.project.MavenProject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
-import io.quarkus.bootstrap.resolver.TsArtifact;
-import io.quarkus.bootstrap.resolver.TsDependency;
-import io.quarkus.bootstrap.resolver.TsQuarkusExt;
-import io.quarkus.bootstrap.resolver.TsRepoBuilder;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.util.IoUtils;
 
 public abstract class TreeMojoTestBase {
     protected Path workDir;

@@ -2,7 +2,6 @@ package io.quarkus.arc.processor;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;

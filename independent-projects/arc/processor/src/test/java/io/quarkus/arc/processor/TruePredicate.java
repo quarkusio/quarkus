@@ -1,7 +1,6 @@
 package io.quarkus.arc.processor;
 
 import java.util.function.Predicate;
-
 import org.jboss.jandex.DotName;
 
 public class TruePredicate implements Predicate<DotName> {

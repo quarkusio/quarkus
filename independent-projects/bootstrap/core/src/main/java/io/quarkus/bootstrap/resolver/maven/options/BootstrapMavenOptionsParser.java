@@ -2,7 +2,6 @@ package io.quarkus.bootstrap.resolver.maven.options;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.ParseException;
 import org.apache.maven.cli.CLIManager;

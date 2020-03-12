@@ -1,16 +1,14 @@
 package io.quarkus.arc.impl;
 
+import io.quarkus.arc.InjectableBean;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.InjectionPoint;
-
-import io.quarkus.arc.InjectableBean;
 
 public class InstanceBean extends BuiltInBean<Instance<?>> {
 

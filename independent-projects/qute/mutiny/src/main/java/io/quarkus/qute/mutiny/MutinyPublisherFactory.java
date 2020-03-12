@@ -1,10 +1,9 @@
 package io.quarkus.qute.mutiny;
 
-import org.reactivestreams.Publisher;
-
 import io.quarkus.qute.PublisherFactory;
 import io.quarkus.qute.TemplateInstance;
 import io.smallrye.mutiny.Multi;
+import org.reactivestreams.Publisher;
 
 public class MutinyPublisherFactory implements PublisherFactory {
 

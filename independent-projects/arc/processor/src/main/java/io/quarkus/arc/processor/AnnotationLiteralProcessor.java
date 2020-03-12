@@ -1,5 +1,10 @@
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.impl.ComputingCache;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -7,18 +12,11 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
-
-import io.quarkus.arc.impl.ComputingCache;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 
 /**
  *

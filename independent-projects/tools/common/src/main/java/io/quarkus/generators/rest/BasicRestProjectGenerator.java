@@ -2,10 +2,6 @@ package io.quarkus.generators.rest;
 
 import static java.lang.String.format;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.Map.Entry;
-
 import io.quarkus.cli.commands.QuarkusCommandInvocation;
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
@@ -13,6 +9,9 @@ import io.quarkus.generators.BuildTool;
 import io.quarkus.generators.ProjectGenerator;
 import io.quarkus.generators.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.Map.Entry;
 
 public class BasicRestProjectGenerator implements ProjectGenerator {
 

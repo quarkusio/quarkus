@@ -1,7 +1,6 @@
 package io.quarkus.arc.processor;
 
 import java.util.List;
-
 import javax.enterprise.inject.spi.DeploymentException;
 
 /**

@@ -3,24 +3,21 @@ package io.quarkus.arc.test.buildextension.observers;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.literal.NamedLiteral;
-import javax.enterprise.inject.spi.EventContext;
-import javax.inject.Named;
-import javax.inject.Singleton;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.processor.ObserverRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import javax.enterprise.event.Observes;
+import javax.enterprise.inject.literal.NamedLiteral;
+import javax.enterprise.inject.spi.EventContext;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class SyntheticObserverTest {
 

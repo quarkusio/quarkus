@@ -1,16 +1,14 @@
 package io.quarkus.arc.impl;
 
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.InstanceHandle;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
-
-import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableReferenceProvider;
-import io.quarkus.arc.InstanceHandle;
 
 /**
  *

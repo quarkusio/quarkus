@@ -1,5 +1,20 @@
 package io.quarkus.arc.test;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ComponentsProvider;
+import io.quarkus.arc.ResourceReferenceProvider;
+import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.BeanArchives;
+import io.quarkus.arc.processor.BeanDeploymentValidator;
+import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BeanProcessor;
+import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.arc.processor.ContextRegistrar;
+import io.quarkus.arc.processor.InjectionPointsTransformer;
+import io.quarkus.arc.processor.InterceptorBindingRegistrar;
+import io.quarkus.arc.processor.ObserverRegistrar;
+import io.quarkus.arc.processor.ObserverTransformer;
+import io.quarkus.arc.processor.ResourceOutput;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -16,29 +31,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ComponentsProvider;
-import io.quarkus.arc.ResourceReferenceProvider;
-import io.quarkus.arc.processor.AnnotationsTransformer;
-import io.quarkus.arc.processor.BeanArchives;
-import io.quarkus.arc.processor.BeanDeploymentValidator;
-import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.arc.processor.BeanProcessor;
-import io.quarkus.arc.processor.BeanRegistrar;
-import io.quarkus.arc.processor.ContextRegistrar;
-import io.quarkus.arc.processor.InjectionPointsTransformer;
-import io.quarkus.arc.processor.InterceptorBindingRegistrar;
-import io.quarkus.arc.processor.ObserverRegistrar;
-import io.quarkus.arc.processor.ObserverTransformer;
-import io.quarkus.arc.processor.ResourceOutput;
 
 /**
  * Junit5 extension for Arc bootstrap/shutdown.

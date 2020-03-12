@@ -1,14 +1,13 @@
 package io.quarkus.qute;
 
+import io.quarkus.qute.Results.Result;
+import io.quarkus.qute.TemplateNode.Origin;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-
-import io.quarkus.qute.Results.Result;
-import io.quarkus.qute.TemplateNode.Origin;
 
 /**
  * 

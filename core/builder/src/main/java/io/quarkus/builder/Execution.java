@@ -1,8 +1,7 @@
 package io.quarkus.builder;
 
 import static java.lang.Math.max;
-import static java.util.concurrent.locks.LockSupport.park;
-import static java.util.concurrent.locks.LockSupport.unpark;
+import static java.util.concurrent.locks.LockSupport.*;
 
 import java.util.ArrayList;
 import java.util.Collections;

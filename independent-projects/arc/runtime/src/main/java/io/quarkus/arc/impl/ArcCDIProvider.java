@@ -1,15 +1,13 @@
 package io.quarkus.arc.impl;
 
+import io.quarkus.arc.Arc;
 import java.lang.annotation.Annotation;
 import java.util.Iterator;
-
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.CDI;
 import javax.enterprise.inject.spi.CDIProvider;
 import javax.enterprise.util.TypeLiteral;
-
-import io.quarkus.arc.Arc;
 
 /**
  * 

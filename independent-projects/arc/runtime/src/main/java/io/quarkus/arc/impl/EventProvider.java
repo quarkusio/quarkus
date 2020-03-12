@@ -1,13 +1,11 @@
 package io.quarkus.arc.impl;
 
+import io.quarkus.arc.InjectableReferenceProvider;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Set;
-
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Event;
-
-import io.quarkus.arc.InjectableReferenceProvider;
 
 /**
  *

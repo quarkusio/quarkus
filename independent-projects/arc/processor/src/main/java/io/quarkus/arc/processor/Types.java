@@ -2,6 +2,13 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
+import io.quarkus.arc.impl.GenericArrayTypeImpl;
+import io.quarkus.arc.impl.ParameterizedTypeImpl;
+import io.quarkus.arc.impl.TypeVariableImpl;
+import io.quarkus.arc.impl.WildcardTypeImpl;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -28,14 +34,6 @@ import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.WildcardType;
 import org.jboss.logging.Logger;
-
-import io.quarkus.arc.impl.GenericArrayTypeImpl;
-import io.quarkus.arc.impl.ParameterizedTypeImpl;
-import io.quarkus.arc.impl.TypeVariableImpl;
-import io.quarkus.arc.impl.WildcardTypeImpl;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 
 /**
  *

@@ -5,22 +5,20 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.quarkus.cli.commands.file.MavenBuildFile;
+import io.quarkus.cli.commands.writer.FileProjectWriter;
+import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Map;
-
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import io.quarkus.cli.commands.file.MavenBuildFile;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
-import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
 public class ListExtensionsTest extends PlatformAwareTestBase {
 

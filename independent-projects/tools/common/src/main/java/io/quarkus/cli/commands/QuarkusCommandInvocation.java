@@ -1,10 +1,5 @@
 package io.quarkus.cli.commands;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-
 import io.quarkus.cli.commands.file.BuildFile;
 import io.quarkus.cli.commands.file.MavenBuildFile;
 import io.quarkus.cli.commands.writer.ProjectWriter;
@@ -12,6 +7,10 @@ import io.quarkus.generators.BuildTool;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.DefaultMessageWriter;
 import io.quarkus.platform.tools.MessageWriter;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 public class QuarkusCommandInvocation extends ValueMap<QuarkusCommandInvocation> {
 

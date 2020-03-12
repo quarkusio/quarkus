@@ -3,7 +3,6 @@ package io.quarkus.arc;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.Set;
-
 import javax.enterprise.event.Reception;
 import javax.enterprise.event.TransactionPhase;
 import javax.enterprise.inject.spi.ObserverMethod;

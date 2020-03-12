@@ -1,5 +1,7 @@
 package io.quarkus.tck.jwt;
 
+import java.io.*;
+
 import org.jboss.arquillian.container.test.spi.client.deployment.ApplicationArchiveProcessor;
 import org.jboss.arquillian.test.spi.TestClass;
 import org.jboss.shrinkwrap.api.Archive;

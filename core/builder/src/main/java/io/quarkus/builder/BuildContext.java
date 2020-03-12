@@ -1,6 +1,6 @@
 package io.quarkus.builder;
 
-import static io.quarkus.builder.Execution.log;
+import static io.quarkus.builder.Execution.*;
 
 import java.util.ArrayList;
 import java.util.Collections;

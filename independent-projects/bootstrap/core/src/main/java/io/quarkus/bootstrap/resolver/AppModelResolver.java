@@ -1,12 +1,11 @@
 package io.quarkus.bootstrap.resolver;
 
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
-
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Application model resolver used to resolve application and/or its dependency artifacts.

@@ -6,6 +6,9 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.processor.InterceptorBindingRegistrar;
+import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -15,21 +18,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
-
 import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.processor.InterceptorBindingRegistrar;
-import io.quarkus.arc.test.ArcTestContainer;
 
 public class AdditionalInterceptorBindingsTest {
 

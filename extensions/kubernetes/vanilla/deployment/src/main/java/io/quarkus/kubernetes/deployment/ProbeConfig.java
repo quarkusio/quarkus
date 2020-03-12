@@ -64,4 +64,7 @@ public class ProbeConfig {
     @ConfigItem(defaultValue = "3")
     Integer failureThreshold;
 
+    public boolean hasUserSuppliedAction() {
+        return httpActionPath.isPresent() || tcpSocketAction.isPresent() || execAction.isPresent();
+    }
 }

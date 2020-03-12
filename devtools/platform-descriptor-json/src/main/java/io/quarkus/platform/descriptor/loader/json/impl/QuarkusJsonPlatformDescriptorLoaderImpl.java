@@ -1,12 +1,14 @@
 package io.quarkus.platform.descriptor.loader.json.impl;
 
+import java.io.IOException;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoader;
 import io.quarkus.platform.descriptor.loader.json.QuarkusJsonPlatformDescriptorLoaderContext;
-import java.io.IOException;
 
 public class QuarkusJsonPlatformDescriptorLoaderImpl
         implements QuarkusJsonPlatformDescriptorLoader<QuarkusJsonPlatformDescriptor> {

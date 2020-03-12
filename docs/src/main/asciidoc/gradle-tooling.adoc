@@ -153,7 +153,7 @@ If no extension is found or if more than one extensions match, you will see a re
 [...]
 ----
 
-You can install all extensions which match a globbing pattern :
+You can install all extensions which match a globbing pattern:
 
 [source,shell]
 ----
@@ -185,6 +185,7 @@ Hit `CTRL+C` to stop the application.
 
 You can change the working directory the development environment runs on:
 
+[source,groovy]
 ----
 quarkusDev {
     workingDir = rootProject.projectDir

@@ -136,7 +136,7 @@ public class ArcRecorder {
         @Override
         public BeanContainer.Instance<T> create() {
             try {
-                T instance = type.getConstructor().newInstance();
+                T instance = type.getDeclaredConstructor().newInstance();
                 return new BeanContainer.Instance<T>() {
                     @Override
                     public T get() {

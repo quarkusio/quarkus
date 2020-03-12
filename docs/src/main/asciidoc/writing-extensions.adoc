@@ -2329,7 +2329,7 @@ public class SomeServiceRecorder {
         // instantiate the service implementations
         for (Class<? extends io.quarkus.SomeService> implementationClass : implementations) {
             try {
-                services.add(implementationClass.getConstructor().newInstance());
+                services.add(implementationClass.getDeclaredConstructor().newInstance());
             } catch (Exception e) {
                 throw new IllegalArgumentException("Unable to instantiate service " + implementationClass, e);
             }

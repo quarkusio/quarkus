@@ -95,7 +95,7 @@ public class CuratedApplication implements Serializable, Closeable {
     public AugmentAction createAugmentor() {
         try {
             Class<?> augmentor = getAugmentClassLoader().loadClass(AUGMENTOR);
-            return (AugmentAction) augmentor.getConstructor(CuratedApplication.class).newInstance(this);
+            return (AugmentAction) augmentor.getDeclaredConstructor(CuratedApplication.class).newInstance(this);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -112,9 +112,10 @@ public class CuratedApplication implements Serializable, Closeable {
         try {
             Class<?> augmentor = getAugmentClassLoader().loadClass(AUGMENTOR);
             Function<Object, List<?>> function = (Function<Object, List<?>>) getAugmentClassLoader().loadClass(functionName)
-                    .getConstructor().newInstance();
+                    .getDeclaredConstructor().newInstance();
             List<?> res = function.apply(props);
-            return (AugmentAction) augmentor.getConstructor(CuratedApplication.class, List.class).newInstance(this, res);
+            return (AugmentAction) augmentor.getDeclaredConstructor(CuratedApplication.class, List.class).newInstance(this,
+                    res);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -127,7 +128,7 @@ public class CuratedApplication implements Serializable, Closeable {
             Thread.currentThread().setContextClassLoader(cl);
             Class<? extends BiConsumer<CuratedApplication, Map<String, Object>>> clazz = (Class<? extends BiConsumer<CuratedApplication, Map<String, Object>>>) cl
                     .loadClass(consumerName);
-            BiConsumer<CuratedApplication, Map<String, Object>> biConsumer = clazz.getConstructor().newInstance();
+            BiConsumer<CuratedApplication, Map<String, Object>> biConsumer = clazz.getDeclaredConstructor().newInstance();
             biConsumer.accept(this, params);
             return biConsumer;
         } catch (Exception e) {

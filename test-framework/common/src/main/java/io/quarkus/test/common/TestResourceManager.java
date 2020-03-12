@@ -116,7 +116,7 @@ public class TestResourceManager {
 
         for (Class<? extends QuarkusTestResourceLifecycleManager> testResourceRunnerClass : testResourceRunnerClasses) {
             try {
-                testResourceRunners.add(testResourceRunnerClass.getConstructor().newInstance());
+                testResourceRunners.add(testResourceRunnerClass.getDeclaredConstructor().newInstance());
             } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
                     | InvocationTargetException | NoSuchMethodException | SecurityException e) {
                 throw new RuntimeException("Unable to instantiate the test resource " + testResourceRunnerClass);

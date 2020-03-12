@@ -69,7 +69,7 @@ public class RestClientBase {
     private void registerHostnameVerifier(String verifier, RestClientBuilder builder) {
         try {
             Class<?> verifierClass = Class.forName(verifier, true, Thread.currentThread().getContextClassLoader());
-            builder.hostnameVerifier((HostnameVerifier) verifierClass.getConstructor().newInstance());
+            builder.hostnameVerifier((HostnameVerifier) verifierClass.getDeclaredConstructor().newInstance());
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Could not find hostname verifier class" + verifier, e);
         } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {

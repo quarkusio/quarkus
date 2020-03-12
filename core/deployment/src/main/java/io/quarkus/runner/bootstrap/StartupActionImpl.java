@@ -92,7 +92,7 @@ public class StartupActionImpl implements StartupAction {
             }
 
             Method start = appClass.getMethod("start", String[].class);
-            Object application = appClass.getConstructor().newInstance();
+            Object application = appClass.getDeclaredConstructor().newInstance();
             start.invoke(application, (Object) args);
             Closeable closeTask = (Closeable) application;
             return new RunningQuarkusApplicationImpl(new Closeable() {

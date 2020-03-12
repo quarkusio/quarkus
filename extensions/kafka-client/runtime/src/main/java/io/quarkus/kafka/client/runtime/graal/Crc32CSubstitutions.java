@@ -27,7 +27,7 @@ final class Target_org_apache_kafka_common_utils_Crc32C_Java9ChecksumFactory {
     @Substitute
     public Checksum create() {
         try {
-            return (Checksum) Class.forName("java.util.zip.CRC32C").getConstructor().newInstance();
+            return (Checksum) Class.forName("java.util.zip.CRC32C").getDeclaredConstructor().newInstance();
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }

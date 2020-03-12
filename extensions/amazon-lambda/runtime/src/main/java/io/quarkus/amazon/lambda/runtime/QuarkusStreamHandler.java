@@ -29,7 +29,7 @@ public class QuarkusStreamHandler implements RequestStreamHandler {
             try {
                 Class appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
                 String[] args = {};
-                Application app = (Application) appClass.getConstructor().newInstance();
+                Application app = (Application) appClass.getDeclaredConstructor().newInstance();
                 Runtime.getRuntime().addShutdownHook(new Thread() {
                     @Override
                     public void run() {

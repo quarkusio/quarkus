@@ -513,7 +513,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 holder = substitutions.get(expectedType);
             }
             try {
-                ObjectSubstitution substitution = holder.sub.getConstructor().newInstance();
+                ObjectSubstitution substitution = holder.sub.getDeclaredConstructor().newInstance();
                 Object res = substitution.serialize(param);
                 DeferredParameter serialized = loadObjectInstance(res, existing, holder.to);
                 SubstitutionHolder finalHolder = holder;

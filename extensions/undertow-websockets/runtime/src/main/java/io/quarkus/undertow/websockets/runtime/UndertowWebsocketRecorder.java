@@ -52,7 +52,8 @@ public class UndertowWebsocketRecorder {
         for (String clazzName : serverApplicationConfigClasses) {
             try {
                 configInstances.add((ServerApplicationConfig) Class
-                        .forName(clazzName, true, Thread.currentThread().getContextClassLoader()).getConstructor().newInstance());
+                        .forName(clazzName, true, Thread.currentThread().getContextClassLoader()).getDeclaredConstructor()
+                        .newInstance());
             } catch (Exception e) {
                 log.error("Could not initialize websocket config class " + clazzName, e);
             }

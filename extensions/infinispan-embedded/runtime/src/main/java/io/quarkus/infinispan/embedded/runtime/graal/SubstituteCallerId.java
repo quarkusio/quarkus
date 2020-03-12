@@ -1,7 +1,7 @@
 package io.quarkus.infinispan.embedded.runtime.graal;
 
-import org.infinispan.commons.util.Version;
 import org.infinispan.commons.jdkspecific.CallerId;
+import org.infinispan.commons.util.Version;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;

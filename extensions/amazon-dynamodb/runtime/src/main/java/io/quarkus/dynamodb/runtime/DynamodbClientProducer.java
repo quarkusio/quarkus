@@ -219,7 +219,7 @@ public class DynamodbClientProducer {
             SdkEventLoopGroup.Builder eventLoopBuilder = SdkEventLoopGroup.builder();
             config.eventLoop.numberOfThreads.ifPresent(eventLoopBuilder::numberOfThreads);
             config.eventLoop.threadNamePrefix.ifPresent(s -> eventLoopBuilder.threadFactory(
-                new ThreadFactoryBuilder().threadNamePrefix(s).build()));
+                    new ThreadFactoryBuilder().threadNamePrefix(s).build()));
             builder.eventLoopGroupBuilder(eventLoopBuilder);
         }
 
@@ -229,8 +229,10 @@ public class DynamodbClientProducer {
     private ExecutionInterceptor createInterceptor(Class<?> interceptorClass) {
         try {
             return (ExecutionInterceptor) Class
-                    .forName(interceptorClass.getName(), true, Thread.currentThread().getContextClassLoader()).getConstructor().newInstance();
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+                    .forName(interceptorClass.getName(), true, Thread.currentThread().getContextClassLoader())
+                    .getDeclaredConstructor().newInstance();
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
+                | InvocationTargetException e) {
             LOG.error("Unable to create interceptor", e);
             return null;
         }

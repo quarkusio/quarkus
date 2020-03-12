@@ -390,7 +390,7 @@ public class FastBootMetadataBuilder {
 
         for (Class<? extends Integrator> integratorClass : additionalIntegrators) {
             try {
-                integrators.add(integratorClass.getConstructor().newInstance());
+                integrators.add(integratorClass.getDeclaredConstructor().newInstance());
             } catch (Exception e) {
                 throw new IllegalArgumentException("Unable to instantiate integrator " + integratorClass, e);
             }
@@ -591,7 +591,7 @@ public class FastBootMetadataBuilder {
 
         if (metadataBuilderContributorImplClass != null) {
             try {
-                metadataBuilderContributor = metadataBuilderContributorImplClass.getConstructor().newInstance();
+                metadataBuilderContributor = metadataBuilderContributorImplClass.getDeclaredConstructor().newInstance();
             } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 throw new IllegalArgumentException("The MetadataBuilderContributor class ["
                         + metadataBuilderContributorImplClass + "] could not be instantiated!", e);

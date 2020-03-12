@@ -10,7 +10,7 @@ public class SmallRyeHealthRecorder {
 
     public void registerHealthCheckResponseProvider(Class<? extends HealthCheckResponseProvider> providerClass) {
         try {
-            HealthCheckResponse.setResponseProvider(providerClass.getConstructor().newInstance());
+            HealthCheckResponse.setResponseProvider(providerClass.getDeclaredConstructor().newInstance());
         } catch (Exception e) {
             throw new IllegalStateException(
                     "Unable to instantiate service " + providerClass + " using the no-arg constructor.");

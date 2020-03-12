@@ -503,7 +503,7 @@ public final class BuildTimeConfigurationReader {
             // re-create this config group
             final Object instance;
             try {
-                instance = configurationClass.getConstructor().newInstance();
+                instance = configurationClass.getDeclaredConstructor().newInstance();
             } catch (InstantiationException e) {
                 throw toError(e);
             } catch (IllegalAccessException e) {
@@ -577,7 +577,7 @@ public final class BuildTimeConfigurationReader {
                         Class<?> clazz = groupMember.getGroupDefinition().getConfigurationClass();
                         Object nestedInstance;
                         try {
-                            nestedInstance = clazz.getConstructor().newInstance();
+                            nestedInstance = clazz.getDeclaredConstructor().newInstance();
                         } catch (InstantiationException e) {
                             throw toError(e);
                         } catch (InvocationTargetException e) {

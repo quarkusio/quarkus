@@ -72,7 +72,7 @@ public class CustomConfigurationViaBeansTest {
         @Override
         public <T extends ConstraintValidator<?, ?>> T getInstance(Class<T> key) {
             try {
-                return key.getConstructor().newInstance();
+                return key.getDeclaredConstructor().newInstance();
             } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
                     | NoSuchMethodException | SecurityException e) {
                 throw new ValidationException("Unable to create constraint validator instance", e);

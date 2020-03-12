@@ -192,7 +192,7 @@ public class ProxyFactory<T> {
     public T newInstance(InvocationHandler handler) throws IllegalAccessException, InstantiationException {
         synchronized (lock) {
             try {
-                return defineClass().getConstructor(InvocationHandler.class).newInstance(handler);
+                return defineClass().getDeclaredConstructor(InvocationHandler.class).newInstance(handler);
             } catch (NoSuchMethodException | InvocationTargetException e) {
                 // if this happens, we have not created the proxy correctly
                 throw new IllegalStateException(e);

@@ -149,7 +149,7 @@ public class VertxRecorder {
             Class<?> codec = codecEntry.getValue();
             try {
                 if (MessageCodec.class.isAssignableFrom(codec)) {
-                    MessageCodec messageCodec = (MessageCodec) codec.getConstructor().newInstance();
+                    MessageCodec messageCodec = (MessageCodec) codec.getDeclaredConstructor().newInstance();
                     eventBus.registerDefaultCodec(target, messageCodec);
                 } else {
                     LOGGER.error(String.format("The codec %s does not inherit from MessageCodec ", target.toString()));

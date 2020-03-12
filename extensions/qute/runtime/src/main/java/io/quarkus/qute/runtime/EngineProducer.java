@@ -147,10 +147,11 @@ public class EngineProducer {
             Class<?> resolverClazz = Thread.currentThread()
                     .getContextClassLoader().loadClass(resolverClassName);
             if (ValueResolver.class.isAssignableFrom(resolverClazz)) {
-                return (ValueResolver) resolverClazz.getConstructor().newInstance();
+                return (ValueResolver) resolverClazz.getDeclaredConstructor().newInstance();
             }
             throw new IllegalStateException("Not a value resolver: " + resolverClassName);
-        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException
+                | InvocationTargetException e) {
             throw new IllegalStateException("Unable to create resolver: " + resolverClassName, e);
         }
     }

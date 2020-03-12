@@ -120,7 +120,7 @@ public final class ReflectUtil {
 
     public static <T> T newInstance(Class<T> clazz) {
         try {
-            return clazz.getConstructor().newInstance();
+            return clazz.getDeclaredConstructor().newInstance();
         } catch (InstantiationException e) {
             throw toError(e);
         } catch (InvocationTargetException e) {

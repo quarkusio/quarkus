@@ -331,10 +331,14 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     static AppDependency toAppDependency(ResolvedArtifact a) {
+        return new AppDependency(toAppArtifact(a), "runtime");
+    }
+
+    public static AppArtifact toAppArtifact(ResolvedArtifact a) {
         final String[] split = a.getModuleVersion().toString().split(":");
         final AppArtifact appArtifact = new AppArtifact(split[0], split[1], split.length > 2 ? split[2] : null);
         appArtifact.setPath(a.getFile().toPath());
-        return new AppDependency(appArtifact, "runtime");
+        return appArtifact;
     }
 
     private Dependency processQuarkusDir(AppArtifact a, Path quarkusDir, AppModel.Builder appBuilder) {

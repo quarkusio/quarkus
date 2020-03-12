@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -55,10 +56,12 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.impl.Http1xServerConnection;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PfxOptions;
@@ -411,6 +414,14 @@ public class VertxHttpRecorder {
         final Optional<Path> trustStoreFile = sslConfig.certificate.trustStoreFile;
         final Optional<String> trustStorePassword = sslConfig.certificate.trustStorePassword;
         final HttpServerOptions serverOptions = new HttpServerOptions();
+
+        //ssl
+        if (JdkSSLEngineOptions.isAlpnAvailable()) {
+            serverOptions.setUseAlpn(httpConfiguration.http2);
+            if (httpConfiguration.http2) {
+                serverOptions.setAlpnVersions(Arrays.asList(HttpVersion.HTTP_2, HttpVersion.HTTP_1_1));
+            }
+        }
         serverOptions.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
         setIdleTimeout(httpConfiguration, serverOptions);
 
@@ -484,6 +495,7 @@ public class VertxHttpRecorder {
         serverOptions.setTcpQuickAck(httpConfiguration.tcpQuickAck);
         serverOptions.setTcpCork(httpConfiguration.tcpCork);
         serverOptions.setTcpFastOpen(httpConfiguration.tcpFastOpen);
+
         return serverOptions;
     }
 

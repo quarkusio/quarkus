@@ -15,8 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
-import io.fabric8.kubernetes.api.model.Probe;
-import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.PodSpec;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
 import io.quarkus.test.LogFile;
@@ -24,16 +23,16 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithHealthTest {
+public class OpenshiftWithHealthTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
-            .setApplicationName("health")
+            .setApplicationName("openshift-health")
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
-            .withConfigurationResource("kubernetes-with-health.properties")
+            .withConfigurationResource("openshift-with-health.properties")
             .setForcedDependencies(
                     Collections.singletonList(
                             new AppArtifact("io.quarkus", "quarkus-smallrye-health", Version.getVersion())));
@@ -58,39 +57,36 @@ public class KubernetesWithHealthTest {
 
     @Test
     public void assertGeneratedResources() throws IOException {
-        final Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
+        Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
         assertThat(kubernetesDir)
-                .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.json"))
-                .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.yml"));
-        List<HasMetadata> kubernetesList = DeserializationUtil
-                .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
-        assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
-            assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("health");
-            });
+                .isDirectoryContaining(p -> p.getFileName().endsWith("openshift.json"))
+                .isDirectoryContaining(p -> p.getFileName().endsWith("openshift.yml"));
+        List<HasMetadata> openshiftList = DeserializationUtil
+                .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 
-            assertThat(d.getSpec()).satisfies(deploymentSpec -> {
-                assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
-                    assertThat(t.getSpec()).satisfies(podSpec -> {
+        assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).hasOnlyOneElementSatisfying(h -> {
+            assertThat(h.getMetadata()).satisfies(m -> {
+                assertThat(m.getName()).isEqualTo("openshift-health");
+            });
+            assertThat(h).extracting("spec").extracting("template").extracting("spec").isInstanceOfSatisfying(PodSpec.class,
+                    podSpec -> {
                         assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
                             assertThat(container.getReadinessProbe()).satisfies(p -> {
-                                assertThat(p.getInitialDelaySeconds()).isEqualTo(0);
-                                assertProbePath(p, "/health/ready");
+                                assertThat(p.getPeriodSeconds()).isEqualTo(10);
+                                assertThat(p.getHttpGet()).satisfies(h1 -> {
+                                    assertThat(h1.getPath()).isEqualTo("/health/ready");
+                                });
                             });
                             assertThat(container.getLivenessProbe()).satisfies(p -> {
-                                assertThat(p.getInitialDelaySeconds()).isEqualTo(20);
-                                assertProbePath(p, "/health/live");
+                                assertThat(p.getPeriodSeconds()).isEqualTo(30);
+                                assertThat(p.getHttpGet()).isNull();
+                                assertThat(p.getExec()).satisfies(e -> {
+                                    assertThat(e.getCommand()).containsOnly("kill");
+                                });
                             });
                         });
                     });
-                });
-            });
         });
     }
 
-    private void assertProbePath(Probe p, String expectedPath) {
-        assertThat(p.getHttpGet()).satisfies(h -> {
-            assertThat(h.getPath()).isEqualTo(expectedPath);
-        });
-    }
 }

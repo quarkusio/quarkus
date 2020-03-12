@@ -42,9 +42,9 @@ public interface PlatformConfiguration {
 
     Optional<List<String>> getImagePullSecrets();
 
-    Optional<ProbeConfig> getLivenessProbe();
+    ProbeConfig getLivenessProbe();
 
-    Optional<ProbeConfig> getReadinessProbe();
+    ProbeConfig getReadinessProbe();
 
     Map<String, MountConfig> getMounts();
 

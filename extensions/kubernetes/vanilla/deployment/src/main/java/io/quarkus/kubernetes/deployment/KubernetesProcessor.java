@@ -374,14 +374,13 @@ class KubernetesProcessor {
         String openshiftName = openshiftConfig.name.orElse(name);
         String knativeName = knativeConfig.name.orElse(name);
 
-        containerImageBuildItem.ifPresent(
-                c -> session.resources().decorate(KUBERNETES, new ApplyContainerImageDecorator(kubernetesName, c.getImage())));
-        containerImageBuildItem
-                .ifPresent(c -> session.resources().decorate(OPENSHIFT,
-                        new ApplyContainerImageDecorator(openshiftName, c.getImage())));
-        containerImageBuildItem
-                .ifPresent(c -> session.resources().decorate(KNATIVE,
-                        new ApplyContainerImageDecorator(knativeName, c.getImage())));
+        session.resources().decorate(KNATIVE, new AddMissingContainerNameDecorator(knativeName, knativeName));
+
+        containerImageBuildItem.ifPresent(c -> {
+            session.resources().decorate(OPENSHIFT, new ApplyContainerImageDecorator(openshiftName, c.getImage()));
+            session.resources().decorate(KUBERNETES, new ApplyContainerImageDecorator(kubernetesName, c.getImage()));
+            session.resources().decorate(KNATIVE, new ApplyContainerImageDecorator(knativeName, c.getImage()));
+        });
 
         //Handle Command and arguments
         commandBuildItem.ifPresent(c -> {

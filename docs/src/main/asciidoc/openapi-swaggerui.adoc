@@ -392,6 +392,9 @@ If you want to make it available in production too, you can include the followin
 ----
 quarkus.swagger-ui.always-include=true
 ----
+
+This is a build time property, it cannot be changed at runtime after your application is built.
+
 ====
 
 By default, Swagger UI is accessible at `/swagger-ui`.

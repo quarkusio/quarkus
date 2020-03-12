@@ -24,12 +24,12 @@ public class PomTransformerTest {
     void postProcess() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "</project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "</project>\n";
         asserTransformation(source, Collections.emptyList(), expected);
@@ -44,7 +44,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "-->\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "</project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
@@ -54,7 +54,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "-->\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "</project>\n";
         asserTransformation(source, Collections.emptyList(), expected);
@@ -64,12 +64,12 @@ public class PomTransformerTest {
     void postProcessEol() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\r\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\r\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\r\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\r\n" //
                 + "</project>";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\r\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\r\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\r\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\r\n" //
                 + "</project>";
         asserTransformation(source, Collections.emptyList(), expected);
@@ -79,7 +79,7 @@ public class PomTransformerTest {
     void addModuleNoModules() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>grand-parent</artifactId>\n" //
@@ -88,7 +88,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>grand-parent</artifactId>\n" //
@@ -105,7 +105,7 @@ public class PomTransformerTest {
     void addModuleNoModulesNoIndent() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>grand-parent</artifactId>\n" //
@@ -113,7 +113,7 @@ public class PomTransformerTest {
                 + "    <packaging>pom</packaging></project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>grand-parent</artifactId>\n" //
@@ -130,7 +130,7 @@ public class PomTransformerTest {
     void addModuleAfterModule() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>grand-parent</artifactId>\n" //
@@ -143,7 +143,7 @@ public class PomTransformerTest {
                 + "    </modules>\n" + "</project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>grand-parent</artifactId>\n" //
@@ -163,7 +163,7 @@ public class PomTransformerTest {
     void addModuleAfterModuleNoIndent() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>grand-parent</artifactId>\n" //
@@ -175,7 +175,7 @@ public class PomTransformerTest {
                 + "        <module>old-module</module></modules>\n" + "</project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>grand-parent</artifactId>\n" //
@@ -195,7 +195,7 @@ public class PomTransformerTest {
     void addModuleBeforeBuild() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>grand-parent</artifactId>\n" //
@@ -207,7 +207,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>grand-parent</artifactId>\n" //
@@ -227,7 +227,7 @@ public class PomTransformerTest {
     void addModuleBeforeBuildNoIndent() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>grand-parent</artifactId>\n" //
@@ -237,7 +237,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>grand-parent</artifactId>\n" //
@@ -261,7 +261,7 @@ public class PomTransformerTest {
     void addDependencyManagementDependencies() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>bom</artifactId>\n" //
@@ -272,7 +272,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>bom</artifactId>\n" //
@@ -292,7 +292,7 @@ public class PomTransformerTest {
     void addDependencyManagement() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>bom</artifactId>\n" //
@@ -301,7 +301,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>bom</artifactId>\n" //
@@ -321,7 +321,7 @@ public class PomTransformerTest {
     void addDependencyManagementBeforeDependencies() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>bom</artifactId>\n" //
@@ -332,7 +332,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>bom</artifactId>\n" //
@@ -354,7 +354,7 @@ public class PomTransformerTest {
     void addDependencyManagementBeforeBuild() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>bom</artifactId>\n" //
@@ -365,7 +365,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>bom</artifactId>\n" //
@@ -387,7 +387,7 @@ public class PomTransformerTest {
     void addManagedDependency() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>bom</artifactId>\n" //
@@ -396,7 +396,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>bom</artifactId>\n" //
@@ -422,7 +422,7 @@ public class PomTransformerTest {
     void importBom() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>bom</artifactId>\n" //
@@ -431,7 +431,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "    <groupId>org.acme</groupId>\n" //
                 + "    <artifactId>bom</artifactId>\n" //
@@ -460,7 +460,7 @@ public class PomTransformerTest {
         assertFormat("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
                 "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-                "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
+                "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
                 +
                 "    <modelVersion>4.0.0</modelVersion>\n" +
                 "    <parent>\n" +
@@ -478,21 +478,21 @@ public class PomTransformerTest {
         assertFormat("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" +
                 "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\r\n" +
                 "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" +
-                "    xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\r\n"
+                "    xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\r\n"
                 +
                 "  <modelVersion>4.0.0</modelVersion>\r\n" +
                 "</project>", "  ", "\r\n");
         assertFormat("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
                 "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-                "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
+                "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
                 +
                 "    <!-- comment --><modelVersion>4.0.0</modelVersion>\n" +
                 "</project>", "    ", "\n");
         assertFormat("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
                 "         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-                "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
+                "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
                 +
                 "\t<!-- comment --><modelVersion>4.0.0</modelVersion>\n" +
                 "</project>", "\t", "\n");

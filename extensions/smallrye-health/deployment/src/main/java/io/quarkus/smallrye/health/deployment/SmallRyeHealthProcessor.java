@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
@@ -76,7 +77,10 @@ class SmallRyeHealthProcessor {
     @BuildStep
     void healthCheck(BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer,
             List<HealthBuildItem> healthBuildItems) {
-        if (config.extensionsEnabled) {
+        boolean extensionsEnabled = config.extensionsEnabled &&
+                !ConfigProvider.getConfig().getOptionalValue("mp.health.disable-default-procedures", boolean.class)
+                        .orElse(false);
+        if (extensionsEnabled) {
             for (HealthBuildItem buildItem : healthBuildItems) {
                 if (buildItem.isEnabled()) {
                     buildItemBuildProducer.produce(new AdditionalBeanBuildItem(buildItem.getHealthCheckClass()));

@@ -44,17 +44,17 @@ in order for Quarkus to know how to find the authentication information to check
 
 Please see the linked documents above for details on how to setup the various extensions.
 
-## Authenticating via HTTP
+== Authenticating via HTTP
 
 Quarkus has two built in authentication mechanisms for HTTP based FORM and BASIC auth. This mechanism is pluggable
 however so extensions can add additional mechanisms (most notably OpenID Connect for Keycloak based auth).
 
-### Basic Authentication
+=== Basic Authentication
 
 To enable basic authentication set `quarkus.http.auth.basic=true`. You must also have at least one extension installed
 that provides a username/password based `IdentityProvider`, such as link:security-jdbc[Elytron JDBC].
 
-### Form Based Authentication
+=== Form Based Authentication
 
 Quarkus provides form based authentication that works in a similar manner to traditional Servlet form based auth. Unlike
 traditional form authentication the authenticated user is not stored in a HTTP session, as Quarkus does not provide
@@ -132,7 +132,7 @@ public class SubjectExposingResource {
 <5> The `/subject/denied` endpoint disallows any access regardless of whether the call is authenticated by specifying the `@DenyAll` annotation.
 
 
-## Authorization of Web Endpoints using configuration
+== Authorization of Web Endpoints using configuration
 
 Quarkus has an integrated plugable web security layer. If security is enabled all HTTP requests will have a permission
 check performed to make sure they are permitted to continue.
@@ -170,7 +170,7 @@ which permit all, deny all and only allow authenticated users respectively.
 It is also possible to define role based policies, as shown in the example. These policies will only allow users with the
 specified roles to access the resources.
 
-### Matching on paths, methods
+=== Matching on paths, methods
 
 Permission sets can also specify paths and methods as a comma separated list. If a path ends with '*' then it is considered
 to be a wildcard match and will match all sub paths, otherwise it is an exact match and will only match that specific path:
@@ -182,7 +182,7 @@ quarkus.http.auth.permission.permit1.policy=permit
 quarkus.http.auth.permission.permit1.methods=GET,HEAD
 --
 
-### Matching path but not method
+=== Matching path but not method
 
 If a request would match one or more permission sets based on the path, but does not match any due to method requirements
 then the request is rejected.
@@ -190,7 +190,7 @@ then the request is rejected.
 TIP: Given the above permission set, `GET /public/foo` would match both the path and method and thus be allowed,
 whereas `POST /public/foo` would match the path but not the method and would thus be rejected.
 
-### Matching multiple paths: longest wins
+=== Matching multiple paths: longest wins
 
 Matching is always done on a longest path basis, less specific permission sets are not considered if a more specific one
 has been matched:
@@ -209,7 +209,7 @@ TIP: Given the above permission set, `GET /public/forbidden-folder/foo` would ma
 but because it matches the `deny1` permission set's path on a longer match, `deny1` will be chosen and the request will
 be rejected.
 
-### Matching multiple paths: most specific method wins
+=== Matching multiple paths: most specific method wins
 
 If a path is registered with multiple permission sets then any permission sets that specify a HTTP method will take
 precedence and permissions sets without a method will not be considered (assuming of course the method matches). In this
@@ -231,7 +231,7 @@ but because it matches the `permit1` permission set's explicit method, `permit1`
 be accepted. `PUT /public/foo` on the other hand, will not match the method permissions of `permit1` and so
 `deny1` will be activated and reject the request.
 
-### Matching multiple paths and methods: both win
+=== Matching multiple paths and methods: both win
 
 If multiple permission sets specify the same path and method (or multiple have no method) then both permissions have to
 allow access for the request to proceed. Note that for this to happen both have to either have specified the method, or
@@ -253,14 +253,14 @@ quarkus.http.auth.permission.roles2.policy=admin-policy1
 TIP: Given the above permission set, `GET /api/foo` would match both permission sets' paths,
 so would require both the `user` and `admin` roles.
 
-## Authenticated representation
+== Authenticated representation
 
 For every authenticated resource, you can inject a `SecurityIdentity` instance to get the authenticated identity information.
 
 In some other contexts you may have other parallel representations of the same information (or parts of it) such as `SecurityContext`
 for JAX-RS or `JsonWebToken` for JWT.
 
-## Configuration
+== Configuration
 
 There are two configuration settings that alter the RBAC behavior:
 
@@ -270,7 +270,7 @@ That is if the security annotations do not define the access control. Defaults t
 and JAX-RS endpoints that do not have security annotations but are defined in classes that contain methods with
 security annotations. Defaults to `false`.
 
-### Registering Security Providers
+=== Registering Security Providers
 
 When running in native mode the default behavior for Graal native image generation is to only include the main "SUN" provider
 unless you have enabled SSL, in which case all security providers are registered. If you are not using SSL, then you can selectively
@@ -284,7 +284,7 @@ quarkus.security.security-providers=SunRsaSign,SunJCE
 ...
 ----
 
-## Security Identity Customization
+== Security Identity Customization
 
 Internally, the identity providers create and update an istance of the `io.quarkus.security.identity.SecurityIdentity` class which holds the principal, roles, credentials which were used to authenticate the client (user) and other security attributes. An easy option to customize `SecurityIdentity` is to register a custom `SecurityIdentityAugmentor`, for example, the augmentor below adds an addition role:
 
@@ -331,3 +331,20 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
     }
 }
 --
+
+== Reactive Security
+
+If you are going to use security in a reactive environment you will likely need Smallrye Content Propagation:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-smallrye-context-propagation</artifactId>
+</dependency>
+----
+
+This will allow you to propagate the identity throughout the reactive callback. You also need to make sure you
+are using an executor that is capable of propagating the identity (e.g. no `CompletableFuture.supplyAsync`),
+to make sure that quarkus can propagate it. For more information see the
+link:context-propagation[Context Propagation Guide].

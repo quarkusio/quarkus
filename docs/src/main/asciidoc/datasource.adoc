@@ -103,9 +103,9 @@ If you want to use a database kind that is not part of this list, just use `othe
 
 [NOTE]
 ====
-Although it's possible to use any other JDBC driver in JVM mode, it's highly unlikely that it will work when compiling your application to native.
+Although it is possible to use any JDBC driver in JVM mode, it is unlikely that it will work when compiling your application to a native executable.
 
-We recommend you to use the existing JDBC Quarkus extensions when possible.
+If you plan to do the latter, we recommend you to use the existing JDBC Quarkus extensions (or contribute one for your driver).
 ====
 
 There is a good chance you will need to define some credentials to access your database.

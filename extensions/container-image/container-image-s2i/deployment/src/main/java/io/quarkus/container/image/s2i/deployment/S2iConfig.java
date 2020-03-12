@@ -2,6 +2,7 @@ package io.quarkus.container.image.s2i.deployment;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -12,6 +13,7 @@ public class S2iConfig {
 
     public static final String DEFAULT_BASE_JVM_IMAGE = "fabric8/s2i-java:2.3";
     public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:19.3.0";
+    public static final String DEFAULT_NATIVE_TARGET_FILENAME = "application";
 
     /**
      * The base image to be used when a container image is being produced for the jar build
@@ -38,18 +40,32 @@ public class S2iConfig {
     public List<String> nativeArguments;
 
     /**
-     * The path to where the jar is added during the assemble phase.
+     * The directory where the jar is added during the assemble phase.
      * This is dependant on the s2i image and should be supplied if a non default image is used.
      */
-    @ConfigItem(defaultValue = "/deployments/application${quarkus.package.runner-suffix}.jar")
-    public String jarPath;
+    @ConfigItem(defaultValue = "/deployments/")
+    public String jarDirectory;
 
     /**
-     * The path to where the native binary is added during the assemble phase.
-     * This is dependant on the s2i image and should be supplied if a non default image is used.
+     * The resulting filename of the jar in the s2i image.
+     * This option may be used if the selected s2i image uses a fixed name for the jar.
      */
-    @ConfigItem(defaultValue = "/home/quarkus/application")
-    public String nativeBinaryPath;
+    @ConfigItem
+    public Optional<String> jarFileName;
+
+    /**
+     * The directory where the native binary is added during the assemble phase.
+     * This is dependant on the s2i image and should be supplied if a non-default image is used.
+     */
+    @ConfigItem(defaultValue = "/home/quarkus/")
+    public String nativeBinaryDirectory;
+
+    /**
+     * The resulting filename of the native binary in the s2i image.
+     * This option may be used if the selected s2i image uses a fixed name for the native binary.
+     */
+    @ConfigItem
+    public Optional<String> nativeBinaryFileName;
 
     /**
      * The build timeout.

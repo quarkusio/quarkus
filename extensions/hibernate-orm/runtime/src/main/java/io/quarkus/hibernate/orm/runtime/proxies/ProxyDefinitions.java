@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.hibernate.HibernateException;
-import org.hibernate.boot.spi.MetadataImplementor;
+import org.hibernate.boot.Metadata;
 import org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl;
 import org.hibernate.internal.util.ReflectHelper;
 import org.hibernate.internal.util.collections.ArrayHelper;
@@ -49,7 +49,7 @@ public final class ProxyDefinitions {
         this.proxyDefinitionMap = proxyDefinitionMap;
     }
 
-    public static ProxyDefinitions createFromMetadata(MetadataImplementor storeableMetadata) {
+    public static ProxyDefinitions createFromMetadata(Metadata storeableMetadata) {
         //Check upfront for any need across all metadata: would be nice to avoid initializing the Bytecode provider.
         if (needAnyProxyDefinitions(storeableMetadata)) {
             final HashMap<Class<?>, ProxyClassDetailsHolder> proxyDefinitionMap = new HashMap<>();
@@ -83,7 +83,7 @@ public final class ProxyDefinitions {
         }
     }
 
-    private static boolean needAnyProxyDefinitions(MetadataImplementor storeableMetadata) {
+    private static boolean needAnyProxyDefinitions(Metadata storeableMetadata) {
         for (PersistentClass persistentClass : storeableMetadata.getEntityBindings()) {
             if (needsProxyGeneration(persistentClass))
                 return true;

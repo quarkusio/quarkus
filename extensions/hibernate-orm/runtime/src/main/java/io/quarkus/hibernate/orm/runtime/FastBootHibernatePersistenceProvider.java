@@ -14,7 +14,6 @@ import javax.sql.DataSource;
 
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
-import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
@@ -27,6 +26,7 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
+import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 
 /**
@@ -145,7 +145,7 @@ final class FastBootHibernatePersistenceProvider implements PersistenceProvider 
 
             RecordedState recordedState = PersistenceUnitsHolder.getRecordedState(persistenceUnitName);
 
-            final MetadataImplementor metadata = recordedState.getMetadata();
+            final PrevalidatedQuarkusMetadata metadata = recordedState.getMetadata();
             final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
             final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,

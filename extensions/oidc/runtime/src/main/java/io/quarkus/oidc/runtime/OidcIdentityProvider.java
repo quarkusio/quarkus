@@ -22,7 +22,10 @@ import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.oauth2.AccessToken;
+import io.vertx.ext.auth.oauth2.impl.OAuth2AuthProviderImpl;
+import io.vertx.ext.jwt.JWT;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
@@ -53,13 +56,22 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         return authenticate(request, vertxContext);
     }
 
-    @SuppressWarnings("deprecation")
     private CompletableFuture<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             RoutingContext vertxContext) {
-        CompletableFuture<SecurityIdentity> result = new CompletableFuture<>();
         TenantConfigContext resolvedContext = tenantResolver.resolve(vertxContext, true);
-        OidcTenantConfig config = resolvedContext.oidcConfig;
 
+        if (resolvedContext.oidcConfig.publicKey.isPresent()) {
+            return validateTokenWithoutOidcServer(request, resolvedContext);
+        } else {
+            return validateTokenWithOidcServer(request, resolvedContext);
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private CompletableFuture<SecurityIdentity> validateTokenWithOidcServer(TokenAuthenticationRequest request,
+            TenantConfigContext resolvedContext) {
+
+        CompletableFuture<SecurityIdentity> result = new CompletableFuture<>();
         resolvedContext.auth.decodeToken(request.getToken().getToken(),
                 new Handler<AsyncResult<AccessToken>>() {
                     @Override
@@ -68,42 +80,73 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             result.completeExceptionally(new AuthenticationFailedException(event.cause()));
                             return;
                         }
-                        AccessToken token = event.result();
+                        JsonObject tokenJson = event.result().accessToken();
                         try {
-                            OidcUtils.validateClaims(config.getToken(), token.accessToken());
-                        } catch (OIDCException e) {
-                            result.completeExceptionally(new AuthenticationFailedException(e));
-                            return;
+                            result.complete(validateAndCreateIdentity(request, resolvedContext.oidcConfig, tokenJson));
+                        } catch (Throwable ex) {
+                            result.completeExceptionally(ex);
                         }
-
-                        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
-                        builder.addCredential(request.getToken());
-
-                        JsonWebToken jwtPrincipal;
-                        try {
-                            JwtClaims jwtClaims = JwtClaims.parse(token.accessToken().encode());
-                            jwtClaims.setClaim(Claims.raw_token.name(), request.getToken().getToken());
-                            jwtPrincipal = new OidcJwtCallerPrincipal(jwtClaims, request.getToken(),
-                                    config.token.principalClaim.isPresent() ? config.token.principalClaim.get() : null);
-                        } catch (InvalidJwtException e) {
-                            result.completeExceptionally(new AuthenticationFailedException(e));
-                            return;
-                        }
-                        builder.setPrincipal(jwtPrincipal);
-                        try {
-                            String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
-                            for (String role : OidcUtils.findRoles(clientId, config.getRoles(), token.accessToken())) {
-                                builder.addRole(role);
-                            }
-                        } catch (Exception e) {
-                            result.completeExceptionally(new ForbiddenException(e));
-                            return;
-                        }
-
-                        result.complete(builder.build());
                     }
                 });
 
         return result;
+    }
+
+    private CompletableFuture<SecurityIdentity> validateTokenWithoutOidcServer(TokenAuthenticationRequest request,
+            TenantConfigContext resolvedContext) {
+        CompletableFuture<SecurityIdentity> result = new CompletableFuture<>();
+
+        OAuth2AuthProviderImpl auth = ((OAuth2AuthProviderImpl) resolvedContext.auth);
+        JWT jwt = auth.getJWT();
+        JsonObject tokenJson = null;
+        try {
+            tokenJson = jwt.decode(request.getToken().getToken());
+        } catch (Throwable ex) {
+            result.completeExceptionally(new AuthenticationFailedException(ex));
+            return result;
+        }
+        if (jwt.isExpired(tokenJson, auth.getConfig().getJWTOptions())) {
+            result.completeExceptionally(new AuthenticationFailedException());
+        } else {
+            try {
+                result.complete(validateAndCreateIdentity(request, resolvedContext.oidcConfig, tokenJson));
+            } catch (Throwable ex) {
+                result.completeExceptionally(ex);
+            }
+        }
+        return result;
+    }
+
+    private QuarkusSecurityIdentity validateAndCreateIdentity(TokenAuthenticationRequest request,
+            OidcTenantConfig config, JsonObject tokenJson)
+            throws Exception {
+        try {
+            OidcUtils.validateClaims(config.getToken(), tokenJson);
+        } catch (OIDCException e) {
+            throw new AuthenticationFailedException(e);
+        }
+
+        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
+        builder.addCredential(request.getToken());
+
+        JsonWebToken jwtPrincipal;
+        try {
+            JwtClaims jwtClaims = JwtClaims.parse(tokenJson.encode());
+            jwtClaims.setClaim(Claims.raw_token.name(), request.getToken().getToken());
+            jwtPrincipal = new OidcJwtCallerPrincipal(jwtClaims, request.getToken(),
+                    config.token.principalClaim.isPresent() ? config.token.principalClaim.get() : null);
+        } catch (InvalidJwtException e) {
+            throw new AuthenticationFailedException(e);
+        }
+        builder.setPrincipal(jwtPrincipal);
+        try {
+            String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
+            for (String role : OidcUtils.findRoles(clientId, config.getRoles(), tokenJson)) {
+                builder.addRole(role);
+            }
+        } catch (Exception e) {
+            throw new ForbiddenException(e);
+        }
+        return builder.build();
     }
 }

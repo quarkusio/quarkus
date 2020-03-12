@@ -11,6 +11,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials.Secret;
 import io.quarkus.runtime.annotations.Recorder;
@@ -21,6 +22,7 @@ import io.vertx.core.Vertx;
 import io.vertx.ext.auth.PubSecKeyOptions;
 import io.vertx.ext.auth.oauth2.OAuth2Auth;
 import io.vertx.ext.auth.oauth2.OAuth2ClientOptions;
+import io.vertx.ext.auth.oauth2.impl.OAuth2AuthProviderImpl;
 import io.vertx.ext.auth.oauth2.providers.KeycloakAuth;
 import io.vertx.ext.jwt.JWTOptions;
 
@@ -65,12 +67,40 @@ public class OidcRecorder {
             return null;
         }
 
-        if (!oidcConfig.getAuthServerUrl().isPresent() || !oidcConfig.getClientId().isPresent()) {
-            throw new ConfigurationException(
-                    "auth-server-url and client-id must be configured when the quarkus-oidc extension is enabled");
+        OAuth2ClientOptions options = new OAuth2ClientOptions();
+
+        if (oidcConfig.getClientId().isPresent()) {
+            options.setClientID(oidcConfig.getClientId().get());
         }
 
-        OAuth2ClientOptions options = new OAuth2ClientOptions();
+        if (oidcConfig.getToken().issuer.isPresent()) {
+            options.setValidateIssuer(false);
+        }
+
+        if (oidcConfig.getToken().getExpirationGrace().isPresent()) {
+            JWTOptions jwtOptions = new JWTOptions();
+            jwtOptions.setLeeway(oidcConfig.getToken().getExpirationGrace().get());
+            options.setJWTOptions(jwtOptions);
+        }
+
+        if (oidcConfig.getPublicKey().isPresent()) {
+            if (oidcConfig.applicationType == ApplicationType.WEB_APP) {
+                throw new ConfigurationException("'public-key' property can only be used with the 'service' applications");
+            }
+            LOG.info("'public-key' property for the local token verification is set,"
+                    + " no connection to the OIDC server will be created");
+            options.addPubSecKey(new PubSecKeyOptions()
+                    .setAlgorithm("RS256")
+                    .setPublicKey(oidcConfig.getPublicKey().get()));
+
+            return new TenantConfigContext(new OAuth2AuthProviderImpl(vertx, options), oidcConfig);
+        }
+
+        if (!oidcConfig.getAuthServerUrl().isPresent() || !oidcConfig.getClientId().isPresent()) {
+            throw new ConfigurationException(
+                    "Both 'auth-server-url' and 'client-id' or alterntively 'public-key' must be configured"
+                            + " when the quarkus-oidc extension is enabled");
+        }
 
         // Base IDP server URL
         options.setSite(oidcConfig.getAuthServerUrl().get());
@@ -84,10 +114,6 @@ public class OidcRecorder {
             options.setJwkPath(oidcConfig.getJwksPath().get());
         }
 
-        if (oidcConfig.getClientId().isPresent()) {
-            options.setClientID(oidcConfig.getClientId().get());
-        }
-
         Credentials creds = oidcConfig.getCredentials();
         if (creds.secret.isPresent() && (creds.clientSecret.value.isPresent() || creds.clientSecret.method.isPresent())) {
             throw new ConfigurationException(
@@ -95,7 +121,6 @@ public class OidcRecorder {
         }
         // TODO: The workaround to support client_secret_post is added below and have to be removed once
         // it is supported again in VertX OAuth2.
-
         if (creds.secret.isPresent()
                 || creds.clientSecret.value.isPresent()
                         && creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC) == Secret.Method.BASIC) {
@@ -105,21 +130,6 @@ public class OidcRecorder {
             // Avoid the client_secret set in CodeAuthenticationMechanism when client_secret_post is enabled
             // from being reset to null in VertX OAuth2
             options.setClientSecretParameterName(null);
-        }
-
-        if (oidcConfig.getPublicKey().isPresent()) {
-            options.addPubSecKey(new PubSecKeyOptions()
-                    .setAlgorithm("RS256")
-                    .setPublicKey(oidcConfig.getPublicKey().get()));
-        }
-        if (oidcConfig.getToken().issuer.isPresent()) {
-            options.setValidateIssuer(false);
-        }
-
-        if (oidcConfig.getToken().getExpirationGrace().isPresent()) {
-            JWTOptions jwtOptions = new JWTOptions();
-            jwtOptions.setLeeway(oidcConfig.getToken().getExpirationGrace().get());
-            options.setJWTOptions(jwtOptions);
         }
 
         final long connectionDelayInSecs = oidcConfig.getConnectionDelay().isPresent()

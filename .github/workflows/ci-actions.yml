@@ -410,7 +410,6 @@ jobs:
           - category: Misc3
             timeout: 50
             test-modules: >
-              kogito
               kubernetes-client
           - category: Spring
             timeout: 30

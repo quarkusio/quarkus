@@ -22,6 +22,7 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 
 /**
@@ -158,7 +159,13 @@ public class BuildMojo extends AbstractMojo {
                     .setRemoteRepositories(repos)
                     .build();
 
+            final Artifact projectArtifact = project.getArtifact();
+            final AppArtifact appArtifact = new AppArtifact(projectArtifact.getGroupId(), projectArtifact.getArtifactId(),
+                    projectArtifact.getClassifier(), projectArtifact.getArtifactHandler().getExtension(),
+                    projectArtifact.getVersion());
+
             CuratedApplication curatedApplication = QuarkusBootstrap.builder(outputDirectory.toPath())
+                    .setAppArtifact(appArtifact)
                     .setProjectRoot(project.getBasedir().toPath())
                     .setMavenArtifactResolver(resolver)
                     .setBaseClassLoader(BuildMojo.class.getClassLoader())

@@ -1,6 +1,7 @@
 
 package io.quarkus.kubernetes.deployment;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -34,22 +35,22 @@ public class ProbeConfig {
     Optional<String> tcpSocketAction;
 
     /**
-     * The amount of time to wait in seconds before starting to probe.
+     * The amount of time to wait before starting to probe.
      */
     @ConfigItem(defaultValue = "0")
-    Integer initialDelaySeconds;
+    Duration initialDelay;
 
     /**
      * The period in which the action should be called.
      */
-    @ConfigItem(defaultValue = "30")
-    Integer periodSeconds;
+    @ConfigItem(defaultValue = "30s")
+    Duration period;
 
     /**
      * The amount of time to wait for each action.
      */
-    @ConfigItem(defaultValue = "10")
-    Integer timeoutSeconds;
+    @ConfigItem(defaultValue = "10s")
+    Duration timeout;
 
     /**
      * The success threshold to use.
@@ -63,4 +64,7 @@ public class ProbeConfig {
     @ConfigItem(defaultValue = "3")
     Integer failureThreshold;
 
+    public boolean hasUserSuppliedAction() {
+        return httpActionPath.isPresent() || tcpSocketAction.isPresent() || execAction.isPresent();
+    }
 }

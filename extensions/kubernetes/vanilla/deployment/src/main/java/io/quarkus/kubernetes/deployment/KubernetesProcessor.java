@@ -37,7 +37,6 @@ import io.dekorate.kubernetes.config.Annotation;
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.Label;
 import io.dekorate.kubernetes.config.PortBuilder;
-import io.dekorate.kubernetes.config.ProbeBuilder;
 import io.dekorate.kubernetes.configurator.AddPort;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddAwsElasticBlockStoreVolumeDecorator;
@@ -312,16 +311,6 @@ class KubernetesProcessor {
             l.forEach(s -> session.resources().decorate(target, new AddImagePullSecretDecorator(name, s)));
         });
 
-        //Probes
-        config.getLivenessProbe().ifPresent(p -> {
-            session.resources().decorate(target, new AddLivenessProbeDecorator(name, ProbeConverter.convert(p)));
-        });
-
-        config.getReadinessProbe().ifPresent(p -> {
-            session.resources().decorate(target,
-                    new AddReadinessProbeDecorator(name, ProbeConverter.convert(p)));
-        });
-
         // Mounts and Volumes
         config.getMounts().entrySet().forEach(e -> {
             session.resources().decorate(target, new AddMountDecorator(MountConverter.convert(e)));
@@ -437,17 +426,72 @@ class KubernetesProcessor {
             });
         }
 
-        //Handle probes
-        kubernetesHealthLivenessPathBuildItem
-                .ifPresent(l -> session.resources()
-                        .decorate(new AddLivenessProbeDecorator(name, new ProbeBuilder()
-                                .withHttpActionPath(l.getPath())
-                                .build())));
-        kubernetesHealthReadinessPathBuildItem
-                .ifPresent(r -> session.resources()
-                        .decorate(new AddReadinessProbeDecorator(name, new ProbeBuilder()
-                                .withHttpActionPath(r.getPath())
-                                .build())));
+        // only use the probe config 
+        kubernetesConfig.deploymentTarget.forEach(target -> {
+            kubernetesHealthLivenessPathBuildItem.ifPresent(l -> {
+                session.resources().decorate(target, new AddLivenessProbeDecorator(name,
+                        ProbeConverter.builder(kubernetesConfig.livenessProbe).withHttpActionPath(l.getPath()).build()));
+            });
+            kubernetesHealthReadinessPathBuildItem.ifPresent(l -> {
+                session.resources().decorate(target, new AddReadinessProbeDecorator(name,
+                        ProbeConverter.builder(kubernetesConfig.readinessProbe).withHttpActionPath(l.getPath()).build()));
+            });
+        });
+        handleProbes(name, kubernetesConfig, openshiftConfig, knativeConfig, kubernetesHealthLivenessPathBuildItem,
+                kubernetesHealthReadinessPathBuildItem, session);
+    }
+
+    private void handleProbes(String name, KubernetesConfig kubernetesConfig, OpenshiftConfig openshiftConfig,
+            KnativeConfig knativeConfig, Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
+            Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem, Session session) {
+        if (kubernetesConfig.deploymentTarget.contains(KUBERNETES)) {
+            handleLivenessProbe(name, KUBERNETES, kubernetesConfig.livenessProbe, kubernetesHealthLivenessPathBuildItem,
+                    session);
+            handleReadinessProbe(name, KUBERNETES, kubernetesConfig.readinessProbe, kubernetesHealthReadinessPathBuildItem,
+                    session);
+        }
+        if (kubernetesConfig.deploymentTarget.contains(OPENSHIFT)) {
+            handleLivenessProbe(name, OPENSHIFT, openshiftConfig.livenessProbe, kubernetesHealthLivenessPathBuildItem, session);
+            handleReadinessProbe(name, OPENSHIFT, openshiftConfig.readinessProbe, kubernetesHealthReadinessPathBuildItem,
+                    session);
+        }
+        if (kubernetesConfig.deploymentTarget.contains(KNATIVE)) {
+            handleLivenessProbe(name, OPENSHIFT, knativeConfig.livenessProbe, kubernetesHealthLivenessPathBuildItem, session);
+            handleReadinessProbe(name, OPENSHIFT, knativeConfig.readinessProbe, kubernetesHealthReadinessPathBuildItem,
+                    session);
+        }
+    }
+
+    private void handleLivenessProbe(String name, String target, ProbeConfig livenessProbe,
+            Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem, Session session) {
+        AddLivenessProbeDecorator livenessProbeDecorator = null;
+        if (livenessProbe.hasUserSuppliedAction()) {
+            livenessProbeDecorator = new AddLivenessProbeDecorator(name,
+                    ProbeConverter.convert(livenessProbe));
+        } else if (kubernetesHealthLivenessPathBuildItem.isPresent()) {
+            livenessProbeDecorator = new AddLivenessProbeDecorator(name,
+                    ProbeConverter.builder(livenessProbe)
+                            .withHttpActionPath(kubernetesHealthLivenessPathBuildItem.get().getPath()).build());
+        }
+        if (livenessProbeDecorator != null) {
+            session.resources().decorate(target, livenessProbeDecorator);
+        }
+    }
+
+    private void handleReadinessProbe(String name, String target, ProbeConfig readinessProbe,
+            Optional<KubernetesHealthReadinessPathBuildItem> healthReadinessPathBuildItem, Session session) {
+        AddReadinessProbeDecorator readinessProbeDecorator = null;
+        if (readinessProbe.hasUserSuppliedAction()) {
+            readinessProbeDecorator = new AddReadinessProbeDecorator(name,
+                    ProbeConverter.convert(readinessProbe));
+        } else if (healthReadinessPathBuildItem.isPresent()) {
+            readinessProbeDecorator = new AddReadinessProbeDecorator(name,
+                    ProbeConverter.builder(readinessProbe)
+                            .withHttpActionPath(healthReadinessPathBuildItem.get().getPath()).build());
+        }
+        if (readinessProbeDecorator != null) {
+            session.resources().decorate(target, readinessProbeDecorator);
+        }
     }
 
     private Map<String, Integer> verifyPorts(List<KubernetesPortBuildItem> kubernetesPortBuildItems) {

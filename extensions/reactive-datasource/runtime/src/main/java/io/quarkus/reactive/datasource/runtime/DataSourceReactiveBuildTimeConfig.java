@@ -11,7 +11,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class DataSourceReactiveBuildTimeConfig {
 
     /**
-     * If we create a JDBC datasource for this datasource.
+     * If we create a Reactive datasource for this datasource.
      */
     @ConfigItem(name = ConfigItem.PARENT, defaultValue = "true")
     public boolean enabled;

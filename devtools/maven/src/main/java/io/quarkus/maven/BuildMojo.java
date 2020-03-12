@@ -117,7 +117,8 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(property = "ignoredEntries")
     private String[] ignoredEntries;
 
-    @Parameter(defaultValue = "false")
+    /** Skip the execution of this mojo */
+    @Parameter(defaultValue = "false", property = "quarkus.build.skip")
     private boolean skip = false;
 
     public BuildMojo() {

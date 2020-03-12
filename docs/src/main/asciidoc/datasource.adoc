@@ -101,6 +101,13 @@ For instance, when we have a JDBC driver extension for a given kind,
 we resolve the JDBC driver to be used automatically, so you don't need to configure it yourself.
 If you want to use a database kind that is not part of this list, just use `other` or whatever name you prefer.
 
+[NOTE]
+====
+Although it's possible to use any other JDBC driver in JVM mode, it's highly unlikely that it will work when compiling your application to native.
+
+We recommend you to use the existing JDBC Quarkus extensions when possible.
+====
+
 There is a good chance you will need to define some credentials to access your database.
 
 This is done by configuring the following properties:

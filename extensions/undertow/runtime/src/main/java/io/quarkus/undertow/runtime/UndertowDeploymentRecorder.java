@@ -33,6 +33,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -362,7 +363,19 @@ public class UndertowDeploymentRecorder {
                 }
                 Duration readTimeout = httpConfiguration.readTimeout;
                 exchange.setReadTimeout(readTimeout.toMillis());
-                defaultHandler.handle(exchange);
+                //we eagerly dispatch to the exector, as Undertow needs to be blocking anyway
+                //its actually possible to be on a different IO thread at this point which confuses Undertow
+                //see https://github.com/quarkusio/quarkus/issues/7782
+                if (BlockingOperationControl.isBlockingAllowed()) {
+                    defaultHandler.handle(exchange);
+                } else {
+                    executorService.submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            defaultHandler.handle(exchange);
+                        }
+                    });
+                }
             }
         };
     }

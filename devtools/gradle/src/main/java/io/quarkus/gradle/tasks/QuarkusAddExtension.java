@@ -42,7 +42,11 @@ public class QuarkusAddExtension extends QuarkusPlatformTask {
                 .collect(toSet());
 
         try {
-            new AddExtensions(new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir())), platformDescriptor())
+            GradleBuildFile gradleBuildFile = getProject().getParent() == null
+                    ? new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir()))
+                    : new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir()),
+                            new FileProjectWriter(getProject().getRootProject().getProjectDir()));
+            new AddExtensions(gradleBuildFile, platformDescriptor())
                     .extensions(extensionsSet)
                     .execute();
         } catch (Exception e) {

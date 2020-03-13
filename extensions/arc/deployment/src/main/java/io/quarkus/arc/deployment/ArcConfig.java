@@ -25,7 +25,6 @@ public class ArcConfig {
      * <li>If set to `fwk`, then all unused beans will be removed, except the unused beans whose classes are declared in the
      * application code</li>
      * </ul>
-     * <br>
      * <p>
      * An unused bean:
      * <ul>
@@ -37,7 +36,6 @@ public class ArcConfig {
      * <li>does not declare any producer which is eligible for injection to any injection point,</li>
      * <li>is not directly eligible for injection into any {@link javax.enterprise.inject.Instance} injection point</li>
      * </ul>
-     * </p>
      * 
      * @see UnremovableBeanBuildItem
      */
@@ -54,12 +52,24 @@ public class ArcConfig {
     /**
      * If set to true, Arc will transform the bytecode of beans containing methods that need to be proxyable
      * but have been declared as final. The transformation is simply a matter of removing final.
-     * This ensures that a proxy can be created properly.
+     * This ensures that a proxy/subclass can be created properly.
      * If the value is set to false, then an exception is thrown at build time indicating
      * that a proxy could not be created because a method was final.
+     * 
+     * @deprecated This config property is ignored and will be removed at some point post Quarkus 1.4
+     * @see #transformUnproxyableClasses
      */
+    @Deprecated
     @ConfigItem(defaultValue = "true")
     public boolean removeFinalForProxyableMethods;
+
+    /**
+     * If set to true, the bytecode of unproxyable beans will be transformed. This ensures that a proxy/subclass
+     * can be created properly. If the value is set to false, then an exception is thrown at build time indicating that a
+     * subclass/proxy could not be created.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean transformUnproxyableClasses;
 
     /**
      * The default naming strategy for {@link ConfigProperties.NamingStrategy}. The allowed values are determined

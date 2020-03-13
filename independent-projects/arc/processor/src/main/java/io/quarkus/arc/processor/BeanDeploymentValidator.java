@@ -23,11 +23,14 @@ public interface BeanDeploymentValidator extends BuildExtension {
     }
 
     /**
+     * This method is deprecated and is not used internally.
      * 
      * @param target
      * @param rule
      * @return {@code true} if the given validation rule should be skipped for the specified target
+     * @deprecated This method will be removed at some point post Quarkus 1.4
      */
+    @Deprecated
     default boolean skipValidation(InjectionTargetInfo target, ValidationRule rule) {
         return false;
     }
@@ -52,6 +55,7 @@ public interface BeanDeploymentValidator extends BuildExtension {
 
     }
 
+    @Deprecated
     enum ValidationRule {
 
         NO_ARGS_CONSTRUCTOR;

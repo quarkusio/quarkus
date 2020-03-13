@@ -124,7 +124,7 @@ final class Methods {
     static Set<MethodInfo> addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
             Map<MethodKey, Set<AnnotationInstance>> candidates,
             List<AnnotationInstance> classLevelBindings, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
-            boolean removeFinalForProxyableMethods) {
+            boolean transformUnproxyableClasses) {
 
         Set<NameAndDescriptor> methodsFromWhichToRemoveFinal = new HashSet<>();
         Set<MethodInfo> finalMethodsFoundAndNotChanged = new HashSet<>();
@@ -147,7 +147,7 @@ final class Methods {
             if (!merged.isEmpty()) {
                 boolean addToCandidates = true;
                 if (Modifier.isFinal(method.flags())) {
-                    if (removeFinalForProxyableMethods) {
+                    if (transformUnproxyableClasses) {
                         methodsFromWhichToRemoveFinal.add(NameAndDescriptor.fromMethodInfo(method));
                     } else {
                         addToCandidates = false;
@@ -183,7 +183,7 @@ final class Methods {
             ClassInfo superClassInfo = getClassByName(beanDeployment.getIndex(), classInfo.superName());
             if (superClassInfo != null) {
                 finalMethodsFoundAndNotChanged.addAll(addInterceptedMethodCandidates(beanDeployment, superClassInfo, candidates,
-                        classLevelBindings, bytecodeTransformerConsumer, removeFinalForProxyableMethods));
+                        classLevelBindings, bytecodeTransformerConsumer, transformUnproxyableClasses));
             }
         }
         return finalMethodsFoundAndNotChanged;

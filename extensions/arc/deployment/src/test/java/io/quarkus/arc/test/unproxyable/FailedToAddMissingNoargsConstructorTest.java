@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.noargsconstructor;
+package io.quarkus.arc.test.unproxyable;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.spi.BeanManager;

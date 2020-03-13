@@ -5,8 +5,8 @@ import org.objectweb.asm.ClassVisitor;
 
 public class BytecodeTransformer {
 
-    final String classToTransform;
-    final BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction;
+    private final String classToTransform;
+    private final BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction;
 
     public BytecodeTransformer(String classToTransform,
             BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction) {

@@ -249,16 +249,18 @@ public class S2iProcessor {
         Config config = kubernetesClient.getClient().getConfiguration();
         //Let's disable http2 as it causes issues with duplicate build triggers.
         config.setHttp2Disable(true);
-        KubernetesClient client = Clients.fromConfig(config);
-        OpenShiftClient openShiftClient = client.adapt(OpenShiftClient.class);
-        KubernetesList kubernetesList = Serialization.unmarshalAsList(new ByteArrayInputStream(openshiftManifests.getData()));
+        try (KubernetesClient client = Clients.fromConfig(config)) {
+            OpenShiftClient openShiftClient = client.adapt(OpenShiftClient.class);
+            KubernetesList kubernetesList = Serialization
+                    .unmarshalAsList(new ByteArrayInputStream(openshiftManifests.getData()));
 
-        List<HasMetadata> buildResources = kubernetesList.getItems().stream()
-                .filter(i -> i instanceof BuildConfig || i instanceof ImageStream || i instanceof Secret)
-                .collect(Collectors.toList());
+            List<HasMetadata> buildResources = kubernetesList.getItems().stream()
+                    .filter(i -> i instanceof BuildConfig || i instanceof ImageStream || i instanceof Secret)
+                    .collect(Collectors.toList());
 
-        applyS2iResources(openShiftClient, buildResources);
-        s2iBuild(openShiftClient, buildResources, tar, s2iConfig);
+            applyS2iResources(openShiftClient, buildResources);
+            s2iBuild(openShiftClient, buildResources, tar, s2iConfig);
+        }
     }
 
     /**

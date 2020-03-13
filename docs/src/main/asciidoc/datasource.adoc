@@ -400,7 +400,7 @@ AgroalDataSource inventoryDataSource;
 
 == Datasource Health Check
 
-If you are using the `quarkus-smallrye-health` extension, `quarkus-agroal` will automatically add a readiness health check
+If you are using the `quarkus-smallrye-health` extension, `quarkus-agroal`, `quarkus-reactive-pg-client` and `quarkus-reactive-mysql-client` extensions will automatically add a readiness health check
 to validate the datasource.
 
 So when you access the `/health/ready` endpoint of your application you will have information about the datasource validation status.

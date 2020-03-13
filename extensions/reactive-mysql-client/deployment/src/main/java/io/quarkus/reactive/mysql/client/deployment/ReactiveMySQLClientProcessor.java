@@ -19,6 +19,7 @@ import io.quarkus.reactive.mysql.client.runtime.DataSourceReactiveMySQLConfig;
 import io.quarkus.reactive.mysql.client.runtime.LegacyDataSourceReactiveMySQLConfig;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolProducer;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolRecorder;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
 @SuppressWarnings("deprecation")
@@ -62,5 +63,11 @@ class ReactiveMySQLClientProcessor {
                 shutdown)));
 
         return serviceStart;
+    }
+
+    @BuildStep
+    HealthBuildItem addHealthCheck(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
+        return new HealthBuildItem("io.quarkus.reactive.mysql.client.runtime.health.ReactiveMySQLDataSourceHealthCheck",
+                dataSourcesBuildTimeConfig.healthEnabled, "datasource");
     }
 }

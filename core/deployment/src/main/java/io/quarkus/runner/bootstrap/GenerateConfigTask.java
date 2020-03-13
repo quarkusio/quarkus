@@ -7,6 +7,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,17 +27,15 @@ import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
  *
  * @author Stuart Douglas
  */
-public class GenerateConfigTask {
+public class GenerateConfigTask implements BiConsumer<CuratedApplication, Map<String, Object>> {
 
     private static final Logger log = Logger.getLogger(GenerateConfigTask.class);
 
-    private final Path configFile;
+    public static final String CONFIG_FILE = "config-file";
 
-    public GenerateConfigTask(Path configFile) {
-        this.configFile = configFile;
-    }
-
-    public Path run(CuratedApplication application) {
+    @Override
+    public void accept(CuratedApplication application, Map<String, Object> stringObjectMap) {
+        Path configFile = (Path) stringObjectMap.get(CONFIG_FILE);
         //first lets look for some config, as it is not on the current class path
         //and we need to load it to run the build process
         try {
@@ -89,7 +89,6 @@ public class GenerateConfigTask {
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate config file", e);
         }
-        return configFile;
     }
 
     private String formatDocs(String docs) {
@@ -154,4 +153,5 @@ public class GenerateConfigTask {
         }
         return ret.toString();
     }
+
 }

@@ -456,8 +456,8 @@ class KubernetesProcessor {
                     session);
         }
         if (kubernetesConfig.deploymentTarget.contains(KNATIVE)) {
-            handleLivenessProbe(name, OPENSHIFT, knativeConfig.livenessProbe, kubernetesHealthLivenessPathBuildItem, session);
-            handleReadinessProbe(name, OPENSHIFT, knativeConfig.readinessProbe, kubernetesHealthReadinessPathBuildItem,
+            handleLivenessProbe(name, KNATIVE, knativeConfig.livenessProbe, kubernetesHealthLivenessPathBuildItem, session);
+            handleReadinessProbe(name, KNATIVE, knativeConfig.readinessProbe, kubernetesHealthReadinessPathBuildItem,
                     session);
         }
     }

@@ -18,4 +18,10 @@ public class FlywayFunctionalityTest {
         when().get("/flyway/migrate").then().body(is("1.0.1"));
     }
 
+    @Test
+    @DisplayName("Returns current placeholders")
+    public void testPlaceholders() {
+        when().get("/flyway/placeholders").then().body("foo", is("bar"));
+    }
+
 }

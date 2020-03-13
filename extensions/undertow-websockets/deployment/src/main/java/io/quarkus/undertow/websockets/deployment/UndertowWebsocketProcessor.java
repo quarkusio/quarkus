@@ -92,7 +92,8 @@ public class UndertowWebsocketProcessor {
     public ServletContextAttributeBuildItem deploy(final CombinedIndexBuildItem indexBuildItem,
             UndertowWebsocketRecorder recorder,
             BuildProducer<ReflectiveClassBuildItem> reflection,
-            List<AnnotatedWebsocketEndpointBuildItem> annotatedEndpoints) throws Exception {
+            List<AnnotatedWebsocketEndpointBuildItem> annotatedEndpoints,
+            WebsocketConfig websocketConfig) throws Exception {
 
         final Set<String> endpoints = new HashSet<>();
         final Set<String> config = new HashSet<>();
@@ -133,7 +134,7 @@ public class UndertowWebsocketProcessor {
                 new ReflectiveClassBuildItem(true, true, ClientEndpointConfig.Configurator.class.getName()));
 
         return new ServletContextAttributeBuildItem(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
-                recorder.createDeploymentInfo(annotated, endpoints, config));
+                recorder.createDeploymentInfo(annotated, endpoints, config, websocketConfig.maxFrameSize));
     }
 
     private void registerCodersForReflection(BuildProducer<ReflectiveClassBuildItem> reflection,

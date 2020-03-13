@@ -224,10 +224,11 @@ public abstract class AbstractDataSourceProducer {
 
         // Pool size configuration:
 
-        poolConfiguration.minSize(dataSourceRuntimeConfig.minSize);
-        poolConfiguration.maxSize(dataSourceRuntimeConfig.maxSize);
-        if (dataSourceRuntimeConfig.initialSize.isPresent() && dataSourceRuntimeConfig.initialSize.getAsInt() > 0) {
-            poolConfiguration.initialSize(dataSourceRuntimeConfig.initialSize.getAsInt());
+
+        poolConfiguration.minSize(dataSourceJdbcRuntimeConfig.minSize);
+        poolConfiguration.maxSize(dataSourceJdbcRuntimeConfig.maxSize);
+        if (dataSourceJdbcRuntimeConfig.initialSize.isPresent() && dataSourceJdbcRuntimeConfig.initialSize.getAsInt() > 0) {
+            poolConfiguration.initialSize(dataSourceJdbcRuntimeConfig.initialSize.getAsInt());
         }
 
         // Connection management

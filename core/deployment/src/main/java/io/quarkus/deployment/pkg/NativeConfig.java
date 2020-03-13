@@ -38,12 +38,8 @@ public class NativeConfig {
     /**
      * @deprecated JNI is always enabled starting from GraalVM 19.3.1.
      */
-<<<<<<< HEAD
-    @Deprecated
-    @ConfigItem(defaultValue = "true")
-=======
+
     @ConfigItem
->>>>>>> fix config-related cleanups #5388
     public boolean enableJni;
 
     /**

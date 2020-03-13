@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.DeploymentException;
 import javax.inject.Inject;
 import org.junit.jupiter.api.Test;
@@ -23,8 +22,6 @@ public class NormalScopedConstructorTest {
         Throwable error = container.getFailure();
         assertNotNull(error);
         assertTrue(error instanceof DeploymentException);
-        assertNotNull(error.getCause());
-        assertTrue(error.getCause() instanceof DefinitionException);
     }
 
     @ApplicationScoped

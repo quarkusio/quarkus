@@ -240,7 +240,7 @@ public class ArcProcessor {
                 }
             });
         }
-        builder.setRemoveFinalFromProxyableMethods(arcConfig.removeFinalForProxyableMethods);
+        builder.setTransformUnproxyableClasses(arcConfig.transformUnproxyableClasses);
         builder.setJtaCapabilities(capabilities.isCapabilityPresent(Capabilities.TRANSACTIONS));
         builder.setGenerateSources(BootstrapDebug.DEBUG_SOURCES_DIR != null);
 
@@ -290,13 +290,14 @@ public class ArcProcessor {
             configurator.getValues().forEach(ObserverConfigurator::done);
         }
 
-        observerRegistrationPhase.getBeanProcessor().initialize(new Consumer<BytecodeTransformer>() {
+        Consumer<BytecodeTransformer> bytecodeTransformerConsumer = new Consumer<BytecodeTransformer>() {
             @Override
             public void accept(BytecodeTransformer t) {
                 bytecodeTransformer.produce(new BytecodeTransformerBuildItem(t.getClassToTransform(), t.getVisitorFunction()));
             }
-        });
-        return new ValidationPhaseBuildItem(observerRegistrationPhase.getBeanProcessor().validate(),
+        };
+        observerRegistrationPhase.getBeanProcessor().initialize(bytecodeTransformerConsumer);
+        return new ValidationPhaseBuildItem(observerRegistrationPhase.getBeanProcessor().validate(bytecodeTransformerConsumer),
                 observerRegistrationPhase.getBeanProcessor());
     }
 

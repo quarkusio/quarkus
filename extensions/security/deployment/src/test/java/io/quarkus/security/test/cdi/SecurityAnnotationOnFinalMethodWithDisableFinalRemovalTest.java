@@ -24,7 +24,7 @@ public class SecurityAnnotationOnFinalMethodWithDisableFinalRemovalTest {
                     .addClasses(BeanWithSecuredFinalMethod.class, IdentityMock.class,
                             AuthData.class, SecurityTestUtils.class)
                     .addAsResource(new StringAsset(
-                            "quarkus.arc.remove-final-for-proxyable-methods=false"),
+                            "quarkus.arc.transform-unproxyable-classes=false"),
                             "application.properties"))
             .setExpectedException(DeploymentException.class);
 

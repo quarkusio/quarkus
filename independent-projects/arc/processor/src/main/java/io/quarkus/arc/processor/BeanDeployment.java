@@ -94,7 +94,7 @@ public class BeanDeployment {
     private final Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts;
 
     private final Collection<BeanDefiningAnnotation> beanDefiningAnnotations;
-    private final boolean removeFinalForProxyableMethods;
+    final boolean transformUnproxyableClasses;
     private final boolean jtaCapabilities;
 
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
@@ -111,7 +111,8 @@ public class BeanDeployment {
             Collection<DotName> resourceAnnotations,
             BuildContextImpl buildContext, boolean removeUnusedBeans, List<Predicate<BeanInfo>> unusedExclusions,
             Map<DotName, Collection<AnnotationInstance>> additionalStereotypes,
-            List<InterceptorBindingRegistrar> bindingRegistrars, boolean removeFinalForProxyableMethods,
+            List<InterceptorBindingRegistrar> bindingRegistrars,
+            boolean transformUnproxyableClasses,
             boolean jtaCapabilities) {
         this.buildContext = buildContext;
         Set<BeanDefiningAnnotation> beanDefiningAnnotations = new HashSet<>();
@@ -167,7 +168,7 @@ public class BeanDeployment {
 
         this.beanResolver = new BeanResolver(this);
         this.interceptorResolver = new InterceptorResolver(this);
-        this.removeFinalForProxyableMethods = removeFinalForProxyableMethods;
+        this.transformUnproxyableClasses = transformUnproxyableClasses;
         this.jtaCapabilities = jtaCapabilities;
     }
 
@@ -224,13 +225,13 @@ public class BeanDeployment {
         // Collect dependency resolution errors
         List<Throwable> errors = new ArrayList<>();
         for (BeanInfo bean : beans) {
-            bean.init(errors, bytecodeTransformerConsumer, removeFinalForProxyableMethods);
+            bean.init(errors, bytecodeTransformerConsumer, transformUnproxyableClasses);
         }
         for (ObserverInfo observer : observers) {
             observer.init(errors);
         }
         for (InterceptorInfo interceptor : interceptors) {
-            interceptor.init(errors, bytecodeTransformerConsumer, removeFinalForProxyableMethods);
+            interceptor.init(errors, bytecodeTransformerConsumer, transformUnproxyableClasses);
         }
         processErrors(errors);
 
@@ -316,14 +317,17 @@ public class BeanDeployment {
         LOGGER.debugf("Bean deployment initialized in %s ms", System.currentTimeMillis() - start);
     }
 
-    ValidationContext validate(List<BeanDeploymentValidator> validators) {
+    ValidationContext validate(List<BeanDeploymentValidator> validators,
+            Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
         // Validate the bean deployment
         List<Throwable> errors = new ArrayList<>();
-        validateBeans(errors, validators);
+        // First, validate all beans internally
+        validateBeans(errors, validators, bytecodeTransformerConsumer);
         ValidationContextImpl validationContext = new ValidationContextImpl(buildContext);
         for (Throwable error : errors) {
             validationContext.addDeploymentProblem(error);
         }
+        // Next, execute all registered validators 
         for (BeanDeploymentValidator validator : validators) {
             validator.validate(validationContext);
         }
@@ -943,6 +947,8 @@ public class BeanDeployment {
                 Throwable error = errors.get(0);
                 if (error instanceof DeploymentException) {
                     throw (DeploymentException) error;
+                } else if (error instanceof DefinitionException) {
+                    throw (DefinitionException) error;
                 } else {
                     throw new DeploymentException(errors.get(0));
                 }
@@ -984,7 +990,9 @@ public class BeanDeployment {
         return interceptors;
     }
 
-    private void validateBeans(List<Throwable> errors, List<BeanDeploymentValidator> validators) {
+    private void validateBeans(List<Throwable> errors, List<BeanDeploymentValidator> validators,
+            Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
+
         Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
 
         for (BeanInfo bean : beans) {
@@ -996,7 +1004,7 @@ public class BeanDeployment {
                 }
                 named.add(bean);
             }
-            bean.validate(errors, validators);
+            bean.validate(errors, validators, bytecodeTransformerConsumer);
         }
 
         if (!namedBeans.isEmpty()) {

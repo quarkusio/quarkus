@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.noargsconstructor;
+package io.quarkus.arc.test.unproxyable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

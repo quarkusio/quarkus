@@ -47,4 +47,37 @@ public class SentryConfig {
      */
     @ConfigItem
     public Optional<List<String>> inAppPackages;
+
+    /**
+     * Environment
+     *
+     * As of Sentry 9, you can easily filter issues, releases, and user feedback by environment.
+     * The environment filter on sentry affects all issue-related metrics like count of users affected, times series graphs,
+     * and event count.
+     * By setting the environment option, an environment tag will be added to each new issue sent to Sentry.
+     *
+     * There are a few restrictions:
+     * -> the environment name cannot contain newlines or spaces, cannot be the string “None” or exceed 64 characters.
+     *
+     * For further detail, please refer to the sentry environment option documentation:
+     * https://docs.sentry.io/enriching-error-data/environments/
+     */
+    @ConfigItem
+    public Optional<String> environment;
+
+    /**
+     * Release
+     *
+     * A release is a version of your code that is deployed to an environment.
+     * When you give Sentry information about your releases, you unlock a number of new features:
+     * - Determine the issues and regressions introduced in a new release
+     * - Predict which commit caused an issue and who is likely responsible
+     * - Resolve issues by including the issue number in your commit message
+     * - Receive email notifications when your code gets deployed
+     *
+     * For further detail, please refer to the sentry release option documentation:
+     * https://docs.sentry.io/workflow/releases/
+     */
+    @ConfigItem
+    public Optional<String> release;
 }

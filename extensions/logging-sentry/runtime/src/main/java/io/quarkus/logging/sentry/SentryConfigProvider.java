@@ -25,6 +25,10 @@ class SentryConfigProvider implements ConfigurationProvider {
                 return config.inAppPackages.map(p -> join(",", p))
                         .filter(s -> !Objects.equals(s, "*"))
                         .orElse("");
+            case DefaultSentryClientFactory.ENVIRONMENT_OPTION:
+                return config.environment.orElse("");
+            case DefaultSentryClientFactory.RELEASE_OPTION:
+                return config.release.orElse("");
             // New SentryConfig options should be mapped here
             default:
                 return null;

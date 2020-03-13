@@ -26,9 +26,9 @@ class SentryConfigProvider implements ConfigurationProvider {
                         .filter(s -> !Objects.equals(s, "*"))
                         .orElse("");
             case DefaultSentryClientFactory.ENVIRONMENT_OPTION:
-                return config.environment.orElse("");
+                return config.environment.orElse(null);
             case DefaultSentryClientFactory.RELEASE_OPTION:
-                return config.release.orElse("");
+                return config.release.orElse(null);
             // New SentryConfig options should be mapped here
             default:
                 return null;

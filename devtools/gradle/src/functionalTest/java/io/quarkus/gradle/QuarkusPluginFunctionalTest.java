@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
+import io.quarkus.platform.tools.config.QuarkusPlatformConfig;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
@@ -48,6 +50,22 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleTestBase {
         assertThat(build.getOutput()).contains("Quarkus - Core");
     }
 
+    @Test
+    public void canGenerateConfig() throws IOException {
+        createProject(SourceType.JAVA);
+
+        BuildResult build = GradleRunner.create()
+                .forwardOutput()
+                .withPluginClasspath()
+                .withArguments(arguments("generateConfig"))
+                .withProjectDir(projectRoot)
+                .build();
+
+        assertThat(build.task(":generateConfig").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+        assertThat(projectRoot.toPath().resolve("src/main/resources/application.properties.example")).exists();
+    }
+
+
     @ParameterizedTest(name = "Build {0} project")
     @EnumSource(SourceType.class)
     public void canBuild(SourceType sourceType) throws IOException, InterruptedException {
@@ -68,7 +86,8 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleTestBase {
     private void createProject(SourceType sourceType) throws IOException {
         Map<String, Object> context = new HashMap<>();
         context.put("path", "/greeting");
-        assertThat(new CreateProject(new FileProjectWriter(projectRoot))
+        assertThat(new CreateProject(new FileProjectWriter(projectRoot),
+                                     QuarkusPlatformConfig.getGlobalDefault().getPlatformDescriptor())
                 .groupId("com.acme.foo")
                 .artifactId("foo")
                 .version("1.0.0-SNAPSHOT")

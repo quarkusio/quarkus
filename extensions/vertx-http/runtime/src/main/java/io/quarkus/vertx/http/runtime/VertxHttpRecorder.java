@@ -5,11 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-<<<<<<< HEAD
 import java.util.Arrays;
 import java.util.Collections;
-=======
->>>>>>> fix config-related cleanups #5388
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;

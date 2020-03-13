@@ -144,7 +144,9 @@ class FlywayProcessor {
                 .map(flywayBuildConfig::getConfigForDataSourceName)
                 .flatMap(config -> Stream.of(config.locations.get()))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
-        if (DataSourceInitializedBuildItem.isDefaultDataSourcePresent(dataSourceInitializedBuildItem)) {
+
+
+        if (DataSourceUtil.hasDefault(dataSourceNames)) {
             migrationLocations.addAll(Arrays.asList(flywayBuildConfig.defaultDataSource.locations.get()));
         }
         return migrationLocations;

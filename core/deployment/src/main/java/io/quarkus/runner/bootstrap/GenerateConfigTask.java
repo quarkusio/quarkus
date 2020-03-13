@@ -75,7 +75,10 @@ public class GenerateConfigTask implements BiConsumer<CuratedApplication, Map<St
                     sb.append("\n#\n");
                     sb.append(formatDocs(i.getDocs()));
                     sb.append("\n#\n#");
-                    sb.append(i.getPropertyName() + "=" + i.getDefaultValue());
+                    sb.append(i.getPropertyName()).append("=");
+                    if (i.getDefaultValue() != null) {
+                        sb.append(i.getDefaultValue());
+                    }
                     sb.append("\n");
                 }
 

@@ -40,7 +40,4 @@ public class JibConfig {
      */
     @ConfigItem
     public Optional<Map<String, String>> environmentVariables;
-
-    //TODO: do the following config options belong in ContainerImageConfig ?
-
 }

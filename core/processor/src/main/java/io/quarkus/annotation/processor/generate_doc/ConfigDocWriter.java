@@ -30,6 +30,10 @@ final public class ConfigDocWriter {
     private void generateDocumentation(Path targetPath, String initialAnchorPrefix, boolean activateSearch,
             List<ConfigDocItem> configDocItems)
             throws IOException {
+        if (configDocItems.isEmpty()) {
+            return;
+        }
+
         try (Writer writer = Files.newBufferedWriter(targetPath)) {
             summaryTableDocFormatter.format(writer, initialAnchorPrefix, activateSearch, configDocItems);
 

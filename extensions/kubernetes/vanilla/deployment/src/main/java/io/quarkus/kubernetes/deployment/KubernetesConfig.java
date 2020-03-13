@@ -117,13 +117,13 @@ public class KubernetesConfig implements PlatformConfiguration {
      * The liveness probe
      */
     @ConfigItem
-    Optional<ProbeConfig> livenessProbe;
+    ProbeConfig livenessProbe;
 
     /**
      * The readiness probe
      */
     @ConfigItem
-    Optional<ProbeConfig> readinessProbe;
+    ProbeConfig readinessProbe;
 
     /**
      * Volume mounts
@@ -264,11 +264,11 @@ public class KubernetesConfig implements PlatformConfiguration {
         return imagePullSecrets;
     }
 
-    public Optional<ProbeConfig> getLivenessProbe() {
+    public ProbeConfig getLivenessProbe() {
         return livenessProbe;
     }
 
-    public Optional<ProbeConfig> getReadinessProbe() {
+    public ProbeConfig getReadinessProbe() {
         return readinessProbe;
     }
 

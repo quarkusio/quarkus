@@ -77,6 +77,7 @@ import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatform;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
+import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordableBootstrap;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.recording.RecordingDialectFactory;
@@ -333,8 +334,9 @@ public class FastBootMetadataBuilder {
 
         Dialect dialect = extractDialect();
         JtaPlatform jtaPlatform = extractJtaPlatform();
+        PrevalidatedQuarkusMetadata storeableMetadata = trimBootstrapMetadata(fullMeta);
+        //Make sure that the service is destroyed after the metadata has been validated and trimmed, as validation needs to use it.
         destroyServiceRegistry(fullMeta);
-        MetadataImplementor storeableMetadata = trimBootstrapMetadata(fullMeta);
         ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata);
         return new RecordedState(dialect, jtaPlatform, storeableMetadata, buildTimeSettings, getIntegrators(),
                 providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions);
@@ -347,7 +349,7 @@ public class FastBootMetadataBuilder {
         serviceRegistry.resetParent(null);
     }
 
-    private MetadataImplementor trimBootstrapMetadata(MetadataImpl fullMeta) {
+    private PrevalidatedQuarkusMetadata trimBootstrapMetadata(MetadataImpl fullMeta) {
         MetadataImpl replacement = new MetadataImpl(
                 fullMeta.getUUID(),
                 fullMeta.getMetadataBuildingOptions(), //TODO Replace this
@@ -370,7 +372,7 @@ public class FastBootMetadataBuilder {
                 fullMeta.getBootstrapContext() //FIXME WHOA!
         );
 
-        return replacement;
+        return PrevalidatedQuarkusMetadata.validateAndWrap(replacement);
     }
 
     private JtaPlatform extractJtaPlatform() {

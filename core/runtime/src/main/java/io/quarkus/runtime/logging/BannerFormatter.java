@@ -1,5 +1,6 @@
 package io.quarkus.runtime.logging;
 
+import java.nio.charset.Charset;
 import java.util.function.Supplier;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -58,6 +59,14 @@ public class BannerFormatter extends ColorPatternFormatter {
 
     @Override
     public String getHead(Handler h) {
-        return bannerSupplier.get();
+        final String banner = bannerSupplier.get();
+        final String encoding = h.getEncoding();
+        final Charset charset;
+        try {
+            charset = encoding == null ? Charset.defaultCharset() : Charset.forName(encoding);
+            return charset.newEncoder().canEncode(banner) ? banner : "";
+        } catch (IllegalArgumentException ignored) {
+            return "";
+        }
     }
 }

@@ -2,6 +2,13 @@ package io.quarkus.undertow.test.devmode;
 
 import static org.hamcrest.Matchers.is;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -28,7 +35,7 @@ public class ServletChangeTestCase {
             });
 
     @Test
-    public void testServletChange() throws InterruptedException {
+    public void testServletChange() throws InterruptedException, ExecutionException {
         RestAssured.when().get("/dev").then()
                 .statusCode(200)
                 .body(is("Hello World"));
@@ -59,6 +66,25 @@ public class ServletChangeTestCase {
         RestAssured.when().get("/new").then()
                 .statusCode(200)
                 .body(is("Hello Quarkus"));
+
+        ExecutorService service = Executors.newFixedThreadPool(20);
+        List<Future<Object>> results = new ArrayList<>();
+        //make sure we are always dispatched
+        //https://github.com/quarkusio/quarkus/issues/7782
+        for (int i = 0; i < 1000; ++i) {
+            results.add(service.submit(new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    RestAssured.when().get("/new").then()
+                            .statusCode(200)
+                            .body(is("Hello Quarkus"));
+                    return null;
+                }
+            }));
+        }
+        for (Future<Object> i : results) {
+            i.get();
+        }
     }
 
     @Test

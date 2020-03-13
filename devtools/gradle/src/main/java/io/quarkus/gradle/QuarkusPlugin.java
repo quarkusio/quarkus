@@ -1,6 +1,7 @@
 package io.quarkus.gradle;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import org.gradle.api.GradleException;
@@ -142,16 +143,37 @@ public class QuarkusPlugin implements Plugin<Project> {
     }
 
     private void configProjectDependency(Project project, Project dep) {
+        if (dep.getState().getExecuted()) {
+            setupTaskDependencies(project, dep);
+        } else {
+            dep.afterEvaluate(p -> {
+                setupTaskDependencies(project, p);
+            });
+        }
+    }
+
+    private void setupTaskDependencies(Project project, Project dep) {
+        project.getLogger().debug("Configuring %s task dependencies on %s tasks", project, dep);
         try {
             final Task jarTask = dep.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
-            final Task quarkusBuild = project.getTasks().findByName(QUARKUS_BUILD_TASK_NAME);
-            project.getLogger().debug("Configuring %s task dependencies on %s tasks", project, dep);
+            final Task quarkusBuild = findTask(project.getTasks(), QUARKUS_BUILD_TASK_NAME);
             if (quarkusBuild != null) {
                 quarkusBuild.dependsOn(jarTask);
             }
             extension.addProjectDepJarTask(dep, jarTask);
         } catch (UnknownTaskException e) {
-            project.getLogger().debug("Expected tasks not present", e);
+            project.getLogger().debug("Project %s does not include %s task", dep, JavaPlugin.JAR_TASK_NAME, e);
+        }
+        for (Map.Entry<String, Project> entry : dep.getChildProjects().entrySet()) {
+            configProjectDependency(project, entry.getValue());
+        }
+    }
+
+    private static Task findTask(TaskContainer tasks, String name) {
+        try {
+            return tasks.findByName(name);
+        } catch (UnknownTaskException e) {
+            return null;
         }
     }
 }

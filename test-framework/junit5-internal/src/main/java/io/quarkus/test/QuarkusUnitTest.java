@@ -264,7 +264,7 @@ public class QuarkusUnitTest
         invocation.skip();
     }
 
-    private void runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext) {
+    private void runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext) throws Throwable {
         Method newMethod = null;
         Class<?> c = actualTestClass;
         while (c != Object.class) {
@@ -284,10 +284,7 @@ public class QuarkusUnitTest
             newMethod.setAccessible(true);
             newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
         } catch (InvocationTargetException e) {
-            if (e.getCause() instanceof RuntimeException) {
-                throw (RuntimeException) e.getCause();
-            }
-            throw new RuntimeException(e.getCause());
+            throw e.getCause();
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }

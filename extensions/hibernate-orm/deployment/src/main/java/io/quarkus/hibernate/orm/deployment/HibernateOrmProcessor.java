@@ -760,7 +760,7 @@ public final class HibernateOrmProcessor {
             try {
                 byte[] bytes = IoUtil.readClassAsBytes(HibernateOrmProcessor.class.getClassLoader(), className);
                 byte[] enhanced = hibernateEntityEnhancer.enhance(className, bytes);
-                additionalClasses.produce(new GeneratedClassBuildItem(true, className, enhanced != null ? enhanced : bytes));
+                additionalClasses.produce(new GeneratedClassBuildItem(false, className, enhanced != null ? enhanced : bytes));
             } catch (IOException e) {
                 throw new RuntimeException("Failed to read Model class", e);
             }

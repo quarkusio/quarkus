@@ -133,10 +133,7 @@ public class QuarkusBootstrap implements Serializable {
             appModelFactory.setDevMode(true);
             appModelFactory.setEnableClasspathCache(true);
         }
-        CurationResult model = appModelFactory
-                .resolveAppModel();
-        return new CuratedApplication(this, model);
-
+        return new CuratedApplication(this, appModelFactory.resolveAppModel());
     }
 
     public AppModelResolver getAppModelResolver() {

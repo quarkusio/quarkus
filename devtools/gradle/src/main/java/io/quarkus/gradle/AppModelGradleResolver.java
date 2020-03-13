@@ -23,11 +23,11 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ModuleIdentifier;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
+import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.internal.artifacts.DefaultModuleIdentifier;
 import org.gradle.api.internal.artifacts.dependencies.DefaultDependencyArtifact;
@@ -140,13 +140,7 @@ public class AppModelGradleResolver implements AppModelResolver {
         Map<AppArtifactKey, AppDependency> versionMap = new HashMap<>();
         Map<ModuleIdentifier, ModuleVersionIdentifier> userModules = new HashMap<>();
 
-        collectDependencies(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME, appBuilder, directExtensionDeps, userDeps,
-                versionMap,
-                userModules);
-        if (launchMode == LaunchMode.TEST) {
-            collectDependencies(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, appBuilder, directExtensionDeps, userDeps,
-                    versionMap, userModules);
-        }
+        collectDependencies(appBuilder, directExtensionDeps, userDeps, versionMap, userModules);
 
         final List<AppDependency> deploymentDeps = new ArrayList<>();
         final List<AppDependency> fullDeploymentDeps = new ArrayList<>();
@@ -205,15 +199,26 @@ public class AppModelGradleResolver implements AppModelResolver {
         return this.appModel = appBuilder.build();
     }
 
-    private void collectDependencies(String configName, AppModel.Builder appBuilder, final List<Dependency> directExtensionDeps,
+    private void collectDependencies(AppModel.Builder appBuilder, final List<Dependency> directExtensionDeps,
             final List<AppDependency> userDeps, Map<AppArtifactKey, AppDependency> versionMap,
             Map<ModuleIdentifier, ModuleVersionIdentifier> userModules) {
-        final Configuration config = project.getConfigurations().getByName(configName);
+        collectDependencies(project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME),
+                appBuilder, directExtensionDeps, userDeps,
+                versionMap, userModules);
+        if (launchMode == LaunchMode.TEST) {
+            collectDependencies(project.getConfigurations().getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME),
+                    appBuilder, directExtensionDeps, userDeps,
+                    versionMap, userModules);
+        }
+    }
 
-        final DependencySet incomingSet = config.getIncoming().getDependencies();
-        final Set<AppArtifactKey> directDeps = new HashSet<>(incomingSet.size());
-        incomingSet.forEach(d -> directDeps.add(new AppArtifactKey(d.getGroup(), d.getName())));
-        for (ResolvedArtifact a : config.getResolvedConfiguration().getResolvedArtifacts()) {
+    private void collectDependencies(Configuration config, AppModel.Builder appBuilder,
+            final List<Dependency> directExtensionDeps,
+            final List<AppDependency> userDeps, Map<AppArtifactKey, AppDependency> versionMap,
+            Map<ModuleIdentifier, ModuleVersionIdentifier> userModules) {
+
+        final ResolvedConfiguration resolvedConfig = config.getResolvedConfiguration();
+        for (ResolvedArtifact a : resolvedConfig.getResolvedArtifacts()) {
             if (!isDependency(a)) {
                 continue;
             }
@@ -244,23 +249,52 @@ public class AppModelGradleResolver implements AppModelResolver {
             }
 
             userDeps.add(dependency);
-            versionMap
-                    .put(new AppArtifactKey(dependency.getArtifact().getGroupId(), dependency.getArtifact().getArtifactId(),
-                            dependency.getArtifact().getClassifier()), dependency);
+            versionMap.put(artifactGa, dependency);
+        }
 
-            final Dependency dep;
-            final Path artifactPath = dependency.getArtifact().getPath();
+        collectExtensionDeps(resolvedConfig.getFirstLevelModuleDependencies(), versionMap, appBuilder, directExtensionDeps,
+                true, new HashSet<>());
+    }
+
+    private void collectExtensionDeps(Set<ResolvedDependency> resolvedDeps,
+            Map<AppArtifactKey, AppDependency> versionMap,
+            AppModel.Builder appBuilder,
+            List<Dependency> firstLevelExtensions,
+            boolean firstLevelExt,
+            Set<AppArtifactKey> visited) {
+        for (ResolvedDependency dep : resolvedDeps) {
+            final AppArtifactKey key = new AppArtifactKey(dep.getModuleGroup(), dep.getModuleName());
+            if (!visited.add(key)) {
+                continue;
+            }
+            final AppDependency appDep = versionMap.get(key);
+            if (appDep == null) {
+                // not a jar
+                continue;
+            }
+
+            final Dependency extDep;
+            final Path artifactPath = appDep.getArtifact().getPath();
             if (Files.isDirectory(artifactPath)) {
-                dep = processQuarkusDir(a, artifactPath.resolve(BootstrapConstants.META_INF), appBuilder);
+                extDep = processQuarkusDir(appDep.getArtifact(), artifactPath.resolve(BootstrapConstants.META_INF), appBuilder);
             } else {
                 try (FileSystem artifactFs = FileSystems.newFileSystem(artifactPath, null)) {
-                    dep = processQuarkusDir(a, artifactFs.getPath(BootstrapConstants.META_INF), appBuilder);
+                    extDep = processQuarkusDir(appDep.getArtifact(), artifactFs.getPath(BootstrapConstants.META_INF),
+                            appBuilder);
                 } catch (IOException e) {
                     throw new GradleException("Failed to process " + artifactPath, e);
                 }
             }
-            if (dep != null && directDeps.contains(artifactGa)) {
-                directExtensionDeps.add(dep);
+
+            boolean addChildExtensions = firstLevelExt;
+            if (extDep != null && firstLevelExt) {
+                firstLevelExtensions.add(extDep);
+                addChildExtensions = false;
+            }
+            final Set<ResolvedDependency> resolvedChildren = dep.getChildren();
+            if (!resolvedChildren.isEmpty()) {
+                collectExtensionDeps(resolvedChildren, versionMap, appBuilder, firstLevelExtensions, addChildExtensions,
+                        visited);
             }
         }
     }
@@ -275,8 +309,7 @@ public class AppModelGradleResolver implements AppModelResolver {
 
     private AppDependency alignVersion(AppDependency dependency, Map<AppArtifactKey, AppDependency> versionMap) {
         AppArtifactKey appKey = new AppArtifactKey(dependency.getArtifact().getGroupId(),
-                dependency.getArtifact().getArtifactId(),
-                dependency.getArtifact().getClassifier());
+                dependency.getArtifact().getArtifactId());
         if (versionMap.containsKey(appKey)) {
             return versionMap.get(appKey);
         }
@@ -300,13 +333,17 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     static AppDependency toAppDependency(ResolvedArtifact a) {
+        return new AppDependency(toAppArtifact(a), "runtime");
+    }
+
+    public static AppArtifact toAppArtifact(ResolvedArtifact a) {
         final String[] split = a.getModuleVersion().toString().split(":");
         final AppArtifact appArtifact = new AppArtifact(split[0], split[1], split.length > 2 ? split[2] : null);
         appArtifact.setPath(a.getFile().toPath());
-        return new AppDependency(appArtifact, "runtime");
+        return appArtifact;
     }
 
-    private Dependency processQuarkusDir(ResolvedArtifact a, Path quarkusDir, AppModel.Builder appBuilder) {
+    private Dependency processQuarkusDir(AppArtifact a, Path quarkusDir, AppModel.Builder appBuilder) {
         if (!Files.exists(quarkusDir)) {
             return null;
         }

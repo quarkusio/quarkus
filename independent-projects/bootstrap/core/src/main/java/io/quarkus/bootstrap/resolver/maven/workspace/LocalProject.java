@@ -10,8 +10,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -28,17 +30,24 @@ public class LocalProject {
 
     private static final String PROJECT_BASEDIR = "${project.basedir}";
     private static final String POM_XML = "pom.xml";
+    private static final String REVISION = "revision";
+    static final String REVISION_EXPR = "${revision}";
 
     public static LocalProject load(Path path) throws BootstrapException {
         return load(path, true);
     }
 
     public static LocalProject load(Path path, boolean required) throws BootstrapException {
-        Path cpd = locateCurrentProjectDir(path, required);
+        final Path cpd = locateCurrentProjectDir(path, required);
         if (cpd == null) {
             return null;
         }
-        return new LocalProject(readModel(cpd.resolve(POM_XML)), null);
+        try {
+            return new LocalProject(readModel(cpd.resolve(POM_XML)), null);
+        } catch (UnresolvedRevisionException e) {
+            // if the revision couldn't be resolved, we are trying to resolve it from the workspace
+            return loadWorkspace(cpd);
+        }
     }
 
     public static LocalProject loadWorkspace(Path path) throws BootstrapException {
@@ -136,10 +145,37 @@ public class LocalProject {
         this.workspace = workspace;
         this.groupId = ModelUtils.getGroupId(rawModel);
         this.artifactId = rawModel.getArtifactId();
-        this.version = ModelUtils.getVersion(rawModel);
+
+        String version = ModelUtils.getVersion(rawModel);
+        final boolean revisionVersion;
+        if (revisionVersion = REVISION_EXPR.equals(version)) {
+            version = resolveRevision(rawModel);
+        }
+
         if (workspace != null) {
             workspace.addProject(this, rawModel.getPomFile().lastModified());
+            if (revisionVersion) {
+                if (version == null) {
+                    version = workspace.getRevision();
+                    if (version == null) {
+                        throw UnresolvedRevisionException.forGa(groupId, artifactId);
+                    }
+                } else {
+                    workspace.setRevision(version);
+                }
+            }
+        } else if (version == null) {
+            throw UnresolvedRevisionException.forGa(groupId, artifactId);
         }
+
+        this.version = version;
+    }
+
+    private static String resolveRevision(Model rawModel) {
+        final Map<String, String> props = new HashMap<>();
+        rawModel.getProperties().entrySet().forEach(e -> props.put(e.getKey().toString(), e.getValue().toString()));
+        System.getProperties().entrySet().forEach(e -> props.put(e.getKey().toString(), e.getValue().toString()));
+        return props.get(REVISION);
     }
 
     public String getGroupId() {

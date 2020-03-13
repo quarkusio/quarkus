@@ -33,6 +33,7 @@ public class KubernetesWithHealthTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
+            .withConfigurationResource("kubernetes-with-health.properties")
             .setForcedDependencies(
                     Collections.singletonList(
                             new AppArtifact("io.quarkus", "quarkus-smallrye-health", Version.getVersion())));
@@ -73,9 +74,11 @@ public class KubernetesWithHealthTest {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
                             assertThat(container.getReadinessProbe()).satisfies(p -> {
+                                assertThat(p.getInitialDelaySeconds()).isEqualTo(0);
                                 assertProbePath(p, "/health/ready");
                             });
                             assertThat(container.getLivenessProbe()).satisfies(p -> {
+                                assertThat(p.getInitialDelaySeconds()).isEqualTo(20);
                                 assertProbePath(p, "/health/live");
                             });
                         });

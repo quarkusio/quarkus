@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -109,6 +109,7 @@
                         <surefire-version>${version.surefire.plugin}</surefire-version>
                         <graalvm-version>${graal-sdk.version-for-documentation}</graalvm-version>
                         <restassured-version>${rest-assured.version}</restassured-version>
+                        <gradle-version>${gradle-wrapper.version}</gradle-version>
                         <keycloak-docker-image>${keycloak.docker.image}</keycloak-docker-image>
                         <!-- Project website home page -->
                         <quarkus-home-url>${quarkus-home-url}</quarkus-home-url>

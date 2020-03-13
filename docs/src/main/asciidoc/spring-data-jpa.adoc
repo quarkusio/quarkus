@@ -113,12 +113,12 @@ Add the following properties to `application.properties` to configure access to 
 
 [source,properties]
 ----
-quarkus.datasource.url=jdbc:postgresql:quarkus_test
-quarkus.datasource.driver=org.postgresql.Driver
+quarkus.datasource.db-kind=postgresql
 quarkus.datasource.username=quarkus_test
 quarkus.datasource.password=quarkus_test
-quarkus.datasource.max-size=8
-quarkus.datasource.min-size=2
+quarkus.datasource.jdbc.url=jdbc:postgresql:quarkus_test
+quarkus.datasource.jdbc.max-size=8
+quarkus.datasource.jdbc.min-size=2
 quarkus.hibernate-orm.database.generation=drop-and-create
 ----
 

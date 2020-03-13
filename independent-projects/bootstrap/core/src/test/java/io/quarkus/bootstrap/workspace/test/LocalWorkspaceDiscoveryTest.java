@@ -11,11 +11,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.util.IoUtils;
+import java.io.File;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Parent;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -216,6 +221,53 @@ public class LocalWorkspaceDiscoveryTest {
 
         assertCompleteWorkspace(project);
         assertLocalDeps(project);
+    }
+
+    @Test
+    public void testRevisionProperty() throws Exception {
+        final URL module1Url = Thread.currentThread().getContextClassLoader().getResource("workspace-revision/root/module1");
+        assertNotNull(module1Url);
+        final Path module1Dir = Paths.get(module1Url.toURI());
+        assertTrue(Files.exists(module1Dir));
+
+        final LocalProject module1 = LocalProject.load(module1Dir);
+
+        assertEquals("1.2.3", module1.getVersion());
+        assertNotNull(module1.getWorkspace()); // the revision must have been resolved from the workspace
+
+        final File root = module1.getWorkspace()
+                .findArtifact(new DefaultArtifact(module1.getGroupId(), "root", null, "pom", "${revision}"));
+        assertNotNull(root);
+        assertTrue(root.exists());
+        final URL rootPomUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-revision/root/pom.xml");
+        assertEquals(new File(rootPomUrl.toURI()), root);
+    }
+
+    @Test
+    public void testRevisionPropertyOverridenWithSystemProperty() throws Exception {
+        final URL module1Url = Thread.currentThread().getContextClassLoader().getResource("workspace-revision/root/module1");
+        assertNotNull(module1Url);
+        final Path module1Dir = Paths.get(module1Url.toURI());
+        assertTrue(Files.exists(module1Dir));
+
+        final String revisionProp = "revision";
+        final String originalRevision = System.getProperty(revisionProp);
+        System.setProperty(revisionProp, "build123");
+
+        final LocalProject module1 = LocalProject.load(module1Dir);
+
+        if (originalRevision != null) {
+            System.setProperty(revisionProp, originalRevision);
+        }
+        assertEquals("build123", module1.getVersion());
+        assertNull(module1.getWorkspace()); // the workspace was not necessary to resolve the revision
+
+        final File root = LocalProject.loadWorkspace(module1Dir).getWorkspace()
+                .findArtifact(new DefaultArtifact(module1.getGroupId(), "root", null, "pom", "${revision}"));
+        assertNotNull(root);
+        assertTrue(root.exists());
+        final URL rootPomUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-revision/root/pom.xml");
+        assertEquals(new File(rootPomUrl.toURI()), root);
     }
 
     private void assertCompleteWorkspace(final LocalProject project) {

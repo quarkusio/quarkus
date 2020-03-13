@@ -1,5 +1,6 @@
 package io.quarkus.it.flyway;
 
+import java.util.Map;
 import java.util.Objects;
 
 import javax.inject.Inject;
@@ -26,6 +27,12 @@ public class FlywayFunctionalityResource {
         MigrationVersion version = Objects.requireNonNull(flyway.info().current().getVersion(),
                 "Version is null! Migration was not applied");
         return version.toString();
+    }
+
+    @GET
+    @Path("placeholders")
+    public Map<String, String> returnPlaceholders() {
+        return flyway.getConfiguration().getPlaceholders();
     }
 
 }

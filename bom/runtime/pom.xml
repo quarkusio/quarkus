@@ -198,6 +198,7 @@
         <cxf.version>3.3.4</cxf.version>
         <saaj.version>1.4.0</saaj.version>
         <woodstox.version>5.0.3</woodstox.version>
+        <msv.version>2013.6.1</msv.version>
     </properties>
 
     <dependencyManagement>
@@ -1563,6 +1564,11 @@
                 <groupId>com.fasterxml.woodstox</groupId>
                 <artifactId>woodstox-core</artifactId>
                 <version>${woodstox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.java.dev.msv</groupId>
+                <artifactId>msv-core</artifactId>
+                <version>${msv.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.sun.xml.messaging.saaj</groupId>

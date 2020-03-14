@@ -1,5 +1,6 @@
 package io.quarkus.flyway.runtime;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -111,5 +112,5 @@ public final class FlywayDataSourceRuntimeConfig {
      * Sets the placeholders to replace in SQL migration scripts.
      */
     @ConfigItem
-    public Map<String, String> placeholders;
+    public Map<String, String> placeholders = Collections.emptyMap();
 }

@@ -148,12 +148,8 @@ public class CxfProcessor {
         classCreator.addAnnotation(AnnotationInstance.create(
                 DotName.createSimple(XmlType.class.getName()), null,
                 new AnnotationValue[] { AnnotationValue.createStringValue("name", operationName),
-                        Antrtt(gtnotationValue.createStringValue("namespace", namespace) }));
-
-        classCreator.addAnnotation(AnnotationInstance.create(
-                DotName.createSimple(Unremovable.class.getName()), null,
-                new AnnotationValue[] { AnnotationValue.createStringValue("name", operationName),
                         AnnotationValue.createStringValue("namespace", namespace) }));
+
         // else
         //classCreator.addAnnotation(AnnotationInstance.create(
         //        DotName.createSimple(XmlType.class.getName()), null,

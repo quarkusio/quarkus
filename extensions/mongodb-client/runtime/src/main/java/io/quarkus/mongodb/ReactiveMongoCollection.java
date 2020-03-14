@@ -10,11 +10,35 @@ import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 
 import com.mongodb.MongoNamespace;
 import com.mongodb.bulk.BulkWriteResult;
-import com.mongodb.client.model.*;
+import com.mongodb.client.model.BulkWriteOptions;
+import com.mongodb.client.model.CountOptions;
+import com.mongodb.client.model.CreateIndexOptions;
+import com.mongodb.client.model.DeleteOptions;
+import com.mongodb.client.model.DropIndexOptions;
+import com.mongodb.client.model.EstimatedDocumentCountOptions;
+import com.mongodb.client.model.FindOneAndDeleteOptions;
+import com.mongodb.client.model.FindOneAndReplaceOptions;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
+import com.mongodb.client.model.IndexModel;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.InsertManyOptions;
+import com.mongodb.client.model.InsertOneOptions;
+import com.mongodb.client.model.RenameCollectionOptions;
+import com.mongodb.client.model.ReplaceOptions;
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.InsertManyResult;
+import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
-import com.mongodb.reactivestreams.client.*;
+import com.mongodb.reactivestreams.client.AggregatePublisher;
+import com.mongodb.reactivestreams.client.ChangeStreamPublisher;
+import com.mongodb.reactivestreams.client.ClientSession;
+import com.mongodb.reactivestreams.client.DistinctPublisher;
+import com.mongodb.reactivestreams.client.FindPublisher;
+import com.mongodb.reactivestreams.client.ListIndexesPublisher;
+import com.mongodb.reactivestreams.client.MapReducePublisher;
 
 /**
  * A reactive API to interact with a Mongo collection.
@@ -478,7 +502,7 @@ public interface ReactiveMongoCollection<T> {
      * @param pipeline the aggregate pipeline
      * @return a stream containing the result of the aggregation operation
      */
-    AggregatePublisher<Document> aggregateAsPublisher(List<? extends Bson> pipeline);
+    AggregatePublisher<T> aggregateAsPublisher(List<? extends Bson> pipeline);
 
     /**
      * Aggregates documents according to the specified aggregation pipeline.
@@ -497,7 +521,7 @@ public interface ReactiveMongoCollection<T> {
      * @param pipeline the aggregate pipeline
      * @return a stream containing the result of the aggregation operation
      */
-    AggregatePublisher<Document> aggregateAsPublisher(ClientSession clientSession, List<? extends Bson> pipeline);
+    AggregatePublisher<T> aggregateAsPublisher(ClientSession clientSession, List<? extends Bson> pipeline);
 
     /**
      * Aggregates documents according to the specified aggregation pipeline.
@@ -516,7 +540,7 @@ public interface ReactiveMongoCollection<T> {
      * @param pipeline the aggregate pipeline
      * @return a stream containing the result of the aggregation operation
      */
-    PublisherBuilder<Document> aggregate(List<? extends Bson> pipeline);
+    PublisherBuilder<T> aggregate(List<? extends Bson> pipeline);
 
     /**
      * Aggregates documents according to the specified aggregation pipeline.
@@ -535,7 +559,7 @@ public interface ReactiveMongoCollection<T> {
      * @param pipeline the aggregate pipeline
      * @return a stream containing the result of the aggregation operation
      */
-    PublisherBuilder<Document> aggregate(ClientSession clientSession, List<? extends Bson> pipeline);
+    PublisherBuilder<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline);
 
     /**
      * Aggregates documents according to the specified aggregation pipeline.
@@ -557,7 +581,7 @@ public interface ReactiveMongoCollection<T> {
      * @param options the stream options
      * @return a stream containing the result of the aggregation operation
      */
-    PublisherBuilder<Document> aggregate(List<? extends Bson> pipeline, AggregateOptions options);
+    PublisherBuilder<T> aggregate(List<? extends Bson> pipeline, AggregateOptions options);
 
     /**
      * Aggregates documents according to the specified aggregation pipeline.
@@ -578,7 +602,7 @@ public interface ReactiveMongoCollection<T> {
      * @param options the stream options
      * @return a stream containing the result of the aggregation operation
      */
-    PublisherBuilder<Document> aggregate(ClientSession clientSession, List<? extends Bson> pipeline, AggregateOptions options);
+    PublisherBuilder<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline, AggregateOptions options);
 
     /**
      * Aggregates documents according to the specified aggregation pipeline.
@@ -825,28 +849,28 @@ public interface ReactiveMongoCollection<T> {
     <D> PublisherBuilder<ChangeStreamDocument<D>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
             Class<D> clazz, ChangeStreamOptions options);
 
-    MapReducePublisher<Document> mapReduceAsPublisher(String mapFunction, String reduceFunction);
+    MapReducePublisher<T> mapReduceAsPublisher(String mapFunction, String reduceFunction);
 
     <D> MapReducePublisher<D> mapReduceAsPublisher(String mapFunction, String reduceFunction, Class<D> clazz);
 
-    MapReducePublisher<Document> mapReduceAsPublisher(ClientSession clientSession, String mapFunction, String reduceFunction);
+    MapReducePublisher<T> mapReduceAsPublisher(ClientSession clientSession, String mapFunction, String reduceFunction);
 
     <D> MapReducePublisher<D> mapReduceAsPublisher(ClientSession clientSession, String mapFunction, String reduceFunction,
             Class<D> clazz);
 
-    PublisherBuilder<Document> mapReduce(String mapFunction, String reduceFunction);
+    PublisherBuilder<T> mapReduce(String mapFunction, String reduceFunction);
 
     <D> PublisherBuilder<D> mapReduce(String mapFunction, String reduceFunction, Class<D> clazz);
 
-    PublisherBuilder<Document> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction);
+    PublisherBuilder<T> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction);
 
     <D> PublisherBuilder<D> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction, Class<D> clazz);
 
-    PublisherBuilder<Document> mapReduce(String mapFunction, String reduceFunction, MapReduceOptions options);
+    PublisherBuilder<T> mapReduce(String mapFunction, String reduceFunction, MapReduceOptions options);
 
     <D> PublisherBuilder<D> mapReduce(String mapFunction, String reduceFunction, Class<D> clazz, MapReduceOptions options);
 
-    PublisherBuilder<Document> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction,
+    PublisherBuilder<T> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction,
             MapReduceOptions options);
 
     <D> PublisherBuilder<D> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction, Class<D> clazz,
@@ -896,7 +920,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a completion stage completed successfully when the operation completes, or completed exceptionally with
      *         either a {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException}
      */
-    CompletionStage<Void> insertOne(T document);
+    CompletionStage<InsertOneResult> insertOne(T document);
 
     /**
      * Inserts the provided document. If the document is missing an identifier, the driver should generate one.
@@ -906,7 +930,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a completion stage completed successfully when the operation completes, or completed exceptionally with
      *         either a {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException}
      */
-    CompletionStage<Void> insertOne(T document, InsertOneOptions options);
+    CompletionStage<InsertOneResult> insertOne(T document, InsertOneOptions options);
 
     /**
      * Inserts the provided document. If the document is missing an identifier, the driver should generate one.
@@ -916,7 +940,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a completion stage completed successfully when the operation completes, or completed exceptionally with
      *         either a {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException}
      */
-    CompletionStage<Void> insertOne(ClientSession clientSession, T document);
+    CompletionStage<InsertOneResult> insertOne(ClientSession clientSession, T document);
 
     /**
      * Inserts the provided document. If the document is missing an identifier, the driver should generate one.
@@ -927,7 +951,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a completion stage completed successfully when the operation completes, or completed exceptionally with
      *         either a {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException}
      */
-    CompletionStage<Void> insertOne(ClientSession clientSession, T document, InsertOneOptions options);
+    CompletionStage<InsertOneResult> insertOne(ClientSession clientSession, T document, InsertOneOptions options);
 
     /**
      * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API.
@@ -936,7 +960,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a completion stage completed successfully when the operation completes, or completed exceptionally with
      *         either a {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException}
      */
-    CompletionStage<Void> insertMany(List<? extends T> documents);
+    CompletionStage<InsertManyResult> insertMany(List<? extends T> documents);
 
     /**
      * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API.
@@ -946,7 +970,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a completion stage completed successfully when the operation completes, or completed exceptionally with
      *         either a {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException}
      */
-    CompletionStage<Void> insertMany(List<? extends T> documents, InsertManyOptions options);
+    CompletionStage<InsertManyResult> insertMany(List<? extends T> documents, InsertManyOptions options);
 
     /**
      * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API.
@@ -956,7 +980,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a completion stage completed successfully when the operation completes, or completed exceptionally with
      *         either a {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException}
      */
-    CompletionStage<Void> insertMany(ClientSession clientSession, List<? extends T> documents);
+    CompletionStage<InsertManyResult> insertMany(ClientSession clientSession, List<? extends T> documents);
 
     /**
      * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API.
@@ -967,7 +991,8 @@ public interface ReactiveMongoCollection<T> {
      * @return a completion stage completed successfully when the operation completes, or completed exceptionally with
      *         either a {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException}
      */
-    CompletionStage<Void> insertMany(ClientSession clientSession, List<? extends T> documents, InsertManyOptions options);
+    CompletionStage<InsertManyResult> insertMany(ClientSession clientSession, List<? extends T> documents,
+            InsertManyOptions options);
 
     /**
      * Removes at most one document from the collection that matches the given filter.

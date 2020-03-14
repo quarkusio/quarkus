@@ -23,7 +23,6 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.InsertOneModel;
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
-import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 
 import io.quarkus.arc.Arc;
@@ -228,7 +227,7 @@ public class MongoOperations {
         } else {
             //insert with user provided ID or update
             BsonDocument query = new BsonDocument().append(ID, id);
-            collection.replaceOne(query, entity, ReplaceOptions.createReplaceOptions(new UpdateOptions().upsert(true)));
+            collection.replaceOne(query, entity, new ReplaceOptions().upsert(true));
         }
     }
 
@@ -248,7 +247,7 @@ public class MongoOperations {
                 //insert with user provided ID or update
                 BsonDocument query = new BsonDocument().append(ID, id);
                 bulk.add(new ReplaceOneModel(query, entity,
-                        ReplaceOptions.createReplaceOptions(new UpdateOptions().upsert(true))));
+                        new ReplaceOptions().upsert(true)));
             }
         }
 

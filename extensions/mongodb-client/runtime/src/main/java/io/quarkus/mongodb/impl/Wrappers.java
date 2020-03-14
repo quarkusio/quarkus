@@ -8,8 +8,6 @@ import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.reactivestreams.Publisher;
 
-import com.mongodb.reactivestreams.client.Success;
-
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.codegen.annotations.Nullable;
@@ -29,10 +27,6 @@ class Wrappers {
             return uni.emitOn(command -> context.runOnContext(x -> command.run()));
         }
         return uni;
-    }
-
-    static Uni<Void> toEmptyUni(Publisher<Success> publisher) {
-        return toUni(publisher).onItem().apply(s -> null);
     }
 
     static <T> Multi<T> toMulti(Publisher<T> publisher) {
@@ -86,23 +80,12 @@ class Wrappers {
         return result;
     }
 
-    private static final RuntimeException UNEXPECTED_EMPTY_STREAM = new IllegalStateException(
-            "Unexpected empty stream");
-
     private static <T> void completeOrFailedTheFuture(CompletableFuture<T> cf, T value, Throwable err) {
         if (err != null) {
             cf.completeExceptionally(err);
         } else {
-            if (value == null) {
-                cf.completeExceptionally(UNEXPECTED_EMPTY_STREAM);
-            } else {
-                cf.complete(value);
-            }
+            cf.complete(value);
         }
-    }
-
-    static CompletionStage<Void> toEmptyCompletionStage(Publisher<Success> publisher) {
-        return toCompletionStage(publisher).thenApply(x -> null);
     }
 
     static <T> CompletionStage<List<T>> toCompletionStageOfList(Publisher<T> publisher) {

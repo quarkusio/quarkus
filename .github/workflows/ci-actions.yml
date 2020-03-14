@@ -381,6 +381,7 @@ jobs:
           - category: HTTP
             timeout: 35
             test-modules: >
+              cxf
               resteasy-jackson
               resteasy-mutiny
               vertx

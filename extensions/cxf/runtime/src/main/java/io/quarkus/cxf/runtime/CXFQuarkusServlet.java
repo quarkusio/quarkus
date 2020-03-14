@@ -3,8 +3,7 @@ package io.quarkus.cxf.runtime;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.ServletConfig;
 
 import org.apache.cxf.Bus;
@@ -17,19 +16,16 @@ import org.apache.cxf.message.Message;
 import org.apache.cxf.transport.servlet.CXFNonSpringServlet;
 import org.jboss.logging.Logger;
 
+@Singleton
 public class CXFQuarkusServlet extends CXFNonSpringServlet {
 
     private static final Logger LOGGER = Logger.getLogger(CXFQuarkusServlet.class);
 
     private static final List<CXFServletInfo> WEB_SERVICES = new ArrayList<>();
 
-    @Inject
-    Instance<Object> instance;
-
     private Class<?> loadClass(String className) {
         try {
             return Thread.currentThread().getContextClassLoader().loadClass(className);
-            //return Class.forName(className, true, classLoader);
         } catch (ClassNotFoundException e) {
             LOGGER.warn("failed to load class " + className);
             return null;
@@ -38,14 +34,9 @@ public class CXFQuarkusServlet extends CXFNonSpringServlet {
 
     private Object getInstance(String className) {
         Class<?> classObj = loadClass(className);
-        if (classObj == null) {
-            LOGGER.warn("DUFF class<> is null");
-        }
         try {
-            return instance.select(classObj).get();
-            //return classObj.getConstructor().newInstance();
+            return classObj.getConstructor().newInstance();
         } catch (Exception e) {
-            LOGGER.warn("Failed to instanciate class " + className + e);
             return null;
         }
     }
@@ -53,6 +44,7 @@ public class CXFQuarkusServlet extends CXFNonSpringServlet {
     @Override
     public void loadBus(ServletConfig servletConfig) {
         LOGGER.info("Load CXF bus");
+
         super.loadBus(servletConfig);
 
         Bus bus = getBus();

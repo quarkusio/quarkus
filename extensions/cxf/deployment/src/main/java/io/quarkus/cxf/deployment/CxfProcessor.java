@@ -17,15 +17,7 @@ import javax.enterprise.inject.Produces;
 import javax.jws.WebParam;
 import javax.servlet.DispatcherType;
 import javax.xml.bind.JAXBElement;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttachmentRef;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
-import javax.xml.bind.annotation.XmlList;
-import javax.xml.bind.annotation.XmlMimeType;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.*;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import org.apache.cxf.common.jaxb.JAXBUtils;
@@ -155,6 +147,11 @@ public class CxfProcessor {
         //if (!anonymous)
         classCreator.addAnnotation(AnnotationInstance.create(
                 DotName.createSimple(XmlType.class.getName()), null,
+                new AnnotationValue[] { AnnotationValue.createStringValue("name", operationName),
+                        Antrtt(gtnotationValue.createStringValue("namespace", namespace) }));
+
+        classCreator.addAnnotation(AnnotationInstance.create(
+                DotName.createSimple(Unremovable.class.getName()), null,
                 new AnnotationValue[] { AnnotationValue.createStringValue("name", operationName),
                         AnnotationValue.createStringValue("namespace", namespace) }));
         // else
@@ -564,11 +561,23 @@ public class CxfProcessor {
             String namespace = namespaceVal != null ? namespaceVal.asString() : getNamespaceFromPackage(pkg);
 
             ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
-            //TODO check if gizmo handle the package-info because no class only package inside this file.
             //https://github.com/apache/cxf/blob/master/rt/frontend/jaxws/src/main/java/org/apache/cxf/jaxws/WrapperClassGenerator.java#L234
-            //ClassCreator PackageInfoCreator = ClassCreator.builder().classOutput(classOutput).signature()
-            //        .className(pkg + ".package-info")
-            //        .build();
+            ClassCreator PackageInfoCreator = ClassCreator.builder().classOutput(classOutput)
+                    .className(pkg + ".package-info")
+                    .build();
+            List<AnnotationValue> annotationValues = new ArrayList<>();
+            annotationValues.add(AnnotationValue.createStringValue("namespace", namespace));
+            annotationValues.add(AnnotationValue.createEnumValue("elementFormDefault",
+                    DotName.createSimple("javax.xml.bind.annotation.XmlNsForm"),
+                    (namespaceVal != null) ? "QUALIFIED" : "UNQUALIFIED"));
+            PackageInfoCreator.addAnnotation(AnnotationInstance.create(DotName.createSimple(XmlSchema.class.getName()),
+                    null, annotationValues));
+            // TODO find package annotation with yandex (AnnotationTarget.Kind.package do not exists...
+            // then forward value and type of XmlJavaTypeAdapter
+            //            PackageInfoCreator.addAnnotation(AnnotationInstance.create(DotName.createSimple(XmlJavaTypeAdapters.class.getName()),
+            //                    null, annotationValues));
+            //            PackageInfoCreator.addAnnotation(AnnotationInstance.create(DotName.createSimple(XmlJavaTypeAdapter.class.getName()),
+            //                    null, annotationValues));
 
             //TODO get SOAPBINDING_ANNOTATION to get iRPC
             List<MethodDescriptor> setters = new ArrayList<>();
@@ -798,7 +807,8 @@ public class CxfProcessor {
                 new RuntimeInitializedClassBuildItem("io.netty.buffer.UnpooledUnsafeHeapByteBuf"),
                 new RuntimeInitializedClassBuildItem(
                         "io.netty.buffer.UnpooledByteBufAllocator$InstrumentedUnpooledUnsafeHeapByteBuf"),
-                new RuntimeInitializedClassBuildItem("io.netty.buffer.AbstractReferenceCountedByteBuf"));
+                new RuntimeInitializedClassBuildItem("io.netty.buffer.AbstractReferenceCountedByteBuf"),
+                new RuntimeInitializedClassBuildItem("org.apache.cxf.staxutils.validation.W3CMultiSchemaFactory"));
     }
 
     @BuildStep

@@ -143,7 +143,8 @@ final class Target_org_apache_cxf_jaxws_WrapperClassGenerator {
         // generation is done on quarkus side now
         Class<?> clz = null;
         try {
-            clz = Class.forName(className);
+            clz = Thread.currentThread().getContextClassLoader().loadClass(className);
+            //clz = Class.forName(className);
             wrapperPart.setTypeClass(clz);
             wrapperBeans.add(clz);
         } catch (Exception e) {

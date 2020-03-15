@@ -47,6 +47,7 @@ sudo apt-get install build-essential libz-dev zlib1g-dev
 ----
 xcode-select --install
 ----
+* On Windows, you will need to install the https://aka.ms/vs/15/release/vs_buildtools.exe[Visual Studio 2017 Visual C++ Build Tools]
 ====
 
 [[configuring-graalvm]]
@@ -60,7 +61,7 @@ If you cannot install GraalVM, you can use a multi-stage Docker build to run Mav
 Version {graalvm-version} is required. Using the community edition is enough.
 
 1. Install GraalVM if you haven't already. You have a few options for this:
-** Use platform-specific install tools like https://github.com/graalvm/homebrew-tap[homebrew] or https://sdkman.io/jdks#Oracle[sdkman].
+** Use platform-specific install tools like https://github.com/graalvm/homebrew-tap[homebrew], https://sdkman.io/jdks#Oracle[sdkman], or https://github.com/ScoopInstaller/Java[scoop].
 ** Download the appropriate Community Edition archive from <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
 2. Configure the runtime environment. Set `GRAALVM_HOME` environment variable to the GraalVM installation directory, for example:
 +
@@ -75,6 +76,13 @@ On macOS, point the variable to the `Home` sub-directory:
 ----
 export GRAALVM_HOME=$HOME/Development/graalvm/Contents/Home/
 ----
++
+On Windows, you will have to go through the Control Panel to set your environment variables.
++
+[TIP]
+====
+Installing via scoop will do this for you.
+====
 3. Install the `native-image` tool using `gu install`:
 +
 [source,shell]
@@ -158,6 +166,21 @@ just pass -Dquarkus.package.type=native as a property on the command line, howev
 this allows native image tests to also be run.
 
 Create a native executable using: `./mvnw package -Pnative`.
+
+[[graal-and-windows]]
+[NOTE]
+.Issues with packaging on Windows
+====
+The Microsoft Native Tools for Visual Studio must first be initialized before packaging. You can do this by starting
+the `x64 Native Tools Command Prompt` that was installed with the Visual Studio Build Tools.
+
+Another solution is to write a script to do this for you:
+
+[source,shell]
+----
+cmd /c 'call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvars64.bat" && mvn package -Pnative'
+----
+====
 
 In addition to the regular files, the build also produces `target/getting-started-1.0-SNAPSHOT-runner`.
 You can run it using: `./target/getting-started-1.0-SNAPSHOT-runner`.

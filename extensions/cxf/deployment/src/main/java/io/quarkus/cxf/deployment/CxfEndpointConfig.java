@@ -9,14 +9,26 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class CxfEndpointConfig {
 
     /**
-     * The class implementor
+     * The server class implementor
      */
     @ConfigItem
-    public String implementor;
+    public Optional<String> implementor;
 
     /**
      * The wsdl path
      */
     @ConfigItem
     public Optional<String> wsdlPath;
+
+    /**
+     * The client endpoint url
+     */
+    @ConfigItem
+    public Optional<String> clientEndpointURL;
+
+    /**
+     * The client interface
+     */
+    @ConfigItem
+    public Optional<String> serviceInterface;
 }

@@ -13,6 +13,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
 import javax.jws.WebParam;
 import javax.servlet.DispatcherType;
@@ -39,6 +40,7 @@ import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.cxf.runtime.AbstractCxfClientProducer;
 import io.quarkus.cxf.runtime.CXFQuarkusServlet;
 import io.quarkus.cxf.runtime.CXFServletRecorder;
 import io.quarkus.deployment.Capabilities;
@@ -707,80 +709,99 @@ public class CxfProcessor {
         for (Entry<String, CxfEndpointConfig> webServicesByPath : cxfConfig.endpoints.entrySet()) {
 
             CxfEndpointConfig cxfEndPointConfig = webServicesByPath.getValue();
-            DotName webServiceImplementor = DotName.createSimple(cxfEndPointConfig.implementor);
-            ClassInfo wsclass = index.getClassByName(webServiceImplementor);
+            String relativePath = webServicesByPath.getKey();
             String sei = null;
-            if (wsclass != null) {
-                for (Type wsInterfaceType : wsclass.interfaceTypes()) {
-                    //TODO annotation is not seen do not know why so comment it for moment
-                    //if (wsInterfaceType.hasAnnotation(WEBSERVICE_ANNOTATION)) {
-                    sei = wsInterfaceType.name().toString();
-                    //}
-                }
-            }
             String wsdlPath = null;
             if (cxfEndPointConfig.wsdlPath.isPresent()) {
                 wsdlPath = cxfEndPointConfig.wsdlPath.get();
             }
-            CXFServletInfoBuildItem cxfServletInfo = new CXFServletInfoBuildItem(webServicesByPath.getKey(),
-                    webServicesByPath.getValue().implementor, sei, wsdlPath);
-            for (AnnotationInstance annotation : wsclass.classAnnotations()) {
-                switch (annotation.name().toString()) {
-                    case "org.apache.cxf.feature.Features":
-                        HashSet<String> features = new HashSet<>(
-                                Arrays.asList(annotation.value("features").asStringArray()));
-                        cxfServletInfo.getFeatures().addAll(features);
-                        unremovableBeans.produce(new UnremovableBeanBuildItem(
-                                new UnremovableBeanBuildItem.BeanClassNamesExclusion(features)));
-                        reflectiveClass
-                                .produce(
-                                        new ReflectiveClassBuildItem(true, true, annotation.value("features").asStringArray()));
-                        break;
-                    case "org.apache.cxf.interceptor.InInterceptors":
-                        HashSet<String> inInterceptors = new HashSet<>(
-                                Arrays.asList(annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
-                        cxfServletInfo.getInInterceptors().addAll(inInterceptors);
-                        unremovableBeans.produce(new UnremovableBeanBuildItem(
-                                new UnremovableBeanBuildItem.BeanClassNamesExclusion(inInterceptors)));
-                        reflectiveClass
-                                .produce(new ReflectiveClassBuildItem(true, true,
-                                        annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
-                        break;
-                    case "org.apache.cxf.interceptor.OutInterceptors":
-                        HashSet<String> outInterceptors = new HashSet<>(
-                                Arrays.asList(annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
-                        cxfServletInfo.getOutInterceptors().addAll(outInterceptors);
-                        unremovableBeans.produce(new UnremovableBeanBuildItem(
-                                new UnremovableBeanBuildItem.BeanClassNamesExclusion(outInterceptors)));
-                        reflectiveClass
-                                .produce(new ReflectiveClassBuildItem(true, true,
-                                        annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
-                        break;
-                    case "org.apache.cxf.interceptor.OutFaultInterceptors":
-                        HashSet<String> outFaultInterceptors = new HashSet<>(
-                                Arrays.asList(annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
-                        cxfServletInfo.getOutFaultInterceptors().addAll(outFaultInterceptors);
-                        unremovableBeans.produce(new UnremovableBeanBuildItem(
-                                new UnremovableBeanBuildItem.BeanClassNamesExclusion(outFaultInterceptors)));
-                        reflectiveClass
-                                .produce(new ReflectiveClassBuildItem(true, true,
-                                        annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
-                        break;
-                    case "org.apache.cxf.interceptor.InFaultInterceptors":
-                        HashSet<String> inFaultInterceptors = new HashSet<>(
-                                Arrays.asList(annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
-                        cxfServletInfo.getInFaultInterceptors().addAll(inFaultInterceptors);
-                        unremovableBeans.produce(new UnremovableBeanBuildItem(
-                                new UnremovableBeanBuildItem.BeanClassNamesExclusion(inFaultInterceptors)));
-                        reflectiveClass
-                                .produce(new ReflectiveClassBuildItem(true, true,
-                                        annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
-                        break;
-                    default:
-                        break;
+            if (cxfEndPointConfig.serviceInterface.isPresent()) {
+                sei = cxfEndPointConfig.serviceInterface.get();
+                String wsAbsoluteUrl = cxfEndPointConfig.clientEndpointURL.isPresent()
+                        ? cxfEndPointConfig.clientEndpointURL.get()
+                        : "http://localhost:8080";
+                wsAbsoluteUrl = wsAbsoluteUrl.endsWith("/") ? wsAbsoluteUrl.substring(0, wsAbsoluteUrl.length() - 2)
+                        : wsAbsoluteUrl;
+                wsAbsoluteUrl = relativePath.startsWith("/") ? wsAbsoluteUrl + relativePath
+                        : wsAbsoluteUrl + "/" + relativePath;
+                generateCxfClientProducer(generatedBeans, sei + "CxfClientProducer", wsAbsoluteUrl, sei, wsdlPath);
+
+            } else if (cxfEndPointConfig.implementor.isPresent()) {
+                DotName webServiceImplementor = DotName.createSimple(cxfEndPointConfig.implementor.get());
+                ClassInfo wsClass = index.getClassByName(webServiceImplementor);
+
+                if (wsClass != null) {
+                    for (Type wsInterfaceType : wsClass.interfaceTypes()) {
+                        //TODO annotation is not seen do not know why so comment it for moment
+                        //if (wsInterfaceType.hasAnnotation(WEBSERVICE_ANNOTATION)) {
+                        sei = wsInterfaceType.name().toString();
+                        //}
+                    }
                 }
+
+                CXFServletInfoBuildItem cxfServletInfo = new CXFServletInfoBuildItem(relativePath,
+                        cxfEndPointConfig.implementor.get(), sei, wsdlPath);
+                for (AnnotationInstance annotation : wsClass.classAnnotations()) {
+                    switch (annotation.name().toString()) {
+                        case "org.apache.cxf.feature.Features":
+                            HashSet<String> features = new HashSet<>(
+                                    Arrays.asList(annotation.value("features").asStringArray()));
+                            cxfServletInfo.getFeatures().addAll(features);
+                            unremovableBeans.produce(new UnremovableBeanBuildItem(
+                                    new UnremovableBeanBuildItem.BeanClassNamesExclusion(features)));
+                            reflectiveClass
+                                    .produce(
+                                            new ReflectiveClassBuildItem(true, true,
+                                                    annotation.value("features").asStringArray()));
+                            break;
+                        case "org.apache.cxf.interceptor.InInterceptors":
+                            HashSet<String> inInterceptors = new HashSet<>(
+                                    Arrays.asList(annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
+                            cxfServletInfo.getInInterceptors().addAll(inInterceptors);
+                            unremovableBeans.produce(new UnremovableBeanBuildItem(
+                                    new UnremovableBeanBuildItem.BeanClassNamesExclusion(inInterceptors)));
+                            reflectiveClass
+                                    .produce(new ReflectiveClassBuildItem(true, true,
+                                            annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
+                            break;
+                        case "org.apache.cxf.interceptor.OutInterceptors":
+                            HashSet<String> outInterceptors = new HashSet<>(
+                                    Arrays.asList(annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
+                            cxfServletInfo.getOutInterceptors().addAll(outInterceptors);
+                            unremovableBeans.produce(new UnremovableBeanBuildItem(
+                                    new UnremovableBeanBuildItem.BeanClassNamesExclusion(outInterceptors)));
+                            reflectiveClass
+                                    .produce(new ReflectiveClassBuildItem(true, true,
+                                            annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
+                            break;
+                        case "org.apache.cxf.interceptor.OutFaultInterceptors":
+                            HashSet<String> outFaultInterceptors = new HashSet<>(
+                                    Arrays.asList(annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
+                            cxfServletInfo.getOutFaultInterceptors().addAll(outFaultInterceptors);
+                            unremovableBeans.produce(new UnremovableBeanBuildItem(
+                                    new UnremovableBeanBuildItem.BeanClassNamesExclusion(outFaultInterceptors)));
+                            reflectiveClass
+                                    .produce(new ReflectiveClassBuildItem(true, true,
+                                            annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
+                            break;
+                        case "org.apache.cxf.interceptor.InFaultInterceptors":
+                            HashSet<String> inFaultInterceptors = new HashSet<>(
+                                    Arrays.asList(annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
+                            cxfServletInfo.getInFaultInterceptors().addAll(inFaultInterceptors);
+                            unremovableBeans.produce(new UnremovableBeanBuildItem(
+                                    new UnremovableBeanBuildItem.BeanClassNamesExclusion(inFaultInterceptors)));
+                            reflectiveClass
+                                    .produce(new ReflectiveClassBuildItem(true, true,
+                                            annotation.value(ANNOTATION_VALUE_INTERCEPTORS).asStringArray()));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                cxfServletInfos.produce(cxfServletInfo);
+            } else {
+                LOGGER.error("either webservice interface (client) or implementation (server) is mandatory");
             }
-            cxfServletInfos.produce(cxfServletInfo);
         }
 
         for (ClassInfo subclass : index.getAllKnownSubclasses(ABSTRACT_FEATURE)) {
@@ -793,6 +814,58 @@ public class CxfProcessor {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, subclass.name().toString()));
         }
 
+    }
+
+    /**
+     * Create Producer bean managing webservice client
+     * <p>
+     * The generated class will look like
+     *
+     * <pre>
+     * public class FruitWebserviceCxfClientProducer extends AbstractCxfClientProducer {
+     * &#64;ApplicationScoped
+     * &#64;Produces
+     * &#64;Default
+     * public FruitWebService createService() {
+     * return (FruitWebService) loadCxfClient ("org.acme.FruitWebService", "http://localhost/fruit",
+     * "http://myServiceNamespace", "FruitWebServiceName", "http://myPortNamespace", "fruitWebServicePortName");
+     * }
+     *
+     */
+    private void generateCxfClientProducer(BuildProducer<GeneratedBeanBuildItem> generatedBean,
+            String cxfClientProducerClassName, String endpointAddress, String sei, String wsdlUrl) {
+        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBean);
+
+        ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
+                .className(cxfClientProducerClassName)
+                .superClass(AbstractCxfClientProducer.class)
+                .build();
+        classCreator.addAnnotation(ApplicationScoped.class);
+
+        MethodCreator cxfClientMethodCreator = classCreator.getMethodCreator(
+                "createService",
+                sei);
+        cxfClientMethodCreator.addAnnotation(ApplicationScoped.class);
+        cxfClientMethodCreator.addAnnotation(Produces.class);
+        cxfClientMethodCreator.addAnnotation(Default.class);
+
+        ResultHandle seiRH = cxfClientMethodCreator.load(sei);
+        ResultHandle endpointAddressRH = cxfClientMethodCreator.load(endpointAddress);
+        ResultHandle wsdlUrlRH = cxfClientMethodCreator.load(wsdlUrl);
+
+        // New configuration
+        ResultHandle cxfClient = cxfClientMethodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(AbstractCxfClientProducer.class,
+                        "loadCxfClient",
+                        Object.class,
+                        String.class,
+                        String.class,
+                        String.class),
+                cxfClientMethodCreator.getThis(), seiRH, endpointAddressRH, wsdlUrlRH);
+        ResultHandle cxfClientCasted = cxfClientMethodCreator.checkCast(cxfClient, sei);
+        cxfClientMethodCreator.returnValue(cxfClientCasted);
+
+        classCreator.close();
     }
 
     @BuildStep
@@ -1185,14 +1258,16 @@ public class CxfProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveItems) {
         for (Entry<String, CxfEndpointConfig> webServicesByPath : cxfConfig.endpoints.entrySet()) {
-            String webServiceName = webServicesByPath.getValue().implementor;
-            String producerClassName = webServiceName + "Producer";
-            ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
+            if (webServicesByPath.getValue().implementor.isPresent()) {
+                String webServiceName = webServicesByPath.getValue().implementor.get();
+                String producerClassName = webServiceName + "Producer";
+                ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
 
-            createProducer(producerClassName, classOutput, webServiceName);
-            unremovableBeans.produce(new UnremovableBeanBuildItem(
-                    new UnremovableBeanBuildItem.BeanClassNameExclusion(producerClassName)));
-            reflectiveItems.produce(new ReflectiveClassBuildItem(true, true, producerClassName));
+                createProducer(producerClassName, classOutput, webServiceName);
+                unremovableBeans.produce(new UnremovableBeanBuildItem(
+                        new UnremovableBeanBuildItem.BeanClassNameExclusion(producerClassName)));
+                reflectiveItems.produce(new ReflectiveClassBuildItem(true, true, producerClassName));
+            }
 
         }
 

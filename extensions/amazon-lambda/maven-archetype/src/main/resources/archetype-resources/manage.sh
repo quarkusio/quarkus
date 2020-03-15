@@ -9,7 +9,11 @@ function cmd_create() {
     --handler ${HANDLER} \
     --runtime ${RUNTIME} \
     --role ${LAMBDA_ROLE_ARN} \
+    --timeout 15 \
+    --memory-size 256 \
     ${LAMBDA_META}
+# Enable and move this param above ${LAMBDA_META}, if using AWS X-Ray
+#    --tracing-config Mode=Active \
 }
 
 function cmd_delete() {
@@ -27,6 +31,8 @@ function cmd_invoke() {
     --log-type Tail \
     --query 'LogResult' \
     --output text |  base64 -d
+  { set +x; } 2>/dev/null
+  cat response.txt && rm -f response.txt
 }
 
 function cmd_update() {

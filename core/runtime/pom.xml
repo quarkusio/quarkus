@@ -109,8 +109,17 @@
                         <parentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</parentFirstArtifact>
                         <parentFirstArtifact>org.jboss.logging:jboss-logging</parentFirstArtifact>
                         <parentFirstArtifact>org.ow2.asm:asm</parentFirstArtifact>
+                        <parentFirstArtifact>org.ow2.asm:asm-commons</parentFirstArtifact>
                         <parentFirstArtifact>org.apache.maven:maven-model</parentFirstArtifact>
+                        <!--
+                        This is a temporary fix, we need a better way to be able to
+                        add these exclusions outside the quarkus-extension.properties file.
+                        -->
                         <parentFirstArtifact>org.opentest4j:opentest4j</parentFirstArtifact>
+                        <parentFirstArtifact>org.mockito:mockito-core</parentFirstArtifact>
+                        <parentFirstArtifact>org.objenesis:objenesis</parentFirstArtifact>
+                        <parentFirstArtifact>net.bytebuddy:byte-buddy</parentFirstArtifact>
+                        <parentFirstArtifact>net.bytebuddy:byte-buddy-agent</parentFirstArtifact>
                     </parentFirstArtifacts>
                     <excludedArtifacts>
                         <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>

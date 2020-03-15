@@ -11,9 +11,9 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
 import javax.sql.XADataSource;
 
 import org.eclipse.microprofile.metrics.Metadata;
@@ -358,7 +358,7 @@ class AgroalProcessor {
                 .className(dataSourceProducerClassName)
                 .superClass(AbstractDataSourceProducer.class)
                 .build();
-        classCreator.addAnnotation(ApplicationScoped.class);
+        classCreator.addAnnotation(Singleton.class);
 
         for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedDataSourceBuildTimeConfigs) {
             String dataSourceName = aggregatedDataSourceBuildTimeConfig.getName();
@@ -366,7 +366,7 @@ class AgroalProcessor {
             MethodCreator dataSourceMethodCreator = classCreator.getMethodCreator(
                     "createDataSource_" + HashUtil.sha1(dataSourceName),
                     AgroalDataSource.class);
-            dataSourceMethodCreator.addAnnotation(ApplicationScoped.class);
+            dataSourceMethodCreator.addAnnotation(Singleton.class);
             dataSourceMethodCreator.addAnnotation(Produces.class);
             if (aggregatedDataSourceBuildTimeConfig.isDefault()) {
                 dataSourceMethodCreator.addAnnotation(Default.class);

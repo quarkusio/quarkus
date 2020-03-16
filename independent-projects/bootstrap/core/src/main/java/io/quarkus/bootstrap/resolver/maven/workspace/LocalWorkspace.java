@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.resolution.UnresolvableModelException;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
@@ -87,6 +88,16 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
                 || !lp.getVersion().equals(artifact.getVersion())
                         && !(LocalProject.REVISION_EXPR.equals(artifact.getVersion())
                                 && lp.getVersion().equals(revision))) {
+            return null;
+        }
+        if (!Objects.equals(artifact.getClassifier(), lp.getAppArtifact().getClassifier())) {
+            if ("tests".equals(artifact.getClassifier())) {
+                //special classifier used for test jars
+                final File file = lp.getTestClassesDir().toFile();
+                if (file.exists()) {
+                    return file;
+                }
+            }
             return null;
         }
         final String type = artifact.getExtension();

@@ -202,6 +202,10 @@ public class LocalProject {
         return getOutputDir().resolve("classes");
     }
 
+    public Path getTestClassesDir() {
+        return getOutputDir().resolve("test-classes");
+    }
+
     public Path getSourcesSourcesDir() {
         if (getRawModel().getBuild() != null && getRawModel().getBuild().getSourceDirectory() != null) {
             String originalValue = getRawModel().getBuild().getSourceDirectory();

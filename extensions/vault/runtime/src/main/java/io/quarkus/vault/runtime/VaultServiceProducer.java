@@ -7,6 +7,7 @@ import javax.inject.Named;
 
 import io.quarkus.vault.CredentialsProvider;
 import io.quarkus.vault.VaultKVSecretEngine;
+import io.quarkus.vault.VaultTOTPSecretEngine;
 import io.quarkus.vault.VaultTransitSecretEngine;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 
@@ -23,6 +24,12 @@ public class VaultServiceProducer {
     @ApplicationScoped
     public VaultTransitSecretEngine createTransitSecretEngine() {
         return VaultManager.getInstance().getVaultTransitManager();
+    }
+
+    @Produces
+    @ApplicationScoped
+    public VaultTOTPSecretEngine createVaultTOTPSecretEngine() {
+        return VaultManager.getInstance().getVaultTOTPManager();
     }
 
     @Produces

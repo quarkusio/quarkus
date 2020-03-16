@@ -34,6 +34,7 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
+import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
@@ -61,8 +62,8 @@ public class QuarkusTestExtension
     private static Path testClassLocation;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
-    private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
-
+    private ExtensionState doJavaStart(ExtensionContext context) throws Throwable {
+        Closeable testResourceManager = null;
         try {
             final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
 
@@ -83,17 +84,26 @@ public class QuarkusTestExtension
                     .setProjectRoot(new File("").toPath())
                     .build()
                     .bootstrap();
+
             Timing.staticInitStarted(curatedApplication.getBaseRuntimeClassLoader());
             AugmentAction augmentAction = curatedApplication.createAugmentor(TestBuildChainFunction.class.getName(),
                     Collections.singletonMap(TEST_LOCATION, testClassLocation));
-            runningQuarkusApplication = augmentAction.createInitialRuntimeApplication().run();
+            StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
+            Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
+
+            //must be done after the TCCL has been set
+            testResourceManager = (Closeable) startupAction.getClassLoader().loadClass(TestResourceManager.class.getName())
+                    .getConstructor(Class.class)
+                    .newInstance(context.getRequiredTestClass());
+            testResourceManager.getClass().getMethod("start").invoke(testResourceManager);
+
+            runningQuarkusApplication = startupAction.run();
 
             ConfigProviderResolver.setInstance(new RunningAppConfigResolver(runningQuarkusApplication));
 
-            Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
-
             System.setProperty("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication));
 
+            Closeable tm = testResourceManager;
             Closeable shutdownTask = new Closeable() {
                 @Override
                 public void close() throws IOException {
@@ -102,8 +112,12 @@ public class QuarkusTestExtension
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     } finally {
-                        while (!shutdownTasks.isEmpty()) {
-                            shutdownTasks.pop().run();
+                        try {
+                            while (!shutdownTasks.isEmpty()) {
+                                shutdownTasks.pop().run();
+                            }
+                        } finally {
+                            tm.close();
                         }
                     }
                 }
@@ -121,8 +135,16 @@ public class QuarkusTestExtension
                 }
             }, "Quarkus Test Cleanup Shutdown task"));
             return new ExtensionState(testResourceManager, shutdownTask);
-        } catch (java.util.ServiceConfigurationError | Exception e) {
-            throw new RuntimeException(e);
+        } catch (Throwable e) {
+
+            try {
+                if (testResourceManager != null) {
+                    testResourceManager.close();
+                }
+            } catch (Exception ex) {
+                e.addSuppressed(ex);
+            }
+            throw e;
         }
     }
 
@@ -174,18 +196,11 @@ public class QuarkusTestExtension
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
         if (state == null && !failedBoot) {
             PropertyTestUtil.setLogFileProperty();
-            TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
             try {
-                testResourceManager.start();
-                state = doJavaStart(extensionContext, testResourceManager);
+                state = doJavaStart(extensionContext);
                 store.put(ExtensionState.class.getName(), state);
 
             } catch (Throwable e) {
-                try {
-                    testResourceManager.stop();
-                } catch (Exception ex) {
-                    e.addSuppressed(ex);
-                }
                 failedBoot = true;
                 firstException = e;
             }
@@ -254,7 +269,8 @@ public class QuarkusTestExtension
 
             Class<?> resM = Thread.currentThread().getContextClassLoader().loadClass(TestHTTPResourceManager.class.getName());
             resM.getDeclaredMethod("inject", Object.class).invoke(null, actualTestInstance);
-            state.testResourceManager.inject(actualTestInstance);
+            state.testResourceManager.getClass().getMethod("inject", Object.class).invoke(state.testResourceManager,
+                    actualTestInstance);
         } catch (Exception e) {
             throw new TestInstantiationException("Failed to create test instance", e);
         }
@@ -356,10 +372,10 @@ public class QuarkusTestExtension
 
     class ExtensionState implements ExtensionContext.Store.CloseableResource {
 
-        private final TestResourceManager testResourceManager;
+        private final Closeable testResourceManager;
         private final Closeable resource;
 
-        ExtensionState(TestResourceManager testResourceManager, Closeable resource) {
+        ExtensionState(Closeable testResourceManager, Closeable resource) {
             this.testResourceManager = testResourceManager;
             this.resource = resource;
         }
@@ -372,7 +388,7 @@ public class QuarkusTestExtension
                 if (QuarkusTestExtension.this.originalCl != null) {
                     setCCL(QuarkusTestExtension.this.originalCl);
                 }
-                testResourceManager.stop();
+                testResourceManager.close();
             }
         }
     }

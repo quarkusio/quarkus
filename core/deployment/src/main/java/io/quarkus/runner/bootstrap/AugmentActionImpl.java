@@ -1,5 +1,9 @@
 package io.quarkus.runner.bootstrap;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +14,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.app.AdditionalDependency;
 import io.quarkus.bootstrap.app.ArtifactResult;
@@ -44,6 +49,8 @@ import io.quarkus.runtime.configuration.ProfileManager;
  */
 public class AugmentActionImpl implements AugmentAction {
 
+    private static final Logger log = Logger.getLogger(AugmentActionImpl.class);
+
     private final QuarkusBootstrap quarkusBootstrap;
     private final CuratedApplication curatedApplication;
     private final LaunchMode launchMode;
@@ -75,6 +82,30 @@ public class AugmentActionImpl implements AugmentAction {
                 throw new IllegalStateException("Can only create a production application when using NORMAL launch mode");
             }
             BuildResult result = runAugment(true, Collections.emptySet(), ArtifactResultBuildItem.class);
+
+            String debugSourcesDir = BootstrapDebug.DEBUG_SOURCES_DIR;
+            if (debugSourcesDir != null) {
+                for (GeneratedClassBuildItem i : result.consumeMulti(GeneratedClassBuildItem.class)) {
+                    try {
+                        if (i.getSource() != null) {
+                            File debugPath = new File(debugSourcesDir);
+                            if (!debugPath.exists()) {
+                                debugPath.mkdir();
+                            }
+                            File sourceFile = new File(debugPath, i.getName() + ".zig");
+                            sourceFile.getParentFile().mkdirs();
+                            Files.write(sourceFile.toPath(), i.getSource().getBytes(StandardCharsets.UTF_8),
+                                    StandardOpenOption.CREATE);
+                            log.infof("Wrote source: %s", sourceFile.getAbsolutePath());
+                        } else {
+                            log.infof("Source not available: %s", i.getName());
+                        }
+                    } catch (Exception t) {
+                        log.errorf(t, "Failed to write debug source file: %s", i.getName());
+                    }
+                }
+            }
+
             JarBuildItem jarBuildItem = result.consumeOptional(JarBuildItem.class);
             NativeImageBuildItem nativeImageBuildItem = result.consumeOptional(NativeImageBuildItem.class);
             return new AugmentResult(result.consumeMulti(ArtifactResultBuildItem.class).stream()

@@ -8,12 +8,18 @@ import io.quarkus.builder.item.MultiBuildItem;
  */
 public final class GeneratedBeanBuildItem extends MultiBuildItem {
 
-    final String name;
-    final byte[] data;
+    private final String name;
+    private final byte[] data;
+    private final String source;
 
     public GeneratedBeanBuildItem(String name, byte[] data) {
+        this(name, data, null);
+    }
+
+    public GeneratedBeanBuildItem(String name, byte[] data, String source) {
         this.name = name;
         this.data = data;
+        this.source = source;
     }
 
     public String getName() {
@@ -23,4 +29,13 @@ public final class GeneratedBeanBuildItem extends MultiBuildItem {
     public byte[] getData() {
         return data;
     }
+
+    /**
+     * 
+     * @return the textual representation of generated code
+     */
+    public String getSource() {
+        return source;
+    }
+
 }

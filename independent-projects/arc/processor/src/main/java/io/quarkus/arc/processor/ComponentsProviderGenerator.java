@@ -44,7 +44,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
     protected final AnnotationLiteralProcessor annotationLiterals;
 
-    public ComponentsProviderGenerator(AnnotationLiteralProcessor annotationLiterals) {
+    public ComponentsProviderGenerator(AnnotationLiteralProcessor annotationLiterals, boolean generateSources) {
+        super(generateSources);
         this.annotationLiterals = annotationLiterals;
     }
 
@@ -59,7 +60,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
     Collection<Resource> generate(String name, BeanDeployment beanDeployment, Map<BeanInfo, String> beanToGeneratedName,
             Map<ObserverInfo, String> observerToGeneratedName) {
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(true);
+        ResourceClassOutput classOutput = new ResourceClassOutput(true, generateSources);
 
         String generatedName = SETUP_PACKAGE + "." + name + COMPONENTS_PROVIDER_SUFFIX;
         ClassCreator componentsProvider = ClassCreator.builder().classOutput(classOutput).className(generatedName)
@@ -123,7 +124,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         for (Resource resource : classOutput.getResources()) {
             resources.add(resource);
             resources.add(ResourceImpl.serviceProvider(ComponentsProvider.class.getName(),
-                    (resource.getName().replace('/', '.')).getBytes(Charset.forName("UTF-8"))));
+                    (resource.getName().replace('/', '.')).getBytes(Charset.forName("UTF-8")), null));
         }
         return resources;
     }

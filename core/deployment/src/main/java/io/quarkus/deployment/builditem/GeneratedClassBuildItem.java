@@ -3,14 +3,21 @@ package io.quarkus.deployment.builditem;
 import io.quarkus.builder.item.MultiBuildItem;
 
 public final class GeneratedClassBuildItem extends MultiBuildItem {
+
     final boolean applicationClass;
     final String name;
     final byte[] classData;
+    final String source;
 
     public GeneratedClassBuildItem(boolean applicationClass, String name, byte[] classData) {
+        this(applicationClass, name, classData, null);
+    }
+
+    public GeneratedClassBuildItem(boolean applicationClass, String name, byte[] classData, String source) {
         this.applicationClass = applicationClass;
         this.name = name;
         this.classData = classData;
+        this.source = source;
     }
 
     public boolean isApplicationClass() {
@@ -24,4 +31,9 @@ public final class GeneratedClassBuildItem extends MultiBuildItem {
     public byte[] getClassData() {
         return classData;
     }
+
+    public String getSource() {
+        return source;
+    }
+
 }

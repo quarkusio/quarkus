@@ -47,23 +47,17 @@ public class BeanProcessor {
     static final Logger LOGGER = Logger.getLogger(BeanProcessor.class);
 
     private final String name;
-
     private final ResourceOutput output;
-
     private final boolean sharedAnnotationLiterals;
-
     private final ReflectionRegistration reflectionRegistration;
-
     private final List<BeanRegistrar> beanRegistrars;
     private final List<ContextRegistrar> contextRegistrars;
     private final List<ObserverRegistrar> observerRegistrars;
     private final List<BeanDeploymentValidator> beanDeploymentValidators;
-
     private final BuildContextImpl buildContext;
-
     private final Predicate<DotName> applicationClassPredicate;
-
     private final BeanDeployment beanDeployment;
+    private final boolean generateSources;
 
     private BeanProcessor(String name, IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             ResourceOutput output,
@@ -83,12 +77,14 @@ public class BeanProcessor {
             Map<DotName, Collection<AnnotationInstance>> additionalStereotypes,
             List<InterceptorBindingRegistrar> interceptorBindingRegistrars,
             boolean removeFinalForProxyableMethods,
-            boolean jtaCapabilities) {
+            boolean jtaCapabilities,
+            boolean generateSources) {
         this.reflectionRegistration = reflectionRegistration;
         this.applicationClassPredicate = applicationClassPredicate;
         this.name = name;
         this.output = output;
         this.sharedAnnotationLiterals = sharedAnnotationLiterals;
+        this.generateSources = generateSources;
 
         // Initialize all build processors
         buildContext = new BuildContextImpl();
@@ -145,14 +141,16 @@ public class BeanProcessor {
         PrivateMembersCollector privateMembers = new PrivateMembersCollector();
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(sharedAnnotationLiterals,
                 applicationClassPredicate);
-        BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate, privateMembers);
-        ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator(applicationClassPredicate);
+        BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate, privateMembers,
+                generateSources);
+        ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator(applicationClassPredicate, generateSources);
         InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate,
-                privateMembers);
-        SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals, applicationClassPredicate);
+                privateMembers, generateSources);
+        SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals, applicationClassPredicate,
+                generateSources);
         ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate,
-                privateMembers);
-        AnnotationLiteralGenerator annotationLiteralsGenerator = new AnnotationLiteralGenerator();
+                privateMembers, generateSources);
+        AnnotationLiteralGenerator annotationLiteralsGenerator = new AnnotationLiteralGenerator(generateSources);
 
         Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
         Map<ObserverInfo, String> observerToGeneratedName = new HashMap<>();
@@ -202,7 +200,8 @@ public class BeanProcessor {
 
         // Generate _ComponentsProvider
         resources.addAll(
-                new ComponentsProviderGenerator(annotationLiterals).generate(name, beanDeployment, beanToGeneratedName,
+                new ComponentsProviderGenerator(annotationLiterals, generateSources).generate(name, beanDeployment,
+                        beanToGeneratedName,
                         observerToGeneratedName));
 
         // Generate AnnotationLiterals
@@ -267,6 +266,8 @@ public class BeanProcessor {
         private boolean removeUnusedBeans = false;
         private boolean jtaCapabilities = false;
         private final List<Predicate<BeanInfo>> removalExclusions = new ArrayList<>();
+
+        private boolean generateSources = false;
 
         private Predicate<DotName> applicationClassPredicate = new Predicate<DotName>() {
             @Override
@@ -408,12 +409,24 @@ public class BeanProcessor {
             return this;
         }
 
+        /**
+         * If set to true the will generate source files of all generated classes for debug purposes. The generated source is
+         * not actually a source file but a textual representation of generated code.
+         * 
+         * @param value
+         * @return self
+         */
+        public Builder setGenerateSources(boolean value) {
+            this.generateSources = value;
+            return this;
+        }
+
         public BeanProcessor build() {
             return new BeanProcessor(name, index, additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
                     reflectionRegistration, annotationTransformers, injectionPointTransformers, observerTransformers,
                     resourceAnnotations, beanRegistrars, observerRegistrars, contextRegistrars, beanDeploymentValidators,
                     applicationClassPredicate, removeUnusedBeans, removalExclusions, additionalStereotypes,
-                    additionalInterceptorBindingRegistrars, removeFinalForProxyableMethods, jtaCapabilities);
+                    additionalInterceptorBindingRegistrars, removeFinalForProxyableMethods, jtaCapabilities, generateSources);
         }
 
     }

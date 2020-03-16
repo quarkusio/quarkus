@@ -62,7 +62,8 @@ public class ObserverGenerator extends AbstractGenerator {
     private final PrivateMembersCollector privateMembers;
 
     public ObserverGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
-            PrivateMembersCollector privateMembers) {
+            PrivateMembersCollector privateMembers, boolean generateSources) {
+        super(generateSources);
         this.annotationLiterals = annotationLiterals;
         this.applicationClassPredicate = applicationClassPredicate;
         this.privateMembers = privateMembers;
@@ -121,7 +122,7 @@ public class ObserverGenerator extends AbstractGenerator {
 
         boolean isApplicationClass = applicationClassPredicate.test(observer.getBeanClass());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.OBSERVER : null);
+                name -> name.equals(generatedName) ? SpecialType.OBSERVER : null, generateSources);
 
         // Foo_Observer_fooMethod_hash implements ObserverMethod<T>
         ClassCreator observerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)

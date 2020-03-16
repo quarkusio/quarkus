@@ -15,8 +15,8 @@ class ResourceImpl implements ResourceOutput.Resource {
 
     private final boolean applicationClass;
 
-    static Resource javaClass(String name, byte[] data, SpecialType specialType, boolean applicationClass) {
-        return new ResourceImpl(applicationClass, name, data, Type.JAVA_CLASS, specialType);
+    static Resource javaClass(String name, byte[] data, SpecialType specialType, boolean applicationClass, String source) {
+        return new ResourceImpl(applicationClass, name, data, Type.JAVA_CLASS, specialType, source);
 
     }
 
@@ -25,23 +25,23 @@ class ResourceImpl implements ResourceOutput.Resource {
     }
 
     static Resource serviceProvider(String name, byte[] data, SpecialType specialType) {
-        return new ResourceImpl(true, name, data, Type.SERVICE_PROVIDER, specialType);
+        return new ResourceImpl(true, name, data, Type.SERVICE_PROVIDER, specialType, null);
     }
 
     private final String name;
-
     private final byte[] data;
-
+    private final String source;
     private final Type type;
-
     private final SpecialType specialType;
 
-    private ResourceImpl(boolean applicationClass, String name, byte[] data, Type type, SpecialType specialType) {
+    private ResourceImpl(boolean applicationClass, String name, byte[] data, Type type, SpecialType specialType,
+            String source) {
         this.applicationClass = applicationClass;
         this.name = name;
         this.data = data;
         this.type = type;
         this.specialType = specialType;
+        this.source = source;
     }
 
     @Override
@@ -84,6 +84,11 @@ class ResourceImpl implements ResourceOutput.Resource {
     @Override
     public SpecialType getSpecialType() {
         return specialType;
+    }
+
+    @Override
+    public String getSource() {
+        return source;
     }
 
     private Path getOutputDirectory(File directory) throws IOException {

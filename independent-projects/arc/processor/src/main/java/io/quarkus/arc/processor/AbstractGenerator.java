@@ -13,6 +13,12 @@ abstract class AbstractGenerator {
     static final String UNDERSCORE = "_";
     static final String SYNTHETIC_SUFFIX = "Synthetic";
 
+    protected final boolean generateSources;
+
+    public AbstractGenerator(boolean generateSources) {
+        this.generateSources = generateSources;
+    }
+
     /**
      * Create a generated bean name from a bean package. When bean is located
      * in a default package (i.e. a classpath root), the target package name

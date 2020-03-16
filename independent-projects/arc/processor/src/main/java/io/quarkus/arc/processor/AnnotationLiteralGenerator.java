@@ -46,6 +46,13 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
 
     private static final Logger LOGGER = Logger.getLogger(AnnotationLiteralGenerator.class);
 
+    private final boolean generateSources;
+
+    AnnotationLiteralGenerator(boolean generateSources) {
+        super(generateSources);
+        this.generateSources = generateSources;
+    }
+
     /**
      *
      * @param beanDeployment
@@ -56,7 +63,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
             ComputingCache<Key, Literal> annotationLiteralsCache) {
         List<Resource> resources = new ArrayList<>();
         annotationLiteralsCache.forEachEntry((key, literal) -> {
-            ResourceClassOutput classOutput = new ResourceClassOutput(literal.isApplicationClass);
+            ResourceClassOutput classOutput = new ResourceClassOutput(literal.isApplicationClass, generateSources);
             createSharedAnnotationLiteral(classOutput, key, literal);
             resources.addAll(classOutput.getResources());
         });

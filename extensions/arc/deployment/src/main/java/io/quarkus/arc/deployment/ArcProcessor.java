@@ -65,6 +65,7 @@ import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
+import io.quarkus.runner.bootstrap.BootstrapDebug;
 
 /**
  * This class contains build steps that trigger various phases of the bean processing.
@@ -241,6 +242,7 @@ public class ArcProcessor {
         }
         builder.setRemoveFinalFromProxyableMethods(arcConfig.removeFinalForProxyableMethods);
         builder.setJtaCapabilities(capabilities.isCapabilityPresent(Capabilities.TRANSACTIONS));
+        builder.setGenerateSources(BootstrapDebug.DEBUG_SOURCES_DIR != null);
 
         BeanProcessor beanProcessor = builder.build();
         ContextRegistrar.RegistrationContext context = beanProcessor.registerCustomContexts();
@@ -338,7 +340,7 @@ public class ArcProcessor {
                     LOGGER.debugf("Add %s class: %s", (resource.isApplicationClass() ? "APP" : "FWK"),
                             resource.getFullyQualifiedName());
                     generatedClass.produce(new GeneratedClassBuildItem(resource.isApplicationClass(), resource.getName(),
-                            resource.getData()));
+                            resource.getData(), resource.getSource()));
                     break;
                 case SERVICE_PROVIDER:
                     generatedResource.produce(

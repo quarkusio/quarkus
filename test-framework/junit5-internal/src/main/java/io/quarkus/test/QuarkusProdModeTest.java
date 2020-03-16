@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -99,6 +100,19 @@ public class QuarkusProdModeTest
     private boolean expectExit;
     private String startupConsoleOutput;
     private int exitCode;
+
+    public QuarkusProdModeTest() {
+        InputStream appPropsIs = Thread.currentThread().getContextClassLoader().getResourceAsStream("application.properties");
+        if (appPropsIs != null) {
+            customApplicationProperties = new Properties();
+            try (InputStream is = appPropsIs) {
+                customApplicationProperties.load(is);
+            } catch (IOException e) {
+                throw new UncheckedIOException("Failed to load application configuration from "
+                        + Thread.currentThread().getContextClassLoader().getResource("application.properties"), e);
+            }
+        }
+    }
 
     public Supplier<JavaArchive> getArchiveProducer() {
         return archiveProducer;
@@ -291,7 +305,8 @@ public class QuarkusProdModeTest
             exportArchive(deploymentDir, testClass);
 
             Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
-            QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder(deploymentDir)
+            QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
+                    .setApplicationRoot(deploymentDir)
                     .setMode(QuarkusBootstrap.Mode.PROD)
                     .setLocalProjectDiscovery(true)
                     .addExcludedPath(testLocation)

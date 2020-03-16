@@ -42,7 +42,9 @@ public class KubernetesMockServerTestResource implements QuarkusTestResourceLife
 
     @Override
     public void stop() {
-        mockServer.destroy();
+        if (mockServer != null) {
+            mockServer.destroy();
+        }
     }
 
     @Override

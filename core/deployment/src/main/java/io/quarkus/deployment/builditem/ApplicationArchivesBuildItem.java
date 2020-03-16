@@ -15,6 +15,7 @@ public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
 
     private final ApplicationArchive root;
     private final Collection<ApplicationArchive> applicationArchives;
+    private Set<ApplicationArchive> allArchives;
 
     public ApplicationArchivesBuildItem(ApplicationArchive root, Collection<ApplicationArchive> applicationArchives) {
         this.root = root;
@@ -42,9 +43,12 @@ public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
      * @return A set of all application archives, including the root archive
      */
     public Set<ApplicationArchive> getAllApplicationArchives() {
-        HashSet<ApplicationArchive> ret = new HashSet<>(applicationArchives);
-        ret.add(root);
-        return Collections.unmodifiableSet(ret);
+        if (allArchives == null) {
+            HashSet<ApplicationArchive> ret = new HashSet<>(applicationArchives);
+            ret.add(root);
+            allArchives = Collections.unmodifiableSet(ret);
+        }
+        return allArchives;
     }
 
     /**

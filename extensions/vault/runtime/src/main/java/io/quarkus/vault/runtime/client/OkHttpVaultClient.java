@@ -10,6 +10,7 @@ import java.util.Map;
 
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -31,6 +32,13 @@ import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2WriteBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
+import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyBody;
+import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyResult;
+import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPGenerateCodeResult;
+import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPListKeysResult;
+import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPReadKeyResult;
+import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPValidateCodeBody;
+import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPValidateCodeResult;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecrypt;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecryptBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitEncrypt;
@@ -61,6 +69,7 @@ public class OkHttpVaultClient implements VaultClient {
         this.client = createHttpClient(serverConfig);
         this.url = serverConfig.url.get();
         this.mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
     @Override
@@ -103,12 +112,12 @@ public class OkHttpVaultClient implements VaultClient {
 
     @Override
     public void deleteSecretV1(String token, String secretEnginePath, String path) {
-        delete(secretEnginePath + "/" + path, token, null, null, 204);
+        delete(secretEnginePath + "/" + path, token, 204);
     }
 
     @Override
     public void deleteSecretV2(String token, String secretEnginePath, String path) {
-        delete(secretEnginePath + "/data/" + path, token, null, null, 204);
+        delete(secretEnginePath + "/data/" + path, token, 204);
     }
 
     @Override
@@ -167,11 +176,61 @@ public class OkHttpVaultClient implements VaultClient {
         return post("transit/rewrap/" + keyName, token, body, VaultTransitEncrypt.class);
     }
 
+    @Override
+    public VaultTOTPCreateKeyResult createTOTPKey(String token, String keyName,
+            VaultTOTPCreateKeyBody body) {
+        String path = "totp/keys/" + keyName;
+
+        // Depending on parameters it might produce an output or not
+        if (body.isProducingOutput()) {
+            return post(path, token, body, VaultTOTPCreateKeyResult.class, 200);
+        } else {
+            post(path, token, body, 204);
+            return null;
+        }
+    }
+
+    @Override
+    public VaultTOTPReadKeyResult readTOTPKey(String token, String keyName) {
+        String path = "totp/keys/" + keyName;
+        return get(path, token, VaultTOTPReadKeyResult.class);
+    }
+
+    @Override
+    public VaultTOTPListKeysResult listTOTPKeys(String token) {
+        return list("totp/keys", token, VaultTOTPListKeysResult.class);
+    }
+
+    @Override
+    public void deleteTOTPKey(String token, String keyName) {
+        String path = "totp/keys/" + keyName;
+        delete(path, token, 204);
+    }
+
+    @Override
+    public VaultTOTPGenerateCodeResult generateTOTPCode(String token, String keyName) {
+        String path = "totp/code/" + keyName;
+        return get(path, token, VaultTOTPGenerateCodeResult.class);
+    }
+
+    @Override
+    public VaultTOTPValidateCodeResult validateTOTPCode(String token, String keyName,
+            String code) {
+        String path = "totp/code/" + keyName;
+        VaultTOTPValidateCodeBody body = new VaultTOTPValidateCodeBody(code);
+        return post(path, token, body, VaultTOTPValidateCodeResult.class);
+    }
+
     // ---
 
-    protected <T> T delete(String path, String token, Object body, Class<T> resultClass, int expectedCode) {
-        Request request = builder(path, token).delete(requestBody(body)).build();
-        return exec(request, resultClass, expectedCode);
+    protected <T> T list(String path, String token, Class<T> resultClass) {
+        Request request = builder(path, token).method("LIST", null).build();
+        return exec(request, resultClass);
+    }
+
+    protected <T> T delete(String path, String token, int expectedCode) {
+        Request request = builder(path, token).delete().build();
+        return exec(request, expectedCode);
     }
 
     protected <T> T post(String path, String token, Object body, Class<T> resultClass, int expectedCode) {
@@ -182,6 +241,11 @@ public class OkHttpVaultClient implements VaultClient {
     protected <T> T post(String path, String token, Object body, Class<T> resultClass) {
         Request request = builder(path, token).post(requestBody(body)).build();
         return exec(request, resultClass);
+    }
+
+    protected <T> T post(String path, String token, Object body, int expectedCode) {
+        Request request = builder(path, token).post(requestBody(body)).build();
+        return exec(request, expectedCode);
     }
 
     protected <T> T put(String path, String token, Object body, Class<T> resultClass) {
@@ -196,6 +260,10 @@ public class OkHttpVaultClient implements VaultClient {
 
     private <T> T exec(Request request, Class<T> resultClass) {
         return exec(request, resultClass, 200);
+    }
+
+    private <T> T exec(Request request, int expectedCode) {
+        return exec(request, null, expectedCode);
     }
 
     private <T> T exec(Request request, Class<T> resultClass, int expectedCode) {

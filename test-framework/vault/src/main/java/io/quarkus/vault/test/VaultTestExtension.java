@@ -297,6 +297,10 @@ public class VaultTestExtension {
         execVault(format("vault write transit/keys/%s type=ed25519 derived=true", SIGN_DERIVATION_KEY_NAME));
 
         execVault("vault write transit/keys/jws type=ecdsa-p256");
+
+        // TOTP
+
+        execVault("vault secrets enable totp");
     }
 
     public static boolean useTls() {

@@ -1,7 +1,6 @@
 package io.quarkus.oidc.runtime;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -20,6 +19,8 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
@@ -39,7 +40,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     @Override
-    public CompletionStage<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
+    public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
         ContextAwareTokenCredential credential = (ContextAwareTokenCredential) request.getToken();
         RoutingContext vertxContext = credential.getContext();
@@ -48,7 +49,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             return context.runBlocking(new Supplier<SecurityIdentity>() {
                 @Override
                 public SecurityIdentity get() {
-                    return authenticate(request, vertxContext).join();
+                    return authenticate(request, vertxContext).await().indefinitely();
                 }
             });
         }
@@ -56,7 +57,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         return authenticate(request, vertxContext);
     }
 
-    private CompletableFuture<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
+    private Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             RoutingContext vertxContext) {
         TenantConfigContext resolvedContext = tenantResolver.resolve(vertxContext, true);
 
@@ -68,53 +69,52 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     @SuppressWarnings("deprecation")
-    private CompletableFuture<SecurityIdentity> validateTokenWithOidcServer(TokenAuthenticationRequest request,
+    private Uni<SecurityIdentity> validateTokenWithOidcServer(TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
 
-        CompletableFuture<SecurityIdentity> result = new CompletableFuture<>();
-        resolvedContext.auth.decodeToken(request.getToken().getToken(),
-                new Handler<AsyncResult<AccessToken>>() {
-                    @Override
-                    public void handle(AsyncResult<AccessToken> event) {
-                        if (event.failed()) {
-                            result.completeExceptionally(new AuthenticationFailedException(event.cause()));
-                            return;
-                        }
-                        JsonObject tokenJson = event.result().accessToken();
-                        try {
-                            result.complete(validateAndCreateIdentity(request, resolvedContext.oidcConfig, tokenJson));
-                        } catch (Throwable ex) {
-                            result.completeExceptionally(ex);
-                        }
-                    }
-                });
-
-        return result;
+        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
+            @Override
+            public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
+                resolvedContext.auth.decodeToken(request.getToken().getToken(),
+                        new Handler<AsyncResult<AccessToken>>() {
+                            @Override
+                            public void handle(AsyncResult<AccessToken> event) {
+                                if (event.failed()) {
+                                    uniEmitter.fail(new AuthenticationFailedException(event.cause()));
+                                    return;
+                                }
+                                JsonObject tokenJson = event.result().accessToken();
+                                try {
+                                    uniEmitter.complete(
+                                            validateAndCreateIdentity(request, resolvedContext.oidcConfig, tokenJson));
+                                } catch (Throwable ex) {
+                                    uniEmitter.fail(ex);
+                                }
+                            }
+                        });
+            }
+        });
     }
 
-    private CompletableFuture<SecurityIdentity> validateTokenWithoutOidcServer(TokenAuthenticationRequest request,
+    private Uni<SecurityIdentity> validateTokenWithoutOidcServer(TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
-        CompletableFuture<SecurityIdentity> result = new CompletableFuture<>();
-
         OAuth2AuthProviderImpl auth = ((OAuth2AuthProviderImpl) resolvedContext.auth);
         JWT jwt = auth.getJWT();
         JsonObject tokenJson = null;
         try {
             tokenJson = jwt.decode(request.getToken().getToken());
         } catch (Throwable ex) {
-            result.completeExceptionally(new AuthenticationFailedException(ex));
-            return result;
+            return Uni.createFrom().failure(new AuthenticationFailedException(ex));
         }
         if (jwt.isExpired(tokenJson, auth.getConfig().getJWTOptions())) {
-            result.completeExceptionally(new AuthenticationFailedException());
+            return Uni.createFrom().failure(new AuthenticationFailedException());
         } else {
             try {
-                result.complete(validateAndCreateIdentity(request, resolvedContext.oidcConfig, tokenJson));
+                return Uni.createFrom().item(validateAndCreateIdentity(request, resolvedContext.oidcConfig, tokenJson));
             } catch (Throwable ex) {
-                result.completeExceptionally(ex);
+                return Uni.createFrom().failure(ex);
             }
         }
-        return result;
     }
 
     private QuarkusSecurityIdentity validateAndCreateIdentity(TokenAuthenticationRequest request,

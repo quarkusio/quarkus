@@ -25,9 +25,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
 
 import javax.inject.Singleton;
@@ -42,6 +41,7 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -114,7 +114,7 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
     }
 
     @Override
-    public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
+    public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
         List<String> authHeaders = context.request().headers().getAll(HttpHeaderNames.AUTHORIZATION);
         if (authHeaders != null) {
@@ -152,32 +152,30 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
 
                     // By this point we had a header we should have been able to verify but for some reason
                     // it was not correctly structured.
-                    CompletableFuture<SecurityIdentity> cf = new CompletableFuture<>();
-                    cf.completeExceptionally(new AuthenticationFailedException());
-                    return cf;
+                    return Uni.createFrom().failure(new AuthenticationFailedException());
                 }
             }
         }
 
         // No suitable header has been found in this request,
-        return CompletableFuture.completedFuture(null);
+        return Uni.createFrom().optional(Optional.empty());
     }
 
     @Override
-    public CompletionStage<ChallengeData> getChallenge(RoutingContext context) {
+    public Uni<ChallengeData> getChallenge(RoutingContext context) {
         if (silent) {
             //if this is silent we only send a challenge if the request contained auth headers
             //otherwise we assume another method will send the challenge
             String authHeader = context.request().headers().get(HttpHeaderNames.AUTHORIZATION);
             if (authHeader == null) {
-                return CompletableFuture.completedFuture(null);
+                return Uni.createFrom().optional(Optional.empty());
             }
         }
         ChallengeData result = new ChallengeData(
                 HttpResponseStatus.UNAUTHORIZED.code(),
                 HttpHeaderNames.WWW_AUTHENTICATE,
                 challenge);
-        return CompletableFuture.completedFuture(result);
+        return Uni.createFrom().item(result);
     }
 
     @Override

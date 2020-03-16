@@ -26,9 +26,7 @@ public class QuarkusUndertowAccount implements Account {
     @Override
     public Set<String> getRoles() {
         Set<String> roles = new HashSet<>();
-        for (String i : securityIdentity.getRoles()) {
-            roles.add(i);
-        }
+        roles.addAll(securityIdentity.getRoles());
         return roles;
     }
 

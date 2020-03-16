@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
@@ -48,10 +49,15 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         if (event.failure() instanceof UnauthorizedException) {
             HttpAuthenticator authenticator = event.get(HttpAuthenticator.class.getName());
             if (authenticator != null) {
-                authenticator.sendChallenge(event, new Runnable() {
+                authenticator.sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
                     @Override
-                    public void run() {
+                    public void accept(Boolean aBoolean) {
                         event.response().end();
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) {
+                        event.fail(throwable);
                     }
                 });
             } else {

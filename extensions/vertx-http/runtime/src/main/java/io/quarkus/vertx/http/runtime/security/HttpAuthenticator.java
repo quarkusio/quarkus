@@ -5,9 +5,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -20,6 +19,7 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -83,7 +83,7 @@ public class HttpAuthenticator {
     }
 
     /**
-     * Attempts authentication with the contents of the request. If this is possible the CompletionStage
+     * Attempts authentication with the contents of the request. If this is possible the Uni
      * will resolve to a valid SecurityIdentity.
      *
      * If invalid credentials are present then the completion stage will resolve to a
@@ -91,16 +91,16 @@ public class HttpAuthenticator {
      *
      * If no credentials are present it will resolve to null.
      */
-    public CompletionStage<SecurityIdentity> attemptAuthentication(RoutingContext routingContext) {
+    public Uni<SecurityIdentity> attemptAuthentication(RoutingContext routingContext) {
 
-        CompletionStage<SecurityIdentity> result = mechanisms[0].authenticate(routingContext, identityProviderManager);
+        Uni<SecurityIdentity> result = mechanisms[0].authenticate(routingContext, identityProviderManager);
         for (int i = 1; i < mechanisms.length; ++i) {
             HttpAuthenticationMechanism mech = mechanisms[i];
-            result = result.thenCompose(new Function<SecurityIdentity, CompletionStage<SecurityIdentity>>() {
+            result = result.onItem().produceUni(new Function<SecurityIdentity, Uni<SecurityIdentity>>() {
                 @Override
-                public CompletionStage<SecurityIdentity> apply(SecurityIdentity data) {
+                public Uni<SecurityIdentity> apply(SecurityIdentity data) {
                     if (data != null) {
-                        return CompletableFuture.completedFuture(data);
+                        return Uni.createFrom().item(data);
                     }
                     return mech.authenticate(routingContext, identityProviderManager);
                 }
@@ -112,42 +112,39 @@ public class HttpAuthenticator {
 
     /**
      *
-     * @param closeTask The task that should be run to finalize the HTTP exchange.
      * @return
      */
-    public CompletionStage<Void> sendChallenge(RoutingContext routingContext, Runnable closeTask) {
-        if (closeTask == null) {
-            closeTask = NoopCloseTask.INSTANCE;
-        }
-        CompletionStage<Boolean> result = mechanisms[0].sendChallenge(routingContext);
+    public Uni<Boolean> sendChallenge(RoutingContext routingContext) {
+        Uni<Boolean> result = mechanisms[0].sendChallenge(routingContext);
         for (int i = 1; i < mechanisms.length; ++i) {
             HttpAuthenticationMechanism mech = mechanisms[i];
-            result = result.thenCompose(new Function<Boolean, CompletionStage<Boolean>>() {
+            result = result.onItem().produceUni(new Function<Boolean, Uni<? extends Boolean>>() {
                 @Override
-                public CompletionStage<Boolean> apply(Boolean aBoolean) {
+                public Uni<? extends Boolean> apply(Boolean aBoolean) {
                     if (aBoolean) {
-                        return CompletableFuture.completedFuture(true);
+                        return Uni.createFrom().item(aBoolean);
                     }
                     return mech.sendChallenge(routingContext);
                 }
             });
         }
-        return result.thenRun(closeTask);
+        return result;
     }
 
-    public CompletionStage<ChallengeData> getChallenge(RoutingContext routingContext) {
-        CompletionStage<ChallengeData> result = mechanisms[0].getChallenge(routingContext);
+    public Uni<ChallengeData> getChallenge(RoutingContext routingContext) {
+        Uni<ChallengeData> result = mechanisms[0].getChallenge(routingContext);
         for (int i = 1; i < mechanisms.length; ++i) {
             HttpAuthenticationMechanism mech = mechanisms[i];
-            result = result.thenCompose(new Function<ChallengeData, CompletionStage<ChallengeData>>() {
+            result = result.onItem().produceUni(new Function<ChallengeData, Uni<? extends ChallengeData>>() {
                 @Override
-                public CompletionStage<ChallengeData> apply(ChallengeData data) {
+                public Uni<? extends ChallengeData> apply(ChallengeData data) {
                     if (data != null) {
-                        return CompletableFuture.completedFuture(data);
+                        return Uni.createFrom().item(data);
                     }
                     return mech.getChallenge(routingContext);
                 }
             });
+
         }
         return result;
     }
@@ -155,15 +152,15 @@ public class HttpAuthenticator {
     static class NoAuthenticationMechanism implements HttpAuthenticationMechanism {
 
         @Override
-        public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
+        public Uni<SecurityIdentity> authenticate(RoutingContext context,
                 IdentityProviderManager identityProviderManager) {
-            return CompletableFuture.completedFuture(null);
+            return Uni.createFrom().optional(Optional.empty());
         }
 
         @Override
-        public CompletionStage<ChallengeData> getChallenge(RoutingContext context) {
+        public Uni<ChallengeData> getChallenge(RoutingContext context) {
             ChallengeData challengeData = new ChallengeData(HttpResponseStatus.FORBIDDEN.code(), null, null);
-            return CompletableFuture.completedFuture(challengeData);
+            return Uni.createFrom().item(challengeData);
         }
 
         @Override

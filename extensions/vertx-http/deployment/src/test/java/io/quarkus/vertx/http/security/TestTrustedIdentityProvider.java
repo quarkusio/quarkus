@@ -1,7 +1,7 @@
 package io.quarkus.vertx.http.security;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import javax.inject.Singleton;
 
@@ -11,6 +11,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusPrincipal;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.TrustedAuthenticationRequest;
+import io.smallrye.mutiny.Uni;
 
 @Singleton
 public class TestTrustedIdentityProvider implements IdentityProvider<TrustedAuthenticationRequest> {
@@ -20,14 +21,14 @@ public class TestTrustedIdentityProvider implements IdentityProvider<TrustedAuth
     }
 
     @Override
-    public CompletionStage<SecurityIdentity> authenticate(TrustedAuthenticationRequest request,
+    public Uni<SecurityIdentity> authenticate(TrustedAuthenticationRequest request,
             AuthenticationRequestContext context) {
         TestIdentityController.TestIdentity ident = TestIdentityController.idenitities.get(request.getPrincipal());
         if (ident == null) {
-            return CompletableFuture.completedFuture(null);
+            return Uni.createFrom().optional(Optional.empty());
         }
-        return CompletableFuture
+        return Uni.createFrom().completionStage(CompletableFuture
                 .completedFuture(QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal(request.getPrincipal()))
-                        .addRoles(ident.roles).build());
+                        .addRoles(ident.roles).build()));
     }
 }

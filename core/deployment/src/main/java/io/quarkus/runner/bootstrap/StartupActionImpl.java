@@ -37,17 +37,11 @@ public class StartupActionImpl implements StartupAction {
 
     private final CuratedApplication curatedApplication;
     private final BuildResult buildResult;
+    private final QuarkusClassLoader runtimeClassLoader;
 
     public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult) {
         this.curatedApplication = curatedApplication;
         this.buildResult = buildResult;
-    }
-
-    /**
-     * Runs the application, and returns a handle that can be used to shut it down.
-     */
-    public RunningQuarkusApplication run(String... args) throws Exception {
-        //first
         Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = extractTransformers();
         QuarkusClassLoader baseClassLoader = curatedApplication.getBaseRuntimeClassLoader();
         ClassLoader transformerClassLoader = buildResult.consume(DeploymentClassLoaderBuildItem.class).getClassLoader();
@@ -68,6 +62,15 @@ public class StartupActionImpl implements StartupAction {
             baseClassLoader.reset(resources, bytecodeTransformers, transformerClassLoader);
             runtimeClassLoader = baseClassLoader;
         }
+        this.runtimeClassLoader = runtimeClassLoader;
+    }
+
+    /**
+     * Runs the application, and returns a handle that can be used to shut it down.
+     */
+    public RunningQuarkusApplication run(String... args) throws Exception {
+        //first
+
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
 
         //we have our class loaders
@@ -129,6 +132,11 @@ public class StartupActionImpl implements StartupAction {
             Thread.currentThread().setContextClassLoader(old);
         }
 
+    }
+
+    @Override
+    public ClassLoader getClassLoader() {
+        return runtimeClassLoader;
     }
 
     private Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> extractTransformers() {

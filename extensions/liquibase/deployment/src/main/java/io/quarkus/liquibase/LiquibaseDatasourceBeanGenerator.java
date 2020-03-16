@@ -16,6 +16,7 @@ import org.jboss.jandex.DotName;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -68,8 +69,9 @@ class LiquibaseDatasourceBeanGenerator {
      * @return String name of the generated producer bean class.
      */
     public void createLiquibaseProducerBean() {
+        GeneratedBeanGizmoAdaptor classOutput = new GeneratedBeanGizmoAdaptor(generatedBean);
         ClassCreator classCreator = ClassCreator.builder()
-                .classOutput(this::writeGeneratedBeanBuildItem)
+                .classOutput(classOutput)
                 .className(LIQUIBASE_PRODUCER_TYPE_NAME)
                 .build();
         classCreator.addAnnotation(ApplicationScoped.class);
@@ -100,10 +102,6 @@ class LiquibaseDatasourceBeanGenerator {
                             liquibaseProducerMethod.load(namedDataSourceName)));
         }
         classCreator.close();
-    }
-
-    private void writeGeneratedBeanBuildItem(String name, byte[] data) {
-        generatedBean.produce(new GeneratedBeanBuildItem(name, data));
     }
 
     private static String hashed(String dataSourceName) {

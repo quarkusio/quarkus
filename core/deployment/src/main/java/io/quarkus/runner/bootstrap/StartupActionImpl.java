@@ -6,6 +6,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,8 +34,6 @@ import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 public class StartupActionImpl implements StartupAction {
 
     private static final Logger log = Logger.getLogger(StartupActionImpl.class);
-
-    static final String DEBUG_CLASSES_DIR = System.getProperty("quarkus.debug.generated-classes-dir");
 
     private final CuratedApplication curatedApplication;
     private final BuildResult buildResult;
@@ -148,9 +149,9 @@ public class StartupActionImpl implements StartupAction {
         for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
             if (i.isApplicationClass() == applicationClasses) {
                 data.put(i.getName().replace(".", "/") + ".class", i.getClassData());
-                if (DEBUG_CLASSES_DIR != null) {
+                if (BootstrapDebug.DEBUG_CLASSES_DIR != null) {
                     try {
-                        File debugPath = new File(DEBUG_CLASSES_DIR);
+                        File debugPath = new File(BootstrapDebug.DEBUG_CLASSES_DIR);
                         if (!debugPath.exists()) {
                             debugPath.mkdir();
                         }
@@ -162,6 +163,27 @@ public class StartupActionImpl implements StartupAction {
                         log.infof("Wrote %s", classFile.getAbsolutePath());
                     } catch (Exception t) {
                         log.errorf(t, "Failed to write debug class files %s", i.getName());
+                    }
+                }
+
+                String debugSourcesDir = BootstrapDebug.DEBUG_SOURCES_DIR;
+                if (debugSourcesDir != null) {
+                    try {
+                        if (i.getSource() != null) {
+                            File debugPath = new File(debugSourcesDir);
+                            if (!debugPath.exists()) {
+                                debugPath.mkdir();
+                            }
+                            File sourceFile = new File(debugPath, i.getName() + ".zig");
+                            sourceFile.getParentFile().mkdirs();
+                            Files.write(sourceFile.toPath(), i.getSource().getBytes(StandardCharsets.UTF_8),
+                                    StandardOpenOption.CREATE);
+                            log.infof("Wrote source %s", sourceFile.getAbsolutePath());
+                        } else {
+                            log.infof("Source not available: %s", i.getName());
+                        }
+                    } catch (Exception t) {
+                        log.errorf(t, "Failed to write debug source file %s", i.getName());
                     }
                 }
             }

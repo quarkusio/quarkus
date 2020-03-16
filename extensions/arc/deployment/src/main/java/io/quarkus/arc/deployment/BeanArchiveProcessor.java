@@ -64,12 +64,13 @@ public class BeanArchiveProcessor {
                     Thread.currentThread().getContextClassLoader());
         }
         Set<DotName> generatedClassNames = new HashSet<>();
-        for (GeneratedBeanBuildItem beanClass : generatedBeans) {
-            IndexingUtil.indexClass(beanClass.getName(), additionalBeanIndexer, applicationIndex, additionalIndex,
+        for (GeneratedBeanBuildItem generatedBeanClass : generatedBeans) {
+            IndexingUtil.indexClass(generatedBeanClass.getName(), additionalBeanIndexer, applicationIndex, additionalIndex,
                     Thread.currentThread().getContextClassLoader(),
-                    beanClass.getData());
-            generatedClassNames.add(DotName.createSimple(beanClass.getName().replace('/', '.')));
-            generatedClass.produce(new GeneratedClassBuildItem(true, beanClass.getName(), beanClass.getData()));
+                    generatedBeanClass.getData());
+            generatedClassNames.add(DotName.createSimple(generatedBeanClass.getName().replace('/', '.')));
+            generatedClass.produce(new GeneratedClassBuildItem(true, generatedBeanClass.getName(), generatedBeanClass.getData(),
+                    generatedBeanClass.getSource()));
         }
 
         // Finally, index ArC/CDI API built-in classes

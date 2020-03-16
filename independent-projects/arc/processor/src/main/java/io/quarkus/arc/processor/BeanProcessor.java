@@ -425,8 +425,7 @@ public class BeanProcessor {
         }
 
         /**
-         * If set to true the container will attempt to remove the final flag from a bean class that must be proxyable during
-         * validation.
+         * If set to true the container will transform unproxyable bean classes during validation.
          * 
          * @param value
          * @return self

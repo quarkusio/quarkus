@@ -1,31 +1,7 @@
 package io.quarkus.mongodb.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.Produces;
-
-import org.bson.codecs.configuration.CodecProvider;
-import org.bson.codecs.pojo.annotations.BsonDiscriminator;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
-
 import com.mongodb.client.MongoClient;
 import com.mongodb.event.ConnectionPoolListener;
-
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
@@ -36,6 +12,8 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.annotations.Weak;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -60,6 +38,23 @@ import io.quarkus.mongodb.runtime.MongoClientName;
 import io.quarkus.mongodb.runtime.MongoClientRecorder;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import javax.enterprise.inject.Default;
+import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
+import org.bson.codecs.configuration.CodecProvider;
+import org.bson.codecs.pojo.annotations.BsonDiscriminator;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 
 public class MongoClientProcessor {
     private static DotName MONGOCLIENT_ANNOTATION = DotName.createSimple(MongoClientName.class.getName());
@@ -175,11 +170,11 @@ public class MongoClientProcessor {
                 .className(mongoClientProducerClassName)
                 .superClass(AbstractMongoClientProducer.class)
                 .build()) {
-            classCreator.addAnnotation(ApplicationScoped.class);
+            classCreator.addAnnotation(Singleton.class);
 
             try (MethodCreator defaultMongoClientMethodCreator = classCreator.getMethodCreator("createDefaultMongoClient",
                     MongoClient.class)) {
-                defaultMongoClientMethodCreator.addAnnotation(ApplicationScoped.class);
+                defaultMongoClientMethodCreator.addAnnotation(Singleton.class);
                 defaultMongoClientMethodCreator.addAnnotation(Produces.class);
                 defaultMongoClientMethodCreator.addAnnotation(Default.class);
                 if (makeUnremovable) {
@@ -206,7 +201,7 @@ public class MongoClientProcessor {
             try (MethodCreator defaultReactiveMongoClientMethodCreator = classCreator.getMethodCreator(
                     "createDefaultLegacyReactiveMongoClient",
                     ReactiveMongoClient.class)) {
-                defaultReactiveMongoClientMethodCreator.addAnnotation(ApplicationScoped.class);
+                defaultReactiveMongoClientMethodCreator.addAnnotation(Singleton.class);
                 defaultReactiveMongoClientMethodCreator.addAnnotation(Produces.class);
                 defaultReactiveMongoClientMethodCreator.addAnnotation(Default.class);
 
@@ -230,7 +225,7 @@ public class MongoClientProcessor {
             try (MethodCreator defaultReactiveMongoClientMethodCreator = classCreator.getMethodCreator(
                     "createDefaultReactiveMongoClient",
                     io.quarkus.mongodb.reactive.ReactiveMongoClient.class)) {
-                defaultReactiveMongoClientMethodCreator.addAnnotation(ApplicationScoped.class);
+                defaultReactiveMongoClientMethodCreator.addAnnotation(Singleton.class);
                 defaultReactiveMongoClientMethodCreator.addAnnotation(Produces.class);
                 defaultReactiveMongoClientMethodCreator.addAnnotation(Default.class);
                 if (makeUnremovable) {
@@ -258,7 +253,7 @@ public class MongoClientProcessor {
                 try (MethodCreator namedMongoClientMethodCreator = classCreator.getMethodCreator(
                         "createNamedMongoClient_" + HashUtil.sha1(namedMongoClientName),
                         MongoClient.class)) {
-                    namedMongoClientMethodCreator.addAnnotation(ApplicationScoped.class);
+                    namedMongoClientMethodCreator.addAnnotation(Singleton.class);
                     namedMongoClientMethodCreator.addAnnotation(Produces.class);
                     namedMongoClientMethodCreator.addAnnotation(AnnotationInstance.create(DotNames.NAMED, null,
                             new AnnotationValue[] { AnnotationValue.createStringValue("value", namedMongoClientName) }));
@@ -290,7 +285,7 @@ public class MongoClientProcessor {
                 try (MethodCreator namedReactiveMongoClientMethodCreator = classCreator.getMethodCreator(
                         "createNamedLegacyReactiveMongoClient_" + HashUtil.sha1(namedMongoClientName),
                         ReactiveMongoClient.class)) {
-                    namedReactiveMongoClientMethodCreator.addAnnotation(ApplicationScoped.class);
+                    namedReactiveMongoClientMethodCreator.addAnnotation(Singleton.class);
                     namedReactiveMongoClientMethodCreator.addAnnotation(Produces.class);
                     namedReactiveMongoClientMethodCreator.addAnnotation(AnnotationInstance.create(DotNames.NAMED, null,
                             new AnnotationValue[] {
@@ -322,7 +317,7 @@ public class MongoClientProcessor {
                 try (MethodCreator namedReactiveMongoClientMethodCreator = classCreator.getMethodCreator(
                         "createNamedReactiveMongoClient_" + HashUtil.sha1(namedMongoClientName),
                         io.quarkus.mongodb.reactive.ReactiveMongoClient.class)) {
-                    namedReactiveMongoClientMethodCreator.addAnnotation(ApplicationScoped.class);
+                    namedReactiveMongoClientMethodCreator.addAnnotation(Singleton.class);
                     namedReactiveMongoClientMethodCreator.addAnnotation(Produces.class);
                     namedReactiveMongoClientMethodCreator.addAnnotation(AnnotationInstance.create(DotNames.NAMED, null,
                             new AnnotationValue[] {

@@ -12,7 +12,7 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -124,7 +124,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         for (Resource resource : classOutput.getResources()) {
             resources.add(resource);
             resources.add(ResourceImpl.serviceProvider(ComponentsProvider.class.getName(),
-                    (resource.getName().replace('/', '.')).getBytes(Charset.forName("UTF-8")), null));
+                    (resource.getName().replace('/', '.')).getBytes(StandardCharsets.UTF_8), null));
         }
         return resources;
     }

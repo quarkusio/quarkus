@@ -24,6 +24,7 @@ import com.sun.management.GarbageCollectionNotificationInfo;
 import com.sun.management.GcInfo;
 
 import io.smallrye.metrics.ExtendedMetadata;
+import io.smallrye.metrics.ExtendedMetadataBuilder;
 import io.smallrye.metrics.MetricRegistries;
 
 /**
@@ -147,28 +148,34 @@ class MicrometerGCMetrics {
                     gcPauseMaxValue.set(duration); // update the maximum GC length if needed
                 }
                 if (!registry.getGauges().containsKey(pauseSecondsMaxMetricID)) {
-                    registry.register(new ExtendedMetadata(metricName + ".seconds.max",
-                            MetricType.GAUGE,
-                            MetricUnits.NONE,
-                            "Time spent in GC pause",
-                            true),
+                    registry.register(new ExtendedMetadataBuilder()
+                            .withName(metricName + ".seconds.max")
+                            .withType(MetricType.GAUGE)
+                            .withUnit(MetricUnits.NONE)
+                            .withDescription("Time spent in GC pause")
+                            .skipsScopeInOpenMetricsExportCompletely(true)
+                            .build(),
                             new LambdaGauge(() -> mapForStoringMax.get(causeAndAction).doubleValue() / 1000.0), tags);
                 }
 
-                ExtendedMetadata countMetadata = new ExtendedMetadata(metricName + ".seconds.count",
-                        MetricType.COUNTER,
-                        MetricUnits.NONE,
-                        "Time spent in GC pause",
-                        true,
-                        metricName.replace(".", "_") + "_seconds_count");
+                ExtendedMetadata countMetadata = new ExtendedMetadataBuilder()
+                        .withName(metricName + ".seconds.count")
+                        .withType(MetricType.COUNTER)
+                        .withUnit(MetricUnits.NONE)
+                        .withDescription("Time spent in GC pause")
+                        .skipsScopeInOpenMetricsExportCompletely(true)
+                        .withOpenMetricsKeyOverride(metricName.replace(".", "_") + "_seconds_count")
+                        .build();
                 registry.counter(countMetadata, tags).inc();
 
-                registry.counter(new ExtendedMetadata(metricName + ".seconds.sum",
-                        MetricType.COUNTER,
-                        MetricUnits.MILLISECONDS,
-                        "Time spent in GC pause",
-                        true,
-                        metricName.replace(".", "_") + "_seconds_sum"), tags).inc(duration);
+                registry.counter(new ExtendedMetadataBuilder()
+                        .withName(metricName + ".seconds.sum")
+                        .withType(MetricType.COUNTER)
+                        .withUnit(MetricUnits.MILLISECONDS)
+                        .withDescription("Time spent in GC pause")
+                        .skipsScopeInOpenMetricsExportCompletely(true)
+                        .withOpenMetricsKeyOverride(metricName.replace(".", "_") + "_seconds_sum")
+                        .build(), tags).inc(duration);
 
                 // Update promotion and allocation counters
                 final Map<String, MemoryUsage> before = gcInfo.getMemoryUsageBeforeGc();

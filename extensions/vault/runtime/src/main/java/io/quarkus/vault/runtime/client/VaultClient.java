@@ -11,8 +11,11 @@ import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV1;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2WriteBody;
+import io.quarkus.vault.runtime.client.dto.sys.VaultHealthResult;
+import io.quarkus.vault.runtime.client.dto.sys.VaultInitResponse;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
+import io.quarkus.vault.runtime.client.dto.sys.VaultSealStatusResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyBody;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPGenerateCodeResult;
@@ -85,4 +88,12 @@ public interface VaultClient {
     VaultTOTPGenerateCodeResult generateTOTPCode(String token, String keyName);
 
     VaultTOTPValidateCodeResult validateTOTPCode(String token, String keyName, String code);
+
+    int systemHealth(boolean isStandByOk, boolean isPerfStandByOk);
+
+    VaultHealthResult systemHealthStatus(boolean isStandByOk, boolean isPerfStandByOk);
+
+    VaultSealStatusResult systemSealStatus();
+
+    VaultInitResponse init(int secretShares, int secretThreshold);
 }

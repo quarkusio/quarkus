@@ -58,6 +58,8 @@ public class VaultConfigSource implements ConfigSource {
 
     private AtomicReference<VaultCacheEntry<Map<String, String>>> cache = new AtomicReference<>(null);
     private AtomicReference<VaultRuntimeConfig> serverConfig = new AtomicReference<>(null);
+    private AtomicReference<VaultBuildTimeConfig> buildServerConfig = new AtomicReference<>(null);
+
     private AtomicBoolean init = new AtomicBoolean(false);
     private int ordinal;
     private DurationConverter durationConverter = new DurationConverter();
@@ -148,14 +150,27 @@ public class VaultConfigSource implements ConfigSource {
 
     private VaultManager getVaultManager() {
 
+        VaultBuildTimeConfig buildTimeConfig = getBuildConfig();
         VaultRuntimeConfig serverConfig = getConfig();
 
         // init at most once
         if (init.compareAndSet(false, true)) {
-            VaultManager.init(serverConfig);
+            VaultManager.init(buildTimeConfig, serverConfig);
         }
 
         return VaultManager.getInstance();
+    }
+
+    private VaultBuildTimeConfig getBuildConfig() {
+        VaultBuildTimeConfig buildTimeConfig = this.buildServerConfig.get();
+        if (buildTimeConfig != null) {
+            return buildTimeConfig;
+        } else {
+            buildTimeConfig = loadBuildConfig();
+            log.debug("loaded vault build time server config " + buildTimeConfig);
+            this.buildServerConfig.set(buildTimeConfig);
+            return this.buildServerConfig.get();
+        }
     }
 
     private VaultRuntimeConfig getConfig() {
@@ -168,6 +183,22 @@ public class VaultConfigSource implements ConfigSource {
             this.serverConfig.set(serverConfig);
             return this.serverConfig.get();
         }
+    }
+
+    // need to recode config loading since we are at the config source level
+    private VaultBuildTimeConfig loadBuildConfig() {
+        VaultBuildTimeConfig vaultBuildTimeConfig = new VaultBuildTimeConfig();
+        vaultBuildTimeConfig.health = new HealthConfig();
+
+        vaultBuildTimeConfig.health.enabled = parseBoolean(
+                getVaultProperty("health.enable", "false"));
+
+        vaultBuildTimeConfig.health.standbyok = parseBoolean(
+                getVaultProperty("health.standbyok", "false"));
+        vaultBuildTimeConfig.health.perfstandbyok = parseBoolean(
+                getVaultProperty("health.perfstandbyok", "false"));
+
+        return vaultBuildTimeConfig;
     }
 
     // need to recode config loading since we are at the config source level

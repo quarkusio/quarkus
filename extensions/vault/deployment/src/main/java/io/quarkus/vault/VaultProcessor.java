@@ -15,11 +15,13 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vault.runtime.Base64StringDeserializer;
 import io.quarkus.vault.runtime.Base64StringSerializer;
 import io.quarkus.vault.runtime.VaultRecorder;
 import io.quarkus.vault.runtime.VaultServiceProducer;
 import io.quarkus.vault.runtime.client.dto.VaultModel;
+import io.quarkus.vault.runtime.config.VaultBuildTimeConfig;
 import io.quarkus.vault.runtime.config.VaultConfigSource;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 
@@ -65,8 +67,14 @@ public class VaultProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void configure(VaultRecorder recorder, VaultRuntimeConfig serverConfig) {
-        recorder.configureRuntimeProperties(serverConfig);
+    void configure(VaultRecorder recorder, VaultBuildTimeConfig buildTimeConfig, VaultRuntimeConfig serverConfig) {
+        recorder.configureRuntimeProperties(buildTimeConfig, serverConfig);
+    }
+
+    @BuildStep
+    HealthBuildItem addHealthCheck(VaultBuildTimeConfig config) {
+        return new HealthBuildItem("io.quarkus.vault.health.VaultHealthCheck",
+                config.health.enabled, "vault");
     }
 
 }

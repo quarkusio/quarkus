@@ -6,10 +6,6 @@ import io.quarkus.vault.runtime.client.dto.transit.VaultTransitRandomBody;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import io.quarkus.vault.test.client.dto.VaultAppRoleRoleId;
 import io.quarkus.vault.test.client.dto.VaultAppRoleSecretId;
-import io.quarkus.vault.test.client.dto.VaultHealth;
-import io.quarkus.vault.test.client.dto.VaultInit;
-import io.quarkus.vault.test.client.dto.VaultInitBody;
-import io.quarkus.vault.test.client.dto.VaultSealStatus;
 import io.quarkus.vault.test.client.dto.VaultTransitHash;
 import io.quarkus.vault.test.client.dto.VaultTransitHashBody;
 import io.quarkus.vault.test.client.dto.VaultTransitRandom;
@@ -22,19 +18,6 @@ public class TestVaultClient extends OkHttpVaultClient {
 
     public TestVaultClient(VaultRuntimeConfig serverConfig) {
         super(serverConfig);
-    }
-
-    public VaultInit init(int secretShares, int secretThreshold) {
-        VaultInitBody body = new VaultInitBody(secretShares, secretThreshold);
-        return put("sys/init", null, body, VaultInit.class);
-    }
-
-    public VaultHealth getHealth() {
-        return get("sys/health", null, VaultHealth.class);
-    }
-
-    public VaultSealStatus getSealStatus() {
-        return get("sys/seal-status", null, VaultSealStatus.class);
     }
 
     public VaultAppRoleSecretId generateAppRoleSecretId(String token, String roleName) {

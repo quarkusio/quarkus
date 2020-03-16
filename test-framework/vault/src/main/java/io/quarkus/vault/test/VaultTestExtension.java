@@ -38,11 +38,13 @@ import io.quarkus.vault.VaultException;
 import io.quarkus.vault.VaultKVSecretEngine;
 import io.quarkus.vault.runtime.VaultManager;
 import io.quarkus.vault.runtime.client.VaultClientException;
+import io.quarkus.vault.runtime.client.dto.sys.VaultInitResponse;
+import io.quarkus.vault.runtime.client.dto.sys.VaultSealStatusResult;
+import io.quarkus.vault.runtime.config.HealthConfig;
+import io.quarkus.vault.runtime.config.VaultBuildTimeConfig;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import io.quarkus.vault.runtime.config.VaultTlsConfig;
 import io.quarkus.vault.test.client.TestVaultClient;
-import io.quarkus.vault.test.client.dto.VaultInit;
-import io.quarkus.vault.test.client.dto.VaultSealStatus;
 
 public class VaultTestExtension {
 
@@ -146,7 +148,11 @@ public class VaultTestExtension {
         serverConfig.tls.caCert = Optional.empty();
         serverConfig.connectTimeout = Duration.ofSeconds(5);
         serverConfig.readTimeout = Duration.ofSeconds(1);
-        return new VaultManager(serverConfig, new TestVaultClient(serverConfig));
+
+        VaultBuildTimeConfig buildTimeConfig = new VaultBuildTimeConfig();
+        buildTimeConfig.health = new HealthConfig();
+
+        return new VaultManager(buildTimeConfig, serverConfig, new TestVaultClient(serverConfig));
     }
 
     private static Optional<URL> getVaultUrl() {
@@ -208,14 +214,14 @@ public class VaultTestExtension {
     private void initVault() throws InterruptedException, IOException {
 
         TestVaultClient vaultClient = (TestVaultClient) vaultManager.getVaultClient();
-        VaultInit vaultInit = vaultClient.init(1, 1);
+        VaultInitResponse vaultInit = vaultClient.init(1, 1);
         String unsealKey = vaultInit.keys.get(0);
         rootToken = vaultInit.rootToken;
 
         waitForContainerToStart();
 
         try {
-            vaultClient.getHealth();
+            vaultClient.systemHealthStatus(false, false);
         } catch (VaultClientException e) {
             // https://www.vaultproject.io/api/system/health.html
             // 503 = sealed
@@ -225,7 +231,7 @@ public class VaultTestExtension {
         // unseal
         execVault("vault operator unseal " + unsealKey);
 
-        VaultSealStatus sealStatus = vaultClient.getSealStatus();
+        VaultSealStatusResult sealStatus = vaultClient.systemSealStatus();
         assertFalse(sealStatus.sealed);
 
         // userpass auth

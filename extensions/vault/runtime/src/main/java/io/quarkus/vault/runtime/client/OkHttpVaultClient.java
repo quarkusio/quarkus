@@ -6,6 +6,8 @@ import static io.quarkus.vault.runtime.client.OkHttpClientFactory.createHttpClie
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
@@ -29,9 +31,13 @@ import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV1;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2Write;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2WriteBody;
+import io.quarkus.vault.runtime.client.dto.sys.VaultHealthResult;
+import io.quarkus.vault.runtime.client.dto.sys.VaultInitBody;
+import io.quarkus.vault.runtime.client.dto.sys.VaultInitResponse;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
+import io.quarkus.vault.runtime.client.dto.sys.VaultSealStatusResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyBody;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPGenerateCodeResult;
@@ -49,6 +55,7 @@ import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSignBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerify;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerifyBody;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
+import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -221,6 +228,30 @@ public class OkHttpVaultClient implements VaultClient {
         return post(path, token, body, VaultTOTPValidateCodeResult.class);
     }
 
+    @Override
+    public int systemHealth(boolean isStandByOk, boolean isPerfStandByOk) {
+        Map<String, String> queryParams = getHealthParams(isStandByOk, isPerfStandByOk);
+
+        return head("sys/health", queryParams);
+    }
+
+    @Override
+    public VaultHealthResult systemHealthStatus(boolean isStandByOk, boolean isPerfStandByOk) {
+        Map<String, String> queryParams = getHealthParams(isStandByOk, isPerfStandByOk);
+        return get("sys/health", queryParams, VaultHealthResult.class);
+    }
+
+    @Override
+    public VaultSealStatusResult systemSealStatus() {
+        return get("sys/seal-status", Collections.emptyMap(), VaultSealStatusResult.class);
+    }
+
+    @Override
+    public VaultInitResponse init(int secretShares, int secretThreshold) {
+        VaultInitBody body = new VaultInitBody(secretShares, secretThreshold);
+        return put("sys/init", body, VaultInitResponse.class);
+    }
+
     // ---
 
     protected <T> T list(String path, String token, Class<T> resultClass) {
@@ -253,9 +284,29 @@ public class OkHttpVaultClient implements VaultClient {
         return exec(request, resultClass);
     }
 
+    protected <T> T put(String path, Object body, Class<T> resultClass) {
+        Request request = builder(path).put(requestBody(body)).build();
+        return exec(request, resultClass);
+    }
+
     protected <T> T get(String path, String token, Class<T> resultClass) {
         Request request = builder(path, token).get().build();
         return exec(request, resultClass);
+    }
+
+    protected <T> T get(String path, Map<String, String> queryParams, Class<T> resultClass) {
+        final Request request = builder(path, queryParams).get().build();
+        return exec(request, resultClass);
+    }
+
+    protected int head(String path) {
+        final Request request = builder(path).head().build();
+        return exec(request);
+    }
+
+    protected int head(String path, Map<String, String> queryParams) {
+        final Request request = builder(path, queryParams).head().build();
+        return exec(request);
     }
 
     private <T> T exec(Request request, Class<T> resultClass) {
@@ -273,6 +324,14 @@ public class OkHttpVaultClient implements VaultClient {
             }
             String jsonBody = response.body().string();
             return resultClass == null ? null : mapper.readValue(jsonBody, resultClass);
+        } catch (IOException e) {
+            throw new VaultException(e);
+        }
+    }
+
+    private int exec(Request request) {
+        try (Response response = client.newCall(request).execute()) {
+            return response.code();
         } catch (IOException e) {
             throw new VaultException(e);
         }
@@ -296,6 +355,20 @@ public class OkHttpVaultClient implements VaultClient {
         return builder;
     }
 
+    private Request.Builder builder(String path) {
+        Request.Builder builder = new Request.Builder().url(getUrl(path));
+        return builder;
+    }
+
+    private Request.Builder builder(String path, Map<String, String> queryParams) {
+        HttpUrl.Builder httpBuilder = HttpUrl.parse(getUrl(path).toExternalForm()).newBuilder();
+        if (queryParams != null) {
+            queryParams.forEach((name, value) -> httpBuilder.addQueryParameter(name, value));
+        }
+        Request.Builder builder = new Request.Builder().url(httpBuilder.build());
+        return builder;
+    }
+
     private RequestBody requestBody(Object body) {
         try {
             return RequestBody.create(JSON, mapper.writeValueAsString(body));
@@ -310,6 +383,19 @@ public class OkHttpVaultClient implements VaultClient {
         } catch (MalformedURLException e) {
             throw new VaultException(e);
         }
+    }
+
+    private Map<String, String> getHealthParams(boolean isStandByOk, boolean isPerfStandByOk) {
+        Map<String, String> queryParams = new HashMap<>();
+        if (isStandByOk) {
+            queryParams.put("standbyok", "true");
+        }
+
+        if (isPerfStandByOk) {
+            queryParams.put("perfstandbyok", "true");
+        }
+
+        return queryParams;
     }
 
 }

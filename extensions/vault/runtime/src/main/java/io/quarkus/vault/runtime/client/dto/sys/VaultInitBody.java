@@ -1,4 +1,4 @@
-package io.quarkus.vault.test.client.dto;
+package io.quarkus.vault.runtime.client.dto.sys;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

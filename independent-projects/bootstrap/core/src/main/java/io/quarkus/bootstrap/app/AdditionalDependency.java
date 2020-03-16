@@ -15,6 +15,16 @@ import java.nio.file.Path;
 public class AdditionalDependency implements Serializable {
 
     /**
+     * Creates additional test dependency
+     * 
+     * @param path additional test dependency location
+     * @return
+     */
+    public static AdditionalDependency test(Path path) {
+        return new AdditionalDependency(path, false, true, true);
+    }
+
+    /**
      * The path to the application archive
      */
     private final Path archivePath;

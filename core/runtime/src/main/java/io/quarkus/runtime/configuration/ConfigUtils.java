@@ -30,7 +30,6 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.jboss.logging.Logger;
 
-import io.smallrye.config.PropertiesConfigSourceProvider;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
@@ -79,11 +78,12 @@ public final class ConfigUtils {
             builder.addDefaultSources();
         } else {
             final List<ConfigSource> sources = new ArrayList<>();
-            sources.addAll(new PropertiesConfigSourceProvider("META-INF/microprofile-config.properties", true, classLoader)
-                    .getConfigSources(classLoader));
+            sources.addAll(
+                    new QuarkusPropertiesConfigSourceProvider("META-INF/microprofile-config.properties", true, classLoader)
+                            .getConfigSources(classLoader));
             // required by spec...
             sources.addAll(
-                    new PropertiesConfigSourceProvider("WEB-INF/classes/META-INF/microprofile-config.properties", true,
+                    new QuarkusPropertiesConfigSourceProvider("WEB-INF/classes/META-INF/microprofile-config.properties", true,
                             classLoader).getConfigSources(classLoader));
             sources.add(new EnvConfigSource());
             sources.add(new SysPropConfigSource());

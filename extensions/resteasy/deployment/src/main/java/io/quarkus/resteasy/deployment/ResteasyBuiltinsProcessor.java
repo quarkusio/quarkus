@@ -90,7 +90,9 @@ public class ResteasyBuiltinsProcessor {
     void addStaticResourcesExceptionMapper(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             ExceptionMapperRecorder recorder) {
         recorder.setStaticResourceRoots(applicationArchivesBuildItem.getAllApplicationArchives().stream()
-                .map(i -> i.getArchiveRoot().resolve(META_INF_RESOURCES).toAbsolutePath().toString())
+                .map(i -> i.getChildPath(META_INF_RESOURCES))
+                .filter(p -> p != null)
+                .map(p -> p.toAbsolutePath().toString())
                 .collect(Collectors.toSet()));
     }
 

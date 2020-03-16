@@ -121,6 +121,5 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
             return;
         undertow.stop();
         undertow = null;
-
     }
 }

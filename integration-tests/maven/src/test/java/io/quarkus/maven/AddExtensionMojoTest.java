@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 class AddExtensionMojoTest {
 
     private static final File MIN_POM = new File("src/test/resources/projects/simple-pom-it/pom.xml");
-    private static final File OUTPUT_POM = new File("target/test-classes/pom.xml");
+    private static final File OUTPUT_POM = new File("target/test-classes/add-extension/pom.xml");
     private static final String DEP_GAV = "org.apache.commons:commons-lang3:3.8.1";
     private AddExtensionMojo mojo;
 

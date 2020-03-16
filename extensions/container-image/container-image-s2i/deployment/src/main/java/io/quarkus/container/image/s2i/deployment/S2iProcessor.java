@@ -316,7 +316,7 @@ public class S2iProcessor {
     /**
      * Performs the binary build of the specified {@link BuildConfig} with the given
      * binary input.
-     * 
+     *
      * @param client The openshift client instance
      * @param buildConfig The build config
      * @param binaryFile The binary file

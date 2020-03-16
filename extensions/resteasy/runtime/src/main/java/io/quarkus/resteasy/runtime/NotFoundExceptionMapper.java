@@ -3,17 +3,18 @@ package io.quarkus.resteasy.runtime;
 import static org.jboss.resteasy.util.HttpHeaderNames.ACCEPT;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Proxy;
-import java.net.JarURLConnection;
-import java.net.URL;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -21,8 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,6 +46,7 @@ import org.jboss.resteasy.spi.Registry;
 import org.jboss.resteasy.spi.ResourceInvoker;
 
 import io.quarkus.runtime.TemplateHtmlBuilder;
+import io.quarkus.runtime.util.ClassPathUtils;
 
 @Provider
 @Priority(Priorities.USER + 1)
@@ -308,28 +308,9 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
             }
         }
         try {
-            Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(META_INF_RESOURCES);
-            while (resources.hasMoreElements()) {
-                URL url = resources.nextElement();
-                if (url.getProtocol().equals("jar")) {
-                    JarURLConnection jar = (JarURLConnection) url.openConnection();
-                    jar.setUseCaches(false);
-                    try (JarFile jarFile = jar.getJarFile()) {
-                        Enumeration<JarEntry> entries = jarFile.entries();
-                        while (entries.hasMoreElements()) {
-                            JarEntry entry = entries.nextElement();
-                            if (entry.getName().startsWith(META_INF_RESOURCES_SLASH)) {
-                                String sub = entry.getName().substring(META_INF_RESOURCES_SLASH.length());
-                                if (!sub.isEmpty()) {
-                                    if (!entry.getName().endsWith("/")) {
-                                        knownFiles.add(sub);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            ClassPathUtils.consumeAsPaths(META_INF_RESOURCES, p -> {
+                collectKnownPaths(p, knownFiles);
+            });
         } catch (IOException e) {
             LOG.error("Failed to read static resources", e);
         }
@@ -337,6 +318,24 @@ public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundExceptio
         //limit to 1000 to not have to many files to display
         return knownFiles.stream().filter(this::isHtmlFileName).limit(1000).distinct().sorted(Comparator.naturalOrder())
                 .collect(Collectors.toList());
+    }
+
+    private void collectKnownPaths(java.nio.file.Path resource, Set<String> knownPaths) {
+        try {
+            Files.walkFileTree(resource, new SimpleFileVisitor<java.nio.file.Path>() {
+                @Override
+                public FileVisitResult visitFile(java.nio.file.Path p, BasicFileAttributes attrs)
+                        throws IOException {
+                    String file = resource.relativize(p).toString();
+                    // Windows has a backslash
+                    file = file.replace('\\', '/');
+                    knownPaths.add(file);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private boolean isHtmlFileName(String fileName) {

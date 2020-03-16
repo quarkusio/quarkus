@@ -1,6 +1,7 @@
 package io.quarkus.vertx.verticles;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import javax.inject.Inject;
 
@@ -20,11 +21,15 @@ public class VerticleDeploymentTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap
                     .create(JavaArchive.class)
-                    .addClasses(MyBeanVerticle.class, VerticleDeployer.class)
+                    .addClasses(MyBeanVerticle.class, MyUndeployedVerticle.class, NotDeployedVerticle.class,
+                            VerticleDeployer.class)
                     .addAsResource(new StringAsset("address=foo"), "application.properties"));
 
     @Inject
     Vertx vertx;
+
+    @Inject
+    VerticleDeployer deployer;
 
     @Test
     public void test() {
@@ -32,5 +37,18 @@ public class VerticleDeploymentTest {
                 .onItem().apply(Message::body)
                 .await().indefinitely();
         assertThat(s).isEqualTo("hello");
+
+        // No handlers for address alpha - NotDeployedVerticle was not deployed
+        assertNull(vertx.eventBus().<String> request("alpha", "anyone?")
+                .onFailure().recoverWithItem(() -> null)
+                .await().indefinitely());
+
+        // Handled by MyUndeployedVerticle
+        assertThat(vertx.eventBus().<String> request("bravo", "anyone?")
+                .onItem().apply(Message::body)
+                .await().indefinitely()).isEqualTo("hello from bravo");
+
+        // Undeploy MyUndeployedVerticle manually
+        deployer.undeploy();
     }
 }

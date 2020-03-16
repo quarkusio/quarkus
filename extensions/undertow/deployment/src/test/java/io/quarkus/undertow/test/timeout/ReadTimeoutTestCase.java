@@ -52,7 +52,11 @@ public class ReadTimeoutTestCase {
         requestWithDelay(1000L);
 
         ByteBuffer buffer = ByteBuffer.allocate(100000);
-        client.read(buffer);
+        try {
+            client.read(buffer);
+        } catch (IOException ignore) {
+
+        }
 
         assertFalse(TimeoutTestServlet.read);
         assertNotNull(TimeoutTestServlet.error);

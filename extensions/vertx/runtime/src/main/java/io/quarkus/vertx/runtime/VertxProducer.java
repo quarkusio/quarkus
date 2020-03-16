@@ -1,12 +1,21 @@
 package io.quarkus.vertx.runtime;
 
+import java.util.Set;
+
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.BeforeDestroyed;
+import javax.enterprise.context.spi.Context;
+import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.spi.Bean;
+import javax.enterprise.inject.spi.BeanManager;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
+import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 
@@ -99,4 +108,36 @@ public class VertxProducer {
     public synchronized io.vertx.mutiny.core.eventbus.EventBus mutinyEventBus() {
         return mutiny().eventBus();
     }
+
+    /**
+     * Undeploy verticles backed by contextual instances of {@link ApplicationScoped} beans before the application context is
+     * destroyed. Otherwise Vertx may attempt to stop the verticles after the CDI container is shut down.
+     * 
+     * @param event
+     * @param beanManager
+     */
+    void undeployVerticles(@Observes @BeforeDestroyed(ApplicationScoped.class) Object event,
+            BeanManager beanManager) {
+        // Only beans with the AbstractVerticle in the set of bean types are considered - we need a deployment id 
+        Set<Bean<?>> beans = beanManager.getBeans(AbstractVerticle.class, Any.Literal.INSTANCE);
+        Context applicationContext = beanManager.getContext(ApplicationScoped.class);
+        for (Bean<?> bean : beans) {
+            if (ApplicationScoped.class.equals(bean.getScope())) {
+                // Only beans with @ApplicationScoped are considered
+                Object instance = applicationContext.get(bean);
+                if (instance != null) {
+                    // Only existing instances are considered
+                    try {
+                        AbstractVerticle verticle = (AbstractVerticle) instance;
+                        mutinyVertx.undeploy(verticle.deploymentID()).await().indefinitely();
+                        LOGGER.debugf("Undeployed verticle %s:", instance.getClass());
+                    } catch (Exception e) {
+                        // In theory, a user can undeploy the verticle manually
+                        LOGGER.debugf("Unable to undeploy verticle %s: %s", instance.getClass(), e.toString());
+                    }
+                }
+            }
+        }
+    }
+
 }

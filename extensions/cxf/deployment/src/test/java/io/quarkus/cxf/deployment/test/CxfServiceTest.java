@@ -1,7 +1,6 @@
 package io.quarkus.cxf.deployment.test;
 
 import java.io.IOException;
-import java.util.function.Supplier;
 
 import javax.xml.parsers.*;
 import javax.xml.xpath.XPath;
@@ -9,6 +8,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -16,24 +16,21 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
-import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
 public class CxfServiceTest {
 
     @RegisterExtension
-    public static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClass(FruitWebServiceImpl.class)
-                            .addClass(FruitWebService.class)
-                            .addClass(Fruit.class)
-                            .addAsResource("application.properties");
-                }
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(FruitWebService.class)
+                    .addClass(FruitWebServiceImpl.class)
+                    .addClass(Fruit.class)
+                    .addAsResource(new StringAsset(
+                            "quarkus.cxf.endpoint.\"/fruit\".implementor=io.quarkus.cxf.deployment.test.FruitWebServiceImpl"),
+                            "application.properties"));
 
     @Test
     public void whenCheckingWsdl() throws ParserConfigurationException, IOException, SAXException, XPathExpressionException {

@@ -17,14 +17,14 @@ public class CxfEndpointConfig {
     /**
      * The wsdl path
      */
-    @ConfigItem
+    @ConfigItem(name = "wsdl")
     public Optional<String> wsdlPath;
 
     /**
      * The client endpoint url
      */
     @ConfigItem
-    public Optional<String> clientEndpointURL;
+    public Optional<String> clientEndpointUrl;
 
     /**
      * The client interface

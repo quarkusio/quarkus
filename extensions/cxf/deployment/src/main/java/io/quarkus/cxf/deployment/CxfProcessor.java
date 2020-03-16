@@ -97,7 +97,7 @@ public class CxfProcessor {
             XmlElementWrapper.class);
 
     /**
-     * JAX-RS configuration.
+     * JAX-WS configuration.
      */
     CxfConfig cxfConfig;
 
@@ -715,18 +715,23 @@ public class CxfProcessor {
             if (cxfEndPointConfig.wsdlPath.isPresent()) {
                 wsdlPath = cxfEndPointConfig.wsdlPath.get();
             }
+
             if (cxfEndPointConfig.serviceInterface.isPresent()) {
                 sei = cxfEndPointConfig.serviceInterface.get();
-                String wsAbsoluteUrl = cxfEndPointConfig.clientEndpointURL.isPresent()
-                        ? cxfEndPointConfig.clientEndpointURL.get()
+
+                String wsAbsoluteUrl = cxfEndPointConfig.clientEndpointUrl.isPresent()
+                        ? cxfEndPointConfig.clientEndpointUrl.get()
                         : "http://localhost:8080";
                 wsAbsoluteUrl = wsAbsoluteUrl.endsWith("/") ? wsAbsoluteUrl.substring(0, wsAbsoluteUrl.length() - 2)
                         : wsAbsoluteUrl;
                 wsAbsoluteUrl = relativePath.startsWith("/") ? wsAbsoluteUrl + relativePath
                         : wsAbsoluteUrl + "/" + relativePath;
+
                 generateCxfClientProducer(generatedBeans, sei + "CxfClientProducer", wsAbsoluteUrl, sei, wsdlPath);
 
-            } else if (cxfEndPointConfig.implementor.isPresent()) {
+            }
+            if (cxfEndPointConfig.implementor.isPresent()) {
+
                 DotName webServiceImplementor = DotName.createSimple(cxfEndPointConfig.implementor.get());
                 ClassInfo wsClass = index.getClassByName(webServiceImplementor);
 
@@ -799,7 +804,8 @@ public class CxfProcessor {
                     }
                 }
                 cxfServletInfos.produce(cxfServletInfo);
-            } else {
+            }
+            if (!cxfEndPointConfig.serviceInterface.isPresent() && !cxfEndPointConfig.implementor.isPresent()) {
                 LOGGER.error("either webservice interface (client) or implementation (server) is mandatory");
             }
         }
@@ -851,7 +857,12 @@ public class CxfProcessor {
 
         ResultHandle seiRH = cxfClientMethodCreator.load(sei);
         ResultHandle endpointAddressRH = cxfClientMethodCreator.load(endpointAddress);
-        ResultHandle wsdlUrlRH = cxfClientMethodCreator.load(wsdlUrl);
+        ResultHandle wsdlUrlRH;
+        if (wsdlUrl != null) {
+            wsdlUrlRH = cxfClientMethodCreator.load(wsdlUrl);
+        } else {
+            wsdlUrlRH = cxfClientMethodCreator.loadNull();
+        }
 
         // New configuration
         ResultHandle cxfClient = cxfClientMethodCreator.invokeVirtualMethod(

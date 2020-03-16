@@ -190,6 +190,30 @@ quarkus.cxf.path=/cxf
 quarkus.cxf.endpoint."/fruit".implementor=org.acme.cxf.FruitWebServiceImpl
 ----
 
+== Client
+
+In order to support only SOAP client, register endpoint URL and the service endpoint interface (same than the server) with configuration:
+
+[source,properties]
+----
+quarkus.cxf.endpoint."/fruit".client-endpoint-url=http://localhost:8080/
+quarkus.cxf.endpoint."/fruit".service-interface=io.quarkus.cxf.deployment.test.FruitWebService
+----
+
+Then inject the client to used it:
+
+[source,java]
+----
+public class MySoapClient {
+
+    @Inject
+    FruitWebService clientService;
+
+    public int getCount() {
+        return clientService.count();
+    }
+}
+----
 
 == Conclusion
 

@@ -2,7 +2,11 @@ package io.quarkus.it.main;
 
 import static org.hamcrest.Matchers.is;
 
-import org.junit.jupiter.api.Test;
+import java.util.Arrays;
+import java.util.List;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -10,13 +14,13 @@ import io.restassured.RestAssured;
 @QuarkusTest
 public class ContextPropagationTestCase {
 
-    @Test
-    public void testContextPropagation() throws Exception {
-        RestAssured.when().get("/context-propagation").then().body(is("OK"));
+    @ParameterizedTest
+    @MethodSource("endpoints")
+    public void testContextPropagation(String endpoint) throws Exception {
+        RestAssured.when().get(endpoint).then().body(is("OK"));
     }
 
-    @Test
-    public void testContextPropagationWithMutiny() throws Exception {
-        RestAssured.when().get("/context-propagation-mutiny").then().body(is("OK"));
+    private static List<String> endpoints() {
+        return Arrays.asList("/context-propagation", "/context-propagation-mutiny");
     }
 }

@@ -409,12 +409,12 @@ public class QuarkusTestExtension
     }
 
     /**
-     * By returning true, we allow a QuarkusTest to use constructor injection
+     * Return true if we need a parameter for constructor injection
      */
     @Override
     public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
-        return true;
+        return parameterContext.getDeclaringExecutable() instanceof Constructor;
     }
 
     /**

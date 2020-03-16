@@ -293,6 +293,8 @@
                                             <exclude>org.springframework.data:spring-data-commons</exclude>
                                             <exclude>org.springframework.security:spring-security-core</exclude>
                                             <exclude>org.springframework.boot:spring-boot</exclude>
+                                            <!-- Ban checker-qual, we don't use Checker Framework -->
+                                            <exclude>org.checkerframework:checker-qual</exclude>
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->

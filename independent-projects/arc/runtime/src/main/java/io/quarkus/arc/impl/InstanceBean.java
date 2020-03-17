@@ -15,6 +15,8 @@ public class InstanceBean extends BuiltInBean<Instance<?>> {
     public static final Set<Type> INSTANCE_TYPES = Collections
             .unmodifiableSet(new HashSet<>(Arrays.asList(Instance.class, Object.class)));
 
+    static final InstanceBean INSTANCE = new InstanceBean();
+
     @Override
     public Set<Type> getTypes() {
         return INSTANCE_TYPES;

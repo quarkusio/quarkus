@@ -35,9 +35,11 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
     private final CreationalContextImpl<?> creationalContext;
     private final Set<InjectableBean<?>> resolvedBeans;
 
-    private final Type injectionPointType;
     private final Type requiredType;
     private final Set<Annotation> requiredQualifiers;
+
+    // The following fields are only needed for InjectionPoint metadata
+    private final Type injectionPointType;
     private final InjectableBean<?> targetBean;
     private final Set<Annotation> annotations;
     private final Member javaMember;

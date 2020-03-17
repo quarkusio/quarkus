@@ -16,6 +16,8 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>common-runtime</module>
+        <module>common-deployment</module>
         <module>runtime</module>
         <module>deployment</module>
         <module>maven-archetype</module>

@@ -38,7 +38,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
@@ -228,26 +227,6 @@ public final class AmazonLambdaProcessor {
             List<ServiceStartBuildItem> orderServicesFirst // try to order this after service recorders
     ) {
         recorder.startPollLoop(shutdownContextBuildItem);
-    }
-
-    /**
-     * Lambda custom runtime does not like ipv6.
-     */
-    @BuildStep(onlyIf = NativeBuild.class)
-    void ipv4Only(BuildProducer<SystemPropertyBuildItem> systemProperty) {
-        // lambda custom runtime does not like IPv6
-        systemProperty.produce(new SystemPropertyBuildItem("java.net.preferIPv4Stack", "true"));
-    }
-
-    @BuildStep
-    void tmpdirs(BuildProducer<SystemPropertyBuildItem> systemProperty,
-            LaunchModeBuildItem launchModeBuildItem) {
-        LaunchMode mode = launchModeBuildItem.getLaunchMode();
-        if (mode.isDevOrTest()) {
-            return; // just in case we're on windows.
-        }
-        systemProperty.produce(new SystemPropertyBuildItem("java.io.tmpdir", "/tmp"));
-        systemProperty.produce(new SystemPropertyBuildItem("vertx.cacheDirBase", "/tmp/vertx"));
     }
 
     @BuildStep

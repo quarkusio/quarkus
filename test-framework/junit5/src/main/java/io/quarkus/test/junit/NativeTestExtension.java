@@ -113,7 +113,7 @@ public class NativeTestExtension
 
         @Override
         public void close() throws Throwable {
-            testResourceManager.stop();
+            testResourceManager.close();
             resource.close();
         }
     }

@@ -2,6 +2,7 @@ package io.quarkus.test.common;
 
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -29,7 +30,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 
-public class TestResourceManager {
+public class TestResourceManager implements Closeable {
 
     private final List<QuarkusTestResourceLifecycleManager> testResources;
     private Map<String, String> oldSystemProps;
@@ -42,7 +43,10 @@ public class TestResourceManager {
         Map<String, String> ret = new HashMap<>();
         for (QuarkusTestResourceLifecycleManager testResource : testResources) {
             try {
-                ret.putAll(testResource.start());
+                Map<String, String> start = testResource.start();
+                if (start != null) {
+                    ret.putAll(start);
+                }
             } catch (Exception e) {
                 throw new RuntimeException("Unable to start Quarkus test resource " + testResource, e);
             }
@@ -65,7 +69,7 @@ public class TestResourceManager {
         }
     }
 
-    public void stop() {
+    public void close() {
         if (oldSystemProps != null) {
             for (Map.Entry<String, String> e : oldSystemProps.entrySet()) {
                 if (e.getValue() == null) {
@@ -106,7 +110,7 @@ public class TestResourceManager {
         for (AnnotationInstance annotation : testResourceAnnotations) {
             try {
                 testResourceRunnerClasses.add((Class<? extends QuarkusTestResourceLifecycleManager>) Class
-                        .forName(annotation.value().asString()));
+                        .forName(annotation.value().asString(), true, Thread.currentThread().getContextClassLoader()));
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Unable to find the class for the test resource " + annotation.value().asString());
             }
@@ -124,7 +128,7 @@ public class TestResourceManager {
         }
 
         for (QuarkusTestResourceLifecycleManager quarkusTestResourceLifecycleManager : ServiceLoader
-                .load(QuarkusTestResourceLifecycleManager.class)) {
+                .load(QuarkusTestResourceLifecycleManager.class, Thread.currentThread().getContextClassLoader())) {
             testResourceRunners.add(quarkusTestResourceLifecycleManager);
         }
 

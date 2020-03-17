@@ -13,6 +13,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Instance;
 import javax.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -40,8 +41,12 @@ public class SimpleObserverInjectionTest {
     static class StringObserver {
 
         @SuppressWarnings({ "rawtypes", "unchecked" })
-        void observeString(@Observes AtomicReference value, Fool fool) {
+        void observeString(@Observes AtomicReference value, Fool fool, Instance<Fool> fools) {
             value.set(fool.id);
+            fools.forEach(f -> {
+                // Fool is @Dependent!
+                assertNotEquals(fool.id, f.id);
+            });
         }
 
     }

@@ -146,7 +146,8 @@ public class ValueResolverGenerator {
 
         valueResolver.close();
 
-        if (!ignoreSuperclasses && !clazz.superName().equals(OBJECT)) {
+        DotName superName = clazz.superName();
+        if (!ignoreSuperclasses && (superName != null && !superName.equals(OBJECT))) {
             ClassInfo superClass = index.getClassByName(clazz.superClassType().name());
             if (superClass != null) {
                 generate(superClass);

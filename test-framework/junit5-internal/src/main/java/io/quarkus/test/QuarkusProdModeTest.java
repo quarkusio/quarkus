@@ -220,8 +220,8 @@ public class QuarkusProdModeTest
 
         try {
             outputDir = Files.createTempDirectory("quarkus-prod-mode-test");
-            Path deploymentDir = outputDir.resolve("deployment");
-            buildDir = outputDir.resolve("build");
+            Path deploymentDir = outputDir.resolve("deployment-result");
+            buildDir = outputDir.resolve("build-result");
 
             if (applicationName != null) {
                 overrideConfigKey("quarkus.application.name", applicationName);

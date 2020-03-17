@@ -35,6 +35,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-spring-core-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-spring-boot-orm-api</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

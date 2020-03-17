@@ -642,7 +642,7 @@ public abstract class PanacheEntityBase {
      * Delete an entity of this type by ID.
      *
      * @param id the ID of the entity to delete.
-     * @return false if the entity is not delete (not found).
+     * @return false if the entity was not deleted (not found).
      */
     @GenerateBridge
     public static boolean deleteById(Object id) {

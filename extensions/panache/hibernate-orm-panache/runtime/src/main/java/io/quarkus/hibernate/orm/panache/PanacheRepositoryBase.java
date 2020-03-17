@@ -638,7 +638,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
      * Delete an entity of this type by ID.
      *
      * @param id the ID of the entity to delete.
-     * @return false if the entity is not deleted (not found).
+     * @return false if the entity was not deleted (not found).
      */
     @GenerateBridge
     public default boolean deleteById(Id id) {

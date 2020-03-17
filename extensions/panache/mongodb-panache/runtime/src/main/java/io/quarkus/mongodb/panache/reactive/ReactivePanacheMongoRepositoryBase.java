@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 import org.bson.Document;
 
 import io.quarkus.mongodb.panache.reactive.runtime.ReactiveMongoOperations;
+import io.quarkus.mongodb.panache.runtime.MongoOperations;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
 import io.quarkus.panache.common.Parameters;
@@ -701,6 +702,17 @@ public interface ReactivePanacheMongoRepositoryBase<Entity, Id> {
     @GenerateBridge
     public default Uni<Long> deleteAll() {
         throw ReactiveMongoOperations.implementationInjectionMissing();
+    }
+
+    /**
+     * Delete an entity of this type by ID.
+     *
+     * @param id the ID of the entity to delete.
+     * @return false if the entity was not deleted (not found).
+     */
+    @GenerateBridge
+    public default Uni<Boolean> deleteById(Id id) {
+        throw MongoOperations.implementationInjectionMissing();
     }
 
     /**

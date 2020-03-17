@@ -556,6 +556,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-mutiny-reactive-streams-operators</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-reactive-type-converters</artifactId>
                 <version>${project.version}</version>
             </dependency>

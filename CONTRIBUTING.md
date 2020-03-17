@@ -171,6 +171,12 @@ Bad examples and the corresponding good example:
 - "PostgreSQL database connector" (use "Connect to the PostgreSQL database via JDBC")
 - "Asynchronous messaging for Reactive Streams" (use "Produce and consume messages and implement event driven and data streaming applications")
 
+## Pull Requests
+
+This is where I will add information about pull requests
+
+I really need to add a lot more information here
+
 ## The small print
 
 This project is an open source project, please act responsibly, be nice, polite and enjoy!

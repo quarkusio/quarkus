@@ -50,6 +50,10 @@
                     <groupId>org.drools</groupId>
                     <artifactId>drools-model-compiler</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.checkerframework</groupId>
+                    <artifactId>checker-qual</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

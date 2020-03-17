@@ -176,7 +176,7 @@
         <quarkus-spring-api.version>5.2.Final</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.Final</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.2.Final</quarkus-spring-security-api.version>
-        <quarkus-spring-boot-api.version>2.1.Final</quarkus-spring-boot-api.version>
+        <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
         <mvel2.version>2.4.4.Final</mvel2.version>
         <htmlunit.version>2.36.0</htmlunit.version>
         <mockito.version>3.3.0</mockito.version>
@@ -2824,6 +2824,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-boot-orm-api</artifactId>
+                <version>${quarkus-spring-boot-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-spring-data-commons-api</artifactId>
                 <version>${quarkus-spring-data-api.version}</version>
             </dependency>
@@ -2844,7 +2849,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-spring-boot-api</artifactId>
+                <artifactId>quarkus-spring-boot-properties-api</artifactId>
                 <version>${quarkus-spring-boot-api.version}</version>
             </dependency>
 

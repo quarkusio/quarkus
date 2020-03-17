@@ -11,9 +11,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
 
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.pojo.annotations.BsonDiscriminator;
@@ -126,7 +126,7 @@ public class MongoClientProcessor {
      * 
      * <pre>
      * public class myclass extends AbstractMongoClientProducer {
-     *     &#64;ApplicationScoped
+     *     &#64;Singleton
      *     &#64;Produces
      *     &#64;Default
      *     public MongoClient createDefaultMongoClient() {
@@ -134,7 +134,7 @@ public class MongoClientProcessor {
      *         return createMongoClient(cfg);
      *     }
      * 
-     *     &#64;ApplicationScoped
+     *     &#64;Singleton
      *     &#64;Produces
      *     &#64;Default
      *     public ReactiveMongoClient createDefaultReactiveMongoClient() {
@@ -145,7 +145,7 @@ public class MongoClientProcessor {
      *     // for each named mongoclient configuration
      *     // example:
      *     // quarkus.mongodb.cluster1.connection-string = mongodb://mongo1:27017,mongo2:27017
-     *     &#64;ApplicationScoped
+     *     &#64;Singleton
      *     &#64;Produces
      *     &#64;Named("cluster1")
      *     &#64;MongoClientName("cluster1")
@@ -154,7 +154,7 @@ public class MongoClientProcessor {
      *         return createMongoClient(cfg);
      *     }
      * 
-     *     &#64;ApplicationScoped
+     *     &#64;Singleton
      *     &#64;Produces
      *     &#64;Named("cluster1")
      *     &#64;MongoClientName("cluster1")
@@ -175,11 +175,11 @@ public class MongoClientProcessor {
                 .className(mongoClientProducerClassName)
                 .superClass(AbstractMongoClientProducer.class)
                 .build()) {
-            classCreator.addAnnotation(ApplicationScoped.class);
+            classCreator.addAnnotation(Singleton.class);
 
             try (MethodCreator defaultMongoClientMethodCreator = classCreator.getMethodCreator("createDefaultMongoClient",
                     MongoClient.class)) {
-                defaultMongoClientMethodCreator.addAnnotation(ApplicationScoped.class);
+                defaultMongoClientMethodCreator.addAnnotation(Singleton.class);
                 defaultMongoClientMethodCreator.addAnnotation(Produces.class);
                 defaultMongoClientMethodCreator.addAnnotation(Default.class);
                 if (makeUnremovable) {
@@ -206,7 +206,7 @@ public class MongoClientProcessor {
             try (MethodCreator defaultReactiveMongoClientMethodCreator = classCreator.getMethodCreator(
                     "createDefaultLegacyReactiveMongoClient",
                     ReactiveMongoClient.class)) {
-                defaultReactiveMongoClientMethodCreator.addAnnotation(ApplicationScoped.class);
+                defaultReactiveMongoClientMethodCreator.addAnnotation(Singleton.class);
                 defaultReactiveMongoClientMethodCreator.addAnnotation(Produces.class);
                 defaultReactiveMongoClientMethodCreator.addAnnotation(Default.class);
 
@@ -230,7 +230,7 @@ public class MongoClientProcessor {
             try (MethodCreator defaultReactiveMongoClientMethodCreator = classCreator.getMethodCreator(
                     "createDefaultReactiveMongoClient",
                     io.quarkus.mongodb.reactive.ReactiveMongoClient.class)) {
-                defaultReactiveMongoClientMethodCreator.addAnnotation(ApplicationScoped.class);
+                defaultReactiveMongoClientMethodCreator.addAnnotation(Singleton.class);
                 defaultReactiveMongoClientMethodCreator.addAnnotation(Produces.class);
                 defaultReactiveMongoClientMethodCreator.addAnnotation(Default.class);
                 if (makeUnremovable) {
@@ -258,7 +258,7 @@ public class MongoClientProcessor {
                 try (MethodCreator namedMongoClientMethodCreator = classCreator.getMethodCreator(
                         "createNamedMongoClient_" + HashUtil.sha1(namedMongoClientName),
                         MongoClient.class)) {
-                    namedMongoClientMethodCreator.addAnnotation(ApplicationScoped.class);
+                    namedMongoClientMethodCreator.addAnnotation(Singleton.class);
                     namedMongoClientMethodCreator.addAnnotation(Produces.class);
                     namedMongoClientMethodCreator.addAnnotation(AnnotationInstance.create(DotNames.NAMED, null,
                             new AnnotationValue[] { AnnotationValue.createStringValue("value", namedMongoClientName) }));
@@ -290,7 +290,7 @@ public class MongoClientProcessor {
                 try (MethodCreator namedReactiveMongoClientMethodCreator = classCreator.getMethodCreator(
                         "createNamedLegacyReactiveMongoClient_" + HashUtil.sha1(namedMongoClientName),
                         ReactiveMongoClient.class)) {
-                    namedReactiveMongoClientMethodCreator.addAnnotation(ApplicationScoped.class);
+                    namedReactiveMongoClientMethodCreator.addAnnotation(Singleton.class);
                     namedReactiveMongoClientMethodCreator.addAnnotation(Produces.class);
                     namedReactiveMongoClientMethodCreator.addAnnotation(AnnotationInstance.create(DotNames.NAMED, null,
                             new AnnotationValue[] {
@@ -322,7 +322,7 @@ public class MongoClientProcessor {
                 try (MethodCreator namedReactiveMongoClientMethodCreator = classCreator.getMethodCreator(
                         "createNamedReactiveMongoClient_" + HashUtil.sha1(namedMongoClientName),
                         io.quarkus.mongodb.reactive.ReactiveMongoClient.class)) {
-                    namedReactiveMongoClientMethodCreator.addAnnotation(ApplicationScoped.class);
+                    namedReactiveMongoClientMethodCreator.addAnnotation(Singleton.class);
                     namedReactiveMongoClientMethodCreator.addAnnotation(Produces.class);
                     namedReactiveMongoClientMethodCreator.addAnnotation(AnnotationInstance.create(DotNames.NAMED, null,
                             new AnnotationValue[] {

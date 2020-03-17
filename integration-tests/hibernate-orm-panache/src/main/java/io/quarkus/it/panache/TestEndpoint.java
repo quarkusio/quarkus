@@ -1,8 +1,10 @@
 package io.quarkus.it.panache;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -29,6 +31,7 @@ import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.hibernate.jpa.QueryHints;
 import org.junit.jupiter.api.Assertions;
 
+import io.quarkus.hibernate.orm.panache.Panache;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
@@ -213,6 +216,14 @@ public class TestEndpoint {
         Assertions.assertEquals(7, Person.deleteAll());
 
         testUpdate();
+
+        //delete by id
+        Person toRemove = new Person();
+        toRemove.name = "testDeleteById";
+        toRemove.uniqueName = "testDeleteByIdUnique";
+        toRemove.persist();
+        assertTrue(Person.deleteById(toRemove.id));
+        Person.deleteById(666L); //not existing
 
         // persistAndFlush
         Person person1 = new Person();
@@ -459,8 +470,8 @@ public class TestEndpoint {
         person1.name = "stef1";
         Person person2 = new Person();
         person2.name = "stef2";
-        Assertions.assertFalse(person1.isPersistent());
-        Assertions.assertFalse(person2.isPersistent());
+        assertFalse(person1.isPersistent());
+        assertFalse(person2.isPersistent());
         switch (persistTest) {
             case Iterable:
                 Person.persist(Arrays.asList(person1, person2));
@@ -472,8 +483,8 @@ public class TestEndpoint {
                 Person.persist(person1, person2);
                 break;
         }
-        Assertions.assertTrue(person1.isPersistent());
-        Assertions.assertTrue(person2.isPersistent());
+        assertTrue(person1.isPersistent());
+        assertTrue(person2.isPersistent());
     }
 
     @Inject
@@ -499,11 +510,11 @@ public class TestEndpoint {
         } catch (NoResultException x) {
         }
 
-        Assertions.assertFalse(personDao.findAll().singleResultOptional().isPresent());
+        assertFalse(personDao.findAll().singleResultOptional().isPresent());
 
         Assertions.assertNull(personDao.findAll().firstResult());
 
-        Assertions.assertFalse(personDao.findAll().firstResultOptional().isPresent());
+        assertFalse(personDao.findAll().firstResultOptional().isPresent());
 
         Person person = makeSavedPersonDao();
         Assertions.assertNotNull(person.id);
@@ -645,6 +656,14 @@ public class TestEndpoint {
 
         testUpdateDAO();
 
+        //delete by id
+        Person toRemove = new Person();
+        toRemove.name = "testDeleteById";
+        toRemove.uniqueName = "testDeleteByIdUnique";
+        personDao.persist(toRemove);
+        assertTrue(personDao.deleteById(toRemove.id));
+        personDao.deleteById(666L);//not existing
+
         //flush
         Person person1 = new Person();
         person1.name = "testFlush1";
@@ -735,8 +754,8 @@ public class TestEndpoint {
         person1.name = "stef1";
         Person person2 = new Person();
         person2.name = "stef2";
-        Assertions.assertFalse(person1.isPersistent());
-        Assertions.assertFalse(person2.isPersistent());
+        assertFalse(person1.isPersistent());
+        assertFalse(person2.isPersistent());
         switch (persistTest) {
             case Iterable:
                 personDao.persist(Arrays.asList(person1, person2));
@@ -748,8 +767,8 @@ public class TestEndpoint {
                 personDao.persist(person1, person2);
                 break;
         }
-        Assertions.assertTrue(person1.isPersistent());
-        Assertions.assertTrue(person2.isPersistent());
+        assertTrue(person1.isPersistent());
+        assertTrue(person2.isPersistent());
     }
 
     private Person makeSavedPersonDao(String suffix) {
@@ -827,8 +846,8 @@ public class TestEndpoint {
         Assertions.assertEquals("stef0", persons.get(0).name);
         Assertions.assertEquals("stef1", persons.get(1).name);
         Assertions.assertEquals("stef2", persons.get(2).name);
-        Assertions.assertTrue(query.hasNextPage());
-        Assertions.assertFalse(query.hasPreviousPage());
+        assertTrue(query.hasNextPage());
+        assertFalse(query.hasPreviousPage());
 
         persons = query.nextPage().list();
         Assertions.assertEquals(1, query.page().index);
@@ -837,14 +856,14 @@ public class TestEndpoint {
         Assertions.assertEquals("stef3", persons.get(0).name);
         Assertions.assertEquals("stef4", persons.get(1).name);
         Assertions.assertEquals("stef5", persons.get(2).name);
-        Assertions.assertTrue(query.hasNextPage());
-        Assertions.assertTrue(query.hasPreviousPage());
+        assertTrue(query.hasNextPage());
+        assertTrue(query.hasPreviousPage());
 
         persons = query.nextPage().list();
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals("stef6", persons.get(0).name);
-        Assertions.assertFalse(query.hasNextPage());
-        Assertions.assertTrue(query.hasPreviousPage());
+        assertFalse(query.hasNextPage());
+        assertTrue(query.hasPreviousPage());
 
         persons = query.nextPage().list();
         Assertions.assertEquals(0, persons.size());
@@ -1058,6 +1077,47 @@ public class TestEndpoint {
         Field f = JAXBEntity.class.getField(fieldName);
         assertNull(f.getAnnotation(XmlAttribute.class));
         assertNotNull(f.getAnnotation(XmlTransient.class));
+    }
+
+    @GET
+    @Path("composite")
+    @Transactional
+    public String testCompositeKey() {
+        ObjectWithCompositeId obj = new ObjectWithCompositeId();
+        obj.part1 = "part1";
+        obj.part2 = "part2";
+        obj.description = "description";
+        obj.persist();
+
+        ObjectWithCompositeId.ObjectKey key = new ObjectWithCompositeId.ObjectKey("part1", "part2");
+        ObjectWithCompositeId result = ObjectWithCompositeId.findById(key);
+        assertNotNull(result);
+
+        boolean deleted = ObjectWithCompositeId.deleteById(key);
+        assertTrue(deleted);
+
+        ObjectWithCompositeId.ObjectKey notExistingKey = new ObjectWithCompositeId.ObjectKey("notexist1", "notexist2");
+        deleted = ObjectWithCompositeId.deleteById(key);
+        assertFalse(deleted);
+
+        ObjectWithEmbeddableId.ObjectKey embeddedKey = new ObjectWithEmbeddableId.ObjectKey("part1", "part2");
+        ObjectWithEmbeddableId embeddable = new ObjectWithEmbeddableId();
+        embeddable.key = embeddedKey;
+        embeddable.description = "description";
+        embeddable.persist();
+
+        ObjectWithEmbeddableId embeddableResult = ObjectWithEmbeddableId.findById(embeddedKey);
+        assertNotNull(embeddableResult);
+
+        deleted = ObjectWithEmbeddableId.deleteById(embeddedKey);
+        assertTrue(deleted);
+
+        ObjectWithEmbeddableId.ObjectKey notExistingEmbeddedKey = new ObjectWithEmbeddableId.ObjectKey("notexist1",
+                "notexist2");
+        deleted = ObjectWithEmbeddableId.deleteById(embeddedKey);
+        assertFalse(deleted);
+
+        return "OK";
     }
 
     @GET

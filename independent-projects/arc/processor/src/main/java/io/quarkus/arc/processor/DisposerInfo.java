@@ -2,8 +2,9 @@ package io.quarkus.arc.processor;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 import javax.enterprise.inject.spi.DefinitionException;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -71,9 +72,11 @@ public class DisposerInfo implements InjectionTargetInfo {
     }
 
     Collection<AnnotationInstance> getDisposedParameterQualifiers() {
-        return Annotations.getParameterAnnotations(declaringBean.getDeployment(), disposerMethod, disposedParameter.position())
-                .stream().filter(a -> declaringBean.getDeployment().getQualifier(a.name()) != null)
-                .collect(Collectors.toList());
+        Set<AnnotationInstance> resultingQualifiers = new HashSet<>();
+        Annotations.getParameterAnnotations(declaringBean.getDeployment(), disposerMethod, disposedParameter.position())
+                .stream().forEach(a -> declaringBean.getDeployment().extractQualifiers(a)
+                        .forEach(resultingQualifiers::add));
+        return resultingQualifiers;
     }
 
     Type getDisposedParameterType() {

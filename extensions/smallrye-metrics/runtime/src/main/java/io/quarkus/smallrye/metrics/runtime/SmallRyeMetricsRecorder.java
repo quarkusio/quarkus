@@ -229,7 +229,7 @@ public class SmallRyeMetricsRecorder {
         Metadata countMetadata = Metadata.builder()
                 .withName("gc.total")
                 .withType(MetricType.COUNTER)
-                .withDisplayName("Garbage Collection Time")
+                .withDisplayName("Garbage Collection Count")
                 .withUnit("none")
                 .withDescription(
                         "Displays the total number of collections that have occurred. This attribute lists -1 if the collection count is undefined for this collector.")

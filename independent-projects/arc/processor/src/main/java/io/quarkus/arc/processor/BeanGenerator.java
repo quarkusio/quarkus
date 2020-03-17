@@ -81,13 +81,12 @@ public class BeanGenerator extends AbstractGenerator {
     protected static final String FIELD_NAME_PARAMS = "params";
 
     protected final AnnotationLiteralProcessor annotationLiterals;
-
     protected final Predicate<DotName> applicationClassPredicate;
-
     protected final PrivateMembersCollector privateMembers;
 
     public BeanGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
-            PrivateMembersCollector privateMembers) {
+            PrivateMembersCollector privateMembers, boolean generateSources) {
+        super(generateSources);
         this.annotationLiterals = annotationLiterals;
         this.applicationClassPredicate = applicationClassPredicate;
         this.privateMembers = privateMembers;
@@ -139,7 +138,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         boolean isApplicationClass = applicationClassPredicate.test(bean.getImplClazz().name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+                name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
@@ -250,7 +249,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         boolean isApplicationClass = applicationClassPredicate.test(beanClass.name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+                name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
@@ -346,7 +345,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+                name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
@@ -432,7 +431,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+                name -> name.equals(generatedName) ? SpecialType.BEAN : null, generateSources);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)

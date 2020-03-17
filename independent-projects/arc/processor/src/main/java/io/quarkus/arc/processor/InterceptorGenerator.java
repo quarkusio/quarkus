@@ -43,8 +43,8 @@ public class InterceptorGenerator extends BeanGenerator {
     protected static final String FIELD_NAME_BINDINGS = "bindings";
 
     public InterceptorGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
-            PrivateMembersCollector privateMembers) {
-        super(annotationLiterals, applicationClassPredicate, privateMembers);
+            PrivateMembersCollector privateMembers, boolean generateSources) {
+        super(annotationLiterals, applicationClassPredicate, privateMembers, generateSources);
     }
 
     /**
@@ -70,7 +70,7 @@ public class InterceptorGenerator extends BeanGenerator {
 
         boolean isApplicationClass = applicationClassPredicate.test(interceptor.getBeanClass());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
-                name -> name.equals(generatedName) ? SpecialType.INTERCEPTOR_BEAN : null);
+                name -> name.equals(generatedName) ? SpecialType.INTERCEPTOR_BEAN : null, generateSources);
 
         // MyInterceptor_Bean implements InjectableInterceptor<T>
         ClassCreator interceptorCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)

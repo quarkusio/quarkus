@@ -16,6 +16,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -67,8 +68,9 @@ class FlywayDatasourceBeanGenerator {
      * @return String name of the generated producer bean class.
      */
     public void createFlywayProducerBean() {
+        GeneratedBeanGizmoAdaptor classOutput = new GeneratedBeanGizmoAdaptor(generatedBean);
         ClassCreator classCreator = ClassCreator.builder()
-                .classOutput(this::writeGeneratedBeanBuildItem)
+                .classOutput(classOutput)
                 .className(FLYWAY_PRODUCER_TYPE_NAME)
                 .build();
         classCreator.addAnnotation(ApplicationScoped.class);
@@ -99,10 +101,6 @@ class FlywayDatasourceBeanGenerator {
                             flywayProducerMethod.load(dataSourceName)));
         }
         classCreator.close();
-    }
-
-    private void writeGeneratedBeanBuildItem(String name, byte[] data) {
-        generatedBean.produce(new GeneratedBeanBuildItem(name, data));
     }
 
     private static String hashed(String dataSourceName) {

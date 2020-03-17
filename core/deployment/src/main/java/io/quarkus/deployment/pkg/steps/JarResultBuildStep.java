@@ -358,7 +358,8 @@ public class JarResultBuildStep {
 
         List<GeneratedClassBuildItem> allClasses = new ArrayList<>(generatedClasses);
         allClasses.addAll(nativeImageResources.stream()
-                .map((s) -> new GeneratedClassBuildItem(true, s.getName(), s.getClassData())).collect(Collectors.toList()));
+                .map((s) -> new GeneratedClassBuildItem(true, s.getName(), s.getClassData()))
+                .collect(Collectors.toList()));
 
         try (FileSystem runnerZipFs = ZipUtils.newZip(runnerJar)) {
 

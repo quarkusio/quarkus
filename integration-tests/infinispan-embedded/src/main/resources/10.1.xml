@@ -79,6 +79,7 @@
          <relay.RELAY2 site="LON" xmlns="urn:org:jgroups"/>
          <remote-sites default-stack="tcpgossip">
             <remote-site name="NYC" stack="tcp"/>
+            <remote-site name="LON" stack="tcp"/>
          </remote-sites>
       </stack>
    </jgroups>
@@ -105,7 +106,7 @@
    <cache-container name="maximal" aliases="alias1 alias2" default-cache="local" async-executor="async-infinispan" expiration-executor="infinispan-expiration"
                     jndi-name="java:global/infinispan/maximal"  state-transfer-executor="infinispan-state-transfer" listener-executor="infinispan-listener"
                     persistence-executor="infinispan-cached" module="org.infinispan" statistics="true" shutdown-hook="DONT_REGISTER" zero-capacity-node="false">
-       <transport cluster="maximal-cluster" executor="infinispan-transport" remote-command-executor="infinispan-cached" lock-timeout="120000" stack="tcpping" node-name="a-node" machine="a" rack="b" site="c"
+       <transport cluster="maximal-cluster" executor="infinispan-transport" remote-command-executor="infinispan-cached" lock-timeout="120000" stack="xsite" node-name="a-node" machine="a" rack="b" site="c"
                  initial-cluster-size="1" initial-cluster-timeout="30000" />
       <!--
       <security>
@@ -353,7 +354,7 @@
          <transaction mode="BATCH" stop-timeout="61000" locking="PESSIMISTIC"/>
          <expiration interval="11000" lifespan="12" max-idle="12"/>
          <persistence>
-            <cluster-loader remote-timeout="35000" preload="true"/>
+            <cluster-loader remote-timeout="35000" preload="false"/>
          </persistence>
          <memory>
             <object size="21000"/>

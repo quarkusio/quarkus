@@ -206,7 +206,7 @@ public class QuarkusDev extends QuarkusTask {
                 args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=" + debugSuspend);
             } else if (debug.toLowerCase().equals("true") || debug.isEmpty()) {
                 args.add("-Xdebug");
-                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=y,suspend=" + debugSuspend);
+                args.add("-Xrunjdwp:transport=dt_socket,address=0.0.0.0:5005,server=y,suspend=" + debugSuspend);
             } else if (!debug.toLowerCase().equals("false")) {
                 try {
                     int port = Integer.parseInt(debug);

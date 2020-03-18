@@ -739,7 +739,7 @@ public class QuteProcessor {
             @Override
             public boolean test(Check check) {
                 // RawString
-                if (check.isProperty() && check.classNameEquals(STRING) && check.nameIn("raw", "safe")) {
+                if (check.isProperty() && check.nameIn("raw", "safe")) {
                     return true;
                 }
                 // Elvis and ternary operators

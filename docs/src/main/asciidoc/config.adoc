@@ -442,33 +442,39 @@ The proper way to check the active profile programmatically is to use the `getAc
 Using `@ConfigProperty("quarkus.profile")` will *not* work properly.
 ====
 
-=== Using placeholders
+=== Using Property Expressions
 
-Quarkus supports the use of placeholders in the `application.properties` file on build time.
+Quarkus supports the use of property expressions in the `application.properties` file.
 
-The placeholder can be used by enclosing the key inside `${}`.
+These expressions are resolved when the property is read.
+So if your configuration property is a build time configuration property, the property expression will be resolved at build time.
+If your configuration property is overridable at runtime, the property expression will be resolved at runtime.
 
-For example having the following property:
+You can use property expressions both for the Quarkus configuration or for your own configuration properties.
+
+Property expressions are defined this way: `${my-property-expression}`.
+
+For example, having the following property:
 
 [source,properties]
 ----
 remote.host=quarkus.io
 ----
-having another property defined as
+and another property defined as:
 
 [source,properties]
 ----
-callable.url=http://${remote.host}/
+callable.url=https://${remote.host}/
 ----
 
-will result on the value of the `callable.url` property to be set at build time to
+will result in the value of the `callable.url` property being set to:
 
 [source,properties]
 ----
-callable.url=quarkus.io
+callable.url=https://quarkus.io/
 ----
 
-Another example would be defining different database servers depending on profiles used
+Another example would be defining different database servers depending on the profile used:
 
 [source,properties]
 ----
@@ -476,7 +482,7 @@ Another example would be defining different database servers depending on profil
 quarkus.datasource.url=jdbc:mysql://remotehost:3306/mydatabase?useSSL=false
 ----
 
-can be simplified by having
+can be simplified by having:
 
 [source,properties]
 ----
@@ -486,31 +492,38 @@ application.server=remotehost
 quarkus.datasource.url=jdbc:mysql://${application.server}:3306/mydatabase?useSSL=false
 ----
 
-It does result in one more line in this example but the value of `application.server` can be reused in other properties, diminishing the possibility of typos and providing more flexibility in properties definitions.
+It does result in one more line in this example but the value of `application.server` can be reused in other properties,
+diminishing the possibility of typos and providing more flexibility in property definitions.
 
-=== Combining placeholders and environment variables
+=== Combining Property Expressions and Environment Variables
 
-Quarkus also supports the combination of both placeholders and environment variables.
+Quarkus also supports the combination of both property expressions and environment variables.
 
-Let's assume you have following property defined in `application.properties`
+Let's assume you have following property defined in `application.properties`:
+
 [source,properties]
 ----
 remote.host=quarkus.io
 ----
 
-You can combine environment variables and placeholders by having a property defined as follow
+You can combine environment variables and property expressions by having a property defined as follows:
+
 [source,properties]
 ----
 application.host=${HOST:${remote.host}}
 ----
 
-This will expand the HOST environment variable and use the value of the property `remote.host` as the default value if `HOST` is not set.
+This will expand the `HOST` environment variable and use the value of the property `remote.host` as the default value if `HOST` is not set.
 
-For the purpose of this section we used the defined property `remote.host`, it has to be noted that the value could have been a specific one like 
+For the purpose of this section we used the property `remote.host` we defined previously.
+It has to be noted that the value could have been a fixed one such as in:
+
+[source,properties]
 ----
 application.host=${HOST:localhost}
 ----
-which will use `localhost` as the default value if `HOST` is not set.
+
+which will result in `localhost` as the default value if `HOST` is not set.
 
 === Clearing properties
 

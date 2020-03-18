@@ -12,7 +12,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.fabric8.knative.serving.v1alpha1.Service;
+import io.fabric8.knative.serving.v1.Service;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
@@ -42,15 +42,11 @@ public class KnativeContainerImageTest {
             assertThat(i).isInstanceOfSatisfying(Service.class, d -> {
 
                 assertThat(d.getSpec()).satisfies(serviceSpec -> {
-                    assertThat(serviceSpec.getRunLatest()).satisfies(revisionTemplate -> {
-                        assertThat(revisionTemplate.getConfiguration()).satisfies(configuration -> {
-                            assertThat(configuration.getRevisionTemplate()).satisfies(template -> {
-                                assertThat(template.getSpec()).satisfies(spec -> {
-                                    assertThat(spec.getContainer()).satisfies(c -> {
-                                        assertThat(c.getImage())
-                                                .isEqualTo("quay.io/grp/knative-with-container-image:0.1-SNAPSHOT");
-                                    });
-                                });
+                    assertThat(serviceSpec.getTemplate()).satisfies(revisionTemplate -> {
+                        assertThat(revisionTemplate.getSpec()).satisfies(spec -> {
+                            assertThat(spec.getContainers()).satisfies(containers -> {
+                                assertThat(containers.get(0)).satisfies(c -> assertThat(c.getImage())
+                                        .isEqualTo("quay.io/grp/knative-with-container-image:0.1-SNAPSHOT"));
                             });
                         });
                     });

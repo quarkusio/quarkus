@@ -10,6 +10,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -352,8 +353,15 @@ public class QuarkusTestExtension
             while (c != Object.class) {
                 if (c.getName().equals(invocationContext.getExecutable().getDeclaringClass().getName())) {
                     try {
+                        Class<?>[] originalParameterTypes = invocationContext.getExecutable().getParameterTypes();
+                        List<Class<?>> parameterTypesFromTccl = new ArrayList<>(originalParameterTypes.length);
+                        for (Class<?> type : originalParameterTypes) {
+                            parameterTypesFromTccl
+                                    .add(Class.forName(type.getName(), true,
+                                            Thread.currentThread().getContextClassLoader()));
+                        }
                         newMethod = c.getDeclaredMethod(invocationContext.getExecutable().getName(),
-                                invocationContext.getExecutable().getParameterTypes());
+                                parameterTypesFromTccl.toArray(new Class[0]));
                         break;
                     } catch (NoSuchMethodException e) {
                         //ignore
@@ -365,7 +373,23 @@ public class QuarkusTestExtension
                 throw new RuntimeException("Could not find method " + invocationContext.getExecutable() + " on test class");
             }
             newMethod.setAccessible(true);
-            newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
+
+            // the arguments were not loaded from TCCL so we need to try and "convert" if possible
+            // most of the time this won't be possible or necessary, but for the widely used enum case we need to do it
+            // this is a total hack, but...
+            List<Object> originalArguments = invocationContext.getArguments();
+            List<Object> argumentsFromTccl = new ArrayList<>();
+            for (Object arg : originalArguments) {
+                if (arg.getClass().isEnum()) {
+                    argumentsFromTccl.add(Enum.valueOf((Class<Enum>) Class.forName(arg.getClass().getName(), false,
+                            Thread.currentThread().getContextClassLoader()), arg.toString()));
+                } else {
+                    // we can't do anything but hope for the best...
+                    argumentsFromTccl.add(arg);
+                }
+            }
+
+            newMethod.invoke(actualTestInstance, argumentsFromTccl.toArray(new Object[0]));
         } catch (InvocationTargetException e) {
             throw e.getCause();
         } catch (IllegalAccessException | ClassNotFoundException e) {

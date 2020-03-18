@@ -30,7 +30,6 @@
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-metrics</artifactId>
         </dependency>
-        <!-- Hack to get it to have the API Infinispan uses available -->
         <dependency>
             <groupId>org.eclipse.microprofile.metrics</groupId>
             <artifactId>microprofile-metrics-api</artifactId>

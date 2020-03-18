@@ -389,7 +389,7 @@ public class BeanDeployment {
                 return new ArrayList<>(Arrays.asList(annotation.value().asNestedArray()));
             } else {
                 // neither qualifier, nor container annotation, return empty collection
-                return Collections.EMPTY_LIST;
+                return Collections.emptyList();
             }
         }
     }

@@ -22,6 +22,10 @@
             <artifactId>microprofile-reactive-streams-operators-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mutiny</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>mutiny-reactive-streams-operators</artifactId>
         </dependency>

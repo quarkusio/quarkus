@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-streams-operators-deployment</artifactId>
+            <artifactId>quarkus-mutiny-reactive-streams-operators-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

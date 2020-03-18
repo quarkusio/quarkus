@@ -35,7 +35,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-amazon-lambda</artifactId>
-            <version>${quarkus.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

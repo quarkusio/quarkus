@@ -2795,6 +2795,11 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-reactive-converter-mutiny</artifactId>
+                <version>${smallrye-converter-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-reactive-converter-rxjava2</artifactId>
                 <version>${smallrye-converter-api.version}</version>
             </dependency>

@@ -19,6 +19,28 @@ a normal production Quarkus application.
 For all other use cases (e.g. tests, dev mode, and building the application) Quarkus
 uses the class loading architecture outlined here.
 
+== Reading Class Bytecode
+
+Whenever class bytecode needs to be read, a `@BuildStep` where class reading is done must have the `loadsApplicationClasses` parameter set to `true`. Otherwise the class will not be found.
+
+It's also important to use the correct `ClassLoader`. The recommended approach is to get it by calling the
+`Thread.currentThread().getContextClassLoader()` method.
+
+Example:
+
+
+[source,java,subs=attributes+]
+----
+@BuildStep(loadsApplicationClasses = true)
+GeneratedClassBuildItem instrument(final CombinedIndexBuildItem index) {
+    final String classname = "com.example.SomeClass";
+    final ClassLoader cl = Thread.currentThread().getContextClassLoader();
+    final byte[] originalBytecode = IoUtil.readClassAsBytes(cl, classname);
+    final byte[] enhancedBytecode = ... // class instrumentation from originalBytecode
+    return new GeneratedClassBuildItem(true, classname, enhancedBytecode));
+}
+----
+
 == Bootstrapping Quarkus
 
 All Quarkus applications are created by the QuarkusBootstrap class in the `independent-projects/bootstrap` module. This

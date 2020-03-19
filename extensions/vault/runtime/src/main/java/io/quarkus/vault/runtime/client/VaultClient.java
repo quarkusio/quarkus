@@ -13,6 +13,12 @@ import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2WriteBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
+import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyBody;
+import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyResult;
+import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPGenerateCodeResult;
+import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPListKeysResult;
+import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPReadKeyResult;
+import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPValidateCodeResult;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecrypt;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecryptBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitEncrypt;
@@ -68,4 +74,15 @@ public interface VaultClient {
 
     VaultTransitEncrypt rewrap(String token, String keyName, VaultTransitRewrapBody body);
 
+    VaultTOTPCreateKeyResult createTOTPKey(String token, String keyName, VaultTOTPCreateKeyBody vaultTOTPCreateKeyBody);
+
+    VaultTOTPReadKeyResult readTOTPKey(String token, String keyName);
+
+    VaultTOTPListKeysResult listTOTPKeys(String token);
+
+    void deleteTOTPKey(String token, String keyName);
+
+    VaultTOTPGenerateCodeResult generateTOTPCode(String token, String keyName);
+
+    VaultTOTPValidateCodeResult validateTOTPCode(String token, String keyName, String code);
 }

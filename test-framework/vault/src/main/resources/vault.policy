@@ -49,3 +49,7 @@ path "secret/crud" {
 path "secret-v2/data/crud" {
   capabilities = ["read", "create", "update", "delete"]
 }
+
+path "totp/*" {
+  capabilities = ["read", "create", "update", "delete", "list"]
+}

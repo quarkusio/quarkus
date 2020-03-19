@@ -1,10 +1,13 @@
 package io.quarkus.smallrye.opentracing.deployment;
 
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import org.eclipse.microprofile.opentracing.Traced;
 
 @Path("/")
 public interface RestService {
@@ -22,7 +25,11 @@ public interface RestService {
     Response restClient();
 
     @GET
-    @Traced(false)
     @Path("/faultTolerance")
-    Response faultTolerance();
+    CompletionStage<String> faultTolerance();
+
+    @GET
+    @Path("/jpa")
+    @Produces(MediaType.APPLICATION_JSON)
+    List<Fruit> jpa();
 }

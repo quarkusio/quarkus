@@ -1,5 +1,8 @@
 package io.quarkus.smallrye.opentracing.deployment;
 
+import java.util.List;
+import java.util.concurrent.CompletionStage;
+
 import javax.inject.Inject;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
@@ -38,8 +41,11 @@ public class TestResource implements RestService {
     }
 
     @Override
-    public Response faultTolerance() {
-        String ret = service.faultTolerance();
-        return Response.ok(ret).build();
+    public CompletionStage<String> faultTolerance() {
+        return service.faultTolerance();
+    }
+
+    public List<Fruit> jpa() {
+        return service.getFruits();
     }
 }

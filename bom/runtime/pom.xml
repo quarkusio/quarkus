@@ -114,7 +114,7 @@
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
-        <rest-assured.version>4.2.0</rest-assured.version>
+        <rest-assured.version>4.3.0</rest-assured.version>
         <junit.jupiter.version>5.6.0</junit.jupiter.version>
         <testng.version>6.14.2</testng.version>
         <assertj.version>3.15.0</assertj.version>

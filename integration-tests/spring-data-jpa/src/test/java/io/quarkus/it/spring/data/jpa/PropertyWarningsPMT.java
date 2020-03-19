@@ -38,7 +38,11 @@ public class PropertyWarningsPMT {
                     assertThat(s).contains("spring.jpa.show-sql should be replaced by quarkus.hibernate-orm.log.sql")
                             .contains(
                                     "spring.jpa.properties.hibernate.dialect should be replaced by quarkus.hibernate-orm.dialect")
-                            .contains("spring.jpa.open-in-view");
+                            .contains("spring.jpa.open-in-view")
+                            .contains(
+                                    "spring.jpa.hibernate.naming.physical-strategy should be replaced by quarkus.hibernate-orm.physical-naming-strategy")
+                            .contains(
+                                    "spring.jpa.hibernate.naming.implicit-strategy should be replaced by quarkus.hibernate-orm.implicit-naming-strategy");
                 });
             });
         });

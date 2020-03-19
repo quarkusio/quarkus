@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime.security;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.enterprise.inject.spi.CDI;
@@ -46,6 +47,12 @@ public class HttpSecurityRecorder {
                                     @Override
                                     public void run() {
                                         event.response().end();
+                                    }
+                                }).exceptionally(new Function<Throwable, Void>() {
+                                    @Override
+                                    public Void apply(Throwable throwable) {
+                                        event.fail(throwable);
+                                        return null;
                                     }
                                 });
                             } else if (throwable instanceof AuthenticationCompletionException) {

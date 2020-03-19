@@ -5,12 +5,12 @@ import java.util.function.Supplier;
 
 import javax.sql.DataSource;
 
-import org.wildfly.security.WildFlyElytronProvider;
 import org.wildfly.security.auth.realm.jdbc.JdbcSecurityRealm;
 import org.wildfly.security.auth.realm.jdbc.JdbcSecurityRealmBuilder;
 import org.wildfly.security.auth.realm.jdbc.QueryBuilder;
 import org.wildfly.security.auth.realm.jdbc.mapper.AttributeMapper;
 import org.wildfly.security.auth.server.SecurityRealm;
+import org.wildfly.security.password.WildFlyElytronPasswordProvider;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.RuntimeValue;
@@ -19,7 +19,7 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class JdbcRecorder {
 
-    private static final Provider[] PROVIDERS = new Provider[] { new WildFlyElytronProvider() };
+    private static final Provider[] PROVIDERS = new Provider[] { new WildFlyElytronPasswordProvider() };
 
     /**
      * Create a runtime value for a {@linkplain JdbcSecurityRealm}

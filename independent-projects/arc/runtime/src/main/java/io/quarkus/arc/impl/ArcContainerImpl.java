@@ -213,7 +213,24 @@ public class ArcContainerImpl implements ArcContainer {
     public <T> Supplier<InstanceHandle<T>> instanceSupplier(Class<T> type, Annotation... qualifiers) {
         requireRunning();
 
-        InjectableBean<T> bean = getBean(type, qualifiers);
+        if (qualifiers == null || qualifiers.length == 0) {
+            qualifiers = new Annotation[] { Default.Literal.INSTANCE };
+        }
+        Set<InjectableBean<?>> resolvedBeans = resolved.getValue(new Resolvable(type, qualifiers));
+        Set<InjectableBean<?>> filteredBean = resolvedBeans;
+        if (resolvedBeans.size() > 1) {
+            //if there are multiple beans we look for an exact match
+            //this method is only called with the exact type required
+            //so ignoring subclasses is the correct behaviour
+            filteredBean = new HashSet<>();
+            for (InjectableBean<?> i : resolvedBeans) {
+                if (i.getBeanClass().equals(type)) {
+                    filteredBean.add(i);
+                }
+            }
+        }
+        InjectableBean<T> bean = filteredBean.isEmpty() || filteredBean.size() > 1 ? null
+                : (InjectableBean<T>) filteredBean.iterator().next();
         if (bean == null) {
             return null;
         }

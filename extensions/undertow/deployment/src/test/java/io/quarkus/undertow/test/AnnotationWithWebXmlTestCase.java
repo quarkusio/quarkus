@@ -50,7 +50,7 @@ public class AnnotationWithWebXmlTestCase {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(WebXmlServlet.class, TestServlet.class,
                             WebXmlFilter.class, AnnotatedFilter.class,
-                            WebXmlListener.class, AnnotatedListener.class)
+                            WebXmlListener.class, AnnotatedListener.class, TestGreeter.class)
                     .addAsManifestResource(new StringAsset(WEB_XML), "web.xml"));
 
     @Test

@@ -3,11 +3,11 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Openshift extension
+= Quarkus - Deploying on OpenShift
 
 include::./attributes.adoc[]
 
-This guide covers generating and deploying Openshift resources based on sane default and user supplied configuration.
+This guide covers generating and deploying OpenShift resources based on sane default and user supplied configuration.
 
 
 == Prerequisites
@@ -18,11 +18,11 @@ To complete this guide, you need:
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
-* access to an Openshift or cluster (Minishift is a viable options)
+* access to an OpenShift or cluster (Minishift is a viable option)
 
 == Creating the Maven project
 
-First, we need a new project that contains the Openshift extension. This can be done using the following command:
+First, we need a new project that contains the OpenShift extension. This can be done using the following command:
 
 [source, subs=attributes+]
 ----
@@ -36,11 +36,11 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
 cd openshift-quickstart
 ----
 
-=== Openshift
+=== OpenShift
 
-Quarkus offers the ability to automatically generate Openshift resources based on sane default and user supplied configuration.
-The Openshift extension is actually a wrapper extension that brings together the link:kubernetes[kubernetes] and link:container-image-s2i[container-image-s2i]
-extensions with sensible defaults so that it's easier for the user to get started with Quarkus on Openshift.
+Quarkus offers the ability to automatically generate OpenShift resources based on sane default and user supplied configuration.
+The OpenShift extension is actually a wrapper extension that brings together the link:kubernetes[kubernetes] and link:container-image-s2i[container-image-s2i]
+extensions with sensible defaults so that it's easier for the user to get started with Quarkus on OpenShift.
 
 When we added the `openshift` extension to the command line invocation above, the following dependency was added to the `pom.xml`
 
@@ -52,9 +52,9 @@ When we added the `openshift` extension to the command line invocation above, th
     </dependency>
 ----
 
-By adding this dependency, we now have the ability to configure the Openshift resource generation and application using the usual `application.properties` approach that Quarkus provides.
-The configuration items that are available can be found in: `io.quarkus.kubernetes.deployment.OpenshiftConfig` class.
-Furthermore, the items provided by `io.quarkus.deployment.ApplicationConfig` affect the Openshift resources.
+By adding this dependency, we now have the ability to configure the OpenShift resource generation and application using the usual `application.properties` approach that Quarkus provides.
+The configuration items that are available can be found in: `io.quarkus.kubernetes.deployment.OpenShiftConfig` class.
+Furthermore, the items provided by `io.quarkus.deployment.ApplicationConfig` affect the OpenShift resources.
 
 === Building
 
@@ -76,13 +76,13 @@ To trigger a deployment:
 ./mvnw clean package -Dquarkus.kubernetes.deploy=true
 ----
 
-The command above will trigger a container image build and will apply the generated Openshift resources, right after.
-The generated resources are using Openshift's `DeploymentConfig` that is configured to automatically trigger a redeployment when a change in the `ImageStream` is noticed.
+The command above will trigger a container image build and will apply the generated OpenShift resources, right after.
+The generated resources are using OpenShift's `DeploymentConfig` that is configured to automatically trigger a redeployment when a change in the `ImageStream` is noticed.
 In other words, any container image build after the inital deployment will automatically trigger redeployment, without the need to delete, update or re-apply the generated resources.
 
 === Customizing
 
-All available customization options are available in the link:kubenretes#openshift[Openshift configuration options].
+All available customization options are available in the link:kubenretes#openshift[OpenShift configuration options].
 
 Some examples are provided in the sections below:
 
@@ -158,7 +158,7 @@ quarkus.openshift.env-vars.my-env-var.configmap=my-secret
 
 ==== Mounting volumes
 
-The Openshift extension allows the user to configure both volumes and mounts for the application.
+The OpenShift extension allows the user to configure both volumes and mounts for the application.
 
 Any volume can be mounted with a simple configuration:
 

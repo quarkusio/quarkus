@@ -118,3 +118,10 @@ update_configs:
           dependency_name: "net.revelc.code.formatter:formatter-maven-plugin"
       - match:
           dependency_name: "net.revelc.code:impsort-maven-plugin"
+      # Narayana
+      - match:
+          dependency_name: "org.jboss.narayana.jta:narayana-jta"
+      - match:
+          dependency_name: "org.jboss.narayana.jts:narayana-jts-integration"
+      - match:
+          dependency_name: "org.jboss.narayana.stm:stm"

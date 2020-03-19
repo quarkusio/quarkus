@@ -11,7 +11,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.TemplateHtmlBuilder;
+import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.UnauthorizedException;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -38,6 +42,25 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         if (event.failure() == null) {
             event.response().setStatusCode(event.statusCode());
             event.response().end();
+            return;
+        }
+        //this can happen if there is no auth mechanisms
+        if (event.failure() instanceof UnauthorizedException) {
+            HttpAuthenticator authenticator = event.get(HttpAuthenticator.class.getName());
+            if (authenticator != null) {
+                authenticator.sendChallenge(event, new Runnable() {
+                    @Override
+                    public void run() {
+                        event.response().end();
+                    }
+                });
+            } else {
+                event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code()).end();
+            }
+            return;
+        }
+        if (event.failure() instanceof ForbiddenException) {
+            event.response().setStatusCode(HttpResponseStatus.FORBIDDEN.code()).end();
             return;
         }
         event.response().setStatusCode(500);

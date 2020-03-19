@@ -11,7 +11,6 @@ import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.wildfly.security.WildFlyElytronProvider;
 import org.wildfly.security.auth.principal.NamePrincipal;
 import org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm;
 import org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm;
@@ -23,6 +22,7 @@ import org.wildfly.security.authz.AuthorizationIdentity;
 import org.wildfly.security.authz.MapAttributes;
 import org.wildfly.security.credential.Credential;
 import org.wildfly.security.credential.PasswordCredential;
+import org.wildfly.security.password.WildFlyElytronPasswordProvider;
 import org.wildfly.security.password.interfaces.ClearPassword;
 
 /**
@@ -41,7 +41,7 @@ public class SecurityRealmsTestCase {
                 .setProviders(new Supplier<Provider[]>() {
                     @Override
                     public Provider[] get() {
-                        return new Provider[] { new WildFlyElytronProvider() };
+                        return new Provider[] { new WildFlyElytronPasswordProvider() };
                     }
                 })
                 .build();

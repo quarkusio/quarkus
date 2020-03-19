@@ -17,7 +17,6 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 import org.wildfly.common.iteration.ByteIterator;
-import org.wildfly.security.WildFlyElytronProvider;
 import org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm;
 import org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm;
 import org.wildfly.security.auth.realm.SimpleRealmEntry;
@@ -44,7 +43,7 @@ import io.quarkus.runtime.annotations.Recorder;
 public class ElytronPropertiesFileRecorder {
     static final Logger log = Logger.getLogger(ElytronPropertiesFileRecorder.class);
 
-    private static final Provider[] PROVIDERS = new Provider[] { new WildFlyElytronProvider() };
+    private static final Provider[] PROVIDERS = new Provider[] { new WildFlyElytronPasswordProvider() };
 
     /**
      * Load the user.properties and roles.properties files into the {@linkplain SecurityRealm}

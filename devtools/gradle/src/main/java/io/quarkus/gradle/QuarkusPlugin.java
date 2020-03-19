@@ -153,7 +153,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     }
 
     private void setupTaskDependencies(Project project, Project dep) {
-        project.getLogger().debug("Configuring %s task dependencies on %s tasks", project, dep);
+        project.getLogger().debug("Configuring {} task dependencies on {} tasks", project, dep);
         try {
             final Task jarTask = dep.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
             final Task quarkusBuild = findTask(project.getTasks(), QUARKUS_BUILD_TASK_NAME);
@@ -162,7 +162,7 @@ public class QuarkusPlugin implements Plugin<Project> {
             }
             extension.addProjectDepJarTask(dep, jarTask);
         } catch (UnknownTaskException e) {
-            project.getLogger().debug("Project %s does not include %s task", dep, JavaPlugin.JAR_TASK_NAME, e);
+            project.getLogger().debug("Project {} does not include {} task", dep, JavaPlugin.JAR_TASK_NAME, e);
         }
         for (Map.Entry<String, Project> entry : dep.getChildProjects().entrySet()) {
             configProjectDependency(project, entry.getValue());

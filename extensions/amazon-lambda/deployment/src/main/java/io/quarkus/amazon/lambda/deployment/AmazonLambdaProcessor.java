@@ -50,6 +50,7 @@ public final class AmazonLambdaProcessor {
 
     private static final DotName REQUEST_HANDLER = DotName.createSimple(RequestHandler.class.getName());
     private static final DotName REQUEST_STREAM_HANDLER = DotName.createSimple(RequestStreamHandler.class.getName());
+    private static final DotName SKILL_STREAM_HANDLER = DotName.createSimple("com.amazon.ask.SkillStreamHandler");
 
     private static final DotName NAMED = DotName.createSimple(Named.class.getName());
     private static final Logger log = Logger.getLogger(AmazonLambdaProcessor.class);
@@ -70,11 +71,13 @@ public final class AmazonLambdaProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) throws BuildException {
-        Collection<ClassInfo> allKnownImplementors = combinedIndexBuildItem.getIndex().getAllKnownImplementors(REQUEST_HANDLER);
-        Collection<ClassInfo> allKnownStreamImplementors = combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(REQUEST_STREAM_HANDLER);
 
-        allKnownImplementors.addAll(allKnownStreamImplementors);
+        Collection<ClassInfo> allKnownImplementors = combinedIndexBuildItem.getIndex().getAllKnownImplementors(REQUEST_HANDLER);
+        allKnownImplementors.addAll(combinedIndexBuildItem.getIndex()
+                .getAllKnownImplementors(REQUEST_STREAM_HANDLER));
+        allKnownImplementors.addAll(combinedIndexBuildItem.getIndex()
+                .getAllKnownImplementors(SKILL_STREAM_HANDLER));
+
         if (allKnownImplementors.size() > 0 && providedLambda.isPresent()) {
             throw new BuildException(
                     "Multiple handler classes.  You have a custom handler class and the " + providedLambda.get().getProvider()

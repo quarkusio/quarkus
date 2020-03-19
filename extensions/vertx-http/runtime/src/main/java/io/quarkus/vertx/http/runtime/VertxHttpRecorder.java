@@ -47,6 +47,7 @@ import io.quarkus.vertx.http.runtime.filters.Filters;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -66,6 +67,7 @@ import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PfxOptions;
 import io.vertx.core.net.SocketAddress;
+import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.core.net.impl.VertxHandler;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
@@ -874,8 +876,27 @@ public class VertxHttpRecorder {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
-                event.request().resume();
-                bodyHandler.handle(event);
+                if (!Context.isOnEventLoopThread()) {
+                    ((ConnectionBase) event.request().connection()).channel().eventLoop().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                //this can happen if blocking authentication is involved for get requests
+                                if (!event.request().isEnded()) {
+                                    event.request().resume();
+                                    bodyHandler.handle(event);
+                                } else {
+                                    event.next();
+                                }
+                            } catch (Throwable t) {
+                                event.fail(t);
+                            }
+                        }
+                    });
+                } else {
+                    event.request().resume();
+                    bodyHandler.handle(event);
+                }
             }
         };
     }

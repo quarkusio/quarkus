@@ -13,7 +13,6 @@ import org.jboss.jandex.DotName;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -59,7 +58,6 @@ public final class PanacheResourceProcessor {
 
     @BuildStep
     void build(CombinedIndexBuildItem index,
-            ApplicationIndexBuildItem applicationIndex,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             HibernateEnhancersRegisteredBuildItem hibernateMarker,
             BuildProducer<PanacheEntityClassesBuildItem> entityClasses) throws Exception {
@@ -109,7 +107,7 @@ public final class PanacheResourceProcessor {
         MetamodelInfo<EntityModel<EntityField>> modelInfo = modelEnhancer.getModelInfo();
         if (modelInfo.hasEntities()) {
             PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
-            for (ClassInfo classInfo : applicationIndex.getIndex().getKnownClasses()) {
+            for (ClassInfo classInfo : index.getIndex().getKnownClasses()) {
                 String className = classInfo.name().toString();
                 if (!modelClasses.contains(className)) {
                     transformers.produce(new BytecodeTransformerBuildItem(className, panacheFieldAccessEnhancer));

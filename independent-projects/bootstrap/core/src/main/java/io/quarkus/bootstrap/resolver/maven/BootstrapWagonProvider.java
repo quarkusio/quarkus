@@ -47,7 +47,7 @@ public class BootstrapWagonProvider implements WagonProvider {
 
     private static Class<?> loadClass(String name, String protocol) {
         try {
-            return Thread.currentThread().getContextClassLoader().loadClass(name);
+            return BootstrapWagonProvider.class.getClassLoader().loadClass(name);
         } catch (ClassNotFoundException e) {
             final StringBuilder buf = new StringBuilder();
             buf.append("Failed to locate Wagon implementation ")

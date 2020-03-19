@@ -41,11 +41,19 @@ under the License.
         <include>*</include>
       </includes>
     </fileSet>
+    <fileSet>
+      <directory>src/test/resources</directory>
+      <includes>
+        <include>*</include>
+      </includes>
+    </fileSet>
     <fileSet filtered="true">
       <directory></directory>
       <includes>
         <include>*.sh</include>
         <include>*.json</include>
+        <include>*.gradle</include>
+        <include>gradle.*</include>
         <include>sam.jvm.yaml</include>
         <include>sam.native.yaml</include>
       </includes>

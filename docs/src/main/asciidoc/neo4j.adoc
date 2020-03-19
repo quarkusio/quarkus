@@ -91,7 +91,7 @@ To complete this guide, you need:
 
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * an IDE
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 * Access to a Neo4j Database
 * Optional Docker for your system
 

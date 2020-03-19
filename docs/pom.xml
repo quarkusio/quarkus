@@ -110,6 +110,7 @@
                         <graalvm-version>${graal-sdk.version-for-documentation}</graalvm-version>
                         <graalvm-flavor>${graal-sdk.version-for-documentation}-java11</graalvm-flavor>
                         <restassured-version>${rest-assured.version}</restassured-version>
+                        <maven-version>${proposed-maven-version}</maven-version>
                         <gradle-version>${gradle-wrapper.version}</gradle-version>
                         <keycloak-docker-image>${keycloak.docker.image}</keycloak-docker-image>
                         <!-- Project website home page -->

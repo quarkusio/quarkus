@@ -39,6 +39,9 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
     private static final String JAXB_TRANSIENT_BINARY_NAME = "javax/xml/bind/annotation/XmlTransient";
     private static final String JAXB_TRANSIENT_SIGNATURE = "L" + JAXB_TRANSIENT_BINARY_NAME + ";";
 
+    private static final String JSON_PROPERTY_BINARY_NAME = "com/fasterxml/jackson/annotation/JsonProperty";
+    private static final String JSON_PROPERTY_SIGNATURE = "L" + JSON_PROPERTY_BINARY_NAME + ";";
+
     protected MetamodelType modelInfo;
     protected final ClassInfo panacheEntityBaseClassInfo;
     protected final IndexView indexView;
@@ -101,8 +104,11 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
 
                 @Override
                 public void visitEnd() {
-                    // add the @JaxbTransient property to the field so that Jackson prefers the generated getter
-                    // jsonb will already use the getter so we're good
+                    // Add the @JaxbTransient property to the field so that JAXB prefers the generated getter (otherwise JAXB complains about
+                    // having a field and property both with the same name)
+                    // JSONB will already use the getter so we're good
+                    // Note: we don't need to check if we already have @XmlTransient in the descriptors because if we did, we moved it to the getter
+                    // so we can't have any duplicate
                     super.visitAnnotation(JAXB_TRANSIENT_SIGNATURE, true);
                     super.visitEnd();
                 }
@@ -208,6 +214,11 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                     // Apply JAX-B annotations that are being transferred from the field
                     for (EntityFieldAnnotation anno : field.annotations) {
                         anno.writeToVisitor(mv);
+                    }
+                    // Add an explicit Jackson annotation so that the entire property is not ignored due to having @XmlTransient
+                    // on the field
+                    if (!field.hasAnnotation(JSON_PROPERTY_SIGNATURE)) {
+                        mv.visitAnnotation(JSON_PROPERTY_SIGNATURE, true);
                     }
                     mv.visitEnd();
                 }

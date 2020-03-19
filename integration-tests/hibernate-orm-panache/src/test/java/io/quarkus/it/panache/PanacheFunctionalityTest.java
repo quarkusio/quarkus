@@ -3,6 +3,14 @@ package io.quarkus.it.panache;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.StringWriter;
+
+import javax.json.bind.Jsonb;
+import javax.json.bind.JsonbBuilder;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -90,12 +98,52 @@ public class PanacheFunctionalityTest {
         person.name = "max";
         // do
         ObjectMapper objectMapper = new ObjectMapper();
+        // make sure the Jaxb module is loaded
+        objectMapper.findAndRegisterModules();
         String personAsString = objectMapper.writeValueAsString(person);
         // check 
         // hence no 'persistence'-attribute
         assertEquals(
                 "{\"id\":null,\"name\":\"max\",\"uniqueName\":null,\"address\":null,\"status\":null,\"dogs\":[],\"serialisationTrick\":1}",
                 personAsString);
+    }
+
+    /**
+     * This test is disabled in native mode as there is no interaction with the quarkus integration test endpoint.
+     */
+    @DisabledOnNativeImage
+    @Test
+    public void jaxbDeserializationHasAllFields() throws JsonProcessingException, JAXBException {
+        // set Up
+        Person person = new Person();
+        person.name = "max";
+        // do
+        JAXBContext jaxbContext = JAXBContext.newInstance(Person.class);
+
+        Marshaller marshaller = jaxbContext.createMarshaller();
+        StringWriter sw = new StringWriter();
+        marshaller.marshal(person, sw);
+        assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+                + "<person><name>max</name><serialisationTrick>1</serialisationTrick></person>",
+                sw.toString());
+    }
+
+    /**
+     * This test is disabled in native mode as there is no interaction with the quarkus integration test endpoint.
+     */
+    @DisabledOnNativeImage
+    @Test
+    public void jsonbDeserializationHasAllFields() throws JsonProcessingException {
+        // set Up
+        Person person = new Person();
+        person.name = "max";
+        // do
+
+        Jsonb jsonb = JsonbBuilder.create();
+        String json = jsonb.toJson(person);
+        assertEquals(
+                "{\"dogs\":[],\"name\":\"max\",\"serialisationTrick\":1}",
+                json);
     }
 
     @Test

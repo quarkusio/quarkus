@@ -244,7 +244,7 @@ public class SmallRyeReactiveMessagingProcessor {
             Capabilities capabilities, ReactiveMessagingConfiguration configuration) {
         boolean isMetricEnabled = capabilities.isCapabilityPresent(Capabilities.METRICS) && configuration.metricsEnabled;
         if (!isMetricEnabled) {
-            LOGGER.info("Metric is disabled - vetoing the MetricDecorator");
+            LOGGER.debug("Metric is disabled - vetoing the MetricDecorator");
             // We veto the Metric Decorator
             AnnotationsTransformerBuildItem veto = new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
                 @Override

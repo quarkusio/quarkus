@@ -7,6 +7,7 @@ import io.dekorate.deps.kubernetes.api.builder.Predicate;
 import io.dekorate.deps.kubernetes.api.model.ContainerBuilder;
 import io.dekorate.deps.kubernetes.api.model.ContainerFluent.EnvFromNested;
 import io.dekorate.deps.kubernetes.api.model.ContainerFluent.EnvNested;
+import io.dekorate.deps.kubernetes.api.model.EnvFromSourceBuilder;
 import io.dekorate.deps.kubernetes.api.model.EnvVarBuilder;
 import io.dekorate.deps.kubernetes.api.model.EnvVarFluent.ValueFromNested;
 import io.dekorate.doc.Description;
@@ -29,29 +30,37 @@ public class ApplyEnvVarDecorator extends ApplicationContainerDecorator<Containe
     }
 
     public void andThenVisit(ContainerBuilder builder) {
-        Predicate<EnvVarBuilder> p = new Predicate<EnvVarBuilder>() {
+        Predicate<EnvVarBuilder> matchingEnv = new Predicate<EnvVarBuilder>() {
             public Boolean apply(EnvVarBuilder e) {
                 if (e.getName() != null) {
                     return e.getName().equals(env.getName());
-                } else if (e.getValueFrom() != null && e.getValueFrom().getSecretKeyRef() != null
-                        && e.getValueFrom().getSecretKeyRef().getName() != null) {
-                    return e.getValueFrom().getSecretKeyRef().getName().equals(env.getSecret());
-                } else if (e.getValueFrom() != null && e.getValueFrom().getConfigMapKeyRef() != null
-                        && e.getValueFrom().getConfigMapKeyRef().getName() != null) {
-                    return e.getValueFrom().getConfigMapKeyRef().getName().equals(env.getConfigmap());
                 }
                 return false;
             }
         };
-        builder.removeMatchingFromEnv(p);
+
+        Predicate<EnvFromSourceBuilder> matchingEnvFrom = new Predicate<EnvFromSourceBuilder>() {
+            public Boolean apply(EnvFromSourceBuilder e) {
+                if (e.getSecretRef() != null
+                        && e.getSecretRef().getName() != null) {
+                    return e.getSecretRef().getName().equals(env.getSecret());
+                } else if (e.getConfigMapRef() != null
+                        && e.editConfigMapRef().getName() != null) {
+                    return e.editConfigMapRef().getName().equals(env.getConfigmap());
+                }
+                return false;
+            }
+        };
+
+        builder.removeMatchingFromEnv(matchingEnv);
+        builder.removeMatchingFromEnvFrom(matchingEnvFrom);
 
         if (Strings.isNotNullOrEmpty(this.env.getSecret())) {
             this.populateFromSecret(builder);
         } else if (Strings.isNotNullOrEmpty(this.env.getConfigmap())) {
             this.populateFromConfigMap(builder);
         } else if (Strings.isNotNullOrEmpty(this.env.getField())) {
-            ((ValueFromNested) ((EnvNested) builder.addNewEnv().withName(this.env.getName())).withNewValueFrom()
-                    .withNewFieldRef((String) null, this.env.getField())).endValueFrom();
+            this.populateFromField(builder);
         } else if (Strings.isNotNullOrEmpty(this.env.getName())) {
             ((EnvNested) ((EnvNested) builder.addNewEnv().withName(this.env.getName())).withValue(this.env.getValue()))
                     .endEnv();
@@ -65,7 +74,6 @@ public class ApplyEnvVarDecorator extends ApplicationContainerDecorator<Containe
         } else {
             ((EnvFromNested) builder.addNewEnvFrom().withNewSecretRef(this.env.getSecret(), false)).endEnvFrom();
         }
-
     }
 
     private void populateFromConfigMap(ContainerBuilder builder) {
@@ -75,7 +83,11 @@ public class ApplyEnvVarDecorator extends ApplicationContainerDecorator<Containe
         } else {
             ((EnvFromNested) builder.addNewEnvFrom().withNewConfigMapRef(this.env.getConfigmap(), false)).endEnvFrom();
         }
+    }
 
+    private void populateFromField(ContainerBuilder builder) {
+        ((ValueFromNested) ((EnvNested) builder.addNewEnv().withName(this.env.getName())).withNewValueFrom()
+                .withNewFieldRef((String) null, this.env.getField())).endValueFrom();
     }
 
     public boolean equals(Object o) {

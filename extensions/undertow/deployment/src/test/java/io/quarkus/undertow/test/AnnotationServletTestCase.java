@@ -15,7 +15,7 @@ public class AnnotationServletTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestServlet.class));
+                    .addClasses(TestServlet.class, TestServletSubclass.class, TestGreeter.class));
 
     @Test
     public void testServlet() {
@@ -24,4 +24,10 @@ public class AnnotationServletTestCase {
                 .body(is("test servlet"));
     }
 
+    @Test
+    public void testServletSubclass() {
+        RestAssured.when().get("/test-sub").then()
+                .statusCode(200)
+                .body(is("test servlet"));
+    }
 }

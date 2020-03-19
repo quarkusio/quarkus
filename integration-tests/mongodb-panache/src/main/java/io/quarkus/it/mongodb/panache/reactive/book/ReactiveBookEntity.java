@@ -13,7 +13,7 @@ import io.quarkus.it.mongodb.panache.book.BookDetail;
 import io.quarkus.mongodb.panache.MongoEntity;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
 
-@MongoEntity(collection = "TheBookEntity")
+@MongoEntity(collection = "TheBookEntity", clientName = "cl2")
 public class ReactiveBookEntity extends ReactivePanacheMongoEntity {
     @BsonProperty("bookTitle")
     private String title;

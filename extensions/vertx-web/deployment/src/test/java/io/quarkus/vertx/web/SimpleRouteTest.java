@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.is;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import javax.annotation.security.RolesAllowed;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
@@ -30,8 +31,12 @@ public class SimpleRouteTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(SimpleBean.class,
-                    SimpleEventBusBean.class, SimpleRoutesBean.class, Transformer.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addAsResource("application.properties")
+                    .addAsResource("test-users.properties")
+                    .addAsResource("test-roles.properties")
+                    .addClasses(SimpleBean.class,
+                            SimpleEventBusBean.class, SimpleRoutesBean.class, Transformer.class));
 
     @Test
     public void testSimpleRoute() {
@@ -51,6 +56,13 @@ public class SimpleRouteTest {
         when().get("/request").then().statusCode(200).body(is("HellO!"));
     }
 
+    @Test
+    public void testSecuredRoute() {
+        when().get("/secured").then().statusCode(401);
+        given().auth().basic("bob", "bob").get("/secured").then().statusCode(403);
+        given().auth().basic("alice", "alice").get("/secured").then().statusCode(200);
+    }
+
     static class SimpleBean {
 
         @Inject
@@ -62,6 +74,12 @@ public class SimpleRouteTest {
         void hello(RoutingContext context) {
             String name = context.request().getParam("name");
             context.response().setStatusCode(200).end("Hello " + (name != null ? name : "world") + "!");
+        }
+
+        @Route(path = "/secured")
+        @RolesAllowed("admin") //we are just testing that this is actually denied
+        void secure(RoutingContext context) {
+            context.response().setStatusCode(200).end();
         }
 
         @Route(path = "/rx-hello")

@@ -151,7 +151,6 @@ public class QuarkusDev extends QuarkusTask {
 
     @TaskAction
     public void startDev() {
-
         Project project = getProject();
         QuarkusPluginExtension extension = (QuarkusPluginExtension) project.getExtensions().findByName("quarkus");
 
@@ -434,7 +433,7 @@ public class QuarkusDev extends QuarkusTask {
                 .orElseThrow(() -> new IllegalStateException("Unable to find quarkus-gradle-plugin dependency"));
 
         quarkusDep.getAllModuleArtifacts().stream()
-                .map(ra -> ra.getFile())
+                .map(ResolvedArtifact::getFile)
                 .forEach(f -> addToClassPaths(classPathManifest, context, f));
     }
 

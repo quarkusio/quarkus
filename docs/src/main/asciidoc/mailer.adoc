@@ -17,7 +17,7 @@ To complete this guide, you need:
 * The SMTP hostname, port and credentials, and an email address
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 * GraalVM installed if you want to run in native mode.
 
 == Architecture

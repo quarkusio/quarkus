@@ -33,7 +33,7 @@ To complete this guide, you need:
 
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * an IDE
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 * An AWS Account to access the DynamoDB service
 * Optionally, Docker for your system to run DynamoDB locally for testing purposes
 

@@ -89,7 +89,7 @@ public class DevModeMain implements Closeable {
             if (context.getProjectDir() != null) {
                 bootstrapBuilder.setProjectRoot(context.getProjectDir().toPath());
             } else {
-                bootstrapBuilder.setProjectRoot(new File(".").toPath());
+                bootstrapBuilder.setProjectRoot(Paths.get("").toAbsolutePath().normalize());
             }
             for (int i = 1; i < context.getClassesRoots().size(); ++i) {
                 bootstrapBuilder.addAdditionalApplicationArchive(

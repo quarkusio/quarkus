@@ -30,6 +30,13 @@
                     <exclude>archetype-resources/pom.xml</exclude>
                 </excludes>
             </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>archetype-resources/gradle.properties</include>
+                </includes>
+            </resource>
         </resources>
         <extensions>
             <extension>

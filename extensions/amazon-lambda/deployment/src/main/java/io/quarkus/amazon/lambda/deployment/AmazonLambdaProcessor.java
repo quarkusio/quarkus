@@ -76,7 +76,7 @@ public final class AmazonLambdaProcessor {
         allKnownImplementors.addAll(combinedIndexBuildItem.getIndex()
                 .getAllKnownImplementors(REQUEST_STREAM_HANDLER));
         allKnownImplementors.addAll(combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(SKILL_STREAM_HANDLER));
+                .getAllKnownSubclasses(SKILL_STREAM_HANDLER));
 
         if (allKnownImplementors.size() > 0 && providedLambda.isPresent()) {
             throw new BuildException(
@@ -102,7 +102,7 @@ public final class AmazonLambdaProcessor {
 
             ClassInfo current = info;
             boolean done = false;
-            boolean streamHandler = false;
+            boolean streamHandler = info.superName().equals(SKILL_STREAM_HANDLER) ? true : false;
             while (current != null && !done) {
                 for (MethodInfo method : current.methods()) {
                     if (method.name().equals("handleRequest")) {

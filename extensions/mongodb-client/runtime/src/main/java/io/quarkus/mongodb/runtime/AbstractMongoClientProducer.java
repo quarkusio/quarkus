@@ -207,6 +207,9 @@ public abstract class AbstractMongoClientProducer {
             if (config.connectTimeout.isPresent()) {
                 builder.connectTimeout((int) config.connectTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
             }
+            if (config.readTimeout.isPresent()) {
+                builder.readTimeout((int) config.readTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
+            }
         }
     }
 

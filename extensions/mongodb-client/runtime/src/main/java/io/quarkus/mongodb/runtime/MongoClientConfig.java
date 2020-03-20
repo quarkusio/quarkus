@@ -137,10 +137,10 @@ public class MongoClientConfig {
     public Optional<Duration> connectTimeout;
 
     /**
-     * How long a send or receive on a socket can take before timing out.
+     * How long a socket read can take before timing out.
      */
     @ConfigItem
-    public Optional<Duration> socketTimeout;
+    public Optional<Duration> readTimeout;
 
     /**
      * If connecting with TLS, this option enables insecure TLS connections.

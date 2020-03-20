@@ -1,0 +1,10 @@
+---
+name: "Amazon Alexa"
+metadata:
+  keywords:
+  - "lambda"
+  - "alexa"
+  categories:
+  - "cloud"
+  guide: "https://quarkus.io/guides/amazon-lambda"
+  status: "preview"

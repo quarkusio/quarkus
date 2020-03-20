@@ -2,6 +2,7 @@ package io.quarkus.panache.common;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * <p>
@@ -41,6 +42,8 @@ public class Sort {
     }
 
     public class Column {
+
+        private final Pattern COLUMN_PATTERN = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_]*$");
         private String name;
         private Direction direction;
 
@@ -49,6 +52,9 @@ public class Sort {
         }
 
         public Column(String name, Direction direction) {
+            if (COLUMN_PATTERN.asPredicate().negate().test(name)) {
+                throw new IllegalArgumentException("Column name must match pattern: " + COLUMN_PATTERN.pattern());
+            }
             this.name = name;
             this.direction = direction;
         }

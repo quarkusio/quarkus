@@ -1,5 +1,7 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -8,8 +10,11 @@ import javax.inject.Inject;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
@@ -41,4 +46,15 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
         return OidcTenantConfig.ApplicationType.WEB_APP == tenantContext.oidcConfig.applicationType;
     }
 
+    @Override
+    public Set<Class<? extends AuthenticationRequest>> getCredentialTypes() {
+        return Collections.singleton(TokenAuthenticationRequest.class);
+    }
+
+    @Override
+    public HttpCredentialTransport getCredentialTransport() {
+        //not 100% correct, but enough for now
+        //if OIDC is present we don't really want another bearer mechanism
+        return new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, "bearer");
+    }
 }

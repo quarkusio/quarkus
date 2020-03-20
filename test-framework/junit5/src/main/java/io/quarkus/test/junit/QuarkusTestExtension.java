@@ -346,9 +346,13 @@ public class QuarkusTestExtension
                         Class<?>[] originalParameterTypes = invocationContext.getExecutable().getParameterTypes();
                         List<Class<?>> parameterTypesFromTccl = new ArrayList<>(originalParameterTypes.length);
                         for (Class<?> type : originalParameterTypes) {
-                            parameterTypesFromTccl
-                                    .add(Class.forName(type.getName(), true,
-                                            Thread.currentThread().getContextClassLoader()));
+                            if (type.isPrimitive()) {
+                                parameterTypesFromTccl.add(type);
+                            } else {
+                                parameterTypesFromTccl
+                                        .add(Class.forName(type.getName(), true,
+                                                Thread.currentThread().getContextClassLoader()));
+                            }
                         }
                         newMethod = c.getDeclaredMethod(invocationContext.getExecutable().getName(),
                                 parameterTypesFromTccl.toArray(new Class[0]));

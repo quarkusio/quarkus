@@ -19,4 +19,10 @@ public class ServletConfig {
     @ConfigItem
     Optional<String> contextPath;
 
+    /**
+     * The default charset to use for reading and writing requests
+     */
+    @ConfigItem(defaultValue = "UTF-8")
+    public String defaultCharset;
+
 }

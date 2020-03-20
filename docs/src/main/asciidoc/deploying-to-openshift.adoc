@@ -82,7 +82,7 @@ In other words, any container image build after the inital deployment will autom
 
 === Customizing
 
-All available customization options are available in the link:kubenretes#openshift[OpenShift configuration options].
+All available customization options are available in the link:kubernetes#openshift[OpenShift configuration options].
 
 Some examples are provided in the sections below:
 

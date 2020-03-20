@@ -254,44 +254,55 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        ClassLoaderState state = getState();
-        synchronized (getClassLoadingLock(name)) {
-            Class<?> c = findLoadedClass(name);
-            if (c != null) {
-                return c;
-            }
-            String resourceName = sanitizeName(name).replace(".", "/") + ".class";
-            boolean parentFirst = parentFirst(resourceName, state);
-            if (state.bannedResources.contains(resourceName)) {
+        //even if the thread is interrupted we still want to be able to load classes
+        //if the interrupt bit is set then we clear it and restore it at the end
+        boolean interrupted = Thread.interrupted();
+        try {
+            ClassLoaderState state = getState();
+            synchronized (getClassLoadingLock(name)) {
+                Class<?> c = findLoadedClass(name);
+                if (c != null) {
+                    return c;
+                }
+                String resourceName = sanitizeName(name).replace(".", "/") + ".class";
+                boolean parentFirst = parentFirst(resourceName, state);
+                if (state.bannedResources.contains(resourceName)) {
+                    throw new ClassNotFoundException(name);
+                }
+                if (parentFirst) {
+                    try {
+                        return parent.loadClass(name);
+                    } catch (ClassNotFoundException ignore) {
+                        log.tracef("Class %s not found in parent first load from %s", name, parent);
+                    }
+                }
+                ClassPathElement[] resource = state.loadableResources.get(resourceName);
+                if (resource != null) {
+                    ClassPathElement classPathElement = resource[0];
+                    ClassPathResource classPathElementResource = classPathElement.getResource(resourceName);
+                    if (classPathElementResource != null) { //can happen if the class loader was closed
+                        byte[] data = classPathElementResource.getData();
+                        List<BiFunction<String, ClassVisitor, ClassVisitor>> transformers = bytecodeTransformers.get(name);
+                        if (transformers != null) {
+                            data = handleTransform(name, data, transformers);
+                        }
+                        definePackage(name, classPathElement);
+                        return defineClass(name, data, 0, data.length,
+                                protectionDomains.computeIfAbsent(classPathElement, (ce) -> ce.getProtectionDomain(this)));
+                    }
+                }
+
+                if (!parentFirst) {
+                    return parent.loadClass(name);
+                }
                 throw new ClassNotFoundException(name);
             }
-            if (parentFirst) {
-                try {
-                    return parent.loadClass(name);
-                } catch (ClassNotFoundException ignore) {
-                    log.tracef("Class %s not found in parent first load from %s", name, parent);
-                }
-            }
-            ClassPathElement[] resource = state.loadableResources.get(resourceName);
-            if (resource != null) {
-                ClassPathElement classPathElement = resource[0];
-                ClassPathResource classPathElementResource = classPathElement.getResource(resourceName);
-                if (classPathElementResource != null) { //can happen if the class loader was closed
-                    byte[] data = classPathElementResource.getData();
-                    List<BiFunction<String, ClassVisitor, ClassVisitor>> transformers = bytecodeTransformers.get(name);
-                    if (transformers != null) {
-                        data = handleTransform(name, data, transformers);
-                    }
-                    definePackage(name, classPathElement);
-                    return defineClass(name, data, 0, data.length,
-                            protectionDomains.computeIfAbsent(classPathElement, (ce) -> ce.getProtectionDomain(this)));
-                }
-            }
 
-            if (!parentFirst) {
-                return parent.loadClass(name);
+        } finally {
+            if (interrupted) {
+                //restore interrupt state
+                Thread.currentThread().interrupt();
             }
-            throw new ClassNotFoundException(name);
         }
     }
 

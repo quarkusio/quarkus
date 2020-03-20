@@ -36,6 +36,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.liquibase.runtime.LiquibaseBuildTimeConfig;
 import io.quarkus.liquibase.runtime.LiquibaseProducer;
 import io.quarkus.liquibase.runtime.LiquibaseRecorder;
@@ -54,14 +55,6 @@ class LiquibaseProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(LiquibaseServiceLoader.class);
 
-    /**
-     * The change log parser factory singleton used for the liquibase service classpath scanner
-     */
-    private static final ChangeLogParserFactory CHANGE_LOG_PARSER_FACTORY = ChangeLogParserFactory.getInstance();
-
-    /**
-     * Liquibase build time configuration
-     */
     LiquibaseBuildTimeConfig liquibaseBuildConfig;
 
     @BuildStep
@@ -69,11 +62,14 @@ class LiquibaseProcessor {
         return new CapabilityBuildItem(Capabilities.LIQUIBASE);
     }
 
-    @BuildStep
-    void reflection(BuildProducer<ReflectiveClassBuildItem> reflective,
-            BuildProducer<NativeImageResourceBuildItem> resourceProducer,
-            BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized) {
+    @BuildStep(onlyIf = NativeBuild.class, loadsApplicationClasses = true)
+    void nativeImageConfiguration(
+            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
+            BuildProducer<ReflectiveClassBuildItem> reflective,
+            BuildProducer<NativeImageResourceBuildItem> resource,
+            BuildProducer<GeneratedResourceBuildItem> generatedResource,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitialized,
+            BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
 
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("liquibase.util.StringUtils"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("liquibase.servicelocator.ServiceLocator"));
@@ -113,38 +109,17 @@ class LiquibaseProcessor {
                 liquibase.executor.Executor.class,
                 liquibase.lockservice.LockService.class,
                 liquibase.sqlgenerator.SqlGenerator.class)
-                .forEach(t -> addService(reflective, generatedResourceProducer, resourceProducer, t));
-    }
-
-    @Record(STATIC_INIT)
-    @BuildStep(loadsApplicationClasses = true)
-    void build(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer,
-            BuildProducer<FeatureBuildItem> featureProducer,
-            BuildProducer<NativeImageResourceBuildItem> resourceProducer,
-            BuildProducer<BeanContainerListenerBuildItem> containerListenerProducer,
-            LiquibaseRecorder recorder,
-            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
-            BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItem,
-            BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
-
-        featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.LIQUIBASE));
-
-        AdditionalBeanBuildItem unremovableProducer = AdditionalBeanBuildItem.unremovableOf(LiquibaseProducer.class);
-        additionalBeanProducer.produce(unremovableProducer);
+                .forEach(t -> addService(reflective, generatedResource, resource, t));
 
         Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
                 .map(i -> i.getName())
                 .collect(Collectors.toSet());
-        new LiquibaseDatasourceBeanGenerator(dataSourceNames, generatedBeanBuildItem).createLiquibaseProducerBean();
 
-        containerListenerProducer.produce(
-                new BeanContainerListenerBuildItem(recorder.setLiquibaseBuildConfig(liquibaseBuildConfig)));
-
-        resourceProducer.produce(
+        resource.produce(
                 new NativeImageResourceBuildItem(getChangeLogs(dataSourceNames).toArray(new String[0])));
 
         // liquibase XSD
-        resourceProducer.produce(new NativeImageResourceBuildItem(
+        resource.produce(new NativeImageResourceBuildItem(
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.7.xsd",
@@ -158,19 +133,37 @@ class LiquibaseProcessor {
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("liquibase/i18n/liquibase-core"));
     }
 
-    /**
-     * Handles all the operations that can be recorded in the RUNTIME_INIT execution time phase
-     *
-     * @param recorder Used to set the runtime config
-     * @param liquibaseRuntimeConfig The Liquibase configuration
-     */
+    @Record(STATIC_INIT)
+    @BuildStep(loadsApplicationClasses = true)
+    void build(
+            LiquibaseRecorder recorder,
+            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean,
+            BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
+            BuildProducer<GeneratedBeanBuildItem> generatedBean) {
+
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.LIQUIBASE));
+
+        AdditionalBeanBuildItem unremovableProducer = AdditionalBeanBuildItem.unremovableOf(LiquibaseProducer.class);
+        additionalBean.produce(unremovableProducer);
+
+        Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
+                .map(i -> i.getName())
+                .collect(Collectors.toSet());
+        new LiquibaseDatasourceBeanGenerator(dataSourceNames, generatedBean).createLiquibaseProducerBean();
+
+        beanContainerListener.produce(
+                new BeanContainerListenerBuildItem(recorder.setLiquibaseBuildConfig(liquibaseBuildConfig)));
+    }
+
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     ServiceStartBuildItem configureRuntimeProperties(LiquibaseRecorder recorder,
             LiquibaseRuntimeConfig liquibaseRuntimeConfig,
             BeanContainerBuildItem beanContainer,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
-            BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
+            BuildProducer<JdbcDataSourceSchemaReadyBuildItem> jdbcDataSourceSchemaReady) {
         recorder.configureLiquibaseProperties(liquibaseRuntimeConfig, beanContainer.getValue());
         recorder.doStartActions(liquibaseRuntimeConfig, beanContainer.getValue());
         // once we are done running the migrations, we produce a build item indicating that the
@@ -178,22 +171,18 @@ class LiquibaseProcessor {
         Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
                 .map(i -> i.getName())
                 .collect(Collectors.toSet());
-        schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(dataSourceNames));
+        jdbcDataSourceSchemaReady.produce(new JdbcDataSourceSchemaReadyBuildItem(dataSourceNames));
         return new ServiceStartBuildItem("liquibase");
     }
 
     /**
      * Search for all implementation of the interface {@code className}.
-     * The service interface is add to the reflection.
-     * Each implementation is add to the reflection and add to the
-     * native resource (text file) which contains all the implementation classes.
-     * The native resource name {@link LiquibaseServiceLoader#serviceResourceFile(Class)}
-     * and to the generated text file list which is add to the native image.
-     *
-     * @param reflective the reflective producer
-     * @param generatedResourceProducer the generated resource producer
-     * @param resourceProducer the resource producer
-     * @param className the service class
+     * <p>
+     * The service interface is added to the reflection configuration.
+     * Each implementation is added to the reflection configuration and added to a text file
+     * which contains all the implementation classes.
+     * This text file is added to the native resources and is used to load the implementations
+     * of the service.
      */
     private void addService(BuildProducer<ReflectiveClassBuildItem> reflective,
             BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
@@ -215,11 +204,7 @@ class LiquibaseProcessor {
     }
 
     /**
-     * Add the reflection for the liquibase class interface and all the implementation of the interface
-     *
-     * @param reflective the reflective build producer
-     * @param methods the method flag
-     * @param className the interface class
+     * Add the reflection for the liquibase class interface and all the implementations of the interface
      */
     private void addReflection(BuildProducer<ReflectiveClassBuildItem> reflective, boolean methods, Class<?>... className) {
         for (Class<?> clazz : className) {
@@ -231,48 +216,55 @@ class LiquibaseProcessor {
     }
 
     /**
-     * Collects the configured changeLog file for the default and all named DataSources.
+     * Collect the configured changeLog file for the default and all named datasources.
      * <p>
      * A {@link LinkedHashSet} is used to avoid duplications.
-     *
-     * @param dataSourceInitializedBuildItem {@link DataSourceInitializedBuildItem}
-     * @return {@link Collection} of {@link String}s
      */
     private List<String> getChangeLogs(Collection<String> dataSourceNames) {
-        Collection<String> changeLogs = dataSourceNames.stream()
-                .filter(n -> !DataSourceUtil.isDefault(n))
-                .map(liquibaseBuildConfig::getConfigForDataSourceName)
-                .map(c -> c.changeLog)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        if (dataSourceNames.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         ChangeLogParameters changeLogParameters = new ChangeLogParameters();
         ClassLoaderResourceAccessor classLoaderResourceAccessor = new ClassLoaderResourceAccessor(
                 Thread.currentThread().getContextClassLoader());
 
+        ChangeLogParserFactory changeLogParserFactory = ChangeLogParserFactory.getInstance();
+
         Set<String> resources = new LinkedHashSet<>();
-        for (String tmp : changeLogs) {
-            resources.addAll(findAllChangeLogs(tmp, classLoaderResourceAccessor, changeLogParameters));
-        }
+
+        // default datasource
         if (DataSourceUtil.hasDefault(dataSourceNames)) {
-            resources.addAll(findAllChangeLogs(liquibaseBuildConfig.defaultDataSource.changeLog, classLoaderResourceAccessor,
-                    changeLogParameters));
+            resources.addAll(findAllChangeLogs(liquibaseBuildConfig.defaultDataSource.changeLog, changeLogParserFactory,
+                    classLoaderResourceAccessor, changeLogParameters));
         }
-        LOGGER.debugf("Liquibase changeLogs: " + resources);
+
+        // named datasources
+        Collection<String> namedDataSourceChangeLogs = dataSourceNames.stream()
+                .filter(n -> !DataSourceUtil.isDefault(n))
+                .map(liquibaseBuildConfig::getConfigForDataSourceName)
+                .map(c -> c.changeLog)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        for (String namedDataSourceChangeLog : namedDataSourceChangeLogs) {
+            resources.addAll(
+                    findAllChangeLogs(namedDataSourceChangeLog, changeLogParserFactory, classLoaderResourceAccessor,
+                            changeLogParameters));
+        }
+
+        LOGGER.debugf("Liquibase changeLogs: %s", resources);
+
         return new ArrayList<>(resources);
     }
 
     /**
-     * Finds all changes for the change log file
-     *
-     * @param file the change log file
-     * @param classLoaderResourceAccessor the liquibase class loader resource accessor
-     * @param changeLogParameters the liquibase change log parameters
-     * @return the corresponding list of change log resources.
+     * Finds all resource files for the given change log file
      */
-    private Set<String> findAllChangeLogs(String file, ClassLoaderResourceAccessor classLoaderResourceAccessor,
+    private Set<String> findAllChangeLogs(String file, ChangeLogParserFactory changeLogParserFactory,
+            ClassLoaderResourceAccessor classLoaderResourceAccessor,
             ChangeLogParameters changeLogParameters) {
         try {
-            ChangeLogParser parser = CHANGE_LOG_PARSER_FACTORY.getParser(file, classLoaderResourceAccessor);
+            ChangeLogParser parser = changeLogParserFactory.getParser(file, classLoaderResourceAccessor);
             DatabaseChangeLog changelog = parser.parse(file, changeLogParameters, classLoaderResourceAccessor);
 
             if (changelog != null) {

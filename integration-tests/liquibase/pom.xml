@@ -121,6 +121,7 @@
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
                                     <debugBuildProcess>false</debugBuildProcess>
+                                    <enableReports>true</enableReports>
                                 </configuration>
                             </execution>
                         </executions>

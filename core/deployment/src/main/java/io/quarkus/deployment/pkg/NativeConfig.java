@@ -168,7 +168,7 @@ public class NativeConfig {
     public boolean fullStackTraces;
 
     /**
-     * If reporting on call paths should be enabled
+     * If the reports on call paths and included packages/classes/methods should be generated
      */
     @ConfigItem(defaultValue = "false")
     public boolean enableReports;

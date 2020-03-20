@@ -301,7 +301,8 @@ public class UndertowBuildStep {
             LaunchModeBuildItem launchMode,
             ShutdownContextBuildItem shutdownContext,
             KnownPathsBuildItem knownPaths,
-            HttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
+            HttpBuildTimeConfig httpBuildTimeConfig,
+            ServletConfig servletConfig) throws Exception {
 
         ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(ServletSecurityInfo.class,
                 ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
@@ -315,7 +316,9 @@ public class UndertowBuildStep {
         String contextPath = servletContextPathBuildItem.getServletContextPath();
         RuntimeValue<DeploymentInfo> deployment = recorder.createDeployment("test", knownPaths.knownFiles,
                 knownPaths.knownDirectories,
-                launchMode.getLaunchMode(), shutdownContext, contextPath, httpBuildTimeConfig.rootPath);
+                launchMode.getLaunchMode(), shutdownContext, contextPath, httpBuildTimeConfig.rootPath,
+                servletConfig.defaultCharset, webMetaData.getRequestCharacterEncoding(),
+                webMetaData.getResponseCharacterEncoding());
 
         if (webMetaData.getContextParams() != null) {
             for (ParamValueMetaData i : webMetaData.getContextParams()) {

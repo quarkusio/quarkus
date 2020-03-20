@@ -13,6 +13,8 @@ import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
 @XmlRootElement
@@ -42,7 +44,8 @@ public class Person extends PanacheEntity {
     }
 
     // For JAXB: both getter and setter are required
-    // Here we make sure the field is not used by Hibernate, but the accessor is used by jaxb and jsonb
+    // Here we make sure the field is not used by Hibernate, but the accessor is used by jaxb, jsonb and jackson
+    @JsonProperty
     public int getSerialisationTrick() {
         return ++serialisationTrick;
     }

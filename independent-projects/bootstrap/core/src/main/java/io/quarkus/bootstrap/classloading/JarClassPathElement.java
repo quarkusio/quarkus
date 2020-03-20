@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -76,7 +77,14 @@ public class JarClassPathElement implements ClassPathElement {
                                 @Override
                                 public byte[] apply(JarFile jarFile) {
                                     try {
-                                        return readStreamContents(jarFile.getInputStream(res));
+                                        try {
+                                            return readStreamContents(jarFile.getInputStream(res));
+                                        } catch (InterruptedIOException e) {
+                                            //if we are interrupted reading data we finish the op, then just re-interrupt the thread state
+                                            byte[] bytes = readStreamContents(jarFile.getInputStream(res));
+                                            Thread.currentThread().interrupt();
+                                            return bytes;
+                                        }
                                     } catch (IOException e) {
                                         throw new RuntimeException("Unable to read " + name, e);
                                     }

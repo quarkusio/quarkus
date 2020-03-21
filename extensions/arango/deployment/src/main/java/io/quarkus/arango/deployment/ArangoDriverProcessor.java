@@ -33,8 +33,8 @@ class ArangoDriverProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void configureArangoDriverProducer(ArangoDriverRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
-                                       ArangoConfiguration configuration,
-                                       ShutdownContextBuildItem shutdownContext) {
+            ArangoConfiguration configuration,
+            ShutdownContextBuildItem shutdownContext) {
 
         recorder.configureArangoProducer(beanContainerBuildItem.getValue(), configuration, shutdownContext);
     }

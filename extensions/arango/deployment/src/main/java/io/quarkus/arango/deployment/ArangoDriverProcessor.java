@@ -14,7 +14,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
-class Neo4jDriverProcessor {
+class ArangoDriverProcessor {
 
     @BuildStep
     FeatureBuildItem createFeature(BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {

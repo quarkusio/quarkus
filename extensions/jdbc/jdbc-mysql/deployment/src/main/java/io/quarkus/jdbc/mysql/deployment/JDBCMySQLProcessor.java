@@ -7,12 +7,15 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllTimeZonesBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.jdbc.mysql.runtime.MySQLAgroalConnectionConfigurer;
+import io.quarkus.jdbc.mysql.runtime.MySQLRecorder;
 
 public class JDBCMySQLProcessor {
 
@@ -37,6 +40,12 @@ public class JDBCMySQLProcessor {
                     .setUnremovable()
                     .build());
         }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void abandonedConnectionCleanUp(MySQLRecorder recorder) {
+        recorder.startAbandonedConnectionCleanup();
     }
 
     @BuildStep

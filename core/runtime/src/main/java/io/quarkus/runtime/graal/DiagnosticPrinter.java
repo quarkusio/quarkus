@@ -9,7 +9,6 @@ import org.graalvm.nativeimage.Platforms;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.os.IsDefined;
 import com.oracle.svm.core.posix.headers.Pthread;
 
 /**
@@ -44,7 +43,8 @@ public final class DiagnosticPrinter {
             w.print("prio=");
             w.print(thread.getPriority());
             w.print(" tid=");
-            if ((IsDefined.isLinux() || IsDefined.isDarwin()) && Target_PosixJavaThreads.hasThreadIdentifier(thread)) {
+            if ((Platform.includedIn(Platform.LINUX.class) || Platform.includedIn(Platform.DARWIN.class))
+                    && Target_PosixJavaThreads.hasThreadIdentifier(thread)) {
                 final long nativeId = Target_PosixJavaThreads.getPthreadIdentifier(thread).rawValue();
                 w.print("0x");
                 w.println(Long.toHexString(nativeId));

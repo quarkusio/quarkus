@@ -125,3 +125,8 @@ update_configs:
           dependency_name: "org.jboss.narayana.jts:narayana-jts-integration"
       - match:
           dependency_name: "org.jboss.narayana.stm:stm"
+      #Jandex
+      - match:
+          dependency_name: "org.jboss:jandex"
+      - match:
+          dependency_name: "org.jboss.jandex:jandex-maven-plugin"

@@ -42,7 +42,7 @@ Quarkus offers the ability to automatically generate OpenShift resources based o
 The OpenShift extension is actually a wrapper extension that brings together the link:deploying-to-kubernetes[kubernetes] and link:container-image#s2i[container-image-s2i]
 extensions with sensible defaults so that it's easier for the user to get started with Quarkus on OpenShift.
 
-When we added the `OpenShift` extension to the command line invocation above, the following dependency was added to the `pom.xml`
+When we added the OpenShift extension to the command line invocation above, the following dependency was added to the `pom.xml`
 
 [source,xml]
 ----

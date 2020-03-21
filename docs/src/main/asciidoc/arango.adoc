@@ -1,0 +1,104 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Arango
+:arango_version: 6.2.0
+
+include::./attributes.adoc[]
+:extension-status: preview
+
+https://www.arangodb.com/[ArangoDB] is a free and open-source native multi-model database system developed by ArangoDB GmbH. The database system supports three data models (key/value, documents, graphs) with one database core and a unified query language AQL (ArangoDB Query Language). The query language is declarative and allows the combination of different data access patterns in a single query. ArangoDB is a NoSQL database system but AQL is similar in many ways to SQL.
+
+ArangoDB has been referred to as a universal database but its creators refer to it as a "native multi-model" database to indicate that it was designed specifically to allow key/value, document, and graph data to be stored together and queried with a common language
+
+
+ArangoDB - as the most popular graph database according to DB-Engines ranking - provides a variety of drivers for various languages.
+
+The Quarkus ArangoDB extension is based on the official https://github.com/arangodb/arangodb-java-driver[ArangoDB Java driver].
+The extension provides an instance of the driver configured ready for usage in any Quarkus application.
+
+include::./status-include.adoc[]
+
+== Programming model
+
+The driver and thus the Quarkus extension support three different programming models:
+
+* It can be used synchronously as well as asynchronously. The formerly separate async driver with the same API as the synchronous driver, except that it returned a CompletableFuture<T> instead of the result T directly, was merged into this driver in version 6.2.0. See
+
+=== Setup ArangoDB
+
+The easiest way to start a ArangoDB instance is a locally installed Docker environment.
+
+[source,shell,subs="verbatim,attributes"]
+----
+docker run -e ARANGO_NO_AUTH=1 -p 8529:8529 -d arangodb
+----
+
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: git clone https://github.com/quarkusio/quarkus-quickstarts.git, or download an archive.
+
+The solution is located in the `arango-quickstart` {quickstarts-tree-url}/arango-quickstart[directory].
+It contains a very simple UI to use the JAX-RS resources created here, too.
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=arango-quickstart \
+    -Dextensions="arango,resteasy-jsonb"
+cd arango-quickstart
+----
+
+It generates:
+
+* the Maven structure
+* a landing page accessible on `http://localhost:8080`
+* example `Dockerfile` files for both `native` and `jvm` modes
+* the application configuration file
+
+[source,shell]
+----
+./mvnw quarkus:add-extension -Dextensions="arango"
+----
+
+Otherwise, you can manually add this to the dependencies section of your `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-arango</artifactId>
+</dependency>
+----
+
+== Configuring
+
+The Arango driver can be configured with standard Quarkus properties:
+
+[source]
+.src/main/resources/application.properties
+----
+quarkus.arango.uri = 127.0.0.1:8529,127.0.0.1:8529
+quarkus.arango.user= root
+quarkus.arango.password= somepassword
+----
+
+You'll recognize the authentication here that you passed on to the docker command above.
+
+Having done that, the driver is ready to use, there are however other configuration options, detailed below.
+
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-arango.adoc[opts=optional, leveloffset=+1]

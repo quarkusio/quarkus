@@ -20,9 +20,9 @@ class ArangoDriverProcessor {
     FeatureBuildItem createFeatureItem(BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
 
         // Indicates that this extension would like the SSL support to be enabled
-        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.ARANGO_DB));
+        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.ARANGO));
 
-        return new FeatureBuildItem(FeatureBuildItem.ARANGO_DB);
+        return new FeatureBuildItem(FeatureBuildItem.ARANGO);
     }
 
     @BuildStep

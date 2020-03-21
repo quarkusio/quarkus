@@ -99,6 +99,7 @@
         <module>cache</module>
         <module>qute</module>
         <module>bootstrap-config</module>
+        <module>arango</module>
     </modules>
 
     <build>

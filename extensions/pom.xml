@@ -88,7 +88,7 @@
         <module>kafka-streams</module>
         <module>tika</module>
         <module>neo4j</module>
-        <module>arango-db</module>
+        <module>arango</module>
         <module>mongodb-client</module>
         <module>artemis-core</module>
         <module>artemis-jms</module>

@@ -156,6 +156,7 @@
         <snakeyaml.version>1.25</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <neo4j-java-driver.version>4.0.0</neo4j-java-driver.version>
+        <arangodb-java-driver>6.6.1</arangodb-java-driver>
         <mongo-client.version>3.12.0</mongo-client.version>
         <mongo-reactivestreams-client.version>1.13.0</mongo-reactivestreams-client.version>
         <mongo-crypt.version>1.0.0</mongo-crypt.version>
@@ -808,6 +809,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-neo4j</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-arango</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -2245,6 +2251,11 @@
                 <groupId>org.neo4j.driver</groupId>
                 <artifactId>neo4j-java-driver</artifactId>
                 <version>${neo4j-java-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.arangodb</groupId>
+                <artifactId>arangodb-java-driver</artifactId>
+                <version>${arangodb-java-driver}</version>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>

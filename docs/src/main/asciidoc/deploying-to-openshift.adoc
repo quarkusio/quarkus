@@ -39,10 +39,10 @@ cd openshift-quickstart
 === OpenShift
 
 Quarkus offers the ability to automatically generate OpenShift resources based on sane default and user supplied configuration.
-The OpenShift extension is actually a wrapper extension that brings together the link:kubernetes[kubernetes] and link:container-image-s2i[container-image-s2i]
+The OpenShift extension is actually a wrapper extension that brings together the link:deploying-to-kubernetes[kubernetes] and link:container-image#s2i[container-image-s2i]
 extensions with sensible defaults so that it's easier for the user to get started with Quarkus on OpenShift.
 
-When we added the `openshift` extension to the command line invocation above, the following dependency was added to the `pom.xml`
+When we added the OpenShift extension to the command line invocation above, the following dependency was added to the `pom.xml`
 
 [source,xml]
 ----
@@ -78,11 +78,11 @@ To trigger a deployment:
 
 The command above will trigger a container image build and will apply the generated OpenShift resources, right after.
 The generated resources are using OpenShift's `DeploymentConfig` that is configured to automatically trigger a redeployment when a change in the `ImageStream` is noticed.
-In other words, any container image build after the inital deployment will automatically trigger redeployment, without the need to delete, update or re-apply the generated resources.
+In other words, any container image build after the initial deployment will automatically trigger redeployment, without the need to delete, update or re-apply the generated resources.
 
 === Customizing
 
-All available customization options are available in the link:kubernetes#openshift[OpenShift configuration options].
+All available customization options are available in the link:deploying-to-kubernetes#openshift[OpenShift configuration options].
 
 Some examples are provided in the sections below:
 
@@ -95,7 +95,7 @@ To expose a `Route` for the Quarkus application:
 quarkus.openshift.expose=true
 ----
 
-Tip: You don't necesserily need to add this property in the `application.properties`. You can pass it as a command line argument:
+Tip: You don't necessarily need to add this property in the `application.properties`. You can pass it as a command line argument:
 
 [source, subs=attributes+]
 ----
@@ -167,7 +167,7 @@ Any volume can be mounted with a simple configuration:
 quarkus.openshift.mounts.my-volume.path=/where/to/mount
 ----
 
-This will add a mount to my pod for volume `my-voume` to path `/where/to/mount`
+This will add a mount to my pod for volume `my-volume` to path `/where/to/mount`
 
 The volumes themselves can be configured as shown in the sections below:
 

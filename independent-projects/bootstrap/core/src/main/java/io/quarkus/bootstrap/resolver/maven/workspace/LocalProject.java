@@ -15,6 +15,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -30,8 +32,14 @@ public class LocalProject {
 
     private static final String PROJECT_BASEDIR = "${project.basedir}";
     private static final String POM_XML = "pom.xml";
-    private static final String REVISION = "revision";
-    static final String REVISION_EXPR = "${revision}";
+
+    /**
+     * Matches specific properties that are allowed to be used in a version as per Maven spec.
+     *
+     * @see <a href="https://maven.apache.org/maven-ci-friendly.html">Maven CI Friendly Versions (maven.apache.org)</a>
+     */
+    private static final Pattern UNRESOLVED_VERSION_PATTERN = Pattern
+            .compile(Pattern.quote("${") + "(revision|sha1|changelist)" + Pattern.quote("}"));
 
     public static LocalProject load(Path path) throws BootstrapException {
         return load(path, true);
@@ -44,8 +52,8 @@ public class LocalProject {
         }
         try {
             return new LocalProject(readModel(cpd.resolve(POM_XML)), null);
-        } catch (UnresolvedRevisionException e) {
-            // if the revision couldn't be resolved, we are trying to resolve it from the workspace
+        } catch (UnresolvedVersionException e) {
+            // if a property in the version couldn't be resolved, we are trying to resolve it from the workspace
             return loadWorkspace(cpd);
         }
     }
@@ -146,36 +154,49 @@ public class LocalProject {
         this.groupId = ModelUtils.getGroupId(rawModel);
         this.artifactId = rawModel.getArtifactId();
 
-        String version = ModelUtils.getVersion(rawModel);
-        final boolean revisionVersion;
-        if (revisionVersion = REVISION_EXPR.equals(version)) {
-            version = resolveRevision(rawModel);
-        }
+        final String rawVersion = ModelUtils.getVersion(rawModel);
+        final boolean rawVersionIsUnresolved = isUnresolvedVersion(rawVersion);
+        String resolvedVersion = rawVersionIsUnresolved ? resolveVersion(rawVersion, rawModel) : rawVersion;
 
         if (workspace != null) {
             workspace.addProject(this, rawModel.getPomFile().lastModified());
-            if (revisionVersion) {
-                if (version == null) {
-                    version = workspace.getRevision();
-                    if (version == null) {
-                        throw UnresolvedRevisionException.forGa(groupId, artifactId);
+            if (rawVersionIsUnresolved) {
+                if (resolvedVersion == null) {
+                    resolvedVersion = workspace.getResolvedVersion();
+                    if (resolvedVersion == null) {
+                        throw UnresolvedVersionException.forGa(groupId, artifactId, rawVersion);
                     }
                 } else {
-                    workspace.setRevision(version);
+                    workspace.setResolvedVersion(resolvedVersion);
                 }
             }
-        } else if (version == null) {
-            throw UnresolvedRevisionException.forGa(groupId, artifactId);
+        } else if (resolvedVersion == null) {
+            throw UnresolvedVersionException.forGa(groupId, artifactId, rawVersion);
         }
 
-        this.version = version;
+        this.version = resolvedVersion;
     }
 
-    private static String resolveRevision(Model rawModel) {
+    static boolean isUnresolvedVersion(String version) {
+        return UNRESOLVED_VERSION_PATTERN.matcher(version).find();
+    }
+
+    private static String resolveVersion(String rawVersion, Model rawModel) {
         final Map<String, String> props = new HashMap<>();
         rawModel.getProperties().entrySet().forEach(e -> props.put(e.getKey().toString(), e.getValue().toString()));
         System.getProperties().entrySet().forEach(e -> props.put(e.getKey().toString(), e.getValue().toString()));
-        return props.get(REVISION);
+
+        Matcher matcher = UNRESOLVED_VERSION_PATTERN.matcher(rawVersion);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            final String resolved = props.get(matcher.group(1));
+            if (resolved == null) {
+                return null;
+            }
+            matcher.appendReplacement(sb, resolved);
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
     }
 
     public String getGroupId() {

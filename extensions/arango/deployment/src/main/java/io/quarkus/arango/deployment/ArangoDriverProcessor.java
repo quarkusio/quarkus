@@ -17,7 +17,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 class ArangoDriverProcessor {
 
     @BuildStep
-    FeatureBuildItem createFeature(BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
+    FeatureBuildItem createFeatureItem(BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
 
         // Indicates that this extension would like the SSL support to be enabled
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.ARANGO_DB));
@@ -26,21 +26,21 @@ class ArangoDriverProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem createDriverProducer() {
+    AdditionalBeanBuildItem createArangoDriverProducer() {
         return AdditionalBeanBuildItem.unremovableOf(ArangoDriverProducer.class);
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void configureDriverProducer(ArangoDriverRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
-                                 ArangoConfiguration configuration,
-                                 ShutdownContextBuildItem shutdownContext) {
+    void configureArangoDriverProducer(ArangoDriverRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
+                                       ArangoConfiguration configuration,
+                                       ShutdownContextBuildItem shutdownContext) {
 
         recorder.configureArangoProducer(beanContainerBuildItem.getValue(), configuration, shutdownContext);
     }
 
     @BuildStep
-    HealthBuildItem addHealthCheck(ArangoDBBuildTimeConfig buildTimeConfig) {
+    HealthBuildItem addArangoHealthCheck(ArangoDBBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.arango.runtime.health.ArangoHealthCheck",
                 buildTimeConfig.healthEnabled, "arango");
     }

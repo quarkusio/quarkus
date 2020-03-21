@@ -41,7 +41,7 @@ cd kubernetes-quickstart
 Quarkus offers the ability to automatically generate Kubernetes resources based on sane defaults and user supplied configuration. The implementation that takes care
 of generating the actual Kubernetes resources is provided by https://github.com/dekorateio/dekorate/[dekorate]. Currently it supports the generation of resources for
 vanilla Kubernetes and OpenShift. Furthermore, Quarkus can deploy the application to a target Kubernetes cluster by applying the generated manifests to the target cluster's API Server.
-Finally, when either the `quarkus-container-image-jib` or `quarkus-container-container-image-docker` extensions are present (see the link:container-image[container image guide] for more details),
+Finally, when either the `quarkus-container-image-jib` or `quarkus-container-image-docker` extensions are present (see the link:container-image[container image guide] for more details),
 Quarkus has the ability to create a container image and push it to a registry *before* deploying the application to the Kubernetes cluster.
 
 When we executed the previous command, the following dependencies were added to the `pom.xml`

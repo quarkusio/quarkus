@@ -58,13 +58,13 @@ public final class QualifierConfigurator<C extends Consumer<AnnotationInstance>>
         } else if (val instanceof Integer) {
             return AnnotationValue.createIntegerValue(name, (int) val);
         } else if (val instanceof Long) {
-            return AnnotationValue.createLongalue(name, (long) val);
+            return AnnotationValue.createLongValue(name, (long) val);
         } else if (val instanceof Byte) {
             return AnnotationValue.createByteValue(name, (byte) val);
         } else if (val instanceof Float) {
             return AnnotationValue.createFloatValue(name, (float) val);
         } else if (val instanceof Double) {
-            return AnnotationValue.createDouleValue(name, (double) val);
+            return AnnotationValue.createDoubleValue(name, (double) val);
         } else if (val instanceof Short) {
             return AnnotationValue.createShortValue(name, (short) val);
         } else if (val instanceof Boolean) {

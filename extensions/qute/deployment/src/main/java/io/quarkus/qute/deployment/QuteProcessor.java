@@ -739,7 +739,7 @@ public class QuteProcessor {
             @Override
             public boolean test(Check check) {
                 // RawString
-                if (check.isProperty() && check.classNameEquals(STRING) && check.nameIn("raw", "safe")) {
+                if (check.isProperty() && check.nameIn("raw", "safe")) {
                     return true;
                 }
                 // Elvis and ternary operators
@@ -967,7 +967,7 @@ public class QuteProcessor {
                 }
             }
             DotName superName = clazz.superName();
-            if (superName == null || DotNames.OBJECT.equals(superName)) {
+            if (superName == null) {
                 clazz = null;
             } else {
                 clazz = index.getClassByName(clazz.superName());

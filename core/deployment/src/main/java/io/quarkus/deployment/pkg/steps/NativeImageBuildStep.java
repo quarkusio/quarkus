@@ -338,7 +338,8 @@ public class NativeImageBuildStep {
             if (exitCode != 0) {
                 throw imageGenerationFailed(exitCode, command);
             }
-            if (IS_WINDOWS) { //once image is generated it gets added .exe on windows
+            if (IS_WINDOWS && !(nativeConfig.containerRuntime.isPresent() || nativeConfig.containerBuild)) {
+                //once image is generated it gets added .exe on Windows
                 executableName = executableName + ".exe";
             }
             Path generatedImage = outputDir.resolve(executableName);

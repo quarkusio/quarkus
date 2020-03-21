@@ -1,5 +1,7 @@
 package io.quarkus.qute.deployment;
 
+import java.util.Objects;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 
@@ -28,7 +30,7 @@ public final class ImplicitValueResolverBuildItem extends MultiBuildItem {
     }
 
     public ImplicitValueResolverBuildItem(ClassInfo clazz, AnnotationInstance templateData) {
-        this.clazz = clazz;
+        this.clazz = Objects.requireNonNull(clazz);
         this.templateData = templateData;
     }
 

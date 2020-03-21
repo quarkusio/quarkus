@@ -15,7 +15,7 @@
 
     <properties>
         <aesh.version>1.11</aesh.version>
-        <jandex.version>2.1.2.Final</jandex.version>
+        <jandex.version>2.1.3.Final</jandex.version>
         <resteasy.version>4.5.2.Final</resteasy.version>
         <opentracing.version>0.31.0</opentracing.version>
         <opentracing-jaxrs.version>0.4.1</opentracing-jaxrs.version>
@@ -114,19 +114,19 @@
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
-        <rest-assured.version>4.2.0</rest-assured.version>
+        <rest-assured.version>4.3.0</rest-assured.version>
         <junit.jupiter.version>5.6.0</junit.jupiter.version>
         <testng.version>6.14.2</testng.version>
         <assertj.version>3.15.0</assertj.version>
         <json-smart.version>2.3</json-smart.version>
-        <infinispan.version>10.1.2.Final</infinispan.version>
-        <infinispan.protostream.version>4.3.1.Final</infinispan.protostream.version>
+        <infinispan.version>10.1.5.Final</infinispan.version>
+        <infinispan.protostream.version>4.3.2.Final</infinispan.protostream.version>
         <caffeine.version>2.8.0</caffeine.version>
         <netty.version>4.1.45.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <test-containers.version>1.12.4</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
-        <mutiny.version>0.4.0</mutiny.version>
+        <mutiny.version>0.4.2</mutiny.version>
         <axle-client.version>0.0.13</axle-client.version>
         <mutiny-client.version>0.0.13</mutiny-client.version>
         <kafka2.version>2.4.0</kafka2.version>
@@ -142,7 +142,7 @@
         <awssdk.version>2.10.70</awssdk.version>
         <azure-functions-java-library.version>1.3.0</azure-functions-java-library.version>
         <kotlin.version>1.3.61</kotlin.version>
-        <dekorate.version>0.11.2</dekorate.version>
+        <dekorate.version>0.11.3</dekorate.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <jline.version>2.14.6</jline.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>
@@ -150,7 +150,7 @@
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.4</jboss-logmanager.version>
         <jgit.version>5.6.1.202002131546-r</jgit.version>
-        <flyway.version>6.3.0</flyway.version>
+        <flyway.version>6.3.1</flyway.version>
         <yasson.version>1.0.6</yasson.version>
         <liquibase.version>3.8.7</liquibase.version>
         <snakeyaml.version>1.25</snakeyaml.version>
@@ -176,7 +176,7 @@
         <quarkus-spring-api.version>5.2.Final</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.Final</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.2.Final</quarkus-spring-security-api.version>
-        <quarkus-spring-boot-api.version>2.1.Final</quarkus-spring-boot-api.version>
+        <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
         <mvel2.version>2.4.4.Final</mvel2.version>
         <htmlunit.version>2.36.0</htmlunit.version>
         <mockito.version>3.3.0</mockito.version>
@@ -189,7 +189,7 @@
         <jzlib.version>1.1.1</jzlib.version>
         <checker-qual.version>2.5.2</checker-qual.version>
         <error-prone-annotations.version>2.2.0</error-prone-annotations.version>
-        <jib-core.version>0.13.0</jib-core.version>
+        <jib-core.version>0.13.1</jib-core.version>
         <google-http-client.version>1.34.0</google-http-client.version>
     </properties>
 
@@ -896,6 +896,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-amazon-lambda</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-qute</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -988,6 +993,12 @@
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>caffeine</artifactId>
                 <version>${caffeine.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.checkerframework</groupId>
+                        <artifactId>checker-qual</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.github.tomakehurst</groupId>
@@ -2490,6 +2501,11 @@
             </dependency>
             <dependency>
                 <groupId>org.infinispan</groupId>
+                <artifactId>infinispan-commons-test</artifactId>
+                <version>${infinispan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.infinispan</groupId>
                 <artifactId>infinispan-core</artifactId>
                 <version>${infinispan.version}</version>
                 <type>test-jar</type>
@@ -2842,6 +2858,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-boot-orm-api</artifactId>
+                <version>${quarkus-spring-boot-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-spring-data-commons-api</artifactId>
                 <version>${quarkus-spring-data-api.version}</version>
             </dependency>
@@ -2862,7 +2883,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-spring-boot-api</artifactId>
+                <artifactId>quarkus-spring-boot-properties-api</artifactId>
                 <version>${quarkus-spring-boot-api.version}</version>
             </dependency>
 
@@ -2919,6 +2940,10 @@
                     <exclusion>
                         <groupId>commons-logging</groupId>
                         <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.checkerframework</groupId>
+                        <artifactId>checker-qual</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

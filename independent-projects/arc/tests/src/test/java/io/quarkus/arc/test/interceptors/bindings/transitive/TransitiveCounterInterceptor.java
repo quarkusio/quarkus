@@ -7,9 +7,7 @@ import javax.interceptor.InvocationContext;
 
 @Interceptor
 @Priority(2)
-@CounterBinding
-@AnotherAnnotation // this is a transitive binding which brings in CounterBinding + SomeBinding as well
-
+@SomeAnnotation // this is transitive binding, it also brings in @CounterBinding
 public class TransitiveCounterInterceptor {
 
     public static Integer timesInvoked = 0;

@@ -11,7 +11,11 @@ import java.util.Map;
  *
  * These can also be loaded via a service loader mechanism, however if a service
  * loader is used it should not also be annotated as this will result in it being executed
- * twice
+ * twice.
+ *
+ * Note that when using these with QuarkusUnitTest (rather than @QuarkusTest) they run
+ * before the ClassLoader has been setup. This means injection may not work
+ * as expected.
  */
 public interface QuarkusTestResourceLifecycleManager {
 

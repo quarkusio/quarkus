@@ -20,7 +20,7 @@ To complete this guide, you need:
 * less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.5.3+
+* Apache Maven {maven-version}
 
 == Solution
 
@@ -567,8 +567,17 @@ public interface MovieRepository extends CrudRepository<Movie, Long> {
     Slice<Movie> orderByTitleLength(Pageable pageable);
 }
 ----
-
 All methods that are annotated with `@Modifying` will automatically be annotated with `@Transactional`.
+
+==== Naming Strategies
+
+Hibernate ORM maps property names using a physical naming strategy and an implicit naming strategy. If you wish to use Spring Boot's default naming strategies, the following properties need to be set:
+
+[source, properties]
+----
+quarkus.hibernate-orm.physical-naming-strategy=org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+quarkus.hibernate-orm.implicit-naming-strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+----
 
 ==== More examples
 

@@ -2,7 +2,6 @@ package io.quarkus.container.image.jib.deployment;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -39,8 +38,5 @@ public class JibConfig {
      * Environment variables to add to the container image
      */
     @ConfigItem
-    public Optional<Map<String, String>> environmentVariables;
-
-    //TODO: do the following config options belong in ContainerImageConfig ?
-
+    public Map<String, String> environmentVariables;
 }

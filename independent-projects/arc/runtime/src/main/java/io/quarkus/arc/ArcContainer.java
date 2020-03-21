@@ -75,6 +75,11 @@ public interface ArcContainer {
     /**
      * Returns a supplier that can be used to create new instances, or null if no matching bean can be found.
      *
+     * Note that if there are multiple sub classes of the given type this will return the exact match. This means
+     * that this can be used to directly instantiate superclasses of other beans without causing problems.
+     *
+     * see https://github.com/quarkusio/quarkus/issues/3369
+     *
      * @param type
      * @param qualifiers
      * @param <T>

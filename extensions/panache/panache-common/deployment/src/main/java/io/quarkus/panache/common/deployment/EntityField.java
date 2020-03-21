@@ -33,6 +33,15 @@ public class EntityField {
         return JavaBeanUtil.getSetterName(name);
     }
 
+    public boolean hasAnnotation(String descriptor) {
+        for (EntityFieldAnnotation fieldAnnotation : annotations) {
+            if (fieldAnnotation.descriptor.equals(descriptor)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static class EntityFieldAnnotation {
         public final String descriptor;
         public final Map<String, Object> attributes = new HashMap<>(2);

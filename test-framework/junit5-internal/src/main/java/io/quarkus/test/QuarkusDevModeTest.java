@@ -123,7 +123,7 @@ public class QuarkusDevModeTest
 
                 @Override
                 public void close() throws Throwable {
-                    manager.stop();
+                    manager.close();
                 }
             });
         }

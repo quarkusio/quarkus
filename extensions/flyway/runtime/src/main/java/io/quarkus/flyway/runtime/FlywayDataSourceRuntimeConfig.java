@@ -1,6 +1,8 @@
 package io.quarkus.flyway.runtime;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -105,4 +107,10 @@ public final class FlywayDataSourceRuntimeConfig {
      */
     @ConfigItem
     public boolean outOfOrder;
+
+    /**
+     * Sets the placeholders to replace in SQL migration scripts.
+     */
+    @ConfigItem
+    public Map<String, String> placeholders = Collections.emptyMap();
 }

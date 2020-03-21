@@ -1,7 +1,5 @@
 package io.quarkus.it.main;
 
-import javax.inject.Inject;
-
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.Liveness;
 import org.junit.jupiter.api.Test;
@@ -16,9 +14,11 @@ import io.quarkus.test.junit.QuarkusTest;
         "in native " + "tests - see https://quarkus.io/guides/getting-started-testing#native-executable-testing")
 public class HealthCheckTestCase {
 
-    @Inject
-    @Liveness
-    SimpleHealthCheck simpleHealthCheck;
+    final SimpleHealthCheck simpleHealthCheck;
+
+    public HealthCheckTestCase(@Liveness SimpleHealthCheck simpleHealthCheck) {
+        this.simpleHealthCheck = simpleHealthCheck;
+    }
 
     @Test
     public void testInjection() {

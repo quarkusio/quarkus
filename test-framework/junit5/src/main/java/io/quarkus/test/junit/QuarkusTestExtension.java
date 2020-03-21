@@ -10,6 +10,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,9 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolutionException;
+import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 import org.opentest4j.TestAbortedException;
@@ -34,6 +38,7 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
+import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
@@ -49,7 +54,8 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 //todo: share common core with QuarkusUnitTest
 public class QuarkusTestExtension
-        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor, AfterAllCallback {
+        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, InvocationInterceptor, AfterAllCallback,
+        ParameterResolver {
 
     protected static final String TEST_LOCATION = "test-location";
     private static boolean failedBoot;
@@ -61,8 +67,8 @@ public class QuarkusTestExtension
     private static Path testClassLocation;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
 
-    private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
-
+    private ExtensionState doJavaStart(ExtensionContext context) throws Throwable {
+        Closeable testResourceManager = null;
         try {
             final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
 
@@ -83,17 +89,26 @@ public class QuarkusTestExtension
                     .setProjectRoot(new File("").toPath())
                     .build()
                     .bootstrap();
+
             Timing.staticInitStarted(curatedApplication.getBaseRuntimeClassLoader());
             AugmentAction augmentAction = curatedApplication.createAugmentor(TestBuildChainFunction.class.getName(),
                     Collections.singletonMap(TEST_LOCATION, testClassLocation));
-            runningQuarkusApplication = augmentAction.createInitialRuntimeApplication().run();
+            StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
+            Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
+
+            //must be done after the TCCL has been set
+            testResourceManager = (Closeable) startupAction.getClassLoader().loadClass(TestResourceManager.class.getName())
+                    .getConstructor(Class.class)
+                    .newInstance(context.getRequiredTestClass());
+            testResourceManager.getClass().getMethod("start").invoke(testResourceManager);
+
+            runningQuarkusApplication = startupAction.run();
 
             ConfigProviderResolver.setInstance(new RunningAppConfigResolver(runningQuarkusApplication));
 
-            Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
-
             System.setProperty("test.url", TestHTTPResourceManager.getUri(runningQuarkusApplication));
 
+            Closeable tm = testResourceManager;
             Closeable shutdownTask = new Closeable() {
                 @Override
                 public void close() throws IOException {
@@ -102,8 +117,12 @@ public class QuarkusTestExtension
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     } finally {
-                        while (!shutdownTasks.isEmpty()) {
-                            shutdownTasks.pop().run();
+                        try {
+                            while (!shutdownTasks.isEmpty()) {
+                                shutdownTasks.pop().run();
+                            }
+                        } finally {
+                            tm.close();
                         }
                     }
                 }
@@ -121,8 +140,16 @@ public class QuarkusTestExtension
                 }
             }, "Quarkus Test Cleanup Shutdown task"));
             return new ExtensionState(testResourceManager, shutdownTask);
-        } catch (java.util.ServiceConfigurationError | Exception e) {
-            throw new RuntimeException(e);
+        } catch (Throwable e) {
+
+            try {
+                if (testResourceManager != null) {
+                    testResourceManager.close();
+                }
+            } catch (Exception ex) {
+                e.addSuppressed(ex);
+            }
+            throw e;
         }
     }
 
@@ -174,18 +201,11 @@ public class QuarkusTestExtension
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
         if (state == null && !failedBoot) {
             PropertyTestUtil.setLogFileProperty();
-            TestResourceManager testResourceManager = new TestResourceManager(extensionContext.getRequiredTestClass());
             try {
-                testResourceManager.start();
-                state = doJavaStart(extensionContext, testResourceManager);
+                state = doJavaStart(extensionContext);
                 store.put(ExtensionState.class.getName(), state);
 
             } catch (Throwable e) {
-                try {
-                    testResourceManager.stop();
-                } catch (Exception ex) {
-                    e.addSuppressed(ex);
-                }
                 failedBoot = true;
                 firstException = e;
             }
@@ -231,9 +251,15 @@ public class QuarkusTestExtension
         }
         T result;
         ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
         try {
-            Thread.currentThread().setContextClassLoader(extensionContext.getRequiredTestClass().getClassLoader());
+            Thread.currentThread().setContextClassLoader(requiredTestClass.getClassLoader());
             result = invocation.proceed();
+        } catch (NullPointerException e) {
+            throw new RuntimeException(
+                    "When using constructor injection in a test, the only legal operation is to assign the constructor values to fields. Offending class is "
+                            + requiredTestClass,
+                    e);
         } finally {
             Thread.currentThread().setContextClassLoader(old);
         }
@@ -254,7 +280,8 @@ public class QuarkusTestExtension
 
             Class<?> resM = Thread.currentThread().getContextClassLoader().loadClass(TestHTTPResourceManager.class.getName());
             resM.getDeclaredMethod("inject", Object.class).invoke(null, actualTestInstance);
-            state.testResourceManager.inject(actualTestInstance);
+            state.testResourceManager.getClass().getMethod("inject", Object.class).invoke(state.testResourceManager,
+                    actualTestInstance);
         } catch (Exception e) {
             throw new TestInstantiationException("Failed to create test instance", e);
         }
@@ -326,8 +353,19 @@ public class QuarkusTestExtension
             while (c != Object.class) {
                 if (c.getName().equals(invocationContext.getExecutable().getDeclaringClass().getName())) {
                     try {
+                        Class<?>[] originalParameterTypes = invocationContext.getExecutable().getParameterTypes();
+                        List<Class<?>> parameterTypesFromTccl = new ArrayList<>(originalParameterTypes.length);
+                        for (Class<?> type : originalParameterTypes) {
+                            if (type.isPrimitive()) {
+                                parameterTypesFromTccl.add(type);
+                            } else {
+                                parameterTypesFromTccl
+                                        .add(Class.forName(type.getName(), true,
+                                                Thread.currentThread().getContextClassLoader()));
+                            }
+                        }
                         newMethod = c.getDeclaredMethod(invocationContext.getExecutable().getName(),
-                                invocationContext.getExecutable().getParameterTypes());
+                                parameterTypesFromTccl.toArray(new Class[0]));
                         break;
                     } catch (NoSuchMethodException e) {
                         //ignore
@@ -339,7 +377,23 @@ public class QuarkusTestExtension
                 throw new RuntimeException("Could not find method " + invocationContext.getExecutable() + " on test class");
             }
             newMethod.setAccessible(true);
-            newMethod.invoke(actualTestInstance, invocationContext.getArguments().toArray());
+
+            // the arguments were not loaded from TCCL so we need to try and "convert" if possible
+            // most of the time this won't be possible or necessary, but for the widely used enum case we need to do it
+            // this is a total hack, but...
+            List<Object> originalArguments = invocationContext.getArguments();
+            List<Object> argumentsFromTccl = new ArrayList<>();
+            for (Object arg : originalArguments) {
+                if (arg != null && arg.getClass().isEnum()) {
+                    argumentsFromTccl.add(Enum.valueOf((Class<Enum>) Class.forName(arg.getClass().getName(), false,
+                            Thread.currentThread().getContextClassLoader()), arg.toString()));
+                } else {
+                    // we can't do anything but hope for the best...
+                    argumentsFromTccl.add(arg);
+                }
+            }
+
+            newMethod.invoke(actualTestInstance, argumentsFromTccl.toArray(new Object[0]));
         } catch (InvocationTargetException e) {
             throw e.getCause();
         } catch (IllegalAccessException | ClassNotFoundException e) {
@@ -354,12 +408,51 @@ public class QuarkusTestExtension
         }
     }
 
+    /**
+     * Return true if we need a parameter for constructor injection
+     */
+    @Override
+    public boolean supportsParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+            throws ParameterResolutionException {
+        return parameterContext.getDeclaringExecutable() instanceof Constructor;
+    }
+
+    /**
+     * We don't actually have to resolve the parameter (thus the default values in the implementation)
+     * since the class instance that is passed to JUnit isn't really used.
+     * The actual test instance that is used is the one that is pulled from Arc, which of course will already have its
+     * constructor parameters properly resolved
+     */
+    @Override
+    public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
+            throws ParameterResolutionException {
+        String className = parameterContext.getParameter().getType().getName();
+        switch (className) {
+            case "boolean":
+                return false;
+            case "byte":
+            case "short":
+            case "int":
+                return 0;
+            case "long":
+                return 0L;
+            case "float":
+                return 0.0f;
+            case "double":
+                return 0.0d;
+            case "char":
+                return '\u0000';
+            default:
+                return null;
+        }
+    }
+
     class ExtensionState implements ExtensionContext.Store.CloseableResource {
 
-        private final TestResourceManager testResourceManager;
+        private final Closeable testResourceManager;
         private final Closeable resource;
 
-        ExtensionState(TestResourceManager testResourceManager, Closeable resource) {
+        ExtensionState(Closeable testResourceManager, Closeable resource) {
             this.testResourceManager = testResourceManager;
             this.resource = resource;
         }
@@ -372,7 +465,7 @@ public class QuarkusTestExtension
                 if (QuarkusTestExtension.this.originalCl != null) {
                     setCCL(QuarkusTestExtension.this.originalCl);
                 }
-                testResourceManager.stop();
+                testResourceManager.close();
             }
         }
     }

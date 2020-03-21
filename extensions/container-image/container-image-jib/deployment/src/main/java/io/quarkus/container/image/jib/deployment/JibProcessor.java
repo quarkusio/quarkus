@@ -203,7 +203,7 @@ public class JibProcessor {
             }
 
             return javaContainerBuilder.toContainerBuilder()
-                    .setEnvironment(jibConfig.environmentVariables.orElse(Collections.emptyMap()))
+                    .setEnvironment(jibConfig.environmentVariables)
                     .setCreationTime(Instant.now());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -226,7 +226,7 @@ public class JibProcessor {
                             .build())
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
-                    .setEnvironment(jibConfig.environmentVariables.orElse(Collections.emptyMap()))
+                    .setEnvironment(jibConfig.environmentVariables)
                     .setCreationTime(Instant.now());
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);

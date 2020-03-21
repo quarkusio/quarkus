@@ -218,6 +218,7 @@ This will log every request using the standard Quarkus logging infrastructure un
 
 You can customize the category like this:
 
+
 [source]
 ----
 access-log(format='common', category='my.own.category')

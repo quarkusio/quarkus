@@ -14,21 +14,21 @@ import org.jboss.logging.Logger;
 /**
  * The liquibase service class loader for native image.
  *
- * The liquibase has own implementation of the class-path scanner to load the Services (Interface implementation).
- * For this we generated txt files (list of implementation classes) at build time which are used in the native run time.
+ * The liquibase extension has its own implementation of the class-path scanner to load the Services (Interface implementation).
+ * For this we generate .txt files with the list of implementation classes at build time which are used in the native runtime.
  */
 public class LiquibaseServiceLoader {
 
     private static final Logger LOGGER = Logger.getLogger(LiquibaseServiceLoader.class);
 
     /**
-     * File prefix with the service implementation classes list. It is generated dynamically in the Liquibase Quarkus Processor
+     * File prefix with the service implementation classes list. It is generated dynamically in the Liquibase Quarkus Processor.
      */
     private final static String SERVICES_IMPL = "META-INF/liquibase/";
 
     /**
      * The service implementation classes list resource name
-     * 
+     *
      * @param requiredInterface the required interface
      * @return the resource file in the class-path
      */
@@ -46,14 +46,14 @@ public class LiquibaseServiceLoader {
     public static List<Class<?>> findClassesImpl(Class<?> requiredInterface) {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         String resourceName = serviceResourceFile(requiredInterface);
-        LOGGER.debug("Liquibase service resource file: " + resourceName);
+        LOGGER.debugf("Liquibase service resource file: %s", resourceName);
         try (InputStream resource = classLoader.getResourceAsStream(resourceName);
                 BufferedReader reader = new BufferedReader(
                         new InputStreamReader(Objects.requireNonNull(resource), StandardCharsets.UTF_8))) {
 
             return reader.lines().map(className -> {
                 try {
-                    LOGGER.debug("Loading liquibase class: " + className);
+                    LOGGER.debugf("Loading liquibase class: %s", className);
                     return Class.forName(className);
                 } catch (ClassNotFoundException ex) {
                     throw new IllegalStateException(ex);

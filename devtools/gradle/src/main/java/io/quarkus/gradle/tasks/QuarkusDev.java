@@ -151,7 +151,6 @@ public class QuarkusDev extends QuarkusTask {
 
     @TaskAction
     public void startDev() {
-
         Project project = getProject();
         QuarkusPluginExtension extension = (QuarkusPluginExtension) project.getExtensions().findByName("quarkus");
 
@@ -199,14 +198,14 @@ public class QuarkusDev extends QuarkusTask {
                     System.err.println("Port 5005 in use, not starting in debug mode");
                 } catch (IOException e) {
                     args.add("-Xdebug");
-                    args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=" + debugSuspend);
+                    args.add("-Xrunjdwp:transport=dt_socket,address=0.0.0.0:5005,server=y,suspend=" + debugSuspend);
                 }
             } else if (debug.toLowerCase().equals("client")) {
                 args.add("-Xdebug");
                 args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=" + debugSuspend);
             } else if (debug.toLowerCase().equals("true") || debug.isEmpty()) {
                 args.add("-Xdebug");
-                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=y,suspend=" + debugSuspend);
+                args.add("-Xrunjdwp:transport=dt_socket,address=0.0.0.0:5005,server=y,suspend=" + debugSuspend);
             } else if (!debug.toLowerCase().equals("false")) {
                 try {
                     int port = Integer.parseInt(debug);
@@ -214,7 +213,7 @@ public class QuarkusDev extends QuarkusTask {
                         throw new GradleException("The specified debug port must be greater than 0");
                     }
                     args.add("-Xdebug");
-                    args.add("-Xrunjdwp:transport=dt_socket,address=" + port + ",server=y,suspend=" + debugSuspend);
+                    args.add("-Xrunjdwp:transport=dt_socket,address=0.0.0.0:" + port + ",server=y,suspend=" + debugSuspend);
                 } catch (NumberFormatException e) {
                     throw new GradleException(
                             "Invalid value for debug parameter: " + debug + " must be true|false|client|{port}");
@@ -271,9 +270,6 @@ public class QuarkusDev extends QuarkusTask {
                     continue;
                 }
 
-                final AppArtifact appArtifact = AppModelGradleResolver.toAppArtifact(dependency);
-                final AppArtifactKey key = new AppArtifactKey(appArtifact.getGroupId(), appArtifact.getArtifactId());
-                projectDependencies.add(key);
                 Project dependencyProject = project.getRootProject()
                         .findProject(((ProjectComponentIdentifier) componentId).getProjectPath());
                 JavaPluginConvention javaConvention = dependencyProject.getConvention().findPlugin(JavaPluginConvention.class);
@@ -286,7 +282,12 @@ public class QuarkusDev extends QuarkusTask {
                 Set<String> sourcePaths = new HashSet<>();
 
                 for (File sourceDir : mainSourceSet.getAllJava().getSrcDirs()) {
-                    sourcePaths.add(sourceDir.getAbsolutePath());
+                    if (sourceDir.exists()) {
+                        sourcePaths.add(sourceDir.getAbsolutePath());
+                    }
+                }
+                if (sourcePaths.isEmpty()) {
+                    continue;
                 }
 
                 String resourcePaths = mainSourceSet.getResources().getSourceDirectories().getSingleFile().getAbsolutePath(); //TODO: multiple resource directories
@@ -299,6 +300,10 @@ public class QuarkusDev extends QuarkusTask {
                         resourcePaths);
 
                 context.getModules().add(wsModuleInfo);
+
+                final AppArtifact appArtifact = AppModelGradleResolver.toAppArtifact(dependency);
+                final AppArtifactKey key = new AppArtifactKey(appArtifact.getGroupId(), appArtifact.getArtifactId());
+                projectDependencies.add(key);
             }
 
             for (AppDependency appDependency : appModel.getFullDeploymentDeps()) {
@@ -428,7 +433,7 @@ public class QuarkusDev extends QuarkusTask {
                 .orElseThrow(() -> new IllegalStateException("Unable to find quarkus-gradle-plugin dependency"));
 
         quarkusDep.getAllModuleArtifacts().stream()
-                .map(ra -> ra.getFile())
+                .map(ResolvedArtifact::getFile)
                 .forEach(f -> addToClassPaths(classPathManifest, context, f));
     }
 

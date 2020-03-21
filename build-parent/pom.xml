@@ -283,6 +283,18 @@
                                             <exclude>org.slf4j:slf4j-log4j12</exclude>
                                             <exclude>org.slf4j:slf4j-log4j13</exclude>
                                             <exclude>org.osgi:org.osgi.annotation.versioning</exclude>
+                                            <!-- Ban Spring Dependencies (since we have our own jars)-->
+                                            <exclude>org.springframework:spring-core</exclude>
+                                            <exclude>org.springframework:spring-beans</exclude>
+                                            <exclude>org.springframework:spring-context</exclude>
+                                            <exclude>org.springframework:spring-web</exclude>
+                                            <exclude>org.springframework:spring-webmvc</exclude>
+                                            <exclude>org.springframework.data:spring-data-jpa</exclude>
+                                            <exclude>org.springframework.data:spring-data-commons</exclude>
+                                            <exclude>org.springframework.security:spring-security-core</exclude>
+                                            <exclude>org.springframework.boot:spring-boot</exclude>
+                                            <!-- Ban checker-qual, we don't use Checker Framework -->
+                                            <exclude>org.checkerframework:checker-qual</exclude>
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->

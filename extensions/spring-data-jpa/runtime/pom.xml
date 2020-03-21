@@ -35,6 +35,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-spring-core-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-spring-boot-orm-api</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -42,6 +46,12 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <excludedArtifacts>
+                        <excludedArtifact>org.springframework.data:spring-data-jpa</excludedArtifact>
+                        <excludedArtifact>org.springframework.data:spring-data-commons</excludedArtifact>
+                    </excludedArtifacts>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

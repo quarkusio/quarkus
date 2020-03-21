@@ -49,74 +49,8 @@ First, you need to add the datasource config to the `{config-file}` file
 in order to allow Flyway to manage the schema.
 Also, you can customize the Flyway behaviour by using the following properties:
 
-`quarkus.flyway.migrate-at-start`::
-**true** to execute Flyway automatically when the application starts, **false** otherwise. +
-**default:** false
+include::{generated-dir}/config/quarkus-flyway.adoc[opts=optional, leveloffset=+1]
 
-`quarkus.flyway.validate-on-migrate`::
-**true** to validate the applied migrations against the available ones, **false** otherwise. +
-**default:** true
-
-`quarkus.flyway.clean-at-start`::
-**true** to execute Flyway clean command automatically when the application starts, **false** otherwise. +
-**default:** false
-
-`quarkus.flyway.locations`::
-Comma-separated list of locations to scan recursively for migrations. The location type is determined by its prefix.
-Unprefixed locations or locations starting with classpath: point to a package on the classpath and may contain both SQL
-and Java-based migrations.
-Locations starting with filesystem: point to a directory on the filesystem, may only contain SQL migrations and are only
-scanned recursively down non-hidden directories. +
-**default:** classpath:db/migration
-
-`quarkus.flyway.connect-retries`::
-The maximum number of retries when attempting to connect to the database. After each failed attempt, Flyway will wait 1
-second before attempting to connect again, up to the maximum number of times specified by connect-retries. +
-**default:** 0
-
-`quarkus.flyway.schemas`::
-Comma-separated case-sensitive list of schemas managed by Flyway.
-The first schema in the list will be automatically set as the default one during the migration.
-It will also be the one containing the schema history table. +
-**default:** <none>
-
-`quarkus.flyway.table`::
-The name of Flyway's schema history table.
-By default (single-schema mode) the schema history table is placed in the default schema for the connection provided by
-the datasource.
-When the quarkus.flyway.schemas property is set (multi-schema mode), the schema history table is placed in the first schema of
-the list. +
-**default:** flyway_schema_history
-
-`quarkus.flyway.sql-migration-prefix`::
-The file name prefix for versioned SQL migrations.
-Versioned SQL migrations have the following file name structure: prefixVERSIONseparatorDESCRIPTIONsuffix , which using
-the defaults translates to V1.1__My_description.sql +
-**default:** V
-
-`quarkus.flyway.repeatable-sql-migration-prefix`::
-The file name prefix for repeatable SQL migrations.
-Repeatable SQL migrations have the following file name structure: prefixSeparatorDESCRIPTIONsuffix , which using the
-defaults translates to R__My_description.sql +
-**default:** R
-
-`quarkus.flyway.baseline-on-migrate`::
-Whether to automatically call baseline when migrate is executed against a non-empty schema with no metadata table.
-This schema will then be baselined with the *baseline-version* before executing the migrations.
-Only migrations above *baseline-version* will then be applied.
-This is useful for initial Flyway production deployments on projects with an existing DB. +
-+
-Be careful when enabling this as it removes the safety net that ensures Flyway does not
-migrate the wrong database in case of a configuration mistake! +
-**default:** false
-
-`quarkus.flyway.baseline-version`::
-The version to tag an existing schema with when executing baseline +
-**default:** 1
-
-`quarkus.flyway.baseline-description`::
-The description to tag an existing schema with when executing baseline +
-**default:** '<< Flyway Baseline >>'
 
 The following is an example for the `{config-file}` file:
 

@@ -3,6 +3,7 @@ package io.quarkus.maven;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.model.Resource;
@@ -120,8 +121,8 @@ public class GenerateConfigMojo extends AbstractMojo {
                     name = "application.properties.example";
                 }
                 Path configFile = new File(target, name).toPath();
-                GenerateConfigTask generateConfigTask = new GenerateConfigTask(configFile);
-                generateConfigTask.run(curatedApplication);
+                curatedApplication.runInAugmentClassLoader(GenerateConfigTask.class.getName(),
+                        Collections.singletonMap(GenerateConfigTask.CONFIG_FILE, configFile));
 
             } catch (Exception e) {
                 throw new MojoExecutionException("Failed to generate config file", e);

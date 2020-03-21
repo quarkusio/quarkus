@@ -18,7 +18,7 @@ public class ContextPathTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestServlet.class)
+                    .addClasses(TestServlet.class, TestGreeter.class)
                     .addAsResource(new StringAsset("quarkus.servlet.context-path=" + CONTEXT_PATH), "application.properties"));
 
     @Test

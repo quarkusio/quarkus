@@ -43,10 +43,23 @@ enum BuiltinBean {
                 ctx.injectionPoint, ctx.annotationLiterals);
         ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
                 ctx.reflectionRegistration);
+        ResultHandle beanHandle;
+        switch (ctx.targetInfo.kind()) {
+            case OBSERVER:
+                // For observers the first argument is always the declaring bean
+                beanHandle = ctx.constructor.invokeInterfaceMethod(
+                        MethodDescriptors.SUPPLIER_GET, ctx.constructor.getMethodParam(0));
+                break;
+            case BEAN:
+                beanHandle = ctx.constructor.getThis();
+                break;
+            default:
+                throw new IllegalStateException("Unsupported target info: " + ctx.targetInfo);
+        }
         ResultHandle instanceProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(InstanceProvider.class, java.lang.reflect.Type.class, Set.class,
                         InjectableBean.class, Set.class, Member.class, int.class),
-                parameterizedType, qualifiers, ctx.constructor.getThis(), annotationsHandle, javaMemberHandle,
+                parameterizedType, qualifiers, beanHandle, annotationsHandle, javaMemberHandle,
                 ctx.constructor.load(ctx.injectionPoint.getPosition()));
         ResultHandle instanceProviderSupplier = ctx.constructor.newInstance(
                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, instanceProvider);

@@ -179,7 +179,7 @@
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
         <mvel2.version>2.4.4.Final</mvel2.version>
         <htmlunit.version>2.36.0</htmlunit.version>
-        <mockito.version>3.3.0</mockito.version>
+        <mockito.version>3.3.3</mockito.version>
         <jna.version>5.3.1</jna.version>
         <antlr.version>4.7.2</antlr.version>
         <quarkus-security.version>1.0.1.Final</quarkus-security.version>

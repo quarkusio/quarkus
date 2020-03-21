@@ -1,15 +1,15 @@
 package io.quarkus.arango.runtime;
 
-import com.arangodb.ArangoDB;
-
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
+import com.arangodb.ArangoDB;
+
 @ApplicationScoped
 public class ArangoDriverProducer {
 
-    private volatile ArangoDB driver;
+    private ArangoDB driver;
 
     void initialize(ArangoDB driver) {
         this.driver = driver;

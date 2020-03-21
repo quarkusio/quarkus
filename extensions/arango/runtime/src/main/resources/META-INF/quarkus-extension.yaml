@@ -1,0 +1,12 @@
+---
+name: "Arango client"
+metadata:
+  keywords:
+  - "arango"
+  - "graph"
+  - "nosql"
+  - "datastore"
+  guide: "https://quarkus.io/guides/arango"
+  categories:
+  - "data"
+  status: "preview"

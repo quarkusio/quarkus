@@ -29,8 +29,8 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
     private long lastModified;
     private int id = 1;
 
-    // value of ${revision} property
-    private String revision;
+    // value of the resolved version in case the raw version contains a property like ${revision} (see "Maven CI Friendly Versions")
+    private String resolvedVersion;
 
     protected void addProject(LocalProject project, long lastModified) {
         projects.put(project.getKey(), project);
@@ -86,8 +86,8 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
         final LocalProject lp = getProject(artifact.getGroupId(), artifact.getArtifactId());
         if (lp == null
                 || !lp.getVersion().equals(artifact.getVersion())
-                        && !(LocalProject.REVISION_EXPR.equals(artifact.getVersion())
-                                && lp.getVersion().equals(revision))) {
+                        && !(LocalProject.isUnresolvedVersion(artifact.getVersion())
+                                && lp.getVersion().equals(resolvedVersion))) {
             return null;
         }
         if (!Objects.equals(artifact.getClassifier(), lp.getAppArtifact().getClassifier())) {
@@ -131,11 +131,11 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
         return lastFindVersions = Collections.singletonList(artifact.getVersion());
     }
 
-    public String getRevision() {
-        return revision;
+    public String getResolvedVersion() {
+        return resolvedVersion;
     }
 
-    void setRevision(String revision) {
-        this.revision = revision;
+    void setResolvedVersion(String resolvedVersion) {
+        this.resolvedVersion = resolvedVersion;
     }
 }

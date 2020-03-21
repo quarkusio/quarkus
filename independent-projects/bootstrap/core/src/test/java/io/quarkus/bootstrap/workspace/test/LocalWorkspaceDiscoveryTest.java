@@ -8,20 +8,25 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
 import java.io.File;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Parent;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -41,9 +46,13 @@ public class LocalWorkspaceDiscoveryTest {
 
     protected static Path workDir;
 
+    private static Properties systemPropertiesBackup;
+
     @BeforeAll
     public static void setup() throws Exception {
         workDir = IoUtils.createRandomTmpDir();
+
+        systemPropertiesBackup = (Properties) System.getProperties().clone();
 
         final Parent parent = new Parent();
         parent.setGroupId(MvnProjectBuilder.DEFAULT_GROUP_ID);
@@ -95,6 +104,13 @@ public class LocalWorkspaceDiscoveryTest {
         MvnProjectBuilder.forArtifact("independent")
                 .addDependency(newDependency("root-module-with-parent"))
                 .build(workDir.resolve("root").resolve("independent"));
+    }
+
+    @AfterEach
+    public void restoreSystemProperties() {
+        if (systemPropertiesBackup != null) {
+            System.setProperties(systemPropertiesBackup);
+        }
     }
 
     @AfterAll
@@ -224,49 +240,84 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     @Test
-    public void testRevisionProperty() throws Exception {
-        final URL module1Url = Thread.currentThread().getContextClassLoader().getResource("workspace-revision/root/module1");
-        assertNotNull(module1Url);
-        final Path module1Dir = Paths.get(module1Url.toURI());
-        assertTrue(Files.exists(module1Dir));
-
-        final LocalProject module1 = LocalProject.load(module1Dir);
-
-        assertEquals("1.2.3", module1.getVersion());
-        assertNotNull(module1.getWorkspace()); // the revision must have been resolved from the workspace
-
-        final File root = module1.getWorkspace()
-                .findArtifact(new DefaultArtifact(module1.getGroupId(), "root", null, "pom", "${revision}"));
-        assertNotNull(root);
-        assertTrue(root.exists());
-        final URL rootPomUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-revision/root/pom.xml");
-        assertEquals(new File(rootPomUrl.toURI()), root);
+    public void testVersionRevisionProperty() throws Exception {
+        testMavenCiFriendlyVersion("${revision}", "workspace-revision", "1.2.3", true);
     }
 
     @Test
-    public void testRevisionPropertyOverridenWithSystemProperty() throws Exception {
-        final URL module1Url = Thread.currentThread().getContextClassLoader().getResource("workspace-revision/root/module1");
+    public void testVersionRevisionPropertyOverridenWithSystemProperty() throws Exception {
+        final String expectedResolvedVersion = "build123";
+        System.setProperty("revision", expectedResolvedVersion);
+
+        testMavenCiFriendlyVersion("${revision}", "workspace-revision", expectedResolvedVersion, false);
+    }
+
+    @Test
+    public void testVersionSha1Property() throws Exception {
+        testMavenCiFriendlyVersion("${sha1}", "workspace-sha1", "1.2.3", true);
+    }
+
+    @Test
+    public void testVersionSha1PropertyOverridenWithSystemProperty() throws Exception {
+        final String expectedResolvedVersion = "build123";
+        System.setProperty("sha1", expectedResolvedVersion);
+
+        testMavenCiFriendlyVersion("${sha1}", "workspace-sha1", expectedResolvedVersion, false);
+    }
+
+    @Test
+    public void testVersionChangelistProperty() throws Exception {
+        testMavenCiFriendlyVersion("${changelist}", "workspace-changelist", "1.2.3", true);
+    }
+
+    @Test
+    public void testVersionChangelistPropertyOverridenWithSystemProperty() throws Exception {
+        final String expectedResolvedVersion = "build123";
+        System.setProperty("changelist", expectedResolvedVersion);
+
+        testMavenCiFriendlyVersion("${changelist}", "workspace-changelist", expectedResolvedVersion, false);
+    }
+
+    @Test
+    public void testVersionMultipleProperties() throws Exception {
+        testMavenCiFriendlyVersion("${revision}${sha1}${changelist}", "workspace-multiple", "1.2.3", true);
+    }
+
+    @Test
+    public void testVersionMultiplePropertiesOverridenWithSystemProperty() throws Exception {
+        final String expectedResolvedVersion = "build123";
+        System.setProperty("revision", "build");
+        System.setProperty("sha1", "12");
+        System.setProperty("changelist", "3");
+
+        testMavenCiFriendlyVersion("${revision}${sha1}${changelist}", "workspace-multiple", expectedResolvedVersion, false);
+    }
+
+    private void testMavenCiFriendlyVersion(String placeholder, String testResourceDirName, String expectedResolvedVersion,
+            boolean resolvesFromWorkspace) throws BootstrapException, URISyntaxException {
+        final URL module1Url = Thread.currentThread().getContextClassLoader()
+                .getResource(testResourceDirName + "/root/module1");
         assertNotNull(module1Url);
         final Path module1Dir = Paths.get(module1Url.toURI());
         assertTrue(Files.exists(module1Dir));
 
-        final String revisionProp = "revision";
-        final String originalRevision = System.getProperty(revisionProp);
-        System.setProperty(revisionProp, "build123");
-
         final LocalProject module1 = LocalProject.load(module1Dir);
 
-        if (originalRevision != null) {
-            System.setProperty(revisionProp, originalRevision);
+        assertEquals(expectedResolvedVersion, module1.getVersion());
+        if (resolvesFromWorkspace) {
+            assertNotNull(module1.getWorkspace()); // the property must have been resolved from the workspace
+        } else {
+            assertNull(module1.getWorkspace()); // the workspace was not necessary to resolve the property
         }
-        assertEquals("build123", module1.getVersion());
-        assertNull(module1.getWorkspace()); // the workspace was not necessary to resolve the revision
 
-        final File root = LocalProject.loadWorkspace(module1Dir).getWorkspace()
-                .findArtifact(new DefaultArtifact(module1.getGroupId(), "root", null, "pom", "${revision}"));
+        final LocalWorkspace localWorkspace = resolvesFromWorkspace ? module1.getWorkspace()
+                : LocalProject.loadWorkspace(module1Dir).getWorkspace();
+        final File root = localWorkspace
+                .findArtifact(new DefaultArtifact(module1.getGroupId(), "root", null, "pom", placeholder));
         assertNotNull(root);
         assertTrue(root.exists());
-        final URL rootPomUrl = Thread.currentThread().getContextClassLoader().getResource("workspace-revision/root/pom.xml");
+        final URL rootPomUrl = Thread.currentThread().getContextClassLoader()
+                .getResource(testResourceDirName + "/root/pom.xml");
         assertEquals(new File(rootPomUrl.toURI()), root);
     }
 

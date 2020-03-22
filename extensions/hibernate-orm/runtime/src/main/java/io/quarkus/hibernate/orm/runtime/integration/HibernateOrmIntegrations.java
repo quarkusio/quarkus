@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.function.BiConsumer;
 
 import org.hibernate.boot.Metadata;
-import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.spi.BootstrapContext;
 
 public class HibernateOrmIntegrations {
@@ -25,7 +24,6 @@ public class HibernateOrmIntegrations {
     public static void onMetadataInitialized(Metadata metadata, BootstrapContext bootstrapContext,
             BiConsumer<String, Object> propertyCollector) {
         for (HibernateOrmIntegrationListener listener : LISTENERS) {
-            ClassLoaderService cls = bootstrapContext.getServiceRegistry().getService(ClassLoaderService.class);
             listener.onMetadataInitialized(metadata, bootstrapContext, propertyCollector);
         }
     }

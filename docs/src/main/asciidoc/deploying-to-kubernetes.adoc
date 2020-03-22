@@ -537,7 +537,7 @@ If you need to generate resources for both platforms (vanilla Kubernetes and Ope
 quarkus.kubernetes.deployment-target=kubernetes, openshift
 ----
 
-NOTE: Quarkus also provides the link:openshift[OpenShift] extension. This extension is basically wrapper around the Kubernetes extension and
+NOTE: Quarkus also provides the link:deploying-to-openshift[OpenShift] extension. This extension is basically a wrapper around the Kubernetes extension and
 relieves OpenShift users of the necessity of setting the `deployment-target` property to `openshift`
 
 The OpenShift resources can be customized in a similar approach with Kubernetes.

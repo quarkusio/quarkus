@@ -13,6 +13,8 @@ import javax.ws.rs.core.MediaType;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationVersion;
 
+import io.quarkus.flyway.FlywayDataSource;
+
 @Path("/")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -20,12 +22,25 @@ public class FlywayFunctionalityResource {
     @Inject
     Flyway flyway;
 
+    @Inject
+    @FlywayDataSource("second-datasource")
+    Flyway flyway2;
+
     @GET
     @Path("migrate")
     public String doMigrateAuto() {
         flyway.migrate();
         MigrationVersion version = Objects.requireNonNull(flyway.info().current().getVersion(),
                 "Version is null! Migration was not applied");
+        return version.toString();
+    }
+
+    @GET
+    @Path("multiple-flyway-migratation")
+    public String doMigratationOfSecondDataSource() {
+        flyway2.migrate();
+        MigrationVersion version = Objects.requireNonNull(flyway2.info().current().getVersion(),
+                "Version is null! Migration was not applied for second datasource");
         return version.toString();
     }
 

@@ -19,6 +19,12 @@ public class FlywayFunctionalityTest {
     }
 
     @Test
+    @DisplayName("Migrates a schema correctly using second instance of Flyway")
+    public void testMultipleFlywayQuarkusFunctionality() {
+        when().get("/flyway/multiple-flyway-migratation").then().body(is("1.0.0"));
+    }
+
+    @Test
     @DisplayName("Returns current placeholders")
     public void testPlaceholders() {
         when().get("/flyway/placeholders").then().body("foo", is("bar"));

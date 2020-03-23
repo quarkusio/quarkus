@@ -51,6 +51,9 @@
         <module>resteasy-mutiny</module>
         <module>resteasy-qute</module>
         <module>rest-client</module>
+        <module>rest-client-jackson</module>
+        <module>rest-client-jsonb</module>
+        <module>rest-client-jaxb</module>
         <module>smallrye-openapi-common</module>
         <module>smallrye-openapi</module>
         <module>swagger-ui</module>

@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-resteasy-common</artifactId>
     <name>Quarkus - RESTEasy - Common - Runtime</name>
-    <description>REST framework implementing JAX-RS and more</description>
+    <description>Components common to the RESTEasy server and the REST Client</description>
     <dependencies>
         <dependency>
             <groupId>org.graalvm.nativeimage</groupId>
@@ -45,6 +45,16 @@
         <dependency>
             <groupId>com.sun.activation</groupId>
             <artifactId>jakarta.activation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.json.bind</groupId>
+            <artifactId>jakarta.json.bind-api</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

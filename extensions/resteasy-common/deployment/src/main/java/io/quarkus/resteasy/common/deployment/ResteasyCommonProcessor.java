@@ -38,8 +38,11 @@ import org.jboss.resteasy.plugins.providers.StringTextStar;
 import org.jboss.resteasy.plugins.providers.sse.SseConstants;
 import org.jboss.resteasy.spi.InjectorFactory;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -57,6 +60,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
 
 public class ResteasyCommonProcessor {
+
     private static final Logger LOGGER = Logger.getLogger(ResteasyCommonProcessor.class.getName());
 
     private static final ProviderDiscoverer[] PROVIDER_DISCOVERERS = {
@@ -68,6 +72,13 @@ public class ResteasyCommonProcessor {
             new ProviderDiscoverer(ResteasyDotNames.POST, true, true),
             new ProviderDiscoverer(ResteasyDotNames.PUT, true, false)
     };
+
+    private static final DotName QUARKUS_OBJECT_MAPPER_CONTEXT_RESOLVER = DotName
+            .createSimple("io.quarkus.resteasy.common.runtime.jackson.QuarkusObjectMapperContextResolver");
+    private static final DotName OBJECT_MAPPER = DotName.createSimple("com.fasterxml.jackson.databind.ObjectMapper");
+    private static final DotName QUARKUS_JSONB_CONTEXT_RESOLVER = DotName
+            .createSimple("io.quarkus.resteasy.common.runtime.jsonb.QuarkusJsonbContextResolver");
+    private static final DotName JSONB = DotName.createSimple("javax.json.bind.Jsonb");
 
     private ResteasyCommonConfig resteasyCommonConfig;
 
@@ -189,6 +200,62 @@ public class ResteasyCommonProcessor {
         }
 
         return new JaxrsProvidersToRegisterBuildItem(providersToRegister, contributedProviders, useBuiltinProviders);
+    }
+
+    @BuildStep
+    void registerJsonContextResolvers(CombinedIndexBuildItem combinedIndexBuildItem,
+            Capabilities capabilities,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProvider,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean,
+            BuildProducer<UnremovableBeanBuildItem> unremovable) {
+
+        if (capabilities.isCapabilityPresent(Capabilities.REST_JACKSON)) {
+            registerJsonContextResolver(OBJECT_MAPPER, QUARKUS_OBJECT_MAPPER_CONTEXT_RESOLVER, combinedIndexBuildItem,
+                    jaxrsProvider, additionalBean, unremovable);
+        }
+
+        if (capabilities.isCapabilityPresent(Capabilities.REST_JSONB)) {
+            registerJsonContextResolver(JSONB, QUARKUS_JSONB_CONTEXT_RESOLVER, combinedIndexBuildItem, jaxrsProvider,
+                    additionalBean, unremovable);
+        }
+    }
+
+    private void registerJsonContextResolver(
+            DotName jsonImplementation,
+            DotName jsonContextResolver,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProvider,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean,
+            BuildProducer<UnremovableBeanBuildItem> unremovable) {
+
+        IndexView index = combinedIndexBuildItem.getIndex();
+
+        jaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(jsonContextResolver.toString()));
+
+        // this needs to be registered manually since the runtime module is not indexed by Jandex
+        additionalBean.produce(AdditionalBeanBuildItem.unremovableOf(jsonContextResolver.toString()));
+        Set<String> userSuppliedProducers = getUserSuppliedJsonProducerBeans(index, jsonImplementation);
+        if (!userSuppliedProducers.isEmpty()) {
+            unremovable.produce(
+                    new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(userSuppliedProducers)));
+        }
+    }
+
+    /*
+     * We need to find all the user supplied producers and mark them as unremovable since there are no actual injection points
+     * for ObjectMapper/Jsonb.
+     */
+    private Set<String> getUserSuppliedJsonProducerBeans(IndexView index, DotName jsonImplementation) {
+        Set<String> result = new HashSet<>();
+        for (AnnotationInstance annotation : index.getAnnotations(DotNames.PRODUCES)) {
+            if (annotation.target().kind() != AnnotationTarget.Kind.METHOD) {
+                continue;
+            }
+            if (jsonImplementation.equals(annotation.target().asMethod().returnType().name())) {
+                result.add(annotation.target().asMethod().declaringClass().name().toString());
+            }
+        }
+        return result;
     }
 
     private void checkProperConfigAccessInProvider(AnnotationInstance instance) {

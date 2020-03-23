@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-rest-client-deployment</artifactId>
-    <name>Quarkus - REST client - Deployment</name>
+    <name>Quarkus - REST Client - Deployment</name>
 
     <dependencies>
         <dependency>

@@ -200,6 +200,10 @@ public class TestEndpoint {
         testPaging(Person.findAll());
         testPaging(Person.find("ORDER BY name"));
 
+        // range
+        testRange(Person.findAll());
+        testRange(Person.find("ORDER BY name"));
+
         try {
             Person.findAll().singleResult();
             Assertions.fail("singleResult should have thrown");
@@ -633,6 +637,10 @@ public class TestEndpoint {
         testPaging(personDao.findAll());
         testPaging(personDao.find("ORDER BY name"));
 
+        //range
+        testRange(personDao.findAll());
+        testRange(personDao.find("ORDER BY name"));
+
         try {
             personDao.findAll().singleResult();
             Assertions.fail("singleResult should have thrown");
@@ -851,6 +859,49 @@ public class TestEndpoint {
 
         Assertions.assertEquals(7, query.count());
         Assertions.assertEquals(3, query.pageCount());
+
+        // mix page with range
+        persons = query.page(0, 3).range(0, 1).list();
+        Assertions.assertEquals(2, persons.size());
+        Assertions.assertEquals("stef0", persons.get(0).name);
+        Assertions.assertEquals("stef1", persons.get(1).name);
+    }
+
+    private void testRange(PanacheQuery<Person> query) {
+        List<Person> persons = query.range(0, 2).list();
+        Assertions.assertEquals(3, persons.size());
+        Assertions.assertEquals("stef0", persons.get(0).name);
+        Assertions.assertEquals("stef1", persons.get(1).name);
+        Assertions.assertEquals("stef2", persons.get(2).name);
+
+        persons = query.range(3, 5).list();
+        Assertions.assertEquals(3, persons.size());
+        Assertions.assertEquals("stef3", persons.get(0).name);
+        Assertions.assertEquals("stef4", persons.get(1).name);
+        Assertions.assertEquals("stef5", persons.get(2).name);
+
+        persons = query.range(6, 8).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals("stef6", persons.get(0).name);
+
+        persons = query.range(8, 12).list();
+        Assertions.assertEquals(0, persons.size());
+
+        // mix range with page
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).nextPage());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).previousPage());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).pageCount());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).lastPage());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).firstPage());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).hasPreviousPage());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).hasNextPage());
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.range(0, 2).page());
+        // this is valid as we switch from range to page
+        persons = query.range(0, 2).page(0, 3).list();
+        Assertions.assertEquals(3, persons.size());
+        Assertions.assertEquals("stef0", persons.get(0).name);
+        Assertions.assertEquals("stef1", persons.get(1).name);
+        Assertions.assertEquals("stef2", persons.get(2).name);
     }
 
     @GET

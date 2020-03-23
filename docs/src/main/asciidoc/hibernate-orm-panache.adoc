@@ -195,6 +195,9 @@ Person.delete("status", Status.Alive);
 // delete all persons
 Person.deleteAll();
 
+// delete by id
+boolean deleted = Person.deleteById(personId);
+
 // update all living persons
 Person.update("name = 'Moral' where status = ?1", Status.Alive);
 
@@ -378,6 +381,9 @@ personRepository.delete("status", Status.Alive);
 
 // delete all persons
 personRepository.deleteAll();
+
+// delete by id
+boolean deleted = personRepository.deleteById(personId);
 
 // update all living persons
 personRepository.update("name = 'Moral' where status = ?1", Status.Alive);

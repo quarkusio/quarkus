@@ -393,6 +393,17 @@ public class JpaOperations {
         return (long) getEntityManager().createQuery("DELETE FROM " + getEntityName(entityClass)).executeUpdate();
     }
 
+    public static boolean deleteById(Class<?> entityClass, Object id) {
+        // Impl note : we load the entity then delete it because it's the only implementation generic enough for any model,
+        // and correct in all cases (composite key, graph of entities, ...). HQL cannot be directly used for these reasons.
+        Object entity = findById(entityClass, id);
+        if (entity == null) {
+            return false;
+        }
+        getEntityManager().remove(entity);
+        return true;
+    }
+
     public static long delete(Class<?> entityClass, String query, Object... params) {
         return bindParameters(getEntityManager().createQuery(createDeleteQuery(entityClass, query, paramCount(params))), params)
                 .executeUpdate();

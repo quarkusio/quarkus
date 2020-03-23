@@ -147,6 +147,14 @@ public class PanacheFunctionalityTest {
     }
 
     @Test
+    public void testCompositeKey() {
+        RestAssured.when()
+                .get("/test/composite")
+                .then()
+                .body(is("OK"));
+    }
+
+    @Test
     public void testBug7721() {
         RestAssured.when().get("/test/7721").then().body(is("OK"));
     }

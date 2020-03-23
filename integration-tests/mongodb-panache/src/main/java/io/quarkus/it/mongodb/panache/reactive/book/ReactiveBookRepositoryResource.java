@@ -77,7 +77,13 @@ public class ReactiveBookRepositoryResource {
     @DELETE
     @Path("/{id}")
     public Uni<Void> deleteBook(@PathParam("id") String id) {
-        return reactiveBookRepository.findById(new ObjectId(id)).flatMap(book -> reactiveBookRepository.delete(book));
+        return reactiveBookRepository.deleteById(new ObjectId(id))
+                .map(d -> {
+                    if (d) {
+                        return null;
+                    }
+                    throw new NotFoundException();
+                });
     }
 
     @GET

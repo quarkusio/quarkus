@@ -28,6 +28,7 @@ import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
+import com.mongodb.client.result.DeleteResult;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.mongodb.panache.MongoEntity;
@@ -536,6 +537,13 @@ public class MongoOperations {
     public static long deleteAll(Class<?> entityClass) {
         MongoCollection collection = mongoCollection(entityClass);
         return collection.deleteMany(new Document()).getDeletedCount();
+    }
+
+    public static boolean deleteById(Class<?> entityClass, Object id) {
+        MongoCollection collection = mongoCollection(entityClass);
+        Document query = new Document().append(ID, id);
+        DeleteResult results = collection.deleteOne(query);
+        return results.getDeletedCount() == 1;
     }
 
     public static long delete(Class<?> entityClass, String query, Object... params) {

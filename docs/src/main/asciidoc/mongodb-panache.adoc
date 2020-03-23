@@ -222,6 +222,9 @@ Person.delete("status", Status.Alive);
 
 // delete all persons
 Person.deleteAll();
+
+// delete by id
+boolean deleted = Person.deleteById(personId);
 ----
 
 All `list` methods have equivalent `stream` versions.
@@ -382,6 +385,9 @@ personRepository.delete("status", Status.Alive);
 
 // delete all persons
 personRepository.deleteAll();
+
+// delete by id
+boolean deleted = personRepository.deleteById(personId);
 ----
 
 All `list` methods have equivalent `stream` versions.
@@ -800,6 +806,9 @@ Uni<Long>  deleteCount = ReactivePerson.delete("status", Status.Alive);
 
 // delete all persons
 deleteCount = ReactivePerson.deleteAll();
+
+// delete by id
+Uni<Boolean> deleted = ReactivePerson.deleteById(personId);
 ----
 
 TIP: If you use MongoDB with Panache in conjunction with RESTEasy, you can directly return a reactive type inside your JAX-RS resource endpoint as long as you include the `quarkus-resteasy-mutiny` extension.

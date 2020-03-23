@@ -639,6 +639,17 @@ public abstract class PanacheEntityBase {
     }
 
     /**
+     * Delete an entity of this type by ID.
+     *
+     * @param id the ID of the entity to delete.
+     * @return false if the entity was not deleted (not found).
+     */
+    @GenerateBridge
+    public static boolean deleteById(Object id) {
+        throw JpaOperations.implementationInjectionMissing();
+    }
+
+    /**
      * Delete all entities of this type matching the given query, with optional indexed parameters.
      *
      * @param query a {@link io.quarkus.hibernate.orm.panache query string}

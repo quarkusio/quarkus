@@ -707,35 +707,32 @@ public class StockMethodsAdder {
                     ResultHandle entityClass = deleteById.readInstanceField(entityClassFieldDescriptor,
                             deleteById.getThis());
 
-                    ResultHandle entity = deleteById.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(JpaOperations.class, "findById", Object.class, Class.class,
+                    ResultHandle deleted = deleteById.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(JpaOperations.class, "deleteById", boolean.class, Class.class,
                                     Object.class),
                             entityClass, id);
 
-                    BranchResult entityNullBranch = deleteById.ifNull(entity);
-                    BytecodeCreator entityNull = entityNullBranch.trueBranch();
+                    BranchResult deletedBranch = deleteById.ifNonZero(deleted);
+                    BytecodeCreator deletedFalse = deletedBranch.falseBranch();
 
-                    ResultHandle idToString = entityNull.invokeVirtualMethod(
+                    ResultHandle idToString = deletedFalse.invokeVirtualMethod(
                             ofMethod(Object.class, "toString", String.class),
                             id);
-                    ResultHandle formatArgsArray = entityNull.newArray(Object.class, 1);
-                    entityNull.writeArrayValue(formatArgsArray, entityNull.load(0), idToString);
+                    ResultHandle formatArgsArray = deletedFalse.newArray(Object.class, 1);
+                    deletedFalse.writeArrayValue(formatArgsArray, deletedFalse.load(0), idToString);
 
-                    ResultHandle messageFormat = entityNull.load("No entity " + entityTypeStr + " with id %s exists");
-                    ResultHandle message = entityNull.invokeStaticMethod(
+                    ResultHandle messageFormat = deletedFalse.load("No entity " + entityTypeStr + " with id %s exists");
+                    ResultHandle message = deletedFalse.invokeStaticMethod(
                             MethodDescriptor.ofMethod(String.class, "format", String.class, String.class, Object[].class),
                             messageFormat, formatArgsArray);
 
-                    ResultHandle exception = entityNull.newInstance(
+                    ResultHandle exception = deletedFalse.newInstance(
                             MethodDescriptor.ofConstructor(IllegalArgumentException.class, String.class),
                             message);
-                    entityNull.throwException(exception);
+                    deletedFalse.throwException(exception);
+                    deletedFalse.breakScope();
 
-                    BytecodeCreator entityNotNull = entityNullBranch.falseBranch();
-                    entityNotNull.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(JpaOperations.class, "delete", void.class, Object.class),
-                            entity);
-                    entityNotNull.returnValue(null);
+                    deleteById.returnValue(null);
                 }
                 try (MethodCreator bridgeDeleteById = classCreator.getMethodCreator(bridgeDeleteByIdDescriptor)) {
                     MethodDescriptor deleteById = MethodDescriptor.ofMethod(generatedClassName, "deleteById",

@@ -566,6 +566,12 @@ public class ReactiveMongoOperations {
         return collection.deleteMany(new Document()).map(deleteResult -> deleteResult.getDeletedCount());
     }
 
+    public static Uni<Boolean> deleteById(Class<?> entityClass, Object id) {
+        ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
+        Document query = new Document().append(ID, id);
+        return collection.deleteOne(query).map(results -> results.getDeletedCount() == 1);
+    }
+
     public static Uni<Long> delete(Class<?> entityClass, String query, Object... params) {
         String bindQuery = bindQuery(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);

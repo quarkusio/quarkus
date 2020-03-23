@@ -106,6 +106,9 @@
                     <parentFirstArtifacts>
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-core</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-development-mode-spi</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus.http:quarkus-http-core</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus.http:quarkus-http-servlet</parentFirstArtifact>
+                        <parentFirstArtifact>io.quarkus.http:quarkus-http-websockets-jsr</parentFirstArtifact>
                         <parentFirstArtifact>org.jboss.logmanager:jboss-logmanager-embedded</parentFirstArtifact>
                         <parentFirstArtifact>org.jboss.logging:jboss-logging</parentFirstArtifact>
                         <parentFirstArtifact>org.ow2.asm:asm</parentFirstArtifact>

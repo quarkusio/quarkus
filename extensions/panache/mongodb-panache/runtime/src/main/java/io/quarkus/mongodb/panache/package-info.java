@@ -1,27 +1,51 @@
 /**
  * <h2>API usage</h2>
- * 
- * Make your entities extend {@link io.quarkus.mongodb.panache.PanacheMongoEntity}, use public fields or getter/setter
- * for your columns, use the existing operations defined as static methods on your entity class,
+ *
+ * MongoDB with Panache comes in two flavors, the active record pattern via
+ * {@link io.quarkus.mongodb.panache.PanacheMongoEntity},
+ * and the repository pattern via {@link io.quarkus.mongodb.panache.PanacheMongoRepository}.
+ *
+ * To use the active record pattern, make your entities extend {@link io.quarkus.mongodb.panache.PanacheMongoEntity},
+ * use public fields for your columns, use the existing operations defined as static methods on your entity class,
  * and define custom ones as static methods on your entity class:
- * 
+ *
  * <code><pre>
  * public class Person extends PanacheMongoEntity {
  *     public String name;
  *     public LocalDate birth;
  *     public PersonStatus status;
- *     
+ *
  *     public static Person findByName(String name){
  *       return find("name", name).firstResult();
  *     }
- *     
+ *
  *     public static List&lt;Person&gt; findAlive(){
  *       return list("status", Status.Alive);
  *     }
- *     
+ *
  *     public static void deleteStefs(){
  *       delete("name", "Stef");
  *     }
+ * }
+ * </pre></code>
+ *
+ * To use the repository pattern, create a class implementing {@link io.quarkus.mongodb.panache.PanacheMongoRepository},
+ * use the existing operations from your repository and define new ones on your repository class:
+ *
+ * <code><pre>
+ * &#64;ApplicationScoped
+ * public class PersonRepository implements PanacheRepository&lt;Person&gt; {
+ *    public Person findByName(String name){
+ *        return find("name", name).firstResult();
+ *    }
+ *
+ *    public List&lt;Person&gt; findAlive(){
+ *        return list("status", Status.Alive);
+ *    }
+ *
+ *    public void deleteStefs(){
+ *        delete("name", "Stef");
+ *   }
  * }
  * </pre></code>
  *

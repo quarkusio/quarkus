@@ -480,7 +480,7 @@ when using synchronous mode, due to issues in the GraalVM compilation (at presen
 Add `quarkus-jaxb` as a dependency in your Maven `pom.xml`, or Gradle `build.gradle` file.
 
 You must also force your AWS service client for SQS, SNS, S3 et al, to use the URL Connection client,
-which connects to AWS services over HTTPS, hence the inclusion of the SSL enabled property, as described in the <<Using HTTPS>> section above.
+which connects to AWS services over HTTPS, hence the inclusion of the SSL enabled property, as described in the <<https>> section above.
 
 [source,java]
 ----

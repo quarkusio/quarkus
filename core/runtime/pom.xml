@@ -120,6 +120,11 @@
                         <parentFirstArtifact>org.objenesis:objenesis</parentFirstArtifact>
                         <parentFirstArtifact>net.bytebuddy:byte-buddy</parentFirstArtifact>
                         <parentFirstArtifact>net.bytebuddy:byte-buddy-agent</parentFirstArtifact>
+                        <parentFirstArtifact>org.junit.jupiter:junit-jupiter-api</parentFirstArtifact>
+                        <parentFirstArtifact>org.junit.jupiter:junit-jupiter-engine</parentFirstArtifact>
+                        <parentFirstArtifact>org.junit.jupiter:junit-jupiter-params</parentFirstArtifact>
+                        <parentFirstArtifact>org.junit.platform:junit-platform-commons</parentFirstArtifact>
+                        <parentFirstArtifact>org.junit.platform:junit-platform-engine</parentFirstArtifact>
                     </parentFirstArtifacts>
                     <excludedArtifacts>
                         <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>

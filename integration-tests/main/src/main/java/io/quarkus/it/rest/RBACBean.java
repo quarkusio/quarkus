@@ -18,6 +18,11 @@ public class RBACBean {
         return "callingAuthenticated";
     }
 
+    @RolesAllowed("**")
+    public String allRoles() {
+        return "callingAllRoles";
+    }
+
     @PermitAll
     public String permitted() {
         return "callingPermitted";

@@ -1431,10 +1431,12 @@ public class BeanGenerator extends AbstractGenerator {
                     DotNames.POST_CONSTRUCT,
                     bean.getDeployment().getIndex());
             for (MethodInfo callback : postConstructCallbacks) {
-                if (Modifier.isPrivate(callback.flags())) {
-                    privateMembers.add(isApplicationClass,
-                            String.format("@PostConstruct callback %s#%s()", callback.declaringClass().name(),
-                                    callback.name()));
+                if (isReflectionFallbackNeeded(callback, targetPackage)) {
+                    if (Modifier.isPrivate(callback.flags())) {
+                        privateMembers.add(isApplicationClass,
+                                String.format("@PostConstruct callback %s#%s()", callback.declaringClass().name(),
+                                        callback.name()));
+                    }
                     reflectionRegistration.registerMethod(callback);
                     create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
                             create.loadClass(callback.declaringClass().name().toString()),

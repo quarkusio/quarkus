@@ -30,3 +30,26 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+buildNative {
+    enableHttpUrlHandler = true
+}
+
+task renameArtifacts (type: Copy) {
+    from "$buildDir"
+    include "${artifactId}-${version}-runner"
+    rename "${artifactId}-${version}-runner", "bootstrap"
+    into "$buildDir"
+}
+renameArtifacts.dependsOn build
+
+task createZip(type: Zip) {
+    from "$buildDir"
+    include 'bootstrap'
+    archiveName 'function.zip'
+    destinationDir(file("$buildDir"))
+}
+createZip.dependsOn renameArtifacts
+
+buildNative.finalizedBy createZip
+
+

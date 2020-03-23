@@ -36,6 +36,6 @@ AWSTemplateFormatVersion: '2010-09-09'
         Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
         Runtime: java8
         CodeUri: target/${artifactId}-${version}-runner.jar
-        MemorySize: 128
+        MemorySize: 256
         Timeout: 15
         Policies: AWSLambdaBasicExecutionRole

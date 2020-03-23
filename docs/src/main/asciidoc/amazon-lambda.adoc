@@ -206,6 +206,8 @@ in the root directory of the project.
 
 The lambda can also be invoked locally with the SAM CLI like this:
 
+NOTE: If using Gradle, the path to the binaries in the `sam.jvm.yaml` must be changed from `target` to `build`
+
 [source]
 ----
 sam local invoke --template sam.jvm.yaml --event payload.json
@@ -307,7 +309,7 @@ Similarly for Gradle projects, if you want to adapt an existing project to use Q
 of things you need to do.  Take a look at the generated example project to get an example of what you need to adapt.
 
 1. Include the `quarkus-amazon-lambda`, and `quarkus-test-amazon-lambda` extensions as Gradle dependencies, as below
-2. Configure Quarkus to build an `uber-jar` (via appending --uber-jar to the Gradle build command)
+2. Configure Quarkus to build an `uber-jar` (via adding `quarkus.package.uber-jar=true` to `application.properties`)
 3. If you are doing a native image build, Amazon requires you to rename your executable to `bootstrap` and zip it up.
 
 

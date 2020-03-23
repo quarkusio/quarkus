@@ -32,10 +32,10 @@ AWSTemplateFormatVersion: '2010-09-09'
     ${resourceName}NativeFunction:
       Type: AWS::Serverless::Function
       Properties:
-        Handler: not.used.in.provided.runtimei
+        Handler: not.used.in.provided.runtime
         Runtime: provided
         CodeUri: target/function.zip
-        MemorySize: 128
+        MemorySize: 256
         Policies: AWSLambdaBasicExecutionRole
         Timeout: 15
         Environment:

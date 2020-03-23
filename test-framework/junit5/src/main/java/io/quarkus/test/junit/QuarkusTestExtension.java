@@ -102,8 +102,6 @@ public class QuarkusTestExtension
                     .newInstance(context.getRequiredTestClass());
             testResourceManager.getClass().getMethod("start").invoke(testResourceManager);
 
-            handleDynamicTests(startupAction.getClassLoader());
-
             runningQuarkusApplication = startupAction.run();
 
             ConfigProviderResolver.setInstance(new RunningAppConfigResolver(runningQuarkusApplication));
@@ -153,14 +151,6 @@ public class QuarkusTestExtension
             }
             throw e;
         }
-    }
-
-    private void handleDynamicTests(ClassLoader startupActionClassLoader)
-            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        Class<?> quarkusDynamicTestClass = startupActionClassLoader.loadClass(QuarkusDynamicTest.class.getName());
-        Method setClassLoaderMethod = quarkusDynamicTestClass.getDeclaredMethod("setClassLoader", ClassLoader.class);
-        setClassLoaderMethod.setAccessible(true);
-        setClassLoaderMethod.invoke(null, originalCl);
     }
 
     @Override

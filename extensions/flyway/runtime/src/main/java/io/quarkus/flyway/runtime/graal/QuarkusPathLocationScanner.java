@@ -7,14 +7,13 @@ import java.util.Collections;
 import java.util.List;
 
 import org.flywaydb.core.api.Location;
-import org.flywaydb.core.api.logging.Log;
-import org.flywaydb.core.api.logging.LogFactory;
 import org.flywaydb.core.internal.resource.LoadableResource;
 import org.flywaydb.core.internal.resource.classpath.ClassPathResource;
 import org.flywaydb.core.internal.scanner.classpath.ResourceAndClassScanner;
+import org.jboss.logging.Logger;
 
 public final class QuarkusPathLocationScanner implements ResourceAndClassScanner {
-    private static final Log LOG = LogFactory.getLog(QuarkusPathLocationScanner.class);
+    private static final Logger LOGGER = Logger.getLogger(QuarkusPathLocationScanner.class);
     private static final String LOCATION_SEPARATOR = "/";
     private static List<String> applicationMigrationFiles;
 
@@ -26,7 +25,7 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
 
         for (String migrationFile : applicationMigrationFiles) {
             if (canHandleMigrationFile(locations, migrationFile)) {
-                LOG.debug("Loading " + migrationFile);
+                LOGGER.debugf("Loading %s", migrationFile);
                 scannedResources.add(new ClassPathResource(null, migrationFile, classLoader, StandardCharsets.UTF_8));
             }
         }

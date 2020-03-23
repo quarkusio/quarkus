@@ -27,7 +27,7 @@ public class DynamicTestsTestCase {
     }
 
     @TestFactory
-    public List<?> dynamicTests() {
+    public List<DynamicTest> dynamicTests() {
         return Arrays.asList(
                 DynamicTest.dynamicTest("test 1", () -> {
                     assertNotNull(bean);

@@ -52,9 +52,7 @@ class FlywayProcessor {
     private static final String FILE_APPLICATION_MIGRATIONS_PROTOCOL = "file";
 
     private static final Logger LOGGER = Logger.getLogger(FlywayProcessor.class);
-    /**
-     * Flyway build config
-     */
+
     FlywayBuildTimeConfig flywayBuildConfig;
 
     @BuildStep
@@ -90,15 +88,8 @@ class FlywayProcessor {
         containerListenerProducer.produce(new BeanContainerListenerBuildItem(recorder.setFlywayBuildConfig(flywayBuildConfig)));
     }
 
-    /**
-     * Handles all the operations that can be recorded in the RUNTIME_INIT execution time phase
-     *
-     * @param recorder Used to set the runtime config
-     * @param flywayRuntimeConfig The Flyway configuration
-     * @param jdbcDataSourceBuildItems Added this dependency to be sure that Agroal is initialized first
-     */
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem configureRuntimeProperties(FlywayRecorder recorder,
             FlywayRuntimeConfig flywayRuntimeConfig,
             BeanContainerBuildItem beanContainer,
@@ -117,10 +108,6 @@ class FlywayProcessor {
 
     /**
      * Collects the configured migration locations for the default and all named DataSources.
-     * <p>
-     * A {@link LinkedHashSet} is used to avoid duplications.
-     *
-     * @return {@link Collection} of {@link String}
      */
     private Collection<String> getMigrationLocations(Collection<String> dataSourceNames) {
         Collection<String> migrationLocations = dataSourceNames.stream()

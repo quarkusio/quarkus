@@ -207,11 +207,11 @@ public abstract class PanacheMongoEntityBase {
      *
      * @param query a {@link org.bson.Document} query
      * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @see #find(Document, Document)
+     * @see #list(Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
     public static <T extends PanacheMongoEntityBase> PanacheQuery<T> find(Document query) {
@@ -224,11 +224,11 @@ public abstract class PanacheMongoEntityBase {
      * @param query a {@link org.bson.Document} query
      * @param sort the {@link org.bson.Document} sort
      * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @see #find(Document)
+     * @see #list(Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
     public static <T extends PanacheMongoEntityBase> PanacheQuery<T> find(Document query, Document sort) {
@@ -378,12 +378,12 @@ public abstract class PanacheMongoEntityBase {
      * This method is a shortcut for <code>find(query).list()</code>.
      *
      * @param query a {@link org.bson.Document} query
-     * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @return a {@link List} containing all results, without paging
+     * @see #find(Document)
+     * @see #find(Document, Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
     public static <T extends PanacheMongoEntityBase> List<T> list(Document query) {
@@ -396,12 +396,12 @@ public abstract class PanacheMongoEntityBase {
      *
      * @param query a {@link org.bson.Document} query
      * @param sort the {@link org.bson.Document} sort
-     * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @return a {@link List} containing all results, without paging
+     * @see #find(Document)
+     * @see #find(Document, Document)
+     * @see #list(Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
     public static <T extends PanacheMongoEntityBase> List<T> list(Document query, Document sort) {
@@ -553,12 +553,12 @@ public abstract class PanacheMongoEntityBase {
      * This method is a shortcut for <code>find(query).stream()</code>.
      *
      * @param query a {@link org.bson.Document} query
-     * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @return a {@link Stream} containing all results, without paging
+     * @see #find(Document)
+     * @see #find(Document, Document)
+     * @see #list(Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
     public static <T extends PanacheMongoEntityBase> Stream<T> stream(Document query) {
@@ -571,12 +571,12 @@ public abstract class PanacheMongoEntityBase {
      *
      * @param query a {@link org.bson.Document} query
      * @param sort the {@link org.bson.Document} sort
-     * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @return a {@link Stream} containing all results, without paging
+     * @see #find(Document)
+     * @see #find(Document, Document)
+     * @see #list(Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
     public static <T extends PanacheMongoEntityBase> Stream<T> stream(Document query, Document sort) {

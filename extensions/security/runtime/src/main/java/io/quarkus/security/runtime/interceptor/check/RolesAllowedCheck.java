@@ -54,7 +54,7 @@ public class RolesAllowedCheck implements SecurityCheck {
         Set<String> roles = identity.getRoles();
         if (roles != null) {
             for (String role : allowedRoles) {
-                if (roles.contains(role)) {
+                if (roles.contains(role) || ("**".equals(role) && !identity.isAnonymous())) {
                     return;
                 }
             }

@@ -9,14 +9,14 @@ include::./attributes.adoc[]
 
 Quarkus provides extensions for building (and pushing) container images. Currently it supports:
 
-- <<#jib,JIB>>
+- <<#jib,Jib>>
 - <<#docker,Docker>>
 - <<#s2i,S2I>>
 
 == Container Image extensions
 
 [#jib]
-=== JIB
+=== Jib
 
 The extension `quarkus-container-image-jib` is powered by https://github.com/GoogleContainerTools/jib[Jib] for performing container image builds.
 The major benefit of using Jib with Quarkus is that all the dependencies (everything found under `target/lib`) are cached in a different layer than the actual application making rebuilds really fast and small (when it comes to pushing).
@@ -52,7 +52,7 @@ To use this feature, add the following extension to your project.
 The extension `quarkus-container-image-s2i` is using S2I binary builds in order to perform container builds inside the OpenShift cluster.
 The idea behind the binary build is that you just upload the artifact and its dependencies to the cluster and during the build they will be merged to a builder image (defaults to `fabric8/s2i-java`).
 
-The benefit of this approach, is that it can be combined with OpenShift's `DeploymentConfig` that makes it easy to rollout changes to the cluster.
+The benefit of this approach, is that it can be combined with OpenShift's `DeploymentConfig` that makes it easy to roll out changes to the cluster.
 
 To use this feature, add the following extension to your project.
 
@@ -92,7 +92,7 @@ The following properties can be used to customize the container image build proc
 
 include::{generated-dir}/config/quarkus-container-image.adoc[opts=optional, leveloffset=+1]
 
-=== JIB Options
+=== Jib Options
 
 In addition to the generic container image options, the `container-image-jib` also provides the following options:
 

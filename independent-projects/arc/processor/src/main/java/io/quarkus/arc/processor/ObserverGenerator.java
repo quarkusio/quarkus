@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.event.Reception;
 import javax.enterprise.event.TransactionPhase;
@@ -233,15 +234,17 @@ public class ObserverGenerator extends AbstractGenerator {
             return;
         }
 
-        AssignableResultHandle declaringProviderInstanceHandle = notify.createVariable(Object.class);
-        AssignableResultHandle ctxHandle = notify.createVariable(CreationalContextImpl.class);
-
         boolean isStatic = Modifier.isStatic(observer.getObserverMethod().flags());
-        // It is safe to skip CreationalContext.release() for:
-        // (1) static observers or normal scoped declaring provider, and 
-        // (2) no injection points
-        boolean skipRelease = (observer.getDeclaringBean().getScope().isNormal() || isStatic)
-                && observer.getInjection().injectionPoints.isEmpty();
+        // It is safe to skip CreationalContext.release() for observers with noor normal scoped declaring provider, and 
+        boolean skipRelease = observer.getInjection().injectionPoints.isEmpty();
+
+        // Declaring bean instance, may be null
+        AssignableResultHandle declaringProviderInstanceHandle = notify.createVariable(Object.class);
+        // This CreationalContext is used for @Dependent instances injected into method parameters
+        ResultHandle ctxHandle = skipRelease ? notify.loadNull()
+                : notify.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
+                        notify.loadNull());
+        AssignableResultHandle declaringProviderCtx = notify.createVariable(CreationalContextImpl.class);
 
         ResultHandle declaringProviderHandle;
         if (isStatic) {
@@ -258,40 +261,49 @@ public class ObserverGenerator extends AbstractGenerator {
 
         if (isStatic) {
             notify.assign(declaringProviderInstanceHandle, notify.loadNull());
-            notify.assign(ctxHandle, skipRelease ? notify.loadNull()
-                    : notify.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
-                            declaringProviderHandle));
-        } else if (Reception.IF_EXISTS == observer.getReception()
-                && !BuiltinScope.DEPENDENT.is(observer.getDeclaringBean().getScope())) {
-            // If Reception.IF_EXISTS is used we must check the context of the declaring bean first   
-            ResultHandle container = notify.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
-            ResultHandle scope = notify.loadClass(observer.getDeclaringBean().getScope().getDotName().toString());
-            ResultHandle context = notify.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
-                    container,
-                    scope);
-            notify.ifNull(context).trueBranch().returnValue(null);
-            notify.assign(declaringProviderInstanceHandle,
-                    notify.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET_IF_PRESENT, context,
-                            declaringProviderHandle));
-            BranchResult doesNotExist = notify.ifNull(declaringProviderInstanceHandle);
-            doesNotExist.trueBranch().returnValue(null);
-            BytecodeCreator isNotPresent = doesNotExist.falseBranch();
-            isNotPresent.assign(ctxHandle, skipRelease ? isNotPresent.loadNull()
-                    : isNotPresent.newInstance(
-                            MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
-                            declaringProviderHandle));
         } else {
-            notify.assign(ctxHandle, skipRelease ? notify.loadNull()
-                    : notify.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
-                            declaringProviderHandle));
-            notify.assign(declaringProviderInstanceHandle, notify.invokeInterfaceMethod(
-                    MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
-                    ctxHandle));
-            if (observer.getDeclaringBean().getScope().isNormal()) {
-                // We need to unwrap the client proxy
+            if (Reception.IF_EXISTS == observer.getReception()
+                    && !BuiltinScope.DEPENDENT.is(observer.getDeclaringBean().getScope())) {
+                // If Reception.IF_EXISTS is used we must check the context of the declaring bean first   
+                ResultHandle container = notify.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+                ResultHandle scope = notify.loadClass(observer.getDeclaringBean().getScope().getDotName().toString());
+                ResultHandle context = notify.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
+                        container,
+                        scope);
+                notify.ifNull(context).trueBranch().returnValue(null);
+                notify.assign(declaringProviderInstanceHandle,
+                        notify.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET_IF_PRESENT, context,
+                                declaringProviderHandle));
+                BranchResult doesNotExist = notify.ifNull(declaringProviderInstanceHandle);
+                // Notification is no-op
+                doesNotExist.trueBranch().returnValue(null);
+
+            } else if (BuiltinScope.DEPENDENT.is(observer.getDeclaringBean().getScope())) {
+                // Always create a new dependent instance
+                notify.assign(declaringProviderCtx,
+                        notify.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
+                                declaringProviderHandle));
                 notify.assign(declaringProviderInstanceHandle, notify.invokeInterfaceMethod(
-                        MethodDescriptors.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE,
-                        declaringProviderInstanceHandle));
+                        MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
+                        declaringProviderCtx));
+            } else {
+                // Obtain contextual instance for non-dependent beans 
+                ResultHandle container = notify.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+                ResultHandle scope = notify.loadClass(observer.getDeclaringBean().getScope().getDotName().toString());
+                ResultHandle context = notify.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
+                        container,
+                        scope);
+                notify.ifNull(context).trueBranch().throwException(ContextNotActiveException.class,
+                        "Context not active: " + observer.getDeclaringBean().getScope().getDotName());
+                notify.assign(declaringProviderInstanceHandle,
+                        notify.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET_IF_PRESENT, context,
+                                declaringProviderHandle));
+                BytecodeCreator doesNotExist = notify.ifNull(declaringProviderInstanceHandle).trueBranch();
+                doesNotExist.assign(declaringProviderInstanceHandle,
+                        doesNotExist.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, context, declaringProviderHandle,
+                                doesNotExist.newInstance(
+                                        MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
+                                        declaringProviderHandle)));
             }
         }
 
@@ -354,7 +366,7 @@ public class ObserverGenerator extends AbstractGenerator {
         // If non-static and the declaring bean is @Dependent we must destroy the instance afterwards
         if (!isStatic && BuiltinScope.DEPENDENT.is(observer.getDeclaringBean().getScope())) {
             notify.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle,
-                    declaringProviderInstanceHandle, ctxHandle);
+                    declaringProviderInstanceHandle, declaringProviderCtx);
         }
 
         notify.returnValue(null);

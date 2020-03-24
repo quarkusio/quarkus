@@ -781,7 +781,7 @@ public class DevMojo extends AbstractMojo {
             //we don't need to resolve deps properly, this is all in the same project
             //so we have all the info we need locally
             for (Dependency i : dep.getRawModel().getDependencies()) {
-                AppArtifactKey key = new AppArtifactKey(i.getGroupId(), i.getArtifactId(), i.getClassifier());
+                AppArtifactKey key = new AppArtifactKey(i.getGroupId(), i.getArtifactId());
                 if (inProject.contains(key) && !extensionsAndDeps.contains(key)) {
                     extensionsAndDeps.add(key);
                     toRemove.add(localProject.getWorkspace().getProject(key));
@@ -792,6 +792,7 @@ public class DevMojo extends AbstractMojo {
         while (iterator.hasNext()) {
             LocalProject obj = iterator.next();
             if (extensionsAndDeps.contains(obj.getKey())) {
+                getLog().warn("Local Quarkus extension dependency " + obj.getKey() + " will not be hot-reloadable");
                 iterator.remove();
             }
         }

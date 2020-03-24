@@ -194,9 +194,35 @@ Applications and components may use any of the following APIs for logging, and t
 * https://www.slf4j.org/[SLF4J]
 * https://commons.apache.org/proper/commons-logging/[Apache Commons Logging]
 
-== Centralized log management
+== Centralized Log Management
 
 If you want to send your logs to a centralized tool like Graylog, Logstash or Fluentd, you can follow the link:centralized-log-management[Centralized log management guide].
+
+== How to Configure Logging for `@QuarkusTest`
+
+If you want to configure logging for your `@QuarkusTest`, don't forget to set up the `maven-surefire-plugin` accordingly.
+In particular, you need to set the appropriate `LogManager` using the `java.util.logging.manager` system property.  
+
+.Example Configuration
+[source, xml]
+----
+<build>
+  <plugins>
+    <plugin>
+      <artifactId>maven-surefire-plugin</artifactId>
+      <version>${surefire-plugin.version}</version>
+      <configuration>
+        <systemProperties>
+          <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager> <1>
+          <quarkus.log.level>DEBUG</quarkus.log.level>  <2>
+        </systemProperties>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
+----
+<1> Make sure the `org.jboss.logmanager.LogManager` is used.
+<2> Enable debug logging for all logging categories.
 
 [[loggingConfigurationReference]]
 == Logging configuration reference

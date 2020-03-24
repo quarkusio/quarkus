@@ -51,6 +51,10 @@ final public class ConfigDocItemScanner {
      * Record configuration group. It will later be visited to find configuration items.
      */
     public void addConfigGroups(TypeElement configGroup) {
+        if (Constants.SKIP_DOCS_GENERATION) {
+            return;
+        }
+
         String configGroupName = configGroup.getQualifiedName().toString();
         final Matcher pkgMatcher = Constants.PKG_PATTERN.matcher(configGroupName);
         if (!pkgMatcher.find() || configGroupName.startsWith(IO_QUARKUS_TEST_EXTENSION_PACKAGE)) {
@@ -64,6 +68,10 @@ final public class ConfigDocItemScanner {
      * Record a configuration root class. It will later be visited to find configuration items.
      */
     public void addConfigRoot(final PackageElement pkg, TypeElement clazz) {
+        if (Constants.SKIP_DOCS_GENERATION) {
+            return;
+        }
+
         final Matcher pkgMatcher = Constants.PKG_PATTERN.matcher(pkg.toString());
         if (!pkgMatcher.find() || pkg.toString().startsWith(IO_QUARKUS_TEST_EXTENSION_PACKAGE)) {
             return;

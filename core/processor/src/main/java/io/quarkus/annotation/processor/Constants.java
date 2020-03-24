@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -47,11 +48,13 @@ final public class Constants {
 
     public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES = new HashSet<>();
     public static final Map<String, String> ALIASED_TYPES = new HashMap<>();
-    public static final String DOCS_SRC_MAIN_ASCIIDOC_GENERATED = "/target/asciidoc/generated/config/";
-    public static final Path GENERATED_DOCS_PATH = Paths
-            .get(System.getProperties().getProperty("maven.multiModuleProjectDirectory")
-                    + Constants.DOCS_SRC_MAIN_ASCIIDOC_GENERATED);
+    private static final Properties SYSTEM_PROPERTIES = System.getProperties();
+
+    private static final String DOCS_SRC_MAIN_ASCIIDOC_GENERATED = "/target/asciidoc/generated/config/";
+    public static final Path GENERATED_DOCS_PATH = Paths.get(SYSTEM_PROPERTIES.getProperty("maven.multiModuleProjectDirectory")
+            + Constants.DOCS_SRC_MAIN_ASCIIDOC_GENERATED).toAbsolutePath();
     public static final File GENERATED_DOCS_DIR = GENERATED_DOCS_PATH.toFile();
+    public static final Boolean SKIP_DOCS_GENERATION = Boolean.valueOf(SYSTEM_PROPERTIES.getProperty("skipDocs", "false"));
 
     /**
      * Holds the list of configuration items / configuration sections of each configuration roots.

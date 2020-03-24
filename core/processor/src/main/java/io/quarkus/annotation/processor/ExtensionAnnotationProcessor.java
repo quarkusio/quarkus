@@ -236,15 +236,18 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         }
 
         try {
-            final Set<ConfigDocGeneratedOutput> outputs = configDocItemScanner
-                    .scanExtensionsConfigurationItems(javaDocProperties);
-            for (ConfigDocGeneratedOutput output : outputs) {
-                DocGeneratorUtil.sort(output.getConfigDocItems()); // sort before writing
-                configDocWriter.writeAllExtensionConfigDocumentation(output);
+            if (!Constants.SKIP_DOCS_GENERATION) {
+                final Set<ConfigDocGeneratedOutput> outputs = configDocItemScanner
+                        .scanExtensionsConfigurationItems(javaDocProperties);
+                for (ConfigDocGeneratedOutput output : outputs) {
+                    DocGeneratorUtil.sort(output.getConfigDocItems()); // sort before writing
+                    configDocWriter.writeAllExtensionConfigDocumentation(output);
+                }
             }
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate extension doc: " + e);
             return;
+
         }
     }
 

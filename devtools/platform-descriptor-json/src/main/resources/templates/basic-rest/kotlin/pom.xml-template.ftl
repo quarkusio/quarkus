@@ -107,6 +107,7 @@
                 </executions>
                 <configuration>
                     <javaParameters>true</javaParameters>
+                    <jvmTarget>1.8</jvmTarget>
                     <!-- Soon to be replaced by plugin that will pre-configure all necessary annotations -->
                     <compilerPlugins>
                         <plugin>all-open</plugin>

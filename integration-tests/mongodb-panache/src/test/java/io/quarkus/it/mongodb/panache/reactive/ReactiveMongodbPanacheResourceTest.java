@@ -334,4 +334,14 @@ class ReactiveMongodbPanacheResourceTest {
             return cpt;
         }
     }
+
+    @Test
+    public void testMoreEntityFunctionalities() {
+        get("/test/reactive/entity").then().statusCode(200);
+    }
+
+    @Test
+    public void testMoreRepositoryFunctionalities() {
+        get("/test/reactive/repository").then().statusCode(200);
+    }
 }

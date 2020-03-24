@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.mongodb.client.MongoClient;
 
+import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class DefaultMongoClientConfigTest extends MongoWithReplicasTestBase {
@@ -25,18 +26,12 @@ public class DefaultMongoClientConfigTest extends MongoWithReplicasTestBase {
     MongoClient client;
 
     @Inject
-    ReactiveMongoClient legacyClient;
-
-    @Inject
-    io.quarkus.mongodb.reactive.ReactiveMongoClient reactiveClient;
+    ReactiveMongoClient reactiveClient;
 
     @AfterEach
     void cleanup() {
         if (reactiveClient != null) {
             reactiveClient.close();
-        }
-        if (legacyClient != null) {
-            legacyClient.close();
         }
         if (client != null) {
             client.close();
@@ -47,6 +42,5 @@ public class DefaultMongoClientConfigTest extends MongoWithReplicasTestBase {
     public void testClientInjection() {
         assertThat(client.listDatabaseNames().first()).isNotEmpty();
         assertThat(reactiveClient.listDatabases().collectItems().first().await().indefinitely()).isNotEmpty();
-        assertThat(legacyClient.listDatabases().findFirst().run().toCompletableFuture().join()).isNotEmpty();
     }
 }

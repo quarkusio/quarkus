@@ -52,8 +52,8 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.mongodb.ReactiveMongoClient;
 import io.quarkus.mongodb.metrics.MongoMetricsConnectionPoolListener;
+import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.runtime.AbstractMongoClientProducer;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.mongodb.runtime.MongoClientName;
@@ -202,34 +202,10 @@ public class MongoClientProcessor {
                                 mongoClientConfig, defaultMongoClientNameRH));
             }
 
-            // Default Legacy reactive client - this is never made unremovable since it's not part of MongoClientBuildItem
-            try (MethodCreator defaultReactiveMongoClientMethodCreator = classCreator.getMethodCreator(
-                    "createDefaultLegacyReactiveMongoClient",
-                    ReactiveMongoClient.class)) {
-                defaultReactiveMongoClientMethodCreator.addAnnotation(Singleton.class);
-                defaultReactiveMongoClientMethodCreator.addAnnotation(Produces.class);
-                defaultReactiveMongoClientMethodCreator.addAnnotation(Default.class);
-
-                ResultHandle mongoReactiveClientConfig = defaultReactiveMongoClientMethodCreator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(AbstractMongoClientProducer.class, "getDefaultMongoClientConfig",
-                                MongoClientConfig.class),
-                        defaultReactiveMongoClientMethodCreator.getThis());
-
-                ResultHandle defaultReactiveMongoClientNameRH = defaultReactiveMongoClientMethodCreator
-                        .load(MongoClientRecorder.DEFAULT_MONGOCLIENT_NAME);
-                defaultReactiveMongoClientMethodCreator.returnValue(
-                        defaultReactiveMongoClientMethodCreator.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(AbstractMongoClientProducer.class, "createLegacyReactiveMongoClient",
-                                        ReactiveMongoClient.class,
-                                        MongoClientConfig.class, String.class),
-                                defaultReactiveMongoClientMethodCreator.getThis(),
-                                mongoReactiveClientConfig, defaultReactiveMongoClientNameRH));
-            }
-
             // Default Mutiny reactive client
             try (MethodCreator defaultReactiveMongoClientMethodCreator = classCreator.getMethodCreator(
                     "createDefaultReactiveMongoClient",
-                    io.quarkus.mongodb.reactive.ReactiveMongoClient.class)) {
+                    ReactiveMongoClient.class)) {
                 defaultReactiveMongoClientMethodCreator.addAnnotation(Singleton.class);
                 defaultReactiveMongoClientMethodCreator.addAnnotation(Produces.class);
                 defaultReactiveMongoClientMethodCreator.addAnnotation(Default.class);
@@ -247,7 +223,7 @@ public class MongoClientProcessor {
                 defaultReactiveMongoClientMethodCreator.returnValue(
                         defaultReactiveMongoClientMethodCreator.invokeVirtualMethod(
                                 MethodDescriptor.ofMethod(AbstractMongoClientProducer.class, "createReactiveMongoClient",
-                                        io.quarkus.mongodb.reactive.ReactiveMongoClient.class,
+                                        ReactiveMongoClient.class,
                                         MongoClientConfig.class, String.class),
                                 defaultReactiveMongoClientMethodCreator.getThis(),
                                 mongoReactiveClientConfig, defaultReactiveMongoClientNameRH));
@@ -286,42 +262,10 @@ public class MongoClientProcessor {
                                     namedMongoClientConfig, namedMongoClientNameRH));
                 }
 
-                // Legacy reactive client - this is never made unremovable since it's not part of MongoClientBuildItem
-                try (MethodCreator namedReactiveMongoClientMethodCreator = classCreator.getMethodCreator(
-                        "createNamedLegacyReactiveMongoClient_" + HashUtil.sha1(namedMongoClientName),
-                        ReactiveMongoClient.class)) {
-                    namedReactiveMongoClientMethodCreator.addAnnotation(Singleton.class);
-                    namedReactiveMongoClientMethodCreator.addAnnotation(Produces.class);
-                    namedReactiveMongoClientMethodCreator.addAnnotation(AnnotationInstance.create(DotNames.NAMED, null,
-                            new AnnotationValue[] {
-                                    AnnotationValue.createStringValue("value", namedMongoClientName + "reactive-legacy") }));
-                    namedReactiveMongoClientMethodCreator
-                            .addAnnotation(AnnotationInstance.create(MONGOCLIENT_ANNOTATION, null,
-                                    new AnnotationValue[] {
-                                            AnnotationValue.createStringValue("value", namedMongoClientName) }));
-
-                    ResultHandle namedReactiveMongoClientNameRH = namedReactiveMongoClientMethodCreator
-                            .load(namedMongoClientName);
-
-                    ResultHandle namedReactiveMongoClientConfig = namedReactiveMongoClientMethodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractMongoClientProducer.class, "getMongoClientConfig",
-                                    MongoClientConfig.class, String.class),
-                            namedReactiveMongoClientMethodCreator.getThis(), namedReactiveMongoClientNameRH);
-
-                    namedReactiveMongoClientMethodCreator.returnValue(
-                            namedReactiveMongoClientMethodCreator.invokeVirtualMethod(
-                                    MethodDescriptor.ofMethod(AbstractMongoClientProducer.class,
-                                            "createLegacyReactiveMongoClient",
-                                            ReactiveMongoClient.class,
-                                            MongoClientConfig.class, String.class),
-                                    namedReactiveMongoClientMethodCreator.getThis(),
-                                    namedReactiveMongoClientConfig, namedReactiveMongoClientNameRH));
-                }
-
                 // Mutiny reactive clients
                 try (MethodCreator namedReactiveMongoClientMethodCreator = classCreator.getMethodCreator(
                         "createNamedReactiveMongoClient_" + HashUtil.sha1(namedMongoClientName),
-                        io.quarkus.mongodb.reactive.ReactiveMongoClient.class)) {
+                        ReactiveMongoClient.class)) {
                     namedReactiveMongoClientMethodCreator.addAnnotation(Singleton.class);
                     namedReactiveMongoClientMethodCreator.addAnnotation(Produces.class);
                     namedReactiveMongoClientMethodCreator.addAnnotation(AnnotationInstance.create(DotNames.NAMED, null,
@@ -347,7 +291,7 @@ public class MongoClientProcessor {
                     namedReactiveMongoClientMethodCreator.returnValue(
                             namedReactiveMongoClientMethodCreator.invokeVirtualMethod(
                                     MethodDescriptor.ofMethod(AbstractMongoClientProducer.class, "createReactiveMongoClient",
-                                            io.quarkus.mongodb.reactive.ReactiveMongoClient.class,
+                                            ReactiveMongoClient.class,
                                             MongoClientConfig.class, String.class),
                                     namedReactiveMongoClientMethodCreator.getThis(),
                                     namedReactiveMongoClientConfig, namedReactiveMongoClientNameRH));

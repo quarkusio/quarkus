@@ -34,6 +34,7 @@ import org.objectweb.asm.ClassWriter;
 public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     private static final Logger log = Logger.getLogger(QuarkusClassLoader.class);
+    protected static final String META_INF_SERVICES = "META-INF/services/";
 
     static {
         registerAsParallelCapable();
@@ -132,6 +133,27 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         //        resources.add(element.getResource(nm).getUrl());
         //    }
         //}
+
+        //this is a big of a hack, but is nessesary to prevent service leakage
+        //in some situations (looking at you gradle) the parent can contain the same
+        //classes as the application. The parent aggregation stops this being a problem
+        //in most cases, however if there are no actual implementations of the service
+        //in the application then this can still cause problems
+        //this approach makes sure that we don't load services that would result
+        //in a ServiceConfigurationError
+        //see https://github.com/quarkusio/quarkus/issues/7996
+        if (name.startsWith(META_INF_SERVICES)) {
+            try {
+                Class<?> c = loadClass(name.substring(META_INF_SERVICES.length()));
+                if (c.getClassLoader() == this) {
+                    //if the service class is defined by this class loader then any resources that could be loaded
+                    //by the parent would have a different copy of the service class
+                    banned = true;
+                }
+            } catch (ClassNotFoundException ignored) {
+                //ignore
+            }
+        }
         for (ClassPathElement i : elements) {
             ClassPathResource res = i.getResource(nm);
             if (res != null) {

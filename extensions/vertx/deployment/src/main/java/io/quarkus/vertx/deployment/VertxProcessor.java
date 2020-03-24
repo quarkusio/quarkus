@@ -19,6 +19,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
@@ -27,7 +28,6 @@ import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
-import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -134,7 +134,7 @@ class VertxProcessor {
     }
 
     @BuildStep
-    AnnotationsTransformerBuildItem annotationTransformer() {
+    AnnotationsTransformerBuildItem annotationTransformer(CustomScopeAnnotationsBuildItem scopes) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
 
             @Override
@@ -144,7 +144,7 @@ class VertxProcessor {
 
             @Override
             public void transform(TransformationContext context) {
-                if (!BuiltinScope.isIn(context.getAnnotations())
+                if (!scopes.isScopeIn(context.getAnnotations())
                         && context.getTarget().asClass().annotations().containsKey(CONSUME_EVENT)) {
                     // Class with no built-in scope annotation but with a method annotated with @ConsumeMessage
                     LOGGER.debugf(

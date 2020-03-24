@@ -139,7 +139,12 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             try {
                 Object input = null;
                 JsonNode event = mapper.reader().readTree((InputStream) in);
-                String type = event.get("datacontenttype").asText();
+                JsonNode dct = event.get("datacontenttype");
+                if (dct == null) {
+                    routingContext.fail(400);
+                    return;
+                }
+                String type = dct.asText();
                 if (type != null) {
                     if (!type.equals("application/json")) {
                         routingContext.fail(406);

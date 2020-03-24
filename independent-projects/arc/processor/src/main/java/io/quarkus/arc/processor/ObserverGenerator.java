@@ -116,7 +116,12 @@ public class ObserverGenerator extends AbstractGenerator {
         // No suffix added at the end of generated name because it's already
         // included in a baseName, e.g. Foo_Observer_fooMethod_hash
 
-        String targetPackage = DotNames.packageName(observer.getBeanClass());
+        String targetPackage;
+        if (observer.isSynthetic()) {
+            targetPackage = DotNames.packageName(observer.getBeanClass());
+        } else {
+            targetPackage = DotNames.packageName(observer.getObserverMethod().declaringClass().name());
+        }
         String generatedName = generatedNameFromTarget(targetPackage, baseName.toString(), "");
 
         boolean isApplicationClass = applicationClassPredicate.test(observer.getBeanClass());

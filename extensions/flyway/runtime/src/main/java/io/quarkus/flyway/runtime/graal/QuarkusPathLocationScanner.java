@@ -1,52 +1,59 @@
 package io.quarkus.flyway.runtime.graal;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.flywaydb.core.api.logging.Log;
-import org.flywaydb.core.api.logging.LogFactory;
+import org.flywaydb.core.api.Location;
 import org.flywaydb.core.internal.resource.LoadableResource;
 import org.flywaydb.core.internal.resource.classpath.ClassPathResource;
 import org.flywaydb.core.internal.scanner.classpath.ResourceAndClassScanner;
+import org.jboss.logging.Logger;
 
 public final class QuarkusPathLocationScanner implements ResourceAndClassScanner {
-    private static final Log LOG = LogFactory.getLog(QuarkusPathLocationScanner.class);
-    /**
-     * File with the migrations list. It is generated dynamically in the Flyway Quarkus Processor
-     */
-    public final static String MIGRATIONS_LIST_FILE = "META-INF/flyway-migrations.txt";
+    private static final Logger LOGGER = Logger.getLogger(QuarkusPathLocationScanner.class);
+    private static final String LOCATION_SEPARATOR = "/";
+    private static List<String> applicationMigrationFiles;
+
+    private final Collection<LoadableResource> scannedResources;
+
+    public QuarkusPathLocationScanner(Collection<Location> locations) {
+        this.scannedResources = new ArrayList<>();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+
+        for (String migrationFile : applicationMigrationFiles) {
+            if (canHandleMigrationFile(locations, migrationFile)) {
+                LOGGER.debugf("Loading %s", migrationFile);
+                scannedResources.add(new ClassPathResource(null, migrationFile, classLoader, StandardCharsets.UTF_8));
+            }
+        }
+
+    }
 
     /**
-     * Returns the migrations loaded into the {@see MIGRATIONS_LIST_FILE}
      *
      * @return The resources that were found.
      */
     @Override
     public Collection<LoadableResource> scanForResources() {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        try (InputStream resource = classLoader.getResourceAsStream(MIGRATIONS_LIST_FILE);
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(Objects.requireNonNull(resource), StandardCharsets.UTF_8))) {
-            List<String> migrations = reader.lines().collect(Collectors.toList());
-            Set<LoadableResource> resources = new HashSet<>();
-            for (String file : migrations) {
-                LOG.debug("Loading " + file);
-                resources.add(new ClassPathResource(null, file, classLoader, StandardCharsets.UTF_8));
+        return scannedResources;
+    }
+
+    private boolean canHandleMigrationFile(Collection<Location> locations, String migrationFile) {
+        for (Location location : locations) {
+            String locationPath = location.getPath();
+            if (!locationPath.endsWith(LOCATION_SEPARATOR)) {
+                locationPath += "/";
             }
-            return resources;
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
+
+            if (migrationFile.startsWith(locationPath)) {
+                return true;
+            }
         }
+
+        return false;
     }
 
     /**
@@ -59,5 +66,9 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
     public Collection<Class<?>> scanForClasses() {
         // Classes are not supported in native mode
         return Collections.emptyList();
+    }
+
+    public static void setApplicationMigrationFiles(List<String> applicationMigrationFiles) {
+        QuarkusPathLocationScanner.applicationMigrationFiles = applicationMigrationFiles;
     }
 }

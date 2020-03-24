@@ -578,7 +578,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-spring-data-deployment</artifactId>
+                <artifactId>quarkus-spring-data-jpa-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

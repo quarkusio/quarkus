@@ -16,15 +16,18 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Queue;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -62,6 +65,7 @@ import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 import org.twdata.maven.mojoexecutor.MojoExecutor;
 
+import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.dev.DevModeContext;
 import io.quarkus.dev.DevModeMain;
@@ -568,15 +572,7 @@ public class DevMojo extends AbstractMojo {
                 pomFiles.add(localProject.getDir().resolve("pom.xml"));
             } else {
                 localProject = LocalProject.loadWorkspace(outputDirectory.toPath());
-                for (LocalProject project : localProject.getSelfWithLocalDeps()) {
-                    if (project.getClassesDir() != null &&
-                    //if this project also contains Quarkus extensions we do no want to include these in the discovery
-                    //a bit of an edge case, but if you try and include a sample project with your extension you will
-                    //run into problems without this
-                            (Files.exists(project.getClassesDir().resolve("META-INF/quarkus-extension.properties")) ||
-                                    Files.exists(project.getClassesDir().resolve("META-INF/quarkus-build-steps.list")))) {
-                        continue;
-                    }
+                for (LocalProject project : filterExtensionDependencies(localProject)) {
                     addProject(devModeContext, project);
                     pomFiles.add(project.getDir().resolve("pom.xml"));
                 }
@@ -752,5 +748,53 @@ public class DevMojo extends AbstractMojo {
             process.waitFor();
         }
 
+    }
+
+    private List<LocalProject> filterExtensionDependencies(LocalProject localProject) {
+        List<LocalProject> ret = new ArrayList<>();
+        Queue<LocalProject> toRemove = new ArrayDeque<>();
+        Set<AppArtifactKey> extensionsAndDeps = new HashSet<>();
+        Set<AppArtifactKey> inProject = new HashSet<>();
+
+        for (LocalProject project : localProject.getSelfWithLocalDeps()) {
+            inProject.add(project.getKey());
+            if (project.getClassesDir() != null &&
+            //if this project also contains Quarkus extensions we do no want to include these in the discovery
+            //a bit of an edge case, but if you try and include a sample project with your extension you will
+            //run into problems without this
+                    (Files.exists(project.getClassesDir().resolve("META-INF/quarkus-extension.properties")) ||
+                            Files.exists(project.getClassesDir().resolve("META-INF/quarkus-build-steps.list")))) {
+                toRemove.add(project);
+                extensionsAndDeps.add(project.getKey());
+            } else {
+                ret.add(project);
+            }
+        }
+        if (toRemove.isEmpty()) {
+            return ret;
+        }
+        //we also remove transitive deps of the extensions
+        //this is common in projects that provide a library, and a quarkus extension for that library
+        //all in the same project
+        while (!toRemove.isEmpty()) {
+            LocalProject dep = toRemove.poll();
+            //we don't need to resolve deps properly, this is all in the same project
+            //so we have all the info we need locally
+            for (Dependency i : dep.getRawModel().getDependencies()) {
+                AppArtifactKey key = new AppArtifactKey(i.getGroupId(), i.getArtifactId(), i.getClassifier());
+                if (inProject.contains(key) && !extensionsAndDeps.contains(key)) {
+                    extensionsAndDeps.add(key);
+                    toRemove.add(localProject.getWorkspace().getProject(key));
+                }
+            }
+        }
+        Iterator<LocalProject> iterator = ret.iterator();
+        while (iterator.hasNext()) {
+            LocalProject obj = iterator.next();
+            if (extensionsAndDeps.contains(obj.getKey())) {
+                iterator.remove();
+            }
+        }
+        return ret;
     }
 }

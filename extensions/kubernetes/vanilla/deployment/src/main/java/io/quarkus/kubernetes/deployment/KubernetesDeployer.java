@@ -90,7 +90,7 @@ public class KubernetesDeployer {
             KubernetesClient client, Path outputDir) {
         String namespace = Optional.ofNullable(client.getNamespace()).orElse("default");
         log.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()
-                + " in namespace:" + namespace + ".");
+                + " in namespace: " + namespace + ".");
         File manifest = outputDir.resolve(KUBERNETES).resolve(deploymentTarget.getName().toLowerCase() + ".yml")
                 .toFile();
 

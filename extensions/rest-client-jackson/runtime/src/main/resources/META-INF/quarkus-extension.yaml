@@ -1,0 +1,14 @@
+---
+name: "REST Client Jackson"
+metadata:
+  keywords:
+  - "rest-client-jackson"
+  - "rest-client"
+  - "web-client"
+  - "microprofile-rest-client"
+  - "json"
+  - "jackson"
+  categories:
+  - "web"
+  - "serialization"
+  status: "stable"

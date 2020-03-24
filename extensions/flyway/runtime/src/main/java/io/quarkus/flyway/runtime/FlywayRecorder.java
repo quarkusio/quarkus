@@ -1,6 +1,7 @@
 package io.quarkus.flyway.runtime;
 
 import java.lang.annotation.Annotation;
+import java.util.List;
 import java.util.Map.Entry;
 
 import javax.enterprise.inject.Default;
@@ -11,10 +12,14 @@ import org.flywaydb.core.Flyway;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.flyway.FlywayDataSource;
+import io.quarkus.flyway.runtime.graal.QuarkusPathLocationScanner;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class FlywayRecorder {
+    public void setApplicationMigrationFiles(List<String> migrationFiles) {
+        QuarkusPathLocationScanner.setApplicationMigrationFiles(migrationFiles);
+    }
 
     public BeanContainerListener setFlywayBuildConfig(FlywayBuildTimeConfig flywayBuildConfig) {
         return beanContainer -> {

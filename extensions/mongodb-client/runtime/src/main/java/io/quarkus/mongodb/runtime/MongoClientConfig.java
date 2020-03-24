@@ -197,12 +197,4 @@ public class MongoClientConfig {
      */
     @ConfigDocSection
     public CredentialConfig credentials;
-
-    /**
-     * Configures the maximum number of concurrent operations allowed to wait for a server to become available.
-     * All further operations will get an exception immediately.
-     */
-    @ConfigItem
-    public OptionalInt maxWaitQueueSize;
-
 }

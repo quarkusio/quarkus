@@ -15,6 +15,8 @@ import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 
+import com.mongodb.client.result.InsertOneResult;
+
 import de.flapdoodle.embed.mongo.MongodExecutable;
 import de.flapdoodle.embed.mongo.MongodStarter;
 import de.flapdoodle.embed.mongo.config.IMongodConfig;
@@ -140,7 +142,7 @@ public class MongoTestBase {
         io.quarkus.mongodb.reactive.ReactiveMongoDatabase database = mongoClient.getDatabase(DATABASE);
         io.quarkus.mongodb.reactive.ReactiveMongoCollection<Document> mongoCollection = database
                 .getCollection(collection);
-        List<CompletableFuture<Void>> list = new ArrayList<>();
+        List<CompletableFuture<InsertOneResult>> list = new ArrayList<>();
         for (int i = 0; i < num; i++) {
             Document doc = createDoc(i);
             list.add(mongoCollection.insertOne(doc).subscribeAsCompletionStage());
@@ -154,7 +156,7 @@ public class MongoTestBase {
         io.quarkus.mongodb.ReactiveMongoDatabase database = mongoClient.getDatabase(DATABASE);
         io.quarkus.mongodb.ReactiveMongoCollection<Document> mongoCollection = database
                 .getCollection(collection);
-        List<CompletableFuture<Void>> list = new ArrayList<>();
+        List<CompletableFuture<InsertOneResult>> list = new ArrayList<>();
         for (int i = 0; i < num; i++) {
             Document doc = createDoc(i);
             list.add(mongoCollection.insertOne(doc).toCompletableFuture());

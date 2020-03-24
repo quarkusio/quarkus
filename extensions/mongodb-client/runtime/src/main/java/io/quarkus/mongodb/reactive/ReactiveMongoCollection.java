@@ -27,6 +27,8 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.InsertManyResult;
+import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
 import com.mongodb.reactivestreams.client.ClientSession;
 
@@ -377,7 +379,7 @@ public interface ReactiveMongoCollection<T> {
      * @param pipeline the aggregate pipeline
      * @return a stream containing the result of the aggregation operation
      */
-    Multi<Document> aggregate(List<? extends Bson> pipeline);
+    Multi<T> aggregate(List<? extends Bson> pipeline);
 
     /**
      * Aggregates documents according to the specified aggregation pipeline.
@@ -396,7 +398,7 @@ public interface ReactiveMongoCollection<T> {
      * @param pipeline the aggregate pipeline
      * @return a stream containing the result of the aggregation operation
      */
-    Multi<Document> aggregate(ClientSession clientSession, List<? extends Bson> pipeline);
+    Multi<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline);
 
     /**
      * Aggregates documents according to the specified aggregation pipeline.
@@ -418,7 +420,7 @@ public interface ReactiveMongoCollection<T> {
      * @param options the stream options
      * @return a stream containing the result of the aggregation operation
      */
-    Multi<Document> aggregate(List<? extends Bson> pipeline, AggregateOptions options);
+    Multi<T> aggregate(List<? extends Bson> pipeline, AggregateOptions options);
 
     /**
      * Aggregates documents according to the specified aggregation pipeline.
@@ -439,7 +441,7 @@ public interface ReactiveMongoCollection<T> {
      * @param options the stream options
      * @return a stream containing the result of the aggregation operation
      */
-    Multi<Document> aggregate(ClientSession clientSession, List<? extends Bson> pipeline,
+    Multi<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline,
             AggregateOptions options);
 
     /**
@@ -623,7 +625,7 @@ public interface ReactiveMongoCollection<T> {
      *        key.
      * @return a {@link Multi} containing the result of the map-reduce operation
      */
-    Multi<Document> mapReduce(String mapFunction, String reduceFunction);
+    Multi<T> mapReduce(String mapFunction, String reduceFunction);
 
     /**
      * Aggregates documents according to the specified map-reduce function.
@@ -646,7 +648,7 @@ public interface ReactiveMongoCollection<T> {
      *        key.
      * @return a {@link Multi} containing the result of the map-reduce operation
      */
-    Multi<Document> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction);
+    Multi<T> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction);
 
     /**
      * Aggregates documents according to the specified map-reduce function.
@@ -671,7 +673,7 @@ public interface ReactiveMongoCollection<T> {
      * @param options The map reduce options configuring process and result.
      * @return a {@link Multi} containing the result of the map-reduce operation
      */
-    Multi<Document> mapReduce(String mapFunction, String reduceFunction, MapReduceOptions options);
+    Multi<T> mapReduce(String mapFunction, String reduceFunction, MapReduceOptions options);
 
     /**
      * Aggregates documents according to the specified map-reduce function.
@@ -697,7 +699,7 @@ public interface ReactiveMongoCollection<T> {
      * @param options The map reduce options configuring process and result.
      * @return a {@link Multi} containing the result of the map-reduce operation
      */
-    Multi<Document> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction,
+    Multi<T> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction,
             MapReduceOptions options);
 
     /**
@@ -763,7 +765,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
-    Uni<Void> insertOne(T document);
+    Uni<InsertOneResult> insertOne(T document);
 
     /**
      * Inserts the provided document. If the document is missing an identifier, the driver should generate one.
@@ -773,7 +775,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
-    Uni<Void> insertOne(T document, InsertOneOptions options);
+    Uni<InsertOneResult> insertOne(T document, InsertOneOptions options);
 
     /**
      * Inserts the provided document. If the document is missing an identifier, the driver should generate one.
@@ -783,7 +785,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
-    Uni<Void> insertOne(ClientSession clientSession, T document);
+    Uni<InsertOneResult> insertOne(ClientSession clientSession, T document);
 
     /**
      * Inserts the provided document. If the document is missing an identifier, the driver should generate one.
@@ -794,7 +796,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
-    Uni<Void> insertOne(ClientSession clientSession, T document, InsertOneOptions options);
+    Uni<InsertOneResult> insertOne(ClientSession clientSession, T document, InsertOneOptions options);
 
     /**
      * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API.
@@ -803,7 +805,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
-    Uni<Void> insertMany(List<? extends T> documents);
+    Uni<InsertManyResult> insertMany(List<? extends T> documents);
 
     /**
      * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API.
@@ -813,7 +815,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
-    Uni<Void> insertMany(List<? extends T> documents, InsertManyOptions options);
+    Uni<InsertManyResult> insertMany(List<? extends T> documents, InsertManyOptions options);
 
     /**
      * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API.
@@ -823,7 +825,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
-    Uni<Void> insertMany(ClientSession clientSession, List<? extends T> documents);
+    Uni<InsertManyResult> insertMany(ClientSession clientSession, List<? extends T> documents);
 
     /**
      * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API.
@@ -834,7 +836,7 @@ public interface ReactiveMongoCollection<T> {
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
-    Uni<Void> insertMany(ClientSession clientSession, List<? extends T> documents,
+    Uni<InsertManyResult> insertMany(ClientSession clientSession, List<? extends T> documents,
             InsertManyOptions options);
 
     /**

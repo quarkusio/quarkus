@@ -14,8 +14,6 @@ import com.mongodb.event.ConnectionCheckedOutEvent;
 import com.mongodb.event.ConnectionPoolClosedEvent;
 import com.mongodb.event.ConnectionPoolListener;
 import com.mongodb.event.ConnectionPoolOpenedEvent;
-import com.mongodb.event.ConnectionPoolWaitQueueEnteredEvent;
-import com.mongodb.event.ConnectionPoolWaitQueueExitedEvent;
 import com.mongodb.event.ConnectionRemovedEvent;
 
 import io.smallrye.metrics.MetricRegistries;
@@ -56,16 +54,6 @@ public class MongoMetricsConnectionPoolListener implements ConnectionPoolListene
         if (metric != null) {
             ((ConnectionPoolGauge) metric).decrement();
         }
-    }
-
-    @Override
-    public void waitQueueEntered(ConnectionPoolWaitQueueEnteredEvent connectionPoolWaitQueueEnteredEvent) {
-        // Not supported, since the event is deprecated and will be removed anyway
-    }
-
-    @Override
-    public void waitQueueExited(ConnectionPoolWaitQueueExitedEvent connectionPoolWaitQueueExitedEvent) {
-        // Not supported, since the event is deprecated and will be removed anyway
     }
 
     @Override

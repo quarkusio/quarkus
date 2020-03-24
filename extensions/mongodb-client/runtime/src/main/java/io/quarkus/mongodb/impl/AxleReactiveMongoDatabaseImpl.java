@@ -91,12 +91,12 @@ public class AxleReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
 
     @Override
     public CompletionStage<Void> drop() {
-        return Wrappers.toEmptyCompletionStage(database.drop());
+        return Wrappers.toCompletionStage(database.drop());
     }
 
     @Override
     public CompletionStage<Void> drop(ClientSession clientSession) {
-        return Wrappers.toEmptyCompletionStage(database.drop(clientSession));
+        return Wrappers.toCompletionStage(database.drop(clientSession));
     }
 
     @Override
@@ -189,47 +189,47 @@ public class AxleReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
 
     @Override
     public CompletionStage<Void> createCollection(String collectionName) {
-        return Wrappers.toEmptyCompletionStage(database.createCollection(collectionName));
+        return Wrappers.toCompletionStage(database.createCollection(collectionName));
     }
 
     @Override
     public CompletionStage<Void> createCollection(String collectionName, CreateCollectionOptions options) {
-        return Wrappers.toEmptyCompletionStage(database.createCollection(collectionName, options));
+        return Wrappers.toCompletionStage(database.createCollection(collectionName, options));
     }
 
     @Override
     public CompletionStage<Void> createCollection(ClientSession clientSession, String collectionName) {
-        return Wrappers.toEmptyCompletionStage(database.createCollection(clientSession, collectionName));
+        return Wrappers.toCompletionStage(database.createCollection(clientSession, collectionName));
     }
 
     @Override
     public CompletionStage<Void> createCollection(ClientSession clientSession, String collectionName,
             CreateCollectionOptions options) {
-        return Wrappers.toEmptyCompletionStage(database.createCollection(clientSession, collectionName, options));
+        return Wrappers.toCompletionStage(database.createCollection(clientSession, collectionName, options));
     }
 
     @Override
     public CompletionStage<Void> createView(String viewName, String viewOn, List<? extends Bson> pipeline) {
-        return Wrappers.toEmptyCompletionStage(database.createView(viewName, viewOn, pipeline));
+        return Wrappers.toCompletionStage(database.createView(viewName, viewOn, pipeline));
     }
 
     @Override
     public CompletionStage<Void> createView(String viewName, String viewOn, List<? extends Bson> pipeline,
             CreateViewOptions createViewOptions) {
-        return Wrappers.toEmptyCompletionStage(database.createView(viewName, viewOn, pipeline, createViewOptions));
+        return Wrappers.toCompletionStage(database.createView(viewName, viewOn, pipeline, createViewOptions));
     }
 
     @Override
     public CompletionStage<Void> createView(ClientSession clientSession, String viewName, String viewOn,
             List<? extends Bson> pipeline) {
-        return Wrappers.toEmptyCompletionStage(database.createView(clientSession, viewName, viewOn, pipeline));
+        return Wrappers.toCompletionStage(database.createView(clientSession, viewName, viewOn, pipeline));
     }
 
     @Override
     public CompletionStage<Void> createView(ClientSession clientSession, String viewName, String viewOn,
             List<? extends Bson> pipeline, CreateViewOptions createViewOptions) {
         return Wrappers
-                .toEmptyCompletionStage(database.createView(clientSession, viewName, viewOn, pipeline, createViewOptions));
+                .toCompletionStage(database.createView(clientSession, viewName, viewOn, pipeline, createViewOptions));
     }
 
     @Override

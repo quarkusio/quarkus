@@ -139,7 +139,6 @@ public abstract class AbstractMongoClientProducer {
                 builder.localThreshold(config.localThreshold.get().toMillis(), TimeUnit.MILLISECONDS);
             }
 
-            config.maxWaitQueueSize.ifPresent(builder::maxWaitQueueSize);
             config.replicaSetName.ifPresent(builder::requiredReplicaSetName);
 
             if (config.serverSelectionTimeout.isPresent()) {
@@ -161,7 +160,6 @@ public abstract class AbstractMongoClientProducer {
         public void apply(ConnectionPoolSettings.Builder builder) {
             config.maxPoolSize.ifPresent(builder::maxSize);
             config.minPoolSize.ifPresent(builder::minSize);
-            config.maxWaitQueueSize.ifPresent(builder::maxWaitQueueSize);
             if (config.maxConnectionIdleTime.isPresent()) {
                 builder.maxConnectionIdleTime(config.maxConnectionIdleTime.get().toMillis(), TimeUnit.MILLISECONDS);
             }

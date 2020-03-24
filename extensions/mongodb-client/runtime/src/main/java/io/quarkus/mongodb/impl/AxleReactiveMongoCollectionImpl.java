@@ -30,6 +30,8 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.InsertManyResult;
+import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
 import com.mongodb.reactivestreams.client.AggregatePublisher;
 import com.mongodb.reactivestreams.client.ChangeStreamPublisher;
@@ -308,7 +310,7 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
     }
 
     @Override
-    public AggregatePublisher<Document> aggregateAsPublisher(List<? extends Bson> pipeline) {
+    public AggregatePublisher<T> aggregateAsPublisher(List<? extends Bson> pipeline) {
         return collection.aggregate(pipeline);
     }
 
@@ -318,7 +320,7 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
     }
 
     @Override
-    public AggregatePublisher<Document> aggregateAsPublisher(ClientSession clientSession, List<? extends Bson> pipeline) {
+    public AggregatePublisher<T> aggregateAsPublisher(ClientSession clientSession, List<? extends Bson> pipeline) {
         return collection.aggregate(clientSession, pipeline);
     }
 
@@ -338,7 +340,7 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
     }
 
     @Override
-    public PublisherBuilder<Document> aggregate(List<? extends Bson> pipeline) {
+    public PublisherBuilder<T> aggregate(List<? extends Bson> pipeline) {
         return Wrappers.toPublisherBuilder(collection.aggregate(pipeline));
     }
 
@@ -348,7 +350,7 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
     }
 
     @Override
-    public PublisherBuilder<Document> aggregate(ClientSession clientSession, List<? extends Bson> pipeline) {
+    public PublisherBuilder<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline) {
         return Wrappers.toPublisherBuilder(collection.aggregate(clientSession, pipeline));
     }
 
@@ -365,7 +367,7 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
     }
 
     @Override
-    public PublisherBuilder<Document> aggregate(List<? extends Bson> pipeline, AggregateOptions options) {
+    public PublisherBuilder<T> aggregate(List<? extends Bson> pipeline, AggregateOptions options) {
         return ReactiveStreams.fromPublisher(apply(options, collection.aggregate(pipeline)));
     }
 
@@ -375,7 +377,7 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
     }
 
     @Override
-    public PublisherBuilder<Document> aggregate(ClientSession clientSession, List<? extends Bson> pipeline,
+    public PublisherBuilder<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline,
             AggregateOptions options) {
         return ReactiveStreams.fromPublisher(apply(options, collection.aggregate(clientSession, pipeline)));
     }
@@ -520,7 +522,7 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
     }
 
     @Override
-    public MapReducePublisher<Document> mapReduceAsPublisher(String mapFunction, String reduceFunction) {
+    public MapReducePublisher<T> mapReduceAsPublisher(String mapFunction, String reduceFunction) {
         return collection.mapReduce(mapFunction, reduceFunction);
     }
 
@@ -530,7 +532,7 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
     }
 
     @Override
-    public MapReducePublisher<Document> mapReduceAsPublisher(ClientSession clientSession, String mapFunction,
+    public MapReducePublisher<T> mapReduceAsPublisher(ClientSession clientSession, String mapFunction,
             String reduceFunction) {
         return collection.mapReduce(clientSession, mapFunction, reduceFunction);
     }
@@ -542,7 +544,7 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
     }
 
     @Override
-    public PublisherBuilder<Document> mapReduce(String mapFunction, String reduceFunction) {
+    public PublisherBuilder<T> mapReduce(String mapFunction, String reduceFunction) {
         return Wrappers.toPublisherBuilder(mapReduceAsPublisher(mapFunction, reduceFunction));
     }
 
@@ -552,7 +554,7 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
     }
 
     @Override
-    public PublisherBuilder<Document> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction) {
+    public PublisherBuilder<T> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction) {
         return Wrappers.toPublisherBuilder(mapReduceAsPublisher(clientSession, mapFunction, reduceFunction));
     }
 
@@ -563,7 +565,7 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
     }
 
     @Override
-    public PublisherBuilder<Document> mapReduce(String mapFunction, String reduceFunction, MapReduceOptions options) {
+    public PublisherBuilder<T> mapReduce(String mapFunction, String reduceFunction, MapReduceOptions options) {
         return ReactiveStreams.fromPublisher(apply(options, mapReduceAsPublisher(mapFunction, reduceFunction)));
     }
 
@@ -581,7 +583,7 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
     }
 
     @Override
-    public PublisherBuilder<Document> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction,
+    public PublisherBuilder<T> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction,
             MapReduceOptions options) {
         return ReactiveStreams.fromPublisher(apply(options, mapReduceAsPublisher(clientSession, mapFunction, reduceFunction)));
     }
@@ -617,44 +619,44 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
     }
 
     @Override
-    public CompletionStage<Void> insertOne(T t) {
-        return Wrappers.toEmptyCompletionStage(collection.insertOne(t));
+    public CompletionStage<InsertOneResult> insertOne(T t) {
+        return Wrappers.toCompletionStage(collection.insertOne(t));
     }
 
     @Override
-    public CompletionStage<Void> insertOne(T t, InsertOneOptions options) {
-        return Wrappers.toEmptyCompletionStage(collection.insertOne(t, options));
+    public CompletionStage<InsertOneResult> insertOne(T t, InsertOneOptions options) {
+        return Wrappers.toCompletionStage(collection.insertOne(t, options));
     }
 
     @Override
-    public CompletionStage<Void> insertOne(ClientSession clientSession, T t) {
-        return Wrappers.toEmptyCompletionStage(collection.insertOne(clientSession, t));
+    public CompletionStage<InsertOneResult> insertOne(ClientSession clientSession, T t) {
+        return Wrappers.toCompletionStage(collection.insertOne(clientSession, t));
     }
 
     @Override
-    public CompletionStage<Void> insertOne(ClientSession clientSession, T t, InsertOneOptions options) {
-        return Wrappers.toEmptyCompletionStage(collection.insertOne(clientSession, t, options));
+    public CompletionStage<InsertOneResult> insertOne(ClientSession clientSession, T t, InsertOneOptions options) {
+        return Wrappers.toCompletionStage(collection.insertOne(clientSession, t, options));
     }
 
     @Override
-    public CompletionStage<Void> insertMany(List<? extends T> tDocuments) {
-        return Wrappers.toEmptyCompletionStage(collection.insertMany(tDocuments));
+    public CompletionStage<InsertManyResult> insertMany(List<? extends T> tDocuments) {
+        return Wrappers.toCompletionStage(collection.insertMany(tDocuments));
     }
 
     @Override
-    public CompletionStage<Void> insertMany(List<? extends T> tDocuments, InsertManyOptions options) {
-        return Wrappers.toEmptyCompletionStage(collection.insertMany(tDocuments, options));
+    public CompletionStage<InsertManyResult> insertMany(List<? extends T> tDocuments, InsertManyOptions options) {
+        return Wrappers.toCompletionStage(collection.insertMany(tDocuments, options));
     }
 
     @Override
-    public CompletionStage<Void> insertMany(ClientSession clientSession, List<? extends T> tDocuments) {
-        return Wrappers.toEmptyCompletionStage(collection.insertMany(clientSession, tDocuments));
+    public CompletionStage<InsertManyResult> insertMany(ClientSession clientSession, List<? extends T> tDocuments) {
+        return Wrappers.toCompletionStage(collection.insertMany(clientSession, tDocuments));
     }
 
     @Override
-    public CompletionStage<Void> insertMany(ClientSession clientSession, List<? extends T> tDocuments,
+    public CompletionStage<InsertManyResult> insertMany(ClientSession clientSession, List<? extends T> tDocuments,
             InsertManyOptions options) {
-        return Wrappers.toEmptyCompletionStage(collection.insertMany(clientSession, tDocuments, options));
+        return Wrappers.toCompletionStage(collection.insertMany(clientSession, tDocuments, options));
     }
 
     @Override
@@ -824,12 +826,12 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
 
     @Override
     public CompletionStage<Void> drop() {
-        return Wrappers.toEmptyCompletionStage(collection.drop());
+        return Wrappers.toCompletionStage(collection.drop());
     }
 
     @Override
     public CompletionStage<Void> drop(ClientSession clientSession) {
-        return Wrappers.toEmptyCompletionStage(collection.drop(clientSession));
+        return Wrappers.toCompletionStage(collection.drop(clientSession));
     }
 
     @Override
@@ -915,82 +917,82 @@ public class AxleReactiveMongoCollectionImpl<T> implements ReactiveMongoCollecti
 
     @Override
     public CompletionStage<Void> dropIndex(String indexName) {
-        return Wrappers.toEmptyCompletionStage(collection.dropIndex(indexName));
+        return Wrappers.toCompletionStage(collection.dropIndex(indexName));
     }
 
     @Override
     public CompletionStage<Void> dropIndex(Bson keys) {
-        return Wrappers.toEmptyCompletionStage(collection.dropIndex(keys));
+        return Wrappers.toCompletionStage(collection.dropIndex(keys));
     }
 
     @Override
     public CompletionStage<Void> dropIndex(String indexName, DropIndexOptions dropIndexOptions) {
-        return Wrappers.toEmptyCompletionStage(collection.dropIndex(indexName, dropIndexOptions));
+        return Wrappers.toCompletionStage(collection.dropIndex(indexName, dropIndexOptions));
     }
 
     @Override
     public CompletionStage<Void> dropIndex(Bson keys, DropIndexOptions dropIndexOptions) {
-        return Wrappers.toEmptyCompletionStage(collection.dropIndex(keys, dropIndexOptions));
+        return Wrappers.toCompletionStage(collection.dropIndex(keys, dropIndexOptions));
     }
 
     @Override
     public CompletionStage<Void> dropIndex(ClientSession clientSession, String indexName) {
-        return Wrappers.toEmptyCompletionStage(collection.dropIndex(clientSession, indexName));
+        return Wrappers.toCompletionStage(collection.dropIndex(clientSession, indexName));
     }
 
     @Override
     public CompletionStage<Void> dropIndex(ClientSession clientSession, Bson keys) {
-        return Wrappers.toEmptyCompletionStage(collection.dropIndex(clientSession, keys));
+        return Wrappers.toCompletionStage(collection.dropIndex(clientSession, keys));
     }
 
     @Override
     public CompletionStage<Void> dropIndex(ClientSession clientSession, String indexName, DropIndexOptions dropIndexOptions) {
-        return Wrappers.toEmptyCompletionStage(collection.dropIndex(clientSession, indexName, dropIndexOptions));
+        return Wrappers.toCompletionStage(collection.dropIndex(clientSession, indexName, dropIndexOptions));
     }
 
     @Override
     public CompletionStage<Void> dropIndex(ClientSession clientSession, Bson keys, DropIndexOptions dropIndexOptions) {
-        return Wrappers.toEmptyCompletionStage(collection.dropIndex(clientSession, keys, dropIndexOptions));
+        return Wrappers.toCompletionStage(collection.dropIndex(clientSession, keys, dropIndexOptions));
     }
 
     @Override
     public CompletionStage<Void> dropIndexes() {
-        return Wrappers.toEmptyCompletionStage(collection.dropIndexes());
+        return Wrappers.toCompletionStage(collection.dropIndexes());
     }
 
     @Override
     public CompletionStage<Void> dropIndexes(DropIndexOptions dropIndexOptions) {
-        return Wrappers.toEmptyCompletionStage(collection.dropIndexes(dropIndexOptions));
+        return Wrappers.toCompletionStage(collection.dropIndexes(dropIndexOptions));
     }
 
     @Override
     public CompletionStage<Void> dropIndexes(ClientSession clientSession) {
-        return Wrappers.toEmptyCompletionStage(collection.dropIndexes(clientSession));
+        return Wrappers.toCompletionStage(collection.dropIndexes(clientSession));
     }
 
     @Override
     public CompletionStage<Void> dropIndexes(ClientSession clientSession, DropIndexOptions dropIndexOptions) {
-        return Wrappers.toEmptyCompletionStage(collection.dropIndexes(clientSession, dropIndexOptions));
+        return Wrappers.toCompletionStage(collection.dropIndexes(clientSession, dropIndexOptions));
     }
 
     @Override
     public CompletionStage<Void> renameCollection(MongoNamespace newCollectionNamespace) {
-        return Wrappers.toEmptyCompletionStage(collection.renameCollection(newCollectionNamespace));
+        return Wrappers.toCompletionStage(collection.renameCollection(newCollectionNamespace));
     }
 
     @Override
     public CompletionStage<Void> renameCollection(MongoNamespace newCollectionNamespace, RenameCollectionOptions options) {
-        return Wrappers.toEmptyCompletionStage(collection.renameCollection(newCollectionNamespace, options));
+        return Wrappers.toCompletionStage(collection.renameCollection(newCollectionNamespace, options));
     }
 
     @Override
     public CompletionStage<Void> renameCollection(ClientSession clientSession, MongoNamespace newCollectionNamespace) {
-        return Wrappers.toEmptyCompletionStage(collection.renameCollection(clientSession, newCollectionNamespace));
+        return Wrappers.toCompletionStage(collection.renameCollection(clientSession, newCollectionNamespace));
     }
 
     @Override
     public CompletionStage<Void> renameCollection(ClientSession clientSession, MongoNamespace newCollectionNamespace,
             RenameCollectionOptions options) {
-        return Wrappers.toEmptyCompletionStage(collection.renameCollection(clientSession, newCollectionNamespace, options));
+        return Wrappers.toCompletionStage(collection.renameCollection(clientSession, newCollectionNamespace, options));
     }
 }

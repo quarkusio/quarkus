@@ -16,7 +16,7 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
 
-    private static final Logger LOGGER = Logger.getLogger(MongodbPanacheResourceTest.class);
+    private static final Logger LOGGER = Logger.getLogger(MongoTestResource.class);
     private static MongodExecutable MONGO;
 
     @Override

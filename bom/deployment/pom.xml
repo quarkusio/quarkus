@@ -816,6 +816,19 @@
                 <artifactId>quarkus-cache-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-webjars-locator-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            
+            <!-- Quarkus extension dependencies -->
+            <dependency>
+                <groupId>org.webjars</groupId>
+                <artifactId>webjars-locator</artifactId>
+                <version>0.39</version>
+            </dependency>
 
             <!-- Quarkus test dependencies -->
 

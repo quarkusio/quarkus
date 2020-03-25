@@ -33,6 +33,7 @@
         <module>vertx-http</module>
         <module>undertow</module>
         <module>undertow-websockets</module>
+        <module>webjars-locator</module>
 
         <!-- Monitoring -->
         <module>smallrye-health</module>

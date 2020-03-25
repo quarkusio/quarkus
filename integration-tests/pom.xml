@@ -111,6 +111,7 @@
         <module>packaging</module>
         <module>simple with space</module>
         <module>consul-config</module>
+        <module>webjars-locator</module>
 
         <!-- gRPC tests -->
         <module>grpc-plain-text</module>

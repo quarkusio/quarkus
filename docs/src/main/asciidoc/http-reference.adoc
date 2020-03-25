@@ -29,6 +29,29 @@ was chosen as it is the standard location for resources in `jar` files as define
 Quarkus can be used without Servlet following this convention allows existing code that places its resources in this
 location to function correctly.
 
+=== WebJar Locator Support
+
+If you are using webjars, like the following JQuery one
+[source, xml]
+----
+<dependency>
+    <groupId>org.webjars</groupId>
+    <artifactId>jquery</artifactId>
+    <version>3.1.1</version>
+</dependency>
+----
+and rather write `/webjars/jquery/jquery.min.js` instead of `/webjars/jquery/3.1.1/jquery.min.js`
+in your HTML files, you can add the `quarkus-webjars-locator` extension to your project.
+To use it, add the following to your project's dependencies:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-webjars-locator</artifactId>
+</dependency>
+----
+
 == Configuring the Context path
 
 By default Quarkus will serve content from under the root context. If you want to change this you can use the

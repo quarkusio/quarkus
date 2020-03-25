@@ -82,6 +82,11 @@ public class OidcTenantConfig {
     @ConfigItem
     Credentials credentials = new Credentials();
     /**
+     * Options to configure a proxy that OIDC adapter will use for talking with OIDC server.
+     */
+    @ConfigItem
+    Proxy proxy = new Proxy();
+    /**
      * Different options to configure authorization requests
      */
     Authentication authentication = new Authentication();
@@ -172,6 +177,14 @@ public class OidcTenantConfig {
 
     public void setTenantId(String tenantId) {
         this.tenantId = Optional.of(tenantId);
+    }
+
+    public Proxy getProxy() {
+        return proxy;
+    }
+
+    public void setProxy(Proxy proxy) {
+        this.proxy = proxy;
     }
 
     @ConfigGroup
@@ -465,6 +478,37 @@ public class OidcTenantConfig {
         public void setPrincipalClaim(String principalClaim) {
             this.principalClaim = Optional.of(principalClaim);
         }
+    }
+
+    @ConfigGroup
+    public static class Proxy {
+
+        /**
+         * The host (name or IP address) of the Proxy.<br/>
+         * Note: If OIDC adapter needs to use a Proxy to talk with OIDC server (Provider),
+         * then at least the "host" config item must be configured to enable the usage of a Proxy.
+         */
+        @ConfigItem
+        public Optional<String> host = Optional.empty();
+
+        /**
+         * The port number of the Proxy. Default value is 80.
+         */
+        @ConfigItem(defaultValue = "80")
+        public int port = 80;
+
+        /**
+         * The username, if Proxy needs authentication.
+         */
+        @ConfigItem
+        public Optional<String> username = Optional.empty();
+
+        /**
+         * The password, if Proxy needs authentication.
+         */
+        @ConfigItem
+        public Optional<String> password = Optional.empty();
+
     }
 
     public static enum ApplicationType {

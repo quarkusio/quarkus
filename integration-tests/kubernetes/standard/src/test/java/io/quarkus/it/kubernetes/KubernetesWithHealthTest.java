@@ -3,6 +3,8 @@ package io.quarkus.it.kubernetes;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -77,9 +79,17 @@ public class KubernetesWithHealthTest {
                                 assertThat(p.getInitialDelaySeconds()).isEqualTo(0);
                                 assertProbePath(p, "/health/ready");
                             });
+                            assertThat(container.getReadinessProbe()).satisfies(probe -> {
+                                assertNotNull(probe.getHttpGet());
+                                assertEquals(probe.getHttpGet().getPort().getIntVal(), 9090);
+                            });
                             assertThat(container.getLivenessProbe()).satisfies(p -> {
                                 assertThat(p.getInitialDelaySeconds()).isEqualTo(20);
                                 assertProbePath(p, "/health/live");
+                            });
+                            assertThat(container.getLivenessProbe()).satisfies(probe -> {
+                                assertNotNull(probe.getHttpGet());
+                                assertEquals(probe.getHttpGet().getPort().getIntVal(), 9090);
                             });
                         });
                     });

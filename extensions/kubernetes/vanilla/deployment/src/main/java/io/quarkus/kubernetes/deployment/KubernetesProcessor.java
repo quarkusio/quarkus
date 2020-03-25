@@ -1,8 +1,10 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_S2I_IMAGE_NAME;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG;
+import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
@@ -437,28 +439,37 @@ class KubernetesProcessor {
                         ProbeConverter.builder(kubernetesConfig.readinessProbe).withHttpActionPath(l.getPath()).build()));
             });
         });
-        handleProbes(name, kubernetesConfig, openshiftConfig, knativeConfig, kubernetesHealthLivenessPathBuildItem,
+        handleProbes(name, kubernetesConfig, openshiftConfig, knativeConfig, ports, kubernetesHealthLivenessPathBuildItem,
                 kubernetesHealthReadinessPathBuildItem, session);
     }
 
     private void handleProbes(String name, KubernetesConfig kubernetesConfig, OpenshiftConfig openshiftConfig,
-            KnativeConfig knativeConfig, Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
-            Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem, Session session) {
+            KnativeConfig knativeConfig,
+            Map<String, Integer> ports,
+            Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
+            Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem,
+            Session session) {
         if (kubernetesConfig.deploymentTarget.contains(KUBERNETES)) {
             handleLivenessProbe(name, KUBERNETES, kubernetesConfig.livenessProbe, kubernetesHealthLivenessPathBuildItem,
                     session);
             handleReadinessProbe(name, KUBERNETES, kubernetesConfig.readinessProbe, kubernetesHealthReadinessPathBuildItem,
                     session);
+            session.resources().decorate(KUBERNETES,
+                    new ApplyHttpGetActionPortDecorator(ports.getOrDefault(HTTP_PORT, DEFAULT_HTTP_PORT)));
         }
         if (kubernetesConfig.deploymentTarget.contains(OPENSHIFT)) {
             handleLivenessProbe(name, OPENSHIFT, openshiftConfig.livenessProbe, kubernetesHealthLivenessPathBuildItem, session);
             handleReadinessProbe(name, OPENSHIFT, openshiftConfig.readinessProbe, kubernetesHealthReadinessPathBuildItem,
                     session);
+            session.resources().decorate(OPENSHIFT,
+                    new ApplyHttpGetActionPortDecorator(ports.getOrDefault(HTTP_PORT, DEFAULT_HTTP_PORT)));
         }
         if (kubernetesConfig.deploymentTarget.contains(KNATIVE)) {
             handleLivenessProbe(name, KNATIVE, knativeConfig.livenessProbe, kubernetesHealthLivenessPathBuildItem, session);
             handleReadinessProbe(name, KNATIVE, knativeConfig.readinessProbe, kubernetesHealthReadinessPathBuildItem,
                     session);
+            session.resources().decorate(KNATIVE,
+                    new ApplyHttpGetActionPortDecorator(ports.getOrDefault(HTTP_PORT, DEFAULT_HTTP_PORT)));
         }
     }
 

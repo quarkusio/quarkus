@@ -45,6 +45,7 @@ import io.dekorate.kubernetes.decorator.AddAwsElasticBlockStoreVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddAzureDiskVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddAzureFileVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddConfigMapVolumeDecorator;
+import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddImagePullSecretDecorator;
 import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
@@ -287,7 +288,7 @@ class KubernetesProcessor {
 
         //EnvVars
         config.getEnvVars().entrySet().forEach(e -> {
-            session.resources().decorate(target, new ApplyEnvVarDecorator(EnvConverter.convert(e)));
+            session.resources().decorate(target, new AddEnvVarDecorator(EnvConverter.convert(e)));
         });
 
         config.getWorkingDir().ifPresent(w -> {
@@ -371,7 +372,10 @@ class KubernetesProcessor {
         String openshiftName = openshiftConfig.name.orElse(name);
         String knativeName = knativeConfig.name.orElse(name);
 
-        session.resources().decorate(KNATIVE, new AddMissingContainerNameDecorator(knativeName, knativeName));
+        Map<String, PlatformConfiguration> configMap = new HashMap<>();
+        configMap.put(KUBERNETES, kubernetesConfig);
+        configMap.put(OPENSHIFT, openshiftConfig);
+        configMap.put(KNATIVE, knativeConfig);
 
         containerImageBuildItem.ifPresent(c -> {
             session.resources().decorate(OPENSHIFT, new ApplyContainerImageDecorator(openshiftName, c.getImage()));
@@ -380,7 +384,7 @@ class KubernetesProcessor {
         });
 
         kubernetesEnvBuildItems.forEach(e -> {
-            session.resources().decorate(e.getTarget(), new ApplyEnvVarDecorator(new EnvBuilder()
+            session.resources().decorate(e.getTarget(), new AddEnvVarDecorator(new EnvBuilder()
                     .withName(e.getKey())
                     .withValue(e.getValue())
                     .build()));
@@ -436,14 +440,14 @@ class KubernetesProcessor {
         }
 
         // only use the probe config 
-        kubernetesConfig.deploymentTarget.forEach(target -> {
+        deploymentTargets.forEach(target -> {
             kubernetesHealthLivenessPathBuildItem.ifPresent(l -> {
-                session.resources().decorate(target, new AddLivenessProbeDecorator(name,
-                        ProbeConverter.builder(kubernetesConfig.livenessProbe).withHttpActionPath(l.getPath()).build()));
+                session.resources().decorate(target, new AddLivenessProbeDecorator(name, ProbeConverter
+                        .builder(configMap.get(target).getLivenessProbe()).withHttpActionPath(l.getPath()).build()));
             });
             kubernetesHealthReadinessPathBuildItem.ifPresent(l -> {
-                session.resources().decorate(target, new AddReadinessProbeDecorator(name,
-                        ProbeConverter.builder(kubernetesConfig.readinessProbe).withHttpActionPath(l.getPath()).build()));
+                session.resources().decorate(target, new AddReadinessProbeDecorator(name, ProbeConverter
+                        .builder(configMap.get(target).getReadinessProbe()).withHttpActionPath(l.getPath()).build()));
             });
         });
         handleProbes(name, kubernetesConfig, openshiftConfig, knativeConfig, ports, kubernetesHealthLivenessPathBuildItem,
@@ -500,12 +504,10 @@ class KubernetesProcessor {
             Optional<KubernetesHealthReadinessPathBuildItem> healthReadinessPathBuildItem, Session session) {
         AddReadinessProbeDecorator readinessProbeDecorator = null;
         if (readinessProbe.hasUserSuppliedAction()) {
-            readinessProbeDecorator = new AddReadinessProbeDecorator(name,
-                    ProbeConverter.convert(readinessProbe));
+            readinessProbeDecorator = new AddReadinessProbeDecorator(name, ProbeConverter.convert(readinessProbe));
         } else if (healthReadinessPathBuildItem.isPresent()) {
-            readinessProbeDecorator = new AddReadinessProbeDecorator(name,
-                    ProbeConverter.builder(readinessProbe)
-                            .withHttpActionPath(healthReadinessPathBuildItem.get().getPath()).build());
+            readinessProbeDecorator = new AddReadinessProbeDecorator(name, ProbeConverter.builder(readinessProbe)
+                    .withHttpActionPath(healthReadinessPathBuildItem.get().getPath()).build());
         }
         if (readinessProbeDecorator != null) {
             session.resources().decorate(target, readinessProbeDecorator);

@@ -13,7 +13,7 @@ public class JibConfig {
     /**
      * The base image to be used when a container image is being produced for the jar build
      */
-    @ConfigItem(defaultValue = "fabric8/java-alpine-openjdk8-jre")
+    @ConfigItem(defaultValue = "fabric8/java-alpine-openjdk11-jre")
     public String baseJvmImage;
 
     /**

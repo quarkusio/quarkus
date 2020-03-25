@@ -2,6 +2,7 @@ package io.quarkus.oidc.runtime;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
@@ -19,6 +20,8 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.ProxyOptions;
 import io.vertx.ext.auth.PubSecKeyOptions;
 import io.vertx.ext.auth.oauth2.OAuth2Auth;
 import io.vertx.ext.auth.oauth2.OAuth2ClientOptions;
@@ -132,6 +135,11 @@ public class OidcRecorder {
             options.setClientSecretParameterName(null);
         }
 
+        Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.getProxy());
+        if (proxyOpt.isPresent()) {
+            options.setProxyOptions(proxyOpt.get());
+        }
+
         final long connectionDelayInSecs = oidcConfig.getConnectionDelay().isPresent()
                 ? oidcConfig.getConnectionDelay().get().toMillis() / 1000
                 : 0;
@@ -185,6 +193,23 @@ public class OidcRecorder {
                 + "Please make sure it is correct. Note it has to end with a realm value if you work with Keycloak, for example:"
                 + " 'https://localhost:8180/auth/realms/quarkus'";
         return new OIDCException(message, cause);
+    }
+
+    protected static Optional<ProxyOptions> toProxyOptions(OidcTenantConfig.Proxy proxyConfig) {
+        // Proxy is enabled if (at least) "host" is configured.
+        if (!proxyConfig.host.isPresent()) {
+            return Optional.empty();
+        }
+        JsonObject jsonOptions = new JsonObject();
+        jsonOptions.put("host", proxyConfig.host.get());
+        jsonOptions.put("port", proxyConfig.port);
+        if (proxyConfig.username.isPresent()) {
+            jsonOptions.put("username", proxyConfig.username.get());
+        }
+        if (proxyConfig.password.isPresent()) {
+            jsonOptions.put("password", proxyConfig.password.get());
+        }
+        return Optional.of(new ProxyOptions(jsonOptions));
     }
 
 }

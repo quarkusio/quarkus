@@ -842,6 +842,24 @@ public class TestEndpoint {
     }
 
     private void testPaging(PanacheQuery<Person> query) {
+        // No paging allowed until a page is setup
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.firstPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.previousPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.nextPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.lastPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.hasNextPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.hasPreviousPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.page(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.pageCount(),
+                "UnsupportedOperationException should have thrown");
+
         // ints
         List<Person> persons = query.page(0, 3).list();
         Assertions.assertEquals(3, persons.size());

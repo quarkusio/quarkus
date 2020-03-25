@@ -2,6 +2,7 @@ package io.quarkus.cli.commands;
 
 import static io.quarkus.generators.ProjectGenerator.CLASS_NAME;
 import static io.quarkus.generators.ProjectGenerator.IS_SPRING;
+import static io.quarkus.generators.ProjectGenerator.JAVA_TARGET;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_ARTIFACT_ID;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_GROUP_ID;
 import static io.quarkus.generators.ProjectGenerator.PROJECT_VERSION;
@@ -18,6 +19,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.lang.model.SourceVersion;
 
 /**
@@ -26,6 +29,8 @@ import javax.lang.model.SourceVersion;
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
 public class CreateProject {
+
+    private static final Pattern JAVA_VERSION_PATTERN = Pattern.compile("(?:1\\.)?(\\d+)(?:\\..*)?");
 
     public static SourceType determineSourceType(Set<String> extensions) {
         Optional<SourceType> sourceType = extensions.stream()
@@ -41,6 +46,8 @@ public class CreateProject {
     }
 
     private QuarkusCommandInvocation invocation;
+
+    private String javaTarget;
 
     /**
      * @deprecated since 1.3.0.CR1
@@ -73,6 +80,11 @@ public class CreateProject {
 
     public CreateProject sourceType(SourceType sourceType) {
         invocation.setValue(SOURCE_TYPE, sourceType);
+        return this;
+    }
+
+    public CreateProject javaTarget(String javaTarget) {
+        this.javaTarget = javaTarget;
         return this;
     }
 
@@ -126,6 +138,7 @@ public class CreateProject {
                 }
             }
         }
+
         try {
             return execute().isSuccess();
         } catch (QuarkusCommandException e) {
@@ -134,6 +147,15 @@ public class CreateProject {
     }
 
     public QuarkusCommandOutcome execute() throws QuarkusCommandException {
+        // Define the Java version to use determined from the one specified or the one creating the project
+        Matcher matcher = JAVA_VERSION_PATTERN
+                .matcher(this.javaTarget != null ? this.javaTarget : System.getProperty("java.version", ""));
+        if (matcher.matches() && Integer.parseInt(matcher.group(1)) < 11) {
+            invocation.setProperty(JAVA_TARGET, invocation.getBuildTool() == BuildTool.MAVEN ? "1.8" : "1_8");
+        } else {
+            invocation.setProperty(JAVA_TARGET, "11");
+        }
+
         return new CreateProjectCommandHandler().execute(invocation);
     }
 }

@@ -17,21 +17,21 @@ import io.quarkus.vault.test.VaultTestLifecycleManager;
 
 @DisabledOnOs(OS.WINDOWS) // https://github.com/quarkusio/quarkus/issues/3796
 @QuarkusTestResource(VaultTestLifecycleManager.class)
-public class VaultKv2ITCase {
+public class VaultKv1ITCase {
 
-    private static final Logger log = Logger.getLogger(VaultKv2ITCase.class.getName());
+    private static final Logger log = Logger.getLogger(VaultKv1ITCase.class.getName());
 
     public static final String CRUD_PATH = "crud";
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("application-vault-kv-version2-datasource.properties", "application.properties"));
+                    .addAsResource("application-vault-kv-version1-datasource.properties", "application.properties"));
     @Inject
     VaultKVSecretEngine kvSecretEngine;
 
     @Test
-    public void crudSecretV2() {
+    public void crudSecretV1() {
         VaultTestExtension.assertCrudSecret(kvSecretEngine);
     }
 }

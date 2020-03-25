@@ -58,8 +58,8 @@ public class VaultTestExtension {
     public static final String VAULT_AUTH_USERPASS_USER = "bob";
     public static final String VAULT_AUTH_USERPASS_PASSWORD = "sinclair";
     public static final String VAULT_AUTH_APPROLE = "myapprole";
-    public static final String SECRET_PATH_V1 = "secret";
-    public static final String SECRET_PATH_V2 = "secret-v2";
+    public static final String SECRET_PATH_V1 = "secret-v1";
+    public static final String SECRET_PATH_V2 = "secret";
     public static final String VAULT_DBROLE = "mydbrole";
     public static final String APP_SECRET_PATH = "foo";
     static final String APP_CONFIG_PATH = "config";
@@ -250,16 +250,16 @@ public class VaultTestExtension {
         execVault(format("vault kv put %s/%s %s=%s", SECRET_PATH_V1, APP_SECRET_PATH, SECRET_KEY, SECRET_VALUE));
         execVault(format("vault kv put %s/%s %s=%s", SECRET_PATH_V1, APP_CONFIG_PATH, PASSWORD_PROPERTY_NAME, DB_PASSWORD));
 
-        // multi config
-        execVault(format("vault kv put %s/multi/default1 color=blue size=XL", SECRET_PATH_V1));
-        execVault(format("vault kv put %s/multi/default2 color=red weight=3", SECRET_PATH_V1));
-        execVault(format("vault kv put %s/multi/singer1 firstname=paul lastname=shaffer", SECRET_PATH_V1));
-        execVault(format("vault kv put %s/multi/singer2 lastname=simon age=78 color=green", SECRET_PATH_V1));
-
         // static secrets kv v2
         execVault(format("vault secrets enable -path=%s -version=2 kv", SECRET_PATH_V2));
         execVault(format("vault kv put %s/%s %s=%s", SECRET_PATH_V2, APP_SECRET_PATH, SECRET_KEY, SECRET_VALUE));
         execVault(format("vault kv put %s/%s %s=%s", SECRET_PATH_V2, APP_CONFIG_PATH, PASSWORD_PROPERTY_NAME, DB_PASSWORD));
+
+        // multi config
+        execVault(format("vault kv put %s/multi/default1 color=blue size=XL", SECRET_PATH_V2));
+        execVault(format("vault kv put %s/multi/default2 color=red weight=3", SECRET_PATH_V2));
+        execVault(format("vault kv put %s/multi/singer1 firstname=paul lastname=shaffer", SECRET_PATH_V2));
+        execVault(format("vault kv put %s/multi/singer2 lastname=simon age=78 color=green", SECRET_PATH_V2));
 
         // dynamic secrets
 

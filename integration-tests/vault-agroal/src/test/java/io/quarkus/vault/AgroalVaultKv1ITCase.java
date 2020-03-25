@@ -21,21 +21,21 @@ import io.quarkus.vault.test.VaultTestLifecycleManager;
 
 @DisabledOnOs(OS.WINDOWS) // https://github.com/quarkusio/quarkus/issues/3796
 @QuarkusTestResource(VaultTestLifecycleManager.class)
-public class AgroalVaultKv2ITCase {
+public class AgroalVaultKv1ITCase {
 
-    private static final Logger log = Logger.getLogger(AgroalVaultKv2ITCase.class.getName());
+    private static final Logger log = Logger.getLogger(AgroalVaultKv1ITCase.class.getName());
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("application-vault-kv-version2-datasource.properties", "application.properties"));
+                    .addAsResource("application-vault-kv-version1-datasource.properties", "application.properties"));
 
     @Inject
-    AgroalDataSource staticDataSourceV2;
+    AgroalDataSource staticDataSourceV1;
 
     @Test
     public void staticKvVersion2() throws SQLException {
-        testDataSource(staticDataSourceV2);
+        testDataSource(staticDataSourceV1);
     }
 
 }

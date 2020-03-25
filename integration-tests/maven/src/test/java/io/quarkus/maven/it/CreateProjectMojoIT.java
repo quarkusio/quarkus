@@ -208,6 +208,32 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
     }
 
     @Test
+    public void testGradleProjectGenerationFromScratchWithExtensions() throws Exception {
+        testDir = initEmptyProject("projects/gradle-project-generation-with-extensions");
+        assertThat(testDir).isDirectory();
+        invoker = initInvoker(testDir);
+
+        Properties properties = new Properties();
+        properties.put("projectGroupId", "org.acme");
+        properties.put("projectArtifactId", "acme");
+        properties.put("className", "org.acme.MyResource");
+        properties.put("extensions", "kotlin,jackson");
+        properties.put("buildTool", "gradle");
+        setup(properties);
+
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
+
+        assertThat(new File(testDir, "build.gradle")).isFile();
+        assertThat(new File(testDir, "src/main/kotlin")).isDirectory();
+
+        check(new File(testDir, "src/main/kotlin/org/acme/MyResource.kt"), "package org.acme");
+
+        assertThat(FileUtils.readFileToString(new File(testDir, "build.gradle"), "UTF-8"))
+                .contains("quarkus-kotlin", "quarkus-jackson").doesNotContain("missing");
+    }
+
+    @Test
     public void testProjectGenerationFromScratchWithCustomDependencies() throws Exception {
         testDir = initEmptyProject("projects/project-generation-with-resource-and-custom-deps");
         assertThat(testDir).isDirectory();

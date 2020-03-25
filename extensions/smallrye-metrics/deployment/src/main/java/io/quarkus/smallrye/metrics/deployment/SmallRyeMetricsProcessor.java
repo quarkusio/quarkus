@@ -14,7 +14,6 @@ import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.MET
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.METRIC_INTERFACE;
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.SIMPLE_TIMER_INTERFACE;
 import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.TIMER_INTERFACE;
-import static io.quarkus.smallrye.metrics.deployment.SmallRyeMetricsDotNames.isMetricAnnotation;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -33,7 +32,7 @@ import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.MetricType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -47,6 +46,7 @@ import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
@@ -84,6 +84,7 @@ import io.smallrye.metrics.interceptors.ConcurrentGaugeInterceptor;
 import io.smallrye.metrics.interceptors.CountedInterceptor;
 import io.smallrye.metrics.interceptors.MeteredInterceptor;
 import io.smallrye.metrics.interceptors.MetricNameFactory;
+import io.smallrye.metrics.interceptors.MetricsBinding;
 import io.smallrye.metrics.interceptors.MetricsInterceptor;
 import io.smallrye.metrics.interceptors.SimplyTimedInterceptor;
 import io.smallrye.metrics.interceptors.TimedInterceptor;
@@ -157,7 +158,8 @@ public class SmallRyeMetricsProcessor {
     }
 
     @BuildStep
-    AnnotationsTransformerBuildItem transformBeanScope(BeanArchiveIndexBuildItem index) {
+    AnnotationsTransformerBuildItem transformBeanScope(BeanArchiveIndexBuildItem index,
+            CustomScopeAnnotationsBuildItem scopes) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
 
             @Override
@@ -168,34 +170,32 @@ public class SmallRyeMetricsProcessor {
 
             @Override
             public boolean appliesTo(AnnotationTarget.Kind kind) {
-                return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+                return kind == Kind.CLASS;
             }
 
             @Override
             public void transform(TransformationContext ctx) {
-                if (ctx.isClass()) {
-                    if (BuiltinScope.isIn(ctx.getAnnotations())) {
-                        return;
-                    }
-                    ClassInfo clazz = ctx.getTarget().asClass();
-                    if (!isJaxRsEndpoint(clazz) && !isJaxRsProvider(clazz)) {
-                        while (clazz != null && clazz.superName() != null) {
-                            Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
-                            if (annotations.containsKey(GAUGE)
-                                    || annotations.containsKey(SmallRyeMetricsDotNames.CONCURRENT_GAUGE)
-                                    || annotations.containsKey(SmallRyeMetricsDotNames.COUNTED)
-                                    || annotations.containsKey(SmallRyeMetricsDotNames.METERED)
-                                    || annotations.containsKey(SmallRyeMetricsDotNames.SIMPLY_TIMED)
-                                    || annotations.containsKey(SmallRyeMetricsDotNames.TIMED)
-                                    || annotations.containsKey(SmallRyeMetricsDotNames.METRIC)) {
-                                LOGGER.debugf(
-                                        "Found metrics business methods on a class %s with no scope defined - adding @Dependent",
-                                        ctx.getTarget());
-                                ctx.transform().add(Dependent.class).done();
-                                break;
-                            }
-                            clazz = index.getIndex().getClassByName(clazz.superName());
+                if (scopes.isScopeIn(ctx.getAnnotations())) {
+                    return;
+                }
+                ClassInfo clazz = ctx.getTarget().asClass();
+                if (!isJaxRsEndpoint(clazz) && !isJaxRsProvider(clazz)) {
+                    while (clazz != null && clazz.superName() != null) {
+                        Map<DotName, List<AnnotationInstance>> annotations = clazz.annotations();
+                        if (annotations.containsKey(GAUGE)
+                                || annotations.containsKey(SmallRyeMetricsDotNames.CONCURRENT_GAUGE)
+                                || annotations.containsKey(SmallRyeMetricsDotNames.COUNTED)
+                                || annotations.containsKey(SmallRyeMetricsDotNames.METERED)
+                                || annotations.containsKey(SmallRyeMetricsDotNames.SIMPLY_TIMED)
+                                || annotations.containsKey(SmallRyeMetricsDotNames.TIMED)
+                                || annotations.containsKey(SmallRyeMetricsDotNames.METRIC)) {
+                            LOGGER.debugf(
+                                    "Found metrics business methods on a class %s with no scope defined - adding @Dependent",
+                                    ctx.getTarget());
+                            ctx.transform().add(Dependent.class).done();
+                            break;
                         }
+                        clazz = index.getIndex().getClassByName(clazz.superName());
                     }
                 }
             }
@@ -203,18 +203,24 @@ public class SmallRyeMetricsProcessor {
     }
 
     @BuildStep
-    void annotationTransformers(BuildProducer<AnnotationsTransformerBuildItem> transformers) {
+    AnnotationsTransformerBuildItem annotationTransformers() {
         // attach @MetricsBinding to each class that contains any metric annotations
-        transformers.produce(new AnnotationsTransformerBuildItem(ctx -> {
-            if (ctx.isClass()) {
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+
+            @Override
+            public boolean appliesTo(Kind kind) {
+                return kind == Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext context) {
                 // skip classes in package io.smallrye.metrics.interceptors
-                ClassInfo clazz = ctx.getTarget().asClass();
+                ClassInfo clazz = context.getTarget().asClass();
                 if (clazz.name().toString()
                         .startsWith(io.smallrye.metrics.interceptors.MetricsInterceptor.class.getPackage().getName())) {
                     return;
                 }
-
-                if (clazz.annotations().keySet().contains(GAUGE)) {
+                if (clazz.annotations().containsKey(GAUGE)) {
                     BuiltinScope beanScope = BuiltinScope.from(clazz);
                     if (!isJaxRsEndpoint(clazz) && beanScope != null &&
                             !beanScope.equals(BuiltinScope.APPLICATION) &&
@@ -227,12 +233,11 @@ public class SmallRyeMetricsProcessor {
                                 "@ApplicationScoped or @Singleton scopes, or in JAX-RS endpoints.",
                                 clazz.name().toString());
                     }
-                    ctx.transform().add(AnnotationInstance.create(METRICS_BINDING,
-                            ctx.getTarget(), new AnnotationValue[0]))
-                            .done();
+                    context.transform().add(MetricsBinding.class).done();
                 }
             }
-        }));
+
+        });
     }
 
     /**
@@ -336,20 +341,20 @@ public class SmallRyeMetricsProcessor {
             for (AnnotationInstance metricAnnotationInstance : metricAnnotationInstances) {
                 AnnotationTarget metricAnnotationTarget = metricAnnotationInstance.target();
                 switch (metricAnnotationTarget.kind()) {
-                    case METHOD: {
+                    case METHOD:
                         MethodInfo method = metricAnnotationTarget.asMethod();
                         if (!method.declaringClass().name().toString().startsWith("io.smallrye.metrics")) {
                             collectedMetricsMethods.add(method);
                         }
                         break;
-                    }
-                    case CLASS: {
+                    case CLASS:
                         ClassInfo clazz = metricAnnotationTarget.asClass();
                         if (!clazz.name().toString().startsWith("io.smallrye.metrics")) {
                             collectMetricsClassAndSubClasses(index, collectedMetricsClasses, clazz);
                         }
                         break;
-                    }
+                    default:
+                        break;
                 }
             }
         }

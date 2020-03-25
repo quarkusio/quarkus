@@ -177,7 +177,8 @@ public class ResteasyServerCommonProcessor {
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            Optional<ResteasyServletMappingBuildItem> resteasyServletMappingBuildItem) throws Exception {
+            Optional<ResteasyServletMappingBuildItem> resteasyServletMappingBuildItem,
+            CustomScopeAnnotationsBuildItem scopes) throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         resource.produce(new NativeImageResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
@@ -328,17 +329,17 @@ public class ResteasyServerCommonProcessor {
             }
 
             @Override
-            public void transform(TransformationContext transformationContext) {
-                ClassInfo clazz = transformationContext.getTarget().asClass();
+            public void transform(TransformationContext context) {
+                ClassInfo clazz = context.getTarget().asClass();
                 if (clazz.classAnnotation(ResteasyDotNames.PATH) != null) {
                     // Root resources - no need to add scope, @Path is a bean defining annotation
                     if (clazz.classAnnotation(DotNames.TYPED) == null) {
                         // Add @Typed(MyResource.class)
-                        transformationContext.transform().add(createTypedAnnotationInstance(clazz)).done();
+                        context.transform().add(createTypedAnnotationInstance(clazz)).done();
                     }
                     return;
                 }
-                if (BuiltinScope.isIn(clazz.classAnnotations())) {
+                if (scopes.isScopeIn(context.getAnnotations())) {
                     // Skip classes annotated with built-in scope
                     return;
                 }
@@ -347,12 +348,12 @@ public class ResteasyServerCommonProcessor {
                     if (clazz.annotations().containsKey(DotNames.INJECT)
                             || hasAutoInjectAnnotation(autoInjectAnnotationNames, clazz)) {
                         // A provider with an injection point but no built-in scope is @Singleton
-                        transformation = transformationContext.transform().add(BuiltinScope.SINGLETON.getName());
+                        transformation = context.transform().add(BuiltinScope.SINGLETON.getName());
                     }
                     if (clazz.classAnnotation(DotNames.TYPED) == null) {
                         // Add @Typed(MyProvider.class)
                         if (transformation == null) {
-                            transformation = transformationContext.transform();
+                            transformation = context.transform();
                         }
                         transformation.add(createTypedAnnotationInstance(clazz));
                     }
@@ -361,7 +362,7 @@ public class ResteasyServerCommonProcessor {
                     }
                 } else if (subresources.contains(clazz.name())) {
                     // Transform a class annotated with a request method designator
-                    Transformation transformation = transformationContext.transform()
+                    Transformation transformation = context.transform()
                             .add(resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName()
                                     : BuiltinScope.DEPENDENT.getName());
                     if (clazz.classAnnotation(DotNames.TYPED) == null) {
@@ -755,18 +756,6 @@ public class ResteasyServerCommonProcessor {
                             ResteasyDotNames.IGNORE_FOR_REFLECTION_PREDICATE));
                 }
             }
-        }
-    }
-
-    private static DotName getClassName(Type type) {
-        switch (type.kind()) {
-            case CLASS:
-            case PARAMETERIZED_TYPE:
-                return type.name();
-            case ARRAY:
-                return getClassName(type.asArrayType().component());
-            default:
-                return null;
         }
     }
 

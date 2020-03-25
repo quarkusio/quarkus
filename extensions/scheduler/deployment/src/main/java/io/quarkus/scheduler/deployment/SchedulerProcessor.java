@@ -104,14 +104,14 @@ public class SchedulerProcessor {
 
             @Override
             public void transform(TransformationContext context) {
-                if (context.isClass() && !scopes.isScopeDeclaredOn(context.getTarget().asClass())) {
+                ClassInfo target = context.getTarget().asClass();
+                if (!scopes.isScopeIn(context.getAnnotations())
+                        && (target.annotations().containsKey(SCHEDULED_NAME)
+                                || target.annotations().containsKey(SCHEDULES_NAME))) {
                     // Class with no scope annotation but with @Scheduled method
-                    if (context.getTarget().asClass().annotations().containsKey(SCHEDULED_NAME)
-                            || context.getTarget().asClass().annotations().containsKey(SCHEDULES_NAME)) {
-                        LOGGER.debugf("Found scheduled business methods on a class %s with no annotations - adding @Singleton",
-                                context.getTarget());
-                        context.transform().add(Singleton.class).done();
-                    }
+                    LOGGER.debugf("Found scheduled business methods on a class %s with no scope defined - adding @Singleton",
+                            context.getTarget());
+                    context.transform().add(Singleton.class).done();
                 }
             }
         });

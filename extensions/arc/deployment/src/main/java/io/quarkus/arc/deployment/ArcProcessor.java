@@ -3,10 +3,10 @@ package io.quarkus.arc.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -389,11 +389,11 @@ public class ArcProcessor {
 
     @BuildStep
     CustomScopeAnnotationsBuildItem exposeCustomScopeNames(List<ContextRegistrarBuildItem> contextBuildItems) {
-        Collection<DotName> namesList = new ArrayList<>();
+        Set<DotName> names = new HashSet<>();
         for (ContextRegistrarBuildItem item : contextBuildItems) {
-            namesList.addAll(item.getAnnotationNames());
+            names.addAll(item.getAnnotationNames());
         }
-        return new CustomScopeAnnotationsBuildItem(namesList);
+        return new CustomScopeAnnotationsBuildItem(names);
     }
 
     private abstract static class AbstractCompositeApplicationClassesPredicate<T> implements Predicate<T> {

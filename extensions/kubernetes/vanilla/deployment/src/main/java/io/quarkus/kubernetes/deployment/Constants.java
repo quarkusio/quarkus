@@ -26,4 +26,7 @@ public class Constants {
     static final String QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP = "app.quarkus.io/build-timestamp";
 
     static final String OPENSHIFT_ANNOTATIONS_VCS_URL = "app.openshift.io/vcs-url";
+
+    static final String HTTP_PORT = "http";
+    static final int DEFAULT_HTTP_PORT = 8080;
 }

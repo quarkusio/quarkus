@@ -730,3 +730,7 @@ Here is a summary of which extensions can access which metadata:
 * `BeanDeploymentValidator`
 ** Has access to all build metadata
 
+[[arc-configuration-reference]]
+== ArC Configuration Reference
+
+include::{generated-dir}/config/quarkus-arc.adoc[leveloffset=+1, opts=optional]

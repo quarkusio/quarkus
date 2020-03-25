@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-= Quarkus - Using Security from JPA
+= Quarkus - Using Security with JPA
 
 include::./attributes.adoc[]
 

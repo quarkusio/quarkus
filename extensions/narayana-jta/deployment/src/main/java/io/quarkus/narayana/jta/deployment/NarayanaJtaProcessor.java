@@ -83,6 +83,11 @@ class NarayanaJtaProcessor {
 
         //we want to force Arjuna to init at static init time
         Properties defaultProperties = PropertiesFactory.getDefaultProperties();
+        //we don't want to store the system properties here
+        //we re-apply them at runtime
+        for (Object i : System.getProperties().keySet()) {
+            defaultProperties.remove(i);
+        }
         recorder.setDefaultProperties(defaultProperties);
         // This must be done before setNodeName as the code in setNodeName will create a TSM based on the value of this property
         recorder.disableTransactionStatusManager();

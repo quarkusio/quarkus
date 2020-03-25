@@ -108,6 +108,11 @@ final public class ConfigDocItem implements ConfigDocElement, Comparable<ConfigD
      */
     @Override
     public int compareTo(ConfigDocItem item) {
+        // ensure that different config objects in the same extension don't cross streams
+        if (isConfigKey() && item.isConfigKey()
+                && (!getConfigDocKey().getTopLevelGrouping().equals(item.getConfigDocKey().getTopLevelGrouping()))) {
+            return getConfigDocKey().getTopLevelGrouping().compareTo(item.getConfigDocKey().getTopLevelGrouping());
+        }
         if (isConfigSection() && item.isConfigKey()) {
             return 1; // push sections to the end of the list
         } else if (isConfigKey() && item.isConfigSection()) {

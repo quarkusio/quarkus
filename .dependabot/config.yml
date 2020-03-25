@@ -62,8 +62,6 @@ update_configs:
           dependency_name: "mysql:mysql-connector-java"
       - match:
           dependency_name: "org.apache.derby:derbyclient"
-      - match:
-          dependency_name: "com.microsoft.sqlserver:mssql-jdbc"
       # Kafka
       - match:
           dependency_name: "org.apache.kafka:kafka-clients"

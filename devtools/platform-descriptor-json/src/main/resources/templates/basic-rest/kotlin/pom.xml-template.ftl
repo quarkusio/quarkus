@@ -8,8 +8,8 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>${java_target}</maven.compiler.source>
+        <maven.compiler.target>${java_target}</maven.compiler.target>
         <maven.compiler.parameters>true</maven.compiler.parameters>
 
         <quarkus.platform.artifact-id>${bom_artifactId}</quarkus.platform.artifact-id>
@@ -107,7 +107,7 @@
                 </executions>
                 <configuration>
                     <javaParameters>true</javaParameters>
-                    <jvmTarget>11</jvmTarget>
+                    <jvmTarget>${java_target}</jvmTarget>
                     <!-- Soon to be replaced by plugin that will pre-configure all necessary annotations -->
                     <compilerPlugins>
                         <plugin>all-open</plugin>

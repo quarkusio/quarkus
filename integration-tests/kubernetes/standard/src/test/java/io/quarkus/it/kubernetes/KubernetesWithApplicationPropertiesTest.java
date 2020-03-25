@@ -3,6 +3,7 @@ package io.quarkus.it.kubernetes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.groups.Tuple.tuple;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -73,6 +74,7 @@ public class KubernetesWithApplicationPropertiesTest {
         assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getSpec()).satisfies(spec -> {
+                    assertEquals("NodePort", spec.getType());
                     assertThat(spec.getPorts()).hasSize(1).hasOnlyOneElementSatisfying(p -> {
                         assertThat(p.getPort()).isEqualTo(9090);
                     });

@@ -415,6 +415,13 @@ class KubernetesProcessor {
                     .forEach(r -> session.resources().decorate(new AddRoleBindingResourceDecorator(r.getRole())));
         }
 
+        session.resources().decorate(KUBERNETES,
+                new ApplyServiceTypeDecorator(kubernetesName, kubernetesConfig.getServiceType().name()));
+        session.resources().decorate(OPENSHIFT,
+                new ApplyServiceTypeDecorator(openshiftName, openshiftConfig.getServiceType().name()));
+        session.resources().decorate(KNATIVE,
+                new ApplyServiceTypeDecorator(knativeName, knativeConfig.getServiceType().name()));
+
         //Handle custom s2i builder images
         if (deploymentTargets.contains(OPENSHIFT)) {
             baseImageBuildItem.map(BaseImageInfoBuildItem::getImage).ifPresent(builderImage -> {

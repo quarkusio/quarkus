@@ -153,6 +153,7 @@
         <!-- Business automation -->
         <module>optaplanner</module>
         <module>optaplanner-jackson</module>
+        <module>optaplanner-jsonb</module>
 
         <!-- vault -->
         <module>vault</module>

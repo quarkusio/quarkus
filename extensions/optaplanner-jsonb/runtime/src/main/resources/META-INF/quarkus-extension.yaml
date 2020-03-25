@@ -1,0 +1,13 @@
+---
+name: "OptaPlanner JSON-B"
+metadata:
+  keywords:
+    - "optaplanner"
+    - "kogito"
+    - "jsonb"
+    - "json-b"
+    - "json"
+  categories:
+    - "business-automation"
+    - "serialization"
+  status: "preview"

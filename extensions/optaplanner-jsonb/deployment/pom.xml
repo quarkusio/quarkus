@@ -4,13 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-optaplanner-jackson-parent</artifactId>
+        <artifactId>quarkus-optaplanner-jsonb-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-optaplanner-jackson-deployment</artifactId>
-    <name>Quarkus - OptaPlanner Jackson - Deployment</name>
+    <artifactId>quarkus-optaplanner-jsonb-deployment</artifactId>
+    <name>Quarkus - OptaPlanner JSON-B - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -23,7 +23,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jackson-deployment</artifactId>
+            <artifactId>quarkus-jsonb-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -31,7 +31,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-optaplanner-jackson</artifactId>
+            <artifactId>quarkus-optaplanner-jsonb</artifactId>
         </dependency>
 
 
@@ -69,5 +69,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

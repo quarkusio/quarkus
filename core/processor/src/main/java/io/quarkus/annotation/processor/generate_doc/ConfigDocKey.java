@@ -22,6 +22,8 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
     private boolean list;
     private boolean passThroughMap;
     private boolean withinAConfigGroup;
+    // if a key is "quarkus.kubernetes.part-of", then the value of this would be "kubernetes"
+    private String topLevelGrouping;
 
     public ConfigDocKey() {
     }
@@ -56,6 +58,19 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
 
     public void setKey(String key) {
         this.key = key;
+
+        int firstDotIndex = key.indexOf('.');
+        if (firstDotIndex == -1) {
+            this.topLevelGrouping = key;
+            return;
+        }
+        String withoutFirstDotIndex = key.substring(firstDotIndex + 1);
+        int secondDotIndex = withoutFirstDotIndex.indexOf('.');
+        if (secondDotIndex == -1) {
+            this.topLevelGrouping = withoutFirstDotIndex;
+            return;
+        }
+        this.topLevelGrouping = withoutFirstDotIndex.substring(0, secondDotIndex);
     }
 
     public String getConfigDoc() {
@@ -162,6 +177,10 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
 
     public void setWithinAConfigGroup(boolean withinAConfigGroup) {
         this.withinAConfigGroup = withinAConfigGroup;
+    }
+
+    public String getTopLevelGrouping() {
+        return topLevelGrouping;
     }
 
     @Override

@@ -21,5 +21,12 @@ group '${project_groupId}'
 version '${project_version}'
 
 compileScala {
-  scalaCompileOptions.encoding = 'UTF-8'
+    scalaCompileOptions.encoding = 'UTF-8'
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }

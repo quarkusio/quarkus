@@ -42,6 +42,7 @@
         <commons-lang.version>3.9</commons-lang.version>
         <guava.version>27.0.1-jre</guava.version>
         <asm.version>7.3.1</asm.version>
+        <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
     </properties>
     <modules>
         <module>core</module>
@@ -294,6 +295,13 @@
                 <artifactId>junit-jupiter</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shrinkwrap</groupId>
+                <artifactId>shrinkwrap-depchain</artifactId>
+                <type>pom</type>
+                <scope>test</scope>
+                <version>${shrinkwrap-depchain.version}</version>
             </dependency>
              <!-- Jackson dependencies, imported as a BOM -->
             <dependency>

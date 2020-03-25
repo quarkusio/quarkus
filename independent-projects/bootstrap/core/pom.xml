@@ -82,6 +82,12 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.shrinkwrap</groupId>
+            <artifactId>shrinkwrap-depchain</artifactId>
+            <type>pom</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

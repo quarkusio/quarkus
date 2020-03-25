@@ -12,6 +12,8 @@ import javax.persistence.LockModeType;
 import javax.persistence.NonUniqueResultException;
 import javax.persistence.Query;
 
+import org.hibernate.engine.spi.RowSelection;
+
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
@@ -27,10 +29,6 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     private String query;
     private EntityManager em;
 
-    /*
-     * We store the pageSize and apply it for each request because getFirstResult()
-     * sets the page size to 1
-     */
     private Page page;
     private Long count;
 
@@ -41,7 +39,6 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         this.jpaQuery = jpaQuery;
         this.query = query;
         this.paramsArrayOrMap = paramsArrayOrMap;
-        page = new Page(0, Integer.MAX_VALUE);
     }
 
     // Builder
@@ -61,43 +58,43 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     @Override
     public <T extends Entity> PanacheQuery<T> nextPage() {
-        checkNotInRange();
+        checkPagination();
         return page(page.next());
     }
 
     @Override
     public <T extends Entity> PanacheQuery<T> previousPage() {
-        checkNotInRange();
+        checkPagination();
         return page(page.previous());
     }
 
     @Override
     public <T extends Entity> PanacheQuery<T> firstPage() {
-        checkNotInRange();
+        checkPagination();
         return page(page.first());
     }
 
     @Override
     public <T extends Entity> PanacheQuery<T> lastPage() {
-        checkNotInRange();
+        checkPagination();
         return page(page.index(pageCount() - 1));
     }
 
     @Override
     public boolean hasNextPage() {
-        checkNotInRange();
+        checkPagination();
         return page.index < (pageCount() - 1);
     }
 
     @Override
     public boolean hasPreviousPage() {
-        checkNotInRange();
+        checkPagination();
         return page.index > 0;
     }
 
     @Override
     public int pageCount() {
-        checkNotInRange();
+        checkPagination();
         long count = count();
         if (count == 0)
             return 1; // a single page of zero results
@@ -106,11 +103,15 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     @Override
     public Page page() {
-        checkNotInRange();
+        checkPagination();
         return page;
     }
 
-    private void checkNotInRange() {
+    private void checkPagination() {
+        if (page == null) {
+            throw new UnsupportedOperationException("Cannot call a page related method, " +
+                    "call page(Page) or page(int, int) to initiate pagination first");
+        }
         if (range != null) {
             throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, " +
                     "call page(Page) or page(int, int) to initiate pagination first");
@@ -121,7 +122,7 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     public <T extends Entity> PanacheQuery<T> range(int startIndex, int lastIndex) {
         this.range = Range.of(startIndex, lastIndex);
         // reset the page to its default to be able to switch from page to range
-        this.page = new Page(0, Integer.MAX_VALUE);
+        this.page = null;
         return (PanacheQuery<T>) this;
     }
 
@@ -208,7 +209,7 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     public <T extends Entity> Optional<T> singleResultOptional() {
         manageOffsets(2);
         List<T> list = jpaQuery.getResultList();
-        if (list.size() == 2) {
+        if (list.size() > 1) {
             throw new NonUniqueResultException();
         }
 
@@ -220,19 +221,27 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
             jpaQuery.setFirstResult(range.getStartIndex());
             // range is 0 based, so we add 1
             jpaQuery.setMaxResults(range.getLastIndex() - range.getStartIndex() + 1);
-        } else {
+        } else if (page != null) {
             jpaQuery.setFirstResult(page.index * page.size);
             jpaQuery.setMaxResults(page.size);
+        } else {
+            // Use deprecated API in org.hibernate.Query that will be moved to org.hibernate.query.Query on Hibernate 6.0
+            RowSelection options = jpaQuery.unwrap(org.hibernate.query.Query.class).getQueryOptions();
+            options.setFirstRow(null);
+            options.setMaxRows(null);
         }
     }
 
     private void manageOffsets(int maxResults) {
         if (range != null) {
             jpaQuery.setFirstResult(range.getStartIndex());
-            jpaQuery.setMaxResults(maxResults);
-        } else {
+        } else if (page != null) {
             jpaQuery.setFirstResult(page.index * page.size);
-            jpaQuery.setMaxResults(maxResults);
+        } else {
+            // Use deprecated API in org.hibernate.Query that will be moved to org.hibernate.query.Query on Hibernate 6.0
+            RowSelection options = jpaQuery.unwrap(org.hibernate.query.Query.class).getQueryOptions();
+            options.setFirstRow(null);
         }
+        jpaQuery.setMaxResults(maxResults);
     }
 }

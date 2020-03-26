@@ -22,11 +22,11 @@ version '${project_version}'
 
 compileScala {
     scalaCompileOptions.encoding = 'UTF-8'
-    sourceCompatibility = JavaVersion.VERSION_${java_target}
-    targetCompatibility = JavaVersion.VERSION_${java_target}
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_${java_target}
-    targetCompatibility = JavaVersion.VERSION_${java_target}
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }

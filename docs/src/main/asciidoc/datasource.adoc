@@ -96,16 +96,18 @@ We currently include these built-in database kinds:
 * MySQL: `mysql`
 * PostgreSQL: `postgresql`, `pgsql` or `pg`
 
-Note that these database kinds only facilitate things.
-For instance, when we have a JDBC driver extension for a given kind,
-we resolve the JDBC driver to be used automatically, so you don't need to configure it yourself.
-If you want to use a database kind that is not part of this list, just use `other` or whatever name you prefer.
+Giving Quarkus the database kind you are targeting will facilitate configuration.
+By using a JDBC driver extension and setting the kind in the configuration,
+Quarkus resolves the JDBC driver automatically,
+so you don't need to configure it yourself.
+If you want to use a database kind that is not part of the built-in ones, use `other` and define the JDBC driver explicitly.
 
 [NOTE]
 ====
-Although it is possible to use any JDBC driver in JVM mode, it is unlikely that it will work when compiling your application to a native executable.
+You can use any JDBC driver in a Quarkus app in JVM mode (see <<other-databases,Using other databases>>).
+It is unlikely that it will work when compiling your application to a native executable though.
 
-If you plan to do the latter, we recommend you to use the existing JDBC Quarkus extensions (or contribute one for your driver).
+If you plan to make a native executable, we recommend you use the existing JDBC Quarkus extensions (or contribute one for your driver).
 ====
 
 There is a good chance you will need to define some credentials to access your database.
@@ -155,6 +157,8 @@ Quarkus provides driver extensions for:
 * MySQL - `jdbc-mysql`
 * PostgreSQL - `jdbc-postgresql`
 
+See <<other-databases>> if you want to use a JDBC driver for another database.
+
 [NOTE]
 ====
 The H2 and Derby databases can normally be configured to run in "embedded mode";
@@ -165,7 +169,7 @@ Read <<in-memory-databases,Testing with in-memory databases>> (below) for sugges
 
 As usual, you can install the extension using `add-extension`.
 
-To install the PostgreSQL driver dependency for instance, just run the following command:
+To install the PostgreSQL driver dependency for instance, run the following command:
 
 [source,shell]
 ----
@@ -229,14 +233,32 @@ As previously stated, most of the time, this automatic resolution will suit you 
 you won't need to configure the driver.
 ====
 
-Note that you can still define a specific driver if you need to (for instance for using the OpenTracing driver)
-or if you want to use a database for which we don't have a built-in JDBC driver extension.
+[[other-databases]]
+==== Use a database with no built-in extension or with a different driver
 
-Defining a specific JDBC driver is as simple as:
+You can use a specific driver if you need to (for instance for using the OpenTracing driver)
+or if you want to use a database for which Quarkus does not have a built-in JDBC driver extension.
+
+Without an extension, the driver will work fine in any Quarkus app running in JVM mode.
+It is unlikely that it will work when compiling your application to a native executable though.
+If you plan to make a native executable, we recommend you use the existing JDBC Quarkus extensions (or contribute one for your driver).
+
+Here is how you would use the OpenTracing driver:
 
 [source, properties]
 ----
 quarkus.datasource.jdbc.driver=io.opentracing.contrib.jdbc.TracingDriver
+----
+
+Here is how you would define access to a database with no built-in support (in JVM mode):
+
+[source, properties]
+----
+quarkus.datasource.db-kind=other
+quarkus.datasource.jdbc.driver=oracle.jdbc.driver.OracleDriver
+quarkus.datasource.jdbc.url=jdbc:oracle:thin:@192.168.1.12:1521/ORCL_SVC
+quarkus.datasource.username=scott
+quarkus.datasource.password=tiger
 ----
 
 ==== More configuration

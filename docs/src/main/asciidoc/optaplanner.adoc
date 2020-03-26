@@ -25,6 +25,7 @@ by using AI to adhere to hard and soft scheduling _constraints_, such as:
 * A student can attend at most one lesson at the same time.
 * A teacher prefers to teach in a single room.
 * A teacher prefers to teach sequential lessons and dislikes gaps between lessons.
+* A student dislikes sequential lessons on the same subject.
 
 Mathematically speaking, school timetabling is an _NP-hard_ problem.
 That means it is difficult to scale.

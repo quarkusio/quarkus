@@ -64,6 +64,7 @@ public class KubernetesWithApplicationPropertiesTest {
                                 assertThat(container.getPorts()).hasOnlyOneElementSatisfying(p -> {
                                     assertThat(p.getContainerPort()).isEqualTo(9090);
                                 });
+                                assertThat(container.getImagePullPolicy()).isEqualTo("IfNotPresent");
                             });
                         });
                     });

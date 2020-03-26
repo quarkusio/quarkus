@@ -14,6 +14,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.fabric8.kubernetes.api.model.EnvVarSourceBuilder;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceAccount;
@@ -59,11 +60,18 @@ public class KubernetesWithApplicationPropertiesTest {
                             assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
                                 assertThat(container.getEnv()).extracting("name", "value")
                                         .contains(tuple("MY_ENV_VAR", "SOMEVALUE"));
+
+                                assertThat(container.getEnv()).extracting("name", "valueFrom")
+                                        .contains(tuple("MY_NAME",
+                                                new EnvVarSourceBuilder().withNewFieldRef().withFieldPath("metadata.name")
+                                                        .endFieldRef().build()));
+
                                 assertThat(container.getImage())
                                         .isEqualTo("quay.io/grp/kubernetes-with-application-properties:0.1-SNAPSHOT");
                                 assertThat(container.getPorts()).hasOnlyOneElementSatisfying(p -> {
                                     assertThat(p.getContainerPort()).isEqualTo(9090);
                                 });
+                                assertThat(container.getImagePullPolicy()).isEqualTo("IfNotPresent");
                             });
                         });
                     });

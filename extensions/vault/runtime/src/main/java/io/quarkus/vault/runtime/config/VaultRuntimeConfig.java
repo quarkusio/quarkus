@@ -38,6 +38,9 @@ public class VaultRuntimeConfig {
      *
      * Example: https://localhost:8200
      *
+     * See also the documentation for the `kv-secret-engine-mount-path` property for some insights on how
+     * the full Vault url gets built.
+     *
      * @asciidoclet
      */
     @ConfigItem
@@ -99,7 +102,10 @@ public class VaultRuntimeConfig {
      *
      * `@ConfigProperty(name = "foo") String foo` will have value `myappbar`
      * with application properties `quarkus.vault.secret-config-kv-path=base-config,myapp/config`
-     * 
+     *
+     * See also the documentation for the `kv-secret-engine-mount-path` property for some insights on how
+     * the full Vault url gets built.
+     *
      * @asciidoclet
      */
     // @formatter:on
@@ -118,7 +124,10 @@ public class VaultRuntimeConfig {
      *
      * If the same property is available in 2 different paths for the same prefix, the last one
      * will win.
-     * 
+     *
+     * See also the documentation for the `kv-secret-engine-mount-path` property for some insights on how
+     * the full Vault url gets built.
+     *
      * @asciidoclet
      */
     // @formatter:on
@@ -149,7 +158,24 @@ public class VaultRuntimeConfig {
     public int kvSecretEngineVersion;
 
     /**
-     * Kv secret engine path.
+     * KV secret engine path.
+     *
+     * This value is used when building the url path in the KV secret engine programmatic access
+     * (i.e. `VaultKVSecretEngine`) and the vault config source (i.e. fetching configuration properties from Vault).
+     *
+     * For a v2 KV secret engine (default - see `kv-secret-engine-version property`)
+     * the full url is built from the expression `<url>/v1/</kv-secret-engine-mount-path>/data/...`.
+     *
+     * With property `quarkus.vault.url=https://localhost:8200`, the following call
+     * `vaultKVSecretEngine.readSecret("foo/bar")` would lead eventually to a `GET` on Vault with the following
+     * url: `https://localhost:8200/v1/secret/data/foo/bar`.
+     *
+     * With a KV secret engine v1, the url changes to: `<url>/v1/</kv-secret-engine-mount-path>/...`.
+     *
+     * The same logic is applied to the Vault config source. With `quarkus.vault.secret-config-kv-path=config/myapp`
+     * The secret properties would be fetched from Vault using a `GET` on
+     * `https://localhost:8200/v1/secret/data/config/myapp` for a KV secret engine v2 (or
+     * `https://localhost:8200/v1/secret/config/myapp` for a KV secret engine v1).
      *
      * see https://www.vaultproject.io/docs/secrets/kv/index.html
      *
@@ -238,4 +264,5 @@ public class VaultRuntimeConfig {
                 ", readTimeout=" + readTimeout +
                 '}';
     }
+
 }

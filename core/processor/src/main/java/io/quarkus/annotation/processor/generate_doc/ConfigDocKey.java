@@ -58,19 +58,10 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
 
     public void setKey(String key) {
         this.key = key;
+    }
 
-        int firstDotIndex = key.indexOf('.');
-        if (firstDotIndex == -1) {
-            this.topLevelGrouping = key;
-            return;
-        }
-        String withoutFirstDotIndex = key.substring(firstDotIndex + 1);
-        int secondDotIndex = withoutFirstDotIndex.indexOf('.');
-        if (secondDotIndex == -1) {
-            this.topLevelGrouping = withoutFirstDotIndex;
-            return;
-        }
-        this.topLevelGrouping = withoutFirstDotIndex.substring(0, secondDotIndex);
+    public void setTopLevelGrouping(String topLevelGrouping) {
+        this.topLevelGrouping = topLevelGrouping;
     }
 
     public String getConfigDoc() {
@@ -212,13 +203,14 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
                 Objects.equals(javaDocSiteLink, that.javaDocSiteLink) &&
                 Objects.equals(docMapKey, that.docMapKey) &&
                 configPhase == that.configPhase &&
-                Objects.equals(acceptedValues, that.acceptedValues);
+                Objects.equals(acceptedValues, that.acceptedValues) &&
+                Objects.equals(topLevelGrouping, that.topLevelGrouping);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(type, key, configDoc, withinAMap, defaultValue, javaDocSiteLink, docMapKey, configPhase,
-                acceptedValues, optional, list, passThroughMap, withinAConfigGroup);
+                acceptedValues, optional, list, passThroughMap, withinAConfigGroup, topLevelGrouping);
     }
 
     @Override
@@ -237,6 +229,7 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
                 ", list=" + list +
                 ", passThroughMap=" + passThroughMap +
                 ", withinAConfigGroup=" + withinAConfigGroup +
+                ", topLevelGrouping='" + topLevelGrouping + '\'' +
                 '}';
     }
 }

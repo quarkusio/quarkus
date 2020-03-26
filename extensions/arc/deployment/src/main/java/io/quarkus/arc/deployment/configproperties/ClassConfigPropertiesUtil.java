@@ -24,6 +24,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
@@ -43,6 +44,8 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.StartupEvent;
 
 final class ClassConfigPropertiesUtil {
+
+    private static final Logger LOGGER = Logger.getLogger(ClassConfigPropertiesUtil.class);
 
     private static final String VALIDATOR_CLASS = "javax.validation.Validator";
     private static final String HIBERNATE_VALIDATOR_IMPL_CLASS = "org.hibernate.validator.HibernateValidator";
@@ -211,6 +214,11 @@ final class ClassConfigPropertiesUtil {
         // For each field of the class try to pull it out of MP Config and call the corresponding setter
         List<FieldInfo> fields = configClassInfo.fields();
         for (FieldInfo field : fields) {
+            if (field.hasAnnotation(DotNames.CONFIG_PROPERTY)) {
+                LOGGER.warn(
+                        "'@ConfigProperty' is ignored when added to a field of a class annotated with '@ConfigProperties'. Offending field is '"
+                                + field.name() + "' of class '" + field.declaringClass().toString() + "'");
+            }
             boolean useFieldAccess = false;
 
             String setterName = JavaBeanUtil.getSetterName(field.name());

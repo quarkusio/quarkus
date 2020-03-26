@@ -199,42 +199,31 @@ Don't forget to move your GraalVM directory back to where it was.
 
 === Working with containers
 
-When working with containers, the idea is to bundle both the SunEC library and the certificates in the container and to point your binary to them using the system properties mentioned above.
+When working with containers, the idea is to bundle the certificates in the container and to point your binary to them using the system property mentioned above.
 
 You can for example modify your `Dockerfile.native` as follows to copy the required files to your final image:
 
-==== Java 8
 [source, subs=attributes+]
 ----
-FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-version}-java8 as nativebuilder
-RUN mkdir -p /tmp/ssl-libs/lib \
-  && cp /opt/graalvm/jre/lib/security/cacerts /tmp/ssl-libs \
-  && cp /opt/graalvm/jre/lib/amd64/libsunec.so /tmp/ssl-libs/lib/
+FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-flavor} as nativebuilder
+RUN mkdir -p /tmp/ssl \
+  && cp /opt/graalvm/lib/security/cacerts /tmp/ssl/
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 WORKDIR /work/
-COPY --from=nativebuilder /tmp/ssl-libs/ /work/
+COPY --from=nativebuilder /tmp/ssl/ /work/
 COPY target/*-runner /work/application
-RUN chmod 775 /work /work/application
-EXPOSE 8080
-CMD ["./application", "-Dquarkus.http.host=0.0.0.0", "-Djava.library.path=/work/lib", "-Djavax.net.ssl.trustStore=/work/cacerts"]
-----
 
-==== Java 11
-[source, subs=attributes+]
-----
-FROM quay.io/quarkus/ubi-quarkus-native-image:{graalvm-version}-java11 as nativebuilder
-RUN mkdir -p /tmp/ssl-libs/lib \
-  && cp /opt/graalvm/lib/security/cacerts /tmp/ssl-libs \
-  && cp /opt/graalvm/lib/libsunec.so /tmp/ssl-libs/lib/
+# set up permissions for user `1001`
+RUN chmod 775 /work /work/application \
+  && chown -R 1001 /work \
+  && chmod -R "g+rwX" /work \
+  && chown -R 1001:root /work
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal
-WORKDIR /work/
-COPY --from=nativebuilder /tmp/ssl-libs/ /work/
-COPY target/*-runner /work/application
-RUN chmod 775 /work /work/application
 EXPOSE 8080
-CMD ["./application", "-Dquarkus.http.host=0.0.0.0", "-Djava.library.path=/work/lib", "-Djavax.net.ssl.trustStore=/work/cacerts"]
+USER 1001
+
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0", "-Djavax.net.ssl.trustStore=/work/cacerts"]
 ----
 
 == Conclusion

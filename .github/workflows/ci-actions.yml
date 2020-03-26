@@ -34,14 +34,14 @@ on:
 env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
-  NATIVE_TEST_MAVEN_OPTS: "-B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-mariadb -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-vault -Dtest-neo4j -Dnative-image.xmx=6g -Dnative -Dno-format install"
+  NATIVE_TEST_MAVEN_OPTS: "-B --settings azure-mvn-settings.xml -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:19.3.1-java11 -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-mariadb -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-vault -Dtest-neo4j -Dnative-image.xmx=5g -Dnative -Dno-format install"
   JVM_TEST_MAVEN_OPTS: "-e -B --settings azure-mvn-settings.xml -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-mariadb -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-dynamodb -Dtest-vault -Dtest-neo4j -Dtest-keycloak -Dno-format"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
 jobs:
-  build-jdk8:
-    name: "JDK 8 Build"
+  build-jdk11:
+    name: "JDK 11 Build"
     runs-on: ubuntu-latest
     # Skip draft PRs and those with WIP in the subject, rerun as soon as its removed
     if: "github.event_name != 'pull_request' || ( \
@@ -60,11 +60,11 @@ jobs:
       - uses: n1hility/cancel-previous-runs@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Set up JDK 8
+      - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@7134ae95986e4e0a4f9f0b51345c93fcebfc4ea9
         with:
-          java-version: openjdk8
+          java-version: openjdk11
       - name: Compute cache restore key
         # Always recompute on a push so that the maven repo doesnt grow indefinitely with old versions
         run: |
@@ -89,14 +89,10 @@ jobs:
         with:
           name: maven-repo
           path: maven-repo.tgz
-      - name: Cleanup Cache
-        shell: bash
-        run: |
-          find ~/.m2/repositoiry/io/quarkus/ -mindepth 1 -maxdepth 1 \( ! -name http -a ! -name gizmo -a ! -name security \) -exec echo {} \; -exec rm -rf {} \; || true
 
   linux-jvm-tests:
     name: JDK ${{matrix.java-version}} JVM Tests
-    needs: build-jdk8
+    needs: build-jdk11
     timeout-minutes: 120
     strategy:
       fail-fast: ${{ github.repository == 'quarkusio/quarkus' }}
@@ -185,9 +181,9 @@ jobs:
           name: test-reports-linux-jvm${{matrix.java-version}}
           path: 'test-reports.tgz'
 
-  windows-jdk8-jvm-tests:
-    name: Windows JDK 8 JVM Tests
-    needs: build-jdk8
+  windows-jdk11-jvm-tests:
+    name: Windows JDK 11 JVM Tests
+    needs: build-jdk11
     runs-on: windows-latest
     timeout-minutes: 120
     env:
@@ -195,11 +191,11 @@ jobs:
    
     steps:
       - uses: actions/checkout@v2
-      - name: Set up JDK 1.8
+      - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@7134ae95986e4e0a4f9f0b51345c93fcebfc4ea9
         with:
-          java-version: openjdk8
+          java-version: openjdk11
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -221,12 +217,12 @@ jobs:
         uses: actions/upload-artifact@v1
         if: failure()
         with:
-          name: test-reports-windows-jdk8-jvm
+          name: test-reports-windows-jdk11-jvm
           path: 'test-reports.tgz'
 
   tcks-test:
     name: TCKS Test
-    needs: build-jdk8
+    needs: build-jdk11
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
@@ -259,11 +255,11 @@ jobs:
           sudo service mysql stop || true
           docker run --rm --publish 3306:3306 --name build-mysql -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl
       - uses: actions/checkout@v2
-      - name: Set up JDK 8
+      - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@7134ae95986e4e0a4f9f0b51345c93fcebfc4ea9
         with:
-          java-version: openjdk8
+          java-version: openjdk11
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:
@@ -289,7 +285,7 @@ jobs:
        
   native-tests:
     name: Native Tests - ${{matrix.category}}
-    needs: build-jdk8
+    needs: build-jdk11
     runs-on: ubuntu-latest
     # Ignore the following YAML Schema error 
     timeout-minutes: ${{matrix.timeout}}
@@ -301,7 +297,7 @@ jobs:
         include:
           - category: Main
             postgres: "true"
-            timeout: 25
+            timeout: 30
             test-modules: main
           - category: Data1
             mariadb: "true"
@@ -316,7 +312,7 @@ jobs:
           - category: Data2
             mysql: "true"
             postgres: "true"
-            timeout: 25
+            timeout: 30
             test-modules: >
               jpa
               jpa-postgresql
@@ -338,14 +334,14 @@ jobs:
               mongodb-panache
               neo4j
           - category: Data5
-            timeout: 25
+            timeout: 30
             test-modules: >
               hibernate-search-elasticsearch
               narayana-stm
               narayana-jta
           - category: Amazon
             dynamodb: "true"
-            timeout: 15
+            timeout: 20
             test-modules: >
               amazon-dynamodb
               amazon-lambda
@@ -358,7 +354,7 @@ jobs:
               kafka
               kafka-streams
           - category: Security1
-            timeout: 20
+            timeout: 30
             keycloak: "true"
             test-modules: >
               elytron-security-oauth2
@@ -410,9 +406,9 @@ jobs:
               logging-gelf
               bootstrap-config
               optaplanner-jackson
-          # kubernetes-client alone takes 16mn+
+          # kubernetes-client alone takes 30mn+
           - category: Misc3
-            timeout: 35
+            timeout: 50
             test-modules: >
               kogito
               kubernetes-client
@@ -472,11 +468,11 @@ jobs:
             -d quay.io/keycloak/keycloak:9.0.2
         if: matrix.keycloak
       - uses: actions/checkout@v2
-      - name: Set up JDK 8
+      - name: Set up JDK 11
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@7134ae95986e4e0a4f9f0b51345c93fcebfc4ea9
         with:
-          java-version: openjdk8
+          java-version: openjdk11
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
         with:

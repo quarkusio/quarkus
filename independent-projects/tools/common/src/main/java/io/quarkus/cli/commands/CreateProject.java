@@ -151,7 +151,7 @@ public class CreateProject {
         Matcher matcher = JAVA_VERSION_PATTERN
                 .matcher(this.javaTarget != null ? this.javaTarget : System.getProperty("java.version", ""));
         if (matcher.matches() && Integer.parseInt(matcher.group(1)) < 11) {
-            invocation.setProperty(JAVA_TARGET, invocation.getBuildTool() == BuildTool.MAVEN ? "1.8" : "1_8");
+            invocation.setProperty(JAVA_TARGET, "8");
         } else {
             invocation.setProperty(JAVA_TARGET, "11");
         }

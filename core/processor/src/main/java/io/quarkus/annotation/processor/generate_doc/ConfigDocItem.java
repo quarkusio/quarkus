@@ -89,6 +89,18 @@ final public class ConfigDocItem implements ConfigDocElement, Comparable<ConfigD
         return false;
     }
 
+    @Override
+    @JsonIgnore
+    public String getTopLevelGrouping() {
+        if (isConfigKey()) {
+            return configDocKey.getTopLevelGrouping();
+        } else if (isConfigSection()) {
+            return configDocSection.getTopLevelGrouping();
+        }
+
+        return null;
+    }
+
     @JsonIgnore
     public boolean isWithinAConfigGroup() {
         if (isConfigSection()) {
@@ -109,10 +121,10 @@ final public class ConfigDocItem implements ConfigDocElement, Comparable<ConfigD
     @Override
     public int compareTo(ConfigDocItem item) {
         // ensure that different config objects in the same extension don't cross streams
-        if (isConfigKey() && item.isConfigKey()
-                && (!getConfigDocKey().getTopLevelGrouping().equals(item.getConfigDocKey().getTopLevelGrouping()))) {
-            return getConfigDocKey().getTopLevelGrouping().compareTo(item.getConfigDocKey().getTopLevelGrouping());
+        if (isConfigKey() && item.isConfigKey() && (!getTopLevelGrouping().equals(item.getTopLevelGrouping()))) {
+            return getTopLevelGrouping().compareTo(item.getTopLevelGrouping());
         }
+
         if (isConfigSection() && item.isConfigKey()) {
             return 1; // push sections to the end of the list
         } else if (isConfigKey() && item.isConfigSection()) {

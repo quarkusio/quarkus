@@ -627,7 +627,7 @@ import org.optaplanner.core.api.solver.SolverManager;
 public class TimeTableResource {
 
     @Inject
-    private SolverManager<TimeTable, UUID> solverManager;
+    SolverManager<TimeTable, UUID> solverManager;
 
     @POST
     @Path("/solve")
@@ -749,7 +749,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TimeTableResourceTest {
 
     @Inject
-    private TimeTableResource timeTableResource;
+    TimeTableResource timeTableResource;
 
     @Test
     @Timeout(600_000)
@@ -895,9 +895,9 @@ public class TimeTableResource {
     public static final Long SINGLETON_TIME_TABLE_ID = 1L;
 
     @Inject
-    private SolverManager<TimeTable, Long> solverManager;
+    SolverManager<TimeTable, Long> solverManager;
     @Inject
-    private ScoreManager<TimeTable> scoreManager;
+    ScoreManager<TimeTable> scoreManager;
 
     // To try, open http://localhost:8080/timeTable
     @GET
@@ -991,7 +991,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TimeTableResourceTest {
 
     @Inject
-    private TimeTableResource timeTableResource;
+    TimeTableResource timeTableResource;
 
     @Test
     @Timeout(600_000)

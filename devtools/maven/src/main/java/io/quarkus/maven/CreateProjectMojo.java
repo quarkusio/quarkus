@@ -214,7 +214,8 @@ public class CreateProjectMojo extends AbstractMojo {
             File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
             File buildFile = new File(createdDependenciesBuildFile.getAbsolutePath());
             if (success) {
-                success = new AddExtensions(projectWriter, platform).extensions(extensions).execute().isSuccess();
+                success = new AddExtensions(projectWriter, buildToolEnum, platform).extensions(extensions).execute()
+                        .isSuccess();
             }
             if (BuildTool.MAVEN.equals(buildToolEnum)) {
                 createMavenWrapper(createdDependenciesBuildFile, ToolsUtils.readQuarkusProperties(platform));

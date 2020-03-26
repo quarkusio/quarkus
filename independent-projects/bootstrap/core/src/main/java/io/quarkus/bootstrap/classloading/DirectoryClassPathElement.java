@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.classloading;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -53,7 +54,14 @@ public class DirectoryClassPathElement extends AbstractClassPathElement {
                 @Override
                 public byte[] getData() {
                     try {
-                        return Files.readAllBytes(file);
+                        try {
+                            return Files.readAllBytes(file);
+                        } catch (InterruptedIOException e) {
+                            //if we are interrupted reading data we finish the op, then just re-interrupt the thread state
+                            byte[] bytes = Files.readAllBytes(file);
+                            Thread.currentThread().interrupt();
+                            return bytes;
+                        }
                     } catch (IOException e) {
                         throw new RuntimeException("Unable to read " + file, e);
                     }

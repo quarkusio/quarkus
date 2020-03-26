@@ -3,8 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
 ////
-
-= Quarkus - Using Keycloak Authorization Services and Policy Enforcer to Protect JAX-RS Applications
+= Quarkus - Using OpenID Connect and Keycloak to Centralize Authorizations
 
 include::./attributes.adoc[]
 

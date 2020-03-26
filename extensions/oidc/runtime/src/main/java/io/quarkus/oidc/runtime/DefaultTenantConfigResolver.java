@@ -77,13 +77,17 @@ public class DefaultTenantConfigResolver {
     }
 
     private TenantConfigContext getTenantConfigFromTenantResolver(RoutingContext context) {
+        if (staticTenantsConfig == null) {
+            throw new IllegalStateException("staticTenantsConfig is null");
+        }
+
         String tenantId = null;
 
         if (tenantResolver.isResolvable()) {
             tenantId = tenantResolver.get().resolve(context);
         }
 
-        TenantConfigContext configContext = staticTenantsConfig.get(tenantId);
+        TenantConfigContext configContext = tenantId != null ? staticTenantsConfig.get(tenantId) : null;
         if (configContext == null) {
             if (tenantId != null && !tenantId.isEmpty()) {
                 LOG.debugf("No configuration with a tenant id '%s' has been found, using the default configuration");

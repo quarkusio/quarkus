@@ -373,12 +373,16 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     };
                     classInstanceVariables.put(call.theClass, value);
                 }
-                //for every parameter that was passed into the method we create a deferred value
-                //this will allocate a space in the array, so the value can be deserialized correctly
-                //even if the code for an invocation is split over several methods
-                for (int i = 0; i < call.parameters.length; ++i) {
-                    call.deferredParameters[i] = loadObjectInstance(call.parameters[i], parameterMap,
-                            call.method.getParameterTypes()[i]);
+                try {
+                    //for every parameter that was passed into the method we create a deferred value
+                    //this will allocate a space in the array, so the value can be deserialized correctly
+                    //even if the code for an invocation is split over several methods
+                    for (int i = 0; i < call.parameters.length; ++i) {
+                        call.deferredParameters[i] = loadObjectInstance(call.parameters[i], parameterMap,
+                                call.method.getParameterTypes()[i]);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to record call to method " + call.method, e);
                 }
             }
         }
@@ -558,6 +562,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 };
             }
         } else if (param instanceof String) {
+            if (((String) param).length() > 65535) {
+                throw new RuntimeException("String too large to record: " + param);
+            }
             return new DeferredParameter() {
                 @Override
                 ResultHandle doLoad(MethodContext context, MethodCreator method, ResultHandle array) {

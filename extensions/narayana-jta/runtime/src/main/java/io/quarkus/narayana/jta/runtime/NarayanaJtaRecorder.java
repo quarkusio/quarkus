@@ -2,6 +2,7 @@ package io.quarkus.narayana.jta.runtime;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
 
 import org.jboss.logging.Logger;
@@ -35,6 +36,10 @@ public class NarayanaJtaRecorder {
     public void setDefaultProperties(Properties properties) {
         //TODO: this is a huge hack to avoid loading XML parsers
         //this needs a proper SPI
+        for (Map.Entry<Object, Object> i : System.getProperties().entrySet()) {
+            properties.put(i.getKey(), i.getValue());
+        }
+
         try {
             Field field = PropertiesFactory.class.getDeclaredField("delegatePropertiesFactory");
             field.setAccessible(true);

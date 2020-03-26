@@ -12,7 +12,7 @@ public class ContainerImageConfig {
      * The group the container image will be part of
      */
     @ConfigItem(defaultValue = "${user.name}")
-    public String group;
+    public Optional<String> group;
 
     /**
      * The name of the container image. If not set defaults to the application name

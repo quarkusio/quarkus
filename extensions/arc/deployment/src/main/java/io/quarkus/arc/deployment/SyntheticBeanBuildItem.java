@@ -9,6 +9,7 @@ import org.jboss.jandex.DotName;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanConfiguratorBase;
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
@@ -36,6 +37,10 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
         return configurator;
     }
 
+    public boolean isStaticInit() {
+        return configurator.staticInit;
+    }
+
     /**
      * This construct is not thread-safe and should not be reused.
      */
@@ -43,9 +48,11 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
 
         Supplier<?> supplier;
         RuntimeValue<?> runtimeValue;
+        boolean staticInit;
 
         ExtendedBeanConfigurator(DotName implClazz) {
             super(implClazz);
+            this.staticInit = true;
         }
 
         /**
@@ -70,6 +77,18 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
 
         public ExtendedBeanConfigurator runtimeValue(RuntimeValue<?> runtimeValue) {
             this.runtimeValue = runtimeValue;
+            return this;
+        }
+
+        /**
+         * By default, synthetic beans are initialized during {@link ExecutionTime#STATIC_INIT}. It is possible to mark a
+         * synthetic bean to be initialized during {@link ExecutionTime#RUNTIME_INIT}. However, in such case a client that
+         * attempts to obtain such bean during {@link ExecutionTime#STATIC_INIT} will receive an exception.
+         * 
+         * @return self
+         */
+        public ExtendedBeanConfigurator setRuntimeInit() {
+            this.staticInit = false;
             return this;
         }
 

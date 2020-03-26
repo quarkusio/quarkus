@@ -163,6 +163,13 @@ public class ParserTest {
                 "Parser error on line 1: unterminated string literal or composite parameter detected for [#if (foo || bar]", 1);
     }
 
+    @Test
+    public void testWhitespace() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("Hello world", engine.parse("{#if true  }Hello {name }{/if  }").data("name", "world").render());
+        assertEquals("Hello world", engine.parse("Hello {name ?: 'world'  }").render());
+    }
+
     private void assertParserError(String template, String message, int line) {
         Engine engine = Engine.builder().addDefaultSectionHelpers().build();
         try {

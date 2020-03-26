@@ -1,5 +1,7 @@
 package io.quarkus.elytron.security.oauth2.runtime.auth;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -10,9 +12,11 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -52,5 +56,15 @@ public class OAuth2AuthMechanism implements HttpAuthenticationMechanism {
                 HttpHeaderNames.WWW_AUTHENTICATE,
                 "Bearer {token}");
         return CompletableFuture.completedFuture(result);
+    }
+
+    @Override
+    public Set<Class<? extends AuthenticationRequest>> getCredentialTypes() {
+        return Collections.singleton(TokenAuthenticationRequest.class);
+    }
+
+    @Override
+    public HttpCredentialTransport getCredentialTransport() {
+        return new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, "bearer");
     }
 }

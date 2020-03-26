@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import javax.inject.Singleton;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -20,6 +22,7 @@ import io.quarkus.vertx.http.runtime.security.AuthenticatedHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.DenySecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
+import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
@@ -50,14 +53,41 @@ public class HttpSecurityProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void initFormAuth(
-            BeanContainerBuildItem beanContainerBuildItem,
+    SyntheticBeanBuildItem initFormAuth(
             HttpSecurityRecorder recorder,
             HttpBuildTimeConfig buildTimeConfig,
             HttpConfiguration httpConfiguration) {
         if (buildTimeConfig.auth.form.enabled) {
-            recorder.setupFormAuth(beanContainerBuildItem.getValue(), httpConfiguration, buildTimeConfig);
+            return SyntheticBeanBuildItem.configure(FormAuthenticationMechanism.class)
+                    .types(HttpAuthenticationMechanism.class)
+                    .setRuntimeInit()
+                    .scope(Singleton.class)
+                    .supplier(recorder.setupFormAuth(httpConfiguration, buildTimeConfig)).done();
         }
+        return null;
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    SyntheticBeanBuildItem initBasicAuth(
+            HttpSecurityRecorder recorder,
+            HttpBuildTimeConfig buildTimeConfig) {
+        if (buildTimeConfig.auth.form.enabled && !buildTimeConfig.auth.basic) {
+            //if form auth is enabled and we are not then we don't install
+            return null;
+        }
+        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+                .configure(BasicAuthenticationMechanism.class)
+                .types(HttpAuthenticationMechanism.class)
+                .setRuntimeInit()
+                .scope(Singleton.class)
+                .supplier(recorder.setupBasicAuth(buildTimeConfig));
+        if (!buildTimeConfig.auth.form.enabled && !buildTimeConfig.auth.basic) {
+            //if not explicitly enabled we make this a default bean, so it is the fallback if nothing else is defined
+            configurator.defaultBean();
+        }
+
+        return configurator.done();
     }
 
     @BuildStep
@@ -79,7 +109,6 @@ public class HttpSecurityProcessor {
         }
 
         if (buildTimeConfig.auth.form.enabled) {
-            beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(FormAuthenticationMechanism.class));
         } else if (buildTimeConfig.auth.basic) {
             beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(BasicAuthenticationMechanism.class));
         }

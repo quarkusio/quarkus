@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
 import java.util.function.BiFunction;
@@ -8,11 +10,14 @@ import java.util.function.Supplier;
 
 import javax.enterprise.inject.spi.CDI;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.FormAuthConfig;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.vertx.core.Handler;
@@ -21,6 +26,11 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class HttpSecurityRecorder {
+
+    private static final Logger log = Logger.getLogger(HttpSecurityRecorder.class);
+
+    //the temp encryption key, persistent across dev mode restarts
+    static volatile String encryptionKey;
 
     public Handler<RoutingContext> authenticationMechanismHandler() {
         return new Handler<RoutingContext>() {
@@ -106,8 +116,44 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public void setupFormAuth(BeanContainer container, HttpConfiguration httpConfiguration,
+    public Supplier<FormAuthenticationMechanism> setupFormAuth(HttpConfiguration httpConfiguration,
             HttpBuildTimeConfig buildTimeConfig) {
-        container.instance(FormAuthenticationMechanism.class).init(httpConfiguration, buildTimeConfig);
+
+        return new Supplier<FormAuthenticationMechanism>() {
+            @Override
+            public FormAuthenticationMechanism get() {
+                String key;
+                if (!httpConfiguration.encryptionKey.isPresent()) {
+                    if (encryptionKey != null) {
+                        //persist across dev mode restarts
+                        key = encryptionKey;
+                    } else {
+                        byte[] data = new byte[32];
+                        new SecureRandom().nextBytes(data);
+                        key = encryptionKey = Base64.getEncoder().encodeToString(data);
+                        log.warn("Encryption key was not specified for persistent FORM auth, using temporary key " + key);
+                    }
+                } else {
+                    key = httpConfiguration.encryptionKey.get();
+                }
+                FormAuthConfig form = buildTimeConfig.auth.form;
+                PersistentLoginManager loginManager = new PersistentLoginManager(key, form.cookieName, form.timeout.toMillis(),
+                        form.newCookieInterval.toMillis());
+                String loginPage = form.loginPage.startsWith("/") ? form.loginPage : "/" + form.loginPage;
+                String errorPage = form.errorPage.startsWith("/") ? form.errorPage : "/" + form.errorPage;
+                String landingPage = form.landingPage.startsWith("/") ? form.landingPage : "/" + form.landingPage;
+                boolean redirectAfterLogin = form.redirectAfterLogin;
+                return new FormAuthenticationMechanism(loginPage, errorPage, landingPage, redirectAfterLogin, loginManager);
+            }
+        };
+    }
+
+    public Supplier<?> setupBasicAuth(HttpBuildTimeConfig buildTimeConfig) {
+        return new Supplier<BasicAuthenticationMechanism>() {
+            @Override
+            public BasicAuthenticationMechanism get() {
+                return new BasicAuthenticationMechanism(buildTimeConfig.auth.realm, "BASIC", buildTimeConfig.auth.form.enabled);
+            }
+        };
     }
 }

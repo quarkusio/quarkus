@@ -8,6 +8,8 @@ import java.util.NavigableMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import javax.enterprise.inject.CreationException;
+
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
@@ -71,21 +73,42 @@ public class SyntheticBeansProcessor {
         }
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
-            DotName implClazz = bean.configurator().getImplClazz();
-            String name = createName(implClazz.toString(), bean.configurator().getQualifiers().toString());
-            if (bean.configurator().runtimeValue != null) {
-                suppliersMap.put(name, recorder.createSupplier(bean.configurator().runtimeValue));
-            } else {
-                suppliersMap.put(name, bean.configurator().supplier);
+            if (bean.isStaticInit()) {
+                initSyntheticBean(recorder, suppliersMap, beanRegistration, bean);
             }
-            beanRegistration.getContext().configure(implClazz)
-                    .read(bean.configurator())
-                    .creator(creator(name))
-                    .done();
         }
-
         // Init the map of bean instances
-        recorder.initSupplierBeans(suppliersMap);
+        recorder.initStaticSupplierBeans(suppliersMap);
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    void build(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
+            BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
+
+        Map<String, Supplier<?>> suppliersMap = new HashMap<>();
+
+        for (SyntheticBeanBuildItem bean : syntheticBeans) {
+            if (!bean.isStaticInit()) {
+                initSyntheticBean(recorder, suppliersMap, beanRegistration, bean);
+            }
+        }
+        recorder.initRuntimeSupplierBeans(suppliersMap);
+    }
+
+    private void initSyntheticBean(ArcRecorder recorder, Map<String, Supplier<?>> suppliersMap,
+            BeanRegistrationPhaseBuildItem beanRegistration, SyntheticBeanBuildItem bean) {
+        DotName implClazz = bean.configurator().getImplClazz();
+        String name = createName(implClazz.toString(), bean.configurator().getQualifiers().toString());
+        if (bean.configurator().runtimeValue != null) {
+            suppliersMap.put(name, recorder.createSupplier(bean.configurator().runtimeValue));
+        } else {
+            suppliersMap.put(name, bean.configurator().supplier);
+        }
+        beanRegistration.getContext().configure(implClazz)
+                .read(bean.configurator())
+                .creator(creator(name))
+                .done();
     }
 
     private String createName(String beanClass, String qualifiers) {
@@ -102,6 +125,9 @@ public class SyntheticBeansProcessor {
                 ResultHandle supplier = m.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class), staticMap,
                         m.load(name));
+                // Throw an exception if no supplier is found
+                m.ifNull(supplier).trueBranch().throwException(CreationException.class,
+                        "Synthetic bean instance not initialized yet: " + name);
                 ResultHandle result = m.invokeInterfaceMethod(
                         MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
                         supplier);

@@ -2,6 +2,7 @@ package io.quarkus.vault.runtime;
 
 import io.quarkus.vault.runtime.client.OkHttpVaultClient;
 import io.quarkus.vault.runtime.client.VaultClient;
+import io.quarkus.vault.runtime.config.VaultBuildTimeConfig;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 
 public class VaultManager {
@@ -9,6 +10,8 @@ public class VaultManager {
     private static volatile VaultManager instance;
 
     private VaultRuntimeConfig serverConfig;
+    private VaultBuildTimeConfig buildTimeConfig;
+
     private VaultClient vaultClient;
     private VaultAuthManager vaultAuthManager;
     private VaultKvManager vaultKvManager;
@@ -16,14 +19,15 @@ public class VaultManager {
     private VaultTransitManager vaultTransitManager;
     private VaultCredentialsProvider vaultCredentialsProvider;
     private VaultTOTPManager vaultTOTPManager;
+    private VaultSystemBackendManager vaultSystemBackendManager;
 
     public static VaultManager getInstance() {
         return instance;
     }
 
-    public static void init(VaultRuntimeConfig serverConfig) {
+    public static void init(VaultBuildTimeConfig buildTimeConfig, VaultRuntimeConfig serverConfig) {
         if (instance == null) {
-            instance = new VaultManager(serverConfig);
+            instance = new VaultManager(buildTimeConfig, serverConfig);
         }
     }
 
@@ -31,19 +35,21 @@ public class VaultManager {
         instance = null;
     }
 
-    public VaultManager(VaultRuntimeConfig serverConfig) {
-        this(serverConfig, new OkHttpVaultClient(serverConfig));
+    public VaultManager(VaultBuildTimeConfig vaultBuildTimeConfig, VaultRuntimeConfig serverConfig) {
+        this(vaultBuildTimeConfig, serverConfig, new OkHttpVaultClient(serverConfig));
     }
 
-    public VaultManager(VaultRuntimeConfig serverConfig, VaultClient vaultClient) {
+    public VaultManager(VaultBuildTimeConfig vaultBuildTimeConfig, VaultRuntimeConfig serverConfig, VaultClient vaultClient) {
         this.serverConfig = serverConfig;
         this.vaultClient = vaultClient;
+        this.buildTimeConfig = vaultBuildTimeConfig;
         this.vaultAuthManager = new VaultAuthManager(this.vaultClient, serverConfig);
         this.vaultKvManager = new VaultKvManager(this.vaultAuthManager, this.vaultClient, serverConfig);
         this.vaultDbManager = new VaultDbManager(this.vaultAuthManager, this.vaultClient, serverConfig);
         this.vaultTransitManager = new VaultTransitManager(this.vaultAuthManager, this.vaultClient, serverConfig);
         this.vaultCredentialsProvider = new VaultCredentialsProvider(serverConfig, this.vaultKvManager, this.vaultDbManager);
         this.vaultTOTPManager = new VaultTOTPManager(this.vaultAuthManager, this.vaultClient);
+        this.vaultSystemBackendManager = new VaultSystemBackendManager(this.buildTimeConfig, this.vaultClient);
     }
 
     public VaultClient getVaultClient() {
@@ -76,5 +82,13 @@ public class VaultManager {
 
     public VaultRuntimeConfig getServerConfig() {
         return serverConfig;
+    }
+
+    public VaultBuildTimeConfig getBuildTimeConfig() {
+        return buildTimeConfig;
+    }
+
+    public VaultSystemBackendManager getVaultSystemBackendManager() {
+        return vaultSystemBackendManager;
     }
 }

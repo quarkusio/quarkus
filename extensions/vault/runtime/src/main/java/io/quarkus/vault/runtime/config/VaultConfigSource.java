@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -58,6 +59,8 @@ public class VaultConfigSource implements ConfigSource {
 
     private AtomicReference<VaultCacheEntry<Map<String, String>>> cache = new AtomicReference<>(null);
     private AtomicReference<VaultRuntimeConfig> serverConfig = new AtomicReference<>(null);
+    private AtomicReference<VaultBuildTimeConfig> buildServerConfig = new AtomicReference<>(null);
+
     private AtomicBoolean init = new AtomicBoolean(false);
     private int ordinal;
     private DurationConverter durationConverter = new DurationConverter();
@@ -89,7 +92,7 @@ public class VaultConfigSource implements ConfigSource {
     @Override
     public String getValue(String propertyName) {
 
-        VaultRuntimeConfig serverConfig = getConfig();
+        VaultRuntimeConfig serverConfig = getRuntimeConfig();
 
         if (!serverConfig.url.isPresent()) {
             return null;
@@ -100,7 +103,7 @@ public class VaultConfigSource implements ConfigSource {
 
     private Map<String, String> getSecretConfig() {
 
-        VaultRuntimeConfig serverConfig = getConfig();
+        VaultRuntimeConfig serverConfig = getRuntimeConfig();
 
         VaultCacheEntry<Map<String, String>> cacheEntry = cache.get();
         if (cacheEntry != null && cacheEntry.youngerThan(serverConfig.secretConfigCachePeriod)) {
@@ -148,30 +151,55 @@ public class VaultConfigSource implements ConfigSource {
 
     private VaultManager getVaultManager() {
 
-        VaultRuntimeConfig serverConfig = getConfig();
+        VaultBuildTimeConfig buildTimeConfig = getBuildtimeConfig();
+        VaultRuntimeConfig serverConfig = getRuntimeConfig();
 
         // init at most once
         if (init.compareAndSet(false, true)) {
-            VaultManager.init(serverConfig);
+            VaultManager.init(buildTimeConfig, serverConfig);
         }
 
         return VaultManager.getInstance();
     }
 
-    private VaultRuntimeConfig getConfig() {
-        VaultRuntimeConfig serverConfig = this.serverConfig.get();
-        if (serverConfig != null) {
-            return serverConfig;
+    private VaultRuntimeConfig getRuntimeConfig() {
+        return getConfig(this.serverConfig, () -> loadRuntimeConfig(), "runtime");
+    }
+
+    private VaultBuildTimeConfig getBuildtimeConfig() {
+        return getConfig(this.buildServerConfig, () -> loadBuildtimeConfig(), "buildtime");
+    }
+
+    private <T> T getConfig(AtomicReference<T> ref, Supplier<T> supplier, String name) {
+        T config = ref.get();
+        if (config != null) {
+            return config;
         } else {
-            serverConfig = loadConfig();
-            log.debug("loaded vault server config " + serverConfig);
-            this.serverConfig.set(serverConfig);
-            return this.serverConfig.get();
+            config = supplier.get();
+            log.debug("loaded vault " + name + " config " + config);
+            ref.set(config);
+            return ref.get();
         }
     }
 
     // need to recode config loading since we are at the config source level
-    private VaultRuntimeConfig loadConfig() {
+    private VaultBuildTimeConfig loadBuildtimeConfig() {
+        VaultBuildTimeConfig vaultBuildTimeConfig = new VaultBuildTimeConfig();
+        vaultBuildTimeConfig.health = new HealthConfig();
+
+        vaultBuildTimeConfig.health.enabled = parseBoolean(
+                getVaultProperty("health.enabled", "false"));
+
+        vaultBuildTimeConfig.health.standByOk = parseBoolean(
+                getVaultProperty("health.stand-by-ok", "false"));
+        vaultBuildTimeConfig.health.performanceStandByOk = parseBoolean(
+                getVaultProperty("health.performance-stand-by-ok", "false"));
+
+        return vaultBuildTimeConfig;
+    }
+
+    // need to recode config loading since we are at the config source level
+    private VaultRuntimeConfig loadRuntimeConfig() {
 
         VaultRuntimeConfig serverConfig = new VaultRuntimeConfig();
         serverConfig.tls = new VaultTlsConfig();

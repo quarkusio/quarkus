@@ -497,6 +497,27 @@ You should see:
 {password=connor}
 ----
 
+== Vault Health Check
+
+If you are using the `quarkus-smallrye-health` extension, `quarkus-vault` can add a readiness health check
+to validate the connection to the Vault server. This is disabled by default.
+
+If enabled, when you access the `/health/ready` endpoint of your application you will have information about the connection validation status.
+
+This behavior can be enabled by setting the `quarkus.vault.health.enabled` property to `true` in your `application.properties`.
+
+Only if Vault is initialized, unsealed and active, the health endpoint returns that Vault is ready to serve requests.
+
+You can change a bit this behaviour by using `quarkus.vault.health.stand-by-ok` and `quarkus.vault.health.performance-stand-by-ok` to `true` in your `application.properties`.
+
+stand-by-ok:: Specifies if being a standby should still return the active status code instead of the standby status code.
+
+performance-stand-by-ok:: Specifies if being a performance standby should still return the active status code instead of the performance standby status code.
+
+You can inject `io.quarkus.vault.VaultSystemBackendEngine` to run system operations programmatically.
+
+WARNING: When the readiness probe is failing in Kubernetes, then the application is not reachable. This means that if Vault is failing, all services depending on Vault will become unreachable and maybe this is not the desired state, so use this flag according to your requirements.
+
 == TLS
 
 In production mode, TLS should be activated between the Quarkus application and Vault to prevent _man-in-the-middle_ attacks.

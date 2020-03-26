@@ -1,10 +1,10 @@
-package io.quarkus.vault.test.client.dto;
+package io.quarkus.vault.runtime.client.dto.sys;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.quarkus.vault.runtime.client.dto.VaultModel;
 
-public class VaultHealth implements VaultModel {
+public class VaultHealthResult implements VaultModel {
 
     public boolean initialized;
     public boolean sealed;

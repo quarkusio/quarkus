@@ -1,5 +1,6 @@
 package io.quarkus.generators.rest;
 
+import static io.quarkus.generators.ProjectGenerator.JAVA_TARGET;
 import static java.lang.String.format;
 
 import io.quarkus.cli.commands.QuarkusCommandInvocation;
@@ -144,6 +145,24 @@ public class BasicRestProjectGenerator implements ProjectGenerator {
                         template = template.replace(format("${%s}", e.getKey().toString()), e.getValue().toString());
                     }
                 }
+
+                // do some nasty replacements for Java target if we want to generate Java 11 projects
+                if ("11".equals(invocation.getProperty(JAVA_TARGET))) {
+                    if (BuildTool.GRADLE.equals(invocation.getBuildTool())) {
+                        template = template.replace("JavaVersion.VERSION_1_8", "JavaVersion.VERSION_11");
+                    } else {
+                        template = template.replace("<maven.compiler.source>1.8</maven.compiler.source>",
+                                "<maven.compiler.source>11</maven.compiler.source>");
+                        template = template.replace("<maven.compiler.target>1.8</maven.compiler.target>",
+                                "<maven.compiler.target>11</maven.compiler.target>");
+                        // Kotlin
+                        template = template.replace("<jvmTarget>1.8</jvmTarget>", "<jvmTarget>11</jvmTarget>");
+                        // Scala
+                        // For now, we keep Java 8 as a target for Scala as we don't want to upgrade to 2.13
+                        // template = template.replace("<arg>-target:jvm-1.8</arg>", "<arg>-target:jvm-11</arg>");
+                    }
+                }
+
                 writer.write(outputFilePath, template);
             }
         }

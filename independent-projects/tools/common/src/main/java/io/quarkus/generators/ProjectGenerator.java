@@ -22,6 +22,7 @@ public interface ProjectGenerator {
     String CLASS_NAME = "class_name";
     String IS_SPRING = "is_spring";
     String RESOURCE_PATH = "path";
+    String JAVA_TARGET = "java_target";
 
     String getName();
 

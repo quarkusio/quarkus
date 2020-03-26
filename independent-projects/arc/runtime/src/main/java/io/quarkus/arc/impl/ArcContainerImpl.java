@@ -14,6 +14,7 @@ import io.quarkus.arc.ResourceReferenceProvider;
 import io.quarkus.arc.impl.ArcCDIProvider.ArcCDI;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,6 +39,7 @@ import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
+import javax.enterprise.context.NormalScope;
 import javax.enterprise.event.Event;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.Any;
@@ -50,6 +52,7 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.InterceptionType;
 import javax.enterprise.inject.spi.Interceptor;
 import javax.enterprise.util.TypeLiteral;
+import javax.inject.Scope;
 import javax.inject.Singleton;
 import org.jboss.logging.Logger;
 
@@ -209,6 +212,7 @@ public class ArcContainerImpl implements ArcContainer {
         return instanceHandle(type, qualifiers);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> Supplier<InstanceHandle<T>> instanceSupplier(Class<T> type, Annotation... qualifiers) {
         requireRunning();
@@ -393,12 +397,18 @@ public class ArcContainerImpl implements ArcContainer {
     private <T> InjectableBean<T> getBean(Type requiredType, Annotation... qualifiers) {
         if (qualifiers == null || qualifiers.length == 0) {
             qualifiers = new Annotation[] { Default.Literal.INSTANCE };
+        } else {
+            Qualifiers.verify(qualifiers);
         }
         Set<InjectableBean<?>> resolvedBeans = resolved.getValue(new Resolvable(requiredType, qualifiers));
         return resolvedBeans.isEmpty() || resolvedBeans.size() > 1 ? null : (InjectableBean<T>) resolvedBeans.iterator().next();
     }
 
     Set<Bean<?>> getBeans(Type requiredType, Annotation... qualifiers) {
+        if (requiredType instanceof TypeVariable) {
+            throw new IllegalArgumentException("The given type is a type variable: " + requiredType);
+        }
+        Qualifiers.verify(qualifiers);
         // This method does not cache the results
         return new HashSet<>(getMatchingBeans(new Resolvable(requiredType, qualifiers)));
     }
@@ -406,6 +416,29 @@ public class ArcContainerImpl implements ArcContainer {
     Set<Bean<?>> getBeans(String name) {
         // This method does not cache the results
         return new HashSet<>(getMatchingBeans(name));
+    }
+
+    Map<Class<? extends Annotation>, Set<Annotation>> getTransitiveInterceptorBindings() {
+        return transitiveInterceptorBindings;
+    }
+
+    boolean isScope(Class<? extends Annotation> annotationType) {
+        if (annotationType.isAnnotationPresent(Scope.class) || annotationType.isAnnotationPresent(NormalScope.class)) {
+            return true;
+        }
+        return contexts.stream().map(InjectableContext::getScope).filter(annotationType::equals).findAny().isPresent();
+    }
+
+    boolean isNormalScope(Class<? extends Annotation> annotationType) {
+        if (annotationType.isAnnotationPresent(NormalScope.class)) {
+            return true;
+        }
+        for (InjectableContext context : contexts) {
+            if (context.getScope().equals(annotationType) && context.isNormal()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Set<InjectableBean<?>> resolve(Resolvable resolvable) {
@@ -548,6 +581,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     @SuppressWarnings("unchecked")
     <T> List<InjectableObserverMethod<? super T>> resolveObservers(Type eventType, Set<Annotation> eventQualifiers) {
+        Qualifiers.verify(eventQualifiers);
         if (observers.isEmpty()) {
             return Collections.emptyList();
         }

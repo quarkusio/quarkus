@@ -2268,11 +2268,11 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-	    <dependency>
-		<groupId>io.smallrye.reactive</groupId>
-		<artifactId>smallrye-axle-amqp-client</artifactId>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-axle-amqp-client</artifactId>
                 <version>${axle-client.version}</version>
-	    </dependency>
+            </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-axle-core</artifactId>

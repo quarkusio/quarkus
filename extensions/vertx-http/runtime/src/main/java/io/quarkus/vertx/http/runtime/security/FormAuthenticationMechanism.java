@@ -1,13 +1,12 @@
 package io.quarkus.vertx.http.runtime.security;
 
-import java.security.SecureRandom;
-import java.util.Base64;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-
-import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
@@ -15,59 +14,36 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.security.credential.PasswordCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
-import io.quarkus.vertx.http.runtime.FormAuthConfig;
-import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
 
-@Singleton
 public class FormAuthenticationMechanism implements HttpAuthenticationMechanism {
 
     private static final Logger log = Logger.getLogger(FormAuthenticationMechanism.class);
 
     public static final String DEFAULT_POST_LOCATION = "/j_security_check";
 
-    private volatile String loginPage;
-    private volatile String errorPage;
-    private volatile String postLocation = DEFAULT_POST_LOCATION;
-    private volatile String locationCookie = "quarkus-redirect-location";
-    private volatile String landingPage = "/index.html";
-    private volatile boolean redirectAfterLogin;
+    private final String loginPage;
+    private final String errorPage;
+    private final String postLocation = DEFAULT_POST_LOCATION;
+    private final String locationCookie = "quarkus-redirect-location";
+    private final String landingPage;
+    private final boolean redirectAfterLogin;
 
-    private volatile PersistentLoginManager loginManager;
+    private final PersistentLoginManager loginManager;
 
-    private static String encryptionKey;
-
-    public FormAuthenticationMechanism() {
-    }
-
-    public void init(HttpConfiguration httpConfiguration, HttpBuildTimeConfig buildTimeConfig) {
-        String key;
-        if (!httpConfiguration.encryptionKey.isPresent()) {
-            if (encryptionKey != null) {
-                //persist across dev mode restarts
-                key = encryptionKey;
-            } else {
-                byte[] data = new byte[32];
-                new SecureRandom().nextBytes(data);
-                key = encryptionKey = Base64.getEncoder().encodeToString(data);
-                log.warn("Encryption key was not specified for persistent FORM auth, using temporary key " + key);
-            }
-        } else {
-            key = httpConfiguration.encryptionKey.get();
-        }
-        FormAuthConfig form = buildTimeConfig.auth.form;
-        loginManager = new PersistentLoginManager(key, form.cookieName, form.timeout.toMillis(),
-                form.newCookieInterval.toMillis());
-        loginPage = form.loginPage.startsWith("/") ? form.loginPage : "/" + form.loginPage;
-        errorPage = form.errorPage.startsWith("/") ? form.errorPage : "/" + form.errorPage;
-        landingPage = form.landingPage.startsWith("/") ? form.landingPage : "/" + form.landingPage;
-        redirectAfterLogin = form.redirectAfterLogin;
+    public FormAuthenticationMechanism(String loginPage, String errorPage, String landingPage, boolean redirectAfterLogin,
+            PersistentLoginManager loginManager) {
+        this.loginPage = loginPage;
+        this.errorPage = errorPage;
+        this.landingPage = landingPage;
+        this.redirectAfterLogin = redirectAfterLogin;
+        this.loginManager = loginManager;
     }
 
     public CompletionStage<SecurityIdentity> runFormAuth(final RoutingContext exchange,
@@ -194,4 +170,13 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         }
     }
 
+    @Override
+    public Set<Class<? extends AuthenticationRequest>> getCredentialTypes() {
+        return new HashSet<>(Arrays.asList(UsernamePasswordAuthenticationRequest.class, TrustedAuthenticationRequest.class));
+    }
+
+    @Override
+    public HttpCredentialTransport getCredentialTransport() {
+        return new HttpCredentialTransport(HttpCredentialTransport.Type.POST, postLocation);
+    }
 }

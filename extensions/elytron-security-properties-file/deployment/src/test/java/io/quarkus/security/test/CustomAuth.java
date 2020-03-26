@@ -4,8 +4,10 @@ import static io.undertow.httpcore.HttpHeaderNames.BASIC;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -19,10 +21,11 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.PasswordCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
-import io.undertow.security.idm.IdentityManager;
+import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -35,8 +38,6 @@ public class CustomAuth implements HttpAuthenticationMechanism {
     private static final String LOWERCASE_BASIC_PREFIX = BASIC_PREFIX.toLowerCase(Locale.ENGLISH);
     private static final int PREFIX_LENGTH = BASIC_PREFIX.length();
     private static final String COLON = ":";
-
-    private IdentityManager identityManager;
 
     @Override
     public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
@@ -82,5 +83,15 @@ public class CustomAuth implements HttpAuthenticationMechanism {
                 HttpHeaderNames.WWW_AUTHENTICATE,
                 "BASIC realm=CUSTOM");
         return CompletableFuture.completedFuture(result);
+    }
+
+    @Override
+    public Set<Class<? extends AuthenticationRequest>> getCredentialTypes() {
+        return Collections.singleton(UsernamePasswordAuthenticationRequest.class);
+    }
+
+    @Override
+    public HttpCredentialTransport getCredentialTransport() {
+        return new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, "basic");
     }
 }

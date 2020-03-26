@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
@@ -39,6 +40,7 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.PasswordCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.vertx.ext.web.RoutingContext;
 
@@ -176,5 +178,15 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
                 HttpHeaderNames.WWW_AUTHENTICATE,
                 challenge);
         return CompletableFuture.completedFuture(result);
+    }
+
+    @Override
+    public Set<Class<? extends AuthenticationRequest>> getCredentialTypes() {
+        return Collections.singleton(UsernamePasswordAuthenticationRequest.class);
+    }
+
+    @Override
+    public HttpCredentialTransport getCredentialTransport() {
+        return new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, BASIC);
     }
 }

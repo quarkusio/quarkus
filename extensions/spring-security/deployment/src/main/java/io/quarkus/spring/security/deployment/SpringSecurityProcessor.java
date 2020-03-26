@@ -34,7 +34,7 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -77,7 +77,7 @@ class SpringSecurityProcessor {
     }
 
     @BuildStep
-    void addSpringSecuredSecurityCheck(ApplicationIndexBuildItem index,
+    void addSpringSecuredSecurityCheck(CombinedIndexBuildItem index,
             BuildProducer<AdditionalSecurityCheckBuildItem> additionalSecurityCheckBuildItems) {
 
         Set<MethodInfo> methodsWithSecurityAnnotation = new HashSet<>();
@@ -175,7 +175,7 @@ class SpringSecurityProcessor {
 
     @BuildStep
     void locatePreAuthorizedInstances(
-            ApplicationIndexBuildItem index,
+            CombinedIndexBuildItem index,
             BuildProducer<SpringPreAuthorizeAnnotatedMethodBuildItem> springPreAuthorizeAnnotatedMethods,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
         Map<MethodInfo, AnnotationInstance> result = new HashMap<>();
@@ -268,7 +268,7 @@ class SpringSecurityProcessor {
      * The generation needs to be done in it's own build step otherwise we can end up with build cycle errors
      */
     @BuildStep
-    void generateNecessarySupportClasses(ApplicationIndexBuildItem index,
+    void generateNecessarySupportClasses(CombinedIndexBuildItem index,
             SpringPreAuthorizeAnnotatedMethodBuildItem springPreAuthorizeAnnotatedMethods,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
@@ -343,7 +343,7 @@ class SpringSecurityProcessor {
     }
 
     @BuildStep
-    void addSpringPreAuthorizeSecurityCheck(ApplicationIndexBuildItem index,
+    void addSpringPreAuthorizeSecurityCheck(CombinedIndexBuildItem index,
             SpringPreAuthorizeAnnotatedMethodBuildItem springPreAuthorizeAnnotatedMethods,
             SpringBeanNameToDotNameBuildItem springBeanNames,
             BuildProducer<AdditionalSecurityCheckBuildItem> additionalSecurityChecks,

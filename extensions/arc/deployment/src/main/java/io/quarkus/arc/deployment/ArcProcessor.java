@@ -78,7 +78,7 @@ import io.quarkus.runner.bootstrap.BootstrapDebug;
  * <li>{@link ValidationPhaseBuildItem}</li>
  * </ol>
  * These build items are especially useful if an extension needs to produce other build items within the given phase.
- * 
+ *
  * @see BeanProcessor
  */
 public class ArcProcessor {

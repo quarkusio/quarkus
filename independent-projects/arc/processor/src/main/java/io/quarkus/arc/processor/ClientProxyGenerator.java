@@ -3,9 +3,11 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
+import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
 
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.MockableProxy;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.AssignableResultHandle;
@@ -43,12 +45,15 @@ public class ClientProxyGenerator extends AbstractGenerator {
     static final String DELEGATE_METHOD_NAME = "arc$delegate";
     static final String GET_CONTEXTUAL_INSTANCE_METHOD_NAME = "arc_contextualInstance";
     static final String GET_BEAN = "arc_bean";
+    static final String MOCK_FIELD = "mock_field";
 
     private final Predicate<DotName> applicationClassPredicate;
+    private final boolean mockable;
 
-    public ClientProxyGenerator(Predicate<DotName> applicationClassPredicate, boolean generateSources) {
+    public ClientProxyGenerator(Predicate<DotName> applicationClassPredicate, boolean generateSources, boolean mockable) {
         super(generateSources);
         this.applicationClassPredicate = applicationClassPredicate;
+        this.mockable = mockable;
     }
 
     /**
@@ -81,17 +86,26 @@ public class ClientProxyGenerator extends AbstractGenerator {
         } else {
             superClass = providerTypeName;
         }
+        if (mockable) {
+            interfaces.add(MockableProxy.class.getName());
+        }
 
         ClassCreator clientProxy = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .superClass(superClass)
                 .interfaces(interfaces.toArray(new String[0])).build();
         FieldCreator beanField = clientProxy.getFieldCreator("bean", DescriptorUtils.extToInt(beanClassName))
                 .setModifiers(ACC_PRIVATE | ACC_FINAL);
+        if (mockable) {
+            clientProxy.getFieldCreator(MOCK_FIELD, Object.class).setModifiers(ACC_PRIVATE | ACC_VOLATILE);
+        }
 
         createConstructor(clientProxy, beanClassName, superClass, beanField.getFieldDescriptor());
         implementDelegate(clientProxy, providerTypeName, beanField.getFieldDescriptor());
         implementGetContextualInstance(clientProxy, providerTypeName);
         implementGetBean(clientProxy, beanField.getFieldDescriptor());
+        if (mockable) {
+            implementMockMethods(clientProxy);
+        }
 
         for (MethodInfo method : getDelegatingMethods(bean)) {
 
@@ -175,6 +189,21 @@ public class ClientProxyGenerator extends AbstractGenerator {
         return classOutput.getResources();
     }
 
+    private void implementMockMethods(ClassCreator clientProxy) {
+        MethodCreator clear = clientProxy
+                .getMethodCreator(MethodDescriptor.ofMethod(clientProxy.getClassName(), "quarkus$$clearMock", void.class));
+        clear.writeInstanceField(FieldDescriptor.of(clientProxy.getClassName(), MOCK_FIELD, Object.class), clear.getThis(),
+                clear.loadNull());
+        clear.returnValue(null);
+
+        MethodCreator set = clientProxy
+                .getMethodCreator(
+                        MethodDescriptor.ofMethod(clientProxy.getClassName(), "quarkus$$setMock", void.class, Object.class));
+        set.writeInstanceField(FieldDescriptor.of(clientProxy.getClassName(), MOCK_FIELD, Object.class), set.getThis(),
+                set.getMethodParam(0));
+        set.returnValue(null);
+    }
+
     void createConstructor(ClassCreator clientProxy, String beanClassName, String superClasName, FieldDescriptor beanField) {
         MethodCreator creator = clientProxy.getMethodCreator(Methods.INIT, void.class, beanClassName);
         creator.invokeSpecialMethod(MethodDescriptor.ofConstructor(superClasName), creator.getThis());
@@ -185,6 +214,13 @@ public class ClientProxyGenerator extends AbstractGenerator {
     void implementDelegate(ClassCreator clientProxy, String providerTypeName, FieldDescriptor beanField) {
         MethodCreator creator = clientProxy.getMethodCreator(DELEGATE_METHOD_NAME, providerTypeName)
                 .setModifiers(Modifier.PRIVATE);
+        if (mockable) {
+            //if mockable and mocked just return the mock
+            ResultHandle mock = creator.readInstanceField(
+                    FieldDescriptor.of(clientProxy.getClassName(), MOCK_FIELD, Object.class.getName()), creator.getThis());
+            BytecodeCreator falseBranch = creator.ifNull(mock).falseBranch();
+            falseBranch.returnValue(falseBranch.checkCast(mock, providerTypeName));
+        }
         // Arc.container()
         ResultHandle container = creator.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
         // bean.getScope()

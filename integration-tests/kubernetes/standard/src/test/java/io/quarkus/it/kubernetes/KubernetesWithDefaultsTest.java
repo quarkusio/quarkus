@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -37,6 +38,21 @@ public class KubernetesWithDefaultsTest {
                 .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.yml"));
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
+
+        assertThat(kubernetesList).filteredOn(i -> "Deployment".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+            assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
+
+                assertThat(d.getSpec()).satisfies(deploymentSpec -> {
+                    assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
+                        assertThat(t.getSpec()).satisfies(podSpec -> {
+                            assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                                assertThat(container.getImagePullPolicy()).isEqualTo("Always");
+                            });
+                        });
+                    });
+                });
+            });
+        });
 
         assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
             assertThat(i).isInstanceOfSatisfying(Service.class, s -> {

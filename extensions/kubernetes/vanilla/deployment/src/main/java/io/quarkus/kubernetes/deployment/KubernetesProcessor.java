@@ -309,7 +309,7 @@ class KubernetesProcessor {
         });
 
         //Image Pull
-        session.resources().decorate(new ApplyImagePullPolicyDecorator(config.getImagePullPolicy()));
+        session.resources().decorate(target, new ApplyImagePullPolicyDecorator(config.getImagePullPolicy()));
         config.getImagePullSecrets().ifPresent(l -> {
             l.forEach(s -> session.resources().decorate(target, new AddImagePullSecretDecorator(name, s)));
         });

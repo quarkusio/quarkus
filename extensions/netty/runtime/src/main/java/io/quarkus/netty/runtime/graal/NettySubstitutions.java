@@ -122,18 +122,18 @@ final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_Alp
 
 @TargetClass(className = "io.netty.handler.ssl.JettyAlpnSslEngine", onlyWith = JDK8OrEarlier.class)
 final class Target_io_netty_handler_ssl_JettyAlpnSslEngine {
-    @Alias
+    @Substitute
     static boolean isAvailable() {
         return false;
     }
 
-    @Alias
+    @Substitute
     static Target_io_netty_handler_ssl_JettyAlpnSslEngine newClientEngine(SSLEngine engine,
             JdkApplicationProtocolNegotiator applicationNegotiator) {
         return null;
     }
 
-    @Alias
+    @Substitute
     static Target_io_netty_handler_ssl_JettyAlpnSslEngine newServerEngine(SSLEngine engine,
             JdkApplicationProtocolNegotiator applicationNegotiator) {
         return null;

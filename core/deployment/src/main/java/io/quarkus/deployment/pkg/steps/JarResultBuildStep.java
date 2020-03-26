@@ -645,6 +645,20 @@ public class JarResultBuildStep {
                     : applicationInfo.getVersion();
             attributes.put(Attributes.Name.IMPLEMENTATION_VERSION, version);
         }
+        if (config.manifest.manifestSections.size() > 0) {
+            for (String sectionName : config.manifest.manifestSections.keySet()) {
+                for (Map.Entry<String, String> entry : config.manifest.manifestSections.get(sectionName).entrySet()) {
+                    Attributes attribs = manifest.getEntries().get(sectionName);
+                    if (attribs == null) {
+                        attribs = new Attributes();
+                        attribs.putValue(entry.getKey(), entry.getValue());
+                        manifest.getEntries().put(sectionName, attribs);
+                    } else {
+                        attribs.putValue(entry.getKey(), entry.getValue());
+                    }
+                }
+            }
+        }
         try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(manifestPath, DEFAULT_OPEN_OPTIONS))) {
             manifest.write(os);
         }

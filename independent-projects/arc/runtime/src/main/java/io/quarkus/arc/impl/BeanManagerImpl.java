@@ -4,11 +4,13 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.el.ELResolver;
 import javax.el.ExpressionFactory;
 import javax.enterprise.context.ContextNotActiveException;
@@ -37,6 +39,7 @@ import javax.enterprise.inject.spi.Interceptor;
 import javax.enterprise.inject.spi.ObserverMethod;
 import javax.enterprise.inject.spi.ProducerFactory;
 import javax.enterprise.util.TypeLiteral;
+import javax.inject.Qualifier;
 import javax.interceptor.InterceptorBinding;
 
 /**
@@ -123,7 +126,12 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public <T> Set<ObserverMethod<? super T>> resolveObserverMethods(T event, Annotation... qualifiers) {
-        throw new UnsupportedOperationException();
+        Type eventType = Types.getCanonicalType(event.getClass());
+        if (Types.containsTypeVariable(eventType)) {
+            throw new IllegalArgumentException("The runtime type of the event object contains a type variable: " + eventType);
+        }
+        Set<Annotation> eventQualifiers = Arrays.asList(qualifiers).stream().collect(Collectors.toSet());
+        return ArcContainerImpl.instance().resolveObservers(eventType, eventQualifiers).stream().collect(Collectors.toSet());
     }
 
     @Override
@@ -138,12 +146,13 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public boolean isScope(Class<? extends Annotation> annotationType) {
-        throw new UnsupportedOperationException();
+        return ArcContainerImpl.instance().isScope(annotationType);
     }
 
     @Override
     public boolean isNormalScope(Class<? extends Annotation> annotationType) {
-        throw new UnsupportedOperationException();
+        // Note that it's possible to register a custom context with a scope annotation that is not annotated with @Scope or @NormalScope 
+        return ArcContainerImpl.instance().isNormalScope(annotationType);
     }
 
     @Override
@@ -154,12 +163,14 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public boolean isQualifier(Class<? extends Annotation> annotationType) {
-        throw new UnsupportedOperationException();
+        // BeforeBeanDiscovery.addQualifier() and equivalents are not supported
+        return annotationType.isAnnotationPresent(Qualifier.class);
     }
 
     @Override
     public boolean isInterceptorBinding(Class<? extends Annotation> annotationType) {
-        return annotationType.isAnnotationPresent(InterceptorBinding.class);
+        return annotationType.isAnnotationPresent(InterceptorBinding.class)
+                || ArcContainerImpl.instance().getTransitiveInterceptorBindings().containsKey(annotationType);
     }
 
     @Override

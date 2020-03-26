@@ -241,7 +241,7 @@ class Parser implements Function<String, Expression> {
 
     private void flushTag() {
         state = State.TEXT;
-        String content = buffer.toString();
+        String content = buffer.toString().trim();
         String tag = START_DELIMITER + content + END_DELIMITER;
 
         if (content.charAt(0) == Tag.SECTION.command) {

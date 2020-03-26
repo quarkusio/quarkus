@@ -32,7 +32,7 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
  *
  * @author Alexey Loubyansky
  */
-@Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class BuildMojo extends AbstractMojo {
 
     protected static final String QUARKUS_PACKAGE_UBER_JAR = "quarkus.package.uber-jar";

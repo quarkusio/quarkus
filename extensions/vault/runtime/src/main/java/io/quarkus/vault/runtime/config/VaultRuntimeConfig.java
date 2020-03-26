@@ -154,7 +154,7 @@ public class VaultRuntimeConfig {
      *
      * @asciidoclet
      */
-    @ConfigItem(defaultValue = KV_SECRET_ENGINE_VERSION_V1)
+    @ConfigItem(defaultValue = KV_SECRET_ENGINE_VERSION_V2)
     public int kvSecretEngineVersion;
 
     /**

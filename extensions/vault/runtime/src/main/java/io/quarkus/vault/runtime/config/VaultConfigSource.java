@@ -11,7 +11,7 @@ import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_RENEW_G
 import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_SECRET_CONFIG_CACHE_PERIOD;
 import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_TLS_SKIP_VERIFY;
 import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.DEFAULT_TLS_USE_KUBERNETES_CACERT;
-import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.KV_SECRET_ENGINE_VERSION_V1;
+import static io.quarkus.vault.runtime.config.VaultRuntimeConfig.KV_SECRET_ENGINE_VERSION_V2;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
 import static java.util.Collections.emptyMap;
@@ -223,7 +223,7 @@ public class VaultConfigSource implements ConfigSource {
         serverConfig.logConfidentialityLevel = LogConfidentialityLevel
                 .valueOf(getVaultProperty("log-confidentiality-level", MEDIUM.name()).toUpperCase());
         serverConfig.kvSecretEngineVersion = parseInt(
-                getVaultProperty("kv-secret-engine-version", KV_SECRET_ENGINE_VERSION_V1));
+                getVaultProperty("kv-secret-engine-version", KV_SECRET_ENGINE_VERSION_V2));
         serverConfig.kvSecretEngineMountPath = getVaultProperty("kv-secret-engine-mount-path",
                 DEFAULT_KV_SECRET_ENGINE_MOUNT_PATH);
         serverConfig.secretConfigKvPath = getOptionalListProperty("secret-config-kv-path");

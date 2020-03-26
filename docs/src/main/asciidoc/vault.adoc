@@ -96,6 +96,13 @@ in the following step)
 * TLS is disabled
 * a _kv secret engine v2_ is mounted at `secret/`
 
+[NOTE]
+====
+By default quarkus assumes that a _kv secret engine_ in version *2* mounted at path `secret/` will be used.
+If that is not the case, please use properties `quarkus.vault.kv-secret-engine-version`
+and `quarkus.vault.kv-secret-engine-mount-path` accordingly.
+====
+
 In the following step, we are going to add a `userpass` authentication that we will use from the Quarkus application,
 to access a secret stored in the _kv secret engine_.
 
@@ -130,19 +137,6 @@ Cluster ID      55bd74b6-eaaf-3862-f7ce-3473ab86c57f
 HA Enabled      false
 ----
 
-For simplicity reasons, we are going to use a _kv secret engine version 1_ (which is the default) mounted at path
-`secret` instead of the pre-configured _kv version 2_ available in dev mode. So let's disable the current kv engine,
-and recreate a new one:
-
-[source, shell]
-----
-# this will disable the current kv version 2 secret engine mounted at path 'secret'
-vault secrets disable secret
-
-# this will enable a new kv engine version 1 at path 'secret'
-vault secrets enable -path=secret kv
-----
-
 Now let's add a secret configuration for our application:
 
 [source, shell]
@@ -157,7 +151,7 @@ Create a policy that gives read access to `secret/myapps/vault-quickstart` and s
 [source, shell]
 ----
 cat <<EOF | vault policy write vault-quickstart-policy -
-path "secret/myapps/vault-quickstart/*" {
+path "secret/data/myapps/vault-quickstart/*" {
   capabilities = ["read"]
 }
 EOF
@@ -169,7 +163,8 @@ When using a _kv secret engine version 2_, secrets are written and fetched at pa
 as opposed to `<mount>/<secret-path>` in a _kv secret engine version 1_.
 It does not change any of the CLI commands (i.e. you do not specify `data` in your path).
 However it does change the policies, since capabilities are applied to the real path. In the example above,
-the path should be `secret/*data*/myapps/vault-quickstart/*` if you were working with a _kv secret engine version 2_.
+the path is `secret/*data*/myapps/vault-quickstart/\*` since we are working with a _kv secret engine version 2_.
+It would be `secret/myapps/vault-quickstart/*` with a _kv secret engine version 1_.
 ====
 
 And finally, let's enable the _userpass auth secret engine_, and create user `bob` with access to the `vault-quickstart-policy`:

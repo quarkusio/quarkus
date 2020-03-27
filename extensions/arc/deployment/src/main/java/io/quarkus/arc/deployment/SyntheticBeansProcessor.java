@@ -3,8 +3,6 @@ package io.quarkus.arc.deployment;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -13,8 +11,6 @@ import javax.enterprise.inject.CreationException;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
-import io.quarkus.arc.processor.BeanConfigurator;
-import io.quarkus.arc.processor.QualifierConfigurator;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -30,47 +26,10 @@ public class SyntheticBeansProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    void build(ArcRecorder recorder, List<RuntimeBeanBuildItem> runtimeBeans, List<SyntheticBeanBuildItem> syntheticBeans,
+    void initStatic(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
         Map<String, Supplier<?>> suppliersMap = new HashMap<>();
-
-        for (RuntimeBeanBuildItem bean : runtimeBeans) {
-            //deterministic name
-            //as we know the maps are sorted this will result in the same hash for the same bean
-            String name = createName(bean.type, bean.qualifiers.toString());
-            if (bean.runtimeValue != null) {
-                suppliersMap.put(name, recorder.createSupplier(bean.runtimeValue));
-            } else {
-                suppliersMap.put(name, bean.supplier);
-            }
-            DotName beanClass = DotName.createSimple(bean.type);
-            BeanConfigurator<Object> configurator = beanRegistration.getContext().configure(beanClass);
-            // Bean types
-            configurator.addType(beanClass);
-            // Qualifiers
-            if (!bean.qualifiers.isEmpty()) {
-                for (Map.Entry<String, NavigableMap<String, Object>> entry : bean.qualifiers.entrySet()) {
-                    DotName qualifierName = DotName.createSimple(entry.getKey());
-                    QualifierConfigurator<BeanConfigurator<Object>> qualifier = configurator.addQualifier()
-                            .annotation(qualifierName);
-                    if (!entry.getValue().isEmpty()) {
-                        for (Entry<String, Object> valEntry : entry.getValue().entrySet()) {
-                            qualifier.addValue(valEntry.getKey(), valEntry.getValue());
-                        }
-                    }
-                    qualifier.done();
-                }
-            }
-            configurator.scope(bean.scope);
-            if (!bean.removable) {
-                configurator.unremovable();
-            }
-            // Create the bean instance
-            configurator.creator(creator(name));
-            // Finish the registration
-            configurator.done();
-        }
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
             if (bean.isStaticInit()) {
@@ -83,7 +42,7 @@ public class SyntheticBeansProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void build(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
+    void initRuntime(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
         Map<String, Supplier<?>> suppliersMap = new HashMap<>();

@@ -22,7 +22,7 @@ by using AI to adhere to hard and soft scheduling _constraints_, such as:
 
 * A room can have at most one lesson at the same time.
 * A teacher can teach at most one lesson at the same time.
-* A student can attend at most one lesson at the same time.
+* Students in a student grade level can at most receive one lesson at the same time.
 * A teacher prefers to teach in a single room.
 * A teacher prefers to teach sequential lessons and dislikes gaps between lessons.
 
@@ -237,9 +237,9 @@ public class Room {
 === Lesson
 
 During a lesson, represented by the `Lesson` class,
-a teacher teaches a subject to a group of students,
+a teacher teaches a subject to a student grade level,
 for example, `Math by A.Turing for 9th grade` or `Chemistry by M.Curie for 10th grade`.
-If a subject is taught multiple times per week by the same teacher to the same student group,
+If a subject is taught multiple times per week by the same teacher to the same student grade level,
 there are multiple `Lesson` instances that are only distinguishable by `id`.
 For example, the 9th grade has six math lessons a week.
 
@@ -276,7 +276,7 @@ public class Lesson {
 
     private String subject;
     private String teacher;
-    private String studentGroup;
+    private String studentGradeLevel;
 
     @PlanningVariable(valueRangeProviderRefs = "timeslotRange")
     private Timeslot timeslot;
@@ -286,11 +286,11 @@ public class Lesson {
     public Lesson() {
     }
 
-    public Lesson(Long id, String subject, String teacher, String studentGroup) {
+    public Lesson(Long id, String subject, String teacher, String studentGradeLevel) {
         this.id = id;
         this.subject = subject;
         this.teacher = teacher;
-        this.studentGroup = studentGroup;
+        this.studentGradeLevel = studentGradeLevel;
     }
 
     public Long getId() {
@@ -305,8 +305,8 @@ public class Lesson {
         return teacher;
     }
 
-    public String getStudentGroup() {
-        return studentGroup;
+    public String getStudentGradeLevel() {
+        return studentGradeLevel;
     }
 
     public Timeslot getTimeslot() {
@@ -392,8 +392,8 @@ public class TimeTableEasyScoreCalculator implements EasyScoreCalculator<TimeTab
                     if (a.getTeacher().equals(b.getTeacher())) {
                         hardScore--;
                     }
-                    // A student can attend at most one lesson at the same time.
-                    if (a.getStudentGroup().equals(b.getStudentGroup())) {
+                    // Students in a student grade level can at most receive one lesson at the same time.
+                    if (a.getStudentGradeLevel().equals(b.getStudentGradeLevel())) {
                         hardScore--;
                     }
                 }
@@ -434,7 +434,7 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
                 // Hard constraints
                 roomConflict(constraintFactory),
                 teacherConflict(constraintFactory),
-                studentGroupConflict(constraintFactory),
+                studentGradeLevelConflict(constraintFactory),
                 // Soft constraints are only implemented in optaplanner-quickstart
         };
     }
@@ -465,13 +465,13 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
                 .penalize("Teacher conflict", HardSoftScore.ONE_HARD);
     }
 
-    private Constraint studentGroupConflict(ConstraintFactory constraintFactory) {
-        // A student can attend at most one lesson at the same time.
+    private Constraint studentGradeLevelConflict(ConstraintFactory constraintFactory) {
+        // Students in a student grade level can at most receive one lesson at the same time..
         return constraintFactory
                 .fromUniquePair(Lesson.class,
                         Joiners.equal(Lesson::getTimeslot),
-                        Joiners.equal(Lesson::getStudentGroup))
-                .penalize("Student group conflict", HardSoftScore.ONE_HARD);
+                        Joiners.equal(Lesson::getStudentGradeLevel))
+                .penalize("Student grade level conflict", HardSoftScore.ONE_HARD);
     }
 
 }
@@ -564,7 +564,7 @@ Specifically, this class is the input of the problem:
 ** Of each `Lesson`:
 *** The values of the `timeslot` and `room` fields are typically still `null`, so unassigned.
 They are planning variables.
-***  The other fields, such as `subject`, `teacher` and `studentGroup`, are filled in.
+***  The other fields, such as `subject`, `teacher` and `studentGradeLevel`, are filled in.
 These fields are problem properties.
 
 However, this class is also the output of the solution:
@@ -685,7 +685,7 @@ The following example uses the Linux command `curl` to send a POST request:
 
 [source,shell]
 ----
-$ curl -i -X POST http://localhost:8080/timeTable/solve -H "Content-Type:application/json" -d '{"timeslotList":[{"dayOfWeek":"MONDAY","startTime":"08:30:00","endTime":"09:30:00"},{"dayOfWeek":"MONDAY","startTime":"09:30:00","endTime":"10:30:00"}],"roomList":[{"name":"Room A"},{"name":"Room B"}],"lessonList":[{"id":1,"subject":"Math","teacher":"A. Turing","studentGroup":"9th grade"},{"id":2,"subject":"Chemistry","teacher":"M. Curie","studentGroup":"9th grade"},{"id":3,"subject":"French","teacher":"M. Curie","studentGroup":"10th grade"},{"id":4,"subject":"History","teacher":"I. Jones","studentGroup":"10th grade"}]}'
+$ curl -i -X POST http://localhost:8080/timeTable/solve -H "Content-Type:application/json" -d '{"timeslotList":[{"dayOfWeek":"MONDAY","startTime":"08:30:00","endTime":"09:30:00"},{"dayOfWeek":"MONDAY","startTime":"09:30:00","endTime":"10:30:00"}],"roomList":[{"name":"Room A"},{"name":"Room B"}],"lessonList":[{"id":1,"subject":"Math","teacher":"A. Turing","studentGradeLevel":"9th grade"},{"id":2,"subject":"Chemistry","teacher":"M. Curie","studentGradeLevel":"9th grade"},{"id":3,"subject":"French","teacher":"M. Curie","studentGradeLevel":"10th grade"},{"id":4,"subject":"History","teacher":"I. Jones","studentGradeLevel":"10th grade"}]}'
 ----
 
 After about five seconds, according to the termination spent time defined in your `application.properties`,
@@ -697,7 +697,7 @@ HTTP/1.1 200
 Content-Type: application/json
 ...
 
-{"timeslotList":...,"roomList":...,"lessonList":[{"id":1,"subject":"Math","teacher":"A. Turing","studentGroup":"9th grade","timeslot":{"dayOfWeek":"MONDAY","startTime":"08:30:00","endTime":"09:30:00"},"room":{"name":"Room A"}},{"id":2,"subject":"Chemistry","teacher":"M. Curie","studentGroup":"9th grade","timeslot":{"dayOfWeek":"MONDAY","startTime":"09:30:00","endTime":"10:30:00"},"room":{"name":"Room A"}},{"id":3,"subject":"French","teacher":"M. Curie","studentGroup":"10th grade","timeslot":{"dayOfWeek":"MONDAY","startTime":"08:30:00","endTime":"09:30:00"},"room":{"name":"Room B"}},{"id":4,"subject":"History","teacher":"I. Jones","studentGroup":"10th grade","timeslot":{"dayOfWeek":"MONDAY","startTime":"09:30:00","endTime":"10:30:00"},"room":{"name":"Room B"}}],"score":"0hard/0soft"}
+{"timeslotList":...,"roomList":...,"lessonList":[{"id":1,"subject":"Math","teacher":"A. Turing","studentGradeLevel":"9th grade","timeslot":{"dayOfWeek":"MONDAY","startTime":"08:30:00","endTime":"09:30:00"},"room":{"name":"Room A"}},{"id":2,"subject":"Chemistry","teacher":"M. Curie","studentGradeLevel":"9th grade","timeslot":{"dayOfWeek":"MONDAY","startTime":"09:30:00","endTime":"10:30:00"},"room":{"name":"Room A"}},{"id":3,"subject":"French","teacher":"M. Curie","studentGradeLevel":"10th grade","timeslot":{"dayOfWeek":"MONDAY","startTime":"08:30:00","endTime":"09:30:00"},"room":{"name":"Room B"}},{"id":4,"subject":"History","teacher":"I. Jones","studentGradeLevel":"10th grade","timeslot":{"dayOfWeek":"MONDAY","startTime":"09:30:00","endTime":"10:30:00"},"room":{"name":"Room B"}}],"score":"0hard/0soft"}
 ----
 
 Notice that your application assigned all four lessons to one of the two time slots and one of the two rooms.
@@ -939,7 +939,7 @@ public class TimeTableResource {
         return new TimeTable(
                 Timeslot.listAll(Sort.by("dayOfWeek").and("startTime").and("endTime").and("id")),
                 Room.listAll(Sort.by("name").and("id")),
-                Lesson.listAll(Sort.by("subject").and("teacher").and("studentGroup").and("id")));
+                Lesson.listAll(Sort.by("subject").and("teacher").and("studentGradeLevel").and("id")));
     }
 
     @Transactional

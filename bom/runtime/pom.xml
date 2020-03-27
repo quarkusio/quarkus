@@ -169,8 +169,9 @@
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kubernetes-client.version>4.9.0</kubernetes-client.version>
-        <kogito.version>0.8.0</kogito.version>
         <optaplanner.version>7.35.0.Final</optaplanner.version>
+        <!-- Namespaced to avoid clashing with the kogito version in the universe-bom. We're working on getting rid of this potential version mismatch -->
+        <optaplanner-kogito.version>0.8.1</optaplanner-kogito.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP1</quarkus-spring-api.version>
@@ -3034,17 +3035,17 @@
             <dependency>
                 <groupId>org.kie.kogito</groupId>
                 <artifactId>kogito-api</artifactId>
-                <version>${kogito.version}</version>
+                <version>${optaplanner-kogito.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.kie.kogito</groupId>
                 <artifactId>kogito-drools</artifactId>
-                <version>${kogito.version}</version>
+                <version>${optaplanner-kogito.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.kie.kogito</groupId>
                 <artifactId>drools-core-static</artifactId>
-                <version>${kogito.version}</version>
+                <version>${optaplanner-kogito.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

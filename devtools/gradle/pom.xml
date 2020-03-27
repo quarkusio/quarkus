@@ -142,6 +142,18 @@
             </properties>
         </profile>
         <profile>
+            <id>maven.test.skip</id>
+            <activation>
+                <property>
+                    <name>maven.test.skip</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <gradle.task>assemble</gradle.task>
+            </properties>
+        </profile>
+        <profile>
             <id>basic-test-suite</id>
             <activation>
                 <property>

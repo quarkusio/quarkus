@@ -262,7 +262,7 @@ class Parser implements Function<String, Expression> {
             // Add a section block if the section name matches a section block label or does not map to any section helper and the last section treats unknown subsections as blocks
             if (lastSection != null && lastSection.factory.getBlockLabels().contains(sectionName)
                     || (lastSection.factory.treatUnknownSectionsAsBlocks()
-                            && engine.getSectionHelperFactory(sectionName) == null)) {
+                            && !engine.getSectionHelperFactories().containsKey(sectionName))) {
 
                 // Section block
                 if (!ignoreContent) {

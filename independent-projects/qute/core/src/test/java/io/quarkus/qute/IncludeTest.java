@@ -50,4 +50,12 @@ public class IncludeTest {
                 engine.parse("{#include detail/}").render(data));
     }
 
+    @Test
+    public void testOptionalBlockEndTags() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("super", engine.parse("{#insert header}header{/}:{#insert footer /}"));
+        assertEquals("super header:super footer",
+                engine.parse("{#include super}{#header}super header{#footer}super footer{/include}").render());
+    }
+
 }

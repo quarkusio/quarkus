@@ -44,7 +44,7 @@ class EngineImpl implements Engine {
     EngineImpl(Map<String, SectionHelperFactory<?>> sectionHelperFactories, List<ValueResolver> valueResolvers,
             List<NamespaceResolver> namespaceResolvers, List<TemplateLocator> locators,
             List<ResultMapper> resultMappers, Function<String, SectionHelperFactory<?>> sectionHelperFunc) {
-        this.sectionHelperFactories = new HashMap<>(sectionHelperFactories);
+        this.sectionHelperFactories = Collections.unmodifiableMap(new HashMap<>(sectionHelperFactories));
         this.valueResolvers = sort(valueResolvers);
         this.namespaceResolvers = ImmutableList.copyOf(namespaceResolvers);
         this.evaluator = new EvaluatorImpl(this.valueResolvers);
@@ -82,7 +82,7 @@ class EngineImpl implements Engine {
     }
 
     public Map<String, SectionHelperFactory<?>> getSectionHelperFactories() {
-        return Collections.unmodifiableMap(sectionHelperFactories);
+        return sectionHelperFactories;
     }
 
     public List<ValueResolver> getValueResolvers() {

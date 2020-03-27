@@ -18,15 +18,16 @@ public class IncludeTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset("{#insert item}NOK{/}"), "templates/base.html")
-                    .addAsResource(new StringAsset("{#include base}{#item}OK{/}{/}"), "templates/detail.html"));
+                    .addAsResource(new StringAsset("{#insert item}NOK{/}:{#insert foo}default foo{/}"), "templates/base.html")
+                    .addAsResource(new StringAsset("{#include base}{#item}OK{/}{#foo}my foo{/include}"),
+                            "templates/detail.html"));
 
     @Inject
     Template detail;
 
     @Test
     public void testIncludeSection() {
-        assertEquals("OK", detail.render());
+        assertEquals("OK:my foo", detail.render());
     }
 
 }

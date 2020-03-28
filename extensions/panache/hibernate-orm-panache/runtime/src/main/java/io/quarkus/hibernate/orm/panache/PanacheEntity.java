@@ -56,7 +56,7 @@ public abstract class PanacheEntity extends PanacheEntityBase {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), id);
+        return Objects.hash(id);
     }
 
     // FIXME: VERSION?

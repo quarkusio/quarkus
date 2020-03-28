@@ -247,10 +247,11 @@ public class QuteProcessor {
 
         for (TemplateAnalysis analysis : templatesAnalysis.getAnalysis()) {
             for (Expression expression : analysis.expressions) {
-                if (!expression.hasNamespace()) {
-                    validateNestedExpressions(null, new HashMap<>(), templateExtensionMethods, excludes, incorrectExpressions,
-                            expression, index, implicitClassToMethodUsed, templateIdToPathFun);
+                if (expression.hasNamespace() || expression.isLiteral()) {
+                    continue;
                 }
+                validateNestedExpressions(null, new HashMap<>(), templateExtensionMethods, excludes, incorrectExpressions,
+                        expression, index, implicitClassToMethodUsed, templateIdToPathFun);
             }
         }
 
@@ -293,7 +294,7 @@ public class QuteProcessor {
             match.clazz = root.asTypeInfo().rawClass;
             match.type = root.asTypeInfo().resolvedType;
             if (root.asTypeInfo().hint != null) {
-                processHints(root.asTypeInfo().hint, match, index);
+                processHints(root.asTypeInfo().hint, match, index, expression);
             }
         } else {
             // The first part is the name of the bean
@@ -358,7 +359,7 @@ public class QuteProcessor {
                         String hint = info.asProperty().hint;
                         if (hint != null) {
                             // For example a loop section needs to validate the type of an element
-                            processHints(hint, match, index);
+                            processHints(hint, match, index, expression);
                         }
                     }
                 }
@@ -800,15 +801,18 @@ public class QuteProcessor {
         return matchType;
     }
 
-    void processHints(String helperHint, Match match, IndexView index) {
+    void processHints(String helperHint, Match match, IndexView index, Expression expression) {
         if (LoopSectionHelper.Factory.HINT.equals(helperHint)) {
             // Iterable<Item>, Stream<Item> => Item
             // Map<String,Long> => Entry<String,Long>
-            processLoopHint(match, index);
+            processLoopHint(match, index, expression);
         }
     }
 
-    void processLoopHint(Match match, IndexView index) {
+    void processLoopHint(Match match, IndexView index, Expression expression) {
+        if (match.type.name().equals(DotNames.INTEGER)) {
+            return;
+        }
         Type matchType = null;
         if (match.type.kind() == Type.Kind.ARRAY) {
             matchType = match.type.asArrayType().component();
@@ -840,8 +844,10 @@ public class QuteProcessor {
             match.type = matchType;
             match.clazz = index.getClassByName(match.type.name());
         } else {
-            throw new IllegalStateException(
-                    "Unable to extract matching type for loop section hint - unsupported iterable type: " + match.type);
+            throw new IllegalStateException(String.format(
+                    "Unsupported iterable type found in [%s]\n\t- matching type: %s \n\t- found in template [%s] on line %s",
+                    expression.toOriginalString(),
+                    match.type, expression.getOrigin().getTemplateId(), expression.getOrigin().getLine()));
         }
     }
 

@@ -249,9 +249,9 @@ class MainClassBuildStep {
             PackageConfig packageConfig) {
         String mainClassName = MAIN_CLASS;
         Map<String, String> quarkusMainAnnotations = new HashMap<>();
-        Collection<AnnotationInstance> defaultMains = combinedIndexBuildItem.getIndex()
+        Collection<AnnotationInstance> quarkusMains = combinedIndexBuildItem.getIndex()
                 .getAnnotations(DotName.createSimple(QuarkusMain.class.getName()));
-        for (AnnotationInstance i : defaultMains) {
+        for (AnnotationInstance i : quarkusMains) {
             AnnotationValue nameValue = i.value("name");
             String name = "";
             if (nameValue != null) {

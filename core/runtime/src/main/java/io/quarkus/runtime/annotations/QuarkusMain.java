@@ -6,8 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * The default main class of a Quarkus application. This annotation can appear
- * at most once in a Quarkus application.
+ * The default main class of a Quarkus application.
  * 
  * There are two different ways this annotation can be used. The first is to place it
  * on a class with a Java main method. This main method will be the default entry point of

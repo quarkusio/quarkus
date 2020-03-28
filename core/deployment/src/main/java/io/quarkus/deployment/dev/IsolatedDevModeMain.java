@@ -80,7 +80,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                     runtimeUpdatesProcessor.checkForChangedClasses();
                                     restartApp(runtimeUpdatesProcessor.checkForFileChange());
                                 } catch (Exception e) {
-                                    e.printStackTrace();
+                                    log.error("Failed to restart", e);
                                 }
                             }
                         });

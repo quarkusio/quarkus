@@ -64,10 +64,10 @@ shutdown to be initiated. Let's provide our own main method:
 ----
 package om.acme;
 
-import io.quarkus.runtime.annotations.DefaultMain;
+import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.Quarkus;
 
-@DefaultMain  <1>
+@QuarkusMain  <1>
 public class Main {
 
     public static void main(String ... args) {
@@ -83,7 +83,7 @@ This main class will bootstrap Quarkus and run it until it stops. This is no dif
 generated main class, but has the advantage that you can just launch it directly from the IDE without needing
 to run a Maven or Gradle command.
 
-WARNING: It is not recommenced to do any business logic in this main method, as Quarkus has not been setup yet,
+WARNING: It is not recommenced to do any business logic in this main method, as Quarkus has not been set up yet,
 and Quarkus may run in a different ClassLoader. If you want to perform logic on startup use an `io.quarkus.runtime.QuarkusApplication`
 as described below.
 
@@ -102,9 +102,9 @@ package com.acme;
 
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
-import io.quarkus.runtime.annotations.DefaultMain;
+import io.quarkus.runtime.annotations.QuarkusMain;
 
-@DefaultMain
+@QuarkusMain
 public class Main {
     public static void main(String... args) {
         Quarkus.run(MyApp.class, args);

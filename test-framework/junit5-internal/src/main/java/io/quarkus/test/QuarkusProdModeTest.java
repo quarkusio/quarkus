@@ -178,7 +178,7 @@ public class QuarkusProdModeTest
     }
 
     /**
-     * If this is true then the quarkus application is expected to exit immediately (i.e. is a command mode app)
+     * If this is true then the Quarkus application is expected to exit immediately (i.e. is a command mode app)
      */
     public QuarkusProdModeTest setExpectExit(boolean expectExit) {
         this.expectExit = expectExit;

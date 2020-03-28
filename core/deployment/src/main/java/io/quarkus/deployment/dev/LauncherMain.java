@@ -30,7 +30,7 @@ public class LauncherMain {
 
         context.getModules().add(new DevModeContext.ModuleInfo("main", new File("").getAbsolutePath(),
                 Collections.singleton(src.getAbsolutePath()), appClassesFile.getAbsolutePath(), res.getAbsolutePath()));
-        //the loading of this is super wierd, and does its own class loader delegation for some reason
+        //the loading of this is super weird, and does its own class loader delegation for some reason
         ConfigProviderResolver.setInstance(new SmallRyeConfigProviderResolver());
         DevModeMain main = new DevModeMain(context);
         main.start();

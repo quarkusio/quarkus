@@ -75,7 +75,7 @@ To build a container image for your project, `quarkus.container-image.build=true
 
 == Pushing
 
-To build a container image for your project, `quarkus.container-image.push=true` needs to be set using any of the ways that Quarkus supports.
+To push a container image for your project, `quarkus.container-image.push=true` needs to be set using any of the ways that Quarkus supports.
 
 [source, subs=attributes+]
 ----

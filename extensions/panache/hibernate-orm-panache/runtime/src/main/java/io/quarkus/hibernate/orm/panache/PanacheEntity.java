@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.panache;
 
+import java.util.Objects;
+
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
@@ -37,6 +39,26 @@ public abstract class PanacheEntity extends PanacheEntityBase {
     @Override
     public String toString() {
         return this.getClass().getSimpleName() + "<" + id + ">";
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        if (Objects.isNull(object) || getClass() != object.getClass()) {
+            return false;
+        }
+        if (!super.equals(object)) {
+            return false;
+        }
+        PanacheEntity that = (PanacheEntity) object;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), id);
     }
 
     // FIXME: VERSION?

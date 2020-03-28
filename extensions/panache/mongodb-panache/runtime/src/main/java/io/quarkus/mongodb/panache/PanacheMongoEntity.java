@@ -1,5 +1,7 @@
 package io.quarkus.mongodb.panache;
 
+import java.util.Objects;
+
 import org.bson.types.ObjectId;
 
 /**
@@ -26,5 +28,22 @@ public abstract class PanacheMongoEntity extends PanacheMongoEntityBase {
     @Override
     public String toString() {
         return this.getClass().getSimpleName() + "<" + id + ">";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (Objects.isNull(o) || getClass() != o.getClass()) {
+            return false;
+        }
+        PanacheMongoEntity that = (PanacheMongoEntity) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

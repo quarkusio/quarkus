@@ -198,6 +198,39 @@ Applications and components may use any of the following APIs for logging, and t
 
 If you want to send your logs to a centralized tool like Graylog, Logstash or Fluentd, you can follow the link:centralized-log-management[Centralized log management guide].
 
+== Pitfalls
+
+=== None of the configuration properties seems to have any effect
+
+You will most likely see two separate log lines in your output:
+----
+Mar 14, 2020 12:47:37 PM com.mongodb.diagnostics.logging.SLF4JLogger info
+INFO: Opened connection [connectionId{localValue:4, serverValue:236}] to 127.0.0.1:27017
+----
+
+This is usually because you have some agent or something which has initialized logging too early. If that's the case, the workaround is to use the following settings.
+
+For unit tests in your IDE:
+[source]
+----
+-Djava.util.logging.manager=org.jboss.logmanager.LogManager
+----
+
+For your Maven configuration:
+[source,xml]
+----
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <configuration>
+        <systemProperties>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+        </systemProperties>
+    </configuration>
+</plugin>
+----
+(The same applies for the Maven failsafe plugin)
+
 == How to Configure Logging for `@QuarkusTest`
 
 If you want to configure logging for your `@QuarkusTest`, don't forget to set up the `maven-surefire-plugin` accordingly.

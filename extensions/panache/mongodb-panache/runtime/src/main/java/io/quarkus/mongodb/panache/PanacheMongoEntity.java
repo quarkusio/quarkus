@@ -35,7 +35,7 @@ public abstract class PanacheMongoEntity extends PanacheMongoEntityBase {
         if (this == o) {
             return true;
         }
-        if (Objects.isNull(o) || getClass() != o.getClass()) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         PanacheMongoEntity that = (PanacheMongoEntity) o;

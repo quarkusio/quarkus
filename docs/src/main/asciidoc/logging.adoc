@@ -220,40 +220,18 @@ For your Maven configuration:
 [source,xml]
 ----
 <plugin>
-    <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-surefire-plugin</artifactId>
+    <version>${surefire-plugin.version}</version>
     <configuration>
         <systemProperties>
-            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager> <1>
+            <quarkus.log.level>DEBUG</quarkus.log.level>  <2>
         </systemProperties>
     </configuration>
 </plugin>
 ----
 (The same applies for the Maven failsafe plugin)
 
-== How to Configure Logging for `@QuarkusTest`
-
-If you want to configure logging for your `@QuarkusTest`, don't forget to set up the `maven-surefire-plugin` accordingly.
-In particular, you need to set the appropriate `LogManager` using the `java.util.logging.manager` system property.  
-
-.Example Configuration
-[source, xml]
-----
-<build>
-  <plugins>
-    <plugin>
-      <artifactId>maven-surefire-plugin</artifactId>
-      <version>${surefire-plugin.version}</version>
-      <configuration>
-        <systemProperties>
-          <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager> <1>
-          <quarkus.log.level>DEBUG</quarkus.log.level>  <2>
-        </systemProperties>
-      </configuration>
-    </plugin>
-  </plugins>
-</build>
-----
 <1> Make sure the `org.jboss.logmanager.LogManager` is used.
 <2> Enable debug logging for all logging categories.
 

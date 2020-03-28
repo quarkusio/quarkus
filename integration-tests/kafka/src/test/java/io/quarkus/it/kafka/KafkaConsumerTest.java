@@ -30,8 +30,8 @@ public class KafkaConsumerTest {
 
     @Test
     public void test() throws Exception {
-        Producer<Integer, String> consumer = createProducer();
-        consumer.send(new ProducerRecord<>("test-consumer", 1, "hi world"));
+        Producer<Integer, String> producer = createProducer();
+        producer.send(new ProducerRecord<>("test-consumer", 1, "hi world"));
         RestAssured.when().get("/kafka").then().body(Matchers.is("hi world"));
     }
 

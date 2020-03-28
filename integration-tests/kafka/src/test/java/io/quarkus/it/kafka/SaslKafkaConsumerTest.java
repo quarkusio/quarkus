@@ -24,7 +24,7 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(KafkaSASLTestResource.class)
 public class SaslKafkaConsumerTest {
 
-    private static void addSSL(Properties props) {
+    private static void addSsl(Properties props) {
         try {
             File sslDir = KafkaSASLTestResource.sslDir(null, false);
             File tsFile = new File(sslDir, "kafka-truststore.p12");
@@ -44,7 +44,7 @@ public class SaslKafkaConsumerTest {
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "sasl-test-producer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        addSSL(props);
+        addSsl(props);
 
         return new KafkaProducer<>(props);
     }

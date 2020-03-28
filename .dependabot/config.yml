@@ -20,6 +20,8 @@ update_configs:
       - match:
           dependency_name: "org.flywaydb:flyway-core"
       - match:
+          dependency_name: "org.liquibase:liquibase-core"
+      - match:
           dependency_name: "org.freemarker:freemarker"
       - match:
           dependency_name: "org.eclipse.jgit:org.eclipse.jgit"

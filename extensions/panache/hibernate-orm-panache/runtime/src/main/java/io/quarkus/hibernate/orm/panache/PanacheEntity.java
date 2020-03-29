@@ -46,7 +46,7 @@ public abstract class PanacheEntity extends PanacheEntityBase {
         if (this == object) {
             return true;
         }
-        if (Objects.isNull(object) || getClass() != object.getClass()) {
+        if (object == null || getClass() != object.getClass()) {
             return false;
         }
 

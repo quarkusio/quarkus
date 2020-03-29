@@ -1,5 +1,6 @@
 package io.quarkus.vault.runtime.client;
 
+import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapResult;
 import java.util.Map;
 
 import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuth;
@@ -94,6 +95,8 @@ public interface VaultClient {
     VaultHealthResult systemHealthStatus(boolean isStandByOk, boolean isPerfStandByOk);
 
     VaultSealStatusResult systemSealStatus();
+
+    VaultUnwrapResult unwrap(String token);
 
     VaultInitResponse init(int secretShares, int secretThreshold);
 }

@@ -3,6 +3,8 @@ package io.quarkus.vault.runtime.client;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static io.quarkus.vault.runtime.client.OkHttpClientFactory.createHttpClient;
 
+import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapData;
+import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapResult;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -231,7 +233,6 @@ public class OkHttpVaultClient implements VaultClient {
     @Override
     public int systemHealth(boolean isStandByOk, boolean isPerfStandByOk) {
         Map<String, String> queryParams = getHealthParams(isStandByOk, isPerfStandByOk);
-
         return head("sys/health", queryParams);
     }
 
@@ -244,6 +245,12 @@ public class OkHttpVaultClient implements VaultClient {
     @Override
     public VaultSealStatusResult systemSealStatus() {
         return get("sys/seal-status", Collections.emptyMap(), VaultSealStatusResult.class);
+    }
+
+    @Override
+    public VaultUnwrapResult unwrap(String token) {
+        VaultUnwrapData body = new VaultUnwrapData(token);
+        return post("sys/wrapping/unwrap", token, body, VaultUnwrapResult.class);
     }
 
     @Override

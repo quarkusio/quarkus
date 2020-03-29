@@ -217,6 +217,7 @@ public class VaultConfigSource implements ConfigSource {
         serverConfig.authentication.userpass.password = getOptionalVaultProperty("authentication.userpass.password");
         serverConfig.authentication.appRole.roleId = getOptionalVaultProperty("authentication.app-role.role-id");
         serverConfig.authentication.appRole.secretId = getOptionalVaultProperty("authentication.app-role.secret-id");
+        serverConfig.authentication.wrapToken = getOptionalVaultProperty("authentication.wrap-token");
         serverConfig.renewGracePeriod = getVaultDuration("renew-grace-period", DEFAULT_RENEW_GRACE_PERIOD);
         serverConfig.secretConfigCachePeriod = getVaultDuration("secret-config-cache-period",
                 DEFAULT_SECRET_CONFIG_CACHE_PERIOD);

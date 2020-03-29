@@ -5,6 +5,8 @@ import static io.quarkus.vault.runtime.config.VaultAuthenticationType.APPROLE;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.KUBERNETES;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.USERPASS;
 
+import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapAuth;
+import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapResult;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -96,6 +98,14 @@ public class VaultAuthManager {
         VaultToken vaultToken = login(serverConfig.getAuthenticationType());
         sanityCheck(vaultToken);
         log.debug("created new login token: " + vaultToken.getConfidentialInfo(serverConfig.logConfidentialityLevel));
+
+        if (serverConfig.authentication.wrapToken.isPresent()) {
+            log.debug("wrapped token is configured and it is going to unwrap using the previous login");
+            vaultToken = unwrapToken(serverConfig.authentication.wrapToken.get());
+            sanityCheck(vaultToken);
+            log.debug("created new login token from unwrapped token: " + vaultToken.getConfidentialInfo(serverConfig.logConfidentialityLevel));
+        }
+
         return vaultToken;
     }
 
@@ -135,6 +145,13 @@ public class VaultAuthManager {
 
     private void sanityCheck(VaultToken vaultToken) {
         vaultToken.leaseDurationSanityCheck("auth", serverConfig.renewGracePeriod);
+    }
+
+    private VaultToken unwrapToken(String token) {
+        final VaultUnwrapResult unwrapToken = this.vaultClient.unwrap(token);
+        final VaultUnwrapAuth auth = unwrapToken.auth;
+
+        return new VaultToken(auth.clientToken, auth.renewable, auth.leaseDurationSecs);
     }
 
 }

@@ -127,6 +127,7 @@
                         <parentFirstArtifact>org.junit.jupiter:junit-jupiter-params</parentFirstArtifact>
                         <parentFirstArtifact>org.junit.platform:junit-platform-commons</parentFirstArtifact>
                         <parentFirstArtifact>org.junit.platform:junit-platform-engine</parentFirstArtifact>
+                        <parentFirstArtifact>org.hamcrest:hamcrest</parentFirstArtifact>
                     </parentFirstArtifacts>
                     <excludedArtifacts>
                         <excludedArtifact>io.smallrye:smallrye-config</excludedArtifact>

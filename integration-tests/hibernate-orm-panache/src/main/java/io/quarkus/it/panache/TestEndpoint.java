@@ -1180,4 +1180,34 @@ public class TestEndpoint {
         entity.delete();
         return "OK";
     }
+
+    @GET
+    @Path("8254")
+    @Transactional
+    public String testBug8254() {
+        CatOwner owner = new CatOwner("8254");
+        owner.persist();
+        new Cat(owner).persist();
+        new Cat(owner).persist();
+        new Cat(owner).persist();
+
+        // This used to fail with an invalid query "SELECT COUNT(*) SELECT DISTINCT cat.owner FROM Cat cat WHERE cat.owner = ?1"
+        // Should now result in a valid query "SELECT COUNT(DISTINCT cat.owner) FROM Cat cat WHERE cat.owner = ?1"
+        assertEquals(1L, CatOwner.find("SELECT DISTINCT cat.owner FROM Cat cat WHERE cat.owner = ?1", owner).count());
+
+        // This used to fail with an invalid query "SELECT COUNT(*) SELECT cat.owner FROM Cat cat WHERE cat.owner = ?1"
+        // Should now result in a valid query "SELECT COUNT(cat.owner) FROM Cat cat WHERE cat.owner = ?1"
+        assertEquals(3L, CatOwner.find("SELECT cat.owner FROM Cat cat WHERE cat.owner = ?1", owner).count());
+
+        // This used to fail with an invalid query "SELECT COUNT(*) SELECT cat FROM Cat cat WHERE cat.owner = ?1"
+        // Should now result in a valid query "SELECT COUNT(cat) FROM Cat cat WHERE cat.owner = ?1"
+        assertEquals(3L, Cat.find("SELECT cat FROM Cat cat WHERE cat.owner = ?1", owner).count());
+
+        // This didn't use to fail. Make sure it still doesn't.
+        assertEquals(3L, Cat.find("FROM Cat WHERE owner = ?1", owner).count());
+        assertEquals(3L, Cat.find("owner", owner).count());
+        assertEquals(1L, CatOwner.find("name = ?1", "8254").count());
+
+        return "OK";
+    }
 }

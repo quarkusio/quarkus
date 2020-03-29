@@ -267,6 +267,14 @@ public class QuarkusTestExtension
         if (failedBoot) {
             return result;
         }
+
+        // We do this here as well, because when @TestInstance(Lifecycle.PER_CLASS) is used on a class,
+        // interceptTestClassConstructor is called before beforeAll, meaning that the TCCL will not be set correctly
+        // (for any test other than the first) unless this is done
+        if (runningQuarkusApplication != null) {
+            setCCL(runningQuarkusApplication.getClassLoader());
+        }
+
         initTestState(extensionContext, state);
         return result;
     }

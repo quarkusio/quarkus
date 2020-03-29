@@ -16,16 +16,16 @@ import io.quarkus.test.junit.QuarkusTest;
 @QuarkusTest
 class TransactionScopedTest {
     @Inject
-    private UserTransaction tx;
+    UserTransaction tx;
 
     @Inject
-    private TransactionManager tm;
+    TransactionManager tm;
 
     @Inject
-    private TransactionScopedBean beanTransactional;
+    TransactionScopedBean beanTransactional;
 
     @Inject
-    private TransactionBeanWithEvents beanEvents;
+    TransactionBeanWithEvents beanEvents;
 
     @Test
     void transactionScopedInTransaction() throws Exception {

@@ -118,12 +118,15 @@ public class DockerProcessor {
         log.infof("Pushed container image %s (%s)\n", image, reader.getImageId());
 
         if (pushRequested || containerImageConfig.push) {
+            String registry = "docker.io";
             if (!containerImageConfig.registry.isPresent()) {
                 log.info("No container image registry was set, so 'docker.io' will be used");
+            } else {
+                registry = containerImageConfig.registry.get();
             }
             // Check if we need to login first
             if (containerImageConfig.username.isPresent() && containerImageConfig.password.isPresent()) {
-                boolean loginSuccessful = ExecUtil.exec("docker", "login", "-u", containerImageConfig.username.get(),
+                boolean loginSuccessful = ExecUtil.exec("docker", "login", registry, "-u", containerImageConfig.username.get(),
                         "-p" + containerImageConfig.password.get());
                 if (!loginSuccessful) {
                     throw dockerException(new String[] { "-u", containerImageConfig.username.get(), "-p", "********" });

@@ -100,21 +100,20 @@ select the `eclipse.importorder` file as the import order config file.
 * Clone the repository: `git clone https://github.com/quarkusio/quarkus.git`
 * Navigate to the directory: `cd quarkus`
 * Set Maven heap to 1.5GB `export MAVEN_OPTS="-Xmx1563m"`
-* Invoke `./mvnw clean install` from the root directory
+* Invoke `./mvnw clean install -DskipTests -DskipITs -DskipDocs` from the root directory
 
 ```bash
 git clone https://github.com/quarkusio/quarkus.git
 cd quarkus
 export MAVEN_OPTS="-Xmx1563m"
-./mvnw clean install
+./mvnw clean install -DskipTests -DskipITs -DskipDocs
 # Wait... success!
 ```
 
-The default build does not create native images, which is quite time consuming.
+This build skipped all the tests, native-image builds and documentation generation. 
 
-Note that the full build with all tests is quite slow, you will usually want to build with `-DskipTests`. This will also
-skip creation of the integration-test runner jars. If you want to skip tests but still create the runners you can set
-`-DskipTests -Dquarkus.build.skip=false`
+Removing the `-DskipTests -DskipITs` flags enables the tests. 
+It will take much longer to build but will give you more guarantees on your code. 
 
 You can build and test native images in the integration tests supporting it by using `./mvnw install -Dnative`.
 

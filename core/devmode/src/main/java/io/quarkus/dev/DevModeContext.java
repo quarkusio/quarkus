@@ -20,6 +20,8 @@ import java.util.Set;
  */
 public class DevModeContext implements Serializable {
 
+    public static final String ENABLE_PREVIEW_FLAG = "--enable-preview";
+
     private final List<URL> classPath = new ArrayList<>();
     private final List<ModuleInfo> modules = new ArrayList<>();
     private final Map<String, String> systemProperties = new HashMap<>();
@@ -213,5 +215,12 @@ public class DevModeContext implements Serializable {
         public String getResourcePath() {
             return resourcePath;
         }
+    }
+
+    public boolean isEnablePreview() {
+        if (compilerOptions == null) {
+            return false;
+        }
+        return compilerOptions.contains(ENABLE_PREVIEW_FLAG);
     }
 }

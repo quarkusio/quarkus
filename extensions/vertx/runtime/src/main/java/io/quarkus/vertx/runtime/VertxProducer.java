@@ -77,7 +77,7 @@ public class VertxProducer {
         if (rxVertx == null) {
             LOGGER.warn(
                     "`io.vertx.reactivex.core.Vertx` is deprecated  and will be removed in a future version - it is "
-                            + "recommended to switch to `io.vertx.mutiny.core.eventbus.Vertx`");
+                            + "recommended to switch to `io.vertx.mutiny.core.Vertx`");
             rxVertx = io.vertx.reactivex.core.Vertx.newInstance(vertx);
         }
         return rxVertx;

@@ -5,6 +5,8 @@ import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.arc.config.ConfigProperties;
@@ -19,10 +21,12 @@ public class ArcConfig {
 
     /**
      * <ul>
-     * <li>If set to `all` (or `true`) the container will attempt to remove all unused beans.</li>
-     * <li>If set to none (or `false`) no beans will ever be removed even if they are unused (according to the criteria set out
+     * <li>If set to {@code all} (or {@code true}) the container will attempt to remove all unused beans.</li>
+     * <li>If set to {@code none} (or {@code false}) no beans will ever be removed even if they are unused (according to the
+     * criteria set out
      * below)</li>
-     * <li>If set to `fwk`, then all unused beans will be removed, except the unused beans whose classes are declared in the
+     * <li>If set to {@code fwk}, then all unused beans will be removed, except the unused beans whose classes are declared in
+     * the
      * application code</li>
      * </ul>
      * <p>
@@ -77,6 +81,23 @@ public class ArcConfig {
      */
     @ConfigItem(defaultValue = "kebab-case")
     public ConfigProperties.NamingStrategy configPropertiesDefaultNamingStrategy;
+
+    /**
+     * The list of selected alternatives for an application.
+     * <p>
+     * An element value can be:
+     * <ul>
+     * <li>a fully qualified class name, i.e. {@code org.acme.Foo}</li>
+     * <li>a simple class name as defined by {@link Class#getSimpleName()}, i.e. {@code Foo}</li>
+     * <li>a package name with suffix {@code .*}, i.e. {@code org.acme.*}, matches a package</li>
+     * <li>a package name with suffix {@code .**}, i.e. {@code org.acme.**}, matches a package that starts with the value</li>
+     * </ul>
+     * Each element value is used to match an alternative bean class, an alternative stereotype annotation type or a bean class
+     * that declares an alternative producer. If matched the priority of {@link Integer#MAX_VALUE} is used for the relevant
+     * bean.
+     */
+    @ConfigItem
+    public Optional<List<String>> selectedAlternatives;
 
     public final boolean isRemoveUnusedBeansFieldValid() {
         return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans.toLowerCase());

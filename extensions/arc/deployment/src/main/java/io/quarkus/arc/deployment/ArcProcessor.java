@@ -3,6 +3,7 @@ package io.quarkus.arc.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConf
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
+import io.quarkus.arc.processor.AlternativePriorities;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
@@ -39,9 +41,11 @@ import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BytecodeTransformer;
 import io.quarkus.arc.processor.ContextConfigurator;
 import io.quarkus.arc.processor.ContextRegistrar;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.ObserverConfigurator;
 import io.quarkus.arc.processor.ReflectionRegistration;
 import io.quarkus.arc.processor.ResourceOutput;
+import io.quarkus.arc.processor.StereotypeInfo;
 import io.quarkus.arc.runtime.AdditionalBean;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -248,6 +252,42 @@ public class ArcProcessor {
         builder.setGenerateSources(BootstrapDebug.DEBUG_SOURCES_DIR != null);
         builder.setAllowMocking(launchModeBuildItem.getLaunchMode() == LaunchMode.TEST);
 
+        if (arcConfig.selectedAlternatives.isPresent()) {
+            final List<Predicate<ClassInfo>> selectedAlternatives = initAlternativePredicates(
+                    arcConfig.selectedAlternatives.get());
+            builder.setAlternativePriorities(new AlternativePriorities() {
+
+                @Override
+                public Integer compute(AnnotationTarget target, Collection<StereotypeInfo> stereotypes) {
+                    ClassInfo clazz;
+                    switch (target.kind()) {
+                        case CLASS:
+                            clazz = target.asClass();
+                            break;
+                        case FIELD:
+                            clazz = target.asField().declaringClass();
+                            break;
+                        case METHOD:
+                            clazz = target.asMethod().declaringClass();
+                            break;
+                        default:
+                            return null;
+                    }
+                    if (selectedAlternatives.stream().anyMatch(p -> p.test(clazz))) {
+                        return Integer.MAX_VALUE;
+                    }
+                    if (!stereotypes.isEmpty()) {
+                        for (StereotypeInfo stereotype : stereotypes) {
+                            if (selectedAlternatives.stream().anyMatch(p -> p.test(stereotype.getTarget()))) {
+                                return Integer.MAX_VALUE;
+                            }
+                        }
+                    }
+                    return null;
+                }
+            });
+        }
+
         BeanProcessor beanProcessor = builder.build();
         ContextRegistrar.RegistrationContext context = beanProcessor.registerCustomContexts();
         return new ContextRegistrationPhaseBuildItem(context, beanProcessor);
@@ -398,6 +438,50 @@ public class ArcProcessor {
             names.addAll(item.getAnnotationNames());
         }
         return new CustomScopeAnnotationsBuildItem(names);
+    }
+
+    private List<Predicate<ClassInfo>> initAlternativePredicates(List<String> selectedAlternatives) {
+        final String packMatch = ".*";
+        final String packStarts = ".**";
+        List<Predicate<ClassInfo>> predicates = new ArrayList<>();
+        for (String val : selectedAlternatives) {
+            if (val.endsWith(packMatch)) {
+                // Package matches
+                final String pack = val.substring(0, val.length() - packMatch.length());
+                predicates.add(new Predicate<ClassInfo>() {
+                    @Override
+                    public boolean test(ClassInfo c) {
+                        return DotNames.packageName(c.name()).equals(pack);
+                    }
+                });
+            } else if (val.endsWith(packStarts)) {
+                // Package starts with
+                final String prefix = val.substring(0, val.length() - packStarts.length());
+                predicates.add(new Predicate<ClassInfo>() {
+                    @Override
+                    public boolean test(ClassInfo c) {
+                        return DotNames.packageName(c.name()).startsWith(prefix);
+                    }
+                });
+            } else if (val.contains(".")) {
+                // Fully qualified name matches
+                predicates.add(new Predicate<ClassInfo>() {
+                    @Override
+                    public boolean test(ClassInfo c) {
+                        return c.name().toString().equals(val);
+                    }
+                });
+            } else {
+                // Simple name matches
+                predicates.add(new Predicate<ClassInfo>() {
+                    @Override
+                    public boolean test(ClassInfo c) {
+                        return DotNames.simpleName(c).equals(val);
+                    }
+                });
+            }
+        }
+        return predicates;
     }
 
     private abstract static class AbstractCompositeApplicationClassesPredicate<T> implements Predicate<T> {

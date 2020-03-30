@@ -49,7 +49,8 @@ import org.jboss.logging.Logger.Level;
 public class BeanDeployment {
 
     private static final Logger LOGGER = Logger.getLogger(BeanDeployment.class);
-    public static final EnumSet<Type.Kind> CLASS_TYPES = EnumSet.of(Type.Kind.CLASS, Type.Kind.PARAMETERIZED_TYPE);
+
+    static final EnumSet<Type.Kind> CLASS_TYPES = EnumSet.of(Type.Kind.CLASS, Type.Kind.PARAMETERIZED_TYPE);
 
     private final BuildContextImpl buildContext;
 
@@ -97,11 +98,13 @@ public class BeanDeployment {
     final boolean transformUnproxyableClasses;
     private final boolean jtaCapabilities;
 
+    private final AlternativePriorities alternativePriorities;
+
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
             List<AnnotationsTransformer> annotationTransformers) {
         this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(),
                 Collections.emptyList(),
-                null, false, null, Collections.emptyMap(), Collections.emptyList(), false, false);
+                null, false, null, Collections.emptyMap(), Collections.emptyList(), false, false, null);
     }
 
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
@@ -113,7 +116,8 @@ public class BeanDeployment {
             Map<DotName, Collection<AnnotationInstance>> additionalStereotypes,
             List<InterceptorBindingRegistrar> bindingRegistrars,
             boolean transformUnproxyableClasses,
-            boolean jtaCapabilities) {
+            boolean jtaCapabilities,
+            AlternativePriorities alternativePriorities) {
         this.buildContext = buildContext;
         Set<BeanDefiningAnnotation> beanDefiningAnnotations = new HashSet<>();
         if (additionalBeanDefiningAnnotations != null) {
@@ -170,6 +174,7 @@ public class BeanDeployment {
         this.interceptorResolver = new InterceptorResolver(this);
         this.transformUnproxyableClasses = transformUnproxyableClasses;
         this.jtaCapabilities = jtaCapabilities;
+        this.alternativePriorities = alternativePriorities;
     }
 
     ContextRegistrar.RegistrationContext registerCustomContexts(List<ContextRegistrar> contextRegistrars) {
@@ -432,6 +437,16 @@ public class BeanDeployment {
 
     ScopeInfo getScope(DotName scopeAnnotationName) {
         return getScope(scopeAnnotationName, customContexts);
+    }
+
+    /**
+     * 
+     * @param target
+     * @param stereotypes
+     * @return the computed priority or {@code null}
+     */
+    Integer computeAlternativePriority(AnnotationTarget target, List<StereotypeInfo> stereotypes) {
+        return alternativePriorities != null ? alternativePriorities.compute(target, stereotypes) : null;
     }
 
     private void buildContextPut(String key, Object value) {
@@ -784,9 +799,11 @@ public class BeanDeployment {
         Map<ClassInfo, BeanInfo> beanClassToBean = new HashMap<>();
         for (ClassInfo beanClass : beanClasses) {
             BeanInfo classBean = Beans.createClassBean(beanClass, this, injectionPointTransformer);
-            beans.add(classBean);
-            beanClassToBean.put(beanClass, classBean);
-            injectionPoints.addAll(classBean.getAllInjectionPoints());
+            if (classBean != null) {
+                beans.add(classBean);
+                beanClassToBean.put(beanClass, classBean);
+                injectionPoints.addAll(classBean.getAllInjectionPoints());
+            }
         }
 
         List<DisposerInfo> disposers = new ArrayList<>();
@@ -805,16 +822,21 @@ public class BeanDeployment {
             if (declaringBean != null) {
                 BeanInfo producerMethodBean = Beans.createProducerMethod(producerMethod, declaringBean, this,
                         findDisposer(declaringBean, producerMethod, disposers), injectionPointTransformer);
-                beans.add(producerMethodBean);
-                injectionPoints.addAll(producerMethodBean.getAllInjectionPoints());
+                if (producerMethodBean != null) {
+                    beans.add(producerMethodBean);
+                    injectionPoints.addAll(producerMethodBean.getAllInjectionPoints());
+                }
             }
         }
 
         for (FieldInfo producerField : producerFields) {
             BeanInfo declaringBean = beanClassToBean.get(producerField.declaringClass());
             if (declaringBean != null) {
-                beans.add(Beans.createProducerField(producerField, declaringBean, this,
-                        findDisposer(declaringBean, producerField, disposers)));
+                BeanInfo producerFieldBean = Beans.createProducerField(producerField, declaringBean, this,
+                        findDisposer(declaringBean, producerField, disposers));
+                if (producerFieldBean != null) {
+                    beans.add(producerFieldBean);
+                }
             }
         }
 

@@ -3,6 +3,7 @@ package io.quarkus.arc.test;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ComponentsProvider;
 import io.quarkus.arc.ResourceReferenceProvider;
+import io.quarkus.arc.processor.AlternativePriorities;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
@@ -76,6 +77,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         private boolean shouldFail = false;
         private boolean removeUnusedBeans = false;
         private final List<Predicate<BeanInfo>> exclusions;
+        private AlternativePriorities alternativePriorities;
 
         public Builder() {
             resourceReferenceProviders = new ArrayList<>();
@@ -163,11 +165,17 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             return this;
         }
 
+        public Builder alternativePriorities(AlternativePriorities priorities) {
+            this.alternativePriorities = priorities;
+            return this;
+        }
+
         public ArcTestContainer build() {
             return new ArcTestContainer(resourceReferenceProviders, beanClasses, resourceAnnotations, beanRegistrars,
                     observerRegistrars, contextRegistrars, interceptorBindingRegistrars, annotationsTransformers,
                     injectionsPointsTransformers,
-                    observerTransformers, beanDeploymentValidators, shouldFail, removeUnusedBeans, exclusions);
+                    observerTransformers, beanDeploymentValidators, shouldFail, removeUnusedBeans, exclusions,
+                    alternativePriorities);
         }
 
     }
@@ -200,12 +208,14 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     private final boolean removeUnusedBeans;
     private final List<Predicate<BeanInfo>> exclusions;
 
+    private final AlternativePriorities alternativePriorities;
+
     public ArcTestContainer(Class<?>... beanClasses) {
         this(Collections.emptyList(), Arrays.asList(beanClasses), Collections.emptyList(), Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
                 Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), false, false,
-                Collections.emptyList());
+                Collections.emptyList(), null);
     }
 
     public ArcTestContainer(List<Class<?>> resourceReferenceProviders, List<Class<?>> beanClasses,
@@ -216,7 +226,8 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             List<AnnotationsTransformer> annotationsTransformers, List<InjectionPointsTransformer> ipTransformers,
             List<ObserverTransformer> observerTransformers,
             List<BeanDeploymentValidator> beanDeploymentValidators, boolean shouldFail, boolean removeUnusedBeans,
-            List<Predicate<BeanInfo>> exclusions) {
+            List<Predicate<BeanInfo>> exclusions,
+            AlternativePriorities alternativePriorities) {
         this.resourceReferenceProviders = resourceReferenceProviders;
         this.beanClasses = beanClasses;
         this.resourceAnnotations = resourceAnnotations;
@@ -232,6 +243,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.shouldFail = shouldFail;
         this.removeUnusedBeans = removeUnusedBeans;
         this.exclusions = exclusions;
+        this.alternativePriorities = alternativePriorities;
     }
 
     // this is where we start Arc, we operate on a per-method basis
@@ -362,6 +374,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             for (Predicate<BeanInfo> exclusion : exclusions) {
                 builder.addRemovalExclusion(exclusion);
             }
+            builder.setAlternativePriorities(alternativePriorities);
 
             BeanProcessor beanProcessor = builder.build();
 

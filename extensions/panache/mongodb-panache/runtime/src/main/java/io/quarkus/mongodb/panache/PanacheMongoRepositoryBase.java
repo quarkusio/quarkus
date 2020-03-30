@@ -213,11 +213,11 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
      *
      * @param query a {@link org.bson.Document} query
      * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @see #find(Document, Document)
+     * @see #list(Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
     public default PanacheQuery<Entity> find(Document query) {
@@ -230,11 +230,11 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
      * @param query a {@link org.bson.Document} query
      * @param sort the {@link org.bson.Document} sort
      * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @see #find(Document)
+     * @see #list(Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
     public default PanacheQuery<Entity> find(Document query, Document sort) {
@@ -384,15 +384,15 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
      * This method is a shortcut for <code>find(query).list()</code>.
      *
      * @param query a {@link org.bson.Document} query
-     * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @return a {@link List} containing all results, without paging
+     * @see #find(Document)
+     * @see #find(Document, Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
-    public default PanacheQuery<Entity> list(Document query) {
+    public default List<Entity> list(Document query) {
         throw MongoOperations.implementationInjectionMissing();
     }
 
@@ -402,15 +402,15 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
      *
      * @param query a {@link org.bson.Document} query
      * @param sort the {@link org.bson.Document} sort
-     * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @return a {@link List} containing all results, without paging
+     * @see #find(Document)
+     * @see #find(Document, Document)
+     * @see #list(Document)
+     * @see #stream(Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
-    public default PanacheQuery<Entity> list(Document query, Document sort) {
+    public default List<Entity> list(Document query, Document sort) {
         throw MongoOperations.implementationInjectionMissing();
     }
 
@@ -559,15 +559,15 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
      * This method is a shortcut for <code>find(query).stream()</code>.
      *
      * @param query a {@link org.bson.Document} query
-     * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @return a {@link Stream} containing all results, without paging
+     * @see #find(Document)
+     * @see #find(Document, Document)
+     * @see #list(Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document, Document)
      */
     @GenerateBridge
-    public default PanacheQuery<Entity> stream(Document query) {
+    public default Stream<Entity> stream(Document query) {
         throw MongoOperations.implementationInjectionMissing();
     }
 
@@ -577,15 +577,15 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
      *
      * @param query a {@link org.bson.Document} query
      * @param sort the {@link org.bson.Document} sort
-     * @return a new {@link PanacheQuery} instance for the given query
-     * @see #find(String, Parameters)
-     * @see #find(String, Sort, Map)
-     * @see #find(String, Sort, Parameters)
-     * @see #list(String, Sort, Parameters)
-     * @see #stream(String, Sort, Parameters)
+     * @return a {@link Stream} containing all results, without paging
+     * @see #find(Document)
+     * @see #find(Document, Document)
+     * @see #list(Document)
+     * @see #list(Document, Document)
+     * @see #stream(Document)
      */
     @GenerateBridge
-    public default PanacheQuery<Entity> stream(Document query, Document sort) {
+    public default Stream<Entity> stream(Document query, Document sort) {
         throw MongoOperations.implementationInjectionMissing();
     }
 

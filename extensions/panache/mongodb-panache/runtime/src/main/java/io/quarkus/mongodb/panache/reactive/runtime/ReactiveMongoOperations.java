@@ -237,11 +237,8 @@ public class ReactiveMongoOperations {
     }
 
     private static Uni<Void> update(ReactiveMongoCollection collection, List<Object> entities) {
-        Uni<Void> ret = nullUni();
-        for (Object entity : entities) {
-            ret.and(update(collection, entity));
-        }
-        return ret.onItem().ignore().andContinueWithNull();
+        List<Uni<Void>> unis = entities.stream().map(entity -> update(collection, entity)).collect(Collectors.toList());
+        return Uni.combine().all().unis(unis).combinedWith(u -> null);
     }
 
     private static Uni<Void> persistOrUpdate(ReactiveMongoCollection collection, Object entity) {

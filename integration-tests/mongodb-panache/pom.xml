@@ -32,6 +32,13 @@
             <artifactId>quarkus-rest-client</artifactId>
         </dependency>
 
+        <!-- Force the scope to compile as we make assertions inside the resources -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>

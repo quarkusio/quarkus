@@ -93,8 +93,13 @@ public class KubernetesWithApplicationPropertiesTest {
         assertThat(kubernetesList).filteredOn(i -> "ServiceAccount".equals(i.getKind())).hasSize(1)
                 .hasOnlyElementsOfType(ServiceAccount.class);
 
-        assertThat(kubernetesList).filteredOn(i -> "Ingress".equals(i.getKind())).hasSize(1)
-                .hasOnlyElementsOfType(Ingress.class);
+        assertThat(kubernetesList).filteredOn(i -> "Ingress".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+            assertThat(i).isInstanceOfSatisfying(Ingress.class, in -> {
+                assertThat(in.getSpec().getRules()).hasOnlyOneElementSatisfying(r -> {
+                    assertThat(r.getHost()).isEqualTo("example.com");
+                });
+            });
+        });
     }
 
 }

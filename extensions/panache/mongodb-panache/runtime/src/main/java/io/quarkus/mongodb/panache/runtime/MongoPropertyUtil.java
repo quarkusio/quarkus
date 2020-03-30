@@ -4,7 +4,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.jboss.logging.Logger;
@@ -17,6 +19,32 @@ public final class MongoPropertyUtil {
 
     private MongoPropertyUtil() {
         //prevent initialization
+    }
+
+    public static Set<String> collectFields(Class<?> type) {
+        Set<String> fieldNames = new HashSet<>();
+        // gather field names from getters
+        for (Method method : type.getMethods()) {
+            if (method.getName().startsWith("get") && !method.getName().equals("getClass")) {
+                String fieldName = MongoPropertyUtil.decapitalize(method.getName().substring(3));
+                fieldNames.add(fieldName);
+            }
+        }
+
+        // gather field names from public fields
+        for (Field field : type.getFields()) {
+            fieldNames.add(field.getName());
+        }
+
+        // replace fields that have @BsonProperty mappings
+        Map<String, String> replacementMap = MongoPropertyUtil.getReplacementMap(type);
+        for (Map.Entry<String, String> entry : replacementMap.entrySet()) {
+            if (fieldNames.contains(entry.getKey())) {
+                fieldNames.remove(entry.getKey());
+                fieldNames.add(entry.getValue());
+            }
+        }
+        return fieldNames;
     }
 
     public static void setReplacementCache(Map<String, Map<String, String>> newReplacementCache) {
@@ -53,7 +81,7 @@ public final class MongoPropertyUtil {
 
     // copied from JavaBeanUtil that is inside the core deployment module so not accessible at runtime.
     // See conventions expressed by https://docs.oracle.com/javase/7/docs/api/java/beans/Introspector.html#decapitalize(java.lang.String)
-    public static String decapitalize(String name) {
+    private static String decapitalize(String name) {
         if (name != null && name.length() != 0) {
             if (name.length() > 1 && Character.isUpperCase(name.charAt(1))) {
                 return name;

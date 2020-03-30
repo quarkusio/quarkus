@@ -48,7 +48,7 @@ over https://quarkusio.zulipchat.com/#[the online Zulip chat].
 
 If a https://github.com/quarkusio/quarkus/issues[GitHub issue] or
 https://github.com/quarkusio/quarkus/pulls[pull request] is created which
-proposes a design change, then it should be labelled `Needs Decision`, and the
+proposes a design change, then it should be labelled `triage/needs-decision`, and the
 corresponding discussion should then be held on the Google group as explained
 above.  A link to the discussion should be placed in a comment of the issue.
 Such pull requests should not be merged, nor issues resolved, until the design

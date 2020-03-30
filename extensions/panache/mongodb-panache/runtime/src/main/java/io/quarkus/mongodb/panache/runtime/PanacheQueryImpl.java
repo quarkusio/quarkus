@@ -23,7 +23,6 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     private MongoCollection collection;
-    private Class<? extends Entity> entityClass;
     private Document mongoQuery;
     private Document sort;
     private Document projections;
@@ -37,10 +36,8 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     private Range range;
 
-    PanacheQueryImpl(MongoCollection<? extends Entity> collection, Class<? extends Entity> entityClass, Document mongoQuery,
-            Document sort) {
+    PanacheQueryImpl(MongoCollection<? extends Entity> collection, Document mongoQuery, Document sort) {
         this.collection = collection;
-        this.entityClass = entityClass;
         this.mongoQuery = mongoQuery;
         this.sort = sort;
         page = new Page(0, Integer.MAX_VALUE);

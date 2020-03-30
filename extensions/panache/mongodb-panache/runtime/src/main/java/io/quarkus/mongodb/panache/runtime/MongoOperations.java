@@ -315,7 +315,7 @@ public class MongoOperations {
         Document docQuery = Document.parse(bindQuery);
         Document docSort = sortToDocument(sort);
         MongoCollection collection = mongoCollection(entityClass);
-        return new PanacheQueryImpl(collection, entityClass, docQuery, docSort);
+        return new PanacheQueryImpl(collection, docQuery, docSort);
     }
 
     /**
@@ -368,7 +368,7 @@ public class MongoOperations {
         Document docQuery = Document.parse(bindQuery);
         Document docSort = sortToDocument(sort);
         MongoCollection collection = mongoCollection(entityClass);
-        return new PanacheQueryImpl(collection, entityClass, docQuery, docSort);
+        return new PanacheQueryImpl(collection, docQuery, docSort);
     }
 
     public static PanacheQuery<?> find(Class<?> entityClass, String query, Parameters params) {
@@ -383,12 +383,12 @@ public class MongoOperations {
     public static PanacheQuery<?> find(Class<?> entityClass, Document query, Sort sort) {
         MongoCollection collection = mongoCollection(entityClass);
         Document sortDoc = sortToDocument(sort);
-        return new PanacheQueryImpl(collection, entityClass, query, sortDoc);
+        return new PanacheQueryImpl(collection, query, sortDoc);
     }
 
     public static PanacheQuery<?> find(Class<?> entityClass, Document query, Document sort) {
         MongoCollection collection = mongoCollection(entityClass);
-        return new PanacheQueryImpl(collection, entityClass, query, sort);
+        return new PanacheQueryImpl(collection, query, sort);
     }
 
     public static PanacheQuery<?> find(Class<?> entityClass, Document query) {
@@ -466,14 +466,14 @@ public class MongoOperations {
     @SuppressWarnings("rawtypes")
     public static PanacheQuery<?> findAll(Class<?> entityClass) {
         MongoCollection collection = mongoCollection(entityClass);
-        return new PanacheQueryImpl(collection, entityClass, null, null);
+        return new PanacheQueryImpl(collection, null, null);
     }
 
     @SuppressWarnings("rawtypes")
     public static PanacheQuery<?> findAll(Class<?> entityClass, Sort sort) {
         MongoCollection collection = mongoCollection(entityClass);
         Document sortDoc = sortToDocument(sort);
-        return new PanacheQueryImpl(collection, entityClass, null, sortDoc);
+        return new PanacheQueryImpl(collection, null, sortDoc);
     }
 
     private static Document sortToDocument(Sort sort) {

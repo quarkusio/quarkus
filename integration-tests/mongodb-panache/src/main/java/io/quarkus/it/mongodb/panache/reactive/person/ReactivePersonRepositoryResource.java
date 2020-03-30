@@ -9,6 +9,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import io.quarkus.it.mongodb.panache.person.Person;
+import io.quarkus.it.mongodb.panache.person.PersonName;
 import io.quarkus.panache.common.Sort;
 import io.smallrye.mutiny.Uni;
 
@@ -26,6 +27,12 @@ public class ReactivePersonRepositoryResource {
             return reactivePersonRepository.listAll(Sort.ascending(sort));
         }
         return reactivePersonRepository.listAll();
+    }
+
+    @GET
+    @Path("/search/{name}")
+    public Uni<List<PersonName>> searchPersons(@PathParam("name") String name) {
+        return reactivePersonRepository.find("lastname", name).project(PersonName.class).list();
     }
 
     @POST

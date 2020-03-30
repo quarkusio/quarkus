@@ -15,6 +15,7 @@ import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials.Secret;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Tls.Verification;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.core.AsyncResult;
@@ -138,6 +139,11 @@ public class OidcRecorder {
         Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.getProxy());
         if (proxyOpt.isPresent()) {
             options.setProxyOptions(proxyOpt.get());
+        }
+
+        if (oidcConfig.tls.verification == Verification.NONE) {
+            options.setTrustAll(true);
+            options.setVerifyHost(false);
         }
 
         final long connectionDelayInSecs = oidcConfig.getConnectionDelay().isPresent()

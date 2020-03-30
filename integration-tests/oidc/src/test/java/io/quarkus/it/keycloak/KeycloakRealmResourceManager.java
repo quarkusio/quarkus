@@ -21,8 +21,12 @@ import io.restassured.RestAssured;
 
 public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager {
 
-    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
+    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.ssl.url", "https://localhost:8543/auth");
     private static final String KEYCLOAK_REALM = "quarkus";
+
+    static {
+        RestAssured.useRelaxedHTTPSValidation();
+    }
 
     @Override
     public Map<String, String> start() {

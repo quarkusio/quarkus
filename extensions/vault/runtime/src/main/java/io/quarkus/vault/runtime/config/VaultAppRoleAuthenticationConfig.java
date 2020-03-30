@@ -15,9 +15,17 @@ public class VaultAppRoleAuthenticationConfig {
     public Optional<String> roleId;
 
     /**
-     * Secret Id for AppRole auth method. This property is required when selecting the app-role authentication type.
+     * Secret Id for AppRole auth method. This property is required when selecting the app-role authentication type and not setting the secret id as wrapped.
+     *
+     * {@link VaultAppRoleAuthenticationConfig#secretIdWrapped}
      */
     @ConfigItem
     public Optional<String> secretId;
+
+    /**
+     * Wrapped token containing the secret Id for AppRole auth method. This flag is not mandatory, only required if secret id is wrapped.
+     */
+    @ConfigItem
+    public Optional<String> secretIdWrapped;
 
 }

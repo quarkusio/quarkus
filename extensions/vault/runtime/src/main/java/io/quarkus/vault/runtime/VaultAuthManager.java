@@ -5,12 +5,11 @@ import static io.quarkus.vault.runtime.config.VaultAuthenticationType.APPROLE;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.KUBERNETES;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.USERPASS;
 
-import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapAuth;
-import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapResult;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.logging.Logger;
@@ -20,6 +19,8 @@ import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.auth.AbstractVaultAuthAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelfAuth;
+import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapAuth;
+import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapResult;
 import io.quarkus.vault.runtime.config.VaultAuthenticationType;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 
@@ -99,33 +100,40 @@ public class VaultAuthManager {
         sanityCheck(vaultToken);
         log.debug("created new login token: " + vaultToken.getConfidentialInfo(serverConfig.logConfidentialityLevel));
 
-        if (serverConfig.authentication.wrapToken.isPresent()) {
-            log.debug("wrapped token is configured and it is going to unwrap using the previous login");
-            vaultToken = unwrapToken(serverConfig.authentication.wrapToken.get());
-            sanityCheck(vaultToken);
-            log.debug("created new login token from unwrapped token: " + vaultToken.getConfidentialInfo(serverConfig.logConfidentialityLevel));
-        }
-
         return vaultToken;
     }
 
     private VaultToken login(VaultAuthenticationType type) {
         AbstractVaultAuthAuth<?> auth;
-        if (type == KUBERNETES) {
-            auth = loginKubernetes();
-        } else if (type == USERPASS) {
-            String username = serverConfig.authentication.userpass.username.get();
-            String password = serverConfig.authentication.userpass.password.get();
-            auth = vaultClient.loginUserPass(username, password).auth;
-        } else if (type == APPROLE) {
-            String roleId = serverConfig.authentication.appRole.roleId.get();
-            String secretId = serverConfig.authentication.appRole.secretId.get();
-            auth = vaultClient.loginAppRole(roleId, secretId).auth;
-        } else {
-            throw new UnsupportedOperationException("unknown authType " + serverConfig.getAuthenticationType());
+
+        switch (type) {
+            case KUBERNETES: auth = loginKubernetes(); break;
+            case USERPASS: auth = loginUserPass(); break;
+            case APPROLE: auth = loginAppRole(); break;
+            default: throw new UnsupportedOperationException("unknown authType " + serverConfig.getAuthenticationType());
         }
 
         return new VaultToken(auth.clientToken, auth.renewable, auth.leaseDurationSecs);
+    }
+
+    private AbstractVaultAuthAuth<?> loginAppRole() {
+        final AbstractVaultAuthAuth<?> auth;
+        String roleId = serverConfig.authentication.appRole.roleId.get();
+        String secretId = unwrapTokenOrPlainToken(serverConfig.authentication.appRole.secretIdWrapped,
+                                                    serverConfig.authentication.appRole.secretId.get());
+
+        auth = vaultClient.loginAppRole(roleId, secretId).auth;
+        return auth;
+    }
+
+    private AbstractVaultAuthAuth<?> loginUserPass() {
+        final AbstractVaultAuthAuth<?> auth;
+        String username = serverConfig.authentication.userpass.username.get();
+        String password = unwrapTokenOrPlainToken(serverConfig.authentication.userpass.passwordWrapped,
+                                                    serverConfig.authentication.userpass.password.get());
+
+        auth = vaultClient.loginUserPass(username, password).auth;
+        return auth;
     }
 
     private VaultKubernetesAuthAuth loginKubernetes() {
@@ -147,11 +155,9 @@ public class VaultAuthManager {
         vaultToken.leaseDurationSanityCheck("auth", serverConfig.renewGracePeriod);
     }
 
-    private VaultToken unwrapToken(String token) {
-        final VaultUnwrapResult unwrapToken = this.vaultClient.unwrap(token);
-        final VaultUnwrapAuth auth = unwrapToken.auth;
-
-        return new VaultToken(auth.clientToken, auth.renewable, auth.leaseDurationSecs);
+    private String unwrapTokenOrPlainToken(Optional<String> wrappedToken, String plainToken) {
+        return wrappedToken.flatMap(wrapped -> Optional.of(vaultClient.unwrap(wrapped).auth.clientToken))
+            .orElse(plainToken);
     }
 
 }

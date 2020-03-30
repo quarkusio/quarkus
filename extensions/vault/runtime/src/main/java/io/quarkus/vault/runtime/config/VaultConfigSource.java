@@ -215,9 +215,10 @@ public class VaultConfigSource implements ConfigSource {
                 DEFAULT_KUBERNETES_JWT_TOKEN_PATH);
         serverConfig.authentication.userpass.username = getOptionalVaultProperty("authentication.userpass.username");
         serverConfig.authentication.userpass.password = getOptionalVaultProperty("authentication.userpass.password");
+        serverConfig.authentication.userpass.passwordWrapped = getOptionalVaultProperty("authentication.userpass.password-wrapped");
         serverConfig.authentication.appRole.roleId = getOptionalVaultProperty("authentication.app-role.role-id");
         serverConfig.authentication.appRole.secretId = getOptionalVaultProperty("authentication.app-role.secret-id");
-        serverConfig.authentication.wrapToken = getOptionalVaultProperty("authentication.wrap-token");
+        serverConfig.authentication.appRole.secretIdWrapped = getOptionalVaultProperty("authentication.app-role.secret-id-wrapped");
         serverConfig.renewGracePeriod = getVaultDuration("renew-grace-period", DEFAULT_RENEW_GRACE_PERIOD);
         serverConfig.secretConfigCachePeriod = getVaultDuration("secret-config-cache-period",
                 DEFAULT_SECRET_CONFIG_CACHE_PERIOD);

@@ -3,8 +3,6 @@ package io.quarkus.vault.runtime.client;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static io.quarkus.vault.runtime.client.OkHttpClientFactory.createHttpClient;
 
-import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapData;
-import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapResult;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -40,6 +38,8 @@ import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
 import io.quarkus.vault.runtime.client.dto.sys.VaultSealStatusResult;
+import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapData;
+import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyBody;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPGenerateCodeResult;

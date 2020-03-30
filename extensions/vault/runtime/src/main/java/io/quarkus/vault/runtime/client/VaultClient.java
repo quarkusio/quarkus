@@ -1,6 +1,5 @@
 package io.quarkus.vault.runtime.client;
 
-import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapResult;
 import java.util.Map;
 
 import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuth;
@@ -17,6 +16,7 @@ import io.quarkus.vault.runtime.client.dto.sys.VaultInitResponse;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
 import io.quarkus.vault.runtime.client.dto.sys.VaultSealStatusResult;
+import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyBody;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPGenerateCodeResult;

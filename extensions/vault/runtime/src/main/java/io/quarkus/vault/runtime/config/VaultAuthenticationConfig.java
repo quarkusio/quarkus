@@ -18,15 +18,6 @@ public class VaultAuthenticationConfig {
     public Optional<String> clientToken;
 
     /**
-     * Vault inserts the generated token into the cubbyhole of a single-use token,
-     * returning that single-use wrapping token.
-     *
-     * Retrieving the secret requires an unwrap operation against this wrapping token.
-     */
-    @ConfigItem
-    public Optional<String> wrapToken;
-
-    /**
      * AppRole authentication method
      * <p>
      * See https://www.vaultproject.io/api/auth/approle/index.html

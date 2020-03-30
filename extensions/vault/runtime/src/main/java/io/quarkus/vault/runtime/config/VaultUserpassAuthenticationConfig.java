@@ -15,9 +15,17 @@ public class VaultUserpassAuthenticationConfig {
     public Optional<String> username;
 
     /**
-     * Password for userpass auth method. This property is required when selecting the userpass authentication type.
+     * Password for userpass auth method. This property is required when selecting the userpass authentication type and not setting the password as wrapped.
+     *
+     * {@link VaultUserpassAuthenticationConfig#passwordWrapped}
      */
     @ConfigItem
     public Optional<String> password;
+
+    /**
+     * Wrapped token containing the password for userpass auth method. This flag is not mandatory, only required if password is wrapped.
+     */
+    @ConfigItem
+    public Optional<String> passwordWrapped;
 
 }

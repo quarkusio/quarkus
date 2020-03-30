@@ -55,6 +55,30 @@ public class ProtectedResource {
     }
 
     @GET
+    @Path("callback-jwt-before-redirect")
+    public String getNameCallbackJwtBeforeRedirect() {
+        throw new InternalServerErrorException("This method must not be invoked");
+    }
+
+    @GET
+    @Path("callback-jwt-after-redirect")
+    public String getNameCallbackJwtAfterRedirect() {
+        return "callback-jwt:" + getName();
+    }
+
+    @GET
+    @Path("callback-jwt-not-used-before-redirect")
+    public String getNameCallbackJwtNotUsedBeforeRedirect() {
+        throw new InternalServerErrorException("This method must not be invoked");
+    }
+
+    @GET
+    @Path("callback-jwt-not-used-after-redirect")
+    public String getNameCallbackJwtNotUsedAfterRedirect() {
+        throw new InternalServerErrorException("This method must not be invoked");
+    }
+
+    @GET
     @Path("access")
     public String getAccessToken() {
         if (!accessTokenCredential.getToken().equals(accessToken.getRawToken())) {

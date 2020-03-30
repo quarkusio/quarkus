@@ -89,16 +89,7 @@ public class OidcRecorder {
         }
 
         if (oidcConfig.getPublicKey().isPresent()) {
-            if (oidcConfig.applicationType == ApplicationType.WEB_APP) {
-                throw new ConfigurationException("'public-key' property can only be used with the 'service' applications");
-            }
-            LOG.info("'public-key' property for the local token verification is set,"
-                    + " no connection to the OIDC server will be created");
-            options.addPubSecKey(new PubSecKeyOptions()
-                    .setAlgorithm("RS256")
-                    .setPublicKey(oidcConfig.getPublicKey().get()));
-
-            return new TenantConfigContext(new OAuth2AuthProviderImpl(vertx, options), oidcConfig);
+            return createdTenantContextFromPublicKey(options, oidcConfig);
         }
 
         if (!oidcConfig.getAuthServerUrl().isPresent() || !oidcConfig.getClientId().isPresent()) {
@@ -120,20 +111,23 @@ public class OidcRecorder {
         }
 
         Credentials creds = oidcConfig.getCredentials();
-        if (creds.secret.isPresent() && (creds.clientSecret.value.isPresent() || creds.clientSecret.method.isPresent())) {
+        if (creds.secret.isPresent() && creds.clientSecret.value.isPresent()) {
             throw new ConfigurationException(
                     "'credentials.secret' and 'credentials.client-secret' properties are mutually exclusive");
         }
+        if ((creds.secret.isPresent() || creds.clientSecret.value.isPresent()) && creds.jwt.secret.isPresent()) {
+            throw new ConfigurationException(
+                    "Use only 'credentials.secret' or 'credentials.client-secret' or 'credentials.jwt.secret' property");
+        }
+
         // TODO: The workaround to support client_secret_post is added below and have to be removed once
         // it is supported again in VertX OAuth2.
-        if (creds.secret.isPresent()
-                || creds.clientSecret.value.isPresent()
-                        && creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC) == Secret.Method.BASIC) {
+        if (creds.secret.isPresent() || creds.clientSecret.value.isPresent()
+                && creds.clientSecret.method.orElseGet(() -> Secret.Method.BASIC) == Secret.Method.BASIC) {
             // If it is set for client_secret_post as well then VertX OAuth2 will only use client_secret_basic
             options.setClientSecret(creds.secret.orElseGet(() -> creds.clientSecret.value.get()));
         } else {
-            // Avoid the client_secret set in CodeAuthenticationMechanism when client_secret_post is enabled
-            // from being reset to null in VertX OAuth2
+            // Avoid VertX OAuth2 setting a null client_secret form parameter if it is client_secret_post or client_secret_jwt
             options.setClientSecretParameterName(null);
         }
 
@@ -195,6 +189,20 @@ public class OidcRecorder {
         return new TenantConfigContext(auth, oidcConfig);
     }
 
+    @SuppressWarnings("deprecation")
+    private TenantConfigContext createdTenantContextFromPublicKey(OAuth2ClientOptions options, OidcTenantConfig oidcConfig) {
+        if (oidcConfig.applicationType == ApplicationType.WEB_APP) {
+            throw new ConfigurationException("'public-key' property can only be used with the 'service' applications");
+        }
+        LOG.debug("'public-key' property for the local token verification is set,"
+                + " no connection to the OIDC server will be created");
+        options.addPubSecKey(new PubSecKeyOptions()
+                .setAlgorithm("RS256")
+                .setPublicKey(oidcConfig.getPublicKey().get()));
+
+        return new TenantConfigContext(new OAuth2AuthProviderImpl(null, options), oidcConfig);
+    }
+
     protected static OIDCException toOidcException(Throwable cause) {
         final String message = "OIDC server is not available at the 'quarkus.oidc.auth-server-url' URL. "
                 + "Please make sure it is correct. Note it has to end with a realm value if you work with Keycloak, for example:"
@@ -218,5 +226,4 @@ public class OidcRecorder {
         }
         return Optional.of(new ProxyOptions(jsonOptions));
     }
-
 }

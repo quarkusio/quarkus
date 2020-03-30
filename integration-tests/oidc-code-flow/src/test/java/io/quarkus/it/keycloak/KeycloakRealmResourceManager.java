@@ -30,6 +30,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
 
         realm.getClients().add(createClient("quarkus-app"));
+        realm.getClients().add(createClientJwt("quarkus-app-jwt"));
         realm.getUsers().add(createUser("alice", "user"));
         realm.getUsers().add(createUser("admin", "user", "admin"));
         realm.getUsers().add(createUser("jdoe", "user", "confidential"));
@@ -77,6 +78,18 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         client.setRedirectUris(Arrays.asList("*"));
         client.setClientAuthenticatorType("client-secret");
         client.setSecret("secret");
+
+        return client;
+    }
+
+    private static ClientRepresentation createClientJwt(String clientId) {
+        ClientRepresentation client = new ClientRepresentation();
+
+        client.setClientId(clientId);
+        client.setEnabled(true);
+        client.setRedirectUris(Arrays.asList("*"));
+        client.setClientAuthenticatorType("client-secret-jwt");
+        client.setSecret("AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow");
 
         return client;
     }

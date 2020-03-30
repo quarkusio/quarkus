@@ -35,6 +35,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     private static final Logger log = Logger.getLogger(QuarkusClassLoader.class);
     protected static final String META_INF_SERVICES = "META-INF/services/";
+    protected static final String JAVA = "java.";
 
     static {
         registerAsParallelCapable();
@@ -276,6 +277,9 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        if (name.startsWith(JAVA)) {
+            return parent.loadClass(name);
+        }
         //even if the thread is interrupted we still want to be able to load classes
         //if the interrupt bit is set then we clear it and restore it at the end
         boolean interrupted = Thread.interrupted();

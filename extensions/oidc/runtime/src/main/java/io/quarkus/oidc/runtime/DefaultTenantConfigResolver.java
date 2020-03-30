@@ -27,10 +27,11 @@ public class DefaultTenantConfigResolver {
     @Inject
     Instance<TenantConfigResolver> tenantConfigResolver;
 
-    private volatile Map<String, TenantConfigContext> staticTenantsConfig;
-    private volatile TenantConfigContext defaultTenant;
-    private volatile Function<OidcTenantConfig, TenantConfigContext> tenantConfigContextFactory;
-    private volatile Map<String, TenantConfigContext> dynamicTenantsConfig;
+    private Map<String, TenantConfigContext> staticTenantsConfig;
+    private TenantConfigContext defaultTenant;
+    private Function<OidcTenantConfig, TenantConfigContext> tenantConfigContextFactory;
+    private Map<String, TenantConfigContext> dynamicTenantsConfig;
+    private volatile boolean initializationCompleted;
 
     @PostConstruct
     public void verifyResolvers() {
@@ -55,6 +56,10 @@ public class DefaultTenantConfigResolver {
      * @return
      */
     TenantConfigContext resolve(RoutingContext context, boolean create) {
+        if (!initializationCompleted) {
+            waitUntilInitializatonIsCompleted();
+        }
+
         TenantConfigContext config = getTenantConfigFromConfigResolver(context, create);
 
         if (config == null) {
@@ -64,23 +69,32 @@ public class DefaultTenantConfigResolver {
         return config;
     }
 
-    void setTenantsConfig(Map<String, TenantConfigContext> tenantsConfig) {
-        this.staticTenantsConfig = tenantsConfig;
+    void completeInitialization(TenantConfigContext defaultTenant,
+            Map<String, TenantConfigContext> tenantsConfig,
+            Function<OidcTenantConfig, TenantConfigContext> tenantConfigContextFactory) {
+        synchronized (this) {
+            this.defaultTenant = defaultTenant;
+            this.staticTenantsConfig = tenantsConfig;
+            this.tenantConfigContextFactory = tenantConfigContextFactory;
+            this.initializationCompleted = true;
+            this.notifyAll();
+        }
     }
 
-    void setDefaultTenant(TenantConfigContext defaultTenant) {
-        this.defaultTenant = defaultTenant;
-    }
-
-    void setTenantConfigContextFactory(Function<OidcTenantConfig, TenantConfigContext> tenantConfigContextFactory) {
-        this.tenantConfigContextFactory = tenantConfigContextFactory;
+    void waitUntilInitializatonIsCompleted() {
+        synchronized (this) {
+            try {
+                this.wait(5000);
+            } catch (InterruptedException ex) {
+                throw new IllegalStateException("Interrupted while waiting for the initialization to complete", ex);
+            }
+            if (!initializationCompleted) {
+                throw new IllegalStateException("Initialization is not completed");
+            }
+        }
     }
 
     private TenantConfigContext getTenantConfigFromTenantResolver(RoutingContext context) {
-        if (staticTenantsConfig == null) {
-            throw new IllegalStateException("staticTenantsConfig is null");
-        }
-
         String tenantId = null;
 
         if (tenantResolver.isResolvable()) {

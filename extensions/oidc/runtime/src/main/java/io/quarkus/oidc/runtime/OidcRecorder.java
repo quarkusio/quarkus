@@ -36,6 +36,11 @@ public class OidcRecorder {
 
     public void setup(OidcConfig config, Supplier<Vertx> vertx, BeanContainer beanContainer) {
         final Vertx vertxValue = vertx.get();
+
+        // Default tenant configuration context
+        TenantConfigContext defaultTenant = createTenantContext(vertxValue, config.defaultTenant, "Default");
+
+        // Additional tenant configuration contexts
         Map<String, TenantConfigContext> tenantsConfig = new HashMap<>();
 
         for (Map.Entry<String, OidcTenantConfig> tenant : config.namedTenants.entrySet()) {
@@ -50,18 +55,18 @@ public class OidcRecorder {
             tenantsConfig.put(tenant.getKey(), createTenantContext(vertxValue, tenant.getValue(), tenant.getKey()));
         }
 
-        DefaultTenantConfigResolver resolver = beanContainer.instance(DefaultTenantConfigResolver.class);
-
-        resolver.setDefaultTenant(createTenantContext(vertxValue, config.defaultTenant, "Default"));
-        resolver.setTenantsConfig(tenantsConfig);
-        resolver.setTenantConfigContextFactory(new Function<OidcTenantConfig, TenantConfigContext>() {
+        // Tenant configuration context factory
+        Function<OidcTenantConfig, TenantConfigContext> tenantConfigContextFactory = new Function<OidcTenantConfig, TenantConfigContext>() {
             @Override
             public TenantConfigContext apply(OidcTenantConfig config) {
                 // OidcTenantConfig resolved by TenantConfigResolver must have its optional tenantId
                 // initialized which is also enforced by DefaultTenantConfigResolver
                 return createTenantContext(vertxValue, config, config.getTenantId().get());
             }
-        });
+        };
+
+        DefaultTenantConfigResolver resolver = beanContainer.instance(DefaultTenantConfigResolver.class);
+        resolver.completeInitialization(defaultTenant, tenantsConfig, tenantConfigContextFactory);
     }
 
     private TenantConfigContext createTenantContext(Vertx vertx, OidcTenantConfig oidcConfig, String tenantId) {

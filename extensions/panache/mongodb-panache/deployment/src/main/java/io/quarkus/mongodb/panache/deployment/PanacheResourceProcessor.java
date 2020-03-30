@@ -301,10 +301,12 @@ public class PanacheResourceProcessor {
     @BuildStep
     void buildMutiny(CombinedIndexBuildItem index,
             ApplicationIndexBuildItem applicationIndex,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<BytecodeTransformerBuildItem> transformers) throws Exception {
 
         ReactivePanacheMongoRepositoryEnhancer daoEnhancer = new ReactivePanacheMongoRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
+        Set<Type> daoTypeParameters = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_MUTINY_PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
             if (classInfo.name().equals(DOTNAME_MUTINY_PANACHE_REPOSITORY))
@@ -312,14 +314,23 @@ public class PanacheResourceProcessor {
             if (PanacheRepositoryEnhancer.skipRepository(classInfo))
                 continue;
             daoClasses.add(classInfo.name().toString());
+            daoTypeParameters.addAll(
+                    JandexUtil.resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex()));
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_MUTINY_PANACHE_REPOSITORY)) {
             if (PanacheRepositoryEnhancer.skipRepository(classInfo))
                 continue;
             daoClasses.add(classInfo.name().toString());
+            daoTypeParameters.addAll(
+                    JandexUtil.resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex()));
         }
         for (String daoClass : daoClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
+        }
+
+        for (Type parameterType : daoTypeParameters) {
+            // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
         }
 
         ReactivePanacheMongoEntityEnhancer modelEnhancer = new ReactivePanacheMongoEntityEnhancer(index.getIndex());
@@ -336,8 +347,13 @@ public class PanacheResourceProcessor {
             if (modelClasses.add(classInfo.name().toString()))
                 modelEnhancer.collectFields(classInfo);
         }
+
+        // iterate over all the entity classes
         for (String modelClass : modelClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(modelClass, modelEnhancer));
+
+            //register for reflection entity classes
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, modelClass));
         }
 
         if (!modelEnhancer.entities.isEmpty()) {

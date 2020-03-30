@@ -240,7 +240,7 @@ List<String> namesButEmmanuels = persons
 
 NOTE: A `persistOrUpdate()` method exist that persist or update an entity in the database, it uses the __upsert__ capability of MongoDB to do it in a single query.
 
-== Adding entity methods
+=== Adding entity methods
 
 Add custom queries on your entities inside the entities themselves.
 That way, you and your co-workers can find them easily, and queries are co-located with the object they operate on.
@@ -724,7 +724,7 @@ data class Person (
 ): PanacheMongoEntity()
 ----
 
-[[reactive]]]]
+[[reactive]]
 == Reactive Entities and Repositories
 
 MongoDB with Panache allows using reactive style implementation for both entities and repositories.

@@ -93,8 +93,9 @@ public class ArcConfig {
      * <li>a package name with suffix {@code .**}, i.e. {@code org.acme.**}, matches a package that starts with the value</li>
      * </ul>
      * Each element value is used to match an alternative bean class, an alternative stereotype annotation type or a bean class
-     * that declares an alternative producer. If matched the priority of {@link Integer#MAX_VALUE} is used for the relevant
-     * bean.
+     * that declares an alternative producer. If any value matches then the priority of {@link Integer#MAX_VALUE} is used for
+     * the relevant bean. The priority declared via {@link javax.annotation.Priority} or
+     * {@link io.quarkus.arc.AlternativePriority} is overriden.
      */
     @ConfigItem
     public Optional<List<String>> selectedAlternatives;

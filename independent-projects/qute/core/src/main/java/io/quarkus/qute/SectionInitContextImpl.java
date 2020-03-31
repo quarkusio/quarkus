@@ -1,6 +1,7 @@
 package io.quarkus.qute;
 
 import io.quarkus.qute.SectionHelperFactory.SectionInitContext;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -25,7 +26,7 @@ final class SectionInitContextImpl implements SectionInitContext {
      * @return the params of the main block
      */
     public Map<String, String> getParameters() {
-        return blocks.get(0).parameters;
+        return blocks.isEmpty() ? Collections.emptyMap() : blocks.get(0).parameters;
     }
 
     public boolean hasParameter(String name) {
@@ -38,7 +39,7 @@ final class SectionInitContextImpl implements SectionInitContext {
 
     @Override
     public Expression getExpression(String parameterName) {
-        return blocks.get(0).expressions.get(parameterName);
+        return blocks.isEmpty() ? null : blocks.get(0).expressions.get(parameterName);
     }
 
     @Override

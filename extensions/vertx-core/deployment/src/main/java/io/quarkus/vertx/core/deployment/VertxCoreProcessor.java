@@ -2,11 +2,12 @@ package io.quarkus.vertx.core.deployment;
 
 import java.util.function.Supplier;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -20,7 +21,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
-import io.quarkus.vertx.core.runtime.VertxCoreProducer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
@@ -45,11 +45,6 @@ class VertxCoreProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem registerBean() {
-        return AdditionalBeanBuildItem.unremovableOf(VertxCoreProducer.class);
-    }
-
-    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     EventLoopCountBuildItem eventLoopCount(VertxCoreRecorder recorder, VertxConfiguration vertxConfiguration) {
         return new EventLoopCountBuildItem(recorder.calculateEventLoopThreads(vertxConfiguration));
@@ -69,12 +64,19 @@ class VertxCoreProcessor {
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT)
-    CoreVertxBuildItem build(VertxCoreRecorder recorder, BeanContainerBuildItem beanContainer,
+    CoreVertxBuildItem build(VertxCoreRecorder recorder,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, VertxConfiguration config,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             BuildProducer<ServiceStartBuildItem> serviceStartBuildItem) {
 
-        Supplier<Vertx> vertx = recorder.configureVertx(beanContainer.getValue(), config,
+        Supplier<Vertx> vertx = recorder.configureVertx(config,
                 launchMode.getLaunchMode(), shutdown);
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(Vertx.class)
+                .types(Vertx.class)
+                .scope(ApplicationScoped.class)
+                .unremovable()
+                .setRuntimeInit()
+                .supplier(vertx).done());
 
         return new CoreVertxBuildItem(vertx);
     }

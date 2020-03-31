@@ -16,6 +16,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -42,7 +43,7 @@ public class SyntheticBeansProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void initRuntime(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
+    ServiceStartBuildItem initRuntime(ArcRecorder recorder, List<SyntheticBeanBuildItem> syntheticBeans,
             BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
         Map<String, Supplier<?>> suppliersMap = new HashMap<>();
@@ -53,6 +54,7 @@ public class SyntheticBeansProcessor {
             }
         }
         recorder.initRuntimeSupplierBeans(suppliersMap);
+        return new ServiceStartBuildItem("runtime-bean-init");
     }
 
     private void initSyntheticBean(ArcRecorder recorder, Map<String, Supplier<?>> suppliersMap,

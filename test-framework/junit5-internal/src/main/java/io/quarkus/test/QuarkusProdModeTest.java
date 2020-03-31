@@ -170,6 +170,7 @@ public class QuarkusProdModeTest
      */
     public QuarkusProdModeTest setForcedDependencies(List<AppArtifact> forcedDependencies) {
         this.forcedDependencies = forcedDependencies;
+
         return this;
     }
 

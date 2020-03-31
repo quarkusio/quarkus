@@ -10,7 +10,6 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials;
@@ -34,7 +33,7 @@ public class OidcRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcRecorder.class);
 
-    public void setup(OidcConfig config, Supplier<Vertx> vertx, BeanContainer beanContainer) {
+    public Supplier<TenantConfigBean> setup(OidcConfig config, Supplier<Vertx> vertx) {
         final Vertx vertxValue = vertx.get();
         Map<String, TenantConfigContext> tenantsConfig = new HashMap<>();
 
@@ -49,19 +48,21 @@ public class OidcRecorder {
             }
             tenantsConfig.put(tenant.getKey(), createTenantContext(vertxValue, tenant.getValue(), tenant.getKey()));
         }
-
-        DefaultTenantConfigResolver resolver = beanContainer.instance(DefaultTenantConfigResolver.class);
-
-        resolver.setDefaultTenant(createTenantContext(vertxValue, config.defaultTenant, "Default"));
-        resolver.setTenantsConfig(tenantsConfig);
-        resolver.setTenantConfigContextFactory(new Function<OidcTenantConfig, TenantConfigContext>() {
+        TenantConfigContext tenantContext = createTenantContext(vertxValue, config.defaultTenant, "Default");
+        return new Supplier<TenantConfigBean>() {
             @Override
-            public TenantConfigContext apply(OidcTenantConfig config) {
-                // OidcTenantConfig resolved by TenantConfigResolver must have its optional tenantId
-                // initialized which is also enforced by DefaultTenantConfigResolver
-                return createTenantContext(vertxValue, config, config.getTenantId().get());
+            public TenantConfigBean get() {
+                return new TenantConfigBean(tenantsConfig, tenantContext,
+                        new Function<OidcTenantConfig, TenantConfigContext>() {
+                            @Override
+                            public TenantConfigContext apply(OidcTenantConfig config) {
+                                // OidcTenantConfig resolved by TenantConfigResolver must have its optional tenantId
+                                // initialized which is also enforced by DefaultTenantConfigResolver
+                                return createTenantContext(vertxValue, config, config.getTenantId().get());
+                            }
+                        });
             }
-        });
+        };
     }
 
     private TenantConfigContext createTenantContext(Vertx vertx, OidcTenantConfig oidcConfig, String tenantId) {

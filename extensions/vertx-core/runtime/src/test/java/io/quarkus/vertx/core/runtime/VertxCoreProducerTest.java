@@ -1,14 +1,11 @@
 package io.quarkus.vertx.core.runtime;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.function.Supplier;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,49 +18,19 @@ import io.quarkus.vertx.core.runtime.config.PemKeyCertConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemTrustCertConfiguration;
 import io.quarkus.vertx.core.runtime.config.PfxConfiguration;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
-import io.vertx.core.Vertx;
 
 public class VertxCoreProducerTest {
 
     private VertxCoreRecorder recorder;
-    private VertxCoreProducer producer;
 
     @BeforeEach
     public void setUp() throws Exception {
-        producer = new VertxCoreProducer();
         recorder = new VertxCoreRecorder();
     }
 
     @AfterEach
     public void tearDown() throws Exception {
         recorder.destroy();
-    }
-
-    @Test
-    public void shouldNotFailWithoutConfig() {
-        producer.initialize(new Supplier<Vertx>() {
-            @Override
-            public Vertx get() {
-                return VertxCoreRecorder.initialize(null);
-            }
-        });
-        verifyProducer();
-    }
-
-    private void verifyProducer() {
-        assertThat(producer.vertx()).isNotNull();
-        assertFalse(producer.vertx().isClustered());
-    }
-
-    @Test
-    public void shouldNotFailWithDefaultConfig() {
-        VertxConfiguration configuration = createDefaultConfiguration();
-        configuration.workerPoolSize = 10;
-        configuration.warningExceptionTime = Duration.ofSeconds(1);
-        configuration.internalBlockingPoolSize = 5;
-        VertxCoreRecorder.vertx = new VertxCoreRecorder.VertxSupplier(configuration);
-        producer.initialize(VertxCoreRecorder.vertx);
-        verifyProducer();
     }
 
     @Test

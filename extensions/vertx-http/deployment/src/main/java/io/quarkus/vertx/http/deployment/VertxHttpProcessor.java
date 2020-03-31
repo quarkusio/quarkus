@@ -16,6 +16,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -109,14 +110,11 @@ class VertxHttpProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem finalizeRouter(
-            VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer,
-            Optional<RequireVirtualHttpBuildItem> requireVirtual, CoreVertxBuildItem vertx,
-            LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
+            VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer, CoreVertxBuildItem vertx,
+            LaunchModeBuildItem launchMode,
             List<DefaultRouteBuildItem> defaultRoutes, List<FilterBuildItem> filters,
-            VertxWebRouterBuildItem router, EventLoopCountBuildItem eventLoopCount,
+            VertxWebRouterBuildItem router,
             HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            List<WebsocketSubProtocolsBuildItem> websocketSubProtocols,
             List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
             BodyHandlerBuildItem bodyHandlerBuildItem,
             BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
@@ -153,6 +151,21 @@ class VertxHttpProcessor {
                 !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, httpConfiguration, gracefulShutdownFilter,
                 shutdownConfig);
 
+        return new ServiceStartBuildItem("vertx-http");
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep
+    void openSocket(ApplicationStartBuildItem start,
+            LaunchModeBuildItem launchMode,
+            CoreVertxBuildItem vertx,
+            ShutdownContextBuildItem shutdown,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
+            Optional<RequireVirtualHttpBuildItem> requireVirtual,
+            EventLoopCountBuildItem eventLoopCount,
+            List<WebsocketSubProtocolsBuildItem> websocketSubProtocols,
+            VertxHttpRecorder recorder) throws IOException {
         boolean startVirtual = requireVirtual.isPresent() || httpBuildTimeConfig.virtual;
         if (startVirtual) {
             reflectiveClass
@@ -165,8 +178,6 @@ class VertxHttpProcessor {
                 eventLoopCount.getEventLoopCount(),
                 websocketSubProtocols.stream().map(bi -> bi.getWebsocketSubProtocols())
                         .collect(Collectors.joining(",")));
-
-        return new ServiceStartBuildItem("vertx-http");
     }
 
     @BuildStep

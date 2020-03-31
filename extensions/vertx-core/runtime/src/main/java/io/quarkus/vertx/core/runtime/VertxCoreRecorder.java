@@ -19,7 +19,6 @@ import org.jboss.logging.Logger;
 import org.wildfly.common.cpu.ProcessorInfo;
 
 import io.netty.channel.EventLoopGroup;
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.IOThreadDetector;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
@@ -49,11 +48,9 @@ public class VertxCoreRecorder {
 
     static volatile VertxSupplier vertx;
 
-    public Supplier<Vertx> configureVertx(BeanContainer container, VertxConfiguration config,
+    public Supplier<Vertx> configureVertx(VertxConfiguration config,
             LaunchMode launchMode, ShutdownContext shutdown) {
         vertx = new VertxSupplier(config);
-        VertxCoreProducer producer = container.instance(VertxCoreProducer.class);
-        producer.initialize(vertx);
         if (launchMode != LaunchMode.DEVELOPMENT) {
             // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
             // could cause problem to beans that rely on Vert.x and contain shutdown tasks

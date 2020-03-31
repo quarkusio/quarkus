@@ -1,6 +1,7 @@
 package io.quarkus.arc.deployment.configproperties;
 
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.createReadMandatoryValueAndConvertIfNeeded;
+import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.createReadOptionalValueAndConvertIfNeeded;
 import static io.quarkus.arc.deployment.configproperties.ConfigPropertiesUtil.determineSingleGenericType;
 
 import java.lang.reflect.Modifier;
@@ -134,12 +135,32 @@ final class InterfaceConfigPropertiesUtil {
 
                             Type genericType = determineSingleGenericType(returnType,
                                     method.declaringClass().name());
-                            ResultHandle result = methodCreator.invokeInterfaceMethod(
-                                    MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class, String.class,
-                                            Class.class),
-                                    config, methodCreator.load(fullConfigName),
-                                    methodCreator.loadClass(genericType.name().toString()));
-                            methodCreator.returnValue(result);
+
+                            if (genericType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                                ResultHandle result = methodCreator.invokeInterfaceMethod(
+                                        MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class,
+                                                String.class,
+                                                Class.class),
+                                        config, methodCreator.load(fullConfigName),
+                                        methodCreator.loadClass(genericType.name().toString()));
+                                methodCreator.returnValue(result);
+                            } else {
+                                // convert the String value and populate an Optional with it
+                                ConfigPropertiesUtil.ReadOptionalResponse readOptionalResponse = createReadOptionalValueAndConvertIfNeeded(
+                                        fullConfigName,
+                                        genericType, method.declaringClass().name(), methodCreator, config);
+
+                                // return Optional.empty() if no config value was read
+                                readOptionalResponse.getIsPresentFalse()
+                                        .returnValue(readOptionalResponse.getIsPresentFalse().invokeStaticMethod(
+                                                MethodDescriptor.ofMethod(Optional.class, "empty", Optional.class)));
+
+                                // return Optional.of() using the converted value
+                                readOptionalResponse.getIsPresentTrue()
+                                        .returnValue(readOptionalResponse.getIsPresentTrue().invokeStaticMethod(
+                                                MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
+                                                readOptionalResponse.getValue()));
+                            }
                         } else {
                             if (defaultValueStr != null) {
                                 /*

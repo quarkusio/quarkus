@@ -94,7 +94,7 @@ final class ConfigPropertiesUtil {
         return new ReadOptionalResponse(value, isPresentTrue, isPresentBranch.falseBranch(), effectiveTypeResponse);
     }
 
-    private static EffectiveTypeResponse getEffectiveResultType(Type resultType, DotName declaringClass) {
+    static EffectiveTypeResponse getEffectiveResultType(Type resultType, DotName declaringClass) {
         if (DotNames.LIST.equals(resultType.name()) || DotNames.COLLECTION.equals(resultType.name())
                 || DotNames.SET.equals(resultType.name())) {
             /*

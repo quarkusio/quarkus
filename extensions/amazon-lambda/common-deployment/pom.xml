@@ -12,9 +12,13 @@
     </parent>
 
     <artifactId>quarkus-amazon-lambda-common-deployment</artifactId>
-    <name>Quarkus - Amazon Lambda - Deployment</name>
+    <name>Quarkus - Amazon Lambda - Common Deployment</name>
 
     <dependencies>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
@@ -30,6 +34,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-amazon-lambda-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

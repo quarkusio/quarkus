@@ -13,8 +13,20 @@
     <name>Quarkus - Deployment BOM</name>
     <packaging>pom</packaging>
 
+    <properties>
+        <commons-compress.version>1.20</commons-compress.version>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
+
+            <!-- Third party deployment dependencies -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>${commons-compress.version}</version>
+            </dependency>
+
 
             <!-- Quarkus runtime BOM -->
 

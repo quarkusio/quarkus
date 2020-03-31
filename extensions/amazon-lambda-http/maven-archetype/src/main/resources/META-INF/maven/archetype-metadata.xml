@@ -35,12 +35,5 @@ under the License.
         <include>*</include>
       </includes>
     </fileSet>
-    <fileSet filtered="true">
-      <directory></directory>
-      <includes>
-        <include>sam.jvm.yaml</include>
-        <include>sam.native.yaml</include>
-      </includes>
-    </fileSet>
   </fileSets>
 </archetype-descriptor>

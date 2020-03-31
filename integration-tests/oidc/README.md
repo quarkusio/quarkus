@@ -16,7 +16,7 @@ Additionally, you can generate a native image and run the tests for this native 
 mvn clean install -Dtest-keycloak -Ddocker -Dnative
 ```
 
-If you don't want to run Keycloak Server as a Docker container, you can start your own Keycloak server. It needs to listen on the default port `8180`.
+If you don't want to run Keycloak Server as a Docker container, you can start your own Keycloak server. It needs to listen on the default https port `8543`.
 
 You can then run the tests as follows (either with `-Dnative` or not):
 
@@ -24,4 +24,4 @@ You can then run the tests as follows (either with `-Dnative` or not):
 mvn clean install -Dtest-keycloak
 ```
 
-If you have specific requirements, you can define a specific connection URL with `-Dkeycloak.url=http://keycloak.server.domain:8180/auth`.
+If you have specific requirements, you can define a specific connection URL with `-Dkeycloak.url=https://keycloak.server.domain:8543/auth`.

@@ -91,6 +91,34 @@ public class OidcTenantConfig {
      */
     Authentication authentication = new Authentication();
 
+    /**
+     * TLS configurations
+     */
+    @ConfigItem
+    Tls tls = new Tls();
+
+    @ConfigGroup
+    public static class Tls {
+        public enum Verification {
+            /**
+             * Certificates are validated and hostname verification is enabled. This is the default value.
+             */
+            REQUIRED,
+            /**
+             * All certificated are trusted and hostname verification is disabled.
+             */
+            NONE
+        }
+
+        /**
+         * Certificate validation and hostname verification, which can be one of the following values from enum
+         * {@link Verification}. Default is required.
+         */
+        @ConfigItem(defaultValue = "REQUIRED")
+        Verification verification;
+
+    }
+
     public Optional<Duration> getConnectionDelay() {
         return connectionDelay;
     }

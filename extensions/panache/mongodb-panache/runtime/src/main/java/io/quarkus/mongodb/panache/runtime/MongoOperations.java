@@ -32,6 +32,7 @@ import com.mongodb.client.result.DeleteResult;
 import io.quarkus.arc.Arc;
 import io.quarkus.mongodb.panache.MongoEntity;
 import io.quarkus.mongodb.panache.PanacheQuery;
+import io.quarkus.mongodb.panache.PanacheUpdate;
 import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
 import io.quarkus.panache.common.Parameters;
@@ -311,7 +312,7 @@ public class MongoOperations {
 
     @SuppressWarnings("rawtypes")
     public static PanacheQuery<?> find(Class<?> entityClass, String query, Sort sort, Object... params) {
-        String bindQuery = bindQuery(entityClass, query, params);
+        String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         Document docSort = sortToDocument(sort);
         MongoCollection collection = mongoCollection(entityClass);
@@ -322,18 +323,8 @@ public class MongoOperations {
      * We should have a query like <code>{'firstname': ?1, 'lastname': ?2}</code> for native one
      * and like <code>firstname = ?1</code> for PanacheQL one.
      */
-    static String bindQuery(Class<?> clazz, String query, Object[] params) {
-        String bindQuery = null;
-
-        //determine the type of the query
-        if (query.charAt(0) == '{') {
-            //this is a native query
-            bindQuery = NativeQueryBinder.bindQuery(query, params);
-        } else {
-            //this is a PanacheQL query
-            bindQuery = PanacheQlQueryBinder.bindQuery(clazz, query, params);
-        }
-
+    static String bindFilter(Class<?> clazz, String query, Object[] params) {
+        String bindQuery = bindQuery(clazz, query, params);
         LOGGER.debug(bindQuery);
         return bindQuery;
     }
@@ -342,9 +333,42 @@ public class MongoOperations {
      * We should have a query like <code>{'firstname': :firstname, 'lastname': :lastname}</code> for native one
      * and like <code>firstname = :firstname and lastname = :lastname</code> for PanacheQL one.
      */
-    static String bindQuery(Class<?> clazz, String query, Map<String, Object> params) {
-        String bindQuery = null;
+    static String bindFilter(Class<?> clazz, String query, Map<String, Object> params) {
+        String bindQuery = bindQuery(clazz, query, params);
+        LOGGER.debug(bindQuery);
+        return bindQuery;
+    }
 
+    /**
+     * We should have a query like <code>{'firstname': ?1, 'lastname': ?2}</code> for native one
+     * and like <code>firstname = ?1 and lastname = ?2</code> for PanacheQL one.
+     * As update document needs a <code>$set</code> operator we add it if needed.
+     */
+    static String bindUpdate(Class<?> clazz, String query, Object[] params) {
+        String bindUpdate = bindQuery(clazz, query, params);
+        if (!bindUpdate.contains("$set")) {
+            bindUpdate = "{'$set':" + bindUpdate + "}";
+        }
+        LOGGER.debug(bindUpdate);
+        return bindUpdate;
+    }
+
+    /**
+     * We should have a query like <code>{'firstname': :firstname, 'lastname': :lastname}</code> for native one
+     * and like <code>firstname = :firstname and lastname = :lastname</code> for PanacheQL one.
+     * As update document needs a <code>$set</code> operator we add it if needed.
+     */
+    static String bindUpdate(Class<?> clazz, String query, Map<String, Object> params) {
+        String bindUpdate = bindQuery(clazz, query, params);
+        if (!bindUpdate.contains("$set")) {
+            bindUpdate = "{'$set':" + bindUpdate + "}";
+        }
+        LOGGER.debug(bindUpdate);
+        return bindUpdate;
+    }
+
+    private static String bindQuery(Class<?> clazz, String query, Object[] params) {
+        String bindQuery = null;
         //determine the type of the query
         if (query.charAt(0) == '{') {
             //this is a native query
@@ -353,8 +377,19 @@ public class MongoOperations {
             //this is a PanacheQL query
             bindQuery = PanacheQlQueryBinder.bindQuery(clazz, query, params);
         }
+        return bindQuery;
+    }
 
-        LOGGER.debug(bindQuery);
+    private static String bindQuery(Class<?> clazz, String query, Map<String, Object> params) {
+        String bindQuery = null;
+        //determine the type of the query
+        if (query.charAt(0) == '{') {
+            //this is a native query
+            bindQuery = NativeQueryBinder.bindQuery(query, params);
+        } else {
+            //this is a PanacheQL query
+            bindQuery = PanacheQlQueryBinder.bindQuery(clazz, query, params);
+        }
         return bindQuery;
     }
 
@@ -364,7 +399,7 @@ public class MongoOperations {
 
     @SuppressWarnings("rawtypes")
     public static PanacheQuery<?> find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        String bindQuery = bindQuery(entityClass, query, params);
+        String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         Document docSort = sortToDocument(sort);
         MongoCollection collection = mongoCollection(entityClass);
@@ -510,14 +545,14 @@ public class MongoOperations {
     }
 
     public static long count(Class<?> entityClass, String query, Object... params) {
-        String bindQuery = bindQuery(entityClass, query, params);
+        String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         MongoCollection collection = mongoCollection(entityClass);
         return collection.countDocuments(docQuery);
     }
 
     public static long count(Class<?> entityClass, String query, Map<String, Object> params) {
-        String bindQuery = bindQuery(entityClass, query, params);
+        String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         MongoCollection collection = mongoCollection(entityClass);
         return collection.countDocuments(docQuery);
@@ -546,14 +581,14 @@ public class MongoOperations {
     }
 
     public static long delete(Class<?> entityClass, String query, Object... params) {
-        String bindQuery = bindQuery(entityClass, query, params);
+        String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         MongoCollection collection = mongoCollection(entityClass);
         return collection.deleteMany(docQuery).getDeletedCount();
     }
 
     public static long delete(Class<?> entityClass, String query, Map<String, Object> params) {
-        String bindQuery = bindQuery(entityClass, query, params);
+        String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         MongoCollection collection = mongoCollection(entityClass);
         return collection.deleteMany(docQuery).getDeletedCount();
@@ -567,6 +602,32 @@ public class MongoOperations {
     public static long delete(Class<?> entityClass, Document query) {
         MongoCollection collection = mongoCollection(entityClass);
         return collection.deleteMany(query).getDeletedCount();
+    }
+
+    public static PanacheUpdate update(Class<?> entityClass, String update, Map<String, Object> params) {
+        return executeUpdate(entityClass, update, params);
+    }
+
+    public static PanacheUpdate update(Class<?> entityClass, String update, Parameters params) {
+        return update(entityClass, update, params.map());
+    }
+
+    public static PanacheUpdate update(Class<?> entityClass, String update, Object... params) {
+        return executeUpdate(entityClass, update, params);
+    }
+
+    private static PanacheUpdate executeUpdate(Class<?> entityClass, String update, Object... params) {
+        String bindUpdate = MongoOperations.bindUpdate(entityClass, update, params);
+        Document docUpdate = Document.parse(bindUpdate);
+        MongoCollection collection = mongoCollection(entityClass);
+        return new PanacheUpdateImpl(entityClass, docUpdate, collection);
+    }
+
+    private static PanacheUpdate executeUpdate(Class<?> entityClass, String update, Map<String, Object> params) {
+        String bindUpdate = MongoOperations.bindUpdate(entityClass, update, params);
+        Document docUpdate = Document.parse(bindUpdate);
+        MongoCollection collection = mongoCollection(entityClass);
+        return new PanacheUpdateImpl(entityClass, docUpdate, collection);
     }
 
     public static IllegalStateException implementationInjectionMissing() {

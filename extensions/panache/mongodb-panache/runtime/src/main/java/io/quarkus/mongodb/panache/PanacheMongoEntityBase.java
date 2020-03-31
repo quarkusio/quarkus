@@ -794,7 +794,7 @@ public abstract class PanacheMongoEntityBase {
     /**
      * Insert all given entities.
      *
-     * @param entities the entities to update
+     * @param entities the entities to insert
      * @see #persist()
      * @see #persist(Stream)
      * @see #persist(Iterable)
@@ -873,6 +873,55 @@ public abstract class PanacheMongoEntityBase {
      */
     public static void persistOrUpdate(Object firstEntity, Object... entities) {
         MongoOperations.persistOrUpdate(firstEntity, entities);
+    }
+
+    /**
+     * Update all entities of this type by the given update document, with optional indexed parameters.
+     * The returned {@link PanacheUpdate} object will allow to restrict on which document the update should be applied.
+     *
+     * @param update the update document, if it didn't contain <code>$set</code> we add it.
+     *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
+     * @param params optional sequence of indexed parameters
+     * @return a new {@link PanacheUpdate} instance for the given update document
+     * @see #update(String, Map)
+     * @see #update(String, Parameters)
+     */
+    @GenerateBridge
+    public static PanacheUpdate update(String update, Object... params) {
+        throw MongoOperations.implementationInjectionMissing();
+    }
+
+    /**
+     * Update all entities of this type by the given update document, with named parameters.
+     * The returned {@link PanacheUpdate} object will allow to restrict on which document the update should be applied.
+     *
+     * @param update the update document, if it didn't contain <code>$set</code> we add it.
+     *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
+     * @param params {@link Map} of named parameters
+     * @return a new {@link PanacheUpdate} instance for the given update document
+     * @see #update(String, Object...)
+     * @see #update(String, Parameters)
+     *
+     */
+    @GenerateBridge
+    public static PanacheUpdate update(String update, Map<String, Object> params) {
+        throw MongoOperations.implementationInjectionMissing();
+    }
+
+    /**
+     * Update all entities of this type by the given update document, with named parameters.
+     * The returned {@link PanacheUpdate} object will allow to restrict on which document the update should be applied.
+     *
+     * @param update the update document, if it didn't contain <code>$set</code> we add it.
+     *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
+     * @param params {@link Parameters} of named parameters
+     * @return a new {@link PanacheUpdate} instance for the given update document
+     * @see #update(String, Object...)
+     * @see #update(String, Map)
+     */
+    @GenerateBridge
+    public static PanacheUpdate update(String update, Parameters params) {
+        throw MongoOperations.implementationInjectionMissing();
     }
 
     /**

@@ -76,4 +76,11 @@ public class PersonEntityResource {
     public void deleteAll() {
         PersonEntity.deleteAll();
     }
+
+    @POST
+    @Path("/rename")
+    public Response rename(@QueryParam("previousName") String previousName, @QueryParam("newName") String newName) {
+        PersonEntity.update("lastname", newName).where("lastname", previousName);
+        return Response.ok().build();
+    }
 }

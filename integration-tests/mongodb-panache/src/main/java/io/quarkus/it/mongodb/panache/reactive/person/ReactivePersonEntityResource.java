@@ -77,4 +77,11 @@ public class ReactivePersonEntityResource {
     public Uni<Void> deleteAll() {
         return ReactivePersonEntity.deleteAll().map(l -> null);
     }
+
+    @POST
+    @Path("/rename")
+    public Uni<Response> rename(@QueryParam("previousName") String previousName, @QueryParam("newName") String newName) {
+        return ReactivePersonEntity.update("lastname", newName).where("lastname", previousName)
+                .map(count -> Response.ok().build());
+    }
 }

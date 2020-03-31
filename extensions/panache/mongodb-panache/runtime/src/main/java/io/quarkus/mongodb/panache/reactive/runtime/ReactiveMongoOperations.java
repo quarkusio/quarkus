@@ -30,6 +30,7 @@ import io.quarkus.mongodb.panache.MongoEntity;
 import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
+import io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
@@ -335,7 +336,7 @@ public class ReactiveMongoOperations {
 
     @SuppressWarnings("rawtypes")
     public static ReactivePanacheQuery<?> find(Class<?> entityClass, String query, Sort sort, Object... params) {
-        String bindQuery = bindQuery(entityClass, query, params);
+        String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         Document docSort = sortToDocument(sort);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
@@ -346,6 +347,50 @@ public class ReactiveMongoOperations {
      * We should have a query like <code>{'firstname': ?1, 'lastname': ?2}</code> for native one
      * and like <code>firstname = ?1</code> for PanacheQL one.
      */
+    static String bindFilter(Class<?> clazz, String query, Object[] params) {
+        String bindQuery = bindQuery(clazz, query, params);
+        LOGGER.debug(bindQuery);
+        return bindQuery;
+    }
+
+    /**
+     * We should have a query like <code>{'firstname': :firstname, 'lastname': :lastname}</code> for native one
+     * and like <code>firstname = :firstname and lastname = :lastname</code> for PanacheQL one.
+     */
+    static String bindFilter(Class<?> clazz, String query, Map<String, Object> params) {
+        String bindQuery = bindQuery(clazz, query, params);
+        LOGGER.debug(bindQuery);
+        return bindQuery;
+    }
+
+    /**
+     * We should have a query like <code>{'firstname': ?1, 'lastname': ?2}</code> for native one
+     * and like <code>firstname = ?1 and lastname = ?2</code> for PanacheQL one.
+     * As update document needs a <code>$set</code> operator we add it if needed.
+     */
+    static String bindUpdate(Class<?> clazz, String query, Object[] params) {
+        String bindUpdate = bindQuery(clazz, query, params);
+        if (!bindUpdate.contains("$set")) {
+            bindUpdate = "{'$set':" + bindUpdate + "}";
+        }
+        LOGGER.debug(bindUpdate);
+        return bindUpdate;
+    }
+
+    /**
+     * We should have a query like <code>{'firstname': :firstname, 'lastname': :lastname}</code> for native one
+     * and like <code>firstname = :firstname and lastname = :lastname</code> for PanacheQL one.
+     * As update document needs a <code>$set</code> operator we add it if needed.
+     */
+    static String bindUpdate(Class<?> clazz, String query, Map<String, Object> params) {
+        String bindUpdate = bindQuery(clazz, query, params);
+        if (!bindUpdate.contains("$set")) {
+            bindUpdate = "{'$set':" + bindUpdate + "}";
+        }
+        LOGGER.debug(bindUpdate);
+        return bindUpdate;
+    }
+
     static String bindQuery(Class<?> clazz, String query, Object[] params) {
         String bindQuery = null;
 
@@ -358,14 +403,9 @@ public class ReactiveMongoOperations {
             bindQuery = PanacheQlQueryBinder.bindQuery(clazz, query, params);
         }
 
-        LOGGER.debug(bindQuery);
         return bindQuery;
     }
 
-    /**
-     * We should have a query like <code>{'firstname': :firstname, 'lastname': :lastname}</code> for native one
-     * and like <code>firstname = :firstname and lastname = :lastname</code> for PanacheQL one.
-     */
     static String bindQuery(Class<?> clazz, String query, Map<String, Object> params) {
         String bindQuery = null;
 
@@ -378,7 +418,6 @@ public class ReactiveMongoOperations {
             bindQuery = PanacheQlQueryBinder.bindQuery(clazz, query, params);
         }
 
-        LOGGER.debug(bindQuery);
         return bindQuery;
     }
 
@@ -388,7 +427,7 @@ public class ReactiveMongoOperations {
 
     @SuppressWarnings("rawtypes")
     public static ReactivePanacheQuery<?> find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        String bindQuery = bindQuery(entityClass, query, params);
+        String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         Document docSort = sortToDocument(sort);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
@@ -534,14 +573,14 @@ public class ReactiveMongoOperations {
     }
 
     public static Uni<Long> count(Class<?> entityClass, String query, Object... params) {
-        String bindQuery = bindQuery(entityClass, query, params);
+        String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return collection.countDocuments(docQuery);
     }
 
     public static Uni<Long> count(Class<?> entityClass, String query, Map<String, Object> params) {
-        String bindQuery = bindQuery(entityClass, query, params);
+        String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return collection.countDocuments(docQuery);
@@ -569,14 +608,14 @@ public class ReactiveMongoOperations {
     }
 
     public static Uni<Long> delete(Class<?> entityClass, String query, Object... params) {
-        String bindQuery = bindQuery(entityClass, query, params);
+        String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         return collection.deleteMany(docQuery).map(deleteResult -> deleteResult.getDeletedCount());
     }
 
     public static Uni<Long> delete(Class<?> entityClass, String query, Map<String, Object> params) {
-        String bindQuery = bindQuery(entityClass, query, params);
+        String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         return collection.deleteMany(docQuery).map(deleteResult -> deleteResult.getDeletedCount());
@@ -590,6 +629,32 @@ public class ReactiveMongoOperations {
     public static Uni<Long> delete(Class<?> entityClass, Document query) {
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         return collection.deleteMany(query).map(deleteResult -> deleteResult.getDeletedCount());
+    }
+
+    public static ReactivePanacheUpdate update(Class<?> entityClass, String update, Map<String, Object> params) {
+        return executeUpdate(entityClass, update, params);
+    }
+
+    public static ReactivePanacheUpdate update(Class<?> entityClass, String update, Parameters params) {
+        return update(entityClass, update, params.map());
+    }
+
+    public static ReactivePanacheUpdate update(Class<?> entityClass, String update, Object... params) {
+        return executeUpdate(entityClass, update, params);
+    }
+
+    private static ReactivePanacheUpdate executeUpdate(Class<?> entityClass, String update, Object... params) {
+        String bindUpdate = ReactiveMongoOperations.bindUpdate(entityClass, update, params);
+        Document docUpdate = Document.parse(bindUpdate);
+        ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
+        return new ReactivePanacheUpdateImpl(entityClass, docUpdate, collection);
+    }
+
+    private static ReactivePanacheUpdate executeUpdate(Class<?> entityClass, String update, Map<String, Object> params) {
+        String bindUpdate = ReactiveMongoOperations.bindUpdate(entityClass, update, params);
+        Document docUpdate = Document.parse(bindUpdate);
+        ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
+        return new ReactivePanacheUpdateImpl(entityClass, docUpdate, collection);
     }
 
     public static IllegalStateException implementationInjectionMissing() {

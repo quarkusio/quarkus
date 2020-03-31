@@ -28,7 +28,7 @@ public class LoopSectionHelper implements SectionHelper {
     private final Expression iterable;
 
     LoopSectionHelper(String alias, Expression iterable) {
-        this.alias = alias.equals(Parameter.EMPTY) ? DEFAULT_ALIAS : alias;
+        this.alias = Parameter.EMPTY.equals(alias) ? DEFAULT_ALIAS : alias;
         this.iterable = Objects.requireNonNull(iterable);
     }
 

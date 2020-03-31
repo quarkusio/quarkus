@@ -25,15 +25,15 @@ import sun.misc.SignalHandler;
  * Manages the lifecycle of a Quarkus application.
  *
  * The {@link Application} class is responsible for starting and stopping the application,
- * but nothing else. This class can be used to run both persistent application that will run
+ * but nothing else. This class can be used to run both persistent applications that will run
  * till they receive a signal, and command mode applications that will run until the main method
- * returns. This class registers a shutdown hook to properly shut down the application, and handled
+ * returns. This class registers a shutdown hook to properly shut down the application, and handles
  * exiting with the supplied exit code.
  *
  * This class should be used to run production and dev mode applications, while test use cases will
  * likely want to just use {@link Application} directly.
  *
- * This class is static, there can only every be a single application instance running at any time.
+ * This class is static, there can only ever be a single application instance running at any time.
  *
  */
 public class ApplicationLifecycleManager {

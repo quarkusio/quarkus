@@ -78,9 +78,12 @@ public class StartupActionImpl implements StartupAction {
      * of the JVM will exit when the app stops.
      */
     public RunningQuarkusApplication runMainClass(String... args) throws Exception {
-        //first
+
+        //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
 
+        //this clears any old state, and gets ready to start again
+        ApplicationStateNotification.reset();
         //we have our class loaders
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(runtimeClassLoader);
@@ -97,7 +100,10 @@ public class StartupActionImpl implements StartupAction {
                         start.invoke(null, (Object) args);
                     } catch (Throwable e) {
                         log.error("Error running Quarkus", e);
-                        ApplicationStateNotification.notifyStartupComplete(e.getCause());
+                        //this can happen if we did not make it to application init
+                        if (ApplicationStateNotification.getState() == ApplicationStateNotification.State.INITIAL) {
+                            ApplicationStateNotification.notifyStartupFailed(e);
+                        }
                     }
                 }
             }, "Quarkus Main Thread");

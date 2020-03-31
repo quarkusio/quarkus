@@ -94,14 +94,14 @@ public abstract class Application implements Closeable {
             } finally {
                 stateLock.unlock();
             }
-            ApplicationStateNotification.notifyStartupComplete(t);
+            ApplicationStateNotification.notifyStartupFailed(t);
             throw t;
         }
         stateLock.lock();
         try {
             state = ST_STARTED;
             stateCond.signalAll();
-            ApplicationStateNotification.notifyStartupComplete(null);
+            ApplicationStateNotification.notifyStartupComplete();
         } finally {
             stateLock.unlock();
         }

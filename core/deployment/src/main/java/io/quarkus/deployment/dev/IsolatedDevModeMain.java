@@ -29,7 +29,6 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
-import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
 import io.quarkus.runtime.ApplicationLifecycleManager;
@@ -120,9 +119,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     public synchronized void restartApp(Set<String> changedResources) {
         restarting = true;
         stop();
-
-        //this clears any old state
-        ApplicationStateNotification.notifyApplicationStopped();
         restarting = false;
         Timing.restart(curatedApplication.getAugmentClassLoader());
         deploymentProblem = null;
@@ -133,7 +129,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             try {
                 StartupAction start = augmentAction.reloadExistingApplication(changedResources);
                 runner = start.runMainClass();
-                ApplicationStateNotification.waitForApplicationStart();
             } catch (Throwable t) {
                 deploymentProblem = t;
                 log.error("Failed to start quarkus", t);

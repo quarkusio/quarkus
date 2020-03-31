@@ -16,12 +16,6 @@
 
     <dependencies>
         <dependency>
-            <!-- TMP workaround for IDE problem, DO NOT MERGE-->
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bootstrap-core</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
           <groupId>jakarta.annotation</groupId>
           <artifactId>jakarta.annotation-api</artifactId>
         </dependency>

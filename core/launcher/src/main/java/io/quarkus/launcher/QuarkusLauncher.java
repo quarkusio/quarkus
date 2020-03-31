@@ -14,7 +14,7 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
  * This has a number of hacks to make it work, and is always going to be a bit fragile, as it is hard to make something
  * that will work 100% of the time as we just don't have enough information.
  * <p>
- * The launcher module has all it's dependencies shaded, so it is effectively self contained. This allows deployment time
+ * The launcher module has all its dependencies shaded, so it is effectively self contained. This allows deployment time
  * code to not leak into runtime code, as the launcher artifact is explicitly excluded from the production build via a
  * hard coded exclusion.
  */

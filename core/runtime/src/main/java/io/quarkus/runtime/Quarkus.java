@@ -13,7 +13,7 @@ import io.quarkus.launcher.QuarkusLauncher;
  * If this application has already been generated then it will be run directly, otherwise it will be launched
  * in dev mode and augmentation will be done automatically.
  *
- * If an application does not want to immediatly shut down then {@link #waitForExit()} should be called, which
+ * If an application does not want to immediately shut down then {@link #waitForExit()} should be called, which
  * will block until shutdown is initiated, either from an external signal or by a call to one of the exit methods.
  *
  * If no main class is specified then one is generated automatically that will simply wait to exit after Quarkus is booted.

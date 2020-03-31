@@ -42,6 +42,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
+import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -135,6 +136,8 @@ class MainClassBuildStep {
         tryBlock.returnValue(null);
 
         CatchBlockCreator cb = tryBlock.addCatch(Throwable.class);
+        cb.invokeStaticMethod(ofMethod(ApplicationStateNotification.class, "notifyStartupFailed", void.class, Throwable.class),
+                cb.getCaughtException());
         cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
         cb.throwException(RuntimeException.class, "Failed to start quarkus", cb.getCaughtException());
 

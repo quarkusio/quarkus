@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * 
  * There are two different ways this annotation can be used. The first is to place it
  * on a class with a Java main method. This main method will be the default entry point of
- * the application. Note that Quarkus will not be started when this is method is called,
+ * the application. Note that Quarkus will not be started when this method is called,
  * this method must launch Quarkus with the {@link io.quarkus.runtime.Quarkus#run(Class, String...)}
  * method.
  * 

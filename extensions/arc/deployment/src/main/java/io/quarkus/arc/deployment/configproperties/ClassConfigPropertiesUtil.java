@@ -268,11 +268,27 @@ final class ClassConfigPropertiesUtil {
                             field.declaringClass().name());
 
                     // config.getOptionalValue
-                    ResultHandle setterValue = methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class, String.class,
-                                    Class.class),
-                            config, methodCreator.load(fullConfigName), methodCreator.loadClass(genericType.name().toString()));
-                    createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
+                    if (genericType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                        ResultHandle setterValue = methodCreator.invokeInterfaceMethod(
+                                MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class, String.class,
+                                        Class.class),
+                                config, methodCreator.load(fullConfigName),
+                                methodCreator.loadClass(genericType.name().toString()));
+                        createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
+                    } else {
+                        // convert the String value and populate an Optional with it
+                        ReadOptionalResponse readOptionalResponse = createReadOptionalValueAndConvertIfNeeded(fullConfigName,
+                                genericType, field.declaringClass().name(), methodCreator, config);
+                        createWriteValue(readOptionalResponse.getIsPresentTrue(), configObject, field, setter, useFieldAccess,
+                                readOptionalResponse.getIsPresentTrue().invokeStaticMethod(
+                                        MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
+                                        readOptionalResponse.getValue()));
+
+                        // set Optional.empty if the value isn't set
+                        createWriteValue(readOptionalResponse.getIsPresentFalse(), configObject, field, setter, useFieldAccess,
+                                readOptionalResponse.getIsPresentFalse().invokeStaticMethod(
+                                        MethodDescriptor.ofMethod(Optional.class, "empty", Optional.class)));
+                    }
                 } else {
                     /*
                      * We want to support cases where the Config class defines a default value for fields

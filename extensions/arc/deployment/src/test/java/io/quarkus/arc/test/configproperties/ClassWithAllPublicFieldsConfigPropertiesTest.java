@@ -27,7 +27,7 @@ public class ClassWithAllPublicFieldsConfigPropertiesTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(DummyBean.class, DummyProperties.class)
                     .addAsResource(new StringAsset(
-                            "dummy.name=quarkus\ndummy.numbers=1,2,3,4\ndummy.bool-with-default=true\ndummy.optional-int=100"),
+                            "dummy.name=quarkus\ndummy.numbers=1,2,3,4\ndummy.bool-with-default=true\ndummy.optional-int=100\ndummy.optional-int-list=1,2"),
                             "application.properties"));
 
     @Inject
@@ -42,6 +42,9 @@ public class ClassWithAllPublicFieldsConfigPropertiesTest {
         assertTrue(dummyBean.getOptionalInt().isPresent());
         assertEquals(100, dummyBean.getOptionalInt().get());
         assertFalse(dummyBean.getOptionalString().isPresent());
+        assertFalse(dummyBean.getOptionalStringList().isPresent());
+        assertTrue(dummyBean.getOptionalIntList().isPresent());
+        assertEquals(Arrays.asList(1, 2), dummyBean.getOptionalIntList().get());
     }
 
     @Singleton
@@ -72,6 +75,14 @@ public class ClassWithAllPublicFieldsConfigPropertiesTest {
         Optional<String> getOptionalString() {
             return dummyProperties.optionalString;
         }
+
+        Optional<List<String>> getOptionalStringList() {
+            return dummyProperties.optionalStringList;
+        }
+
+        Optional<List<Integer>> getOptionalIntList() {
+            return dummyProperties.optionalIntList;
+        }
     }
 
     @ConfigProperties(prefix = "dummy")
@@ -83,5 +94,7 @@ public class ClassWithAllPublicFieldsConfigPropertiesTest {
         public List<Integer> numbers;
         public Optional<Integer> optionalInt;
         public Optional<String> optionalString;
+        public Optional<List<String>> optionalStringList;
+        public Optional<List<Integer>> optionalIntList;
     }
 }

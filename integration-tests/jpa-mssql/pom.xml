@@ -17,6 +17,7 @@
     <properties>
         <mssqldb.url>jdbc:sqlserver://localhost:1433;databaseName=tempdb</mssqldb.url>
         <mssqldb.sa-password>ActuallyRequired11Complexity</mssqldb.sa-password>
+        <mssqldb.image>microsoft/mssql-server-linux:2017-CU12</mssqldb.image>
     </properties>
 
     <dependencies>
@@ -185,7 +186,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>microsoft/mssql-server-linux:2017-CU12</name>
+                                    <name>${mssqldb.image}</name>
                                     <alias>quarkus-test-mssqldb</alias>
                                     <run>
                                         <network>

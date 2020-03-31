@@ -16,6 +16,7 @@
 
     <properties>
         <mariadb.url>jdbc:mariadb://localhost:3306/hibernate_orm_test</mariadb.url>
+        <mariadb.image>mariadb:10.4</mariadb.image>
     </properties>
 
     <dependencies>
@@ -174,7 +175,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>mariadb:10.4</name>
+                                    <name>${mariadb.image}</name>
                                     <alias>quarkus-test-mariadb</alias>
                                     <run>
                                         <network>

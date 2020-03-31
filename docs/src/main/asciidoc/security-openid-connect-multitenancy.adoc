@@ -165,7 +165,7 @@ In order to set-up the `tenant-a` configuration to use Google OpenID Provider, y
 Once you create the project and have your project's `client_id` and `client_secret`, you can try to configure a tenant as follows:
 
 [source, properties]
----
+----
 # Tenant configuration using Google OpenID Provider
 quarkus.oidc.tenant-b.auth-server-url=https://accounts.google.com
 quarkus.oidc.tenant-b.application-type=web-app
@@ -173,7 +173,7 @@ quarkus.oidc.tenant-b.client-id={GOOGLE_CLIENT_ID}
 quarkus.oidc.tenant-b.credentials.secret={GOOGLE_CLIENT_SECRET}
 quarkus.oidc.tenant-b.token.issuer=https://accounts.google.com
 quarkus.oidc.tenant-b.authentication.scopes=email,profile,openid
----
+----
 
 == Starting and Configuring the Keycloak Server
 

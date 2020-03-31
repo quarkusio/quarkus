@@ -1,10 +1,6 @@
 package io.quarkus.mongodb.panache.reactive.runtime;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -46,28 +42,8 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
 
     @Override
     public <T> ReactivePanacheQuery<T> project(Class<T> type) {
-        Set<String> fieldNames = new HashSet<>();
-        // gather field names from getters
-        for (Method method : type.getMethods()) {
-            if (method.getName().startsWith("get") && !method.getName().equals("getClass")) {
-                String fieldName = MongoPropertyUtil.decapitalize(method.getName().substring(3));
-                fieldNames.add(fieldName);
-            }
-        }
-
-        // gather field names from public fields
-        for (Field field : type.getFields()) {
-            fieldNames.add(field.getName());
-        }
-
-        // replace fields that have @BsonProperty mappings
-        Map<String, String> replacementMap = MongoPropertyUtil.getReplacementMap(type);
-        for (Map.Entry<String, String> entry : replacementMap.entrySet()) {
-            if (fieldNames.contains(entry.getKey())) {
-                fieldNames.remove(entry.getKey());
-                fieldNames.add(entry.getValue());
-            }
-        }
+        // collect field names from public fields and getters
+        Set<String> fieldNames = MongoPropertyUtil.collectFields(type);
 
         // create the projection document
         this.projections = new Document();

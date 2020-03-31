@@ -881,6 +881,55 @@ public interface PanacheMongoRepositoryBase<Entity, Id> {
     }
 
     /**
+     * Update all entities of this type by the given update document, with optional indexed parameters.
+     * The returned {@link PanacheUpdate} object will allow to restrict on which documents the update should be applied.
+     *
+     * @param update the update document, if it didn't contain <code>$set</code> we add it.
+     *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
+     * @param params optional sequence of indexed parameters
+     * @return a new {@link PanacheUpdate} instance for the given update document
+     * @see #update(String, Map)
+     * @see #update(String, Parameters)
+     */
+    @GenerateBridge
+    public default PanacheUpdate update(String update, Object... params) {
+        throw MongoOperations.implementationInjectionMissing();
+    }
+
+    /**
+     * Update all entities of this type by the given update document, with named parameters.
+     * The returned {@link PanacheUpdate} object will allow to restrict on which documents the update should be applied.
+     *
+     * @param update the update document, if it didn't contain <code>$set</code> we add it.
+     *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
+     * @param params {@link Map} of named parameters
+     * @return a new {@link PanacheUpdate} instance for the given update document
+     * @see #update(String, Object...)
+     * @see #update(String, Parameters)
+     *
+     */
+    @GenerateBridge
+    public default PanacheUpdate update(String update, Map<String, Object> params) {
+        throw MongoOperations.implementationInjectionMissing();
+    }
+
+    /**
+     * Update all entities of this type by the given update document, with named parameters.
+     * The returned {@link PanacheUpdate} object will allow to restrict on which document the update should be applied.
+     *
+     * @param update the update document, if it didn't contain <code>$set</code> we add it.
+     *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
+     * @param params {@link Parameters} of named parameters
+     * @return a new {@link PanacheUpdate} instance for the given update document
+     * @see #update(String, Object...)
+     * @see #update(String, Map)
+     */
+    @GenerateBridge
+    public default PanacheUpdate update(String update, Parameters params) {
+        throw MongoOperations.implementationInjectionMissing();
+    }
+
+    /**
      * Allow to access the underlying Mongo Collection
      */
     @GenerateBridge

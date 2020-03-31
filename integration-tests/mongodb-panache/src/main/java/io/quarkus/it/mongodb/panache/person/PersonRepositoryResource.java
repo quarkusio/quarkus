@@ -81,4 +81,11 @@ public class PersonRepositoryResource {
     public void deleteAll() {
         personRepository.deleteAll();
     }
+
+    @POST
+    @Path("/rename")
+    public Response rename(@QueryParam("previousName") String previousName, @QueryParam("newName") String newName) {
+        personRepository.update("lastname", newName).where("lastname", previousName);
+        return Response.ok().build();
+    }
 }

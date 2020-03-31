@@ -288,6 +288,7 @@ class Parser implements Function<String, Expression> {
                     typeInfoStack.addFirst(typeInfos);
                 }
 
+                // A new block - stop ignoring the block content
                 ignoreContent = false;
 
             } else {
@@ -344,6 +345,7 @@ class Parser implements Function<String, Expression> {
                             "section block end tag [" + name + "] does not match the start tag [" + block.getLabel() + "]");
                 }
                 section.addBlock(sectionBlockStack.pop().build());
+                // Ignore the block content until a next block starts or the current section ends
                 ignoreContent = true;
             } else {
                 // Section end
@@ -353,7 +355,11 @@ class Parser implements Function<String, Expression> {
                 }
                 section = sectionStack.pop();
                 if (!ignoreContent) {
+                    // Add the current block to the current section
                     section.addBlock(sectionBlockStack.pop().build());
+                } else {
+                    // The current section ends - stop ignoring the block content
+                    ignoreContent = false;
                 }
                 sectionBlockStack.peek().addNode(section.build());
             }

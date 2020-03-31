@@ -22,7 +22,7 @@ import org.wildfly.security.authz.Roles;
  */
 public class DefaultRoleDecoder {
 
-    @ConfigProperty(name = "quarkus.security.default-role-decoder-name", defaultValue="groups")
+    @ConfigProperty(name = "quarkus.security.roles-claim-name", defaultValue = "groups")
     String groupsAttribute;
 
     @Inject

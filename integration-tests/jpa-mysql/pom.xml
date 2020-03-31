@@ -16,6 +16,7 @@
 
     <properties>
         <mysql.url>jdbc:mysql://localhost:3306/hibernate_orm_test</mysql.url>
+        <mysql.image>mysql:8.0.17</mysql.image>
     </properties>
 
     <dependencies>
@@ -175,7 +176,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>mysql:8.0.17</name>
+                                    <name>${mysql.image}</name>
                                     <alias>quarkus-test-mysql</alias>
                                     <run>
                                         <ports>

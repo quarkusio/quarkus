@@ -158,6 +158,7 @@ And let's build the native executable again:
 ./mvnw clean install -Pnative
 ```
 
+[#the-truststore-path]
 == The TrustStore path
 
 You haven't noticed anything but, while building the image,
@@ -230,8 +231,5 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0", "-Djavax.net.ssl.trustStore
 
 We make building native executable easy and, even if the SSL support in GraalVM is still requiring some serious thinking,
 it should be mostly transparent when using Quarkus.
-
-Hopefully, the situation will improve in the future:
-the native executables size overhead will be reduced and the SunCE library might not be needed anymore.
 
 We track GraalVM progress on a regular basis so we will promptly integrate in Quarkus any improvement with respect to SSL support.

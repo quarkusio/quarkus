@@ -130,8 +130,10 @@ You can of course create a native image using the instructions of the link:build
 Quarkus has more Spring compatibility features. See the following guides for more details:
 
 * link:spring-di[Quarkus - Extension for Spring DI]
+* link:spring-web[Quarkus - Extension for Spring Web]
 * link:spring-data-jpa[Quarkus - Extension for Spring Data JPA]
 * link:spring-security[Quarkus - Extension for Spring Security]
+* link:spring-boot-properties[Quarkus - Extension for Spring Boot properties]
 
 [[spring-cloud-config-client-configuration-reference]]
 == Spring Cloud Config Client Reference

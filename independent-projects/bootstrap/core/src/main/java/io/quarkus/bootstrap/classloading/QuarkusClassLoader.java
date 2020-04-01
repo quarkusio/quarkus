@@ -149,7 +149,14 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 if (c.getClassLoader() == this) {
                     //if the service class is defined by this class loader then any resources that could be loaded
                     //by the parent would have a different copy of the service class
-                    banned = true;
+                    ClassLoader parent = getParent();
+                    if (parent != null) {
+                        try {
+                            getParent().loadClass(name.substring(META_INF_SERVICES.length()));
+                            banned = true;
+                        } catch (ClassNotFoundException ignored) {
+                        }
+                    }
                 }
             } catch (ClassNotFoundException ignored) {
                 //ignore
@@ -256,7 +263,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     /**
      * This method is needed to make packages work correctly on JDK9+, as it will be called
      * to load the package-info class.
-     * 
+     *
      * @param moduleName
      * @param name
      * @return
@@ -491,7 +498,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
          *
          * Banned elements have the highest priority, a banned element will never be loaded,
          * and resources will never appear to be present.
-         * 
+         *
          * @param element The element to add
          * @return This builder
          */
@@ -502,7 +509,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
         /**
          * Sets any bytecode transformers that should be applied to this Class Loader
-         * 
+         *
          * @param bytecodeTransformers
          */
         public void setBytecodeTransformers(
@@ -533,7 +540,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
         /**
          * Builds the class loader
-         * 
+         *
          * @return The class loader
          */
         public QuarkusClassLoader build() {

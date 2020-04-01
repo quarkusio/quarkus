@@ -1,6 +1,5 @@
 package io.quarkus.funqy.runtime.bindings.knative;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,6 +11,7 @@ import javax.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -99,47 +99,71 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
 
     private void vanillaMode(RoutingContext routingContext, ResponseProcessing handler) {
         routingContext.request().bodyHandler(buff -> {
-            Object input = null;
-            if (buff.length() > 0) {
-                ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
-                ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName());
-                try {
-                    input = reader.readValue((InputStream) in);
-                } catch (Exception e) {
-                    log.error("Failed to unmarshal input", e);
-                    routingContext.fail(400);
-                    return;
-                }
-            }
-            Object finalInput = input;
-            executor.execute(() -> {
-                try {
-                    FunqyServerResponse response = dispatch(routingContext, invoker, finalInput);
-                    if (invoker.hasOutput()) {
-                        routingContext.response().setStatusCode(200);
-                        handler.handle();
-                        ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
-                        routingContext.response().putHeader("Content-Type", "application/json");
-                        routingContext.response().end(writer.writeValueAsString(response.getOutput()));
-                    } else {
-                        routingContext.response().setStatusCode(204);
-                        handler.handle();
-                        routingContext.response().end();
+            try {
+                Object input = null;
+                if (buff.length() > 0) {
+                    ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
+                    ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName());
+                    try {
+                        input = reader.readValue((InputStream) in);
+                    } catch (JsonProcessingException e) {
+                        log.error("Failed to unmarshal input", e);
+                        routingContext.fail(400);
+                        return;
                     }
-                } catch (Exception e) {
-                    routingContext.fail(e);
                 }
-            });
+                Object finalInput = input;
+                executor.execute(() -> {
+                    try {
+                        FunqyServerResponse response = dispatch(routingContext, invoker, finalInput);
+                        if (invoker.hasOutput()) {
+                            routingContext.response().setStatusCode(200);
+                            handler.handle();
+                            ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
+                            routingContext.response().putHeader("Content-Type", "application/json");
+                            try {
+                                routingContext.response().end(writer.writeValueAsString(response.getOutput()));
+                            } catch (JsonProcessingException e) {
+                                log.error("Failed to unmarshal input", e);
+                                routingContext.fail(400);
+                                return;
+                            }
+                        } else {
+                            routingContext.response().setStatusCode(204);
+                            handler.handle();
+                            routingContext.response().end();
+                        }
+                    } catch (Throwable t) {
+                        log.error(t);
+                        routingContext.fail(500, t);
+                    }
+                });
+            } catch (Throwable t) {
+                log.error(t);
+                routingContext.fail(500, t);
+            }
         });
     }
 
     private void structuredMode(RoutingContext routingContext) {
         routingContext.request().bodyHandler(buff -> {
-            ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
             try {
+                ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
                 Object input = null;
-                JsonNode event = mapper.reader().readTree((InputStream) in);
-                String type = event.get("datacontenttype").asText();
+                JsonNode event;
+                try {
+                    event = mapper.reader().readTree((InputStream) in);
+                } catch (JsonProcessingException e) {
+                    log.error("Failed to unmarshal input", e);
+                    routingContext.fail(400);
+                    return;
+                }
+                JsonNode dct = event.get("datacontenttype");
+                if (dct == null) {
+                    routingContext.fail(400);
+                    return;
+                }
+                String type = dct.asText();
                 if (type != null) {
                     if (!type.equals("application/json")) {
                         routingContext.fail(406);
@@ -151,7 +175,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                         ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName());
                         try {
                             input = reader.readValue(data);
-                        } catch (Exception e) {
+                        } catch (JsonProcessingException e) {
                             log.error("Failed to unmarshal input", e);
                             routingContext.fail(400);
                             return;
@@ -161,36 +185,42 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 }
                 Object finalInput = input;
                 executor.execute(() -> {
-                    FunqyServerResponse response = dispatch(routingContext, invoker, finalInput);
-                    Map<String, Object> responseEvent = new HashMap<>();
-                    responseEvent.put("id", getResponseId());
-                    responseEvent.put("specversion", "1.0");
-                    responseEvent.put("source", getResponseSource());
-                    responseEvent.put("type", getResponseType());
-                    routingContext.response().setStatusCode(200);
-                    if (invoker.hasOutput()) {
-                        responseEvent.put("datacontenttype", "application/json");
-                        responseEvent.put("data", response.getOutput());
-                        ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
-                        try {
-                            routingContext.response().end(mapper.writer().writeValueAsString(responseEvent));
-                        } catch (Exception e) {
-                            log.error("Failed to marshal", e);
-                            routingContext.fail(e);
+                    try {
+                        FunqyServerResponse response = dispatch(routingContext, invoker, finalInput);
+                        Map<String, Object> responseEvent = new HashMap<>();
+                        responseEvent.put("id", getResponseId());
+                        responseEvent.put("specversion", "1.0");
+                        responseEvent.put("source", getResponseSource());
+                        responseEvent.put("type", getResponseType());
+                        routingContext.response().setStatusCode(200);
+                        if (invoker.hasOutput()) {
+                            responseEvent.put("datacontenttype", "application/json");
+                            responseEvent.put("data", response.getOutput());
+                            ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
+                            try {
+                                routingContext.response().end(mapper.writer().writeValueAsString(responseEvent));
+                            } catch (JsonProcessingException e) {
+                                log.error("Failed to marshal", e);
+                                routingContext.fail(400);
+                                return;
+                            }
+                        } else {
+                            try {
+                                routingContext.response().end(mapper.writer().writeValueAsString(responseEvent));
+                            } catch (JsonProcessingException e) {
+                                log.error("Failed to marshal", e);
+                                routingContext.fail(400);
+                                return;
+                            }
                         }
-                    } else {
-                        try {
-                            routingContext.response().end(mapper.writer().writeValueAsString(responseEvent));
-                        } catch (Exception e) {
-                            routingContext.fail(e);
-                        }
+                    } catch (Throwable t) {
+                        log.error(t);
+                        routingContext.fail(500, t);
                     }
-
                 });
-            } catch (IOException e) {
-                log.error("Failed to unmarshal input", e);
-                routingContext.fail(400);
-                return;
+            } catch (Throwable t) {
+                log.error(t);
+                routingContext.fail(500, t);
             }
         });
     }

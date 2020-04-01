@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
 import io.netty.util.AsciiString;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.SocketAddressImpl;
@@ -154,6 +155,7 @@ class ForwardedParser {
         }
 
         host = host + (port >= 0 ? ":" + port : "");
+        delegate.headers().set(HttpHeaders.HOST, host);
         absoluteURI = scheme + "://" + host + delegate.uri();
     }
 
@@ -161,6 +163,7 @@ class ForwardedParser {
         int portSeparatorIdx = hostToParse.lastIndexOf(':');
         if (portSeparatorIdx > hostToParse.lastIndexOf(']')) {
             host = hostToParse.substring(0, portSeparatorIdx);
+            delegate.headers().set(HttpHeaders.HOST, host);
             port = parsePort(hostToParse.substring(portSeparatorIdx + 1), defaultPort);
         } else {
             host = hostToParse;

@@ -139,6 +139,8 @@ public class HibernateSearchElasticsearchRecorder {
                     elasticsearchBackendConfig.maxConnections);
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.MAX_CONNECTIONS_PER_ROUTE,
                     elasticsearchBackendConfig.maxConnectionsPerRoute);
+            addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.THREAD_POOL_SIZE,
+                    elasticsearchBackendConfig.threadPool.size);
 
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_ENABLED,
                     elasticsearchBackendConfig.discovery.enabled);

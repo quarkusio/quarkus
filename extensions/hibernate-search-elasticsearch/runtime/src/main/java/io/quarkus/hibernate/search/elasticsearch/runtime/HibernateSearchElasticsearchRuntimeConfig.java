@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.hibernate.search.backend.elasticsearch.index.IndexStatus;
 import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategyNames;
@@ -117,6 +118,12 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          */
         @ConfigItem
         DiscoveryConfig discovery;
+
+        /**
+         * Configuration for the thread pool assigned to the backend.
+         */
+        @ConfigItem
+        ThreadPoolConfig threadPool;
 
         /**
          * The default configuration for the Elasticsearch indexes.
@@ -416,6 +423,18 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         @ConfigItem(defaultValue = "create-or-validate")
         SchemaManagementStrategyName strategy;
 
+    }
+
+    @ConfigGroup
+    public static class ThreadPoolConfig {
+        /**
+         * The size of the thread pool assigned to the backend.
+         * <p>
+         * Defaults to the number of processor cores available to the JVM on startup.
+         */
+        // We can't set an actual default value here: see comment on this class.
+        @ConfigItem
+        OptionalInt size;
     }
 
     // We can't set actual default values in this section,

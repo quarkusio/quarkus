@@ -180,6 +180,12 @@ public class HibernateSearchElasticsearchRuntimeConfig {
          */
         @ConfigItem
         ElasticsearchIndexSchemaManagementConfig schemaManagement;
+
+        /**
+         * Configuration for the indexing process that creates, updates and deletes documents.
+         */
+        @ConfigItem
+        ElasticsearchIndexIndexingConfig indexing;
     }
 
     @ConfigGroup
@@ -454,5 +460,31 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         // We can't set an actual default value here: see comment on this class.
         @ConfigItem(defaultValueDocumentation = "10S")
         Optional<Duration> requiredStatusWaitTimeout;
+    }
+
+    // We can't set actual default values in this section,
+    // otherwise "quarkus.hibernate-search.elasticsearch.index-defaults" will be ignored.
+    @ConfigGroup
+    public static class ElasticsearchIndexIndexingConfig {
+        /**
+         * The number of indexing queues assigned to each index.
+         */
+        // We can't set an actual default value here: see comment on this class.
+        @ConfigItem(defaultValueDocumentation = "10")
+        OptionalInt queueCount;
+
+        /**
+         * The size of indexing queues.
+         */
+        // We can't set an actual default value here: see comment on this class.
+        @ConfigItem(defaultValueDocumentation = "1000")
+        OptionalInt queueSize;
+
+        /**
+         * The maximum size of bulk requests created when processing indexing queues.
+         */
+        // We can't set an actual default value here: see comment on this class.
+        @ConfigItem(defaultValueDocumentation = "100")
+        OptionalInt maxBulkSize;
     }
 }

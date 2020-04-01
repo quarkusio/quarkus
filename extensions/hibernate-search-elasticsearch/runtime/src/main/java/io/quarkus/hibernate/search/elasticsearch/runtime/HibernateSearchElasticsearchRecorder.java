@@ -156,6 +156,15 @@ public class HibernateSearchElasticsearchRecorder {
                     ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
                     elasticsearchBackendConfig.indexDefaults.schemaManagement.requiredStatusWaitTimeout, Optional::isPresent,
                     d -> d.get().toMillis());
+            addBackendDefaultIndexConfig(propertyCollector, backendName,
+                    ElasticsearchIndexSettings.INDEXING_QUEUE_COUNT,
+                    elasticsearchBackendConfig.indexDefaults.indexing.queueCount);
+            addBackendDefaultIndexConfig(propertyCollector, backendName,
+                    ElasticsearchIndexSettings.INDEXING_QUEUE_SIZE,
+                    elasticsearchBackendConfig.indexDefaults.indexing.queueSize);
+            addBackendDefaultIndexConfig(propertyCollector, backendName,
+                    ElasticsearchIndexSettings.INDEXING_MAX_BULK_SIZE,
+                    elasticsearchBackendConfig.indexDefaults.indexing.maxBulkSize);
 
             for (Entry<String, ElasticsearchIndexConfig> indexConfigEntry : runtimeConfig.defaultBackend.indexes.entrySet()) {
                 String indexName = indexConfigEntry.getKey();
@@ -168,6 +177,15 @@ public class HibernateSearchElasticsearchRecorder {
                         ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
                         indexConfig.schemaManagement.requiredStatusWaitTimeout, Optional::isPresent,
                         d -> d.get().toMillis());
+                addBackendIndexConfig(propertyCollector, backendName, indexName,
+                        ElasticsearchIndexSettings.INDEXING_QUEUE_COUNT,
+                        indexConfig.indexing.queueCount);
+                addBackendIndexConfig(propertyCollector, backendName, indexName,
+                        ElasticsearchIndexSettings.INDEXING_QUEUE_SIZE,
+                        indexConfig.indexing.queueSize);
+                addBackendIndexConfig(propertyCollector, backendName, indexName,
+                        ElasticsearchIndexSettings.INDEXING_MAX_BULK_SIZE,
+                        indexConfig.indexing.maxBulkSize);
             }
         }
     }

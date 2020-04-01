@@ -136,7 +136,7 @@ public class DevModeMain implements Closeable {
                 // create a symlink to ensure that user updates to the file have the expected effect in dev-mode
                 Files.createSymbolicLink(link, dotEnvPath);
             } catch (IOException e) {
-                log.warn("Unable to copy .env file");
+                log.warn("Unable to copy .env file", e);
             }
         }
     }

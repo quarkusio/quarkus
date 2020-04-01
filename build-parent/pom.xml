@@ -294,6 +294,7 @@
                                             <exclude>org.springframework.boot:spring-boot</exclude>
                                             <!-- Ban checker-qual, we don't use Checker Framework -->
                                             <exclude>org.checkerframework:checker-qual</exclude>
+                                            <exclude>com.google.code.findbugs:jsr305</exclude>
                                         </excludes>
                                         <includes>
                                             <!-- this is for REST Assured -->

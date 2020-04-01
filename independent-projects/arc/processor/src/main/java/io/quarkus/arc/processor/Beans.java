@@ -129,14 +129,15 @@ final class Beans {
         if (name == null) {
             name = initStereotypeName(stereotypes, beanClass);
         }
-        if (isAlternative && alternativePriority == null) {
-            alternativePriority = initStereotypeAlternativePriority(stereotypes);
 
-            // after all attempts, priority is still null, bean will be ignored
+        if (isAlternative) {
+            alternativePriority = initAlternativePriority(beanClass, alternativePriority, stereotypes, beanDeployment);
             if (alternativePriority == null) {
-                throw new IllegalStateException("Bean defined via class " + beanClass.name()
-                        + " is declared as an @Alternative, " +
-                        "but has no @Priority. Either declare a @Priority or leverage @io.quarkus.arc.AlernativePriority annotation.");
+                // after all attempts, priority is still null, bean will be ignored
+                LOGGER.infof(
+                        "Ignoring bean defined via %s - declared as an @Alternative but not selected by @Priority, @AlernativePriority or quarkus.arc.selected-alternatives",
+                        beanClass.name());
+                return null;
             }
         }
 
@@ -251,23 +252,19 @@ final class Beans {
         if (name == null) {
             name = initStereotypeName(stereotypes, producerMethod);
         }
-        if (isAlternative && alternativePriority == null) {
-            alternativePriority = declaringBean.getAlternativePriority();
+
+        if (isAlternative) {
             if (alternativePriority == null) {
-                // Declaring bean itself does not have to be an alternative and can only have @Priority
-                alternativePriority = declaringBean.getTarget().get().asClass().classAnnotations().stream()
-                        .filter(a -> a.name().equals(DotNames.PRIORITY)).findAny()
-                        .map(a -> a.value().asInt()).orElse(null);
+                alternativePriority = declaringBean.getAlternativePriority();
             }
-            if (alternativePriority == null) {
-                alternativePriority = initStereotypeAlternativePriority(stereotypes);
-            }
+            alternativePriority = initAlternativePriority(producerMethod, alternativePriority, stereotypes, beanDeployment);
             // after all attempts, priority is still null
             if (alternativePriority == null) {
-                throw new IllegalStateException("Declaring bean " + declaringBean +
-                        " contains a producer method " + producerMethod + " declaring an @Alternative, " +
-                        "but without @Priority. Either make sure @Priority annotation gets inherited, or replace" +
-                        "@Alternative annotation with @io.quarkus.arc.AlternativePriority annotation.");
+                // after all attempts, priority is still null, bean will be ignored
+                LOGGER.infof(
+                        "Ignoring producer method %s - declared as an @Alternative but not selected by @Priority, @AlernativePriority or quarkus.arc.selected-alternatives",
+                        declaringBean.getTarget().get().asClass().name() + "#" + producerMethod.name());
+                return null;
             }
         }
 
@@ -354,23 +351,18 @@ final class Beans {
         if (name == null) {
             name = initStereotypeName(stereotypes, producerField);
         }
-        if (isAlternative && alternativePriority == null) {
-            alternativePriority = declaringBean.getAlternativePriority();
+
+        if (isAlternative) {
             if (alternativePriority == null) {
-                // Declaring bean itself does not have to be an alternative and can only have @Priority
-                alternativePriority = declaringBean.getTarget().get().asClass().classAnnotations().stream()
-                        .filter(a -> a.name().equals(DotNames.PRIORITY)).findAny()
-                        .map(a -> a.value().asInt()).orElse(null);
+                alternativePriority = declaringBean.getAlternativePriority();
             }
-            if (alternativePriority == null) {
-                alternativePriority = initStereotypeAlternativePriority(stereotypes);
-            }
+            alternativePriority = initAlternativePriority(producerField, alternativePriority, stereotypes, beanDeployment);
             // after all attempts, priority is still null
             if (alternativePriority == null) {
-                throw new IllegalStateException("Declaring bean " + declaringBean +
-                        " contains a producer field " + producerField + " declaring an @Alternative, " +
-                        "but without @Priority. Either make sure @Priority annotation gets inherited, or replace " +
-                        "@Alternative annotation with @io.quarkus.arc.AlternativePriority annotation.");
+                LOGGER.debugf(
+                        "Ignoring producer field %s - declared as an @Alternative but not selected by @Priority, @AlernativePriority or quarkus.arc.selected-alternatives",
+                        producerField);
+                return null;
 
             }
         }
@@ -829,6 +821,24 @@ final class Beans {
         } else {
             return producerMethod.name();
         }
+    }
+
+    private static Integer initAlternativePriority(AnnotationTarget target, Integer alternativePriority,
+            List<StereotypeInfo> stereotypes, BeanDeployment deployment) {
+        if (alternativePriority == null) {
+            // No @Priority or @AlernativePriority used - try stereotypes
+            alternativePriority = initStereotypeAlternativePriority(stereotypes);
+        }
+        Integer computedPriority = deployment.computeAlternativePriority(target, stereotypes);
+        if (computedPriority != null) {
+            if (alternativePriority != null) {
+                LOGGER.infof(
+                        "Computed priority [%s] overrides the priority [%s] declared via @Priority or @AlernativePriority",
+                        computedPriority, alternativePriority);
+            }
+            alternativePriority = computedPriority;
+        }
+        return alternativePriority;
     }
 
     static class FinalClassTransformFunction implements BiFunction<String, ClassVisitor, ClassVisitor> {

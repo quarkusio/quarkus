@@ -60,12 +60,14 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.runner.bootstrap.BootstrapDebug;
+import io.quarkus.runtime.LaunchMode;
 
 /**
  * This class contains build steps that trigger various phases of the bean processing.
@@ -115,7 +117,8 @@ public class ArcProcessor {
             Optional<TestClassPredicateBuildItem> testClassPredicate,
             Capabilities capabilities,
             BuildProducer<FeatureBuildItem> feature,
-            CustomScopeAnnotationsBuildItem scopes) {
+            CustomScopeAnnotationsBuildItem scopes,
+            LaunchModeBuildItem launchModeBuildItem) {
 
         if (!arcConfig.isRemoveUnusedBeansFieldValid()) {
             throw new IllegalArgumentException("Invalid configuration value set for 'quarkus.arc.remove-unused-beans'." +
@@ -243,6 +246,7 @@ public class ArcProcessor {
         builder.setTransformUnproxyableClasses(arcConfig.transformUnproxyableClasses);
         builder.setJtaCapabilities(capabilities.isCapabilityPresent(Capabilities.TRANSACTIONS));
         builder.setGenerateSources(BootstrapDebug.DEBUG_SOURCES_DIR != null);
+        builder.setAllowMocking(launchModeBuildItem.getLaunchMode() == LaunchMode.TEST);
 
         BeanProcessor beanProcessor = builder.build();
         ContextRegistrar.RegistrationContext context = beanProcessor.registerCustomContexts();

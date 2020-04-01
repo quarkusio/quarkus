@@ -302,7 +302,11 @@ public class TestStereotypeTestCase {
 
 == Mock Support
 
-Quarkus supports the use of mock objects using the CDI `@Alternative` mechanism.
+Quarkus supports the use of mock objects using two different approaches. You can either use CDI alternatives to
+mock out a bean for all test classes, or use `QuarkusMock` to mock out beans on a per test basis.
+
+=== CDI `@Alternative` mechanism.
+
 To use this simply override the bean you wish to mock with a class in the `src/test/java` directory, and put the `@Alternative` and `@Priority(1)` annotations on the bean. 
 Alternatively, a convenient `io.quarkus.test.Mock` stereotype annotation could be used.
 This built-in stereotype declares `@Alternative`, `@Priority(1)` and `@Dependent`. 
@@ -341,6 +345,64 @@ it will take effect all the time, not just when testing.
 
 Note that at present this approach does not work with native image testing, as this would required the test alternatives
 to be baked into the native image.
+
+=== Mocking using QuarkusMock
+
+The `io.quarkus.test.junit.QuarkusMock` class can be used to temporarily mock out any normal scoped
+bean. If you use this method in a `@BeforeAll` method the mock will take effect for all tests on the current class,
+while if you use this in a test method the mock will only take effect for the duration of the current test.
+
+This method can be used for any normal scoped CDI bean (e.g. `@ApplicationScoped`, `@RequestScoped` etc, basically
+every scope except `@Singleton` and `@Dependent`).
+
+An example usage could look like:
+
+[source,java]
+----
+@QuarkusTest
+public class MockTestCase {
+
+    @Inject
+    MockableBean1 mockableBean1;
+
+    @Inject
+    MockableBean2 mockableBean2;
+
+    @BeforeAll
+    public static void setup() {
+        MockableBean1 mock = Mockito.mock(MockableBean1.class);
+        Mockito.when(mock.greet("Stuart")).thenReturn("A mock for Stuart");
+        QuarkusMock.installMockForType(mock, MockableBean1.class);  <1>
+    }
+
+    @Test
+    public void testBeforeAll() {
+        Assertions.assertEquals("A mock for Stuart", mockableBean1.greet("Stuart"));
+        Assertions.assertEquals("Hello Stuart", mockableBean2.greet("Stuart"));
+    }
+
+    @Test
+    public void testPerTestMock() {
+        QuarkusMock.installMockForInstance(new BonourGreeter(), mockableBean2); <2>
+        Assertions.assertEquals("A mock for Stuart", mockableBean1.greet("Stuart"));
+        Assertions.assertEquals("Bonjour Stuart", mockableBean2.greet("Stuart"));
+    }
+
+    public static class BonourGreeter extends MockableBean2 {
+        @Override
+        public String greet(String name) {
+            return "Bonjour " + name;
+        }
+    }
+
+}
+----
+<1> As the injected instance is not available here we use `installMockForType`, this mock is used for both test methods
+<2> We use `installMockForInstance` to replace the injected bean, this takes effect for the duration of the test method.
+
+Note that there is no dependency on Mockito, you can use any mocking library you like, or even manually override the
+objects to provide the behaviour you require.
+
 
 == Test Bootstrap Configuration Options
 

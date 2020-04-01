@@ -158,6 +158,7 @@ public class QuarkusTestExtension
         if (isNativeTest(context)) {
             return;
         }
+        popMockContext();
         if (!failedBoot) {
             boolean nativeImageTest = isNativeTest(context);
             runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
@@ -176,6 +177,7 @@ public class QuarkusTestExtension
         if (isNativeTest(context)) {
             return;
         }
+        pushMockContext();
         if (!failedBoot) {
             boolean nativeImageTest = isNativeTest(context);
             if (runningQuarkusApplication != null) {
@@ -226,8 +228,35 @@ public class QuarkusTestExtension
             return;
         }
         ensureStarted(context);
+        pushMockContext();
         if (runningQuarkusApplication != null) {
             setCCL(runningQuarkusApplication.getClassLoader());
+        }
+    }
+
+    private void pushMockContext() {
+        try {
+            //classloader issues
+            Method pushContext = runningQuarkusApplication.getClassLoader().loadClass(MockSupport.class.getName())
+                    .getDeclaredMethod("pushContext");
+            pushContext.setAccessible(true);
+            pushContext
+                    .invoke(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void popMockContext() {
+        try {
+            //classloader issues
+            Method popContext = runningQuarkusApplication.getClassLoader().loadClass(MockSupport.class.getName())
+                    .getDeclaredMethod("popContext");
+            popContext.setAccessible(true);
+            popContext
+                    .invoke(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -422,6 +451,9 @@ public class QuarkusTestExtension
 
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
+        if (!isNativeTest(context)) {
+            popMockContext();
+        }
         if (originalCl != null) {
             setCCL(originalCl);
         }

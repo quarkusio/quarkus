@@ -88,6 +88,9 @@ public class HibernateSearchElasticsearchRecorder {
         @Override
         public void contributeRuntimeProperties(BiConsumer<String, Object> propertyCollector) {
             addConfig(propertyCollector,
+                    HibernateOrmMapperSettings.SCHEMA_MANAGEMENT_STRATEGY,
+                    runtimeConfig.schemaManagement.strategy);
+            addConfig(propertyCollector,
                     HibernateOrmMapperSettings.AUTOMATIC_INDEXING_SYNCHRONIZATION_STRATEGY,
                     runtimeConfig.automaticIndexing.synchronization.strategy);
             addConfig(propertyCollector,
@@ -144,28 +147,24 @@ public class HibernateSearchElasticsearchRecorder {
                         elasticsearchBackendConfig.discovery.refreshInterval.getSeconds());
             }
 
-            addBackendDefaultIndexConfig(propertyCollector, backendName, ElasticsearchIndexSettings.LIFECYCLE_STRATEGY,
-                    elasticsearchBackendConfig.indexDefaults.lifecycle.strategy);
             addBackendDefaultIndexConfig(propertyCollector, backendName,
-                    ElasticsearchIndexSettings.LIFECYCLE_MINIMAL_REQUIRED_STATUS,
-                    elasticsearchBackendConfig.indexDefaults.lifecycle.requiredStatus);
+                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS,
+                    elasticsearchBackendConfig.indexDefaults.schemaManagement.requiredStatus);
             addBackendDefaultIndexConfig(propertyCollector, backendName,
-                    ElasticsearchIndexSettings.LIFECYCLE_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
-                    elasticsearchBackendConfig.indexDefaults.lifecycle.requiredStatusWaitTimeout, Optional::isPresent,
+                    ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
+                    elasticsearchBackendConfig.indexDefaults.schemaManagement.requiredStatusWaitTimeout, Optional::isPresent,
                     d -> d.get().toMillis());
 
             for (Entry<String, ElasticsearchIndexConfig> indexConfigEntry : runtimeConfig.defaultBackend.indexes.entrySet()) {
                 String indexName = indexConfigEntry.getKey();
                 ElasticsearchIndexConfig indexConfig = indexConfigEntry.getValue();
 
-                addBackendIndexConfig(propertyCollector, backendName, indexName, ElasticsearchIndexSettings.LIFECYCLE_STRATEGY,
-                        indexConfig.lifecycle.strategy);
                 addBackendIndexConfig(propertyCollector, backendName, indexName,
-                        ElasticsearchIndexSettings.LIFECYCLE_MINIMAL_REQUIRED_STATUS,
-                        indexConfig.lifecycle.requiredStatus);
+                        ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS,
+                        indexConfig.schemaManagement.requiredStatus);
                 addBackendIndexConfig(propertyCollector, backendName, indexName,
-                        ElasticsearchIndexSettings.LIFECYCLE_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
-                        indexConfig.lifecycle.requiredStatusWaitTimeout, Optional::isPresent,
+                        ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS_WAIT_TIMEOUT,
+                        indexConfig.schemaManagement.requiredStatusWaitTimeout, Optional::isPresent,
                         d -> d.get().toMillis());
             }
         }

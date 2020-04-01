@@ -6,9 +6,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import org.hibernate.search.backend.elasticsearch.index.IndexLifecycleStrategyName;
 import org.hibernate.search.backend.elasticsearch.index.IndexStatus;
 import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategyNames;
+import org.hibernate.search.mapper.orm.schema.management.SchemaManagementStrategyName;
 import org.hibernate.search.mapper.orm.search.loading.EntityLoadingCacheLookupStrategy;
 import org.hibernate.search.util.common.SearchException;
 import org.hibernate.search.util.common.impl.StringHelper;
@@ -36,6 +36,13 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     @ConfigItem(name = "elasticsearch")
     @ConfigDocSection
     public ElasticsearchAdditionalBackendsRuntimeConfig additionalBackends;
+
+    /**
+     * Configuration for automatic creation and validation of the Elasticsearch schema:
+     * indexes, their mapping, their settings.
+     */
+    @ConfigItem
+    SchemaManagementConfig schemaManagement;
 
     /**
      * Configuration for how entities are loaded by a search query.
@@ -162,10 +169,10 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     @ConfigGroup
     public static class ElasticsearchIndexConfig {
         /**
-         * Configuration for the lifecyle of the indexes.
+         * Configuration for the schema management of the indexes.
          */
         @ConfigItem
-        LifecycleConfig lifecycle;
+        ElasticsearchIndexSchemaManagementConfig schemaManagement;
     }
 
     @ConfigGroup
@@ -399,18 +406,22 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         EntityLoadingCacheLookupStrategy strategy;
     }
 
-    // We can't set actual default values in this section,
-    // otherwise "quarkus.hibernate-search.elasticsearch.index-defaults" will be ignored.
     @ConfigGroup
-    public static class LifecycleConfig {
+    public static class SchemaManagementConfig {
 
         /**
          * The strategy used for index lifecycle.
          */
         // We can't set an actual default value here: see comment on this class.
-        @ConfigItem(defaultValueDocumentation = "create")
-        Optional<IndexLifecycleStrategyName> strategy;
+        @ConfigItem(defaultValue = "create-or-validate")
+        SchemaManagementStrategyName strategy;
 
+    }
+
+    // We can't set actual default values in this section,
+    // otherwise "quarkus.hibernate-search.elasticsearch.index-defaults" will be ignored.
+    @ConfigGroup
+    public static class ElasticsearchIndexSchemaManagementConfig {
         /**
          * The minimal cluster status required.
          */

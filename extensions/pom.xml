@@ -114,6 +114,7 @@
         <module>smallrye-jwt</module>
         <module>oidc</module>
         <module>keycloak-authorization</module>
+        <module>keycloak-admin-client</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>

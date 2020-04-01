@@ -1,0 +1,11 @@
+---
+name: "Keycloak Admin Client"
+metadata:
+  keywords:
+  - "oauth2"
+  - "openid-connect"
+  - "keycloak"
+  - "authorization-services"
+  categories:
+    - "security"
+  status: "stable"

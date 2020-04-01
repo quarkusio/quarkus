@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -81,6 +82,9 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleTestBase {
         assertThat(build.task(":build").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
         // gradle build should not build the native image
         assertThat(build.task(":buildNative")).isNull();
+        Path buildDir = projectRoot.toPath().resolve("build");
+        assertThat(buildDir).exists();
+        assertThat(buildDir.resolve("foo-1.0.0-SNAPSHOT-runner")).doesNotExist();
     }
 
     private void createProject(SourceType sourceType) throws IOException {

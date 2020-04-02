@@ -54,6 +54,21 @@ The root logger category is handled separately, and is configured via the follow
 |quarkus.log.level|INFO|The default minimum log level for every log category.
 |===
 
+=== Log levels
+
+There are several log levels you can use:
+
+[cols="<m,<5",options="header"]
+|===
+|Level|Description
+|FATAL|A critical service failure/complete inability to service requests of any kind
+|ERROR|A significant disruption in a request or the inability to service a request
+|WARN|A non-critical service error or problem that may not require immediate correction
+|INFO|Service lifecycle events or important related very-low-frequency information
+|DEBUG|Messages that convey extra information regarding lifecycle or non-request-bound events which may be helpful for debugging
+|TRACE|Messages that convey extra per-request debugging information that may be very high frequency
+|===
+
 [id="format-string"]
 == Format String
 

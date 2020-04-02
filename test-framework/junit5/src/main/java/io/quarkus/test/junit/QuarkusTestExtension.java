@@ -186,11 +186,11 @@ public class QuarkusTestExtension
         if (isNativeTest(context)) {
             return;
         }
-        popMockContext();
-        for (Object afterEachCallback : afterEachCallbacks) {
-            afterEachCallback.getClass().getMethod("afterEach", Object.class).invoke(afterEachCallback, actualTestInstance);
-        }
         if (!failedBoot) {
+            popMockContext();
+            for (Object afterEachCallback : afterEachCallbacks) {
+                afterEachCallback.getClass().getMethod("afterEach", Object.class).invoke(afterEachCallback, actualTestInstance);
+            }
             boolean nativeImageTest = isNativeTest(context);
             runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
                     .getDeclaredMethod("clearURL").invoke(null);
@@ -208,11 +208,12 @@ public class QuarkusTestExtension
         if (isNativeTest(context)) {
             return;
         }
-        pushMockContext();
-        for (Object beforeEachCallback : beforeEachCallbacks) {
-            beforeEachCallback.getClass().getMethod("beforeEach", Object.class).invoke(beforeEachCallback, actualTestInstance);
-        }
         if (!failedBoot) {
+            pushMockContext();
+            for (Object beforeEachCallback : beforeEachCallbacks) {
+                beforeEachCallback.getClass().getMethod("beforeEach", Object.class).invoke(beforeEachCallback,
+                        actualTestInstance);
+            }
             boolean nativeImageTest = isNativeTest(context);
             if (runningQuarkusApplication != null) {
                 runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
@@ -262,8 +263,8 @@ public class QuarkusTestExtension
             return;
         }
         ensureStarted(context);
-        pushMockContext();
         if (runningQuarkusApplication != null) {
+            pushMockContext();
             setCCL(runningQuarkusApplication.getClassLoader());
         }
     }
@@ -488,7 +489,7 @@ public class QuarkusTestExtension
 
     @Override
     public void afterAll(ExtensionContext context) throws Exception {
-        if (!isNativeTest(context)) {
+        if (!isNativeTest(context) && (runningQuarkusApplication != null)) {
             popMockContext();
         }
         if (originalCl != null) {

@@ -1,24 +1,26 @@
 package io.quarkus.funqy.runtime;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class FunctionInvoker {
     protected String name;
-    protected Class targetClass;
+    protected Class<?> targetClass;
     protected Method method;
-    protected FunctionConstructor constructor;
+    protected FunctionConstructor<?> constructor;
     protected ArrayList<ValueInjector> parameterInjectors;
-    protected Class inputType;
-    protected Class outputType;
+    protected Class<?> inputType;
+    protected Class<?> outputType;
+    protected boolean isAsync;
+
     protected Map<String, Object> bindingContext = new ConcurrentHashMap<>();
 
-    public FunctionInvoker(String name, Class targetClass, Method method) {
+    public FunctionInvoker(String name, Class<?> targetClass, Method method) {
         this.name = name;
         this.targetClass = targetClass;
         this.method = method;
@@ -36,8 +38,25 @@ public class FunctionInvoker {
             }
         }
         constructor = new FunctionConstructor(targetClass);
-        if (method.getReturnType() != null) {
-            outputType = method.getReturnType();
+        Class<?> returnType = method.getReturnType();
+        if (returnType != null) {
+            if (CompletionStage.class.isAssignableFrom(returnType)) {
+                outputType = null;
+                isAsync = true;
+                Type genericReturnType = method.getGenericReturnType();
+                if (genericReturnType instanceof ParameterizedType) {
+                    Type[] actualParams = ((ParameterizedType) genericReturnType).getActualTypeArguments();
+                    if (actualParams.length == 1 && actualParams[0] instanceof Class<?>) {
+                        outputType = (Class<?>) actualParams[0];
+                    }
+                }
+                if (outputType == null) {
+                    throw new IllegalArgumentException(
+                            "CompletionStage must be used with type parameter (e.g. CompletionStage<String>).");
+                }
+            } else {
+                outputType = returnType;
+            }
         }
     }
 
@@ -63,8 +82,16 @@ public class FunctionInvoker {
         return outputType;
     }
 
+    protected boolean isAsync() {
+        return isAsync;
+    }
+
+    protected void setAsync(boolean async) {
+        isAsync = async;
+    }
+
     public boolean hasOutput() {
-        return outputType != null;
+        return outputType != null && !outputType.equals(Void.TYPE);
     }
 
     public String getName() {
@@ -83,11 +110,37 @@ public class FunctionInvoker {
         Object target = constructor.construct();
         try {
             Object result = method.invoke(target, args);
-            response.setOutput(result);
+            if (isAsync()) {
+                CompletableFuture<Object> withWrappedException = new CompletableFuture<>();
+                ((CompletionStage<?>) result).whenCompleteAsync((o, t) -> {
+                    if (t != null) {
+                        withWrappedException.completeExceptionally(new ApplicationException(t));
+                    } else {
+                        withWrappedException.complete(o);
+                    }
+                });
+                response.setOutput(withWrappedException);
+            } else {
+                response.setOutput(CompletableFuture.completedFuture(result));
+            }
         } catch (IllegalAccessException e) {
-            throw new InternalError("Failed to invoke function", e);
+            InternalError ex = new InternalError("Failed to invoke function", e);
+            response.setOutput(exceptionalCompletionStage(ex));
+            throw ex;
         } catch (InvocationTargetException e) {
-            throw new ApplicationException(e.getCause());
+            ApplicationException ex = new ApplicationException(e.getCause());
+            response.setOutput(exceptionalCompletionStage(ex));
+            throw ex;
+        } catch (Throwable t) {
+            InternalError ex = new InternalError(t);
+            response.setOutput(exceptionalCompletionStage(ex));
+            throw ex;
         }
+    }
+
+    private static CompletionStage<?> exceptionalCompletionStage(Throwable t) {
+        CompletableFuture<?> fut = new CompletableFuture<>();
+        fut.completeExceptionally(t);
+        return fut;
     }
 }

@@ -1,8 +1,11 @@
 package io.quarkus.funqy.runtime;
 
-public interface FunqyServerResponse {
-    Object getOutput();
+import java.util.concurrent.CompletionStage;
 
-    void setOutput(Object out);
+public interface FunqyServerResponse {
+
+    CompletionStage<?> getOutput();
+
+    void setOutput(CompletionStage<?> out);
 
 }

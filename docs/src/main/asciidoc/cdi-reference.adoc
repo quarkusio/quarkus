@@ -439,7 +439,7 @@ Additionaly, it can be used for producers.
 However, it is also possible to select alternatives for an application using the unified configuration.
 The `quarkus.arc.selected-alternatives` property accepts a list of string values that are used to match alternative beans.
 If any value matches then the priority of `Integer#MAX_VALUE` is used for the relevant bean. 
-The priority declared via `@Priority` or `@AlernativePriority` is overriden.
+The priority declared via `@Priority` or `@AlternativePriority` is overriden.
 
 .Value Examples
 |===

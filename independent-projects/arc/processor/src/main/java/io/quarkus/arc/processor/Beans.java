@@ -262,7 +262,7 @@ final class Beans {
             if (alternativePriority == null) {
                 // after all attempts, priority is still null, bean will be ignored
                 LOGGER.infof(
-                        "Ignoring producer method %s - declared as an @Alternative but not selected by @Priority, @AlernativePriority or quarkus.arc.selected-alternatives",
+                        "Ignoring producer method %s - declared as an @Alternative but not selected by @Priority, @AlternativePriority or quarkus.arc.selected-alternatives",
                         declaringBean.getTarget().get().asClass().name() + "#" + producerMethod.name());
                 return null;
             }
@@ -360,7 +360,7 @@ final class Beans {
             // after all attempts, priority is still null
             if (alternativePriority == null) {
                 LOGGER.debugf(
-                        "Ignoring producer field %s - declared as an @Alternative but not selected by @Priority, @AlernativePriority or quarkus.arc.selected-alternatives",
+                        "Ignoring producer field %s - declared as an @Alternative but not selected by @Priority, @AlternativePriority or quarkus.arc.selected-alternatives",
                         producerField);
                 return null;
 

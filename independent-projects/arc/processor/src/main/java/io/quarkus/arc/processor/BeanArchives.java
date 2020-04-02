@@ -23,6 +23,7 @@ import javax.enterprise.context.control.ActivateRequestContext;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Intercepted;
+import javax.enterprise.inject.Model;
 import javax.inject.Named;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -61,6 +62,7 @@ public final class BeanArchives {
         index(indexer, BeforeDestroyed.class.getName());
         index(indexer, Destroyed.class.getName());
         index(indexer, Intercepted.class.getName());
+        index(indexer, Model.class.getName());
         // Arc built-in beans
         index(indexer, ActivateRequestContextInterceptor.class.getName());
         index(indexer, InjectableRequestContextController.class.getName());

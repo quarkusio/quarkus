@@ -117,11 +117,6 @@ public class ConfigBuildStep {
     }
 
     @BuildStep
-    AutoInjectAnnotationBuildItem autoInjectConfigProperty() {
-        return new AutoInjectAnnotationBuildItem(CONFIG_PROPERTY_NAME);
-    }
-
-    @BuildStep
     @Record(RUNTIME_INIT)
     void validateConfigProperties(ConfigRecorder recorder, List<ConfigPropertyBuildItem> configProperties,
             BeanContainerBuildItem beanContainer, BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {

@@ -282,7 +282,7 @@ NOTE: An event with qualifier `@Initialized(RequestScoped.class)` is fired when 
 
 === Qualified Injected Fields
 
-In CDI, if you declare a field injection point you need to use `@Inject` and optionally a set of qualifiers:
+In CDI, if you declare a field injection point you need to use `@Inject` and optionally a set of qualifiers.
  
 [source,java]
 ----
@@ -291,7 +291,7 @@ In CDI, if you declare a field injection point you need to use `@Inject` and opt
   String coolProperty;
 ----
 
-In Quarkus, you can skip the `@Inject` annotation completely if an injected field declares at least one qualifier:
+In Quarkus, you can skip the `@Inject` annotation completely if the injected field declares at least one qualifier.
 
 [source,java]
 ----
@@ -454,6 +454,42 @@ The priority declared via `@Priority` or `@AlernativePriority` is overriden.
 [source,properties]
 ----
 quarkus.arc.selected-alternatives=org.acme.Foo,org.acme.*,Bar
+----
+
+=== Simplified Producer Method Declaration
+
+In CDI, a producer method must be always annotated with `@Produces`.
+ 
+[source,java]
+----
+class Producers {
+
+  @Inject
+  @ConfigProperty(name = "cool")
+  String coolProperty;
+
+  @Produces
+  @ApplicationScoped
+  MyService produceService() {
+    return new MyService(coolProperty);
+  }
+}
+----
+
+In Quarkus, you can skip the `@Produces` annotation completely if the producer method is annotated with a scope annotation, a stereotype or a qualifier.
+
+[source,java]
+----
+class Producers {
+
+  @ConfigProperty(name = "cool")
+  String coolProperty;
+
+  @ApplicationScoped
+  MyService produceService() {
+    return new MyService(coolProperty);
+  }
+}
 ----
 
 == Build Time Extension Points

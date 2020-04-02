@@ -30,7 +30,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.enterprise.event.Reception;
-import javax.enterprise.inject.Model;
 import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.DeploymentException;
 import org.jboss.jandex.AnnotationInstance;
@@ -928,7 +927,6 @@ public class BeanDeployment {
             }
         }
         beanDefiningAnnotations.addAll(stereotypes);
-        beanDefiningAnnotations.add(DotNames.create(Model.class));
         return beanDefiningAnnotations;
     }
 

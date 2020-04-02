@@ -46,6 +46,7 @@ public class OpenshiftWithApplicationPropertiesTest {
                 assertThat(m.getName()).isEqualTo("test-it");
                 assertThat(m.getLabels()).contains(entry("foo", "bar"));
             });
+            assertThat(h).extracting("spec").extracting("replicas").isEqualTo(3);
             assertThat(h).extracting("spec").extracting("template").extracting("spec").isInstanceOfSatisfying(PodSpec.class,
                     podSpec -> {
                         assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {

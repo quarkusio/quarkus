@@ -403,6 +403,10 @@ class KubernetesProcessor {
         configMap.put(OPENSHIFT, openshiftConfig);
         configMap.put(KNATIVE, knativeConfig);
 
+        //Replicas
+        session.resources().decorate(new KubernetesApplyReplicasDecorator(kubernetesName, kubernetesConfig.getReplicas()));
+        session.resources().decorate(new OpenshiftApplyReplicasDecorator(openshiftConfig.getReplicas()));
+
         kubernetesAnnotations.forEach(a -> {
             session.resources().decorate(a.getTarget(), new AddAnnotationDecorator(new Annotation(a.getKey(), a.getValue())));
         });

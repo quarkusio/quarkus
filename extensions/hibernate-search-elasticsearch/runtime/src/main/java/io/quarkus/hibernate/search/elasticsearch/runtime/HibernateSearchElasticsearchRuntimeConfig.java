@@ -479,6 +479,13 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     public static class ElasticsearchIndexIndexingConfig {
         /**
          * The number of indexing queues assigned to each index.
+         * <p>
+         * Higher values will lead to more connections being used in parallel,
+         * which may lead to higher indexing throughput,
+         * but incurs a risk of overloading Elasticsearch,
+         * i.e. of overflowing its HTTP request buffers and tripping
+         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.6/circuit-breaker.html">circuit breakers</a>,
+         * leading to Elasticsearch giving up on some request and resulting in indexing failures.
          */
         // We can't set an actual default value here: see comment on this class.
         @ConfigItem(defaultValueDocumentation = "10")
@@ -486,6 +493,11 @@ public class HibernateSearchElasticsearchRuntimeConfig {
 
         /**
          * The size of indexing queues.
+         * <p>
+         * Lower values may lead to lower memory usage, especially if there are many queues,
+         * but values that are too low will reduce the likeliness of reaching the max bulk size
+         * and increase the likeliness of application threads blocking because the queue is full,
+         * which may lead to lower indexing throughput.
          */
         // We can't set an actual default value here: see comment on this class.
         @ConfigItem(defaultValueDocumentation = "1000")
@@ -493,6 +505,16 @@ public class HibernateSearchElasticsearchRuntimeConfig {
 
         /**
          * The maximum size of bulk requests created when processing indexing queues.
+         * <p>
+         * Higher values will lead to more documents being sent in each HTTP request sent to Elasticsearch,
+         * which may lead to higher indexing throughput,
+         * but incurs a risk of overloading Elasticsearch,
+         * i.e. of overflowing its HTTP request buffers and tripping
+         * <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.6/circuit-breaker.html">circuit breakers</a>,
+         * leading to Elasticsearch giving up on some request and resulting in indexing failures.
+         * <p>
+         * Note that raising this number above the queue size has no effect,
+         * as bulks cannot include more requests than are contained in the queue.
          */
         // We can't set an actual default value here: see comment on this class.
         @ConfigItem(defaultValueDocumentation = "100")

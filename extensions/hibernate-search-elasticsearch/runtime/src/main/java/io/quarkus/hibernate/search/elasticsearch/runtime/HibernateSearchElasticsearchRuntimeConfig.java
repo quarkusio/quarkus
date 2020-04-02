@@ -436,6 +436,17 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         /**
          * The size of the thread pool assigned to the backend.
          * <p>
+         * Note that number is <em>per backend</em>, not per index.
+         * Adding more indexes will not add more threads.
+         * <p>
+         * As all operations happening in this thread-pool are non-blocking,
+         * raising its size above the number of processor cores available to the JVM will not bring noticeable performance
+         * benefit.
+         * The only reason to alter this setting would be to reduce the number of threads;
+         * for example, in an application with a single index with a single indexing queue,
+         * running on a machine with 64 processor cores,
+         * you might want to bring down the number of threads.
+         * <p>
          * Defaults to the number of processor cores available to the JVM on startup.
          */
         // We can't set an actual default value here: see comment on this class.

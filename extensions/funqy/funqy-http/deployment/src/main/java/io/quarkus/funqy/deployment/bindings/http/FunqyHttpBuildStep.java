@@ -3,8 +3,8 @@ package io.quarkus.funqy.deployment.bindings.http;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
@@ -19,15 +19,14 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.funqy.deployment.FunctionBuildItem;
 import io.quarkus.funqy.deployment.FunctionInitializedBuildItem;
 import io.quarkus.funqy.runtime.bindings.http.FunqyHttpBindingRecorder;
 import io.quarkus.jackson.ObjectMapperProducer;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
-import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.vertx.core.Handler;
-import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 public class FunqyHttpBuildStep {
@@ -76,10 +75,10 @@ public class FunqyHttpBuildStep {
     public void boot(ShutdownContextBuildItem shutdown,
             FunqyHttpBindingRecorder binding,
             BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<DefaultRouteBuildItem> defaultRoutes,
             BuildProducer<RouteBuildItem> routes,
             CoreVertxBuildItem vertx,
             RootpathBuildItem root,
+            List<FunctionBuildItem> functions,
             BeanContainerBuildItem beanContainer,
             ExecutorBuildItem executorBuildItem) throws Exception {
 
@@ -88,28 +87,19 @@ public class FunqyHttpBuildStep {
         feature.produce(new FeatureBuildItem(FUNQY_HTTP_FEATURE));
 
         String rootPath = root.deploymentRootPath;
-        boolean isDefaultOrNullDeploymentPath = rootPath.equals("/");
-        if (!isDefaultOrNullDeploymentPath) {
-            // We need to register a special handler for non-default deployment path (specified as application path or resteasyConfig.path)
-            Handler<RoutingContext> handler = binding.vertxRequestHandler(vertx.getVertx(), beanContainer.getValue(),
-                    executorBuildItem.getExecutorProxy());
-            // Exact match for resources matched to the root path
-            routes.produce(new RouteBuildItem(rootPath, handler, false));
-            String matchPath = rootPath;
-            if (matchPath.endsWith("/")) {
-                matchPath += "*";
-            } else {
-                matchPath += "/*";
-            }
-            // Match paths that begin with the deployment path
-            routes.produce(new RouteBuildItem(matchPath, handler, false));
-        } else {
-            Consumer<Route> ut = binding.start(vertx.getVertx(),
-                    shutdown,
-                    beanContainer.getValue(),
-                    executorBuildItem.getExecutorProxy());
+        Handler<RoutingContext> handler = binding.start(vertx.getVertx(),
+                shutdown,
+                beanContainer.getValue(),
+                executorBuildItem.getExecutorProxy());
 
-            defaultRoutes.produce(new DefaultRouteBuildItem(ut));
+        for (FunctionBuildItem function : functions) {
+            if (rootPath == null)
+                rootPath = "/";
+            else if (!rootPath.endsWith("/"))
+                rootPath += "/";
+            String name = function.getFunctionName() == null ? function.getMethodName() : function.getFunctionName();
+            String path = rootPath + name;
+            routes.produce(new RouteBuildItem(path, handler, false));
         }
     }
 }

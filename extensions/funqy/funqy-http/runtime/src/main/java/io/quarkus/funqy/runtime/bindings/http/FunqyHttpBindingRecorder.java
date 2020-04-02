@@ -1,7 +1,6 @@
 package io.quarkus.funqy.runtime.bindings.http;
 
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -20,7 +19,6 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -56,7 +54,7 @@ public class FunqyHttpBindingRecorder {
         return new ObjectMapper();
     }
 
-    public Consumer<Route> start(Supplier<Vertx> vertx,
+    public Handler<RoutingContext> start(Supplier<Vertx> vertx,
             ShutdownContext shutdown,
             BeanContainer beanContainer,
             Executor executor) {
@@ -70,20 +68,6 @@ public class FunqyHttpBindingRecorder {
         });
         FunctionConstructor.CONTAINER = beanContainer;
 
-        Handler<RoutingContext> handler = vertxRequestHandler(vertx, beanContainer, executor);
-
-        return new Consumer<Route>() {
-
-            @Override
-            public void accept(Route route) {
-                route.handler(handler);
-            }
-        };
-    }
-
-    public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx,
-            BeanContainer beanContainer, Executor executor) {
         return new VertxRequestHandler(vertx.get(), beanContainer, contextPath, executor);
     }
-
 }

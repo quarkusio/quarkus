@@ -388,13 +388,28 @@ public class MockTestCase {
         Assertions.assertEquals("Bonjour Stuart", mockableBean2.greet("Stuart"));
     }
 
+    @ApplicationScoped
+    public static class MockableBean1 {
+
+        public String greet(String name) {
+            return "Hello " + name;
+        }
+    }
+
+    @ApplicationScoped
+    public static class MockableBean2 {
+
+        public String greet(String name) {
+            return "Hello " + name;
+        }
+    }
+
     public static class BonourGreeter extends MockableBean2 {
         @Override
         public String greet(String name) {
             return "Bonjour " + name;
         }
     }
-
 }
 ----
 <1> As the injected instance is not available here we use `installMockForType`, this mock is used for both test methods
@@ -403,6 +418,111 @@ public class MockTestCase {
 Note that there is no dependency on Mockito, you can use any mocking library you like, or even manually override the
 objects to provide the behaviour you require.
 
+==== Further simplification with `@InjectMock`
+
+Building on the features provided by `QuarkusMock`, Quarkus also allows users to effortlessly take advantage of link:https://site.mockito.org/[Mockito] for mocking the beans supported by `QuarkusMock`.
+This functionality is available via the `@io.quarkus.test.junit.mockito.InjectMock` annotation which is available in the `quarkus-junit5-mockito` dependency.
+
+Using `@InjectMock`, the previous example could be written as follows:
+
+[source,java]
+----
+@QuarkusTest
+public class MockTestCase {
+
+    @InjectMock
+    MockableBean1 mockableBean1; <1>
+
+    @InjectMock
+    MockableBean2 mockableBean2;
+
+    @BeforeEach
+    public void setup() {
+        Mockito.when(mockableBean1.greet("Stuart")).thenReturn("A mock for Stuart"); <2>
+    }
+
+    @Test
+    public void firstTest() {
+        Assertions.assertEquals("A mock for Stuart", mockableBean1.greet("Stuart"));
+        Assertions.assertEquals(null, mockableBean2.greet("Stuart")); <3>
+    }
+
+    @Test
+    public void secondTest() {
+        Mockito.when(mockableBean2.greet("Stuart")).thenReturn("Bonjour Stuart"); <4>
+        Assertions.assertEquals("A mock for Stuart", mockableBean1.greet("Stuart"));
+        Assertions.assertEquals("Bonjour Stuart", mockableBean2.greet("Stuart"));
+    }
+
+    @ApplicationScoped
+    public static class MockableBean1 {
+
+        public String greet(String name) {
+            return "Hello " + name;
+        }
+    }
+
+    @ApplicationScoped
+    public static class MockableBean2 {
+
+        public String greet(String name) {
+            return "Hello " + name;
+        }
+    }
+}
+----
+<1> `@InjectMock` results in a mock being and is available in test methods of the test class (other test classes are *not* affected by this)
+<2> The `mockableBean1` is configured here for every test method of the class
+<3> Since the `mockableBean2` mock has not been configured, it will return the default Mockito response.
+<4> In this test the `mockableBean2` is configured, so it returns the configured response.
+
+Although the test above is good for showing the capabilities of `@InjectMock`, it is not a good representation of a real test. In a real test
+we would most likely configure a mock, but then test a bean that uses the mocked bean.
+Here is an example:
+
+[source,java]
+----
+@QuarkusTest
+public class MockGreetingServiceTest {
+
+    @InjectMock
+    GreetingService greetingService;
+
+    @Test
+    public void testGreeting() {
+        when(greetingService.greet()).thenReturn("hi");
+        given()
+                .when().get("/greeting")
+                .then()
+                .statusCode(200)
+                .body(is("hi")); <1>
+    }
+
+    @Path("greeting")
+    public static class GreetingResource {
+
+        final GreetingService greetingService;
+
+        public GreetingResource(GreetingService greetingService) {
+            this.greetingService = greetingService;
+        }
+
+        @GET
+        @Produces("text/plain")
+        public String greet() {
+            return greetingService.greet();
+        }
+    }
+
+    @ApplicationScoped
+    public static class GreetingService {
+        public String greet(){
+            return "hello";
+        }
+    }
+}
+----
+<1> Since we configured `greetingService` as a mock, the `GreetingResource` which uses the `GreetingService` bean, we get the mocked response instead of the response of the regular `GreetingService` bean
 
 == Test Bootstrap Configuration Options
 

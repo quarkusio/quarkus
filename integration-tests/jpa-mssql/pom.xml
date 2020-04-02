@@ -189,9 +189,6 @@
                                     <name>${mssqldb.image}</name>
                                     <alias>quarkus-test-mssqldb</alias>
                                     <run>
-                                        <network>
-                                            <mode>bridge</mode>
-                                        </network>
                                         <ports>
                                             <port>1433:1433</port>
                                         </ports>
@@ -205,13 +202,7 @@
                                             <color>cyan</color>
                                         </log>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
-                                            <tcp>
-                                                <mode>direct</mode>
-                                                <ports>
-                                                    <port>1433</port>
-                                                </ports>
-                                            </tcp>
+                                            <log>SQL Server is now ready for client connections</log>
                                             <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
                                             <time>40000</time>
                                         </wait>

@@ -178,9 +178,6 @@
                                     <name>${mariadb.image}</name>
                                     <alias>quarkus-test-mariadb</alias>
                                     <run>
-                                        <network>
-                                            <mode>bridge</mode>
-                                        </network>
                                         <ports>
                                             <port>3308:3306</port>
                                         </ports>
@@ -198,15 +195,10 @@
                                         <!-- Speed things up a bit by not actually flushing writes to disk -->
                                         <tmpfs>/var/lib/mysql</tmpfs>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
-                                            <tcp>
-                                                <mode>direct</mode>
-                                                <ports>
-                                                    <port>3306</port>
-                                                </ports>
-                                            </tcp>
-                                            <!-- Unfortunately booting MariaDB is slow, needs to set a generous timeout: -->
-                                            <time>40000</time>
+                                            <time>20000</time>
+                                            <exec>
+                                                <postStart>mysqladmin ping -h localhost -u hibernate_orm_test -phibernate_orm_test</postStart>
+                                            </exec>
                                         </wait>
                                         <volumes>
                                             <bind>

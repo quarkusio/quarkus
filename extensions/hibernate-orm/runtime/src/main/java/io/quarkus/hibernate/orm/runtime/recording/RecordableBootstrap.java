@@ -41,6 +41,7 @@ import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusEnvironment;
+import io.quarkus.hibernate.orm.runtime.customized.BootstrapOnlyProxyFactoryFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProviderInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
@@ -97,6 +98,9 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     // list, then changes have evolved.
     private static List<StandardServiceInitiator> standardInitiatorList() {
         final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
+
+        //This one needs to be replaced after Metadata has been recorded:
+        serviceInitiators.add(BootstrapOnlyProxyFactoryFactoryInitiator.INSTANCE);
 
         serviceInitiators.add(CfgXmlAccessServiceInitiator.INSTANCE);
         serviceInitiators.add(ConfigurationServiceInitiator.INSTANCE);

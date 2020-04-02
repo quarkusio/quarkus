@@ -48,7 +48,7 @@ public class DefaultRoleDecoder {
         }
     }
 
-    private Roles fromDefaultAttribute(AuthorizationIdentity authorizationIdentity) {
+    Roles fromDefaultAttribute(AuthorizationIdentity authorizationIdentity) {
         Attributes.Entry groups = authorizationIdentity.getAttributes().get(groupsAttribute);
 
         if (groups == null) {

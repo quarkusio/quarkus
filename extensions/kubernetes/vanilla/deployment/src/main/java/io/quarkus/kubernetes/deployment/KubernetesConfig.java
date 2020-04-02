@@ -96,6 +96,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     Map<String, PortConfig> ports;
 
     /**
+     * The number of desired pods
+     */
+    @ConfigItem(defaultValue = "1")
+    Integer replicas;
+
+    /**
      * The type of service that will be generated for the application
      */
     @ConfigItem(defaultValue = "ClusterIP")
@@ -250,6 +256,10 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     public Map<String, PortConfig> getPorts() {
         return ports;
+    }
+
+    public Integer getReplicas() {
+        return replicas;
     }
 
     public ServiceType getServiceType() {

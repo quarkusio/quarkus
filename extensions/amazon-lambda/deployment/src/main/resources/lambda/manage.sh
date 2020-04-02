@@ -9,7 +9,11 @@ function cmd_create() {
     --handler ${HANDLER} \
     --runtime ${RUNTIME} \
     --role ${LAMBDA_ROLE_ARN} \
+    --timeout 15 \
+    --memory-size 256 \
     ${LAMBDA_META}
+# Enable and move this param above ${LAMBDA_META}, if using AWS X-Ray
+#    --tracing-config Mode=Active \
 }
 
 function cmd_delete() {
@@ -27,6 +31,8 @@ function cmd_invoke() {
     --log-type Tail \
     --query 'LogResult' \
     --output text |  base64 -d
+  { set +x; } 2>/dev/null
+  cat response.txt && rm -f response.txt
 }
 
 function cmd_update() {
@@ -37,10 +43,10 @@ function cmd_update() {
     --zip-file ${ZIP_FILE}
 }
 
-FUNCTION_NAME=${resourceName}Funq
-HANDLER=io.quarkus.funqy.lambda.FunqyStreamHandler::handleRequest
-RUNTIME=java8
-ZIP_FILE=fileb://target/${artifactId}-${version}-runner.jar
+FUNCTION_NAME=${lambdaName}
+HANDLER=io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+RUNTIME=java11
+ZIP_FILE=${targetUri}
 
 function usage() {
   [ "_$1" == "_" ] && echo "\nUsage (JVM): \n$0 [create|delete|invoke]\ne.g.: $0 invoke"
@@ -59,8 +65,8 @@ fi
 if [ "$1" == "native" ]
 then
   RUNTIME=provided
-  ZIP_FILE=fileb://target/function.zip
-  FUNCTION_NAME=${resourceName}NativeFunq
+  ZIP_FILE=${targetUri}
+  FUNCTION_NAME=${lambdaName}Native
   LAMBDA_META="--environment Variables={DISABLE_SIGNAL_HANDLERS=true}"
   shift
 fi

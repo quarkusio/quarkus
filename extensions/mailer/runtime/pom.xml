@@ -45,6 +45,10 @@
                     <groupId>javax.activation</groupId>
                     <artifactId>activation</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.google.code.findbugs</groupId>
+                    <artifactId>jsr305</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

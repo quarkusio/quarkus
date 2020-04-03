@@ -96,8 +96,7 @@ class LiquibaseProcessor {
                 liquibase.sql.visitor.SqlVisitor.class);
 
         // load the liquibase services
-        Stream.of(liquibase.license.LicenseService.class,
-                liquibase.diff.compare.DatabaseObjectComparator.class,
+        Stream.of(liquibase.diff.compare.DatabaseObjectComparator.class,
                 liquibase.parser.NamespaceDetails.class,
                 liquibase.precondition.Precondition.class,
                 liquibase.database.Database.class,
@@ -109,7 +108,9 @@ class LiquibaseProcessor {
                 liquibase.executor.Executor.class,
                 liquibase.lockservice.LockService.class,
                 liquibase.sqlgenerator.SqlGenerator.class)
-                .forEach(t -> addService(reflective, generatedResource, resource, t));
+                .forEach(t -> addService(reflective, generatedResource, resource, t, true));
+
+        addService(reflective, generatedResource, resource, liquibase.license.LicenseService.class, false);
 
         Collection<String> dataSourceNames = jdbcDataSourceBuildItems.stream()
                 .map(i -> i.getName())
@@ -187,11 +188,11 @@ class LiquibaseProcessor {
     private void addService(BuildProducer<ReflectiveClassBuildItem> reflective,
             BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,
-            Class<?> className) {
+            Class<?> className, boolean methods) {
 
         Class<?>[] impl = ServiceLocator.getInstance().findClasses(className);
         if (impl != null && impl.length > 0) {
-            reflective.produce(new ReflectiveClassBuildItem(true, false, false, impl));
+            reflective.produce(new ReflectiveClassBuildItem(true, methods, false, impl));
             String resourcesList = Arrays.stream(impl)
                     .map(Class::getName)
                     .collect(Collectors.joining("\n", "", "\n"));

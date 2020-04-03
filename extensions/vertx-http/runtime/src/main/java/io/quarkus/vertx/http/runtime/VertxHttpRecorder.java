@@ -414,6 +414,10 @@ public class VertxHttpRecorder {
         final Optional<String> trustStorePassword = sslConfig.certificate.trustStorePassword;
         final HttpServerOptions serverOptions = new HttpServerOptions();
         serverOptions.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
+        Optional<MemorySize> maxChunkSize = httpConfiguration.limits.maxChunkSize;
+        if (maxChunkSize.isPresent()) {
+            serverOptions.setMaxChunkSize(maxChunkSize.get().asBigInteger().intValueExact());
+        }
         setIdleTimeout(httpConfiguration, serverOptions);
 
         if (certFile.isPresent() && keyFile.isPresent()) {
@@ -569,6 +573,10 @@ public class VertxHttpRecorder {
         options.setPort(httpConfiguration.determinePort(launchMode));
         setIdleTimeout(httpConfiguration, options);
         options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
+        Optional<MemorySize> maxChunkSize = httpConfiguration.limits.maxChunkSize;
+        if (maxChunkSize.isPresent()) {
+            options.setMaxChunkSize(maxChunkSize.get().asBigInteger().intValueExact());
+        }
         options.setWebsocketSubProtocols(websocketSubProtocols);
         options.setReusePort(httpConfiguration.soReusePort);
         options.setTcpQuickAck(httpConfiguration.tcpQuickAck);
@@ -586,6 +594,10 @@ public class VertxHttpRecorder {
         options.setHost(httpConfiguration.domainSocket);
         setIdleTimeout(httpConfiguration, options);
         options.setMaxHeaderSize(httpConfiguration.limits.maxHeaderSize.asBigInteger().intValueExact());
+        Optional<MemorySize> maxChunkSize = httpConfiguration.limits.maxChunkSize;
+        if (maxChunkSize.isPresent()) {
+            options.setMaxChunkSize(maxChunkSize.get().asBigInteger().intValueExact());
+        }
         options.setWebsocketSubProtocols(websocketSubProtocols);
         return options;
     }

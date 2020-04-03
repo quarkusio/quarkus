@@ -22,7 +22,7 @@ public class KubernetesConfigRecorder {
             return emptyRuntimeValue();
         }
 
-        return new RuntimeValue<>(new ConfigMapConfigSourceProvider(kubernetesConfigSourceConfig,
+        return new RuntimeValue<>(new KubernetesConfigSourceProvider(kubernetesConfigSourceConfig,
                 KubernetesClientUtils.createClient(clientConfig)));
     }
 

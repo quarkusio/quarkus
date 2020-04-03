@@ -11,13 +11,15 @@ import org.junit.jupiter.api.Test;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 
-class ConfigMapUtilTest {
+class ConfigMapConfigSourceUtilTest {
+
+    ConfigMapConfigSourceUtil sut = new ConfigMapConfigSourceUtil();
 
     @Test
     void testEmptyData() {
         ConfigMap configMap = configMapBuilder("testEmptyData").build();
 
-        List<ConfigSource> configSources = ConfigMapUtil.toConfigSources(configMap);
+        List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata().getName(), configMap.getData());
 
         assertThat(configSources).isEmpty();
     }
@@ -27,10 +29,10 @@ class ConfigMapUtilTest {
         ConfigMap configMap = configMapBuilder("testOnlyLiteralData")
                 .addToData("some.key", "someValue").addToData("some.other", "someOtherValue").build();
 
-        List<ConfigSource> configSources = ConfigMapUtil.toConfigSources(configMap);
+        List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata().getName(), configMap.getData());
 
         assertThat(configSources).hasOnlyOneElementSatisfying(c -> {
-            assertThat(c.getProperties()).containsExactly(entry("some.key", "someValue"),
+            assertThat(c.getProperties()).containsOnly(entry("some.key", "someValue"),
                     entry("some.other", "someOtherValue"));
             assertThat(c.getName()).contains("testOnlyLiteralData");
         });
@@ -41,10 +43,10 @@ class ConfigMapUtilTest {
         ConfigMap configMap = configMapBuilder("testOnlySingleMatchingPropertiesData")
                 .addToData("application.properties", "key1=value1\nkey2=value2\nsome.key=someValue").build();
 
-        List<ConfigSource> configSources = ConfigMapUtil.toConfigSources(configMap);
+        List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata().getName(), configMap.getData());
 
         assertThat(configSources).hasOnlyOneElementSatisfying(c -> {
-            assertThat(c.getProperties()).containsExactly(entry("key1", "value1"), entry("key2", "value2"),
+            assertThat(c.getProperties()).containsOnly(entry("key1", "value1"), entry("key2", "value2"),
                     entry("some.key", "someValue"));
             assertThat(c.getName()).contains("testOnlySingleMatchingPropertiesData");
         });
@@ -55,7 +57,7 @@ class ConfigMapUtilTest {
         ConfigMap configMap = configMapBuilder("testOnlySingleMatchingPropertiesData")
                 .addToData("app.properties", "key1=value1\nkey2=value2\nsome.key=someValue").build();
 
-        List<ConfigSource> configSources = ConfigMapUtil.toConfigSources(configMap);
+        List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata().getName(), configMap.getData());
 
         assertThat(configSources).isEmpty();
     }
@@ -65,10 +67,10 @@ class ConfigMapUtilTest {
         ConfigMap configMap = configMapBuilder("testOnlySingleMatchingYamlData")
                 .addToData("application.yaml", "key1: value1\nkey2: value2\nsome:\n  key: someValue").build();
 
-        List<ConfigSource> configSources = ConfigMapUtil.toConfigSources(configMap);
+        List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata().getName(), configMap.getData());
 
         assertThat(configSources).hasOnlyOneElementSatisfying(c -> {
-            assertThat(c.getProperties()).containsExactly(entry("key1", "value1"), entry("key2", "value2"),
+            assertThat(c.getProperties()).containsOnly(entry("key1", "value1"), entry("key2", "value2"),
                     entry("some.key", "someValue"));
             assertThat(c.getName()).contains("testOnlySingleMatchingYamlData");
         });
@@ -79,7 +81,7 @@ class ConfigMapUtilTest {
         ConfigMap configMap = configMapBuilder("testOnlySingleMatchingPropertiesData")
                 .addToData("app.yaml", "key1: value1\nkey2: value2\nsome:\n  key: someValue").build();
 
-        List<ConfigSource> configSources = ConfigMapUtil.toConfigSources(configMap);
+        List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata().getName(), configMap.getData());
 
         assertThat(configSources).isEmpty();
     }
@@ -96,25 +98,25 @@ class ConfigMapUtilTest {
                 .addToData("app.yml", "ignored3: ignoredValue3")
                 .build();
 
-        List<ConfigSource> configSources = ConfigMapUtil.toConfigSources(configMap);
+        List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata().getName(), configMap.getData());
 
         assertThat(configSources).hasSize(4);
         assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("literal"))
                 .hasOnlyOneElementSatisfying(c -> {
-                    assertThat(c.getProperties()).containsExactly(entry("some.key", "someValue"));
+                    assertThat(c.getProperties()).containsOnly(entry("some.key", "someValue"));
                 });
         assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("application.properties"))
                 .hasOnlyOneElementSatisfying(c -> {
-                    assertThat(c.getProperties()).containsExactly(entry("key1", "value1"), entry("app.key", "val"));
+                    assertThat(c.getProperties()).containsOnly(entry("key1", "value1"), entry("app.key", "val"));
                 });
         assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("application.yaml"))
                 .hasOnlyOneElementSatisfying(c -> {
-                    assertThat(c.getProperties()).containsExactly(entry("key2", "value2"),
+                    assertThat(c.getProperties()).containsOnly(entry("key2", "value2"),
                             entry("some.otherKey", "someOtherValue"));
                 });
         assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("application.yml"))
                 .hasOnlyOneElementSatisfying(c -> {
-                    assertThat(c.getProperties()).containsExactly(entry("key3", "value3"));
+                    assertThat(c.getProperties()).containsOnly(entry("key3", "value3"));
                 });
     }
 

@@ -362,7 +362,7 @@ jobs:
               elytron-security-jdbc
               elytron-undertow 
           - category: Security2
-            timeout: 45
+            timeout: 50
             keycloak: "true"
             test-modules: >
               elytron-resteasy

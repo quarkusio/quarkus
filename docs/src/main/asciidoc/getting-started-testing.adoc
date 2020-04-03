@@ -150,6 +150,7 @@ You can configure the port used by tests by configuring `quarkus.http.test-port`
 ----
 quarkus.http.test-port=8083
 ----
+`0` will result in the use of a random port (assigned by the operating system).
 ====
 
 Quarkus also provides RestAssured integration that updates the default port used by RestAssured before the tests are run,

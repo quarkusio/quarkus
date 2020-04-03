@@ -1,4 +1,4 @@
-package io.quarkus.arc.test.autoinject;
+package io.quarkus.arc.test.autoproduces;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
@@ -6,13 +6,17 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.Collections;
+import java.util.List;
 
 import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
+import javax.enterprise.context.control.ActivateRequestContext;
+import javax.enterprise.inject.Model;
 import javax.inject.Inject;
 import javax.inject.Qualifier;
 
@@ -23,45 +27,56 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class AutoFieldInjectionTest {
+public class AutoProducerMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(AutoFieldInjectionTest.class, Client.class, Producer.class));
+                    .addClasses(AutoProducerMethodTest.class, Client.class, Producers.class));
 
     @Inject
     Client bean;
 
+    @ActivateRequestContext
     @Test
-    public void testInjectionWorks() {
+    public void testProducerWorks() {
         assertEquals("ok", bean.foo);
-        assertEquals(1l, bean.bar);
+        assertEquals(13l, bean.longVal);
+        assertTrue(bean.strings.isEmpty());
     }
 
     @Dependent
     static class Client {
 
-        // @Inject is added automatically
+        @Inject
         @MyQualifier
         String foo;
 
-        @MyQualifier
-        Long bar;
+        @Inject
+        Long longVal;
+
+        @Inject
+        List<String> strings;
 
     }
 
-    static class Producer {
+    static class Producers {
 
-        // @Inject should not be added here
+        // @Produces is added automatically
         @MyQualifier
-        @Produces
-        Long producedLong = 1l;
-
-        @MyQualifier
-        @Produces
         String produceString() {
             return "ok";
+        }
+
+        // @Produces is added automatically
+        @Dependent
+        static Long produceLong() {
+            return 13l;
+        }
+
+        @Model
+        List<String> strings() {
+            return Collections.emptyList();
         }
 
     }

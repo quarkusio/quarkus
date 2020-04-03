@@ -77,14 +77,36 @@ public final class Annotations {
      * @return the parameter annotations
      */
     public static Set<AnnotationInstance> getParameterAnnotations(Collection<AnnotationInstance> annotations) {
+        return getAnnotations(Kind.METHOD_PARAMETER, annotations);
+    }
+
+    /**
+     * 
+     * @param annotations
+     * @return the annotations for the given kind
+     */
+    public static Set<AnnotationInstance> getAnnotations(Kind kind, Collection<AnnotationInstance> annotations) {
+        return getAnnotations(kind, null, annotations);
+    }
+
+    /**
+     * 
+     * @param annotations
+     * @return the annotations for the given kind and name
+     */
+    public static Set<AnnotationInstance> getAnnotations(Kind kind, DotName name, Collection<AnnotationInstance> annotations) {
         if (annotations.isEmpty()) {
             return Collections.emptySet();
         }
         Set<AnnotationInstance> ret = new HashSet<>();
         for (AnnotationInstance annotation : annotations) {
-            if (Kind.METHOD_PARAMETER == annotation.target().kind()) {
-                ret.add(annotation);
+            if (kind != annotation.target().kind()) {
+                continue;
             }
+            if (name != null && !annotation.name().equals(name)) {
+                continue;
+            }
+            ret.add(annotation);
         }
         return ret;
     }

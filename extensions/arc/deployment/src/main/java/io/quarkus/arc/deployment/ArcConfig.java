@@ -100,6 +100,14 @@ public class ArcConfig {
     @ConfigItem
     public Optional<List<String>> selectedAlternatives;
 
+    /**
+     * If set to true then {@code javax.enterprise.inject.Produces} is automatically added to all methods that are
+     * annotated with a scope annotation, a stereotype or a qualifier, and are not annotated with {@code Inject} or
+     * {@code Produces}, and no parameter is annotated with {@code Disposes}, {@code Observes} or {@code ObservesAsync}.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean autoProducerMethods;
+
     public final boolean isRemoveUnusedBeansFieldValid() {
         return ALLOWED_REMOVE_UNUSED_BEANS_VALUES.contains(removeUnusedBeans.toLowerCase());
     }

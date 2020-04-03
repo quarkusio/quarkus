@@ -537,6 +537,12 @@ public class Person extends PanacheEntity {
 }
 ----
 
+[WARNING]
+====
+Named queries can only be defined inside your JPA entity classes (being the Panache entity class, or the repository parameterized type),
+or on one of its super classes.
+====
+
 === Query parameters
 
 You can pass query parameters by index (1-based) as shown below:

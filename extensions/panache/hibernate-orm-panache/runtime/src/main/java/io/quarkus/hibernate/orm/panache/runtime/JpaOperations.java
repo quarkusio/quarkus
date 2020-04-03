@@ -265,7 +265,9 @@ public class JpaOperations {
         // FIXME: check for duplicate ORDER BY clause?
         Query jpaQuery;
         if (isNamedQuery(query)) {
-            jpaQuery = em.createNamedQuery(query.substring(1));
+            String namedQuery = query.substring(1);
+            NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
+            jpaQuery = em.createNamedQuery(namedQuery);
         } else {
             jpaQuery = em.createQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
         }
@@ -284,7 +286,9 @@ public class JpaOperations {
         // FIXME: check for duplicate ORDER BY clause?
         Query jpaQuery;
         if (isNamedQuery(query)) {
-            jpaQuery = em.createNamedQuery(query.substring(1));
+            String namedQuery = query.substring(1);
+            NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
+            jpaQuery = em.createNamedQuery(namedQuery);
         } else {
             jpaQuery = em.createQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
         }

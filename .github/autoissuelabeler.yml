@@ -3,6 +3,10 @@
   title: "(?i).*lambda.*"
   description: "(?i).*lambda.*"
   addcomment: "/cc @patriot1burke"
+- labels: [area/funqy]
+  title: "(?i).*funqy.*"
+  description: "(?i).*funqy.*"
+  addcomment: "/cc @patriot1burke"
 - labels: [area/devmode]
   title: "(?i).*dev mode.*"
   description: "(?i).*dev mode.*"

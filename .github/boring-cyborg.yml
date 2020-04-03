@@ -93,6 +93,8 @@ labelPRBasedOnFilePath:
         - independent-projects/tools/**/*
     area/documentation:
         - docs/**/*
+    area/funqy:
+        - extensions/funqy/**/*
     area/gradle:
         - devtools/gradle/**/*
     area/hibernate-orm:

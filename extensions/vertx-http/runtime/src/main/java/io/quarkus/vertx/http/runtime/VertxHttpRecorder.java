@@ -42,6 +42,7 @@ import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
+import io.quarkus.vertx.http.runtime.HttpConfiguration.InsecureRequests;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.Filters;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
@@ -365,15 +366,16 @@ public class VertxHttpRecorder {
             throw new RuntimeException("Unable to start HTTP server", e);
         }
 
-        setHttpServerTiming(httpServerOptions, sslConfig, domainSocketOptions);
+        setHttpServerTiming(httpConfiguration.insecureRequests, httpServerOptions, sslConfig, domainSocketOptions);
     }
 
-    private static void setHttpServerTiming(HttpServerOptions httpServerOptions, HttpServerOptions sslConfig,
+    private static void setHttpServerTiming(InsecureRequests insecureRequests, HttpServerOptions httpServerOptions,
+            HttpServerOptions sslConfig,
             HttpServerOptions domainSocketOptions) {
         String serverListeningMessage = "Listening on: ";
         int socketCount = 0;
 
-        if (httpServerOptions != null) {
+        if (httpServerOptions != null && !InsecureRequests.DISABLED.equals(insecureRequests)) {
             serverListeningMessage += String.format(
                     "http://%s:%s", httpServerOptions.getHost(), httpServerOptions.getPort());
             socketCount++;
@@ -383,8 +385,7 @@ public class VertxHttpRecorder {
             if (socketCount > 0) {
                 serverListeningMessage += " and ";
             }
-            serverListeningMessage = serverListeningMessage
-                    + String.format("https://%s:%s", sslConfig.getHost(), sslConfig.getPort());
+            serverListeningMessage += String.format("https://%s:%s", sslConfig.getHost(), sslConfig.getPort());
             socketCount++;
         }
 
@@ -392,8 +393,7 @@ public class VertxHttpRecorder {
             if (socketCount > 0) {
                 serverListeningMessage += " and ";
             }
-            serverListeningMessage = serverListeningMessage
-                    + String.format("unix:%s", domainSocketOptions.getHost());
+            serverListeningMessage += String.format("unix:%s", domainSocketOptions.getHost());
         }
         Timing.setHttpServer(serverListeningMessage);
     }
@@ -661,7 +661,8 @@ public class VertxHttpRecorder {
         @Override
         public void start(Future<Void> startFuture) {
             final AtomicInteger remainingCount = new AtomicInteger(0);
-            if (httpOptions != null) {
+            boolean httpServerEnabled = httpOptions != null && insecureRequests != HttpConfiguration.InsecureRequests.DISABLED;
+            if (httpServerEnabled) {
                 remainingCount.incrementAndGet();
             }
             if (httpsOptions != null) {
@@ -676,39 +677,37 @@ public class VertxHttpRecorder {
                         .fail(new IllegalArgumentException("Must configure at least one of http, https or unix domain socket"));
             }
 
-            if (insecureRequests != HttpConfiguration.InsecureRequests.DISABLED) {
-                if (httpOptions != null) {
-                    httpServer = vertx.createHttpServer(httpOptions);
-                    if (insecureRequests == HttpConfiguration.InsecureRequests.ENABLED) {
-                        httpServer.requestHandler(ACTUAL_ROOT);
-                    } else {
-                        httpServer.requestHandler(new Handler<HttpServerRequest>() {
-                            @Override
-                            public void handle(HttpServerRequest req) {
-                                try {
-                                    String host = req.getHeader(HttpHeaderNames.HOST);
-                                    if (host == null) {
-                                        //TODO: solution for HTTP/1.0, but really there is not much we can do
-                                        req.response().setStatusCode(HttpResponseStatus.NOT_FOUND.code()).end();
-                                    } else {
-                                        int includedPort = host.indexOf(":");
-                                        if (includedPort != -1) {
-                                            host = host.substring(0, includedPort);
-                                        }
-                                        req.response()
-                                                .setStatusCode(301)
-                                                .putHeader("Location",
-                                                        "https://" + host + ":" + httpsOptions.getPort() + req.uri())
-                                                .end();
+            if (httpServerEnabled) {
+                httpServer = vertx.createHttpServer(httpOptions);
+                if (insecureRequests == HttpConfiguration.InsecureRequests.ENABLED) {
+                    httpServer.requestHandler(ACTUAL_ROOT);
+                } else {
+                    httpServer.requestHandler(new Handler<HttpServerRequest>() {
+                        @Override
+                        public void handle(HttpServerRequest req) {
+                            try {
+                                String host = req.getHeader(HttpHeaderNames.HOST);
+                                if (host == null) {
+                                    //TODO: solution for HTTP/1.0, but really there is not much we can do
+                                    req.response().setStatusCode(HttpResponseStatus.NOT_FOUND.code()).end();
+                                } else {
+                                    int includedPort = host.indexOf(":");
+                                    if (includedPort != -1) {
+                                        host = host.substring(0, includedPort);
                                     }
-                                } catch (Exception e) {
-                                    req.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
+                                    req.response()
+                                            .setStatusCode(301)
+                                            .putHeader("Location",
+                                                    "https://" + host + ":" + httpsOptions.getPort() + req.uri())
+                                            .end();
                                 }
+                            } catch (Exception e) {
+                                req.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code()).end();
                             }
-                        });
-                    }
-                    setupTcpHttpServer(httpServer, httpOptions, false, startFuture, remainingCount);
+                        }
+                    });
                 }
+                setupTcpHttpServer(httpServer, httpOptions, false, startFuture, remainingCount);
             }
 
             if (domainSocketOptions != null) {

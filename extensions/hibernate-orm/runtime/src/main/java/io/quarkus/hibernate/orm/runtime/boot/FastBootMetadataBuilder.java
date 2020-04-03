@@ -76,6 +76,7 @@ import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatform;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
+import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordableBootstrap;
@@ -99,12 +100,14 @@ public class FastBootMetadataBuilder {
     private final Object validatorFactory;
     private final Collection<Class<? extends Integrator>> additionalIntegrators;
     private final Collection<ProvidedService> providedServices;
+    private final PreGeneratedProxies preGeneratedProxies;
 
     @SuppressWarnings("unchecked")
     public FastBootMetadataBuilder(final PersistenceUnitDescriptor persistenceUnit, Scanner scanner,
-            Collection<Class<? extends Integrator>> additionalIntegrators) {
+            Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies) {
         this.persistenceUnit = persistenceUnit;
         this.additionalIntegrators = additionalIntegrators;
+        this.preGeneratedProxies = preGeneratedProxies;
         final ClassLoaderService providedClassLoaderService = FlatClassLoaderService.INSTANCE;
 
         // Copying semantics from: new EntityManagerFactoryBuilderImpl( unit,
@@ -330,7 +333,7 @@ public class FastBootMetadataBuilder {
         PrevalidatedQuarkusMetadata storeableMetadata = trimBootstrapMetadata(fullMeta);
         //Make sure that the service is destroyed after the metadata has been validated and trimmed, as validation needs to use it.
         destroyServiceRegistry(fullMeta);
-        ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata);
+        ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata, preGeneratedProxies);
         return new RecordedState(dialect, jtaPlatform, storeableMetadata, buildTimeSettings, getIntegrators(),
                 providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions);
     }

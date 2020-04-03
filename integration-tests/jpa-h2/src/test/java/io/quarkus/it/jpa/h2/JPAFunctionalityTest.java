@@ -20,4 +20,9 @@ public class JPAFunctionalityTest {
         RestAssured.when().get("/jpa-h2/testfunctionality").then().body(is("OK"));
     }
 
+    @Test
+    public void testHibernateEnhancedProxies() throws Exception {
+        RestAssured.when().get("/jpa-h2/testproxy").then().body(is("OK"));
+    }
+
 }

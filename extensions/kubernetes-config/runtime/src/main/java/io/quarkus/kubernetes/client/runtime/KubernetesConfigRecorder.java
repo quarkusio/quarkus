@@ -14,7 +14,7 @@ public class KubernetesConfigRecorder {
 
     private static final Logger log = Logger.getLogger(KubernetesConfigRecorder.class);
 
-    public RuntimeValue<ConfigSourceProvider> configMaps(KubernetesConfigSourceConfig kubernetesConfigSourceConfig,
+    public RuntimeValue<ConfigSourceProvider> configSources(KubernetesConfigSourceConfig kubernetesConfigSourceConfig,
             KubernetesClientBuildConfig clientConfig) {
         if (!kubernetesConfigSourceConfig.enabled) {
             log.debug(

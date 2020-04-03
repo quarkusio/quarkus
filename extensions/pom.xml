@@ -145,6 +145,7 @@
         <module>container-image</module>
         <module>kubernetes</module>
         <module>kubernetes-client</module>
+        <module>kubernetes-config</module>
 
         <!-- Database migrations -->
         <module>flyway</module>

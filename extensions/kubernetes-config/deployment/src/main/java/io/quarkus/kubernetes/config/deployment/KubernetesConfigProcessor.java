@@ -1,4 +1,4 @@
-package io.quarkus.kubernetes.client.deployment;
+package io.quarkus.kubernetes.config.deployment;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -15,6 +15,6 @@ public class KubernetesConfigProcessor {
     public RunTimeConfigurationSourceValueBuildItem configure(KubernetesConfigRecorder recorder,
             KubernetesConfigSourceConfig config, KubernetesClientBuildConfig clientConfig) {
         return new RunTimeConfigurationSourceValueBuildItem(
-                recorder.configMaps(config, clientConfig));
+                recorder.configSources(config, clientConfig));
     }
 }

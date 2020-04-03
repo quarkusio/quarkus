@@ -27,7 +27,17 @@ public class KubernetesMockServerTestResource implements QuarkusTestResourceLife
             systemProps.put(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY, client.getConfiguration().getMasterUrl());
         }
 
+        configureMockServer(mockServer);
+
         return systemProps;
+    }
+
+    /**
+     * Can be used by subclasses of {@code KubernetesMockServerTestResource} in order to
+     * setup the mock server before the Quarkus application starts
+     */
+    public void configureMockServer(KubernetesMockServer mockServer) {
+
     }
 
     @Override

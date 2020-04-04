@@ -3497,6 +3497,11 @@
                 <version>${mutiny-client.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-mutiny-vertx-redis-client</artifactId>
+                <version>${mutiny-client.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-rx-java2</artifactId>
                 <version>${vertx.version}</version>
@@ -4097,6 +4102,18 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-vertx-graphql-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-redis-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-redis-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

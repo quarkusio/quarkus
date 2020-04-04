@@ -29,7 +29,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
 
     /**
      * The name that gets displayed in the log.
-     * 
+     *
      * @return the name
      */
     public String getName() {

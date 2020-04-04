@@ -1,0 +1,15 @@
+---
+name: "Redis Client"
+metadata:
+  keywords:
+    - "redis"
+    - "redis-client"
+    - "vertx-redis"
+    - "vertx"
+    - "vert.x"
+    - "reactive"
+  guide: "https://quarkus.io/guides/redis"
+  categories:
+    - "persistence"
+    - "reactive"
+  status: "preview"

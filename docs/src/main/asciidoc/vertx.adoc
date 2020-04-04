@@ -239,7 +239,7 @@ public class GreetingResource {
 ./mvnw compile quarkus:dev
 ----
 
-Then, open your browser to 'http://localhost:8080/lorem' and you should get the message.
+Then, open your browser to http://localhost:8080/lorem and you should get the message.
 
 So far so good.
 Now let's use the Vert.x API instead of this artificial delay:

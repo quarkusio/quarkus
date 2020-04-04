@@ -480,7 +480,7 @@ Depending on the API model you want to use you need to add the right dependency 
 
 NOTE: The `vertx-rx-java2` provides the RX Java 2 API for the whole Vert.x stack, not only the web client.
 
-In this guide, we are going to use the Axle API, so:
+In this guide, we are going to use the Mutiny API, so:
 
 [source, xml, subs=attributes+]
 ----

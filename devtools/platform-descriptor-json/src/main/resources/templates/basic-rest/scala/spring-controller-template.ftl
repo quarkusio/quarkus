@@ -1,6 +1,6 @@
 package ${package_name};
 
-import org.springframework.web.bind.annotation.{GetMapping, RequestMapping, RestController, PathVariable};
+import org.springframework.web.bind.annotation.{GetMapping, RequestMapping, RestController};
 
 
 @RestController

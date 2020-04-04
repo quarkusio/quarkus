@@ -102,6 +102,25 @@ public class HibernateOrmConfig {
     Optional<String> implicitNamingStrategy;
 
     /**
+     * Defines the method for multi-tenancy (DATABASE, NONE, SCHEMA). The complete list of allowed values is available in the
+     * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/MultiTenancyStrategy.html[Hibernate ORM JavaDoc].
+     * The type DISCRIMINATOR is currently not supported.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem
+    public Optional<String> multiTenant;
+
+    /**
+     * Defines if the tenant identifier of the "current sessions" should be validated every time the tenant identifier is
+     * resolved.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem
+    public Optional<String> validateTenantInCurrentSessions;
+
+    /**
      * Query related configuration.
      */
     @ConfigItem
@@ -169,6 +188,8 @@ public class HibernateOrmConfig {
                 database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
                 log.isAnyPropertySet() ||
+                multiTenant.isPresent() ||
+                validateTenantInCurrentSessions.isPresent() ||
                 !cache.isEmpty();
     }
 

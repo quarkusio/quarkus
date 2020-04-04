@@ -33,6 +33,7 @@ import javax.persistence.spi.PersistenceUnitTransactionType;
 
 import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricType;
+import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.DerbyTenSevenDialect;
@@ -94,6 +95,8 @@ import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
 import io.quarkus.hibernate.orm.runtime.metrics.HibernateCounter;
+import io.quarkus.hibernate.orm.runtime.tenant.HibernateCurrentTenantIdentifierResolver;
+import io.quarkus.hibernate.orm.runtime.tenant.HibernateMultiTenantConnectionProvider;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.metrics.deployment.spi.MetricBuildItem;
 
@@ -595,6 +598,35 @@ public final class HibernateOrmProcessor {
                 hibernateConfig.implicitNamingStrategy.ifPresent(
                         namingStrategy -> desc.getProperties()
                                 .setProperty(AvailableSettings.IMPLICIT_NAMING_STRATEGY, namingStrategy));
+
+                // Multi tenancy mode (DATABASE, DISCRIMINATOR, NONE, SCHEMA)
+                hibernateConfig.multiTenant.ifPresent(
+                        multiTenant -> {
+
+                            if (multiTenant.equalsIgnoreCase(MultiTenancyStrategy.DISCRIMINATOR.name())) {
+                                // See https://hibernate.atlassian.net/browse/HHH-6054
+                                throw new ConfigurationError("The Hibernate ORM multi tenancy strategy "
+                                        + MultiTenancyStrategy.DISCRIMINATOR + " is currently not supported");
+                            }
+
+                            // No need to have any config in case it's disabled
+                            if (!multiTenant.equalsIgnoreCase(MultiTenancyStrategy.NONE.name())) {
+
+                                // Enable multitenancy
+                                desc.getProperties().setProperty(AvailableSettings.MULTI_TENANT, multiTenant);
+
+                                // Multi tenant connection provider class
+                                desc.getProperties()
+                                        .setProperty(AvailableSettings.MULTI_TENANT_CONNECTION_PROVIDER,
+                                                HibernateMultiTenantConnectionProvider.class.getName());
+
+                                // Multi tenant identifier resolver class
+                                desc.getProperties()
+                                        .setProperty(AvailableSettings.MULTI_TENANT_IDENTIFIER_RESOLVER,
+                                                HibernateCurrentTenantIdentifierResolver.class.getName());
+                            }
+
+                        });
 
                 // Database
                 desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION,

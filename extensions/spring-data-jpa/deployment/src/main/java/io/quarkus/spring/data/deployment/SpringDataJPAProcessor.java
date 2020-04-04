@@ -1,5 +1,6 @@
 package io.quarkus.spring.data.deployment;
 
+import static java.util.stream.Collectors.*;
 import static java.util.stream.Collectors.toList;
 
 import java.lang.reflect.Modifier;
@@ -45,19 +46,21 @@ import io.quarkus.spring.data.deployment.generate.SpringDataRepositoryCreator;
 public class SpringDataJPAProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(SpringDataJPAProcessor.class.getName());
-    private static final Pattern pattern = Pattern.compile("spring\\.jpa\\..*");
+    private static final Pattern pattern = Pattern.compile("spring\\..*");
     public static final String SPRING_JPA_SHOW_SQL = "spring.jpa.show-sql";
     public static final String SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT = "spring.jpa.properties.hibernate.dialect";
     public static final String SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT_STORAGE_ENGINE = "spring.jpa.properties.hibernate.dialect.storage_engine";
     public static final String SPRING_JPA_GENERATE_DDL = "spring.jpa.generate-ddl";
     public static final String SPRING_JPA_HIBERNATE_NAMING_PHYSICAL_STRATEGY = "spring.jpa.hibernate.naming.physical-strategy";
     public static final String SPRING_JPA_HIBERNATE_NAMING_IMPLICIT_STRATEGY = "spring.jpa.hibernate.naming.implicit-strategy";
+    private static final String SPRING_DATASOURCE_DATA = "spring.datasource.data";
     public static final String QUARKUS_HIBERNATE_ORM_DIALECT = "quarkus.hibernate-orm.dialect";
     public static final String QUARKUS_HIBERNATE_ORM_LOG_SQL = "quarkus.hibernate-orm.log.sql";
     public static final String QUARKUS_HIBERNATE_ORM_DIALECT_STORAGE_ENGINE = "quarkus.hibernate-orm.dialect.storage-engine";
     public static final String QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION = "quarkus.hibernate-orm.database.generation";
     public static final String QUARKUS_HIBERNATE_ORM_PHYSICAL_NAMING_STRATEGY = "quarkus.hibernate-orm.physical-naming-strategy";
     public static final String QUARKUS_HIBERNATE_ORM_IMPLICIT_NAMING_STRATEGY = "quarkus.hibernate-orm.implicit-naming-strategy";
+    private static final String QUARKUS_HIBERNATE_ORM_SQL_LOAD_SCRIPT = "quarkus.hibernate-orm.sql-load-script";
 
     @BuildStep
     FeatureBuildItem registerFeature() {
@@ -125,6 +128,13 @@ public class SpringDataJPAProcessor {
                     case SPRING_JPA_HIBERNATE_NAMING_IMPLICIT_STRATEGY:
                         notSupportedProperties = notSupportedProperties + "\t- " + SPRING_JPA_HIBERNATE_NAMING_IMPLICIT_STRATEGY
                                 + " should be replaced by " + QUARKUS_HIBERNATE_ORM_IMPLICIT_NAMING_STRATEGY + "\n";
+                        break;
+                    case SPRING_DATASOURCE_DATA:
+                        notSupportedProperties = notSupportedProperties + "\t- " + QUARKUS_HIBERNATE_ORM_SQL_LOAD_SCRIPT
+                                + " could be used to load data instead of " + SPRING_DATASOURCE_DATA
+                                + " but it does not support either comma separated list of resources or resources with ant-style patterns as "
+                                + SPRING_DATASOURCE_DATA
+                                + " does, it accepts the name of the file containing the SQL statements to execute when when Hibernate ORM starts.\n";
                         break;
                     default:
                         notSupportedProperties = notSupportedProperties + "\t- " + sp + "\n";

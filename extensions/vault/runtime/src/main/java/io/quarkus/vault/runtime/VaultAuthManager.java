@@ -9,15 +9,22 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.auth.AbstractVaultAuthAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleGenerateNewSecretID;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelfAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultTokenCreate;
 import io.quarkus.vault.runtime.config.VaultAuthenticationType;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 
@@ -30,7 +37,9 @@ public class VaultAuthManager {
 
     private VaultRuntimeConfig serverConfig;
     private VaultClient vaultClient;
-    private AtomicReference<VaultToken> auth = new AtomicReference<>(null);
+    private AtomicReference<VaultToken> loginCache = new AtomicReference<>(null);
+    private Map<String, String> wrappedCache = new ConcurrentHashMap<>();
+    private Semaphore unwrapSem = new Semaphore(1);
 
     public VaultAuthManager(VaultClient vaultClient, VaultRuntimeConfig serverConfig) {
         this.vaultClient = vaultClient;
@@ -38,13 +47,24 @@ public class VaultAuthManager {
     }
 
     public String getClientToken() {
-        return serverConfig.authentication.clientToken.orElseGet(() -> login().clientToken);
+        return serverConfig.authentication.isDirectClientToken() ? getDirectClientToken() : login().clientToken;
+    }
+
+    private String getDirectClientToken() {
+
+        Optional<String> clientTokenOption = serverConfig.authentication.clientToken;
+        if (clientTokenOption.isPresent()) {
+            return clientTokenOption.get();
+        }
+
+        return unwrapWrappingTokenOnce("client token",
+                serverConfig.authentication.clientTokenWrappingToken.get(), unwrap -> unwrap.auth.clientToken,
+                VaultTokenCreate.class);
     }
 
     private VaultToken login() {
-        VaultAuthManager service = new VaultAuthManager(vaultClient, serverConfig);
-        VaultToken vaultToken = service.login(auth.get());
-        auth.set(vaultToken);
+        VaultToken vaultToken = login(loginCache.get());
+        loginCache.set(vaultToken);
         return vaultToken;
     }
 
@@ -109,13 +129,57 @@ public class VaultAuthManager {
             auth = vaultClient.loginUserPass(username, password).auth;
         } else if (type == APPROLE) {
             String roleId = serverConfig.authentication.appRole.roleId.get();
-            String secretId = serverConfig.authentication.appRole.secretId.get();
+            String secretId = getSecretId();
             auth = vaultClient.loginAppRole(roleId, secretId).auth;
         } else {
             throw new UnsupportedOperationException("unknown authType " + serverConfig.getAuthenticationType());
         }
 
         return new VaultToken(auth.clientToken, auth.renewable, auth.leaseDurationSecs);
+    }
+
+    private String getSecretId() {
+
+        Optional<String> secretIdOption = serverConfig.authentication.appRole.secretId;
+        if (secretIdOption.isPresent()) {
+            return secretIdOption.get();
+        }
+
+        return unwrapWrappingTokenOnce("secret id",
+                serverConfig.authentication.appRole.secretIdWrappingToken.get(), unwrap -> unwrap.data.secretId,
+                VaultAppRoleGenerateNewSecretID.class);
+    }
+
+    private <T> String unwrapWrappingTokenOnce(String type, String wrappingToken,
+            Function<T, String> f, Class<T> clazz) {
+
+        String wrappedValue = wrappedCache.get(wrappingToken);
+        if (wrappedValue != null) {
+            return wrappedValue;
+        }
+
+        try {
+            unwrapSem.acquire();
+            try {
+                // by the time we reach here, may be somebody has populated the cache
+                wrappedValue = wrappedCache.get(wrappingToken);
+                if (wrappedValue != null) {
+                    return wrappedValue;
+                }
+
+                T unwrap = vaultClient.unwrap(wrappingToken, clazz);
+                wrappedValue = f.apply(unwrap);
+                wrappedCache.put(wrappingToken, wrappedValue);
+                String displayValue = serverConfig.logConfidentialityLevel.maskWithTolerance(wrappedValue, LOW);
+                log.debug("unwrapped " + type + ": " + displayValue);
+                return wrappedValue;
+
+            } finally {
+                unwrapSem.release();
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException("unable to unwrap " + type);
+        }
     }
 
     private VaultKubernetesAuthAuth loginKubernetes() {

@@ -20,6 +20,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Map;
 import java.util.Properties;
@@ -42,6 +43,8 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.vault.runtime.Base64String;
 import io.quarkus.vault.runtime.VaultManager;
 import io.quarkus.vault.runtime.client.VaultClient;
+import io.quarkus.vault.runtime.client.VaultClientException;
+import io.quarkus.vault.runtime.client.dto.VaultModel;
 import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultLookupSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelf;
@@ -51,6 +54,7 @@ import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV1;
 import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
+import io.quarkus.vault.runtime.client.dto.sys.VaultWrapResult;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecrypt;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecryptBatchInput;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitDecryptBody;
@@ -138,13 +142,25 @@ public class VaultITCase {
         VaultTestExtension.assertCrudSecret(kvSecretEngine);
     }
 
+    static class WrapExample implements VaultModel {
+        public String foo = "bar";
+        public String zip = "zap";
+    }
+
     @Test
     public void httpclient() {
 
         VaultClient vaultClient = VaultManager.getInstance().getVaultClient();
 
-        String appRoleRoleId = System.getProperty("quarkus.vault.authentication.app-role.role-id");
-        String appRoleSecretId = System.getProperty("quarkus.vault.authentication.app-role.secret-id");
+        try {
+            vaultClient.unwrap("toto", Object.class);
+            fail("expected error 400: wrapping token is not valid or does not exist");
+        } catch (VaultClientException e) {
+            assertEquals(400, e.getStatus());
+        }
+
+        String appRoleRoleId = System.getProperty("vault-test.role-id");
+        String appRoleSecretId = System.getProperty("vault-test.secret-id");
         VaultAppRoleAuth vaultAppRoleAuth = vaultClient.loginAppRole(appRoleRoleId, appRoleSecretId);
         String appRoleClientToken = vaultAppRoleAuth.auth.clientToken;
         assertNotNull(appRoleClientToken);
@@ -153,6 +169,7 @@ public class VaultITCase {
         assertTokenAppRole(vaultClient, appRoleClientToken);
         assertKvSecrets(vaultClient, appRoleClientToken);
         assertDynamicCredentials(vaultClient, appRoleClientToken, APPROLE);
+        assertWrap(vaultClient, appRoleClientToken);
 
         VaultUserPassAuth vaultUserPassAuth = vaultClient.loginUserPass(VAULT_AUTH_USERPASS_USER, VAULT_AUTH_USERPASS_PASSWORD);
         String userPassClientToken = vaultUserPassAuth.auth.clientToken;
@@ -164,6 +181,14 @@ public class VaultITCase {
         assertTokenUserPass(vaultClient, userPassClientToken);
         assertKvSecrets(vaultClient, userPassClientToken);
         assertDynamicCredentials(vaultClient, userPassClientToken, USERPASS);
+        assertWrap(vaultClient, userPassClientToken);
+    }
+
+    private void assertWrap(VaultClient vaultClient, String token) {
+        VaultWrapResult wrapResult = vaultClient.wrap(token, 60, new WrapExample());
+        WrapExample unwrapExample = vaultClient.unwrap(wrapResult.wrapInfo.token, WrapExample.class);
+        assertEquals("bar", unwrapExample.foo);
+        assertEquals("zap", unwrapExample.zip);
     }
 
     private void assertTransit(VaultClient vaultClient, String token) {

@@ -34,8 +34,11 @@ public class VaultTestLifecycleManager implements QuarkusTestResourceLifecycleMa
             throw new RuntimeException(e);
         }
 
-        sysprops.put("quarkus.vault.authentication.app-role.role-id", vaultTestExtension.appRoleRoleId);
-        sysprops.put("quarkus.vault.authentication.app-role.secret-id", vaultTestExtension.appRoleSecretId);
+        sysprops.put("vault-test.role-id", vaultTestExtension.appRoleRoleId);
+        sysprops.put("vault-test.secret-id", vaultTestExtension.appRoleSecretId);
+
+        sysprops.put("vault-test.secret-id-wrapping-token", vaultTestExtension.appRoleSecretIdWrappingToken);
+        sysprops.put("vault-test.client-token-wrapping-token", vaultTestExtension.clientTokenWrappingToken);
 
         log.info("using system properties " + sysprops);
 

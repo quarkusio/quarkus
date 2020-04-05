@@ -3,6 +3,8 @@ package io.quarkus.vault.test;
 import static io.quarkus.vault.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.regex.Pattern.MULTILINE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -10,9 +12,12 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.testcontainers.containers.BindMode.READ_ONLY;
 import static org.testcontainers.containers.PostgreSQLContainer.POSTGRESQL_PORT;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -24,6 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.sql.DataSource;
 
@@ -81,6 +88,10 @@ public class VaultTestExtension {
     public static final String TMP_VAULT_POLICY_FILE = "/tmp/vault.policy";
     public static final String TMP_POSTGRES_INIT_SQL_FILE = "/tmp/postgres-init.sql";
     public static final String TEST_QUERY_STRING = "SELECT 1";
+    public static final String CONTAINER_TMP_CMD = "/tmp/cmd";
+    public static final String HOST_VAULT_TMP_CMD = "target/vault_cmd";
+    public static final String HOST_POSTGRES_TMP_CMD = "target/postgres_cmd";
+    public static final String OUT_FILE = "/out";
 
     private static String CRUD_PATH = "crud";
 
@@ -89,6 +100,8 @@ public class VaultTestExtension {
     public String rootToken = null;
     public String appRoleSecretId = null;
     public String appRoleRoleId = null;
+    public String appRoleSecretIdWrappingToken = null;
+    public String clientTokenWrappingToken = null;
 
     private VaultManager vaultManager = createVaultManager();
 
@@ -167,6 +180,8 @@ public class VaultTestExtension {
 
         log.info("start containers on " + System.getProperty("os.name"));
 
+        new File(HOST_POSTGRES_TMP_CMD).mkdirs();
+
         Network network = Network.newNetwork();
 
         postgresContainer = new PostgreSQLContainer<>()
@@ -174,6 +189,7 @@ public class VaultTestExtension {
                 .withUsername(DB_USERNAME)
                 .withPassword(DB_PASSWORD)
                 .withNetwork(network)
+                .withFileSystemBind(HOST_POSTGRES_TMP_CMD, CONTAINER_TMP_CMD)
                 .withNetworkAliases(POSTGRESQL_HOST)
                 .withExposedPorts(POSTGRESQL_PORT)
                 .withClasspathResourceMapping("postgres-init.sql", TMP_POSTGRES_INIT_SQL_FILE, READ_ONLY);
@@ -184,12 +200,15 @@ public class VaultTestExtension {
 
         log.info("starting vault with url=" + VAULT_URL + " and config file=" + configFile);
 
+        new File(HOST_VAULT_TMP_CMD).mkdirs();
+
         vaultContainer = new GenericContainer<>("vault:" + getVaultVersion())
                 .withExposedPorts(VAULT_PORT)
                 .withEnv("SKIP_SETCAP", "true")
                 .withEnv("VAULT_SKIP_VERIFY", "true") // this is internal to the container
                 .withEnv("VAULT_ADDR", VAULT_URL)
                 .withNetwork(network)
+                .withFileSystemBind(HOST_VAULT_TMP_CMD, CONTAINER_TMP_CMD)
                 .withClasspathResourceMapping(configFile, TMP_VAULT_CONFIG_JSON_FILE, READ_ONLY)
                 .withClasspathResourceMapping("vault-tls.key", "/tmp/vault-tls.key", READ_ONLY)
                 .withClasspathResourceMapping("vault-tls.crt", "/tmp/vault-tls.crt", READ_ONLY)
@@ -247,6 +266,14 @@ public class VaultTestExtension {
         appRoleRoleId = vaultClient.getAppRoleRoleId(rootToken, VAULT_AUTH_APPROLE).data.roleId;
         log.info(
                 format("generated role_id=%s secret_id=%s for approle=%s", appRoleRoleId, appRoleSecretId, VAULT_AUTH_APPROLE));
+
+        // wrapped
+        appRoleSecretIdWrappingToken = fetchWrappingToken(
+                execVault(format("vault write -wrap-ttl=60s -f auth/approle/role/%s/secret-id", VAULT_AUTH_APPROLE)));
+        log.info("appRoleSecretIdWrappingToken=" + appRoleSecretIdWrappingToken);
+        clientTokenWrappingToken = fetchWrappingToken(
+                execVault(format("vault token create -wrap-ttl=60s -ttl=10m -policy=%s", VAULT_POLICY)));
+        log.info("clientTokenWrappingToken=" + clientTokenWrappingToken);
 
         // policy
         execVault(format("vault policy write %s /tmp/vault.policy", VAULT_POLICY));
@@ -309,6 +336,16 @@ public class VaultTestExtension {
         execVault("vault secrets enable totp");
     }
 
+    private String fetchWrappingToken(String out) {
+        Pattern wrappingTokenPattern = Pattern.compile("^wrapping_token:\\s+([^\\s]+)$", MULTILINE);
+        Matcher matcher = wrappingTokenPattern.matcher(out);
+        if (matcher.find()) {
+            return matcher.group(1);
+        } else {
+            throw new RuntimeException("unable to find wrapping_token in " + out);
+        }
+    }
+
     public static boolean useTls() {
         return System.getProperty("vault-test-extension.use-tls", TRUE.toString()).equals(TRUE.toString());
     }
@@ -324,13 +361,22 @@ public class VaultTestExtension {
         fail("vault failed to start");
     }
 
-    private Container.ExecResult execPostgres(String command) throws IOException, InterruptedException {
-        return exec(postgresContainer, new String[] { "/bin/sh", "-c", command });
+    private String execPostgres(String command) throws IOException, InterruptedException {
+        String[] cmd = { "/bin/sh", "-c", command + " > " + CONTAINER_TMP_CMD + OUT_FILE };
+        return exec(postgresContainer, command, cmd, HOST_POSTGRES_TMP_CMD + OUT_FILE);
     }
 
-    private Container.ExecResult execVault(String command) throws IOException, InterruptedException {
-        String[] cmd = createVaultCommand(command);
-        return exec(vaultContainer, cmd);
+    private String execVault(String command) throws IOException, InterruptedException {
+        String[] cmd = createVaultCommand(command + " > " + CONTAINER_TMP_CMD + OUT_FILE);
+        return exec(vaultContainer, command, cmd, HOST_VAULT_TMP_CMD + OUT_FILE);
+    }
+
+    private String exec(GenericContainer container, String command, String[] cmd, String outFile)
+            throws IOException, InterruptedException {
+        exec(container, cmd);
+        String out = new String(Files.readAllBytes(Paths.get(outFile)), UTF_8);
+        log.info("> " + command + "\n" + out);
+        return out;
     }
 
     private static Container.ExecResult exec(GenericContainer container, String[] cmd)
@@ -342,8 +388,6 @@ public class VaultTestExtension {
             throw new RuntimeException(
                     "command " + Arrays.asList(cmd) + " failed with exit code " + execResult.getExitCode() + "\n"
                             + execResult.getStderr());
-        } else {
-            log.info("> " + Arrays.asList(cmd) + "\n" + execResult.getStdout());
         }
         return execResult;
     }

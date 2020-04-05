@@ -210,6 +210,8 @@ public class VaultConfigSource implements ConfigSource {
         serverConfig.authentication.kubernetes = new VaultKubernetesAuthenticationConfig();
         serverConfig.url = newURL(getOptionalVaultProperty("url"));
         serverConfig.authentication.clientToken = getOptionalVaultProperty("authentication.client-token");
+        serverConfig.authentication.clientTokenWrappingToken = getOptionalVaultProperty(
+                "authentication.client-token-wrapping-token");
         serverConfig.authentication.kubernetes.role = getOptionalVaultProperty("authentication.kubernetes.role");
         serverConfig.authentication.kubernetes.jwtTokenPath = getVaultProperty("authentication.kubernetes.jwt-token-path",
                 DEFAULT_KUBERNETES_JWT_TOKEN_PATH);
@@ -217,6 +219,8 @@ public class VaultConfigSource implements ConfigSource {
         serverConfig.authentication.userpass.password = getOptionalVaultProperty("authentication.userpass.password");
         serverConfig.authentication.appRole.roleId = getOptionalVaultProperty("authentication.app-role.role-id");
         serverConfig.authentication.appRole.secretId = getOptionalVaultProperty("authentication.app-role.secret-id");
+        serverConfig.authentication.appRole.secretIdWrappingToken = getOptionalVaultProperty(
+                "authentication.app-role.secret-id-wrapping-token");
         serverConfig.renewGracePeriod = getVaultDuration("renew-grace-period", DEFAULT_RENEW_GRACE_PERIOD);
         serverConfig.secretConfigCachePeriod = getVaultDuration("secret-config-cache-period",
                 DEFAULT_SECRET_CONFIG_CACHE_PERIOD);

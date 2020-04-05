@@ -2,11 +2,11 @@ package io.quarkus.vault.runtime.client;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static io.quarkus.vault.runtime.client.OkHttpClientFactory.createHttpClient;
+import static java.util.Collections.emptyMap;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,6 +38,8 @@ import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesBody;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
 import io.quarkus.vault.runtime.client.dto.sys.VaultSealStatusResult;
+import io.quarkus.vault.runtime.client.dto.sys.VaultUnwrapBody;
+import io.quarkus.vault.runtime.client.dto.sys.VaultWrapResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyBody;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPGenerateCodeResult;
@@ -243,13 +245,25 @@ public class OkHttpVaultClient implements VaultClient {
 
     @Override
     public VaultSealStatusResult systemSealStatus() {
-        return get("sys/seal-status", Collections.emptyMap(), VaultSealStatusResult.class);
+        return get("sys/seal-status", emptyMap(), VaultSealStatusResult.class);
     }
 
     @Override
     public VaultInitResponse init(int secretShares, int secretThreshold) {
         VaultInitBody body = new VaultInitBody(secretShares, secretThreshold);
         return put("sys/init", body, VaultInitResponse.class);
+    }
+
+    public VaultWrapResult wrap(String token, long ttl, Object object) {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("X-Vault-Wrap-TTL", "" + ttl);
+        return post("sys/wrapping/wrap", token, headers, object, VaultWrapResult.class);
+    }
+
+    @Override
+    public <T> T unwrap(String wrappingToken, Class<T> resultClass) {
+        VaultUnwrapBody body = new VaultUnwrapBody(null);
+        return post("sys/wrapping/unwrap", wrappingToken, body, resultClass);
     }
 
     // ---
@@ -270,7 +284,13 @@ public class OkHttpVaultClient implements VaultClient {
     }
 
     protected <T> T post(String path, String token, Object body, Class<T> resultClass) {
-        Request request = builder(path, token).post(requestBody(body)).build();
+        return post(path, token, emptyMap(), body, resultClass);
+    }
+
+    protected <T> T post(String path, String token, Map<String, String> headers, Object body, Class<T> resultClass) {
+        Request.Builder builder = builder(path, token).post(requestBody(body));
+        headers.forEach(builder::header);
+        Request request = builder.build();
         return exec(request, resultClass);
     }
 

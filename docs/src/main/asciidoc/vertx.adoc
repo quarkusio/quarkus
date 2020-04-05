@@ -178,7 +178,8 @@ vertx.fileSystem().readFile("lorem-ipsum.txt", ar -> {
 // Mutiny Vert.x:
 vertx.fileSystem().readFile("lorem-ipsum.txt")
     .onItem().apply(buffer -> buffer.toString("UTF-8"))
-    .subscribe(
+    .subscribe()
+    .with(
             content -> System.out.println("Content: " + content),
             err -> System.out.println("Cannot read the file: " + err.getMessage())
     );

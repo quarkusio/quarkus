@@ -11,12 +11,15 @@ import javax.json.Json;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestExtension;
 
-@QuarkusTest
 public class ValidatorTestCase {
+
+    @RegisterExtension
+    static QuarkusTestExtension quarkusTestExtension = new QuarkusTestExtension();
 
     @TestHTTPResource("validator/manual")
     URL uri;

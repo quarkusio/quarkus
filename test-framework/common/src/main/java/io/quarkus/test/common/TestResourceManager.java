@@ -1,19 +1,7 @@
 package io.quarkus.test.common;
 
-import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
-
 import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,8 +15,8 @@ import java.util.Set;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 
 public class TestResourceManager implements Closeable {
 
@@ -97,7 +85,7 @@ public class TestResourceManager implements Closeable {
 
     @SuppressWarnings("unchecked")
     private List<QuarkusTestResourceLifecycleManager> getTestResources(Class<?> testClass) {
-        IndexView index = indexTestClasses(testClass);
+        IndexView index = getIndex(testClass);
 
         Set<Class<? extends QuarkusTestResourceLifecycleManager>> testResourceRunnerClasses = new LinkedHashSet<>();
 
@@ -137,55 +125,13 @@ public class TestResourceManager implements Closeable {
         return testResourceRunners;
     }
 
-    private IndexView indexTestClasses(Class<?> testClass) {
-        final Indexer indexer = new Indexer();
-        final Path testClassesLocation = getTestClassesLocation(testClass);
+    private Index getIndex(Class<?> testClass) {
         try {
-            if (Files.isDirectory(testClassesLocation)) {
-                indexTestClassesDir(indexer, testClassesLocation);
-            } else {
-                try (FileSystem jarFs = FileSystems.newFileSystem(testClassesLocation, null)) {
-                    for (Path p : jarFs.getRootDirectories()) {
-                        indexTestClassesDir(indexer, p);
-                    }
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to index the test-classes/ directory.", e);
+            // the index should have been written by the test extension but it doesn't have to
+            return TestClassIndexer.readIndex(testClass);
+        } catch (Exception e) {
+            return TestClassIndexer.indexTestClasses(testClass);
         }
-        return indexer.complete();
     }
 
-    private void indexTestClassesDir(Indexer indexer, final Path testClassesLocation) throws IOException {
-        Files.walkFileTree(testClassesLocation, new FileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                    throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (!file.toString().endsWith(".class")) {
-                    return FileVisitResult.CONTINUE;
-                }
-                try (InputStream inputStream = Files.newInputStream(file, StandardOpenOption.READ)) {
-                    indexer.index(inputStream);
-                } catch (Exception e) {
-                    // ignore
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-        });
-    }
 }

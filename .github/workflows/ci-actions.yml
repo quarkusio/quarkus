@@ -320,7 +320,7 @@ jobs:
               reactive-mysql-client
           - category: Data3
             postgres: "true"
-            timeout: 35
+            timeout: 40
             test-modules: >
               flyway
               hibernate-orm-panache

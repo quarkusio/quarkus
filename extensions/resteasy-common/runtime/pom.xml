@@ -26,7 +26,6 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-core</artifactId>
         </dependency>
-        <!--
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-context-propagation</artifactId>
@@ -37,7 +36,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>

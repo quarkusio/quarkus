@@ -68,6 +68,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.restclient.runtime.RestClientBase;
 import io.quarkus.restclient.runtime.RestClientRecorder;
 import io.quarkus.resteasy.common.deployment.JaxrsProvidersToRegisterBuildItem;
+import io.quarkus.resteasy.common.deployment.RestClientBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyDotNames;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 
@@ -145,6 +146,7 @@ class RestClientProcessor {
             BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
             BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
+            BuildProducer<RestClientBuildItem> restClient,
             RestClientRecorder restClientRecorder) {
 
         // According to the spec only rest client interfaces annotated with RegisterRestClient are registered as beans
@@ -158,6 +160,10 @@ class RestClientProcessor {
 
         if (interfaces.isEmpty()) {
             return;
+        }
+
+        for (DotName interfaze : interfaces.keySet()) {
+            restClient.produce(new RestClientBuildItem(interfaze.toString()));
         }
 
         for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {

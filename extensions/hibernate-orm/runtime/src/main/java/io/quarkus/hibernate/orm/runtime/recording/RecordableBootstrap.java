@@ -25,8 +25,6 @@ import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.hql.internal.QueryTranslatorFactoryInitiator;
-import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.integrator.spi.IntegratorService;
 import org.hibernate.persister.internal.PersisterClassResolverInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
@@ -350,7 +348,6 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     @Override
     @SuppressWarnings("unchecked")
     public StandardServiceRegistry build() {
-        applyServiceContributingIntegrators();
         applyServiceContributors();
 
         final Map settingsCopy = new HashMap();
@@ -359,15 +356,6 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
         return new StandardServiceRegistryImpl(autoCloseRegistry, bootstrapServiceRegistry, initiators,
                 providedServices, settingsCopy);
-    }
-
-    @SuppressWarnings("deprecation")
-    private void applyServiceContributingIntegrators() {
-        for (Integrator integrator : bootstrapServiceRegistry.getService(IntegratorService.class).getIntegrators()) {
-            if (org.hibernate.integrator.spi.ServiceContributingIntegrator.class.isInstance(integrator)) {
-                org.hibernate.integrator.spi.ServiceContributingIntegrator.class.cast(integrator).prepareServices(this);
-            }
-        }
     }
 
     private void applyServiceContributors() {

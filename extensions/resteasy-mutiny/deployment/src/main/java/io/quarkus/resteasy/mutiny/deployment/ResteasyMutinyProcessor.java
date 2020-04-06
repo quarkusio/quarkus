@@ -1,7 +1,9 @@
 package io.quarkus.resteasy.mutiny.deployment;
 
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.mutiny.runtime.MultiInvokerProvider;
@@ -18,6 +20,11 @@ public class ResteasyMutinyProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.RESTEASY_MUTINY);
+    }
+
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.RESTEASY_MUTINY_EXTENSION);
     }
 
     @BuildStep

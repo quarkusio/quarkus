@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -163,6 +164,17 @@ public class ResteasyCommonProcessor {
                                 "information on how to set one.");
             }
         }
+        if (!capabilities.isCapabilityPresent(Capabilities.RESTEASY_MUTINY_EXTENSION)) {
+            String needsMutinyClasses = mutinySupportNeeded(indexBuildItem);
+            if (needsMutinyClasses != null) {
+                LOGGER.warn(
+                        "Quarkus detected the need for Mutiny reactive programming support, however the quarkus-resteasy-mutiny extension"
+                                + "was not present. Reactive REST endpoints in your application that return Uni or Multi " +
+                                "will not function as you expect until you add this extension. Endpoints that need Mutiny are: "
+                                + needsMutinyClasses);
+            }
+
+        }
 
         // we add a couple of default providers
         providersToRegister.add(StringTextStar.class.getName());
@@ -189,6 +201,32 @@ public class ResteasyCommonProcessor {
         }
 
         return new JaxrsProvidersToRegisterBuildItem(providersToRegister, contributedProviders, useBuiltinProviders);
+    }
+
+    private String mutinySupportNeeded(CombinedIndexBuildItem indexBuildItem) {
+        Set<DotName> mutinyTypes = new HashSet<>(Arrays.asList(DotName.createSimple("io.smallrye.mutiny.Uni"),
+                DotName.createSimple("io.smallrye.mutiny.Multi"),
+                DotName.createSimple("io.smallrye.mutiny.GroupedMulti")));
+        List<MethodInfo> methods = new ArrayList<>();
+        for (DotName annotation : ResteasyDotNames.JAXRS_METHOD_ANNOTATIONS) {
+            for (AnnotationInstance instance : indexBuildItem.getIndex().getAnnotations(annotation)) {
+                MethodInfo methodInfo = instance.target().asMethod();
+                Type type = methodInfo.returnType();
+                if (mutinyTypes.contains(type.name())) {
+                    methods.add(methodInfo);
+                }
+            }
+        }
+        if (methods.isEmpty()) {
+            return null;
+        }
+        return methods.stream().map(new Function<MethodInfo, String>() {
+            @Override
+            public String apply(MethodInfo methodInfo) {
+                return methodInfo.declaringClass().toString() + "{" + methodInfo.toString() + "}";
+            }
+        }).collect(Collectors.joining(", "));
+
     }
 
     private void checkProperConfigAccessInProvider(AnnotationInstance instance) {

@@ -19,7 +19,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -75,7 +74,7 @@ public class QuarkusDev extends QuarkusTask {
 
     private String workingDir;
 
-    private String jvmArgs;
+    private List<String> jvmArgs;
 
     private boolean preventnoverify = false;
 
@@ -128,12 +127,12 @@ public class QuarkusDev extends QuarkusTask {
 
     @Optional
     @Input
-    public String getJvmArgs() {
+    public List<String> getJvmArgs() {
         return jvmArgs;
     }
 
     @Option(description = "Set JVM arguments", option = "jvm-args")
-    public void setJvmArgs(String jvmArgs) {
+    public void setJvmArgs(List<String> jvmArgs) {
         this.jvmArgs = jvmArgs;
     }
 
@@ -220,7 +219,7 @@ public class QuarkusDev extends QuarkusTask {
                 }
             }
             if (getJvmArgs() != null) {
-                args.addAll(Arrays.asList(getJvmArgs().split(" ")));
+                args.addAll(getJvmArgs());
             }
 
             // the following flags reduce startup time and are acceptable only for dev purposes

@@ -8,7 +8,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -34,6 +36,7 @@ import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
+import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageResultBuildItem;
 import io.quarkus.deployment.IsNormal;
@@ -57,11 +60,12 @@ public class JibProcessor {
 
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class }, onlyIfNot = NativeBuild.class)
     public void buildFromJar(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
-            JarBuildItem sourceJarBuildItem,
-            MainClassBuildItem mainClassBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem, ApplicationInfoBuildItem applicationInfo,
+            JarBuildItem sourceJar,
+            MainClassBuildItem mainClass,
+            OutputTargetBuildItem outputTarget, ApplicationInfoBuildItem applicationInfo,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
+            List<ContainerImageLabelBuildItem> containerImageLabels,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer) {
 
@@ -71,9 +75,7 @@ public class JibProcessor {
         }
 
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromJar(containerImageConfig, jibConfig,
-                sourceJarBuildItem,
-                outputTargetBuildItem,
-                mainClassBuildItem);
+                sourceJar, outputTarget, mainClass, containerImageLabels);
         JibContainer container = containerize(applicationInfo, containerImageConfig, jibConfig, jibContainerBuilder,
                 pushRequest.isPresent());
 
@@ -85,10 +87,11 @@ public class JibProcessor {
 
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class, NativeBuild.class })
     public void buildFromNative(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
-            NativeImageBuildItem nativeImageBuildItem,
+            NativeImageBuildItem nativeImage,
             ApplicationInfoBuildItem applicationInfo,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
+            List<ContainerImageLabelBuildItem> containerImageLabels,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer) {
 
@@ -97,13 +100,13 @@ public class JibProcessor {
             return;
         }
 
-        if (!NativeBinaryUtil.nativeIsLinuxBinary(nativeImageBuildItem)) {
+        if (!NativeBinaryUtil.nativeIsLinuxBinary(nativeImage)) {
             throw new RuntimeException(
                     "The native binary produced by the build is not a Linux binary and therefore cannot be used in a Linux container image. Consider adding \"quarkus.native.container-build=true\" to your configuration");
         }
 
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(containerImageConfig, jibConfig,
-                nativeImageBuildItem);
+                nativeImage, containerImageLabels);
         JibContainer container = containerize(applicationInfo, containerImageConfig, jibConfig, jibContainerBuilder,
                 pushRequest.isPresent());
 
@@ -189,7 +192,8 @@ public class JibProcessor {
 
     private JibContainerBuilder createContainerBuilderFromJar(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
             JarBuildItem sourceJarBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem, MainClassBuildItem mainClassBuildItem) {
+            OutputTargetBuildItem outputTargetBuildItem, MainClassBuildItem mainClassBuildItem,
+            List<ContainerImageLabelBuildItem> containerImageLabels) {
         try {
             // not ideal since this has been previously zipped - we would like to just reuse it
             Path classesDir = outputTargetBuildItem.getOutputDirectory().resolve("jib");
@@ -211,6 +215,7 @@ public class JibProcessor {
 
             return javaContainerBuilder.toContainerBuilder()
                     .setEnvironment(jibConfig.environmentVariables)
+                    .setLabels(allLabels(jibConfig, containerImageLabels))
                     .setCreationTime(Instant.now());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -220,7 +225,7 @@ public class JibProcessor {
     }
 
     private JibContainerBuilder createContainerBuilderFromNative(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
-            NativeImageBuildItem nativeImageBuildItem) {
+            NativeImageBuildItem nativeImageBuildItem, List<ContainerImageLabelBuildItem> containerImageLabels) {
         List<String> entrypoint = new ArrayList<>(jibConfig.nativeArguments.size() + 1);
         entrypoint.add("./" + BINARY_NAME_IN_CONTAINER);
         entrypoint.addAll(jibConfig.nativeArguments);
@@ -234,10 +239,24 @@ public class JibProcessor {
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
                     .setEnvironment(jibConfig.environmentVariables)
+                    .setLabels(allLabels(jibConfig, containerImageLabels))
                     .setCreationTime(Instant.now());
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Map<String, String> allLabels(JibConfig jibConfig, List<ContainerImageLabelBuildItem> containerImageLabels) {
+        if (jibConfig.labels.isEmpty() && containerImageLabels.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        final Map<String, String> allLabels = new HashMap<>(jibConfig.labels);
+        for (ContainerImageLabelBuildItem containerImageLabel : containerImageLabels) {
+            // we want the user supplied labels to take precedence so the user can override labels generated from other extensions if desired
+            allLabels.putIfAbsent(containerImageLabel.getName(), containerImageLabel.getValue());
+        }
+        return allLabels;
     }
 
     // TODO: this predicate is rather simplistic since it results in creating the directory structure in both the resources and classes so it should probably be improved to remove empty directories

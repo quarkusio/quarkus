@@ -9,7 +9,7 @@ import io.quarkus.runtime.configuration.MemorySize;
 @ConfigGroup
 public class ServerLimitsConfig {
     /**
-     * The the maximum length of all headers.
+     * The maximum length of all headers.
      */
     @ConfigItem(defaultValue = "20K")
     public MemorySize maxHeaderSize;
@@ -20,4 +20,10 @@ public class ServerLimitsConfig {
      */
     @ConfigItem
     public Optional<MemorySize> maxBodySize;
+
+    /**
+     * The max HTTP chunk size
+     */
+    @ConfigItem
+    public Optional<MemorySize> maxChunkSize;
 }

@@ -426,6 +426,57 @@ public class CustomTracerConfiguration {
 `@DefaultBean` allows extensions (or any other code for that matter) to provide defaults while backing off if beans of that type are supplied in any
 way Quarkus supports.
 
+=== Enabling Beans for Quarkus Build Profile
+
+Quarkus adds a capability that CDI currently does not support which is to conditionally enable a bean when a Quarkus build time profile is enabled,
+via the `@io.quarkus.arc.profile.IfBuildProfile` and `@io.quarkus.arc.profile.UnlessBuildProfile` annotations.
+When used in conjunction with `@io.quarkus.arc.DefaultBean`, these annotations allow for the creation of different bean configurations for different build profiles.
+
+Imagine for instance that an application contains a bean named `Tracer`, which needs to be do nothing when in tests or dev-mode, but work in its normal capacity for the production artifact.
+An elegant way to create such beans is the following:
+
+[source,java]
+----
+@Dependent
+public class TracerConfiguration {
+
+    @Produces
+    @IfBuildProfile("prod")
+    public Tracer realTracer(Reporter reporter, Configuration configuration) {
+        return new RealTracer(reporter, configuration);
+    }
+
+    @Produces
+    @DefaultBean
+    public Tracer noopTracer() {
+        return new NoopTracer();
+    }
+}
+----
+
+If instead, it is required that the `Tracer` bean also work in dev-mode and only default to doing nothing for tests, then `@UnlessBuildProfile` would be ideal. The code would look like:
+
+[source,java]
+----
+@Dependent
+public class TracerConfiguration {
+
+    @Produces
+    @DefaultBean
+    public Tracer realTracer(Reporter reporter, Configuration configuration) {
+        return new RealTracer(reporter, configuration);
+    }
+
+    @Produces
+    @UnlessBuildProfile("prod") // this will be enabled for both test and dev build time profiles
+    public Tracer noopTracer() {
+        return new NoopTracer();
+    }
+}
+----
+
+NOTE: The runtime profile has absolutely no effect on the bean resolution using `@IfBuildProfile` and `@UnlessBuildProfile`.
+
 === Declaring Selected Alternatives
 
 In CDI, an alternative bean may be selected either globally for an application by means of `@Priority`, or for a bean archive using a `beans.xml` descriptor.

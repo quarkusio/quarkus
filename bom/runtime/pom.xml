@@ -274,6 +274,18 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-ide-launcher</artifactId>
+                <version>${project.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <!-- This has shaded dependencies -->
+                        <groupId>*</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-arc</artifactId>
                 <version>${project.version}</version>
             </dependency>

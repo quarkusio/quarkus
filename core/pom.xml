@@ -17,10 +17,10 @@
         <module>deployment</module>
         <module>runtime</module>
         <module>processor</module>
-        <module>devmode</module>
         <module>builder</module>
         <module>test-extension</module>
         <module>devmode-spi</module>
+        <module>launcher</module>
     </modules>
 
     <build>

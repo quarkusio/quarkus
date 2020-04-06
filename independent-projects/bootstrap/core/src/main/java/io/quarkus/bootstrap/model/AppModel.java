@@ -175,9 +175,16 @@ public class AppModel implements Serializable {
         }
 
         public AppModel build() {
-            Predicate<AppDependency> includePredicate = s -> !excludedArtifacts
-                    .contains(new AppArtifactKey(s.getArtifact().getGroupId(), s.getArtifact().getArtifactId(),
-                            s.getArtifact().getClassifier(), s.getArtifact().getType()));
+            Predicate<AppDependency> includePredicate = s -> {
+                //we never include the ide launcher in the final app model
+                if (s.getArtifact().getGroupId().equals("io.quarkus")
+                        && s.getArtifact().getArtifactId().equals("quarkus-ide-launcher")) {
+                    return false;
+                }
+                return !excludedArtifacts
+                        .contains(new AppArtifactKey(s.getArtifact().getGroupId(), s.getArtifact().getArtifactId(),
+                                s.getArtifact().getClassifier(), s.getArtifact().getType()));
+            };
             List<AppDependency> runtimeDeps = this.runtimeDeps.stream().filter(includePredicate).collect(Collectors.toList());
             List<AppDependency> deploymentDeps = this.deploymentDeps.stream().filter(includePredicate)
                     .collect(Collectors.toList());

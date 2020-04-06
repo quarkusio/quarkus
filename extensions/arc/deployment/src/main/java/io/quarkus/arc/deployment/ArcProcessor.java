@@ -16,6 +16,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -60,6 +62,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -72,6 +75,8 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.runner.bootstrap.BootstrapDebug;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.QuarkusApplication;
+import io.quarkus.runtime.annotations.QuarkusMain;
 
 /**
  * This class contains build steps that trigger various phases of the bean processing.
@@ -96,6 +101,16 @@ public class ArcProcessor {
     @BuildStep
     CapabilityBuildItem capability() {
         return new CapabilityBuildItem(Capabilities.CDI_ARC);
+    }
+
+    @BuildStep
+    AdditionalBeanBuildItem quarkusApplication(CombinedIndexBuildItem combinedIndexBuildItem) {
+        return AdditionalBeanBuildItem.builder().setUnremovable()
+                .setDefaultScope(DotName.createSimple(ApplicationScoped.class.getName()))
+                .addBeanClasses(combinedIndexBuildItem.getIndex()
+                        .getAllKnownImplementors(DotName.createSimple(QuarkusApplication.class.getName())).stream()
+                        .map(s -> s.name().toString()).toArray(String[]::new))
+                .build();
     }
 
     // PHASE 1 - build BeanProcessor, register custom contexts
@@ -482,6 +497,11 @@ public class ArcProcessor {
             }
         }
         return predicates;
+    }
+
+    @BuildStep
+    BeanDefiningAnnotationBuildItem quarkusMain() {
+        return new BeanDefiningAnnotationBuildItem(DotName.createSimple(QuarkusMain.class.getName()), DotNames.SINGLETON);
     }
 
     private abstract static class AbstractCompositeApplicationClassesPredicate<T> implements Predicate<T> {

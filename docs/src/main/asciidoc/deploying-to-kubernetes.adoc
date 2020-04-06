@@ -207,6 +207,8 @@ To add additional custom labels, for example `foo=bar` just apply the following 
 quarkus.kubernetes.labels.foo=bar
 ----
 
+NOTE: When using the `quarkus-container-image-jib` extension to build a container image, then any label added via the aforementioned property will also be added to the generated container image.
+
 ====  Annotations
 
 Out of the box, the generated resources will be annotated with version control related information that can be used either by tooling, or by the user for troubleshooting purposes.

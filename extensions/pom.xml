@@ -129,6 +129,7 @@
         <module>amazon-lambda-xray</module>
         <module>amazon-lambda-http</module>
         <module>amazon-dynamodb</module>
+        <module>amazon-alexa</module>
         <module>azure-functions-http</module>
 
         <!-- New Frameworks -->

@@ -427,8 +427,8 @@ public class OidcTenantConfig {
             return cookiePath;
         }
 
-        public void setCookiePath(Optional<String> cookiePath) {
-            this.cookiePath = cookiePath;
+        public void setCookiePath(String cookiePath) {
+            this.cookiePath = Optional.of(cookiePath);
         }
     }
 

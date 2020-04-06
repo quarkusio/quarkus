@@ -100,4 +100,18 @@ public class AmazonLambdaSimpleTestCase {
 
     }
 
+    @Test
+    public void testFunqy() {
+        AwsProxyRequest request = new AwsProxyRequest();
+        request.setHttpMethod("POST");
+        request.setMultiValueHeaders(new Headers());
+        request.getMultiValueHeaders().add("Content-Type", "application/json");
+        request.setPath("/funqy");
+        request.setBody("\"Bill\"");
+        AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
+        Assertions.assertEquals(out.getStatusCode(), 200);
+        Assertions.assertEquals(body(out), "\"Make it funqy Bill\"");
+        Assertions.assertTrue(out.getMultiValueHeaders().getFirst("Content-Type").startsWith("application/json"));
+    }
+
 }

@@ -26,6 +26,41 @@ import io.restassured.RestAssured;
  */
 @QuarkusTest
 public class FunctionTest {
+
+    @Test
+    public void testFunqy() {
+        final HttpRequestMessageMock req = new HttpRequestMessageMock();
+        req.setUri(URI.create("https://foo.com/funqy"));
+        req.setHttpMethod(HttpMethod.POST);
+        req.setBody("\"Bill\"".getBytes(StandardCharsets.UTF_8));
+        req.getHeaders().put("Content-Type", "application/json");
+
+        // Invoke
+        final HttpResponseMessage ret = new Function().run(req, new ExecutionContext() {
+            @Override
+            public Logger getLogger() {
+                return null;
+            }
+
+            @Override
+            public String getInvocationId() {
+                return null;
+            }
+
+            @Override
+            public String getFunctionName() {
+                return null;
+            }
+        });
+
+        // Verify
+        Assertions.assertEquals(ret.getStatus(), HttpStatus.OK);
+        Assertions.assertEquals("\"Make it funqy Bill\"", new String((byte[]) ret.getBody(), StandardCharsets.UTF_8));
+        String contentType = ret.getHeader("Content-Type");
+        Assertions.assertNotNull(contentType);
+        Assertions.assertTrue(MediaType.valueOf(contentType).isCompatible(MediaType.APPLICATION_JSON_TYPE));
+    }
+
     @Test
     public void testJaxrs() throws Exception {
         String uri = "https://foo.com/hello";

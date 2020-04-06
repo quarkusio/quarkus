@@ -115,6 +115,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             invoker.invoke(funqyRequest, funqyResponse);
             routingContext.response().setStatusCode(200);
             if (invoker.hasOutput()) {
+                routingContext.response().putHeader("Content-Type", "application/json");
                 ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
                 routingContext.response().end(writer.writeValueAsString(funqyResponse.getOutput()));
             } else {

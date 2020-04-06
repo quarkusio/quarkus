@@ -27,6 +27,7 @@ import io.quarkus.vertx.http.runtime.security.AuthenticationRedirectException;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.oauth2.AccessToken;
@@ -85,9 +86,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     public CompletionStage<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
-        removeCookie(context, SESSION_COOKIE_NAME);
-
         TenantConfigContext configContext = resolver.resolve(context, false);
+        removeCookie(context, configContext, SESSION_COOKIE_NAME);
 
         ChallengeData challenge;
         JsonObject params = new JsonObject();
@@ -170,10 +170,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     return cf;
                 }
                 // The original request path does not have to be restored, the state cookie is no longer needed
-                removeCookie(context, STATE_COOKIE_NAME);
+                removeCookie(context, configContext, STATE_COOKIE_NAME);
             } else {
                 // Local redirect restoring the original request path, the state cookie is no longer needed
-                removeCookie(context, STATE_COOKIE_NAME);
+                removeCookie(context, configContext, STATE_COOKIE_NAME);
             }
         } else {
             // State cookie must be available to minimize the risk of CSRF
@@ -213,6 +213,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             if (throwable != null) {
                                 cf.completeExceptionally(new AuthenticationCompletionException(throwable));
                             } else {
+                                if (!result.idToken().containsKey("exp") || !result.idToken().containsKey("iat")) {
+                                    LOG.debug("ID Token is requered to contain 'exp' and 'iat' claims");
+                                    cf.completeExceptionally(new AuthenticationCompletionException(throwable));
+                                }
                                 processSuccessfulAuthentication(context, configContext, cf, result, securityIdentity);
                             }
                         });
@@ -225,14 +229,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private void processSuccessfulAuthentication(RoutingContext context, TenantConfigContext configContext,
             CompletableFuture<SecurityIdentity> cf,
             AccessToken result, SecurityIdentity securityIdentity) {
-        removeCookie(context, SESSION_COOKIE_NAME);
+        removeCookie(context, configContext, SESSION_COOKIE_NAME);
+
         CookieImpl cookie = new CookieImpl(SESSION_COOKIE_NAME, new StringBuilder(result.opaqueIdToken())
                 .append(COOKIE_DELIM)
                 .append(result.opaqueAccessToken())
                 .append(COOKIE_DELIM)
                 .append(result.opaqueRefreshToken()).toString());
-
-        cookie.setMaxAge(result.idToken().getInteger("exp"));
+        long maxAge = result.idToken().getLong("exp") - result.idToken().getLong("iat");
+        if (configContext.oidcConfig.token.expirationGrace.isPresent()) {
+            maxAge += configContext.oidcConfig.token.expirationGrace.get();
+        }
+        LOG.debugf("Session cookie 'max-age' parameter is set to %d", maxAge);
+        cookie.setMaxAge(maxAge);
         cookie.setSecure(context.request().isSSL());
         cookie.setHttpOnly(true);
         if (configContext.oidcConfig.authentication.cookiePath.isPresent()) {
@@ -279,7 +288,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .toString();
     }
 
-    private Cookie removeCookie(RoutingContext context, String cookieName) {
-        return context.response().removeCookie(cookieName, true);
+    private void removeCookie(RoutingContext context, TenantConfigContext configContext, String cookieName) {
+        ServerCookie cookie = (ServerCookie) context.cookieMap().get(cookieName);
+        if (cookie != null) {
+            cookie.setValue("");
+            cookie.setMaxAge(0);
+            Authentication auth = configContext.oidcConfig.getAuthentication();
+            if (auth.cookiePath.isPresent()) {
+                cookie.setPath(auth.cookiePath.get());
+            }
+        }
     }
 }

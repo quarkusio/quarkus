@@ -211,6 +211,7 @@ public class JibProcessor {
 
             return javaContainerBuilder.toContainerBuilder()
                     .setEnvironment(jibConfig.environmentVariables)
+                    .setLabels(jibConfig.labels)
                     .setCreationTime(Instant.now());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -234,6 +235,7 @@ public class JibProcessor {
                     .setWorkingDirectory(workDirInContainer)
                     .setEntrypoint(entrypoint)
                     .setEnvironment(jibConfig.environmentVariables)
+                    .setLabels(jibConfig.labels)
                     .setCreationTime(Instant.now());
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);

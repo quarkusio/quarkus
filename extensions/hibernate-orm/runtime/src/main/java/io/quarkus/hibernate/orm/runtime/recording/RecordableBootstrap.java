@@ -79,7 +79,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
     private RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry, Map properties,
             LoadedConfig loadedConfigBaseline) {
-        super(bootstrapServiceRegistry, properties, loadedConfigBaseline);
+        super(bootstrapServiceRegistry, properties, loadedConfigBaseline, null);
         this.settings = properties;
         this.bootstrapServiceRegistry = bootstrapServiceRegistry;
         this.configLoader = new ConfigLoader(bootstrapServiceRegistry);

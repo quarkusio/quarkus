@@ -264,6 +264,13 @@ Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {gra
 Create a native executable using: `./gradlew buildNative`.
 A native executable will be present in `build/`.
 
+[WARNING]
+====
+The `buildNative` task has been deprecated in favor of
+`build -Dquarkus.package.type=native`.
+Native related properties can either be added in `application.properties` file or as command line arguments.
+====
+
 === Build a container friendly executable
 
 The native executable will be specific to your operating system.

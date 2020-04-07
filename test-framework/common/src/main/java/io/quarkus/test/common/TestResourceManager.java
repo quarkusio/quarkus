@@ -15,7 +15,6 @@ import java.util.Set;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
 
 public class TestResourceManager implements Closeable {
@@ -85,7 +84,7 @@ public class TestResourceManager implements Closeable {
 
     @SuppressWarnings("unchecked")
     private List<QuarkusTestResourceLifecycleManager> getTestResources(Class<?> testClass) {
-        IndexView index = getIndex(testClass);
+        IndexView index = TestClassIndexer.readIndex(testClass);
 
         Set<Class<? extends QuarkusTestResourceLifecycleManager>> testResourceRunnerClasses = new LinkedHashSet<>();
 
@@ -123,15 +122,6 @@ public class TestResourceManager implements Closeable {
         Collections.sort(testResourceRunners, new QuarkusTestResourceLifecycleManagerComparator());
 
         return testResourceRunners;
-    }
-
-    private Index getIndex(Class<?> testClass) {
-        try {
-            // the index should have been written by the test extension but it doesn't have to
-            return TestClassIndexer.readIndex(testClass);
-        } catch (Exception e) {
-            return TestClassIndexer.indexTestClasses(testClass);
-        }
     }
 
 }

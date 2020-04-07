@@ -49,17 +49,25 @@ public final class TestClassIndexer {
         try (FileOutputStream fos = new FileOutputStream(indexPath(testClass).toFile(), false)) {
             IndexWriter indexWriter = new IndexWriter(fos);
             indexWriter.write(index);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Unable to write test classes index", e);
+        } catch (IOException ignored) {
+            // don't fail to write the index because this error is recoverable at the read site (by just recreating the index)
+            // this is necessary for tests that are not part of the application itself, but instead reside in a jar (like the Quarkus Platform tests)
         }
     }
 
     public static Index readIndex(Class<?> testClass) {
-        try (FileInputStream fis = new FileInputStream(indexPath(testClass).toFile())) {
-            return new IndexReader(fis).read();
-        } catch (IOException e) {
-            throw new UncheckedIOException("Unable to read test classes index", e);
+        Path path = indexPath(testClass);
+        if (path.toFile().exists()) {
+            try (FileInputStream fis = new FileInputStream(path.toFile())) {
+                return new IndexReader(fis).read();
+            } catch (IOException e) {
+                // be lenient since the error is recoverable
+                return indexTestClasses(testClass);
+            }
+        } else {
+            return indexTestClasses(testClass);
         }
+
     }
 
     private static Path indexPath(Class<?> testClass) {

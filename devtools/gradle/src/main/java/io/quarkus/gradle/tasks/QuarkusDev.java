@@ -316,16 +316,7 @@ public class QuarkusDev extends QuarkusTask {
                     extension.outputDirectory().getAbsolutePath(),
                     res);
             context.getModules().add(moduleInfo);
-
-            final String outputClassDirectory = extension.outputDirectory().getAbsolutePath();
-            final String outputResourcesDirectory = extension.outputConfigDirectory().getAbsolutePath();
             context.getClassesRoots().add(extension.outputDirectory().getAbsoluteFile());
-            if (!outputClassDirectory.equals(outputResourcesDirectory)) {
-                final File configDir = extension.outputConfigDirectory().getAbsoluteFile();
-                if (configDir.exists()) {
-                    context.getClassesRoots().add(configDir);
-                }
-            }
             context.setFrameworkClassesDir(wiringClassesDirectory.getAbsoluteFile());
             context.setCacheDir(new File(getBuildDir(), "transformer-cache").getAbsoluteFile());
 

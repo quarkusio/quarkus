@@ -45,6 +45,10 @@ public final class ValidationPhaseBuildItem extends SimpleBuildItem {
             this.values = Arrays.asList(values);
         }
 
+        public ValidationErrorBuildItem(List<Throwable> values) {
+            this.values = values;
+        }
+
         public List<Throwable> getValues() {
             return values;
         }

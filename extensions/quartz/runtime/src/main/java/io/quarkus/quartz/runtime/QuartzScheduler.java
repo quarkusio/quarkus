@@ -1,6 +1,5 @@
 package io.quarkus.quartz.runtime;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
@@ -47,7 +46,8 @@ import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.Trigger;
 import io.quarkus.scheduler.runtime.ScheduledInvoker;
 import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
-import io.quarkus.scheduler.runtime.SchedulerSupport;
+import io.quarkus.scheduler.runtime.SchedulerContext;
+import io.quarkus.scheduler.runtime.SimpleScheduler;
 
 @Singleton
 public class QuartzScheduler implements Scheduler {
@@ -65,8 +65,8 @@ public class QuartzScheduler implements Scheduler {
         return scheduler;
     }
 
-    public QuartzScheduler(SchedulerSupport schedulerSupport, QuartzSupport quartzSupport, Config config) {
-        if (!quartzSupport.getRuntimeConfig().forceStart && schedulerSupport.getScheduledMethods().isEmpty()) {
+    public QuartzScheduler(SchedulerContext context, QuartzSupport quartzSupport, Config config) {
+        if (!quartzSupport.getRuntimeConfig().forceStart && context.getScheduledMethods().isEmpty()) {
             LOGGER.infof("No scheduled business methods found - Quartz scheduler will not be started");
             this.triggerNameSequence = null;
             this.scheduler = null;
@@ -85,13 +85,13 @@ public class QuartzScheduler implements Scheduler {
                 // Set custom job factory
                 scheduler.setJobFactory(new InvokerJobFactory(invokers));
 
-                CronType cronType = schedulerSupport.getCronType();
+                CronType cronType = context.getCronType();
                 CronDefinition def = CronDefinitionBuilder.instanceDefinitionFor(cronType);
                 CronParser parser = new CronParser(def);
 
-                for (ScheduledMethodMetadata method : schedulerSupport.getScheduledMethods()) {
+                for (ScheduledMethodMetadata method : context.getScheduledMethods()) {
 
-                    invokers.put(method.getInvokerClassName(), schedulerSupport.createInvoker(method.getInvokerClassName()));
+                    invokers.put(method.getInvokerClassName(), context.createInvoker(method.getInvokerClassName()));
 
                     for (Scheduled scheduled : method.getSchedules()) {
                         String name = triggerNameSequence.getAndIncrement() + "_" + method.getInvokerClassName();
@@ -103,8 +103,8 @@ public class QuartzScheduler implements Scheduler {
 
                         String cron = scheduled.cron().trim();
                         if (!cron.isEmpty()) {
-                            if (SchedulerSupport.isConfigValue(cron)) {
-                                cron = config.getValue(SchedulerSupport.getConfigProperty(cron), String.class);
+                            if (SchedulerContext.isConfigValue(cron)) {
+                                cron = config.getValue(SchedulerContext.getConfigProperty(cron), String.class);
                             }
                             if (!CronType.QUARTZ.equals(cronType)) {
                                 // Migrate the expression
@@ -122,22 +122,10 @@ public class QuartzScheduler implements Scheduler {
                             }
                             scheduleBuilder = CronScheduleBuilder.cronSchedule(cron);
                         } else if (!scheduled.every().isEmpty()) {
-                            String every = scheduled.every().trim();
-                            if (SchedulerSupport.isConfigValue(every)) {
-                                every = config.getValue(SchedulerSupport.getConfigProperty(every), String.class);
-                            }
-                            if (Character.isDigit(every.charAt(0))) {
-                                every = "PT" + every;
-                            }
-                            Duration duration;
-                            try {
-                                duration = Duration.parse(every);
-                            } catch (Exception e) {
-                                // This should only happen for config-based expressions
-                                throw new IllegalStateException("Invalid every() expression on: " + scheduled, e);
-                            }
                             scheduleBuilder = SimpleScheduleBuilder.simpleSchedule()
-                                    .withIntervalInMilliseconds(duration.toMillis()).repeatForever();
+                                    .withIntervalInMilliseconds(
+                                            SimpleScheduler.parseDuration(scheduled, scheduled.every(), "every").toMillis())
+                                    .repeatForever();
                         } else {
                             throw new IllegalArgumentException("Invalid schedule configuration: " + scheduled);
                         }
@@ -145,9 +133,17 @@ public class QuartzScheduler implements Scheduler {
                         TriggerBuilder<?> triggerBuilder = TriggerBuilder.newTrigger()
                                 .withIdentity(name + "_trigger", Scheduler.class.getName())
                                 .withSchedule(scheduleBuilder);
+
+                        Long millisToAdd = null;
                         if (scheduled.delay() > 0) {
+                            millisToAdd = scheduled.delayUnit().toMillis(scheduled.delay());
+                        } else if (!scheduled.delayed().isEmpty()) {
+                            millisToAdd = Math
+                                    .abs(SimpleScheduler.parseDuration(scheduled, scheduled.delayed(), "delayed").toMillis());
+                        }
+                        if (millisToAdd != null) {
                             triggerBuilder.startAt(new Date(Instant.now()
-                                    .plusMillis(scheduled.delayUnit().toMillis(scheduled.delay())).toEpochMilli()));
+                                    .plusMillis(millisToAdd).toEpochMilli()));
                         }
 
                         JobDetail job = jobBuilder.build();

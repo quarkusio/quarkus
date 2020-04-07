@@ -383,6 +383,47 @@ Let's do that and follow the same steps as before:
 
 This time, you can see our list of legumes.
 
+[[reactive]]
+== Being reactive
+
+You can return _reactive types_ to handle asynchronous processing.
+Quarkus recommends the usage of https://smallrye.io/smallrye-mutiny[Mutiny] to write reactive and asynchronous code.
+
+To integrate Mutiny and RESTEasy, you need to add the `quarkus-resteasy-mutiny` dependency to your project:
+
+[source, xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-resteasy-mutiny</artifactId>
+</dependency>
+----
+
+Then, your endpoint can return `Uni` or `Multi` instances:
+
+[source,java]
+----
+
+@GET
+@Path("/{name}")
+public Uni<Fruit> getOne(@PathParam String name) {
+    return findByName(name);
+}
+
+@GET
+public Multi<Fruit> getAll() {
+    return findAll();
+}
+----
+
+Use `Uni` when you have a single result.
+Use `Multi` when you have multiple items that may be emitted asynchronously.
+
+You can use `Uni` and `Response` to return asynchronous HTTP responses: `Uni<Response>`.
+
+More details about Mutiny can be found in the link:getting-started-reactive#mutiny[Getting Started with Reactive guide].
+
+
 == HTTP filters and interceptors
 
 Both HTTP request and response can be intercepted by providing `ContainerRequestFilter` or `ContainerResponseFilter`

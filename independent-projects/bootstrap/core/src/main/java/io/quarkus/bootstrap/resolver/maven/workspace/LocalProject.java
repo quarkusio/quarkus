@@ -46,15 +46,15 @@ public class LocalProject {
     }
 
     public static LocalProject load(Path path, boolean required) throws BootstrapException {
-        final Path cpd = locateCurrentProjectDir(path, required);
-        if (cpd == null) {
+        final Path pom = locateCurrentProjectPom(path, required);
+        if (pom == null) {
             return null;
         }
         try {
-            return new LocalProject(readModel(cpd.resolve(POM_XML)), null);
+            return new LocalProject(readModel(pom), null);
         } catch (UnresolvedVersionException e) {
             // if a property in the version couldn't be resolved, we are trying to resolve it from the workspace
-            return loadWorkspace(cpd);
+            return loadWorkspace(pom);
         }
     }
 
@@ -63,14 +63,30 @@ public class LocalProject {
     }
 
     public static LocalProject loadWorkspace(Path path, boolean required) throws BootstrapException {
-        path = path.toAbsolutePath().normalize();
-        final Path currentProjectDir = locateCurrentProjectDir(path, required);
-        if (currentProjectDir == null) {
-            return null;
+        path = path.normalize().toAbsolutePath();
+        Path currentProjectPom = null;
+        Model rootModel = null;
+        if (!Files.isDirectory(path)) {
+            // see if that's an actual pom
+            try {
+                rootModel = loadRootModel(path);
+                if (rootModel != null) {
+                    currentProjectPom = path;
+                }
+            } catch (BootstrapException e) {
+                // ignore, it's not a POM file, we'll be looking for the POM later
+            }
+        }
+        if (currentProjectPom == null) {
+            currentProjectPom = locateCurrentProjectPom(path, required);
+            if (currentProjectPom == null) {
+                return null;
+            }
+            rootModel = loadRootModel(currentProjectPom);
         }
         final LocalWorkspace ws = new LocalWorkspace();
-        final LocalProject project = load(ws, null, loadRootModel(currentProjectDir), currentProjectDir);
-        return project == null ? load(ws, null, readModel(currentProjectDir.resolve(POM_XML)), currentProjectDir) : project;
+        final LocalProject project = load(ws, null, rootModel, currentProjectPom.getParent());
+        return project == null ? load(ws, null, readModel(currentProjectPom), currentProjectPom.getParent()) : project;
     }
 
     private static LocalProject load(LocalWorkspace workspace, LocalProject parent, Model model, Path currentProjectDir)
@@ -95,8 +111,7 @@ public class LocalProject {
         return result;
     }
 
-    private static Model loadRootModel(Path currentProjectDir) throws BootstrapException {
-        Path pomXml = currentProjectDir.resolve(POM_XML);
+    private static Model loadRootModel(Path pomXml) throws BootstrapException {
         Model model = null;
         while (Files.exists(pomXml)) {
             model = readModel(pomXml);
@@ -125,11 +140,12 @@ public class LocalProject {
         }
     }
 
-    private static Path locateCurrentProjectDir(Path path, boolean required) throws BootstrapException {
+    private static Path locateCurrentProjectPom(Path path, boolean required) throws BootstrapException {
         Path p = path;
         while (p != null) {
-            if (Files.exists(p.resolve(POM_XML))) {
-                return p;
+            final Path pom = p.resolve(POM_XML);
+            if (Files.exists(pom)) {
+                return pom;
             }
             p = p.getParent();
         }

@@ -46,7 +46,6 @@ import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.MavenRepoInitializer;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.maven.utilities.MojoUtils;
@@ -606,10 +605,10 @@ public class CreateExtensionMojo extends AbstractMojo {
                     try {
                         final LocalWorkspace ws = LocalProject.loadWorkspace(rootPom.getParentFile().toPath()).getWorkspace();
                         final MavenArtifactResolver mvn = MavenArtifactResolver.builder()
-                                .setRepositorySystem(MavenRepoInitializer.getRepositorySystem(repoSession.isOffline(), ws))
+                                .setRepositorySystem(repoSystem)
                                 .setRepositorySystemSession(repoSession)
                                 .setRemoteRepositories(repos)
-                                .setWorkspace(LocalProject.loadWorkspace(rootPom.getParentFile().toPath()).getWorkspace())
+                                .setWorkspace(ws)
                                 .build();
                         final ArtifactDescriptorResult rootDescr = mvn.resolveDescriptor(rootArtifact);
                         importDeploymentBom = !hasQuarkusDeploymentBom(rootDescr.getManagedDependencies());
@@ -631,7 +630,7 @@ public class CreateExtensionMojo extends AbstractMojo {
                     try {
                         final LocalWorkspace ws = LocalProject.loadWorkspace(rootPom.getParentFile().toPath()).getWorkspace();
                         final MavenArtifactResolver mvn = MavenArtifactResolver.builder()
-                                .setRepositorySystem(MavenRepoInitializer.getRepositorySystem(repoSession.isOffline(), ws))
+                                .setRepositorySystem(repoSystem)
                                 .setRepositorySystemSession(repoSession)
                                 .setRemoteRepositories(repos)
                                 .setWorkspace(ws)

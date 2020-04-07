@@ -1,0 +1,17 @@
+<settings>
+  <profiles>
+    <profile>
+      <id>settings-profile</id>
+      <repositories>
+        <repository>
+          <id>settings-central</id>
+          <name>Central Repository</name>
+          <url>https://settings.central</url>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>settings-profile</activeProfile>
+  </activeProfiles>
+</settings>

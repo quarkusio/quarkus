@@ -257,6 +257,7 @@
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
+                                    <additionalBuildArgs></additionalBuildArgs>
                                 </configuration>
                             </execution>
                         </executions>

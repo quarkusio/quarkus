@@ -32,6 +32,7 @@ public class XrayBuildStep {
                 "com.amazonaws.xray.handlers.config.AWSOperationHandler",
                 "com.amazonaws.xray.handlers.config.AWSOperationHandlerRequestDescriptor",
                 "com.amazonaws.xray.handlers.config.AWSOperationHandlerResponseDescriptor",
+                "com.amazonaws.xray.entities.ThrowableDescription",
                 "com.amazonaws.xray.entities.SubsegmentImpl",
                 "com.amazonaws.xray.entities.EntityImpl",
                 "com.amazonaws.xray.entities.TraceID",

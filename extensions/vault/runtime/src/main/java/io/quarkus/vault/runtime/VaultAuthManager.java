@@ -4,6 +4,7 @@ import static io.quarkus.vault.runtime.LogConfidentialityLevel.LOW;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.APPROLE;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.KUBERNETES;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.USERPASS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -18,6 +19,7 @@ import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.vault.VaultException;
 import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.auth.AbstractVaultAuthAuth;
@@ -153,13 +155,17 @@ public class VaultAuthManager {
     private <T> String unwrapWrappingTokenOnce(String type, String wrappingToken,
             Function<T, String> f, Class<T> clazz) {
 
+        // if the wrapped info is already in the cache, no need to go through semaphore acquisition
         String wrappedValue = wrappedCache.get(wrappingToken);
         if (wrappedValue != null) {
             return wrappedValue;
         }
 
         try {
-            unwrapSem.acquire();
+            boolean success = unwrapSem.tryAcquire(1, 10, SECONDS);
+            if (!success) {
+                throw new RuntimeException("unable to enter critical section when unwrapping " + type);
+            }
             try {
                 // by the time we reach here, may be somebody has populated the cache
                 wrappedValue = wrappedCache.get(wrappingToken);
@@ -167,7 +173,23 @@ public class VaultAuthManager {
                     return wrappedValue;
                 }
 
-                T unwrap = vaultClient.unwrap(wrappingToken, clazz);
+                T unwrap;
+
+                try {
+                    unwrap = vaultClient.unwrap(wrappingToken, clazz);
+                } catch (VaultClientException e) {
+                    if (e.getStatus() == 400) {
+                        String message = "wrapping token is not valid or does not exist; " +
+                                "this means that the token has already expired " +
+                                "(if so you can increase the ttl on the wrapping token) or " +
+                                "has been consumed by somebody else " +
+                                "(potentially indicating that the wrapping token has been stolen)";
+                        throw new VaultException(message, e);
+                    } else {
+                        throw e;
+                    }
+                }
+
                 wrappedValue = f.apply(unwrap);
                 wrappedCache.put(wrappingToken, wrappedValue);
                 String displayValue = serverConfig.logConfidentialityLevel.maskWithTolerance(wrappedValue, LOW);
@@ -178,7 +200,7 @@ public class VaultAuthManager {
                 unwrapSem.release();
             }
         } catch (InterruptedException e) {
-            throw new RuntimeException("unable to unwrap " + type);
+            throw new RuntimeException("unable to enter critical section when unwrapping " + type, e);
         }
     }
 

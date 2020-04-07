@@ -262,8 +262,7 @@ public class OkHttpVaultClient implements VaultClient {
 
     @Override
     public <T> T unwrap(String wrappingToken, Class<T> resultClass) {
-        VaultUnwrapBody body = new VaultUnwrapBody(null);
-        return post("sys/wrapping/unwrap", wrappingToken, body, resultClass);
+        return post("sys/wrapping/unwrap", wrappingToken, VaultUnwrapBody.EMPTY, resultClass);
     }
 
     // ---

@@ -355,13 +355,14 @@ jobs:
               kafka
               kafka-streams
           - category: Security1
-            timeout: 30
+            timeout: 40
             keycloak: "true"
             test-modules: >
               elytron-security-oauth2
               elytron-security
               elytron-security-jdbc
-              elytron-undertow 
+              elytron-undertow
+              elytron-security-ldap
           - category: Security2
             timeout: 45
             keycloak: "true"

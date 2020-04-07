@@ -320,7 +320,7 @@ jobs:
               reactive-mysql-client
           - category: Data3
             postgres: "true"
-            timeout: 35
+            timeout: 40
             test-modules: >
               flyway
               hibernate-orm-panache
@@ -362,7 +362,7 @@ jobs:
               elytron-security-jdbc
               elytron-undertow 
           - category: Security2
-            timeout: 45
+            timeout: 50
             keycloak: "true"
             test-modules: >
               elytron-resteasy

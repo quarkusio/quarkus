@@ -3,6 +3,8 @@ package io.quarkus.hibernate.orm.panache.runtime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
@@ -14,6 +16,9 @@ import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
+
+    private static final Pattern SELECT_PATTERN = Pattern.compile("^\\s*SELECT\\s+((?:DISTINCT\\s+)?[^\\s]+)\\s+([^\\s]+.*)$",
+            Pattern.CASE_INSENSITIVE);
 
     private Query jpaQuery;
     private Object paramsArrayOrMap;
@@ -127,6 +132,10 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     }
 
     protected String countQuery() {
+        Matcher selectMatcher = SELECT_PATTERN.matcher(query);
+        if (selectMatcher.matches()) {
+            return "SELECT COUNT(" + selectMatcher.group(1) + ") " + selectMatcher.group(2);
+        }
         return "SELECT COUNT(*) " + query;
     }
 

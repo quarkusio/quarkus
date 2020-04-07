@@ -338,6 +338,11 @@ public class QuarkusDev extends QuarkusTask {
             context.setFrameworkClassesDir(wiringClassesDirectory.getAbsoluteFile());
             context.setCacheDir(new File(getBuildDir(), "transformer-cache").getAbsoluteFile());
 
+            JavaPluginConvention javaPluginConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
+            if (javaPluginConvention != null) {
+                context.setTargetJvmVersion(javaPluginConvention.getTargetCompatibility().toString());
+            }
+
             // this is the jar file we will use to launch the dev mode main class
             final File tempFile = new File(getBuildDir(), extension.finalName() + "-dev.jar");
             tempFile.delete();

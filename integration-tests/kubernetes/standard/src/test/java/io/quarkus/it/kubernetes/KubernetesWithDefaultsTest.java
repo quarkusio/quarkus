@@ -43,6 +43,7 @@ public class KubernetesWithDefaultsTest {
             assertThat(i).isInstanceOfSatisfying(Deployment.class, d -> {
 
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
+                    assertThat(deploymentSpec.getReplicas()).isEqualTo(1);
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                         assertThat(t.getSpec()).satisfies(podSpec -> {
                             assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {

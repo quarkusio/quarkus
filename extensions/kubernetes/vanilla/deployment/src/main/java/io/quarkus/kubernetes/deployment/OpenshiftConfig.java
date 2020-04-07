@@ -97,6 +97,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
     Map<String, PortConfig> ports;
 
     /**
+     * The number of desired pods
+     */
+    @ConfigItem(defaultValue = "1")
+    Integer replicas;
+
+    /**
      * The type of service that will be generated for the application
      */
     @ConfigItem(defaultValue = "ClusterIP")
@@ -239,6 +245,10 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public Optional<String> getHost() {
         return host;
+    }
+
+    public Integer getReplicas() {
+        return replicas;
     }
 
     public Map<String, PortConfig> getPorts() {

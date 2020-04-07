@@ -178,7 +178,8 @@ vertx.fileSystem().readFile("lorem-ipsum.txt", ar -> {
 // Mutiny Vert.x:
 vertx.fileSystem().readFile("lorem-ipsum.txt")
     .onItem().apply(buffer -> buffer.toString("UTF-8"))
-    .subscribe(
+    .subscribe()
+    .with(
             content -> System.out.println("Content: " + content),
             err -> System.out.println("Cannot read the file: " + err.getMessage())
     );
@@ -239,7 +240,7 @@ public class GreetingResource {
 ./mvnw compile quarkus:dev
 ----
 
-Then, open your browser to 'http://localhost:8080/lorem' and you should get the message.
+Then, open your browser to http://localhost:8080/lorem and you should get the message.
 
 So far so good.
 Now let's use the Vert.x API instead of this artificial delay:
@@ -480,7 +481,7 @@ Depending on the API model you want to use you need to add the right dependency 
 
 NOTE: The `vertx-rx-java2` provides the RX Java 2 API for the whole Vert.x stack, not only the web client.
 
-In this guide, we are going to use the Axle API, so:
+In this guide, we are going to use the Mutiny API, so:
 
 [source, xml, subs=attributes+]
 ----

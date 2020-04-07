@@ -30,6 +30,7 @@ public final class Capabilities extends SimpleBuildItem {
     public static final String SECURITY_JPA = "io.quarkus.security.jpa";
     public static final String QUARTZ = "io.quarkus.quartz";
     public static final String METRICS = "io.quarkus.metrics";
+    public static final String RESTEASY_MUTINY_EXTENSION = "io.quarkus.resteasy-mutiny";
 
     private final Set<String> capabilities;
 

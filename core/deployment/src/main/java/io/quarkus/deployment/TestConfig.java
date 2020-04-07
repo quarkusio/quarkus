@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  * This is used currently only to suppress warnings about unknown properties
- * when the user supplies something like: -Dquarkus.test.native-image-profile=someProfile
+ * when the user supplies something like: -Dquarkus.test.profile=someProfile or -Dquarkus.test.native-image-profile=someProfile
  *
  * TODO refactor code to actually use these values
  */
@@ -25,4 +25,10 @@ public class TestConfig {
      */
     @ConfigItem(defaultValue = "prod")
     String nativeImageProfile;
+
+    /**
+     * The profile to use when testing using @QuarkusTest
+     */
+    @ConfigItem(defaultValue = "test")
+    String profile;
 }

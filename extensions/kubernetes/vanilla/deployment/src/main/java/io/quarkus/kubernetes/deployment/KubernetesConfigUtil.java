@@ -79,7 +79,7 @@ public class KubernetesConfigUtil {
         }
 
         // hard-coded support for exposed
-        handleExpose(config, unPrefixed);
+        handleExpose(config, unPrefixed, platformConfigurations);
 
         result.putAll(unPrefixed);
         result.putAll(quarkusPrefixed);
@@ -87,7 +87,8 @@ public class KubernetesConfigUtil {
         return result;
     }
 
-    private static void handleExpose(Config config, Map<String, Object> unPrefixed) {
+    private static void handleExpose(Config config, Map<String, Object> unPrefixed,
+            PlatformConfiguration... platformConfigurations) {
         for (String generator : EXPOSABLE_GENERATORS) {
             boolean unprefixedExpose = config.getOptionalValue(generator + "." + EXPOSE_PROPERTY_NAME, Boolean.class)
                     .orElse(false);
@@ -96,6 +97,13 @@ public class KubernetesConfigUtil {
                     .orElse(false);
             if (unprefixedExpose || prefixedExpose) {
                 unPrefixed.put(DEKORATE_PREFIX + generator + "." + EXPOSE_PROPERTY_NAME, true);
+                for (PlatformConfiguration platformConfiguration : platformConfigurations) {
+                    if (platformConfiguration.getConfigName().equals(generator)) {
+                        platformConfiguration.getHost()
+                                .ifPresent(h -> unPrefixed.put(DEKORATE_PREFIX + generator + ".host", h));
+                        break;
+                    }
+                }
             }
         }
     }

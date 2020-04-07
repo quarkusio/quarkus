@@ -25,8 +25,6 @@ import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.hql.internal.QueryTranslatorFactoryInitiator;
-import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.integrator.spi.IntegratorService;
 import org.hibernate.persister.internal.PersisterClassResolverInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
@@ -41,6 +39,7 @@ import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusEnvironment;
+import io.quarkus.hibernate.orm.runtime.customized.BootstrapOnlyProxyFactoryFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProviderInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
@@ -78,7 +77,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
     private RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry, Map properties,
             LoadedConfig loadedConfigBaseline) {
-        super(bootstrapServiceRegistry, properties, loadedConfigBaseline);
+        super(bootstrapServiceRegistry, properties, loadedConfigBaseline, null);
         this.settings = properties;
         this.bootstrapServiceRegistry = bootstrapServiceRegistry;
         this.configLoader = new ConfigLoader(bootstrapServiceRegistry);
@@ -97,6 +96,9 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     // list, then changes have evolved.
     private static List<StandardServiceInitiator> standardInitiatorList() {
         final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
+
+        //This one needs to be replaced after Metadata has been recorded:
+        serviceInitiators.add(BootstrapOnlyProxyFactoryFactoryInitiator.INSTANCE);
 
         serviceInitiators.add(CfgXmlAccessServiceInitiator.INSTANCE);
         serviceInitiators.add(ConfigurationServiceInitiator.INSTANCE);
@@ -346,7 +348,6 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     @Override
     @SuppressWarnings("unchecked")
     public StandardServiceRegistry build() {
-        applyServiceContributingIntegrators();
         applyServiceContributors();
 
         final Map settingsCopy = new HashMap();
@@ -355,15 +356,6 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
         return new StandardServiceRegistryImpl(autoCloseRegistry, bootstrapServiceRegistry, initiators,
                 providedServices, settingsCopy);
-    }
-
-    @SuppressWarnings("deprecation")
-    private void applyServiceContributingIntegrators() {
-        for (Integrator integrator : bootstrapServiceRegistry.getService(IntegratorService.class).getIntegrators()) {
-            if (org.hibernate.integrator.spi.ServiceContributingIntegrator.class.isInstance(integrator)) {
-                org.hibernate.integrator.spi.ServiceContributingIntegrator.class.cast(integrator).prepareServices(this);
-            }
-        }
     }
 
     private void applyServiceContributors() {

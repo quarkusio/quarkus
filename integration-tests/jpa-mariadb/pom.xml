@@ -16,6 +16,7 @@
 
     <properties>
         <mariadb.url>jdbc:mariadb://localhost:3306/hibernate_orm_test</mariadb.url>
+        <mariadb.image>mariadb:10.4</mariadb.image>
     </properties>
 
     <dependencies>
@@ -134,7 +135,6 @@
                     <plugin>
                         <groupId>io.quarkus</groupId>
                         <artifactId>quarkus-maven-plugin</artifactId>
-                        <version>${project.version}</version>
                         <executions>
                             <execution>
                                 <id>native-image</id>
@@ -175,12 +175,9 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>mariadb:10.4</name>
+                                    <name>${mariadb.image}</name>
                                     <alias>quarkus-test-mariadb</alias>
                                     <run>
-                                        <network>
-                                            <mode>bridge</mode>
-                                        </network>
                                         <ports>
                                             <port>3308:3306</port>
                                         </ports>
@@ -198,15 +195,10 @@
                                         <!-- Speed things up a bit by not actually flushing writes to disk -->
                                         <tmpfs>/var/lib/mysql</tmpfs>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
-                                            <tcp>
-                                                <mode>direct</mode>
-                                                <ports>
-                                                    <port>3306</port>
-                                                </ports>
-                                            </tcp>
-                                            <!-- Unfortunately booting MariaDB is slow, needs to set a generous timeout: -->
-                                            <time>40000</time>
+                                            <time>20000</time>
+                                            <exec>
+                                                <postStart>mysqladmin ping -h localhost -u hibernate_orm_test -phibernate_orm_test</postStart>
+                                            </exec>
                                         </wait>
                                         <volumes>
                                             <bind>

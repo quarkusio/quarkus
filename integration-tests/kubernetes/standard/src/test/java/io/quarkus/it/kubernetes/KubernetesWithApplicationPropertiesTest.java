@@ -55,6 +55,7 @@ public class KubernetesWithApplicationPropertiesTest {
                 });
 
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
+                    assertThat(deploymentSpec.getReplicas()).isEqualTo(3);
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                         assertThat(t.getSpec()).satisfies(podSpec -> {
                             assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
@@ -93,8 +94,13 @@ public class KubernetesWithApplicationPropertiesTest {
         assertThat(kubernetesList).filteredOn(i -> "ServiceAccount".equals(i.getKind())).hasSize(1)
                 .hasOnlyElementsOfType(ServiceAccount.class);
 
-        assertThat(kubernetesList).filteredOn(i -> "Ingress".equals(i.getKind())).hasSize(1)
-                .hasOnlyElementsOfType(Ingress.class);
+        assertThat(kubernetesList).filteredOn(i -> "Ingress".equals(i.getKind())).hasOnlyOneElementSatisfying(i -> {
+            assertThat(i).isInstanceOfSatisfying(Ingress.class, in -> {
+                assertThat(in.getSpec().getRules()).hasOnlyOneElementSatisfying(r -> {
+                    assertThat(r.getHost()).isEqualTo("example.com");
+                });
+            });
+        });
     }
 
 }

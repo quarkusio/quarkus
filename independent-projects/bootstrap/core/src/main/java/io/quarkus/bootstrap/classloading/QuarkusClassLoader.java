@@ -52,6 +52,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private final boolean aggregateParentResources;
     private final List<ClassPathElement> bannedElements;
     private final List<ClassPathElement> parentFirstElements;
+    private final List<ClassPathElement> lesserPriorityElements;
 
     /**
      * The element that holds resettable in-memory classses.
@@ -84,6 +85,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         this.bytecodeTransformers = builder.bytecodeTransformers;
         this.bannedElements = builder.bannedElements;
         this.parentFirstElements = builder.parentFirstElements;
+        this.lesserPriorityElements = builder.lesserPriorityElements;
         this.parent = builder.parent;
         this.parentFirst = builder.parentFirst;
         this.resettableElement = builder.resettableElement;
@@ -194,7 +196,24 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                     }
                     Map<String, ClassPathElement[]> finalElements = new HashMap<>();
                     for (Map.Entry<String, List<ClassPathElement>> i : elementMap.entrySet()) {
-                        finalElements.put(i.getKey(), i.getValue().toArray(new ClassPathElement[i.getValue().size()]));
+                        List<ClassPathElement> entryClassPathElements = i.getValue();
+                        if (!lesserPriorityElements.isEmpty() && (entryClassPathElements.size() > 1)) {
+                            List<ClassPathElement> entryNormalPriorityElements = new ArrayList<>(entryClassPathElements.size());
+                            List<ClassPathElement> entryLesserPriorityElements = new ArrayList<>(entryClassPathElements.size());
+                            for (ClassPathElement classPathElement : entryClassPathElements) {
+                                if (lesserPriorityElements.contains(classPathElement)) {
+                                    entryLesserPriorityElements.add(classPathElement);
+                                } else {
+                                    entryNormalPriorityElements.add(classPathElement);
+                                }
+                            }
+                            // ensure the lesser priority elements are added later
+                            entryClassPathElements = new ArrayList<>(entryClassPathElements.size());
+                            entryClassPathElements.addAll(entryNormalPriorityElements);
+                            entryClassPathElements.addAll(entryLesserPriorityElements);
+                        }
+                        finalElements.put(i.getKey(),
+                                entryClassPathElements.toArray(new ClassPathElement[entryClassPathElements.size()]));
                     }
                     Set<String> banned = new HashSet<>();
                     for (ClassPathElement i : bannedElements) {
@@ -415,6 +434,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         final List<ClassPathElement> elements = new ArrayList<>();
         final List<ClassPathElement> bannedElements = new ArrayList<>();
         final List<ClassPathElement> parentFirstElements = new ArrayList<>();
+        final List<ClassPathElement> lesserPriorityElements = new ArrayList<>();
         Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = Collections.emptyMap();
         final boolean parentFirst;
         MemoryClassPathElement resettableElement;
@@ -497,6 +517,19 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
          */
         public Builder addBannedElement(ClassPathElement element) {
             bannedElements.add(element);
+            return this;
+        }
+
+        /**
+         * Adds an element which will only be used to load a class or resource if no normal
+         * element containing that class or resource exists.
+         * This is used in order control the order of elements when multiple contain the same classes
+         *
+         * @param element The element to add
+         * @return This builder
+         */
+        public Builder addLesserPriorityElement(ClassPathElement element) {
+            lesserPriorityElements.add(element);
             return this;
         }
 

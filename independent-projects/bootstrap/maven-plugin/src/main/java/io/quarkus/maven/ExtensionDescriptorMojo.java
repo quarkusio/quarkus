@@ -108,6 +108,14 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter
     List<String> parentFirstArtifacts;
 
+    /**
+     * Artifacts that will only be used to load a class or resource if no other normal element exists.
+     * This is an advanced option that should only be used when there is a case of multiple jars
+     * containing the same classes and we need to control which jars is actually used to load the classes.
+     */
+    @Parameter
+    List<String> lesserPriorityArtifacts;
+
     @Override
     public void execute() throws MojoExecutionException {
 
@@ -126,6 +134,11 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (excludedArtifacts != null && !excludedArtifacts.isEmpty()) {
             String val = String.join(",", excludedArtifacts);
             props.put(BootstrapConstants.EXCLUDED_ARTIFACTS, val);
+        }
+
+        if (lesserPriorityArtifacts != null && !lesserPriorityArtifacts.isEmpty()) {
+            String val = String.join(",", lesserPriorityArtifacts);
+            props.put(BootstrapConstants.LESSER_PRIORITY_ARTIFACTS, val);
         }
 
         try {

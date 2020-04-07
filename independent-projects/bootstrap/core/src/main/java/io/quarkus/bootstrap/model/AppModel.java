@@ -39,13 +39,17 @@ public class AppModel implements Serializable {
 
     private final Set<AppArtifactKey> parentFirstArtifacts;
 
+    private final Set<AppArtifactKey> lesserPriorityArtifacts;
+
     private AppModel(AppArtifact appArtifact, List<AppDependency> runtimeDeps, List<AppDependency> deploymentDeps,
-            List<AppDependency> fullDeploymentDeps, Set<AppArtifactKey> parentFirstArtifacts) {
+            List<AppDependency> fullDeploymentDeps, Set<AppArtifactKey> parentFirstArtifacts,
+            Set<AppArtifactKey> lesserPriorityArtifacts) {
         this.appArtifact = appArtifact;
         this.runtimeDeps = runtimeDeps;
         this.deploymentDeps = deploymentDeps;
         this.fullDeploymentDeps = fullDeploymentDeps;
         this.parentFirstArtifacts = parentFirstArtifacts;
+        this.lesserPriorityArtifacts = lesserPriorityArtifacts;
     }
 
     public AppArtifact getAppArtifact() {
@@ -76,6 +80,10 @@ public class AppModel implements Serializable {
         return parentFirstArtifacts;
     }
 
+    public Set<AppArtifactKey> getLesserPriorityArtifacts() {
+        return lesserPriorityArtifacts;
+    }
+
     @Override
     public String toString() {
         return "AppModel{" +
@@ -96,6 +104,7 @@ public class AppModel implements Serializable {
         private final List<AppDependency> runtimeDeps = new ArrayList<>();
         private final Set<AppArtifactKey> parentFirstArtifacts = new HashSet<>();
         private final Set<AppArtifactKey> excludedArtifacts = new HashSet<>();
+        private final Set<AppArtifactKey> lesserPriorityArtifacts = new HashSet<>();
 
         public Builder setAppArtifact(AppArtifact appArtifact) {
             this.appArtifact = appArtifact;
@@ -173,6 +182,14 @@ public class AppModel implements Serializable {
                     log.debugf("Extension %s is excluding %s", extension, artifact);
                 }
             }
+            String lesserPriority = props.getProperty(BootstrapConstants.LESSER_PRIORITY_ARTIFACTS);
+            if (lesserPriority != null) {
+                String[] artifacts = lesserPriority.split(",");
+                for (String artifact : artifacts) {
+                    lesserPriorityArtifacts.add(new AppArtifactKey(artifact.split(":")));
+                    log.debugf("Extension %s is making %s a lesser priority artifact", extension, artifact);
+                }
+            }
         }
 
         public AppModel build() {
@@ -192,7 +209,7 @@ public class AppModel implements Serializable {
             List<AppDependency> fullDeploymentDeps = this.fullDeploymentDeps.stream().filter(includePredicate)
                     .collect(Collectors.toList());
             AppModel appModel = new AppModel(appArtifact, runtimeDeps, deploymentDeps, fullDeploymentDeps,
-                    parentFirstArtifacts);
+                    parentFirstArtifacts, lesserPriorityArtifacts);
             log.debugf("Created AppMode %s", appModel);
             return appModel;
 

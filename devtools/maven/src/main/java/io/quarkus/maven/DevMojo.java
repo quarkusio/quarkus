@@ -49,6 +49,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.shared.utils.cli.CommandLineUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -183,6 +184,9 @@ public class DevMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${jvm.args}")
     private String jvmArgs;
+
+    @Parameter(defaultValue = "${quarkus.args}")
+    private String argsString;
 
     @Parameter(defaultValue = "${session}")
     private MavenSession session;
@@ -640,7 +644,9 @@ public class DevMojo extends AbstractMojo {
             }
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
-
+            if (argsString != null) {
+                args.addAll(Arrays.asList(CommandLineUtils.translateCommandline(argsString)));
+            }
         }
 
         private void addQuarkusDevModeDeps(StringBuilder classPathManifest, final DevModeContext devModeContext)

@@ -13,8 +13,10 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -23,6 +25,7 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.tools.ant.types.Commandline;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -69,6 +72,8 @@ public class QuarkusDev extends QuarkusTask {
     private List<String> jvmArgs;
 
     private boolean preventnoverify = false;
+
+    private List<String> args = new LinkedList<String>();
 
     public QuarkusDev() {
         super("Development mode: enables hot deployment with background compilation");
@@ -126,6 +131,21 @@ public class QuarkusDev extends QuarkusTask {
     @Option(description = "Set JVM arguments", option = "jvm-args")
     public void setJvmArgs(List<String> jvmArgs) {
         this.jvmArgs = jvmArgs;
+    }
+
+    @Optional
+    @Input
+    public List<String> getArgs() {
+        return args;
+    }
+
+    public void setArgs(List<String> args) {
+        this.args = args;
+    }
+
+    @Option(description = "Set application arguments", option = "quarkus-args")
+    public void setArgsString(String argsString) {
+        this.setArgs(Arrays.asList(Commandline.translateCommandline(argsString)));
     }
 
     @Input
@@ -363,6 +383,7 @@ public class QuarkusDev extends QuarkusTask {
 
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
+            args.addAll(this.getArgs());
             if (getLogger().isDebugEnabled()) {
                 getLogger().debug("Launching JVM with command line: {}", String.join(" ", args));
             }

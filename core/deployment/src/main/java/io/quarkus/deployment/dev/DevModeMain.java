@@ -42,7 +42,6 @@ public class DevModeMain implements Closeable {
     }
 
     public static void main(String... args) throws Exception {
-
         try (InputStream devModeCp = DevModeMain.class.getClassLoader().getResourceAsStream(DEV_MODE_CONTEXT)) {
             DevModeContext context;
             try {
@@ -52,6 +51,7 @@ public class DevModeMain implements Closeable {
                         "Unable to deserialize the dev mode context. Does the Quarkus plugin version match the version of Quarkus that is in use?",
                         e);
             }
+            context.setArgs(args);
             try (DevModeMain devModeMain = new DevModeMain(context)) {
                 devModeMain.start();
 

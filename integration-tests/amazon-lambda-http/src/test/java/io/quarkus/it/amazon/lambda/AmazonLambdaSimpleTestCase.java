@@ -5,6 +5,8 @@ import javax.ws.rs.core.MediaType;
 import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
 import io.quarkus.amazon.lambda.http.model.AwsProxyResponse;
@@ -100,13 +102,14 @@ public class AmazonLambdaSimpleTestCase {
 
     }
 
-    @Test
-    public void testFunqy() {
+    @ParameterizedTest
+    @ValueSource(strings = { "/funqy", "/funqyAsync" })
+    public void testFunqy(String path) {
         AwsProxyRequest request = new AwsProxyRequest();
         request.setHttpMethod("POST");
         request.setMultiValueHeaders(new Headers());
         request.getMultiValueHeaders().add("Content-Type", "application/json");
-        request.setPath("/funqy");
+        request.setPath(path);
         request.setBody("\"Bill\"");
         AwsProxyResponse out = LambdaClient.invoke(AwsProxyResponse.class, request);
         Assertions.assertEquals(out.getStatusCode(), 200);

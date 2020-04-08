@@ -3,8 +3,11 @@ package io.quarkus.funqy.runtime.bindings.knative;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
@@ -29,6 +32,7 @@ import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
 public class VertxRequestHandler implements Handler<RoutingContext> {
@@ -115,23 +119,32 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 Object finalInput = input;
                 executor.execute(() -> {
                     try {
+                        final HttpServerResponse httpResponse = routingContext.response();
                         FunqyServerResponse response = dispatch(routingContext, invoker, finalInput);
+                        handler.handle();
                         if (invoker.hasOutput()) {
-                            routingContext.response().setStatusCode(200);
-                            handler.handle();
+                            httpResponse.setStatusCode(200);
                             ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
-                            routingContext.response().putHeader("Content-Type", "application/json");
-                            try {
-                                routingContext.response().end(writer.writeValueAsString(response.getOutput()));
-                            } catch (JsonProcessingException e) {
-                                log.error("Failed to unmarshal input", e);
-                                routingContext.fail(400);
-                                return;
-                            }
+                            httpResponse.putHeader("Content-Type", "application/json");
+
+                            CompletionStage<?> output = response.getOutput();
+                            output.whenCompleteAsync((obj, t) -> {
+                                if (t != null) {
+                                    routingContext.fail(t);
+                                    return;
+                                }
+                                try {
+                                    httpResponse.end(writer.writeValueAsString(obj));
+                                } catch (JsonProcessingException jpe) {
+                                    log.error("Failed to unmarshal input", jpe);
+                                    routingContext.fail(400);
+                                } catch (Throwable e) {
+                                    routingContext.fail(e);
+                                }
+                            }, executor);
                         } else {
-                            routingContext.response().setStatusCode(204);
-                            handler.handle();
-                            routingContext.response().end();
+                            httpResponse.setStatusCode(204);
+                            httpResponse.end();
                         }
                     } catch (Throwable t) {
                         log.error(t);
@@ -181,37 +194,45 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             return;
                         }
                     }
-
                 }
                 Object finalInput = input;
                 executor.execute(() -> {
                     try {
-                        FunqyServerResponse response = dispatch(routingContext, invoker, finalInput);
-                        Map<String, Object> responseEvent = new HashMap<>();
+                        final HttpServerResponse httpResponse = routingContext.response();
+                        final FunqyServerResponse response = dispatch(routingContext, invoker, finalInput);
+                        final Map<String, Object> responseEvent = new HashMap<>();
+
                         responseEvent.put("id", getResponseId());
                         responseEvent.put("specversion", "1.0");
                         responseEvent.put("source", getResponseSource());
                         responseEvent.put("type", getResponseType());
-                        routingContext.response().setStatusCode(200);
+                        httpResponse.setStatusCode(200);
+
+                        final Consumer<Optional<Object>> doResponse = (data) -> {
+                            ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
+                            data.ifPresent(val -> {
+                                responseEvent.put("data", val);
+                            });
+                            try {
+                                httpResponse.end(mapper.writer().writeValueAsString(responseEvent));
+                            } catch (JsonProcessingException e) {
+                                log.error("Failed to marshal", e);
+                                routingContext.fail(400);
+                            }
+                        };
+
                         if (invoker.hasOutput()) {
                             responseEvent.put("datacontenttype", "application/json");
-                            responseEvent.put("data", response.getOutput());
-                            ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
-                            try {
-                                routingContext.response().end(mapper.writer().writeValueAsString(responseEvent));
-                            } catch (JsonProcessingException e) {
-                                log.error("Failed to marshal", e);
-                                routingContext.fail(400);
-                                return;
-                            }
+                            CompletionStage<?> output = response.getOutput();
+                            output.whenCompleteAsync((obj, t) -> {
+                                if (t != null) {
+                                    routingContext.fail(t);
+                                } else {
+                                    doResponse.accept(Optional.ofNullable(obj));
+                                }
+                            });
                         } else {
-                            try {
-                                routingContext.response().end(mapper.writer().writeValueAsString(responseEvent));
-                            } catch (JsonProcessingException e) {
-                                log.error("Failed to marshal", e);
-                                routingContext.fail(400);
-                                return;
-                            }
+                            doResponse.accept(Optional.empty());
                         }
                     } catch (Throwable t) {
                         log.error(t);

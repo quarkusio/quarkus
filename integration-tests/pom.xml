@@ -21,6 +21,7 @@
     </properties>
 
     <modules>
+        <module>funqy-amazon-lambda</module>
         <module>class-transformer</module>
         <module>shared-library</module>
         <module>hibernate-validator</module>

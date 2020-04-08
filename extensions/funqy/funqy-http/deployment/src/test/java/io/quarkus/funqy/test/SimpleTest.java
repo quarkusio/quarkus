@@ -4,8 +4,9 @@ import static org.hamcrest.Matchers.equalTo;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
@@ -17,23 +18,32 @@ public class SimpleTest {
                     .addClasses(PrimitiveFunctions.class, GreetingFunctions.class, Greeting.class, GreetingService.class,
                             GreetingTemplate.class));
 
-    @Test
-    public void testString() {
-        RestAssured.given().contentType("application/json").body("\"Hello\"").post("/toLowerCase")
+    @ParameterizedTest
+    @ValueSource(strings = { "/toLowerCase", "/toLowerCaseAsync" })
+    public void testString(String path) {
+        RestAssured.given().contentType("application/json").body("\"Hello\"").post(path)
                 .then().statusCode(200).body(equalTo("\"hello\""));
     }
 
-    @Test
-    public void testInt() {
-        RestAssured.given().contentType("application/json").body("2").post("/doubleIt")
+    @ParameterizedTest
+    @ValueSource(strings = { "/doubleIt", "/doubleItAsync" })
+    public void testInt(String path) {
+        RestAssured.given().contentType("application/json").body("2").post(path)
                 .then().statusCode(200).body(equalTo("4"));
     }
 
-    @Test
-    public void testObject() {
+    @ParameterizedTest
+    @ValueSource(strings = { "/greet", "/greetAsync" })
+    public void testObject(String path) {
+
+        RestAssured.given().contentType("application/json")
+                .body("{\"greeting\":\"Hello\",\"punctuation\":\"!\"}")
+                .post("/template")
+                .then().statusCode(200);
+
         RestAssured.given().contentType("application/json")
                 .body("\"Bill\"")
-                .post("/greet")
+                .post(path)
                 .then().statusCode(200)
                 .body(equalTo("{\"name\":\"Bill\",\"message\":\"Hello Bill!\"}"));
 
@@ -44,7 +54,7 @@ public class SimpleTest {
 
         RestAssured.given().contentType("application/json")
                 .body("\"Bill\"")
-                .post("/greet")
+                .post(path)
                 .then().statusCode(200)
                 .body(equalTo("{\"name\":\"Bill\",\"message\":\"Guten tag Bill.\"}"));
 

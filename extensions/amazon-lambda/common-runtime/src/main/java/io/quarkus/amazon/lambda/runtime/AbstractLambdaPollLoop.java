@@ -33,15 +33,9 @@ public abstract class AbstractLambdaPollLoop {
 
     public void startPollLoop(ShutdownContext context) {
 
-        AtomicBoolean running = new AtomicBoolean(true);
+        final AtomicBoolean running = new AtomicBoolean(true);
 
-        context.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                running.set(false);
-            }
-        });
-        Thread t = new Thread(new Runnable() {
+        final Thread pollingThread = new Thread(new Runnable() {
             @SuppressWarnings("unchecked")
             @Override
             public void run() {
@@ -108,7 +102,11 @@ public abstract class AbstractLambdaPollLoop {
                 }
             }
         }, "Lambda Thread");
-        t.start();
+        context.addShutdownTask(() -> {
+            running.set(false);
+            pollingThread.interrupt();
+        });
+        pollingThread.start();
 
     }
 

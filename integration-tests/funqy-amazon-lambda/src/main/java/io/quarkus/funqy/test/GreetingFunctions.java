@@ -11,13 +11,16 @@ import javax.inject.Inject;
 import io.quarkus.funqy.Funq;
 
 public class GreetingFunctions {
+
+    public static String ERR_MSG = "Identity cannot be null.";
+
     @Inject
     GreetingService service;
 
     @Funq
     public Greeting greet(Identity name) {
         if (name == null) {
-            throw new IllegalArgumentException("Identity cannot be null.");
+            throw new IllegalArgumentException(ERR_MSG);
         }
         String message = service.hello(name.getName());
         Greeting greeting = new Greeting();
@@ -30,7 +33,7 @@ public class GreetingFunctions {
     public CompletionStage<Greeting> greetAsync(Identity name) {
         CompletableFuture<Greeting> result = new CompletableFuture<>();
         if (name == null) {
-            result.completeExceptionally(new IllegalArgumentException("Identity cannot be null."));
+            result.completeExceptionally(new IllegalArgumentException(ERR_MSG));
             return result;
         }
 

@@ -10,6 +10,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Optional;
+
+import javax.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -21,7 +24,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import io.quarkus.it.mongodb.panache.book.BookDetail;
 import io.quarkus.it.mongodb.panache.person.Person;
+import io.quarkus.it.mongodb.panache.person.PersonRepository;
+import io.quarkus.mongodb.panache.PanacheMongoRepositoryBase;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
@@ -353,5 +359,27 @@ class MongodbPanacheResourceTest {
     @Test
     public void testMoreRepositoryFunctionalities() {
         get("/test/imperative/repository").then().statusCode(200);
+    }
+
+    @Inject
+    PersonRepository realPersonRepository;
+
+    @DisabledOnNativeImage
+    @Test
+    public void testPanacheRepositoryBridges() {
+        // normal method call
+        Assertions.assertNull(realPersonRepository.findById(0l));
+        // bridge call
+        Assertions.assertNull(((PanacheMongoRepositoryBase) realPersonRepository).findById(0l));
+
+        // normal method call
+        Assertions.assertEquals(Optional.empty(), realPersonRepository.findByIdOptional(0l));
+        // bridge call
+        Assertions.assertEquals(Optional.empty(), ((PanacheMongoRepositoryBase) realPersonRepository).findByIdOptional(0l));
+
+        // normal method call
+        Assertions.assertEquals(false, realPersonRepository.deleteById(0l));
+        // bridge call
+        Assertions.assertEquals(false, ((PanacheMongoRepositoryBase) realPersonRepository).deleteById(0l));
     }
 }

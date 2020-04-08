@@ -58,8 +58,8 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
 
         protected Type thisClass;
         protected Map<String, ? extends EntityFieldType> fields;
-        // set of name + "/" + descriptor (only for suspected accessor names)
-        private Set<String> methods = new HashSet<>();
+        // set of name + "/" + descriptor
+        private Set<String> userMethods = new HashSet<>();
         private MetamodelInfo<?> modelInfo;
         private ClassInfo panacheEntityBaseClassInfo;
         protected ClassInfo entityInfo;
@@ -118,11 +118,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
         @Override
         public MethodVisitor visitMethod(int access, String methodName, String descriptor, String signature,
                 String[] exceptions) {
-            if (methodName.startsWith("get")
-                    || methodName.startsWith("set")
-                    || methodName.startsWith("is")) {
-                methods.add(methodName + "/" + descriptor);
-            }
+            userMethods.add(methodName + "/" + descriptor);
             MethodVisitor superVisitor = super.visitMethod(access, methodName, descriptor, signature, exceptions);
             return new PanacheFieldAccessMethodVisitor(superVisitor, thisClass.getInternalName(), methodName, descriptor,
                     modelInfo);
@@ -134,7 +130,8 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
 
             for (MethodInfo method : panacheEntityBaseClassInfo.methods()) {
                 // Do not generate a method that already exists
-                if (!JandexUtil.containsMethod(entityInfo, method)) {
+                String descriptor = JandexUtil.getDescriptor(method, name -> null);
+                if (!userMethods.contains(method.name() + "/" + descriptor)) {
                     AnnotationInstance bridge = method.annotation(JandexUtil.DOTNAME_GENERATE_BRIDGE);
                     if (bridge != null) {
                         generateMethod(method, bridge.value("targetReturnTypeErased"));
@@ -202,7 +199,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                 // Getter
                 String getterName = field.getGetterName();
                 String getterDescriptor = "()" + field.descriptor;
-                if (!methods.contains(getterName + "/" + getterDescriptor)) {
+                if (!userMethods.contains(getterName + "/" + getterDescriptor)) {
                     MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC,
                             getterName, getterDescriptor, field.signature == null ? null : "()" + field.signature, null);
                     mv.visitCode();
@@ -226,7 +223,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                 // Setter
                 String setterName = field.getSetterName();
                 String setterDescriptor = "(" + field.descriptor + ")V";
-                if (!methods.contains(setterName + "/" + setterDescriptor)) {
+                if (!userMethods.contains(setterName + "/" + setterDescriptor)) {
                     MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC,
                             setterName, setterDescriptor, field.signature == null ? null : "(" + field.signature + ")V", null);
                     mv.visitCode();

@@ -15,53 +15,53 @@ public class ElasticsearchConfig {
      * The list of hosts of the Elasticsearch servers.
      */
     @ConfigItem(defaultValue = "localhost:9200")
-    List<String> hosts;
+    public List<String> hosts;
 
     /**
      * The protocol to use when contacting Elasticsearch servers.
      * Set to "https" to enable SSL/TLS.
      */
     @ConfigItem(defaultValue = "http")
-    String protocol;
+    public String protocol;
 
     /**
      * The username used for authentication.
      */
     @ConfigItem
-    Optional<String> username;
+    public Optional<String> username;
 
     /**
      * The password used for authentication.
      */
     @ConfigItem
-    Optional<String> password;
+    public Optional<String> password;
 
     /**
      * The connection timeout.
      */
-    //FIXME default is 1S ? and we can also configure a socket timeout (default 30s)
-    @ConfigItem(defaultValue = "3S")
-    Duration connectionTimeout;
+    @ConfigItem(defaultValue = "1S")
+    public Duration connectionTimeout;
 
     /**
-     * The maximum number of connections to all the Elasticsearch servers.
+     * The socket timeout.
      */
-    //FIXME how to map this to the configuration documented here: https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/_number_of_threads.html
-    @ConfigItem(defaultValue = "20")
-    int maxConnections;
+    @ConfigItem(defaultValue = "30S")
+    public Duration socketTimeout;
 
     /**
-     * The maximum number of connections per Elasticsearch server.
+     * The number of IO thread.
+     * By default, this is the number of locally detected processors.
+     * 
+     * @link{https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/_number_of_threads.html}
      */
-    //FIXME how to map this to the configuration documented here: https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/_number_of_threads.html
-    @ConfigItem(defaultValue = "10")
-    int maxConnectionsPerRoute;
+    @ConfigItem
+    public Optional<Integer> ioThreadCounts;
 
     /**
      * Configuration for the automatic discovery of new Elasticsearch nodes.
      */
     @ConfigItem
-    DiscoveryConfig discovery;
+    public DiscoveryConfig discovery;
 
     @ConfigGroup
     public static class DiscoveryConfig {
@@ -70,13 +70,12 @@ public class ElasticsearchConfig {
          * Defines if automatic discovery is enabled.
          */
         @ConfigItem(defaultValue = "false")
-        boolean enabled;
+        public boolean enabled;
 
         /**
          * Refresh interval of the node list.
          */
         @ConfigItem(defaultValue = "10S")
-        Duration refreshInterval;
-
+        public Duration refreshInterval;
     }
 }

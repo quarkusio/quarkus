@@ -124,6 +124,7 @@
         <module>devmode</module>
         <module>ide-launcher</module>
         <module>elasticsearch-lowlevel</module>
+        <module>elasticsearch-highlevel</module>
 
         <!-- gRPC tests -->
         <module>grpc-plain-text</module>

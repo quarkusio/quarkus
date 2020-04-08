@@ -451,7 +451,8 @@ jobs:
             postgres: "true"
             timeout: 60
             test-modules: >
-              elasticsearch
+              elasticsearch-lowlevel
+              elasticsearch-highlevel
               jpa-postgresql
               hibernate-search-elasticsearch
               narayana-stm

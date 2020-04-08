@@ -91,6 +91,7 @@
         <module>hibernate-search-elasticsearch</module>
         <module>elasticsearch-rest-client</module>
         <module>elasticsearch-low-level-client</module>
+        <module>elasticsearch-high-level-client</module>
         <module>jsch</module>
         <module>jgit</module>
         <module>kafka-client</module>

@@ -1,5 +1,6 @@
 package io.quarkus.deployment.steps;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -77,10 +78,16 @@ class NativeImageConfigBuildStep {
         Boolean sslNativeEnabled = isSslNativeEnabled(sslNativeConfig, extensionSslNativeSupport);
         if (sslNativeEnabled) {
             // This makes the native image dependent on the local path used to build it.
+            // This is useful for testing but the user will have to override it.
             String graalVmHome = System.getenv("GRAALVM_HOME");
             if (graalVmHome != null) {
+                // JDK 8 path
                 Path graalVmCacertsPath = Paths.get(graalVmHome, "jre", "lib", "security", "cacerts");
-                // This is useful for testing but the user will have to override it.
+                if (!Files.exists(graalVmCacertsPath)) {
+                    // Path starting with GraalVM JDK 11
+                    graalVmCacertsPath = Paths.get(graalVmHome, "lib", "security", "cacerts");
+                }
+
                 sslTrustStoreSystemProperty.produce(new SslTrustStoreSystemPropertyBuildItem(graalVmCacertsPath.toString()));
             }
         }

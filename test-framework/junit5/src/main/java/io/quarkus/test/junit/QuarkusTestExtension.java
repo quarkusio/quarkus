@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -106,7 +107,7 @@ public class QuarkusTestExtension
             }
             CuratedApplication curatedApplication = runnerBuilder
                     .setTest(true)
-                    .setProjectRoot(new File("").toPath())
+                    .setProjectRoot(Files.isDirectory(appClassLocation) ? new File("").toPath() : null)
                     .build()
                     .bootstrap();
 

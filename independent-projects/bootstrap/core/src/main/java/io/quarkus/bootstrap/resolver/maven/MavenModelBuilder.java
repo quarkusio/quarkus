@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import java.io.File;
@@ -26,18 +25,15 @@ public class MavenModelBuilder implements ModelBuilder {
 
     private final ModelBuilder builder;
     private final WorkspaceModelResolver workspaceResolver;
-    private final BootstrapMavenContext mvnSettings;
+    private final List<Profile> activeSettingsProfiles;
+    private final BootstrapMavenOptions mvnOptions;
 
-    public MavenModelBuilder(BootstrapMavenContext mvnSettings) {
-        this.mvnSettings = mvnSettings;
-        builder = new BootstrapModelBuilderFactory().newInstance();
-        workspaceResolver = mvnSettings.getWorkspace();
-    }
-
-    public MavenModelBuilder(WorkspaceModelResolver wsModelResolver) {
+    public MavenModelBuilder(WorkspaceModelResolver wsModelResolver, BootstrapMavenOptions mvnOptions,
+            List<Profile> activeSettingsProfiles) {
         builder = new BootstrapModelBuilderFactory().newInstance();
         workspaceResolver = wsModelResolver;
-        mvnSettings = null;
+        this.activeSettingsProfiles = activeSettingsProfiles;
+        this.mvnOptions = mvnOptions;
     }
 
     @Override
@@ -80,20 +76,15 @@ public class MavenModelBuilder implements ModelBuilder {
         final List<Profile> profiles = request.getProfiles();
         profiles.forEach(p -> addedProfiles.add(p.getId()));
 
-        try {
-            getActiveSettingsProfiles().forEach(p -> {
-                if (!addedProfiles.contains(p.getId())) {
-                    profiles.add(p);
-                    request.getActiveProfileIds().add(p.getId());
-                }
-            });
-        } catch (AppModelResolverException e) {
-            e.printStackTrace();
-        }
+        activeSettingsProfiles.forEach(p -> {
+            if (!addedProfiles.contains(p.getId())) {
+                profiles.add(p);
+                request.getActiveProfileIds().add(p.getId());
+            }
+        });
 
-        final BootstrapMavenOptions mvnArgs = getMavenOptions();
-        request.getActiveProfileIds().addAll(mvnArgs.getActiveProfileIds());
-        request.getInactiveProfileIds().addAll(mvnArgs.getInactiveProfileIds());
+        request.getActiveProfileIds().addAll(mvnOptions.getActiveProfileIds());
+        request.getInactiveProfileIds().addAll(mvnOptions.getInactiveProfileIds());
         request.setUserProperties(System.getProperties());
     }
 
@@ -105,13 +96,5 @@ public class MavenModelBuilder implements ModelBuilder {
     @Override
     public Result<? extends Model> buildRawModel(File pomFile, int validationLevel, boolean locationTracking) {
         return builder.buildRawModel(pomFile, validationLevel, locationTracking);
-    }
-
-    private List<Profile> getActiveSettingsProfiles() throws AppModelResolverException {
-        return mvnSettings == null ? MavenRepoInitializer.getActiveSettingsProfiles() : mvnSettings.getActiveSettingsProfiles();
-    }
-
-    private BootstrapMavenOptions getMavenOptions() {
-        return mvnSettings == null ? MavenRepoInitializer.getBootstrapMavenOptions() : mvnSettings.getCliOptions();
     }
 }

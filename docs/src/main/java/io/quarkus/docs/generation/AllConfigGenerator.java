@@ -55,7 +55,7 @@ public class AllConfigGenerator {
                 .enable(JsonParser.Feature.ALLOW_COMMENTS)
                 .enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS)
                 .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
-        MavenArtifactResolver resolver = MavenArtifactResolver.builder().build();
+        MavenArtifactResolver resolver = MavenArtifactResolver.builder().setWorkspaceDiscovery(false).build();
 
         // let's read it (and ignore the fields we don't need)
         ExtensionJson extensionJson = mapper.readValue(jsonFile, ExtensionJson.class);
@@ -73,7 +73,7 @@ public class AllConfigGenerator {
             extensionsByGav.put(extension.groupId + ":" + extension.artifactId, extension);
         }
 
-        // examine all the extension jars 
+        // examine all the extension jars
         List<ArtifactRequest> deploymentRequests = new ArrayList<>(extensionJson.extensions.size());
         for (ArtifactResult result : resolver.resolve(requests)) {
             Artifact artifact = result.getArtifact();

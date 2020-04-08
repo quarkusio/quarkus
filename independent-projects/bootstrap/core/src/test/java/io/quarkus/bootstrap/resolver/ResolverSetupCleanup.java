@@ -60,6 +60,7 @@ public class ResolverSetupCleanup {
         return new BootstrapAppModelResolver(MavenArtifactResolver.builder()
                 .setRepoHome(repoHome)
                 .setOffline(true)
+                .setWorkspaceDiscovery(false)
                 .setWorkspace(workspace)
                 .build());
     }

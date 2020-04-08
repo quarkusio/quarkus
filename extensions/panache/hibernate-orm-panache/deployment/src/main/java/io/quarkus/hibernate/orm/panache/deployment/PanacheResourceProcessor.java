@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.NamedQueries;
@@ -38,6 +39,8 @@ import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
+import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
+import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
 public final class PanacheResourceProcessor {
@@ -76,7 +79,11 @@ public final class PanacheResourceProcessor {
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             HibernateEnhancersRegisteredBuildItem hibernateMarker,
             BuildProducer<PanacheEntityClassesBuildItem> entityClasses,
-            BuildProducer<NamedQueryEntityClassBuildStep> namedQueries) throws Exception {
+            BuildProducer<NamedQueryEntityClassBuildStep> namedQueries,
+            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) throws Exception {
+
+        List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
+                .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
         PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
@@ -107,7 +114,7 @@ public final class PanacheResourceProcessor {
             namedQueries.produce(new NamedQueryEntityClassBuildStep(parameterType.name().toString(), typeNamedQueries));
         }
 
-        PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex());
+        PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex(), methodCustomizers);
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheEntity if we ask for subtypes of PanacheEntityBase

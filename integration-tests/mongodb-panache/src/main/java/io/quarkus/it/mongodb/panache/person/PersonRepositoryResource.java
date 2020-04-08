@@ -15,6 +15,10 @@ import io.quarkus.panache.common.Sort;
 @Consumes(MediaType.APPLICATION_JSON)
 public class PersonRepositoryResource {
 
+    // fake unused injection point to force ArC to not remove this otherwise I can't mock it in the tests
+    @Inject
+    MockablePersonRepository mockablePersonRepository;
+
     @Inject
     PersonRepository personRepository;
 

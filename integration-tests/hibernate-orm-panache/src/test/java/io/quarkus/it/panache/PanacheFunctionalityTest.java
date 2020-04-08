@@ -4,12 +4,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.StringWriter;
-import java.util.Optional;
 
-import javax.inject.Inject;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
-import javax.persistence.LockModeType;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
@@ -20,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import io.quarkus.test.junit.DisabledOnNativeImage;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -166,36 +162,5 @@ public class PanacheFunctionalityTest {
     @Test
     public void testBug8254() {
         RestAssured.when().get("/test/8254").then().body(is("OK"));
-    }
-
-    @Inject
-    PersonRepository realPersonRepository;
-
-    @DisabledOnNativeImage
-    @Test
-    public void testPanacheRepositoryBridges() {
-        // normal method call
-        Assertions.assertNull(realPersonRepository.findById(0l));
-        // bridge call
-        Assertions.assertNull(((PanacheRepositoryBase) realPersonRepository).findById(0l));
-        // normal method call
-        Assertions.assertNull(realPersonRepository.findById(0l, LockModeType.NONE));
-        // bridge call
-        Assertions.assertNull(((PanacheRepositoryBase) realPersonRepository).findById(0l, LockModeType.NONE));
-
-        // normal method call
-        Assertions.assertEquals(Optional.empty(), realPersonRepository.findByIdOptional(0l));
-        // bridge call
-        Assertions.assertEquals(Optional.empty(), ((PanacheRepositoryBase) realPersonRepository).findByIdOptional(0l));
-        // normal method call
-        Assertions.assertEquals(Optional.empty(), realPersonRepository.findByIdOptional(0l, LockModeType.NONE));
-        // bridge call
-        Assertions.assertEquals(Optional.empty(),
-                ((PanacheRepositoryBase) realPersonRepository).findByIdOptional(0l, LockModeType.NONE));
-
-        // normal method call
-        Assertions.assertEquals(false, realPersonRepository.deleteById(0l));
-        // bridge call
-        Assertions.assertEquals(false, ((PanacheRepositoryBase) realPersonRepository).deleteById(0l));
     }
 }

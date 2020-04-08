@@ -426,8 +426,6 @@ public class JandexUtil {
         }
         return args.toArray(new Type[0]);
     }
-<<<<<<< HEAD
-=======
 
     public static int getParameterSize(Type paramType) {
         if (paramType.kind() == Kind.PRIMITIVE) {
@@ -439,5 +437,4 @@ public class JandexUtil {
         }
         return 1;
     }
->>>>>>> d0599c8c73... fixup enhancers
 }

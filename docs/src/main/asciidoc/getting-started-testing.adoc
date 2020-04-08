@@ -569,6 +569,10 @@ public class GreetingResourceTest {
 ----
 <1> Indicate that this injection point is meant to use an instance of `RestClient`.
 
+=== Mocking with Panache
+
+If you are using the `quarkus-hibernate-orm-panache` or `quarkus-mongodb-panache` extensions, check out the link:hibernate-orm-panache#mocking[Hibernate ORM with Panache Mocking] and link:mongodb-panache#mocking[MongoDB with Panache Mocking] documentation for the easiest way to mock your data access.
+
 == Test Bootstrap Configuration Options
 
 There are a few system properties that can be used to tune the bootstrap of the test, specifically its classpath.

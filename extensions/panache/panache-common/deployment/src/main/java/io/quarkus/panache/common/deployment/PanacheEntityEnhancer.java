@@ -1,5 +1,7 @@
 package io.quarkus.panache.common.deployment;
 
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,10 +47,13 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
     protected MetamodelType modelInfo;
     protected final ClassInfo panacheEntityBaseClassInfo;
     protected final IndexView indexView;
+    protected final List<PanacheMethodCustomizer> methodCustomizers;
 
-    public PanacheEntityEnhancer(IndexView index, DotName panacheEntityBaseName) {
+    public PanacheEntityEnhancer(IndexView index, DotName panacheEntityBaseName,
+            List<PanacheMethodCustomizer> methodCustomizers) {
         this.panacheEntityBaseClassInfo = index.getClassByName(panacheEntityBaseName);
         this.indexView = index;
+        this.methodCustomizers = methodCustomizers;
     }
 
     @Override
@@ -63,11 +68,13 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
         private MetamodelInfo<?> modelInfo;
         private ClassInfo panacheEntityBaseClassInfo;
         protected ClassInfo entityInfo;
+        protected List<PanacheMethodCustomizer> methodCustomizers;
 
         public PanacheEntityClassVisitor(String className, ClassVisitor outputClassVisitor,
                 MetamodelInfo<? extends EntityModel<? extends EntityFieldType>> modelInfo,
                 ClassInfo panacheEntityBaseClassInfo,
-                ClassInfo entityInfo) {
+                ClassInfo entityInfo,
+                List<PanacheMethodCustomizer> methodCustomizers) {
             super(Gizmo.ASM_API_VERSION, outputClassVisitor);
             thisClass = Type.getType("L" + className.replace('.', '/') + ";");
             this.modelInfo = modelInfo;
@@ -75,6 +82,7 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
             fields = entityModel != null ? entityModel.fields : null;
             this.panacheEntityBaseClassInfo = panacheEntityBaseClassInfo;
             this.entityInfo = entityInfo;
+            this.methodCustomizers = methodCustomizers;
         }
 
         @Override
@@ -120,6 +128,19 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                 String[] exceptions) {
             userMethods.add(methodName + "/" + descriptor);
             MethodVisitor superVisitor = super.visitMethod(access, methodName, descriptor, signature, exceptions);
+            if (Modifier.isStatic(access)
+                    && Modifier.isPublic(access)
+                    && (access & Opcodes.ACC_SYNTHETIC) == 0
+                    && !methodCustomizers.isEmpty()) {
+                org.jboss.jandex.Type[] argTypes = JandexUtil.getParameterTypes(descriptor);
+                MethodInfo method = this.entityInfo.method(methodName, argTypes);
+                if (method == null) {
+                    throw new IllegalStateException(
+                            "Could not find indexed method: " + thisClass + "." + methodName + " with descriptor " + descriptor
+                                    + " and arg types " + Arrays.toString(argTypes));
+                }
+                superVisitor = new PanacheMethodCustomizerVisitor(superVisitor, method, thisClass, methodCustomizers);
+            }
             return new PanacheFieldAccessMethodVisitor(superVisitor, thisClass.getInternalName(), methodName, descriptor,
                     modelInfo);
         }
@@ -162,6 +183,9 @@ public abstract class PanacheEntityEnhancer<MetamodelType extends MetamodelInfo<
                 mv.visitParameter(method.parameterName(i), 0 /* modifiers */);
             }
             mv.visitCode();
+            for (PanacheMethodCustomizer customizer : methodCustomizers) {
+                customizer.customize(thisClass, method, mv);
+            }
             // inject model
             injectModel(mv);
             for (int i = 0; i < parameters.size(); i++) {

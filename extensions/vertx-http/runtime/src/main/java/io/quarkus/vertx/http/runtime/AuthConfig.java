@@ -42,4 +42,14 @@ public class AuthConfig {
      */
     @ConfigItem(name = "policy")
     public Map<String, PolicyConfig> rolePolicy;
+
+    /**
+     * If this is true and credentials are present then a user will always be authenticated
+     * before the request progresses.
+     * 
+     * If this is false then an attempt will only be made to authenticate the user if a permission
+     * check is performed or the current user is required for some other reason.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean proactive;
 }

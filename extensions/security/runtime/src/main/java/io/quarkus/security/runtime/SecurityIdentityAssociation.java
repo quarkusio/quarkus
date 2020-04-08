@@ -1,6 +1,7 @@
 package io.quarkus.security.runtime;
 
 import java.security.Principal;
+import java.util.function.Consumer;
 
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.event.Observes;
@@ -11,11 +12,13 @@ import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
+import io.smallrye.mutiny.Uni;
 
 @RequestScoped
-public class SecurityIdentityAssociation implements CurrentIdentityAssociation {
+public class SecurityIdentityAssociation implements CurrentIdentityAssociation, Consumer<Uni<SecurityIdentity>> {
 
     private volatile SecurityIdentity identity;
+    private volatile Uni<SecurityIdentity> deferredIdentity;
 
     @Inject
     IdentityProviderManager identityProviderManager;
@@ -40,11 +43,31 @@ public class SecurityIdentityAssociation implements CurrentIdentityAssociation {
         return old;
     }
 
+    public Uni<SecurityIdentity> getDeferredIdentity() {
+        return deferredIdentity;
+    }
+
+    public void setDeferredIdentity(Uni<SecurityIdentity> deferredIdentity) {
+        this.deferredIdentity = deferredIdentity;
+    }
+
     @Override
     public SecurityIdentity getIdentity() {
         if (identity == null) {
-            identity = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE).await().indefinitely();
+            if (deferredIdentity != null) {
+                identity = deferredIdentity.await().indefinitely();
+            }
+            if (identity == null) {
+                identity = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE).await().indefinitely();
+            }
         }
         return identity;
+    }
+
+    //THIS IS A TEMP HACK
+    //a setDeferredIdentity and corresponding getter method needs to be added to the interface
+    @Override
+    public void accept(Uni<SecurityIdentity> securityIdentityUni) {
+        deferredIdentity = securityIdentityUni;
     }
 }

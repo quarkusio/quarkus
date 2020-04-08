@@ -71,6 +71,14 @@ The following properties can be used to configure form based auth:
 
 include::{generated-dir}/config/quarkus-vertx-http-config-group-form-auth-config.adoc[opts=optional, leveloffset=+1]
 
+=== Proactive Authentication
+
+By default Quarkus does what we call proactive authentication. This means that if an incoming request has a
+credential then that request will always be authenticated (even if the target page does not require authentication).
+
+This means that requests with an invalid credential will always be rejected, even for public pages. You can change
+this behaviour and only authenticate when required by setting `quarkus.http.auth.proactive=false`.
+
 [#standard-security-annotations]
 == Authorization in REST endpoints and CDI beans using annotations
 

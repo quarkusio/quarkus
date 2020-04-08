@@ -202,17 +202,18 @@ public class AppModelGradleResolver implements AppModelResolver {
     private void collectDependencies(AppModel.Builder appBuilder, final List<Dependency> directExtensionDeps,
             final List<AppDependency> userDeps, Map<AppArtifactKey, AppDependency> versionMap,
             Map<ModuleIdentifier, ModuleVersionIdentifier> userModules) {
-        collectDependencies(project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME),
+        collectDependencies(project, project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME),
                 appBuilder, directExtensionDeps, userDeps,
                 versionMap, userModules);
         if (launchMode == LaunchMode.TEST) {
-            collectDependencies(project.getConfigurations().getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME),
+            collectDependencies(project,
+                    project.getConfigurations().getByName(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME),
                     appBuilder, directExtensionDeps, userDeps,
                     versionMap, userModules);
         }
     }
 
-    private void collectDependencies(Configuration config, AppModel.Builder appBuilder,
+    private void collectDependencies(Project project, Configuration config, AppModel.Builder appBuilder,
             final List<Dependency> directExtensionDeps,
             final List<AppDependency> userDeps, Map<AppArtifactKey, AppDependency> versionMap,
             Map<ModuleIdentifier, ModuleVersionIdentifier> userModules) {
@@ -229,7 +230,10 @@ public class AppModelGradleResolver implements AppModelResolver {
                     dependency.getArtifact().getArtifactId());
 
             // If we are building a JAR then we should be including dependencies as JARs, not directories of classes
-            final Task jarTask = !LaunchMode.NORMAL.equals(launchMode) ? null : projectDepJarTasks.get(artifactGa);
+            // check if the dependency is another project that is part of the multi-module setup.
+            boolean useJarTask = projectDepJarTasks.containsKey(artifactGa)
+                    && projectDepJarTasks.get(artifactGa).getProject() != project;
+            final Task jarTask = LaunchMode.NORMAL.equals(launchMode) || useJarTask ? projectDepJarTasks.get(artifactGa) : null;
             if (jarTask != null) {
                 final Iterator<File> i = jarTask.getOutputs().getFiles().iterator();
                 if (!i.hasNext()) {
@@ -248,7 +252,9 @@ public class AppModelGradleResolver implements AppModelResolver {
                 }
             }
 
-            userDeps.add(dependency);
+            if (!userDeps.contains(dependency)) {
+                userDeps.add(dependency);
+            }
             versionMap.put(artifactGa, dependency);
         }
 

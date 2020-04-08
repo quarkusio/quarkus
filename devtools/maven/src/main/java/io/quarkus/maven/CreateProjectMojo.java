@@ -36,6 +36,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuilder;
+import org.apache.maven.settings.Proxy;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -270,6 +271,8 @@ public class CreateProjectMojo extends AbstractMojo {
                     newExecutionRequest, session.getResult());
             newSession.setCurrentProject(newProject);
 
+            setProxySystemPropertiesFromSession();
+
             executeMojo(
                     plugin(
                             groupId("io.takari"),
@@ -285,6 +288,27 @@ public class CreateProjectMojo extends AbstractMojo {
         } catch (Exception e) {
             // no reason to fail if the wrapper could not be created
             getLog().error("Unable to install the Maven wrapper (./mvnw) in the project", e);
+        }
+    }
+
+    private void setProxySystemPropertiesFromSession() {
+        List<Proxy> proxiesFromSession = session.getRequest().getProxies();
+        // - takari maven uses https to download the maven wrapper
+        // - don't do anything if proxy system property is already set
+        if (!proxiesFromSession.isEmpty() && System.getProperty("https.proxyHost") == null) {
+
+            // use the first active proxy for setting the system properties
+            proxiesFromSession.stream()
+                    .filter(Proxy::isActive)
+                    .findFirst()
+                    .ifPresent(proxy -> {
+                        // note: a http proxy _is_ usable as https.proxyHost
+                        System.setProperty("https.proxyHost", proxy.getHost());
+                        System.setProperty("https.proxyPort", String.valueOf(proxy.getPort()));
+                        if (proxy.getNonProxyHosts() != null) {
+                            System.setProperty("http.nonProxyHosts", proxy.getNonProxyHosts());
+                        }
+                    });
         }
     }
 

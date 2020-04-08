@@ -1,5 +1,7 @@
 package io.quarkus.vertx.http.runtime.security;
 
+import java.util.function.Function;
+
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
@@ -10,8 +12,13 @@ import io.vertx.ext.web.RoutingContext;
 public class AuthenticatedHttpSecurityPolicy implements HttpSecurityPolicy {
 
     @Override
-    public Uni<CheckResult> checkPermission(RoutingContext request, SecurityIdentity identity,
+    public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
-        return Uni.createFrom().item(identity.isAnonymous() ? CheckResult.DENY : CheckResult.PERMIT);
+        return identity.map(new Function<SecurityIdentity, CheckResult>() {
+            @Override
+            public CheckResult apply(SecurityIdentity identity) {
+                return identity.isAnonymous() ? CheckResult.DENY : CheckResult.PERMIT;
+            }
+        });
     }
 }

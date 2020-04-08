@@ -4,7 +4,9 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import javax.enterprise.inject.spi.CDI;
@@ -16,9 +18,11 @@ import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.vertx.http.runtime.FormAuthConfig;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;
@@ -27,11 +31,17 @@ import io.vertx.ext.web.RoutingContext;
 public class HttpSecurityRecorder {
 
     private static final Logger log = Logger.getLogger(HttpSecurityRecorder.class);
+    protected static final Consumer<Throwable> NOOP_CALLBACK = new Consumer<Throwable>() {
+        @Override
+        public void accept(Throwable throwable) {
+
+        }
+    };
 
     //the temp encryption key, persistent across dev mode restarts
     static volatile String encryptionKey;
 
-    public Handler<RoutingContext> authenticationMechanismHandler() {
+    public Handler<RoutingContext> authenticationMechanismHandler(boolean proactiveAuthentication) {
         return new Handler<RoutingContext>() {
 
             volatile HttpAuthenticator authenticator;
@@ -43,50 +53,92 @@ public class HttpSecurityRecorder {
                 }
                 //we put the authenticator into the routing context so it can be used by other systems
                 event.put(HttpAuthenticator.class.getName(), authenticator);
-                authenticator.attemptAuthentication(event)
-                        .subscribe().with(new Consumer<SecurityIdentity>() {
+
+                //register the default auth failure handler
+                //if proactive auth is used this is the only one
+                //if using lazy auth this can be modified downstream, to control authentication behaviour
+                event.put(QuarkusHttpUser.AUTH_FAILURE_HANDLER, new BiConsumer<RoutingContext, Throwable>() {
+                    @Override
+                    public void accept(RoutingContext routingContext, Throwable throwable) {
+                        while (throwable instanceof CompletionException && throwable.getCause() != null) {
+                            throwable = throwable.getCause();
+                        }
+                        //auth failed
+                        if (throwable instanceof AuthenticationFailedException) {
+                            authenticator.sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
+                                @Override
+                                public void accept(Boolean aBoolean) {
+                                    event.response().end();
+                                }
+                            }, new Consumer<Throwable>() {
+                                @Override
+                                public void accept(Throwable throwable) {
+                                    event.fail(throwable);
+                                }
+                            });
+                        } else if (throwable instanceof AuthenticationCompletionException) {
+                            event.response().setStatusCode(401);
+                            event.response().end();
+                        } else if (throwable instanceof AuthenticationRedirectException) {
+                            AuthenticationRedirectException redirectEx = (AuthenticationRedirectException) throwable;
+                            event.response().setStatusCode(redirectEx.getCode());
+                            event.response().headers().set(HttpHeaders.LOCATION, redirectEx.getRedirectUri());
+                            event.response().end();
+                        } else {
+                            event.fail(throwable);
+                        }
+                    }
+                });
+
+                Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event)
+                        .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                            @Override
+                            public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
+                                //if it is null we use the anonymous identity
+                                if (securityIdentity == null) {
+                                    return authenticator.getIdentityProviderManager()
+                                            .authenticate(AnonymousAuthenticationRequest.INSTANCE);
+                                }
+                                return Uni.createFrom().item(securityIdentity);
+                            }
+                        })
+                        .onFailure()
+                        .invoke(new Consumer<Throwable>() {
+                            @Override
+                            public void accept(Throwable throwable) {
+                                //handle the auth failure
+                                //this can be customised
+                                BiConsumer<RoutingContext, Throwable> handler = event.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
+                                if (handler != null) {
+                                    handler.accept(event, throwable);
+                                }
+                            }
+                        })
+                        .onItem()
+                        .invoke(new Consumer<SecurityIdentity>() {
                             @Override
                             public void accept(SecurityIdentity identity) {
-                                if (event.response().ended()) {
-                                    return;
-                                }
+                                //when the result is evaluated we set the user, even if it is evaluated lazily
                                 if (identity != null) {
                                     event.setUser(new QuarkusHttpUser(identity));
                                 }
-                                event.next();
-                            }
-                        }, new Consumer<Throwable>() {
-                            @Override
-                            public void accept(Throwable throwable) {
-                                while (throwable instanceof CompletionException && throwable.getCause() != null) {
-                                    throwable = throwable.getCause();
-                                }
-                                //auth failed
-                                if (throwable instanceof AuthenticationFailedException) {
-                                    authenticator.sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
-                                        @Override
-                                        public void accept(Boolean aBoolean) {
-                                            event.response().end();
-                                        }
-                                    }, new Consumer<Throwable>() {
-                                        @Override
-                                        public void accept(Throwable throwable) {
-                                            event.fail(throwable);
-                                        }
-                                    });
-                                } else if (throwable instanceof AuthenticationCompletionException) {
-                                    event.response().setStatusCode(401);
-                                    event.response().end();
-                                } else if (throwable instanceof AuthenticationRedirectException) {
-                                    AuthenticationRedirectException redirectEx = (AuthenticationRedirectException) throwable;
-                                    event.response().setStatusCode(redirectEx.getCode());
-                                    event.response().headers().set(HttpHeaders.LOCATION, redirectEx.getRedirectUri());
-                                    event.response().end();
-                                } else {
-                                    event.fail(throwable);
-                                }
                             }
                         });
+                if (proactiveAuthentication) {
+                    potentialUser
+                            .subscribe().with(new Consumer<SecurityIdentity>() {
+                                @Override
+                                public void accept(SecurityIdentity identity) {
+                                    if (event.response().ended()) {
+                                        return;
+                                    }
+                                    event.next();
+                                }
+                            }, NOOP_CALLBACK);
+                } else {
+                    event.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, potentialUser);
+                    event.next();
+                }
             }
         };
     }

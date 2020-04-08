@@ -15,7 +15,7 @@ import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class RolesAllowedTestCase extends AbstractRolesAllowedTestCase {
+public class RolesAllowedLazyAuthTestCase extends AbstractRolesAllowedTestCase {
 
     private static final String APP_PROPS = "" +
             "quarkus.http.auth.basic=true\n" +
@@ -28,7 +28,8 @@ public class RolesAllowedTestCase extends AbstractRolesAllowedTestCase {
             "quarkus.http.auth.permission.permit1.paths=/permit\n" +
             "quarkus.http.auth.permission.permit1.policy=permit\n" +
             "quarkus.http.auth.permission.deny1.paths=/deny,/combined\n" +
-            "quarkus.http.auth.permission.deny1.policy=deny\n";
+            "quarkus.http.auth.permission.deny1.policy=deny\n" +
+            "quarkus.http.auth.proactive=false\n";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<JavaArchive>() {
@@ -53,7 +54,7 @@ public class RolesAllowedTestCase extends AbstractRolesAllowedTestCase {
                 .then()
                 .assertThat()
                 .statusCode(200)
-                .body(equalTo("test:/public"));
+                .body(equalTo(":/public"));
     }
 
 }

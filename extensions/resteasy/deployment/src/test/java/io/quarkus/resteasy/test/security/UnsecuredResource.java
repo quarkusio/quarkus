@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.test.security.app;
+package io.quarkus.resteasy.test.security;
 
 import javax.annotation.security.DenyAll;
 import javax.annotation.security.PermitAll;

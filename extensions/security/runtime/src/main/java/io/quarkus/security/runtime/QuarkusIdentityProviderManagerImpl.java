@@ -37,31 +37,36 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
     private final AuthenticationRequestContext blockingRequestContext = new AuthenticationRequestContext() {
         @Override
         public Uni<SecurityIdentity> runBlocking(Supplier<SecurityIdentity> function) {
-
-            if (BlockingOperationControl.isBlockingAllowed()) {
-                try {
-                    SecurityIdentity result = function.get();
-                    return Uni.createFrom().item(result);
-                } catch (Throwable t) {
-                    return Uni.createFrom().failure(t);
-                }
-            } else {
-                return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
-                    @Override
-                    public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
-                        blockingExecutor.execute(new Runnable() {
+            return Uni.createFrom().deferred(new Supplier<Uni<SecurityIdentity>>() {
+                @Override
+                public Uni<SecurityIdentity> get() {
+                    if (BlockingOperationControl.isBlockingAllowed()) {
+                        try {
+                            SecurityIdentity result = function.get();
+                            return Uni.createFrom().item(result);
+                        } catch (Throwable t) {
+                            return Uni.createFrom().failure(t);
+                        }
+                    } else {
+                        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
                             @Override
-                            public void run() {
-                                try {
-                                    uniEmitter.complete(function.get());
-                                } catch (Throwable t) {
-                                    uniEmitter.fail(t);
-                                }
+                            public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
+                                blockingExecutor.execute(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        try {
+                                            uniEmitter.complete(function.get());
+                                        } catch (Throwable t) {
+                                            uniEmitter.fail(t);
+                                        }
+                                    }
+                                });
                             }
                         });
                     }
-                });
-            }
+                }
+            });
+
         }
     };
 

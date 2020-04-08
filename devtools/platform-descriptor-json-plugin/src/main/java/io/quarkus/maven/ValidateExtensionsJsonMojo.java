@@ -53,6 +53,14 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
     @Parameter(property = "jsonVersion", required = true)
     private String jsonVersion;
 
+    /**
+     * Skip the execution of this mojo.
+     *
+     * @since 1.4.0
+     */
+    @Parameter(defaultValue = "false", property = "quarkus.validate-extensions-json.skip")
+    private boolean skip;
+
     @Component
     private RepositorySystem repoSystem;
 
@@ -64,6 +72,10 @@ public class ValidateExtensionsJsonMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        if (skip) {
+            getLog().info("Skipping as required by the mojo configuration");
+            return;
+        }
 
         MavenArtifactResolver mvn;
         try {

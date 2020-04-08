@@ -153,7 +153,7 @@
         <flyway.version>6.3.1</flyway.version>
         <yasson.version>1.0.6</yasson.version>
         <liquibase.version>3.8.7</liquibase.version>
-        <snakeyaml.version>1.25</snakeyaml.version>
+        <snakeyaml.version>1.26</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <neo4j-java-driver.version>4.0.0</neo4j-java-driver.version>
         <mongo-client.version>3.12.0</mongo-client.version>

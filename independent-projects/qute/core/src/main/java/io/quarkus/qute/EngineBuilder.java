@@ -85,7 +85,7 @@ public final class EngineBuilder {
      */
     public EngineBuilder addDefaultValueResolvers() {
         return addValueResolvers(mapResolver(), mapperResolver(), mapEntryResolver(), collectionResolver(),
-                thisResolver(), orResolver(), trueResolver());
+                thisResolver(), orResolver(), trueResolver(), new ReflectionValueResolver());
     }
 
     public EngineBuilder addDefaults() {

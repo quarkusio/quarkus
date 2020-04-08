@@ -5,6 +5,7 @@ import java.io.UncheckedIOException;
 
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.sniff.Sniffer;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.elasticsearch.lowlevel.client.ElasticsearchConfig;
@@ -18,16 +19,26 @@ public class ElasticsearchRestHighLevelClientRecorder {
     public void configureRestClient(BeanContainer beanContainer, ElasticsearchConfig config, ShutdownContext shutdownContext) {
         RestClientBuilder builder = RestClientBuilderHelper.createRestClientBuilder(config);
 
-        //FIXME sniffer if discovery is enabled ?
-
         RestHighLevelClient client = new RestHighLevelClient(builder);
-        shutdownContext.addShutdownTask(() -> {
-            try {
-                client.close();
-            } catch (IOException ioe) {
-                throw new UncheckedIOException(ioe);
-            }
-        });
+        if (config.discovery.enabled) {
+            Sniffer sniffer = RestClientBuilderHelper.createSniffer(client.getLowLevelClient(), config);
+            shutdownContext.addShutdownTask(() -> {
+                try {
+                    sniffer.close();
+                    client.close();
+                } catch (IOException ioe) {
+                    throw new UncheckedIOException(ioe);
+                }
+            });
+        } else {
+            shutdownContext.addShutdownTask(() -> {
+                try {
+                    client.close();
+                } catch (IOException ioe) {
+                    throw new UncheckedIOException(ioe);
+                }
+            });
+        }
 
         ElasticsearchRestHighLevelClientProducer restClientProducer = beanContainer
                 .instance(ElasticsearchRestHighLevelClientProducer.class);

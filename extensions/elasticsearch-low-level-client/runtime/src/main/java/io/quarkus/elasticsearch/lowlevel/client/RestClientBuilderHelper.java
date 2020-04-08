@@ -13,6 +13,7 @@ import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.sniff.Sniffer;
 
 public final class RestClientBuilderHelper {
     private RestClientBuilderHelper() {
@@ -55,5 +56,11 @@ public final class RestClientBuilderHelper {
         });
 
         return builder;
+    }
+
+    public static Sniffer createSniffer(RestClient client, ElasticsearchConfig config) {
+        return Sniffer.builder(client)
+                .setSniffIntervalMillis((int) config.discovery.refreshInterval.toMillis())
+                .build();
     }
 }

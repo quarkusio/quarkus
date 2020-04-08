@@ -75,7 +75,7 @@ public class ElasticsearchConfig {
         /**
          * Refresh interval of the node list.
          */
-        @ConfigItem(defaultValue = "10S")
+        @ConfigItem(defaultValue = "5M")
         public Duration refreshInterval;
     }
 }

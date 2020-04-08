@@ -399,7 +399,7 @@ jobs:
               quartz
               qute
           - category: Misc2
-            timeout: 35
+            timeout: 40
             test-modules: >
               tika
               hibernate-validator
@@ -407,6 +407,7 @@ jobs:
               logging-gelf
               bootstrap-config
               optaplanner-jackson
+              optaplanner-jsonb
           # kubernetes-client alone takes 30mn+
           - category: Misc3
             timeout: 50

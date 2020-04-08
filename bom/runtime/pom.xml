@@ -170,7 +170,7 @@
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kubernetes-client.version>4.9.0</kubernetes-client.version>
         <kogito.version>0.8.0</kogito.version>
-        <optaplanner.version>7.34.0.Final</optaplanner.version>
+        <optaplanner.version>7.35.0.Final</optaplanner.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP1</quarkus-spring-api.version>
@@ -840,6 +840,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-optaplanner-jackson</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-optaplanner-jsonb</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

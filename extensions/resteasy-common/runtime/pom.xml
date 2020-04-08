@@ -57,6 +57,7 @@
                         <excludedArtifact>javax.activation:javax.activation-api</excludedArtifact>
                         <excludedArtifact>javax.activation:activation</excludedArtifact>
                         <excludedArtifact>jakarta.ws.rs:jakarta.ws.rs-api</excludedArtifact>
+                        <excludedArtifact>org.jboss.resteasy:resteasy-context-propagation</excludedArtifact>
                     </excludedArtifacts>
                 </configuration>
             </plugin>

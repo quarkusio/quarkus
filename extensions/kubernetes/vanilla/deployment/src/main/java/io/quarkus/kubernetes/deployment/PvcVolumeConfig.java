@@ -25,6 +25,6 @@ public class PvcVolumeConfig {
     /**
      * Optional
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     boolean optional;
 }

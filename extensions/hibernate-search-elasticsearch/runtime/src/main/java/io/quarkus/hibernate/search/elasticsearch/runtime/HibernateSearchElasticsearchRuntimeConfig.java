@@ -194,7 +194,7 @@ public class HibernateSearchElasticsearchRuntimeConfig {
         /**
          * Defines if automatic discovery is enabled.
          */
-        @ConfigItem(defaultValue = "false")
+        @ConfigItem
         boolean enabled;
 
         /**

@@ -53,7 +53,7 @@ public class Neo4jConfiguration {
         /**
          * Set this to true to disable authentication.
          */
-        @ConfigItem(defaultValue = "false")
+        @ConfigItem
         public boolean disabled = false;
     }
 
@@ -63,13 +63,13 @@ public class Neo4jConfiguration {
         /**
          * Flag, if metrics are enabled.
          */
-        @ConfigItem(defaultValue = "false")
+        @ConfigItem
         public boolean metricsEnabled;
 
         /**
          * Flag, if leaked sessions logging is enabled.
          */
-        @ConfigItem(defaultValue = "false")
+        @ConfigItem
         public boolean logLeakedSessions;
 
         /**

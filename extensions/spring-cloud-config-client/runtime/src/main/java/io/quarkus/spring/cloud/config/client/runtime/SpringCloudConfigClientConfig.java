@@ -15,13 +15,13 @@ public class SpringCloudConfigClientConfig {
     /**
      * If enabled, will try to read the configuration from a Spring Cloud Config Server
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enabled;
 
     /**
      * If set to true, the application will not stand up if it cannot obtain configuration from the Config Server
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean failFast;
 
     /**

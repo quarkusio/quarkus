@@ -202,7 +202,7 @@ public class KubernetesConfig implements PlatformConfiguration {
     /**
      * If true, a Kubernetes Ingress will be created
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     boolean expose;
 
     public Optional<String> getPartOf() {

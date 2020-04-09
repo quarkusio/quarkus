@@ -24,7 +24,7 @@ public class LegacyDataSourceJdbcRuntimeConfig {
     /**
      * @deprecated use quarkus.datasource.jdbc.min-size instead.
      */
-    @ConfigItem(defaultValue = "0")
+    @ConfigItem
     @Deprecated
     public int minSize = 0;
 

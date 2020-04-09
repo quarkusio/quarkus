@@ -41,7 +41,7 @@ public class DataSourcesBuildTimeConfig {
      * NOTE: This is different from the "jdbc.enable-metrics" property that needs to be set on the JDBC datasource level to
      * enable collection of metrics for that datasource.
      */
-    @ConfigItem(name = "metrics.enabled", defaultValue = "false")
+    @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
 
 }

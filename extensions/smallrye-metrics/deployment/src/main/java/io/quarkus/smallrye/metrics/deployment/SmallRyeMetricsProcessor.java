@@ -115,7 +115,7 @@ public class SmallRyeMetricsProcessor {
          * The use case is to facilitate migration from Micrometer-based metrics, because original dashboards for JVM metrics
          * will continue working without having to rewrite them.
          */
-        @ConfigItem(name = "micrometer.compatibility", defaultValue = "false")
+        @ConfigItem(name = "micrometer.compatibility")
         public boolean micrometerCompatibility;
 
     }

@@ -11,6 +11,6 @@ public class ReactiveMessagingConfiguration {
      * Whether or not Reactive Messaging metrics are published in case the smallrye-metrics extension is present
      * (default to false).
      */
-    @ConfigItem(name = "metrics.enabled", defaultValue = "false")
+    @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
 }

@@ -195,7 +195,7 @@ public class OpenshiftConfig implements PlatformConfiguration {
     /**
      * If true, an Openshift Route will be created
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     boolean expose;
 
     public Optional<String> getPartOf() {

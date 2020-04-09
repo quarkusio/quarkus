@@ -24,7 +24,7 @@ public class QuartzRuntimeConfig {
      * If set to true the scheduler will be started even if no scheduled business methods are found. This is necessary for
      * "pure" programmatic scheduling.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean forceStart;
 
 }

@@ -136,7 +136,10 @@ public class BuildDependencyGraphVisitor {
         if (deploymentNode != null) {
             if (runtimeNode == null && !appDeps.contains(new AppArtifactKey(artifact.getGroupId(),
                     artifact.getArtifactId(), artifact.getClassifier(), artifact.getExtension()))) {
-                deploymentDepNodes.add(node);
+                //we never want optional deps on the deployment CP
+                if (!node.getDependency().isOptional()) {
+                    deploymentDepNodes.add(node);
+                }
             } else if (runtimeNode == node) {
                 runtimeNode = null;
                 runtimeArtifact = null;

@@ -60,7 +60,7 @@ public class VaultAuthenticationConfig {
     }
 
     public boolean isUserpass() {
-        return userpass.username.isPresent() && userpass.password.isPresent();
+        return userpass.username.isPresent() && (userpass.password.isPresent() || userpass.passwordWrappingToken.isPresent());
     }
 
 }

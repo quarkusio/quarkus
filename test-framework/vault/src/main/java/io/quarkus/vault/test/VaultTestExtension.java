@@ -1,6 +1,7 @@
 package io.quarkus.vault.test;
 
 import static io.quarkus.vault.CredentialsProvider.PASSWORD_PROPERTY_NAME;
+import static io.quarkus.vault.runtime.VaultAuthManager.USERPASS_WRAPPING_TOKEN_PASSWORD_KEY;
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -92,6 +93,7 @@ public class VaultTestExtension {
     public static final String HOST_VAULT_TMP_CMD = "target/vault_cmd";
     public static final String HOST_POSTGRES_TMP_CMD = "target/postgres_cmd";
     public static final String OUT_FILE = "/out";
+    public static final String WRAPPING_TEST_PATH = "wrapping-test";
 
     private static String CRUD_PATH = "crud";
 
@@ -102,6 +104,9 @@ public class VaultTestExtension {
     public String appRoleRoleId = null;
     public String appRoleSecretIdWrappingToken = null;
     public String clientTokenWrappingToken = null;
+    public String passwordKvv1WrappingToken = null;
+    public String passwordKvv2WrappingToken = null;
+    public String anotherPasswordKvv2WrappingToken = null;
 
     private VaultManager vaultManager = createVaultManager();
 
@@ -267,14 +272,6 @@ public class VaultTestExtension {
         log.info(
                 format("generated role_id=%s secret_id=%s for approle=%s", appRoleRoleId, appRoleSecretId, VAULT_AUTH_APPROLE));
 
-        // wrapped
-        appRoleSecretIdWrappingToken = fetchWrappingToken(
-                execVault(format("vault write -wrap-ttl=60s -f auth/approle/role/%s/secret-id", VAULT_AUTH_APPROLE)));
-        log.info("appRoleSecretIdWrappingToken=" + appRoleSecretIdWrappingToken);
-        clientTokenWrappingToken = fetchWrappingToken(
-                execVault(format("vault token create -wrap-ttl=60s -ttl=10m -policy=%s", VAULT_POLICY)));
-        log.info("clientTokenWrappingToken=" + clientTokenWrappingToken);
-
         // policy
         execVault(format("vault policy write %s /tmp/vault.policy", VAULT_POLICY));
 
@@ -293,6 +290,31 @@ public class VaultTestExtension {
         execVault(format("vault kv put %s/multi/default2 color=red weight=3", SECRET_PATH_V2));
         execVault(format("vault kv put %s/multi/singer1 firstname=paul lastname=shaffer", SECRET_PATH_V2));
         execVault(format("vault kv put %s/multi/singer2 lastname=simon age=78 color=green", SECRET_PATH_V2));
+
+        // wrapped
+
+        appRoleSecretIdWrappingToken = fetchWrappingToken(
+                execVault(format("vault write -wrap-ttl=60s -f auth/approle/role/%s/secret-id", VAULT_AUTH_APPROLE)));
+        log.info("appRoleSecretIdWrappingToken=" + appRoleSecretIdWrappingToken);
+
+        clientTokenWrappingToken = fetchWrappingToken(
+                execVault(format("vault token create -wrap-ttl=60s -ttl=10m -policy=%s", VAULT_POLICY)));
+        log.info("clientTokenWrappingToken=" + clientTokenWrappingToken);
+
+        execVault(format("vault kv put %s/%s %s=%s", SECRET_PATH_V1, WRAPPING_TEST_PATH, USERPASS_WRAPPING_TOKEN_PASSWORD_KEY,
+                VAULT_AUTH_USERPASS_PASSWORD));
+        passwordKvv1WrappingToken = fetchWrappingToken(
+                execVault(format("vault kv get -wrap-ttl=60s %s/%s", SECRET_PATH_V1, WRAPPING_TEST_PATH)));
+        log.info("passwordKvv1WrappingToken=" + passwordKvv1WrappingToken);
+
+        execVault(format("vault kv put %s/%s %s=%s", SECRET_PATH_V2, WRAPPING_TEST_PATH, USERPASS_WRAPPING_TOKEN_PASSWORD_KEY,
+                VAULT_AUTH_USERPASS_PASSWORD));
+        passwordKvv2WrappingToken = fetchWrappingToken(
+                execVault(format("vault kv get -wrap-ttl=60s %s/%s", SECRET_PATH_V2, WRAPPING_TEST_PATH)));
+        log.info("passwordKvv2WrappingToken=" + passwordKvv2WrappingToken);
+        anotherPasswordKvv2WrappingToken = fetchWrappingToken(
+                execVault(format("vault kv get -wrap-ttl=60s %s/%s", SECRET_PATH_V2, WRAPPING_TEST_PATH)));
+        log.info("anotherPasswordKvv2WrappingToken=" + anotherPasswordKvv2WrappingToken);
 
         // dynamic secrets
 

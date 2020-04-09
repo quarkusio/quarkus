@@ -27,6 +27,8 @@ import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleGenerateNewSecretID;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelfAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultTokenCreate;
+import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV1;
+import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2;
 import io.quarkus.vault.runtime.config.VaultAuthenticationType;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 
@@ -36,6 +38,7 @@ import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 public class VaultAuthManager {
 
     private static final Logger log = Logger.getLogger(VaultAuthManager.class.getName());
+    public static final String USERPASS_WRAPPING_TOKEN_PASSWORD_KEY = "password";
 
     private VaultRuntimeConfig serverConfig;
     private VaultClient vaultClient;
@@ -127,7 +130,7 @@ public class VaultAuthManager {
             auth = loginKubernetes();
         } else if (type == USERPASS) {
             String username = serverConfig.authentication.userpass.username.get();
-            String password = serverConfig.authentication.userpass.password.get();
+            String password = getPassword();
             auth = vaultClient.loginUserPass(username, password).auth;
         } else if (type == APPROLE) {
             String roleId = serverConfig.authentication.appRole.roleId.get();
@@ -150,6 +153,23 @@ public class VaultAuthManager {
         return unwrapWrappingTokenOnce("secret id",
                 serverConfig.authentication.appRole.secretIdWrappingToken.get(), unwrap -> unwrap.data.secretId,
                 VaultAppRoleGenerateNewSecretID.class);
+    }
+
+    private String getPassword() {
+
+        Optional<String> passwordOption = serverConfig.authentication.userpass.password;
+        if (passwordOption.isPresent()) {
+            return passwordOption.get();
+        }
+
+        String wrappingToken = serverConfig.authentication.userpass.passwordWrappingToken.get();
+        if (serverConfig.kvSecretEngineVersion == 1) {
+            Function<VaultKvSecretV1, String> f = unwrap -> unwrap.data.get(USERPASS_WRAPPING_TOKEN_PASSWORD_KEY);
+            return unwrapWrappingTokenOnce("password", wrappingToken, f, VaultKvSecretV1.class);
+        } else {
+            Function<VaultKvSecretV2, String> f = unwrap -> unwrap.data.data.get(USERPASS_WRAPPING_TOKEN_PASSWORD_KEY);
+            return unwrapWrappingTokenOnce("password", wrappingToken, f, VaultKvSecretV2.class);
+        }
     }
 
     private <T> String unwrapWrappingTokenOnce(String type, String wrappingToken,

@@ -217,6 +217,8 @@ public class VaultConfigSource implements ConfigSource {
                 DEFAULT_KUBERNETES_JWT_TOKEN_PATH);
         serverConfig.authentication.userpass.username = getOptionalVaultProperty("authentication.userpass.username");
         serverConfig.authentication.userpass.password = getOptionalVaultProperty("authentication.userpass.password");
+        serverConfig.authentication.userpass.passwordWrappingToken = getOptionalVaultProperty(
+                "authentication.userpass.password-wrapping-token");
         serverConfig.authentication.appRole.roleId = getOptionalVaultProperty("authentication.app-role.role-id");
         serverConfig.authentication.appRole.secretId = getOptionalVaultProperty("authentication.app-role.secret-id");
         serverConfig.authentication.appRole.secretIdWrappingToken = getOptionalVaultProperty(

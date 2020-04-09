@@ -2,6 +2,7 @@ package io.quarkus.vault;
 
 import static io.quarkus.vault.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.vault.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.vault.runtime.VaultAuthManager.USERPASS_WRAPPING_TOKEN_PASSWORD_KEY;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.APPROLE;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.USERPASS;
 import static io.quarkus.vault.test.VaultTestExtension.APP_SECRET_PATH;
@@ -152,10 +153,14 @@ public class VaultITCase {
 
         VaultClient vaultClient = VaultManager.getInstance().getVaultClient();
 
+        String anotherWrappingToken = System.getProperty("vault-test.another-password-kv-v2-wrapping-token");
+        VaultKvSecretV2 unwrap = vaultClient.unwrap(anotherWrappingToken, VaultKvSecretV2.class);
+        assertEquals(VAULT_AUTH_USERPASS_PASSWORD, unwrap.data.data.get(USERPASS_WRAPPING_TOKEN_PASSWORD_KEY));
         try {
-            vaultClient.unwrap("toto", Object.class);
+            vaultClient.unwrap(anotherWrappingToken, VaultKvSecretV2.class);
             fail("expected error 400: wrapping token is not valid or does not exist");
         } catch (VaultClientException e) {
+            // fails on second unwrap attempt
             assertEquals(400, e.getStatus());
         }
 

@@ -104,6 +104,7 @@ public class VaultAuthManagerTest {
             config.authentication.appRole.secretIdWrappingToken = Optional.empty();
             config.authentication.userpass.username = Optional.of("bob");
             config.authentication.userpass.password = Optional.of("sinclair");
+            config.authentication.userpass.passwordWrappingToken = Optional.empty();
             config.connectTimeout = Duration.ofSeconds(1);
             config.readTimeout = Duration.ofSeconds(1);
             config.tls.skipVerify = true;

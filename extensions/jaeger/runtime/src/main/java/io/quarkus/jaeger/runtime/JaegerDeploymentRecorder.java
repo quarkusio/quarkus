@@ -15,7 +15,7 @@ public class JaegerDeploymentRecorder {
     private static final Optional UNKNOWN_SERVICE_NAME = Optional.of("quarkus/unknown");
     private static final QuarkusJaegerTracer quarkusTracer = new QuarkusJaegerTracer();
 
-    synchronized public void registerTracer(JaegerConfig jaeger, ApplicationConfig appConfig) {
+    synchronized public void registerTracer(JaegerConfig jaeger, ApplicationConfig appConfig, boolean metricsEnabled) {
         if (!jaeger.serviceName.isPresent()) {
             if (appConfig.name.isPresent()) {
                 jaeger.serviceName = appConfig.name;
@@ -24,6 +24,7 @@ public class JaegerDeploymentRecorder {
             }
         }
         initTracerConfig(jaeger);
+        quarkusTracer.setMetricsEnabled(metricsEnabled);
         quarkusTracer.reset();
         // register Quarkus tracer to GlobalTracer.
         // Usually the tracer will be registered only here, although consumers

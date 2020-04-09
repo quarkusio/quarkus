@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 import io.dekorate.Session;
+import io.dekorate.SessionReader;
 import io.dekorate.SessionWriter;
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.config.Annotation;
@@ -66,6 +67,7 @@ import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.kubernetes.decorator.ApplyServiceAccountNamedDecorator;
 import io.dekorate.kubernetes.decorator.ApplyWorkingDirDecorator;
 import io.dekorate.kubernetes.decorator.RemoveAnnotationDecorator;
+import io.dekorate.processor.SimpleFileReader;
 import io.dekorate.processor.SimpleFileWriter;
 import io.dekorate.project.BuildInfo;
 import io.dekorate.project.FileProjectFactory;
@@ -217,11 +219,15 @@ class KubernetesProcessor {
 
         final Map<String, String> generatedResourcesMap;
         // by passing false to SimpleFileWriter, we ensure that no files are actually written during this phase
-        final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
         Project project = createProject(applicationInfo, artifactPath);
+        final SessionWriter sessionWriter = new SimpleFileWriter(root, false);
+        final SessionReader sessionReader = new SimpleFileReader(
+                project.getRoot().resolve("src").resolve("main").resolve("kubernetes"), kubernetesDeploymentTargets.stream()
+                        .map(KubernetesDeploymentTargetBuildItem::getName).collect(Collectors.toSet()));
         sessionWriter.setProject(project);
         final Session session = Session.getSession();
         session.setWriter(sessionWriter);
+        session.setReader(sessionReader);
 
         session.feed(Maps.fromProperties(config));
 

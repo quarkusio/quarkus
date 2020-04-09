@@ -267,21 +267,14 @@ public class ValueResolverGenerator {
                     ret = matchScope
                             .newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
 
-                    ResultHandle resultsArray = matchScope.newArray(CompletableFuture.class,
-                            matchScope.load(methodParams.size()));
-                    for (int i = 0; i < methodParams.size(); i++) {
-                        ResultHandle evalResult = matchScope.invokeInterfaceMethod(
-                                Descriptors.EVALUATE, evalContext,
-                                matchScope.invokeInterfaceMethod(Descriptors.LIST_GET, params,
-                                        matchScope.load(i)));
-                        matchScope.writeArrayValue(resultsArray, i,
-                                matchScope.invokeInterfaceMethod(Descriptors.CF_TO_COMPLETABLE_FUTURE, evalResult));
-                    }
-                    ResultHandle allOf = matchScope.invokeStaticMethod(Descriptors.COMPLETABLE_FUTURE_ALL_OF,
-                            resultsArray);
+                    // The CompletionStage upon which we invoke whenComplete()
+                    ResultHandle evaluatedParams = matchScope.invokeStaticMethod(Descriptors.FUTURES_EVALUATE_PARAMS,
+                            evalContext);
+                    ResultHandle paramsReady = matchScope.readInstanceField(Descriptors.EVALUATED_PARAMS_STAGE,
+                            evaluatedParams);
 
                     FunctionCreator whenCompleteFun = matchScope.createFunction(BiConsumer.class);
-                    matchScope.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, allOf, whenCompleteFun.getInstance());
+                    matchScope.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, paramsReady, whenCompleteFun.getInstance());
 
                     BytecodeCreator whenComplete = whenCompleteFun.getBytecode();
 
@@ -290,8 +283,6 @@ public class ValueResolverGenerator {
                     whenComplete.assign(whenBase, base);
                     AssignableResultHandle whenRet = whenComplete.createVariable(CompletableFuture.class);
                     whenComplete.assign(whenRet, ret);
-                    AssignableResultHandle whenResults = whenComplete.createVariable(CompletableFuture[].class);
-                    whenComplete.assign(whenResults, resultsArray);
 
                     BranchResult throwableIsNull = whenComplete.ifNull(whenComplete.getMethodParam(1));
 
@@ -299,9 +290,14 @@ public class ValueResolverGenerator {
                     BytecodeCreator success = throwableIsNull.trueBranch();
 
                     ResultHandle[] paramsHandle = new ResultHandle[methodParams.size()];
-                    for (int i = 0; i < methodParams.size(); i++) {
-                        ResultHandle paramResult = success.readArrayValue(whenResults, i);
-                        paramsHandle[i] = success.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_GET, paramResult);
+                    if (methodParams.size() == 1) {
+                        paramsHandle[0] = whenComplete.getMethodParam(0);
+                    } else {
+                        for (int i = 0; i < methodParams.size(); i++) {
+                            paramsHandle[i] = success.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_RESULT,
+                                    evaluatedParams,
+                                    success.load(i));
+                        }
                     }
 
                     AssignableResultHandle invokeRet = success.createVariable(Object.class);
@@ -362,21 +358,14 @@ public class ValueResolverGenerator {
                     ResultHandle ret = matchScope
                             .newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
 
-                    ResultHandle resultsArray = matchScope.newArray(CompletableFuture.class,
-                            matchScope.load(entry.getKey().paramsCount));
-                    for (int i = 0; i < entry.getKey().paramsCount; i++) {
-                        ResultHandle evalResult = matchScope.invokeInterfaceMethod(
-                                Descriptors.EVALUATE, evalContext,
-                                matchScope.invokeInterfaceMethod(Descriptors.LIST_GET, params,
-                                        matchScope.load(i)));
-                        matchScope.writeArrayValue(resultsArray, i,
-                                matchScope.invokeInterfaceMethod(Descriptors.CF_TO_COMPLETABLE_FUTURE, evalResult));
-                    }
-                    ResultHandle allOf = matchScope.invokeStaticMethod(Descriptors.COMPLETABLE_FUTURE_ALL_OF,
-                            resultsArray);
+                    // The CompletionStage upon which we invoke whenComplete()
+                    ResultHandle evaluatedParams = matchScope.invokeStaticMethod(Descriptors.FUTURES_EVALUATE_PARAMS,
+                            evalContext);
+                    ResultHandle paramsReady = matchScope.readInstanceField(Descriptors.EVALUATED_PARAMS_STAGE,
+                            evaluatedParams);
 
                     FunctionCreator whenCompleteFun = matchScope.createFunction(BiConsumer.class);
-                    matchScope.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, allOf, whenCompleteFun.getInstance());
+                    matchScope.invokeInterfaceMethod(Descriptors.CF_WHEN_COMPLETE, paramsReady, whenCompleteFun.getInstance());
 
                     BytecodeCreator whenComplete = whenCompleteFun.getBytecode();
 
@@ -385,17 +374,20 @@ public class ValueResolverGenerator {
                     whenComplete.assign(whenBase, base);
                     AssignableResultHandle whenRet = whenComplete.createVariable(CompletableFuture.class);
                     whenComplete.assign(whenRet, ret);
-                    AssignableResultHandle whenResults = whenComplete.createVariable(CompletableFuture[].class);
-                    whenComplete.assign(whenResults, resultsArray);
 
                     BranchResult throwableIsNull = whenComplete.ifNull(whenComplete.getMethodParam(1));
                     // complete
                     BytecodeCreator success = throwableIsNull.trueBranch();
 
                     ResultHandle[] paramsHandle = new ResultHandle[entry.getKey().paramsCount];
-                    for (int i = 0; i < entry.getKey().paramsCount; i++) {
-                        ResultHandle paramResult = success.readArrayValue(whenResults, i);
-                        paramsHandle[i] = success.invokeVirtualMethod(Descriptors.COMPLETABLE_FUTURE_GET, paramResult);
+                    if (entry.getValue().get(0).parameters().size() == 1) {
+                        paramsHandle[0] = success.getMethodParam(0);
+                    } else {
+                        for (int i = 0; i < entry.getKey().paramsCount; i++) {
+                            paramsHandle[i] = success.invokeVirtualMethod(Descriptors.EVALUATED_PARAMS_GET_RESULT,
+                                    evaluatedParams,
+                                    success.load(i));
+                        }
                     }
 
                     ResultHandle paramClasses = success.newArray(Class.class, success.load(entry.getKey().paramsCount));

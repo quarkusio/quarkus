@@ -4,6 +4,8 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.Expression;
+import io.quarkus.qute.Futures;
+import io.quarkus.qute.Futures.EvaluatedParams;
 import io.quarkus.qute.Results;
 import java.util.Collection;
 import java.util.List;
@@ -50,8 +52,16 @@ class Descriptors {
             CompletionStage.class, BiConsumer.class);
     static final MethodDescriptor BOOLEAN_LOGICAL_OR = MethodDescriptor.ofMethod(Boolean.class, "logicalOr",
             boolean.class, boolean.class, boolean.class);
+    static final MethodDescriptor FUTURES_EVALUATE_PARAMS = MethodDescriptor.ofMethod(Futures.class, "evaluateParams",
+            EvaluatedParams.class,
+            EvalContext.class);
+    static final MethodDescriptor EVALUATED_PARAMS_GET_RESULT = MethodDescriptor.ofMethod(EvaluatedParams.class, "getResult",
+            Object.class,
+            int.class);
 
     static final FieldDescriptor RESULT_NOT_FOUND = FieldDescriptor.of(Results.class, "NOT_FOUND",
+            CompletionStage.class);
+    static final FieldDescriptor EVALUATED_PARAMS_STAGE = FieldDescriptor.of(EvaluatedParams.class, "stage",
             CompletionStage.class);
 
 }

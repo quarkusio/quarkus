@@ -174,6 +174,8 @@ public class CuratedApplication implements Serializable, Closeable {
                     //we always load this from the parent if it is available, as this acts as a bridge between the running
                     //app and the dev mode code
                     builder.addParentFirstElement(element);
+                } else if (appModel.getLesserPriorityArtifacts().contains(key)) {
+                    builder.addLesserPriorityElement(element);
                 }
             }
             for (AppDependency userDep : appModel.getUserDependencies()) {
@@ -183,6 +185,8 @@ public class CuratedApplication implements Serializable, Closeable {
                     if (appModel.getParentFirstArtifacts().contains(key)) {
                         //this mostly happens when building quarkus itself
                         builder.addParentFirstElement(element);
+                    } else if (appModel.getLesserPriorityArtifacts().contains(key)) { // TODO: is this needed?
+                        builder.addLesserPriorityElement(element);
                     }
                     builder.addElement(element);
                 }
@@ -251,6 +255,8 @@ public class CuratedApplication implements Serializable, Closeable {
                     //we always load this from the parent if it is available, as this acts as a bridge between the running
                     //app and the dev mode code
                     builder.addParentFirstElement(element);
+                } else if (appModel.getLesserPriorityArtifacts().contains(key)) {
+                    builder.addLesserPriorityElement(element);
                 }
                 builder.addElement(element);
             }

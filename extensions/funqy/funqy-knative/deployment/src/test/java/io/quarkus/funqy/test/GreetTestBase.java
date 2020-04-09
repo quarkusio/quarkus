@@ -9,10 +9,6 @@ import io.restassured.parsing.Parser;
 
 public abstract class GreetTestBase {
 
-    protected abstract String getCeSource();
-
-    protected abstract String getCeType();
-
     @Test
     public void testVanilla() {
         RestAssured.given().contentType("application/json")
@@ -42,8 +38,8 @@ public abstract class GreetTestBase {
                 .then().statusCode(200)
                 .header("ce-id", notNullValue())
                 .header("ce-specversion", equalTo("1.0"))
-                .header("ce-source", equalTo(getCeSource()))
-                .header("ce-type", equalTo(getCeType()))
+                .header("ce-source", equalTo("test-source"))
+                .header("ce-type", equalTo("test-type"))
                 .body("name", equalTo("Bill"))
                 .body("message", equalTo("Hello Bill!"));
     }
@@ -75,8 +71,8 @@ public abstract class GreetTestBase {
                 .defaultParser(Parser.JSON)
                 .body("id", notNullValue())
                 .body("specversion", equalTo("1.0"))
-                .body("type", equalTo(getCeType()))
-                .body("source", equalTo(getCeSource()))
+                .body("type", equalTo("test-type"))
+                .body("source", equalTo("test-source"))
                 .body("datacontenttype", equalTo("application/json"))
                 .body("data.name", equalTo("Bill"))
                 .body("data.message", equalTo("Hello Bill!"));

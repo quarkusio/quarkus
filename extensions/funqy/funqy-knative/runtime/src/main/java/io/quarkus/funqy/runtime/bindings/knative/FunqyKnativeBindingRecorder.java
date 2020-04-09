@@ -62,7 +62,8 @@ public class FunqyKnativeBindingRecorder {
     public Consumer<Route> start(Supplier<Vertx> vertx,
             ShutdownContext shutdown,
             BeanContainer beanContainer,
-            Executor executor) {
+            Executor executor,
+            FunqyCloudEventsConfig funqyCloudEventsConfig) {
 
         shutdown.addShutdownTask(new Runnable() {
             @Override
@@ -74,7 +75,7 @@ public class FunqyKnativeBindingRecorder {
         });
         FunctionConstructor.CONTAINER = beanContainer;
 
-        Handler<RoutingContext> handler = vertxRequestHandler(vertx, beanContainer, executor);
+        Handler<RoutingContext> handler = vertxRequestHandler(vertx, beanContainer, executor, funqyCloudEventsConfig);
 
         return new Consumer<Route>() {
 
@@ -86,8 +87,8 @@ public class FunqyKnativeBindingRecorder {
     }
 
     public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx,
-            BeanContainer beanContainer, Executor executor) {
-        return new VertxRequestHandler(vertx.get(), beanContainer, invoker, objectMapper, executor);
+            BeanContainer beanContainer, Executor executor, FunqyCloudEventsConfig funqyCloudEventsConfig) {
+        return new VertxRequestHandler(vertx.get(), beanContainer, invoker, objectMapper, executor, funqyCloudEventsConfig);
     }
 
 }

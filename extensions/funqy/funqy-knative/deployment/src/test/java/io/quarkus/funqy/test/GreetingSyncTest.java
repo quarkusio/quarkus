@@ -14,14 +14,4 @@ public class GreetingSyncTest extends GreetTestBase {
                     .addClasses(PrimitiveFunctions.class, GreetingFunctions.class, Greeting.class, GreetingService.class,
                             Identity.class));
 
-    @Override
-    protected String getCeSource() {
-        return "dev.knative.greet";
-    }
-
-    @Override
-    protected String getCeType() {
-        return "greet";
-    }
-
 }

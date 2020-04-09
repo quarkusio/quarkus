@@ -25,6 +25,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.funqy.deployment.FunctionBuildItem;
 import io.quarkus.funqy.deployment.FunctionInitializedBuildItem;
 import io.quarkus.funqy.runtime.FunqyConfig;
+import io.quarkus.funqy.runtime.bindings.knative.FunqyCloudEventsConfig;
 import io.quarkus.funqy.runtime.bindings.knative.FunqyKnativeBindingRecorder;
 import io.quarkus.jackson.ObjectMapperProducer;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -108,7 +109,8 @@ public class FunqyKnativeBuildStep {
             CoreVertxBuildItem vertx,
             RootpathBuildItem root,
             BeanContainerBuildItem beanContainer,
-            ExecutorBuildItem executorBuildItem) throws Exception {
+            ExecutorBuildItem executorBuildItem,
+            FunqyCloudEventsConfig funqyCloudEventsConfig) throws Exception {
 
         if (root == null)
             return;
@@ -116,7 +118,8 @@ public class FunqyKnativeBuildStep {
         Consumer<Route> ut = binding.start(vertx.getVertx(),
                 shutdown,
                 beanContainer.getValue(),
-                executorBuildItem.getExecutorProxy());
+                executorBuildItem.getExecutorProxy(),
+                funqyCloudEventsConfig);
 
         defaultRoutes.produce(new DefaultRouteBuildItem(ut));
     }

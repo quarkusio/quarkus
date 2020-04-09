@@ -1,10 +1,7 @@
 package io.quarkus.funqy.runtime.bindings.knative;
 
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -45,20 +42,42 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     protected final CurrentIdentityAssociation association;
     protected final CurrentVertxRequest currentVertxRequest;
     protected final Executor executor;
+    protected final String ceSource;
+    protected final String ceType;
 
     public VertxRequestHandler(Vertx vertx,
             BeanContainer beanContainer,
             FunctionInvoker invoker,
             ObjectMapper mapper,
-            Executor executor) {
+            Executor executor,
+            FunqyCloudEventsConfig funqyCloudEventsConfig) {
         this.vertx = vertx;
         this.beanContainer = beanContainer;
         this.invoker = invoker;
         this.executor = executor;
         this.mapper = mapper;
+
+        ceSource = or(
+                funqyCloudEventsConfig.source,
+                Optional.ofNullable(System.getenv("K_SERVICE")),
+                Optional.ofNullable(invoker.getName()));
+        ceType = or(
+                funqyCloudEventsConfig.type,
+                Optional.ofNullable(System.getenv("K_SERVICE")),
+                Optional.ofNullable(invoker.getName()));
+
         Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);
         this.association = association.isResolvable() ? association.get() : null;
         currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
+    }
+
+    private static <T> T or(Optional<T>... vals) {
+        for (Optional<T> v : vals) {
+            if (v.isPresent()) {
+                return v.get();
+            }
+        }
+        return null;
     }
 
     @Override
@@ -247,11 +266,11 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     }
 
     private String getResponseType() {
-        return invoker.getName();
+        return ceType;
     }
 
     private String getResponseSource() {
-        return "dev.knative." + invoker.getName();
+        return ceSource;
     }
 
     private String getResponseId() {

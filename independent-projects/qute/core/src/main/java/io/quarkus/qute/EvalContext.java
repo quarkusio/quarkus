@@ -49,4 +49,12 @@ public interface EvalContext {
      */
     CompletionStage<Object> evaluate(Expression expression);
 
+    /**
+     * 
+     * @param key
+     * @return the attribute or null
+     * @see TemplateInstance#getAttribute(String)
+     */
+    Object getAttribute(String key);
+
 }

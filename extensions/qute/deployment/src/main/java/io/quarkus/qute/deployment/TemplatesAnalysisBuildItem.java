@@ -23,12 +23,15 @@ public final class TemplatesAnalysisBuildItem extends SimpleBuildItem {
 
     static class TemplateAnalysis {
 
+        // Path or other user-defined id; may be null
         public final String id;
+        public final String generatedId;
         public final Set<Expression> expressions;
-        public final TemplatePathBuildItem path;
+        public final String path;
 
-        public TemplateAnalysis(String id, Set<Expression> expressions, TemplatePathBuildItem path) {
+        public TemplateAnalysis(String id, String generatedId, Set<Expression> expressions, String path) {
             this.id = id;
+            this.generatedId = generatedId;
             this.expressions = expressions;
             this.path = path;
         }

@@ -47,4 +47,9 @@ public class TestEvalContext implements EvalContext {
         return evaluate.apply(expression);
     }
 
+    @Override
+    public Object getAttribute(String key) {
+        return null;
+    }
+
 }

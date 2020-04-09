@@ -67,4 +67,12 @@ public interface ResolutionContext {
      */
     SectionBlock getExtendingBlock(String name);
 
+    /**
+     * 
+     * @param key
+     * @return the attribute or null
+     * @see TemplateInstance#getAttribute(String)
+     */
+    Object getAttribute(String key);
+
 }

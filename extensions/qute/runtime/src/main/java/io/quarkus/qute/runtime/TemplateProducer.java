@@ -145,22 +145,33 @@ public class TemplateProducer {
 
         @Override
         public String render() {
-            return template().instance().data(data()).render();
+            return templateInstance().render();
         }
 
         @Override
         public CompletionStage<String> renderAsync() {
-            return template().instance().data(data()).renderAsync();
+            return templateInstance().renderAsync();
         }
 
         @Override
         public Publisher<String> publisher() {
-            return template().instance().data(data()).publisher();
+            return templateInstance().publisher();
         }
 
         @Override
         public CompletionStage<Void> consume(Consumer<String> consumer) {
-            return template().instance().data(data()).consume(consumer);
+            return templateInstance().consume(consumer);
+        }
+
+        private TemplateInstance templateInstance() {
+            TemplateInstance instance = template().instance();
+            instance.data(data());
+            if (!attributes.isEmpty()) {
+                for (Entry<String, Object> entry : attributes.entrySet()) {
+                    instance.setAttribute(entry.getKey(), entry.getValue());
+                }
+            }
+            return instance;
         }
 
         private Template template() {

@@ -160,6 +160,11 @@ class EvaluatorImpl implements Evaluator {
         }
 
         @Override
+        public Object getAttribute(String key) {
+            return resolutionContext.getAttribute(key);
+        }
+
+        @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
             builder.append("EvalContextImpl [tryParent=").append(tryParent).append(", base=").append(base).append(", name=")

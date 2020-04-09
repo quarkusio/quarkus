@@ -47,7 +47,7 @@ public class EngineProducer {
     private final String basePath;
     private final String tagPath;
 
-    public EngineProducer(QuteContext context, Event<EngineBuilder> event) {
+    public EngineProducer(QuteContext context, Event<EngineBuilder> builderReady, Event<Engine> engineReady) {
         this.suffixes = context.getConfig().suffixes;
         this.basePath = "templates/";
         this.tagPath = basePath + TAGS;
@@ -77,7 +77,7 @@ public class EngineProducer {
         builder.addValueResolver(new ReflectionValueResolver());
 
         // Allow anyone to customize the builder
-        event.fire(builder);
+        builderReady.fire(builder);
 
         // Resolve @Named beans
         builder.addNamespaceResolver(NamespaceResolver.builder(INJECT_NAMESPACE).resolve(ctx -> {
@@ -106,6 +106,7 @@ public class EngineProducer {
         for (String path : context.getTemplatePaths()) {
             engine.getTemplate(path);
         }
+        engineReady.fire(engine);
     }
 
     @Produces

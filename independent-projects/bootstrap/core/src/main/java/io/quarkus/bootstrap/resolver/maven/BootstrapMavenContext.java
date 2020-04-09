@@ -86,6 +86,7 @@ public class BootstrapMavenContext {
     private static final String DEFAULT_REMOTE_REPO_URL = "https://repo.maven.apache.org/maven2";
     private static final String MAVEN_DOT_HOME = "maven.home";
     private static final String MAVEN_HOME = "MAVEN_HOME";
+    private static final String MAVEN_PROJECTBASEDIR = "MAVEN_PROJECTBASEDIR";
     private static final String SETTINGS_XML = "settings.xml";
 
     private static final String ALTERNATE_USER_SETTINGS = "s";
@@ -113,8 +114,9 @@ public class BootstrapMavenContext {
     private List<RemoteRepository> remoteRepos;
     private String localRepo;
     private Path currentPom;
+    private Boolean currentProjectExists;
     private DefaultServiceLocator serviceLocator;
-    private String alternativePomName;
+    private String alternatePomName;
 
     public static BootstrapMavenContextConfig<?> config() {
         return new BootstrapMavenContextConfig<>();
@@ -131,7 +133,7 @@ public class BootstrapMavenContext {
          * This means the values that are available in the config should be set before
          * the instance method invocations.
          */
-        this.alternativePomName = config.alternativePomName;
+        this.alternatePomName = config.alternativePomName;
         this.artifactTransferLogging = config.artifactTransferLogging;
         this.localRepo = config.localRepo;
         this.offline = config.offline;
@@ -218,15 +220,11 @@ public class BootstrapMavenContext {
     }
 
     private LocalWorkspace resolveWorkspace() throws AppModelResolverException {
-        final Path currentPom = getCurrentProjectPomOrNull();
-        if (currentPom == null) {
-            return null;
-        }
         try {
-            return LocalProject.loadWorkspace(currentPom).getWorkspace();
+            return LocalProject.loadWorkspace(this);
         } catch (BootstrapException e) {
             throw new AppModelResolverException(
-                    "Failed to initialize the local workspace for the current project at " + currentPom);
+                    "Failed to load the workspace for the current project at " + getCurrentProjectPomOrNull());
         }
     }
 
@@ -419,51 +417,52 @@ public class BootstrapMavenContext {
 
     public List<org.apache.maven.model.Profile> getActiveSettingsProfiles()
             throws AppModelResolverException {
-        if (activeSettingsProfiles == null) {
-            final Settings settings = getEffectiveSettings();
-            final int profilesTotal = settings.getProfiles().size();
-            if (profilesTotal == 0) {
-                return Collections.emptyList();
-            }
-            List<org.apache.maven.model.Profile> modelProfiles = new ArrayList<>(profilesTotal);
-            for (Profile profile : settings.getProfiles()) {
-                modelProfiles.add(SettingsUtils.convertFromSettingsProfile(profile));
-            }
-
-            final BootstrapMavenOptions mvnArgs = getCliOptions();
-            List<String> activeProfiles = mvnArgs.getActiveProfileIds();
-            final List<String> inactiveProfiles = mvnArgs.getInactiveProfileIds();
-
-            final Path currentPom = getCurrentProjectPomOrNull();
-            final DefaultProfileActivationContext context = new DefaultProfileActivationContext()
-                    .setActiveProfileIds(activeProfiles)
-                    .setInactiveProfileIds(inactiveProfiles)
-                    .setSystemProperties(System.getProperties())
-                    .setProjectDirectory(
-                            currentPom == null ? getCurrentProjectBaseDir().toFile() : currentPom.getParent().toFile());
-            final DefaultProfileSelector profileSelector = new DefaultProfileSelector()
-                    .addProfileActivator(new PropertyProfileActivator())
-                    .addProfileActivator(new JdkVersionProfileActivator())
-                    .addProfileActivator(new OperatingSystemProfileActivator())
-                    .addProfileActivator(new FileProfileActivator().setPathTranslator(new DefaultPathTranslator()));
-            modelProfiles = profileSelector.getActiveProfiles(modelProfiles, context, new ModelProblemCollector() {
-                public void add(ModelProblemCollectorRequest req) {
-                    log.error("Failed to activate a Maven profile: " + req.getMessage());
-                }
-            });
-
-            activeProfiles = settings.getActiveProfiles();
-            if (!activeProfiles.isEmpty()) {
-                for (String profileName : activeProfiles) {
-                    final Profile profile = getProfile(profileName, settings);
-                    if (profile != null) {
-                        modelProfiles.add(SettingsUtils.convertFromSettingsProfile(profile));
-                    }
-                }
-            }
-            activeSettingsProfiles = modelProfiles;
+        if (activeSettingsProfiles != null) {
+            return activeSettingsProfiles;
         }
-        return activeSettingsProfiles;
+
+        final Settings settings = getEffectiveSettings();
+        final int profilesTotal = settings.getProfiles().size();
+        if (profilesTotal == 0) {
+            return Collections.emptyList();
+        }
+        List<org.apache.maven.model.Profile> modelProfiles = new ArrayList<>(profilesTotal);
+        for (Profile profile : settings.getProfiles()) {
+            modelProfiles.add(SettingsUtils.convertFromSettingsProfile(profile));
+        }
+
+        final BootstrapMavenOptions mvnArgs = getCliOptions();
+        List<String> activeProfiles = mvnArgs.getActiveProfileIds();
+        final List<String> inactiveProfiles = mvnArgs.getInactiveProfileIds();
+
+        final Path currentPom = getCurrentProjectPomOrNull();
+        final DefaultProfileActivationContext context = new DefaultProfileActivationContext()
+                .setActiveProfileIds(activeProfiles)
+                .setInactiveProfileIds(inactiveProfiles)
+                .setSystemProperties(System.getProperties())
+                .setProjectDirectory(
+                        currentPom == null ? getCurrentProjectBaseDir().toFile() : currentPom.getParent().toFile());
+        final DefaultProfileSelector profileSelector = new DefaultProfileSelector()
+                .addProfileActivator(new PropertyProfileActivator())
+                .addProfileActivator(new JdkVersionProfileActivator())
+                .addProfileActivator(new OperatingSystemProfileActivator())
+                .addProfileActivator(new FileProfileActivator().setPathTranslator(new DefaultPathTranslator()));
+        modelProfiles = profileSelector.getActiveProfiles(modelProfiles, context, new ModelProblemCollector() {
+            public void add(ModelProblemCollectorRequest req) {
+                log.error("Failed to activate a Maven profile: " + req.getMessage());
+            }
+        });
+
+        activeProfiles = settings.getActiveProfiles();
+        if (!activeProfiles.isEmpty()) {
+            for (String profileName : activeProfiles) {
+                final Profile profile = getProfile(profileName, settings);
+                if (profile != null) {
+                    modelProfiles.add(SettingsUtils.convertFromSettingsProfile(profile));
+                }
+            }
+        }
+        return activeSettingsProfiles = modelProfiles;
     }
 
     private static Profile getProfile(String name, Settings settings) throws AppModelResolverException {
@@ -545,7 +544,8 @@ public class BootstrapMavenContext {
             locator.addService(TransporterFactory.class, WagonTransporterFactory.class);
             locator.setServices(WagonProvider.class, new BootstrapWagonProvider());
         }
-        locator.setServices(ModelBuilder.class, new MavenModelBuilder(this));
+        locator.setServices(ModelBuilder.class, new MavenModelBuilder(workspace, getCliOptions(),
+                workspace == null ? Collections.emptyList() : getActiveSettingsProfiles()));
         locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
             @Override
             public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
@@ -587,16 +587,20 @@ public class BootstrapMavenContext {
         return props.getProperty("version", "unknown-version");
     }
 
-    Path getCurrentProjectPomOrNull() {
-        if (currentPom != null) {
+    public boolean isCurrentProjectExists() {
+        return currentProjectExists == null
+                ? currentProjectExists = getCurrentProjectPomOrNull() != null
+                : currentProjectExists;
+    }
+
+    public Path getCurrentProjectPomOrNull() {
+        if (currentPom != null
+                || currentProjectExists != null && !currentProjectExists) {
             return currentPom;
         }
-        String pomName = alternativePomName;
+        String pomName = alternatePomName == null ? getCliOptions().getOptionValue(ALTERNATE_POM_FILE) : alternatePomName;
         if (pomName == null) {
-            pomName = getCliOptions().getOptionValue(ALTERNATE_POM_FILE);
-            if (pomName == null) {
-                pomName = "pom.xml";
-            }
+            pomName = "pom.xml";
         }
         Path pom = Paths.get(pomName);
         if (!pom.isAbsolute()) {
@@ -605,11 +609,27 @@ public class BootstrapMavenContext {
         if (Files.isDirectory(pom)) {
             pom = pom.resolve("pom.xml");
         }
-        return currentPom = Files.exists(pom) ? pom : null;
+        return currentPom = (currentProjectExists = Files.exists(pom)) ? pom : null;
     }
 
-    public static Path getCurrentProjectBaseDir() {
+    public Path getCurrentProjectBaseDir() {
         final String basedirProp = PropertyUtils.getProperty(BASEDIR);
         return basedirProp == null ? Paths.get("").normalize().toAbsolutePath() : Paths.get(basedirProp);
+    }
+
+    public Path getRootProjectBaseDir() {
+        final String rootBaseDir = System.getenv(MAVEN_PROJECTBASEDIR);
+        if (rootBaseDir == null) {
+            return null;
+        }
+        // if the alternate POM was set (not on the CLI) and its base dir does not match the base dir
+        // set by the Maven process then the root project set by the Maven process is probably not relevant too
+        if (alternatePomName != null) {
+            final Path currentPom = getCurrentProjectPomOrNull();
+            if (currentPom == null || !getCurrentProjectBaseDir().equals(currentPom.getParent())) {
+                return null;
+            }
+        }
+        return Paths.get(rootBaseDir);
     }
 }

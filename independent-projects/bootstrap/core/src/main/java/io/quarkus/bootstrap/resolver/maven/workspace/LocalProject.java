@@ -4,6 +4,7 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -84,6 +85,30 @@ public class LocalProject {
             }
             rootModel = loadRootModel(currentProjectPom);
         }
+        return loadWorkspace(currentProjectPom, rootModel);
+    }
+
+    /**
+     * Loads the workspace the current project belongs to.
+     * If current project does not exist then the method will return null.
+     *
+     * @param ctx bootstrap maven context
+     * @return current workspace or null in case the current project could not be resolved
+     * @throws BootstrapException in case of an error
+     */
+    public static LocalWorkspace loadWorkspace(BootstrapMavenContext ctx) throws BootstrapException {
+        final Path currentProjectPom = ctx.getCurrentProjectPomOrNull();
+        if (currentProjectPom == null) {
+            return null;
+        }
+        final Path rootProjectBaseDir = ctx.getRootProjectBaseDir();
+        final Model rootModel = rootProjectBaseDir == null || rootProjectBaseDir.equals(currentProjectPom.getParent())
+                ? loadRootModel(currentProjectPom)
+                : readModel(rootProjectBaseDir.resolve(POM_XML));
+        return loadWorkspace(currentProjectPom, rootModel).getWorkspace();
+    }
+
+    private static LocalProject loadWorkspace(Path currentProjectPom, Model rootModel) throws BootstrapException {
         final LocalWorkspace ws = new LocalWorkspace();
         final LocalProject project = load(ws, null, rootModel, currentProjectPom.getParent());
         return project == null ? load(ws, null, readModel(currentProjectPom), currentProjectPom.getParent()) : project;
@@ -162,6 +187,7 @@ public class LocalProject {
     private final Path dir;
     private final LocalWorkspace workspace;
     private final List<LocalProject> modules = new ArrayList<>(0);
+    private AppArtifactKey key;
 
     private LocalProject(Model rawModel, LocalWorkspace workspace) throws BootstrapException {
         this.rawModel = rawModel;
@@ -272,7 +298,7 @@ public class LocalProject {
     }
 
     public AppArtifactKey getKey() {
-        return new AppArtifactKey(groupId, artifactId);
+        return key == null ? key = new AppArtifactKey(groupId, artifactId) : key;
     }
 
     public AppArtifact getAppArtifact() {

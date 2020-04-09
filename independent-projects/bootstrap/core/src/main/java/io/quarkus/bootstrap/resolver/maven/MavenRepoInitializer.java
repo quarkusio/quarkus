@@ -161,7 +161,12 @@ public class MavenRepoInitializer {
             locator.addService(TransporterFactory.class, WagonTransporterFactory.class);
             locator.setServices(WagonProvider.class, new BootstrapWagonProvider());
         }
-        locator.setServices(ModelBuilder.class, new MavenModelBuilder(wsModelResolver));
+        try {
+            locator.setServices(ModelBuilder.class, new MavenModelBuilder(wsModelResolver, mvnArgs,
+                    wsModelResolver == null ? Collections.emptyList() : getActiveSettingsProfiles()));
+        } catch (AppModelResolverException e) {
+            throw new IllegalStateException("Failed to resolve active settings profiles", e);
+        }
         locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
             @Override
             public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {

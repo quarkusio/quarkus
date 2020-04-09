@@ -17,7 +17,7 @@ on:
       - '.github/NativeBuildReport.kts'
       - '.dependabot/**'
   pull_request:
-    types: [assigned, opened, synchronize, reopened, ready_for_review, edited]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
       - 'docs/src/main/asciidoc/**'
       - 'README.md'

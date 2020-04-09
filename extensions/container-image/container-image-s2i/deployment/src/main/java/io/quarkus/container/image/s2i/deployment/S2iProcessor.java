@@ -174,17 +174,23 @@ public class S2iProcessor {
             return;
         }
 
+        Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
+                .stream()
+                .filter(r -> r.getName().endsWith("kubernetes/openshift.yml"))
+                .findFirst();
+
+        if (!openshiftYml.isPresent()) {
+            LOG.warn(
+                    "No Openshift manifests were generated (most likely due to the fact that the service is not an HTTP service) so no s2i process will be taking place");
+            return;
+        }
+
         String namespace = Optional.ofNullable(kubernetesClient.getClient().getNamespace()).orElse("default");
         LOG.info("Performing s2i binary build with jar on server: " + kubernetesClient.getClient().getMasterUrl()
                 + " in namespace:" + namespace + ".");
         String image = containerImage.getImage();
 
-        GeneratedFileSystemResourceBuildItem openshiftYml = generatedResources
-                .stream()
-                .filter(r -> r.getName().endsWith("kubernetes/openshift.yml"))
-                .findFirst().orElseThrow(() -> new IllegalStateException("Could not find kubernetes/openshift.yml"));
-
-        createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), jar.getPath(),
+        createContainerImage(kubernetesClient, openshiftYml.get(), s2iConfig, out.getOutputDirectory(), jar.getPath(),
                 out.getOutputDirectory().resolve("lib"));
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
         containerImageResultProducer.produce(

@@ -889,6 +889,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-elytron-security-ldap</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-vault</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -2113,6 +2118,11 @@
             <dependency>
               <groupId>org.wildfly.security</groupId>
               <artifactId>wildfly-elytron-realm-jdbc</artifactId>
+              <version>${wildfly-elytron.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.wildfly.security</groupId>
+              <artifactId>wildfly-elytron-realm-ldap</artifactId>
               <version>${wildfly-elytron.version}</version>
             </dependency>
             <dependency>

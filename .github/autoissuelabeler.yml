@@ -57,3 +57,7 @@
 - labels: [env/windows]
   title: "(?i).*windows.*"
   description: "(?i).*windows.*"
+- labels: [area/container-image]
+  title: "(?i).*jib.*"
+  description: "(?i).*jib.*"
+  addcomment: "/cc @geoand"

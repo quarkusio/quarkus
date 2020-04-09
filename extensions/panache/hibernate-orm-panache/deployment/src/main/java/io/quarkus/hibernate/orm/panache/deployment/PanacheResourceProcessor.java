@@ -1,25 +1,36 @@
 package io.quarkus.hibernate.orm.panache.deployment;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.persistence.EntityManager;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.quarkus.hibernate.orm.panache.PanacheHibernateRecorder;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import io.quarkus.panache.common.deployment.EntityField;
@@ -37,6 +48,10 @@ public final class PanacheResourceProcessor {
     private static final DotName DOTNAME_PANACHE_ENTITY = DotName.createSimple(PanacheEntity.class.getName());
 
     private static final DotName DOTNAME_ENTITY_MANAGER = DotName.createSimple(EntityManager.class.getName());
+
+    private static final DotName DOTNAME_NAMED_QUERY = DotName.createSimple(NamedQuery.class.getName());
+    private static final DotName DOTNAME_NAMED_QUERIES = DotName.createSimple(NamedQueries.class.getName());
+    private static final DotName DOTNAME_OBJECT = DotName.createSimple(Object.class.getName());
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
@@ -60,10 +75,12 @@ public final class PanacheResourceProcessor {
     void build(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             HibernateEnhancersRegisteredBuildItem hibernateMarker,
-            BuildProducer<PanacheEntityClassesBuildItem> entityClasses) throws Exception {
+            BuildProducer<PanacheEntityClassesBuildItem> entityClasses,
+            BuildProducer<NamedQueryEntityClassBuildStep> namedQueries) throws Exception {
 
         PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
+        Set<Type> daoTypeParameters = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
             if (classInfo.name().equals(DOTNAME_PANACHE_REPOSITORY))
@@ -76,9 +93,18 @@ public final class PanacheResourceProcessor {
             if (PanacheRepositoryEnhancer.skipRepository(classInfo))
                 continue;
             daoClasses.add(classInfo.name().toString());
+            daoTypeParameters.addAll(
+                    JandexUtil.resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex()));
         }
         for (String daoClass : daoClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
+        }
+
+        for (Type parameterType : daoTypeParameters) {
+            // lookup for `@NamedQuery` on the hierarchy and produce NamedQueryEntityClassBuildStep
+            Set<String> typeNamedQueries = new HashSet<>();
+            lookupNamedQueries(index, parameterType.name(), typeNamedQueries);
+            namedQueries.produce(new NamedQueryEntityClassBuildStep(parameterType.name().toString(), typeNamedQueries));
         }
 
         PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex());
@@ -99,6 +125,11 @@ public final class PanacheResourceProcessor {
         }
         for (String modelClass : modelClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(modelClass, modelEnhancer));
+
+            // lookup for `@NamedQuery` on the hierarchy and produce NamedQueryEntityClassBuildStep
+            Set<String> typeNamedQueries = new HashSet<>();
+            lookupNamedQueries(index, DotName.createSimple(modelClass), typeNamedQueries);
+            namedQueries.produce(new NamedQueryEntityClassBuildStep(modelClass, typeNamedQueries));
         }
         if (!modelClasses.isEmpty()) {
             entityClasses.produce(new PanacheEntityClassesBuildItem(modelClasses));
@@ -113,6 +144,50 @@ public final class PanacheResourceProcessor {
                     transformers.produce(new BytecodeTransformerBuildItem(className, panacheFieldAccessEnhancer));
                 }
             }
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void buildNamedQueryMap(List<NamedQueryEntityClassBuildStep> namedQueryEntityClasses,
+            PanacheHibernateRecorder panacheHibernateRecorder) {
+        Map<String, Set<String>> namedQueryMap = new HashMap<>();
+        for (NamedQueryEntityClassBuildStep entityNamedQueries : namedQueryEntityClasses) {
+            namedQueryMap.put(entityNamedQueries.getClassName(), entityNamedQueries.getNamedQueries());
+        }
+
+        panacheHibernateRecorder.setNamedQueryMap(namedQueryMap);
+    }
+
+    private void lookupNamedQueries(CombinedIndexBuildItem index, DotName name, Set<String> namedQueries) {
+        ClassInfo classInfo = index.getIndex().getClassByName(name);
+        if (classInfo == null) {
+            return;
+        }
+
+        List<AnnotationInstance> namedQueryInstances = classInfo.annotations().get(DOTNAME_NAMED_QUERY);
+        if (namedQueryInstances != null) {
+            for (AnnotationInstance namedQueryInstance : namedQueryInstances) {
+                namedQueries.add(namedQueryInstance.value("name").asString());
+            }
+        }
+
+        List<AnnotationInstance> namedQueriesInstances = classInfo.annotations().get(DOTNAME_NAMED_QUERIES);
+        if (namedQueriesInstances != null) {
+            for (AnnotationInstance namedQueriesInstance : namedQueriesInstances) {
+                AnnotationValue value = namedQueriesInstance.value();
+                AnnotationInstance[] nestedInstances = value.asNestedArray();
+                for (AnnotationInstance nested : nestedInstances) {
+                    namedQueries.add(nested.value("name").asString());
+                }
+            }
+        }
+
+        // climb up the hierarchy of types
+        if (!classInfo.superClassType().name().equals(DOTNAME_OBJECT)) {
+            Type superType = classInfo.superClassType();
+            ClassInfo superClass = index.getIndex().getClassByName(superType.name());
+            lookupNamedQueries(index, superClass.name(), namedQueries);
         }
     }
 }

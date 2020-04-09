@@ -115,12 +115,19 @@ public class JpaOperations {
     }
 
     static String createFindQuery(Class<?> entityClass, String query, int paramCount) {
-        if (query == null)
+        if (query == null) {
             return "FROM " + getEntityName(entityClass);
+        }
 
         String trimmed = query.trim();
-        if (trimmed.isEmpty())
+        if (trimmed.isEmpty()) {
             return "FROM " + getEntityName(entityClass);
+        }
+
+        if (isNamedQuery(query)) {
+            // we return named query as is
+            return query;
+        }
 
         String trimmedLc = trimmed.toLowerCase();
         if (trimmedLc.startsWith("from ") || trimmedLc.startsWith("select ")) {
@@ -133,6 +140,13 @@ public class JpaOperations {
             query += " = ?1";
         }
         return "FROM " + getEntityName(entityClass) + " WHERE " + query;
+    }
+
+    static boolean isNamedQuery(String query) {
+        if (query == null || query.isEmpty()) {
+            return false;
+        }
+        return query.charAt(0) == '#';
     }
 
     private static String createCountQuery(Class<?> entityClass, String query, int paramCount) {
@@ -249,7 +263,14 @@ public class JpaOperations {
         String findQuery = createFindQuery(entityClass, query, paramCount(params));
         EntityManager em = getEntityManager();
         // FIXME: check for duplicate ORDER BY clause?
-        Query jpaQuery = em.createQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
+        Query jpaQuery;
+        if (isNamedQuery(query)) {
+            String namedQuery = query.substring(1);
+            NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
+            jpaQuery = em.createNamedQuery(namedQuery);
+        } else {
+            jpaQuery = em.createQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
+        }
         bindParameters(jpaQuery, params);
         return new PanacheQueryImpl(em, jpaQuery, findQuery, params);
     }
@@ -263,7 +284,14 @@ public class JpaOperations {
         String findQuery = createFindQuery(entityClass, query, paramCount(params));
         EntityManager em = getEntityManager();
         // FIXME: check for duplicate ORDER BY clause?
-        Query jpaQuery = em.createQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
+        Query jpaQuery;
+        if (isNamedQuery(query)) {
+            String namedQuery = query.substring(1);
+            NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
+            jpaQuery = em.createNamedQuery(namedQuery);
+        } else {
+            jpaQuery = em.createQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
+        }
         bindParameters(jpaQuery, params);
         return new PanacheQueryImpl(em, jpaQuery, findQuery, params);
     }

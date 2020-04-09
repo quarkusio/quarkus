@@ -8,6 +8,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
 import javax.persistence.Transient;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -19,6 +20,7 @@ import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
 @XmlRootElement
 @Entity(name = "Person2")
+@NamedQuery(name = "Person.getByName", query = "from Person2 where name = :name")
 public class Person extends PanacheEntity {
 
     public String name;

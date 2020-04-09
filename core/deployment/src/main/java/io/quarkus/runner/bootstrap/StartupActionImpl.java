@@ -27,7 +27,6 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
@@ -43,27 +42,27 @@ public class StartupActionImpl implements StartupAction {
     private final BuildResult buildResult;
     private final QuarkusClassLoader runtimeClassLoader;
 
-    public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult) {
+    public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult,
+            ClassLoader deploymentClassLoader) {
         this.curatedApplication = curatedApplication;
         this.buildResult = buildResult;
         Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = extractTransformers();
         QuarkusClassLoader baseClassLoader = curatedApplication.getBaseRuntimeClassLoader();
-        ClassLoader transformerClassLoader = buildResult.consume(DeploymentClassLoaderBuildItem.class).getClassLoader();
         QuarkusClassLoader runtimeClassLoader;
 
         //so we have some differences between dev and test mode here.
         //test mode only has a single class loader, while dev uses a disposable runtime class loader
         //that is discarded between restarts
         if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.DEV) {
-            baseClassLoader.reset(extractGeneratedResources(false), bytecodeTransformers, transformerClassLoader);
+            baseClassLoader.reset(extractGeneratedResources(false), bytecodeTransformers, deploymentClassLoader);
             runtimeClassLoader = curatedApplication.createRuntimeClassLoader(baseClassLoader,
                     bytecodeTransformers,
-                    transformerClassLoader, extractGeneratedResources(true));
+                    deploymentClassLoader, extractGeneratedResources(true));
         } else {
             Map<String, byte[]> resources = new HashMap<>();
             resources.putAll(extractGeneratedResources(false));
             resources.putAll(extractGeneratedResources(true));
-            baseClassLoader.reset(resources, bytecodeTransformers, transformerClassLoader);
+            baseClassLoader.reset(resources, bytecodeTransformers, deploymentClassLoader);
             runtimeClassLoader = baseClassLoader;
         }
         this.runtimeClassLoader = runtimeClassLoader;

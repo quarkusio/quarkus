@@ -22,6 +22,7 @@ public final class BuildChain {
     private final Set<ItemId> consumed;
     private final List<BuildProvider> providers;
     private final int endStepCount;
+    private final ClassLoader classLoader;
 
     BuildChain(final int initialSingleCount, final int initialMultiCount, final Set<StepInfo> startSteps,
             final Set<ItemId> consumed, BuildChainBuilder builder, final int endStepCount) {
@@ -33,6 +34,7 @@ public final class BuildChain {
         this.startSteps = new ArrayList<>(startSteps);
         this.consumed = consumed;
         this.endStepCount = endStepCount;
+        this.classLoader = builder.getClassLoader();
     }
 
     /**
@@ -112,6 +114,10 @@ public final class BuildChain {
 
     Set<ItemId> getFinalIds() {
         return finalIds;
+    }
+
+    ClassLoader getClassLoader() {
+        return classLoader;
     }
 
     int getEndStepCount() {

@@ -91,6 +91,7 @@ public class QuarkusAugmentor {
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
             final BuildChainBuilder chainBuilder = BuildChain.builder();
+            chainBuilder.setClassLoader(deploymentClassLoader);
 
             //TODO: we load everything from the deployment class loader
             //this allows the deployment config (application.properties) to be loaded, but in theory could result

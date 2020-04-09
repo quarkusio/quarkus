@@ -263,6 +263,8 @@ public class BootstrapAppModelFactory {
                             if (reader.readInt() == workspace.getId()) {
                                 ObjectInputStream in = new ObjectInputStream(reader);
                                 AppModel appModel = (AppModel) in.readObject();
+
+                                log.debugf("Loaded cached AppMode %s from %s", appModel, cachedCpPath);
                                 for (AppDependency i : appModel.getFullDeploymentDeps()) {
                                     if (!Files.exists(i.getArtifact().getPath())) {
                                         throw new IOException("Cached artifact does not exist: " + i.getArtifact().getPath());

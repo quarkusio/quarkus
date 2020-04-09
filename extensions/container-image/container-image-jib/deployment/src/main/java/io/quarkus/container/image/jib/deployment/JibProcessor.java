@@ -74,9 +74,9 @@ public class JibProcessor {
             return;
         }
 
-        JibContainerBuilder jibContainerBuilder = createContainerBuilderFromJar(containerImageConfig, jibConfig,
+        JibContainerBuilder jibContainerBuilder = createContainerBuilderFromJar(jibConfig,
                 sourceJar, outputTarget, mainClass, containerImageLabels);
-        JibContainer container = containerize(applicationInfo, containerImageConfig, jibConfig, jibContainerBuilder,
+        JibContainer container = containerize(applicationInfo, containerImageConfig, jibContainerBuilder,
                 pushRequest.isPresent());
 
         ImageReference targetImage = container.getTargetImage();
@@ -107,7 +107,7 @@ public class JibProcessor {
 
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(containerImageConfig, jibConfig,
                 nativeImage, containerImageLabels);
-        JibContainer container = containerize(applicationInfo, containerImageConfig, jibConfig, jibContainerBuilder,
+        JibContainer container = containerize(applicationInfo, containerImageConfig, jibContainerBuilder,
                 pushRequest.isPresent());
 
         ImageReference targetImage = container.getTargetImage();
@@ -117,9 +117,8 @@ public class JibProcessor {
     }
 
     private JibContainer containerize(ApplicationInfoBuildItem applicationInfo, ContainerImageConfig containerImageConfig,
-            JibConfig jibConfig,
             JibContainerBuilder jibContainerBuilder, boolean pushRequested) {
-        Containerizer containerizer = createContainerizer(containerImageConfig, jibConfig, applicationInfo, pushRequested);
+        Containerizer containerizer = createContainerizer(containerImageConfig, applicationInfo, pushRequested);
         try {
             log.info("Starting container image build");
             JibContainer container = jibContainerBuilder.containerize(containerizer);
@@ -133,7 +132,7 @@ public class JibProcessor {
         }
     }
 
-    private Containerizer createContainerizer(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
+    private Containerizer createContainerizer(ContainerImageConfig containerImageConfig,
             ApplicationInfoBuildItem applicationInfo, boolean pushRequested) {
         Containerizer containerizer;
         ImageReference imageReference = getImageReference(containerImageConfig, applicationInfo);
@@ -142,7 +141,8 @@ public class JibProcessor {
             if (!containerImageConfig.registry.isPresent()) {
                 log.info("No container image registry was set, so 'docker.io' will be used");
             }
-            RegistryImage registryImage = toRegistryImage(imageReference, containerImageConfig);
+            RegistryImage registryImage = toRegistryImage(imageReference, containerImageConfig.username,
+                    containerImageConfig.password);
             containerizer = Containerizer.to(registryImage);
         } else {
             containerizer = Containerizer.to(DockerDaemonImage.named(imageReference));
@@ -157,14 +157,14 @@ public class JibProcessor {
         return containerizer;
     }
 
-    private RegistryImage toRegistryImage(ImageReference imageReference, ContainerImageConfig containerImageConfig) {
+    private RegistryImage toRegistryImage(ImageReference imageReference, Optional<String> username, Optional<String> password) {
         CredentialRetrieverFactory credentialRetrieverFactory = CredentialRetrieverFactory.forImage(imageReference,
                 log::info);
         RegistryImage registryImage = RegistryImage.named(imageReference);
         registryImage.addCredentialRetriever(credentialRetrieverFactory.wellKnownCredentialHelpers());
         registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig());
-        if (containerImageConfig.username.isPresent() && containerImageConfig.password.isPresent()) {
-            registryImage.addCredential(containerImageConfig.username.get(), containerImageConfig.password.get());
+        if (username.isPresent() && password.isPresent()) {
+            registryImage.addCredential(username.get(), password.get());
         }
         return registryImage;
     }
@@ -190,7 +190,7 @@ public class JibProcessor {
                 containerImageConfig.tag.orElse(applicationInfo.getVersion()));
     }
 
-    private JibContainerBuilder createContainerBuilderFromJar(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
+    private JibContainerBuilder createContainerBuilderFromJar(JibConfig jibConfig,
             JarBuildItem sourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem, MainClassBuildItem mainClassBuildItem,
             List<ContainerImageLabelBuildItem> containerImageLabels) {
@@ -199,7 +199,8 @@ public class JibProcessor {
             Path classesDir = outputTargetBuildItem.getOutputDirectory().resolve("jib");
             ZipUtils.unzip(sourceJarBuildItem.getPath(), classesDir);
             JavaContainerBuilder javaContainerBuilder = JavaContainerBuilder
-                    .from(toRegistryImage(ImageReference.parse(jibConfig.baseJvmImage), containerImageConfig))
+                    .from(toRegistryImage(ImageReference.parse(jibConfig.baseJvmImage), jibConfig.baseRegistryUsername,
+                            jibConfig.baseRegistryPassword))
                     .addResources(classesDir, IS_CLASS_PREDICATE.negate())
                     .addClasses(classesDir, IS_CLASS_PREDICATE)
                     .addJvmFlags(jibConfig.jvmArguments)
@@ -231,7 +232,9 @@ public class JibProcessor {
         entrypoint.addAll(jibConfig.nativeArguments);
         try {
             AbsoluteUnixPath workDirInContainer = AbsoluteUnixPath.get("/work");
-            return Jib.from(toRegistryImage(ImageReference.parse(jibConfig.baseNativeImage), containerImageConfig))
+            return Jib
+                    .from(toRegistryImage(ImageReference.parse(jibConfig.baseNativeImage), containerImageConfig.username,
+                            containerImageConfig.password))
                     .addLayer(LayerConfiguration.builder()
                             .addEntry(nativeImageBuildItem.getPath(), workDirInContainer.resolve(BINARY_NAME_IN_CONTAINER),
                                     FilePermissions.fromOctalString("775"))

@@ -64,7 +64,7 @@ class OptaPlannerProcessor {
         additionalBeans.produce(new AdditionalBeanBuildItem(OptaPlannerBeanProvider.class));
     }
 
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     @Record(STATIC_INIT)
     void recordSolverFactory(OptaPlannerRecorder recorder, RecorderContext recorderContext,
             CombinedIndexBuildItem combinedIndex,

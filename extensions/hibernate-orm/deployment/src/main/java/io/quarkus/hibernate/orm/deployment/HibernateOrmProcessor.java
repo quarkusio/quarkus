@@ -161,7 +161,7 @@ public final class HibernateOrmProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     @Record(STATIC_INIT)
     public void build(RecorderContext recorderContext, HibernateOrmRecorder recorder,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,

@@ -812,7 +812,7 @@ NOTE: `BuildStep.applicationArchiveMarkers()` is deprecated and will be removed 
 
 ==== Using Thread's Context Class Loader
 
-If `@BuildStep.loadsApplicationClasses()` is set to `true` the build step will be run with a TCCL that can load user classes from the deployment in a transformer-safe way.
+The build step will be run with a TCCL that can load user classes from the deployment in a transformer-safe way.
 This class loader only lasts for the life of the augmentation, and is discarded afterwards.
 The classes will be loaded again in a different class loader at runtime.
 This means that loading a class during augmentation does not stop it from being transformed when running in the development/test mode.

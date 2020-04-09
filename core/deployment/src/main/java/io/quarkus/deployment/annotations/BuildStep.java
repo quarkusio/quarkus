@@ -106,18 +106,8 @@ public @interface BuildStep {
     Class<? extends BooleanSupplier>[] onlyIfNot() default {};
 
     /**
-     * If this is set to true then the build step will be run with a TCCL that can load user
-     * classes from the deployment in a transformer safe way.
-     *
-     * This ClassLoader will only last for the life of the augmentation run, and then will be discarded,
-     * these classes will be loaded again in a different class loader on startup. This means that loading
-     * a class during augmentation does not stop it from being transformed when running in dev or test
-     * mode.
-     *
-     * The ClassLoader will be the one provided by {@link io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem},
-     * and an implicit dependency on this build item will be created.
-     *
-     * @return <code>true</code> if this build step wants to load deployment classes
+     * This no longer has any effect, and will be removed in future.
      */
+    @Deprecated
     boolean loadsApplicationClasses() default false;
 }

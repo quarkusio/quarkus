@@ -264,7 +264,7 @@ public class SmallRyeReactiveMessagingProcessor {
         }
     }
 
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     @Record(STATIC_INIT)
     public void build(SmallRyeReactiveMessagingRecorder recorder, RecorderContext recorderContext,
             BeanContainerBuildItem beanContainer,

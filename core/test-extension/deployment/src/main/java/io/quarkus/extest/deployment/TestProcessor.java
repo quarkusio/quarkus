@@ -353,7 +353,7 @@ public final class TestProcessor {
      * @param beanArchiveIndex - index of type information
      * @param testBeanProducer - producer for located Class<IConfigConsumer> bean types
      */
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     @Record(STATIC_INIT)
     void scanForBeans(TestRecorder recorder, BeanArchiveIndexBuildItem beanArchiveIndex,
             BuildProducer<TestBeanBuildItem> testBeanProducer) {

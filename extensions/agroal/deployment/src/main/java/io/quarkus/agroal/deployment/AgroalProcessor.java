@@ -91,7 +91,7 @@ class AgroalProcessor {
     }
 
     @Record(STATIC_INIT)
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     void build(
             RecorderContext recorderContext,
             AgroalRecorder recorder,

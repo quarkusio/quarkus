@@ -497,7 +497,6 @@ public final class ExtensionLoader {
             final BuildStep buildStep = method.getAnnotation(BuildStep.class);
             final String[] archiveMarkers = buildStep.applicationArchiveMarkers();
             final String[] capabilities = buildStep.providesCapabilities();
-            final boolean loadsAppClasses = buildStep.loadsApplicationClasses();
             final Class<? extends BooleanSupplier>[] onlyIf = buildStep.onlyIf();
             final Class<? extends BooleanSupplier>[] onlyIfNot = buildStep.onlyIfNot();
             final Parameter[] methodParameters = method.getParameters();
@@ -929,10 +928,8 @@ public final class ExtensionLoader {
                                     methodArgs[i] = methodParamFns.get(i).apply(bc, bri);
                                 }
                                 ClassLoader old = Thread.currentThread().getContextClassLoader();
-                                if (loadsAppClasses) {
-                                    Thread.currentThread().setContextClassLoader(
-                                            bc.consume(DeploymentClassLoaderBuildItem.class).getClassLoader());
-                                }
+                                Thread.currentThread().setContextClassLoader(
+                                        bc.consume(DeploymentClassLoaderBuildItem.class).getClassLoader());
                                 Object result;
                                 try {
                                     result = method.invoke(instance, methodArgs);
@@ -967,9 +964,7 @@ public final class ExtensionLoader {
                                 return name;
                             }
                         });
-                        if (loadsAppClasses) {
-                            bsb.consumes(DeploymentClassLoaderBuildItem.class);
-                        }
+                        bsb.consumes(DeploymentClassLoaderBuildItem.class);
                         finalStepConfig.accept(bsb);
                     });
         }

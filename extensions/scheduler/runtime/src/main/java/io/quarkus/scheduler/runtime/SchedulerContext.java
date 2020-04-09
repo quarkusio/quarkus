@@ -4,41 +4,18 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-import javax.inject.Singleton;
-
 import com.cronutils.model.CronType;
 
-/**
- *
- * @author Martin Kouba
- */
-@Singleton
-public class SchedulerSupport {
+public interface SchedulerContext {
 
-    private volatile ExecutorService executor;
-    private volatile CronType cronType;
-    private volatile List<ScheduledMethodMetadata> scheduledMethods;
+    ExecutorService getExecutor();
 
-    void initialize(SchedulerConfig config, List<ScheduledMethodMetadata> scheduledMethods, ExecutorService executor) {
-        this.cronType = config.cronType;
-        this.scheduledMethods = scheduledMethods;
-        this.executor = executor;
-    }
+    CronType getCronType();
 
-    public ExecutorService getExecutor() {
-        return executor;
-    }
-
-    public CronType getCronType() {
-        return cronType;
-    }
-
-    public List<ScheduledMethodMetadata> getScheduledMethods() {
-        return scheduledMethods;
-    }
+    List<ScheduledMethodMetadata> getScheduledMethods();
 
     @SuppressWarnings("unchecked")
-    public ScheduledInvoker createInvoker(String invokerClassName) {
+    default ScheduledInvoker createInvoker(String invokerClassName) {
         try {
             Class<? extends ScheduledInvoker> invokerClazz = (Class<? extends ScheduledInvoker>) Thread.currentThread()
                     .getContextClassLoader()
@@ -50,13 +27,12 @@ public class SchedulerSupport {
         }
     }
 
-    public static String getConfigProperty(String val) {
+    static String getConfigProperty(String val) {
         return val.substring(1, val.length() - 1);
     }
 
-    public static boolean isConfigValue(String val) {
+    static boolean isConfigValue(String val) {
         val = val.trim();
         return val.startsWith("{") && val.endsWith("}");
     }
-
 }

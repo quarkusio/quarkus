@@ -32,14 +32,6 @@
                     <excludes>
                         <!-- We do not support enablement via beans.xml -->
                         <exclude>org.eclipse.microprofile.fault.tolerance.tck.interceptor.xmlInterceptorEnabling.FaultToleranceInterceptorEnableByXmlTest</exclude>
-                        <!-- https://github.com/eclipse/microprofile-fault-tolerance/pull/509 -->
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.FallbackExceptionHierarchyTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.bulkhead.BulkheadAsynchTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.config.CircuitBreakerConfigTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.config.CircuitBreakerSkipOnConfigTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.config.FallbackApplyOnConfigTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.config.FallbackConfigTest</exclude>
-                        <exclude>org.eclipse.microprofile.fault.tolerance.tck.config.FallbackSkipOnConfigTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>

@@ -492,6 +492,44 @@ You should see:
 {password=connor}
 ----
 
+[[totp]]
+== TOTP Secrets Engine
+
+The https://www.vaultproject.io/docs/secrets/totp/[Vault TOTP secrets engine] generates time-based credentials according to the TOTP standard.
+
+Vault TOTP supports both the generator scenario (like Google Authenticator) and the provider scenario (like the Google.com sign in).
+
+The Vault extension integrates with the Vault TOTP secret engine by providing an `io.quarkus.vault.VaultTOTPSecretEngine` class.
+
+[source, java]
+----
+import io.quarkus.vault.VaultTOTPSecretEngine;
+import io.quarkus.vault.secrets.totp.CreateKeyParameters;
+import io.quarkus.vault.secrets.totp.KeyConfiguration;
+import io.quarkus.vault.secrets.totp.KeyDefinition;
+
+@Inject
+VaultTOTPSecretEngine vaultTOTPSecretEngine;
+
+CreateKeyParameters createKeyParameters = new CreateKeyParameters("Google", "test@gmail.com");
+createKeyParameters.setPeriod("30m");
+
+/** Google Authentication logic */
+
+final Optional<KeyDefinition> myKey = vaultTOTPSecretEngine
+                                            .createKey("my_key_2", createKeyParameters); // <1> <2>
+
+final String keyCode = vaultTOTPSecretEngine.generateCode("my_key_2"); // <3>
+
+/** Google Login logic */
+
+boolean valid = vaultTOTPSecretEngine.validateCode("my_key_2", keyCode); // <4>
+----
+<1> Create a key to generate codes.
+<2> `KeyDefinition` class contains an embeddable base64 QR code that can be used by third-party code generators.
+<3> Generates a code (not using third-party generator).
+<4> Validates that the code is valid.
+
 == Vault Health Check
 
 If you are using the `quarkus-smallrye-health` extension, `quarkus-vault` can add a readiness health check

@@ -132,6 +132,9 @@ update_configs:
           dependency_name: "org.jboss:jandex"
       - match:
           dependency_name: "org.jboss.jandex:jandex-maven-plugin"
+      #Neo4j
+      - match:
+          dependency_name: "org.neo4j.driver:neo4j-java-driver"
   - package_manager: "java:gradle"
     directory: "/devtools/gradle"
     update_schedule: "daily"

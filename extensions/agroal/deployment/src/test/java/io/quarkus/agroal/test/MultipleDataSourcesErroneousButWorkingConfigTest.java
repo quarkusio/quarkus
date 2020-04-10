@@ -15,9 +15,8 @@ import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class MultipleDataSourcesConfigTest {
+public class MultipleDataSourcesErroneousButWorkingConfigTest {
 
-    //tag::injection[]
     @Inject
     AgroalDataSource defaultDataSource;
 
@@ -28,13 +27,12 @@ public class MultipleDataSourcesConfigTest {
     @Inject
     @DataSource("inventory")
     AgroalDataSource dataSource2;
-    //end::injection[]
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(MultipleDataSourcesTestUtil.class))
-            .withConfigurationResource("application-multiple-datasources.properties");
+            .withConfigurationResource("application-multiple-datasources-erroneous-but-working.properties");
 
     @Test
     public void testDataSourceInjection() throws SQLException {
@@ -42,4 +40,5 @@ public class MultipleDataSourcesConfigTest {
         testDataSource("users", dataSource1, "jdbc:h2:tcp://localhost/mem:users", "username1", 1, 11);
         testDataSource("inventory", dataSource2, "jdbc:h2:tcp://localhost/mem:inventory", "username2", 2, 12);
     }
+
 }

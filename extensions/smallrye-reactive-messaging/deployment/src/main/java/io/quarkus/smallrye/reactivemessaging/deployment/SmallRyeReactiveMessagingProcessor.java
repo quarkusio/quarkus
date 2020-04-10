@@ -298,13 +298,12 @@ public class SmallRyeReactiveMessagingProcessor {
                 QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil
                         .create(methodInfo, bean,
                                 generatedInvokerName, recorderContext,
-                                Thread.currentThread().getContextClassLoader(), conf.strict);
+                                Thread.currentThread().getContextClassLoader());
                 configurations.add(mediatorConfiguration);
             } catch (IllegalArgumentException e) {
                 throw new DeploymentException(e); // needed to pass the TCK
             }
         }
-
         recorder.registerMediators(configurations, beanContainer.getValue());
 
         for (EmitterBuildItem it : emitterFields) {

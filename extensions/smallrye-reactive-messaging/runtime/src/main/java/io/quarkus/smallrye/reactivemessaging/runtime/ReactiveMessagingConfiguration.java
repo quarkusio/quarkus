@@ -8,12 +8,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class ReactiveMessagingConfiguration {
 
     /**
-     * Enables or disables the <em>strict</em> mode.
-     */
-    @ConfigItem(defaultValue = "false")
-    public boolean strict;
-
-    /**
      * Whether or not Reactive Messaging metrics are published in case the smallrye-metrics extension is present
      * (default to false).
      */

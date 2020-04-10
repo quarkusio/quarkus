@@ -236,6 +236,14 @@ Notice there's an extra bit in the key (the `users` and `inventory` segments).
 The syntax is as follows: `quarkus.mongodb.[optional name.][mongo connection property]`.
 If the name is omitted, it configures the default client.
 
+[NOTE]
+====
+The use of multiple MongoDB clients enables multi-tenancy for MongoDB by allowing to connect to multiple MongoDB clusters. +
+If you want to connect to multiple databases inside the same cluster,
+multiple clients are **not** necessary as a single client is able to access all databases in the same cluster
+(like a JDBC connection is able to access to multiple schemas inside the same database).
+====
+
 === Named Mongo client Injection
 
 When using multiple clients, each `MongoClient`, you can select the client to inject using the `io.quarkus.mongodb.runtime.MongoClientName` qualifier.
@@ -596,6 +604,13 @@ You can then point your browser to `http://localhost:8080/fruits.html` and use y
 Currently, Quarkus doesn't support the `mongodb+srv` protocol in native mode.
 
 link:https://docs.mongodb.com/manual/core/security-client-side-encryption/[Client-Side Field Level Encryption] is also not supported in native mode.
+====
+
+[TIP]
+====
+If you encounter the following error when running your application in native mode: +
+`Failed to encode 'MyObject'. Encoding 'myVariable' errored with: Can't find a codec for class org.acme.MyVariable.` +
+This means that the `org.acme.MyVariable` class is not known to GraalVM, the remedy is to add the `@RegisterForReflection` annotation to your `MyVariable class`.
 ====
 
 == Conclusion

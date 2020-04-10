@@ -41,7 +41,7 @@ public class UndertowStaticResourcesBuildStep {
         }
     }
 
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     void scanStaticResources(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<KnownPathsBuildItem> knownPathsBuilds,

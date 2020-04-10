@@ -19,7 +19,6 @@ import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.gizmo.ClassCreator;
@@ -43,8 +42,7 @@ public class ConfigPropertiesBuildStep {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
-            BuildProducer<ConfigPropertyBuildItem> configProperties,
-            DeploymentClassLoaderBuildItem deploymentClassLoader) {
+            BuildProducer<ConfigPropertyBuildItem> configProperties) {
         if (configPropertiesMetadataList.isEmpty()) {
             return;
         }
@@ -85,7 +83,7 @@ public class ConfigPropertiesBuildStep {
                  * and call setters for value obtained from MP Config
                  */
                 boolean needsValidation = ClassConfigPropertiesUtil.addProducerMethodForClassConfigProperties(
-                        deploymentClassLoader.getClassLoader(), classInfo, producerClassCreator,
+                        Thread.currentThread().getContextClassLoader(), classInfo, producerClassCreator,
                         configPropertiesMetadata.getPrefix(), configPropertiesMetadata.getNamingStrategy(),
                         combinedIndex.getIndex(), configProperties);
                 if (needsValidation) {

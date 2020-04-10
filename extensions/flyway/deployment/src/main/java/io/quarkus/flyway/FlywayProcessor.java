@@ -61,7 +61,7 @@ class FlywayProcessor {
     }
 
     @Record(STATIC_INIT)
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     void build(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer,
             BuildProducer<FeatureBuildItem> featureProducer,
             BuildProducer<NativeImageResourceBuildItem> resourceProducer,

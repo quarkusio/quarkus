@@ -98,7 +98,7 @@ public class DynamodbProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(DynamodbClientProducer.class));
     }
 
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     DynamodbClientBuildItem analyzeDynamodbClientInjectionPoints(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition) {

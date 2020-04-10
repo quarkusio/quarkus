@@ -18,7 +18,7 @@ public class ProducingBean {
                 .ticks().every(Duration.ofMillis(100))
                 .onItem().apply(l -> l * 2)
                 .on().overflow().drop()
-                .onItem().invoke(x -> System.out.println("Producer sending " + x));
+                .onFailure().recoverWithItem(42L);
     }
 
 }

@@ -146,6 +146,13 @@ The full source of the `kubernetes.json` file looks something like this:
 }
 ----
 
+The generated manifest can be applied to kubernetes from the project root using `kubectl`:
+
+[source]
+---
+kubectl apply -f target/kubernetes/kubernetes.json
+---
+
 An important thing to note about the `Deployment` is that is uses `yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT` as the container image of the `Pod`.
 The name of the image is controlled by the Jib extension and can be customized using the usual `application.properties`.
 
@@ -539,6 +546,24 @@ If you need to generate resources for both platforms (vanilla Kubernetes and Ope
 quarkus.kubernetes.deployment-target=kubernetes, openshift
 ----
 
+Following the execution of `./mvnw package` you will notice amongst the other files that are created, two files named
+`openshift.json` and `openshift.yml` in the `target/kubernetes/` directory.
+
+These manifests can be deployed as is to a running cluster, using kubectl:
+
+[source]
+---
+kubectl apply -f target/kubernetes/openshift.json
+---
+
+Openshift users might want to use `oc` instead of `kubectl`:
+
+[source]
+---
+oc apply -f target/kubernetes/openshift.json
+---
+
+
 NOTE: Quarkus also provides the link:deploying-to-openshift[OpenShift] extension. This extension is basically a wrapper around the Kubernetes extension and
 relieves OpenShift users of the necessity of setting the `deployment-target` property to `openshift`
 
@@ -630,6 +655,13 @@ The full source of the `quarkus.knative.json` file looks something like this:
   }
 }
 ----
+
+The generated manifest can be deployed as is to a running cluster, using `kubectl`:
+
+[source]
+---
+kubectl apply -f target/kubernetes/knative.json
+---
 
 The generated service can be customized using the following properties:
 

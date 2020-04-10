@@ -248,14 +248,14 @@ class MyBeanStarter {
 <1> The `AmazingService` is created during injection.
 <2> The `CoolService` is a normal scoped bean so we have to invoke a method upon the injected proxy to force the instantiation.
 
-* Annotate the bean with `@io.quarkus.runtime.Startup` as described in <<startup_annotation>>:
+* Annotate the bean with `@io.quarkus.runtime.Startup` as described in link:lifecycle#startup_annotation[Startup annotation]:
 +
 [source,java]
 ----
-@Startup // <1> 
+@Startup // <1>
 @ApplicationScoped
 public class EagerAppBean {
-  
+
    private final String name;
 
    EagerAppBean(NameGenerator generator) { // <2>
@@ -266,9 +266,9 @@ public class EagerAppBean {
 1. For each bean annotated with `@Startup` a synthetic observer of `StartupEvent` is generated. The default priority is used.
 2. The bean constructor is called when the application starts and the resulting contextual instance is stored in the application context.
 
-NOTE: Quarkus users are encouraged to always prefer the `@Observes StartupEvent` to `@Initialized(ApplicationScoped.class)` as explained in the link:lifecycle[Application Initialization and Termination] guide. 
+NOTE: Quarkus users are encouraged to always prefer the `@Observes StartupEvent` to `@Initialized(ApplicationScoped.class)` as explained in the link:lifecycle[Application Initialization and Termination] guide.
 
-=== Request Context Lifecycle 
+=== Request Context Lifecycle
 
 The request context is also active:
 
@@ -278,12 +278,12 @@ The request context is destroyed:
 
 * after the observer notification completes for an event, if it was not already active when the notification started.
 
-NOTE: An event with qualifier `@Initialized(RequestScoped.class)` is fired when the request context is initialized for an observer notification. Moreover, the events with qualifiers `@BeforeDestroyed(RequestScoped.class)` and `@Destroyed(RequestScoped.class)` are fired when the request context is destroyed. 
+NOTE: An event with qualifier `@Initialized(RequestScoped.class)` is fired when the request context is initialized for an observer notification. Moreover, the events with qualifiers `@BeforeDestroyed(RequestScoped.class)` and `@Destroyed(RequestScoped.class)` are fired when the request context is destroyed.
 
 === Qualified Injected Fields
 
 In CDI, if you declare a field injection point you need to use `@Inject` and optionally a set of qualifiers.
- 
+
 [source,java]
 ----
   @Inject
@@ -315,7 +315,7 @@ public class MyCoolService {
 
   MyCoolService() { // dummy constructor needed
   }
-  
+
   @Inject // constructor injection
   MyCoolService(SimpleProcessor processor) {
     this.processor = processor;
@@ -361,7 +361,7 @@ This optimization applies to all forms of bean declarations: bean class, produce
 
 Users can instruct the container to not remove any of their specific beans (even if they satisfy all the rules specified above) by annotating them with `io.quarkus.arc.Unremovable`.
 This annotation can be placed on the types, producer methods, and producer fields.
- 
+
 Furthermore, extensions can eliminate possible false positives by producing `UnremovableBeanBuildItem`.
 
 Finally, Quarkus provides a middle ground for the bean removal optimization where application beans are never removed whether or not they are unused,
@@ -485,12 +485,12 @@ Quarkus has a simplified bean discovery and the content of `beans.xml` is ignore
 The disadvantage of `@Priority` is that it has `@Target({ TYPE, PARAMETER })` and so it cannot be used for producer methods and fields.
 To address this problem and to simplify the code Quarkus provides the `io.quarkus.arc.AlternativePriority` annotation.
 It's basically a shortcut for `@Alternative` plus `@Priority`.
-Additionaly, it can be used for producers.
+Additionally, it can be used for producers.
 
 However, it is also possible to select alternatives for an application using the unified configuration.
 The `quarkus.arc.selected-alternatives` property accepts a list of string values that are used to match alternative beans.
-If any value matches then the priority of `Integer#MAX_VALUE` is used for the relevant bean. 
-The priority declared via `@Priority` or `@AlternativePriority` is overriden.
+If any value matches then the priority of `Integer#MAX_VALUE` is used for the relevant bean.
+The priority declared via `@Priority` or `@AlternativePriority` is overridden.
 
 .Value Examples
 |===

@@ -505,8 +505,15 @@ class KubernetesProcessor {
         configMap.put(KNATIVE, knativeConfig);
 
         //Replicas
-        session.resources().decorate(new KubernetesApplyReplicasDecorator(kubernetesName, kubernetesConfig.getReplicas()));
-        session.resources().decorate(new OpenshiftApplyReplicasDecorator(openshiftConfig.getReplicas()));
+        if (kubernetesConfig.getReplicas() != 1) {
+            session.resources().decorate(new io.dekorate.kubernetes.decorator.ApplyReplicasDecorator(kubernetesName,
+                    kubernetesConfig.getReplicas()));
+        }
+        if (openshiftConfig.getReplicas() != 1) {
+            session.resources()
+                    .decorate(new io.dekorate.openshift.decorator.ApplyReplicasDecorator(openshiftName,
+                            openshiftConfig.getReplicas()));
+        }
 
         kubernetesAnnotations.forEach(a -> {
             session.resources().decorate(a.getTarget(), new AddAnnotationDecorator(new Annotation(a.getKey(), a.getValue())));

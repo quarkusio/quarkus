@@ -1,13 +1,11 @@
 package io.quarkus.oidc.runtime;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
@@ -15,8 +13,12 @@ import io.vertx.ext.web.RoutingContext;
 public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
 
     private static final String BEARER = "Bearer";
+    protected static final ChallengeData UNAUTHORIZED_CHALLENGE = new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
+            null, null);
+    protected static final ChallengeData FORBIDDEN_CHALLENGE = new ChallengeData(HttpResponseStatus.FORBIDDEN.code(), null,
+            null);
 
-    public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
+    public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager,
             DefaultTenantConfigResolver resolver) {
         String token = extractBearerToken(context);
@@ -25,18 +27,17 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         if (token != null) {
             return authenticate(identityProviderManager, new AccessTokenCredential(token, context));
         }
-
-        return CompletableFuture.completedFuture(null);
+        return Uni.createFrom().nullItem();
     }
 
-    public CompletionStage<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
+    public Uni<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
         String bearerToken = extractBearerToken(context);
 
         if (bearerToken == null) {
-            return CompletableFuture.completedFuture(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(), null, null));
+            return Uni.createFrom().item(UNAUTHORIZED_CHALLENGE);
         }
 
-        return CompletableFuture.completedFuture(new ChallengeData(HttpResponseStatus.FORBIDDEN.code(), null, null));
+        return Uni.createFrom().item(FORBIDDEN_CHALLENGE);
     }
 
     private String extractBearerToken(RoutingContext context) {
@@ -53,7 +54,6 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             return null;
         }
 
-        String token = authorization.substring(idx + 1);
-        return token;
+        return authorization.substring(idx + 1);
     }
 }

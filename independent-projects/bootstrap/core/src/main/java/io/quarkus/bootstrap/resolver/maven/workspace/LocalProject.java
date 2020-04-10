@@ -4,6 +4,7 @@ import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,15 +47,15 @@ public class LocalProject {
     }
 
     public static LocalProject load(Path path, boolean required) throws BootstrapException {
-        final Path cpd = locateCurrentProjectDir(path, required);
-        if (cpd == null) {
+        final Path pom = locateCurrentProjectPom(path, required);
+        if (pom == null) {
             return null;
         }
         try {
-            return new LocalProject(readModel(cpd.resolve(POM_XML)), null);
+            return new LocalProject(readModel(pom), null);
         } catch (UnresolvedVersionException e) {
             // if a property in the version couldn't be resolved, we are trying to resolve it from the workspace
-            return loadWorkspace(cpd);
+            return loadWorkspace(pom);
         }
     }
 
@@ -63,14 +64,54 @@ public class LocalProject {
     }
 
     public static LocalProject loadWorkspace(Path path, boolean required) throws BootstrapException {
-        path = path.toAbsolutePath().normalize();
-        final Path currentProjectDir = locateCurrentProjectDir(path, required);
-        if (currentProjectDir == null) {
+        path = path.normalize().toAbsolutePath();
+        Path currentProjectPom = null;
+        Model rootModel = null;
+        if (!Files.isDirectory(path)) {
+            // see if that's an actual pom
+            try {
+                rootModel = loadRootModel(path);
+                if (rootModel != null) {
+                    currentProjectPom = path;
+                }
+            } catch (BootstrapException e) {
+                // ignore, it's not a POM file, we'll be looking for the POM later
+            }
+        }
+        if (currentProjectPom == null) {
+            currentProjectPom = locateCurrentProjectPom(path, required);
+            if (currentProjectPom == null) {
+                return null;
+            }
+            rootModel = loadRootModel(currentProjectPom);
+        }
+        return loadWorkspace(currentProjectPom, rootModel);
+    }
+
+    /**
+     * Loads the workspace the current project belongs to.
+     * If current project does not exist then the method will return null.
+     *
+     * @param ctx bootstrap maven context
+     * @return current workspace or null in case the current project could not be resolved
+     * @throws BootstrapException in case of an error
+     */
+    public static LocalWorkspace loadWorkspace(BootstrapMavenContext ctx) throws BootstrapException {
+        final Path currentProjectPom = ctx.getCurrentProjectPomOrNull();
+        if (currentProjectPom == null) {
             return null;
         }
+        final Path rootProjectBaseDir = ctx.getRootProjectBaseDir();
+        final Model rootModel = rootProjectBaseDir == null || rootProjectBaseDir.equals(currentProjectPom.getParent())
+                ? loadRootModel(currentProjectPom)
+                : readModel(rootProjectBaseDir.resolve(POM_XML));
+        return loadWorkspace(currentProjectPom, rootModel).getWorkspace();
+    }
+
+    private static LocalProject loadWorkspace(Path currentProjectPom, Model rootModel) throws BootstrapException {
         final LocalWorkspace ws = new LocalWorkspace();
-        final LocalProject project = load(ws, null, loadRootModel(currentProjectDir), currentProjectDir);
-        return project == null ? load(ws, null, readModel(currentProjectDir.resolve(POM_XML)), currentProjectDir) : project;
+        final LocalProject project = load(ws, null, rootModel, currentProjectPom.getParent());
+        return project == null ? load(ws, null, readModel(currentProjectPom), currentProjectPom.getParent()) : project;
     }
 
     private static LocalProject load(LocalWorkspace workspace, LocalProject parent, Model model, Path currentProjectDir)
@@ -95,8 +136,7 @@ public class LocalProject {
         return result;
     }
 
-    private static Model loadRootModel(Path currentProjectDir) throws BootstrapException {
-        Path pomXml = currentProjectDir.resolve(POM_XML);
+    private static Model loadRootModel(Path pomXml) throws BootstrapException {
         Model model = null;
         while (Files.exists(pomXml)) {
             model = readModel(pomXml);
@@ -125,11 +165,12 @@ public class LocalProject {
         }
     }
 
-    private static Path locateCurrentProjectDir(Path path, boolean required) throws BootstrapException {
+    private static Path locateCurrentProjectPom(Path path, boolean required) throws BootstrapException {
         Path p = path;
         while (p != null) {
-            if (Files.exists(p.resolve(POM_XML))) {
-                return p;
+            final Path pom = p.resolve(POM_XML);
+            if (Files.exists(pom)) {
+                return pom;
             }
             p = p.getParent();
         }
@@ -146,6 +187,7 @@ public class LocalProject {
     private final Path dir;
     private final LocalWorkspace workspace;
     private final List<LocalProject> modules = new ArrayList<>(0);
+    private AppArtifactKey key;
 
     private LocalProject(Model rawModel, LocalWorkspace workspace) throws BootstrapException {
         this.rawModel = rawModel;
@@ -256,7 +298,7 @@ public class LocalProject {
     }
 
     public AppArtifactKey getKey() {
-        return new AppArtifactKey(groupId, artifactId);
+        return key == null ? key = new AppArtifactKey(groupId, artifactId) : key;
     }
 
     public AppArtifact getAppArtifact() {

@@ -5,9 +5,9 @@ import java.security.Permission;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.jboss.logging.Logger;
@@ -25,8 +25,11 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.AuthenticationCompletionException;
 import io.quarkus.vertx.http.runtime.security.AuthenticationRedirectException;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.impl.ServerCookie;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.oauth2.AccessToken;
@@ -53,16 +56,16 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .addCredential(refreshTokenCredential)
                 .addRoles(securityIdentity.getRoles())
                 .addAttributes(securityIdentity.getAttributes())
-                .addPermissionChecker(new Function<Permission, CompletionStage<Boolean>>() {
+                .addPermissionChecker(new Function<Permission, Uni<Boolean>>() {
                     @Override
-                    public CompletionStage<Boolean> apply(Permission permission) {
+                    public Uni<Boolean> apply(Permission permission) {
                         return securityIdentity.checkPermission(permission);
                     }
                 })
                 .build();
     }
 
-    public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
+    public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager,
             DefaultTenantConfigResolver resolver) {
         Cookie sessionCookie = context.request().getCookie(SESSION_COOKIE_NAME);
@@ -71,11 +74,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (sessionCookie != null) {
             String[] tokens = sessionCookie.getValue().split(COOKIE_DELIM);
             return authenticate(identityProviderManager, new IdTokenCredential(tokens[0], context))
-                    .thenCompose(new Function<SecurityIdentity, CompletionStage<SecurityIdentity>>() {
+                    .map(new Function<SecurityIdentity, SecurityIdentity>() {
                         @Override
-                        public CompletionStage<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                            return CompletableFuture
-                                    .completedFuture(augmentIdentity(securityIdentity, tokens[1], tokens[2], context));
+                        public SecurityIdentity apply(SecurityIdentity securityIdentity) {
+                            return augmentIdentity(securityIdentity, tokens[1], tokens[2], context);
                         }
                     });
         }
@@ -84,10 +86,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return performCodeFlow(identityProviderManager, context, resolver);
     }
 
-    public CompletionStage<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
-        removeCookie(context, SESSION_COOKIE_NAME);
-
+    public Uni<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
         TenantConfigContext configContext = resolver.resolve(context, false);
+        removeCookie(context, configContext, SESSION_COOKIE_NAME);
 
         ChallengeData challenge;
         JsonObject params = new JsonObject();
@@ -118,10 +119,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         challenge = new ChallengeData(HttpResponseStatus.FOUND.code(), HttpHeaders.LOCATION,
                 configContext.auth.authorizeURL(params));
 
-        return CompletableFuture.completedFuture(challenge);
+        return Uni.createFrom().item(challenge);
     }
 
-    private CompletionStage<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
+    private Uni<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
             RoutingContext context, DefaultTenantConfigResolver resolver) {
         TenantConfigContext configContext = resolver.resolve(context, true);
 
@@ -129,10 +130,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         String code = context.request().getParam("code");
         if (code == null) {
-            return CompletableFuture.completedFuture(null);
+            return Uni.createFrom().optional(Optional.empty());
         }
-
-        CompletableFuture<SecurityIdentity> cf = new CompletableFuture<>();
 
         URI absoluteUri = URI.create(context.request().absoluteURI());
 
@@ -142,12 +141,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             // IDP must return a 'state' query parameter and the value of the state cookie must start with this parameter's value
             if (values.size() != 1) {
                 LOG.debug("State parameter can not be empty or multi-valued");
-                cf.completeExceptionally(new AuthenticationCompletionException());
-                return cf;
+                return Uni.createFrom().failure(new AuthenticationCompletionException());
             } else if (!stateCookie.getValue().startsWith(values.get(0))) {
                 LOG.debug("State cookie does not match the state parameter");
-                cf.completeExceptionally(new AuthenticationCompletionException());
-                return cf;
+                return Uni.createFrom().failure(new AuthenticationCompletionException());
             } else if (context.queryParam("pathChecked").isEmpty()) {
                 // This is an original redirect from IDP, check if the request path needs to be updated
                 String[] pair = stateCookie.getValue().split(COOKIE_DELIM);
@@ -165,21 +162,18 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                     String localRedirectUri = buildRedirectUri(context, absoluteUri, extraPath + extraQuery);
                     LOG.debugf("Local redirect URI: %s", localRedirectUri);
-
-                    cf.completeExceptionally(new AuthenticationRedirectException(localRedirectUri));
-                    return cf;
+                    return Uni.createFrom().failure(new AuthenticationRedirectException(localRedirectUri));
                 }
                 // The original request path does not have to be restored, the state cookie is no longer needed
-                removeCookie(context, STATE_COOKIE_NAME);
+                removeCookie(context, configContext, STATE_COOKIE_NAME);
             } else {
                 // Local redirect restoring the original request path, the state cookie is no longer needed
-                removeCookie(context, STATE_COOKIE_NAME);
+                removeCookie(context, configContext, STATE_COOKIE_NAME);
             }
         } else {
             // State cookie must be available to minimize the risk of CSRF
             LOG.debug("The state cookie is missing after a redirect from IDP");
-            cf.completeExceptionally(new AuthenticationCompletionException());
-            return cf;
+            return Uni.createFrom().failure(new AuthenticationCompletionException());
         }
 
         // Code grant request
@@ -199,40 +193,57 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             params.put("client_secret", creds.clientSecret.value.get());
         }
 
-        configContext.auth.authenticate(params, userAsyncResult -> {
-            if (userAsyncResult.failed()) {
-                if (userAsyncResult.cause() != null) {
-                    LOG.debugf("Exception during the code to token exchange: %s", userAsyncResult.cause().getMessage());
-                }
-                cf.completeExceptionally(new AuthenticationCompletionException(userAsyncResult.cause()));
-            } else {
-                AccessToken result = AccessToken.class.cast(userAsyncResult.result());
+        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
+            @Override
+            public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
+                configContext.auth.authenticate(params, userAsyncResult -> {
+                    if (userAsyncResult.failed()) {
+                        if (userAsyncResult.cause() != null) {
+                            LOG.debugf("Exception during the code to token exchange: %s", userAsyncResult.cause().getMessage());
+                        }
+                        uniEmitter.fail(new AuthenticationCompletionException(userAsyncResult.cause()));
+                    } else {
+                        AccessToken result = AccessToken.class.cast(userAsyncResult.result());
 
-                authenticate(identityProviderManager, new IdTokenCredential(result.opaqueIdToken(), context))
-                        .whenCompleteAsync((securityIdentity, throwable) -> {
-                            if (throwable != null) {
-                                cf.completeExceptionally(new AuthenticationCompletionException(throwable));
-                            } else {
-                                processSuccessfulAuthentication(context, configContext, cf, result, securityIdentity);
-                            }
-                        });
+                        authenticate(identityProviderManager, new IdTokenCredential(result.opaqueIdToken(), context))
+                                .subscribe().with(new Consumer<SecurityIdentity>() {
+                                    @Override
+                                    public void accept(SecurityIdentity securityIdentity) {
+                                        if (!result.idToken().containsKey("exp") || !result.idToken().containsKey("iat")) {
+                                            LOG.debug("ID Token is required to contain 'exp' and 'iat' claims");
+                                            uniEmitter.fail(new AuthenticationCompletionException());
+                                        }
+                                        processSuccessfulAuthentication(context, configContext, uniEmitter, result,
+                                                securityIdentity);
+                                    }
+                                }, new Consumer<Throwable>() {
+                                    @Override
+                                    public void accept(Throwable throwable) {
+                                        uniEmitter.fail(throwable);
+                                    }
+                                });
+                    }
+                });
             }
         });
-
-        return cf;
     }
 
     private void processSuccessfulAuthentication(RoutingContext context, TenantConfigContext configContext,
-            CompletableFuture<SecurityIdentity> cf,
+            UniEmitter<? super SecurityIdentity> cf,
             AccessToken result, SecurityIdentity securityIdentity) {
-        removeCookie(context, SESSION_COOKIE_NAME);
+        removeCookie(context, configContext, SESSION_COOKIE_NAME);
+
         CookieImpl cookie = new CookieImpl(SESSION_COOKIE_NAME, new StringBuilder(result.opaqueIdToken())
                 .append(COOKIE_DELIM)
                 .append(result.opaqueAccessToken())
                 .append(COOKIE_DELIM)
                 .append(result.opaqueRefreshToken()).toString());
-
-        cookie.setMaxAge(result.idToken().getInteger("exp"));
+        long maxAge = result.idToken().getLong("exp") - result.idToken().getLong("iat");
+        if (configContext.oidcConfig.token.expirationGrace.isPresent()) {
+            maxAge += configContext.oidcConfig.token.expirationGrace.get();
+        }
+        LOG.debugf("Session cookie 'max-age' parameter is set to %d", maxAge);
+        cookie.setMaxAge(maxAge);
         cookie.setSecure(context.request().isSSL());
         cookie.setHttpOnly(true);
         if (configContext.oidcConfig.authentication.cookiePath.isPresent()) {
@@ -279,7 +290,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .toString();
     }
 
-    private Cookie removeCookie(RoutingContext context, String cookieName) {
-        return context.response().removeCookie(cookieName, true);
+    private void removeCookie(RoutingContext context, TenantConfigContext configContext, String cookieName) {
+        ServerCookie cookie = (ServerCookie) context.cookieMap().get(cookieName);
+        if (cookie != null) {
+            cookie.setValue("");
+            cookie.setMaxAge(0);
+            Authentication auth = configContext.oidcConfig.getAuthentication();
+            if (auth.cookiePath.isPresent()) {
+                cookie.setPath(auth.cookiePath.get());
+            }
+        }
     }
 }

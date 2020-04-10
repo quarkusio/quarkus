@@ -11,12 +11,19 @@ import io.vertx.ext.web.RoutingContext;
 public interface TenantResolver {
 
     /**
+     * Returns the identifier of the default tenant.
+     * 
+     * @return Default tenant.
+     */
+    String getDefaultHibernateOrmTenantId();
+
+    /**
      * Returns a tenant identifier given a {@code RoutingContext}, where the identifier will be used to choose the proper
      * configuration during runtime.
      * 
      * @param context the routing context. Required value that cannot be {@literal null},
-     * @return the tenant identifier. If {@code null}, indicates that the default configuration/tenant should be chosen.
+     * @return the tenant identifier. A non-{@literal null} value is required.
      */
-    String resolve(RoutingContext context);
+    String resolveHibernateOrmTenantId(RoutingContext context);
 
 }

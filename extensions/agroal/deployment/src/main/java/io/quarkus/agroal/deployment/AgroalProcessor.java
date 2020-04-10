@@ -83,6 +83,10 @@ class AgroalProcessor {
             DotName.createSimple(AbstractDataSourceProducer.class.getName()),
             DotName.createSimple(javax.sql.DataSource.class.getName())));
 
+    private static final String QUARKUS_DATASOURCE_CONFIG_PREFIX = "quarkus.datasource.";
+    private static final String QUARKUS_DATASOURCE_DB_KIND_CONFIG_NAME = "db-kind";
+    private static final String QUARKUS_DATASOURCE_DRIVER_CONFIG_NAME = "driver";
+
     @BuildStep
     void agroal(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<CapabilityBuildItem> capability) {
@@ -91,7 +95,7 @@ class AgroalProcessor {
     }
 
     @Record(STATIC_INIT)
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     void build(
             RecorderContext recorderContext,
             AgroalRecorder recorder,
@@ -266,32 +270,81 @@ class AgroalProcessor {
 
         // Legacy configuration
         if (legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource.driver.isPresent()) {
-            dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
-                    dataSourcesBuildTimeConfig.defaultDataSource,
-                    dataSourcesJdbcBuildTimeConfig.jdbc,
-                    legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource,
-                    resolveLegacyKind(legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource.driver.get()),
-                    legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource.driver.get(),
-                    true));
+            String resolvedDbKind = resolveLegacyKind(legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource.driver.get());
+            boolean alreadyConfigured = ensureNoConfigurationClash(dataSources, DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                    resolvedDbKind);
+
+            if (!alreadyConfigured) {
+                dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                        dataSourcesBuildTimeConfig.defaultDataSource,
+                        dataSourcesJdbcBuildTimeConfig.jdbc,
+                        legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource,
+                        resolvedDbKind,
+                        legacyDataSourcesJdbcBuildTimeConfig.defaultDataSource.driver.get(),
+                        true));
+            }
         }
         for (Entry<String, LegacyDataSourceJdbcBuildTimeConfig> entry : legacyDataSourcesJdbcBuildTimeConfig.namedDataSources
                 .entrySet()) {
+            String datasourceName = entry.getKey();
             DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig.namedDataSources
-                    .containsKey(entry.getKey()) ? dataSourcesBuildTimeConfig.namedDataSources.get(entry.getKey())
+                    .containsKey(datasourceName) ? dataSourcesBuildTimeConfig.namedDataSources.get(datasourceName)
                             : new DataSourceBuildTimeConfig();
             DataSourceJdbcBuildTimeConfig jdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig.namedDataSources
-                    .containsKey(entry.getKey()) ? dataSourcesJdbcBuildTimeConfig.namedDataSources.get(entry.getKey()).jdbc
+                    .containsKey(datasourceName) ? dataSourcesJdbcBuildTimeConfig.namedDataSources.get(datasourceName).jdbc
                             : new DataSourceJdbcBuildTimeConfig();
-            dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(entry.getKey(),
-                    dataSourceBuildTimeConfig,
-                    jdbcBuildTimeConfig,
-                    entry.getValue(),
-                    resolveLegacyKind(entry.getValue().driver.get()),
-                    entry.getValue().driver.get(),
-                    true));
+
+            String resolvedDbKind = resolveLegacyKind(entry.getValue().driver.get());
+            boolean alreadyConfigured = ensureNoConfigurationClash(dataSources, datasourceName, resolvedDbKind);
+
+            if (!alreadyConfigured) {
+                dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(datasourceName,
+                        dataSourceBuildTimeConfig,
+                        jdbcBuildTimeConfig,
+                        entry.getValue(),
+                        resolvedDbKind,
+                        entry.getValue().driver.get(),
+                        true));
+            }
         }
 
         return dataSources;
+    }
+
+    private boolean ensureNoConfigurationClash(List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources,
+            String datasourceName, String resolvedDbKind) {
+
+        boolean alreadyConfigured = false;
+        for (AggregatedDataSourceBuildTimeConfigBuildItem alreadyConfiguredDataSource : dataSources) {
+            if (alreadyConfiguredDataSource.getName().equals(datasourceName)) {
+                if (!alreadyConfiguredDataSource.getResolvedDbKind().equals(resolvedDbKind)) {
+                    throw new RuntimeException("Incompatible values detected between "
+                            + quotedDataSourcePropertyName(datasourceName, QUARKUS_DATASOURCE_DB_KIND_CONFIG_NAME) + " and "
+                            + quotedDataSourcePropertyName(datasourceName, QUARKUS_DATASOURCE_DRIVER_CONFIG_NAME)
+                            + ". Consider removing the latter.");
+                }
+                alreadyConfigured = true;
+            }
+        }
+        if (alreadyConfigured) {
+            log.warn("Configuring " + quotedDataSourcePropertyName(datasourceName, QUARKUS_DATASOURCE_DRIVER_CONFIG_NAME)
+                    + " is redundant when "
+                    + quotedDataSourcePropertyName(datasourceName, QUARKUS_DATASOURCE_DB_KIND_CONFIG_NAME)
+                    + " is also configured");
+        }
+
+        return alreadyConfigured;
+    }
+
+    private String quotedDataSourcePropertyName(String datasourceName, String propertyName) {
+        return "\"" + dataSourcePropertyName(datasourceName, propertyName) + "\"";
+    }
+
+    private String dataSourcePropertyName(String datasourceName, String propertyName) {
+        if (DataSourceUtil.DEFAULT_DATASOURCE_NAME.equals(datasourceName)) {
+            return QUARKUS_DATASOURCE_CONFIG_PREFIX + propertyName;
+        }
+        return QUARKUS_DATASOURCE_CONFIG_PREFIX + datasourceName + "." + propertyName;
     }
 
     private String resolveDriver(String dataSourceName, DataSourceBuildTimeConfig dataSourceBuildTimeConfig,

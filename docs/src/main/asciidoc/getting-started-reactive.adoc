@@ -831,6 +831,7 @@ This guide is an introduction to reactive in Quarkus.
 There are plenty of Quarkus features that are already reactive.
 The following list gives you a few examples:
 
+* link:rest-json#reactive[Using Mutiny with RestEasy]
 * link:mailer[Sending email]
 * link:mongodb#reactive[Using MongoDB] and link:mongodb-panache#reactive[MongoDB with Panache]
 * link:reactive-sql-clients[Reactive Database Clients]

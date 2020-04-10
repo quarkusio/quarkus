@@ -1,12 +1,12 @@
 package io.quarkus.vertx.http.runtime.security;
 
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -14,9 +14,9 @@ import io.vertx.ext.web.RoutingContext;
  */
 public interface HttpAuthenticationMechanism {
 
-    CompletionStage<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager);
+    Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager);
 
-    CompletionStage<ChallengeData> getChallenge(RoutingContext context);
+    Uni<ChallengeData> getChallenge(RoutingContext context);
 
     /**
      * Returns the required credential types. If there are no identity managers installed that support the
@@ -24,8 +24,8 @@ public interface HttpAuthenticationMechanism {
      */
     Set<Class<? extends AuthenticationRequest>> getCredentialTypes();
 
-    default CompletionStage<Boolean> sendChallenge(RoutingContext context) {
-        return getChallenge(context).thenApply(new ChallengeSender(context));
+    default Uni<Boolean> sendChallenge(RoutingContext context) {
+        return getChallenge(context).map(new ChallengeSender(context));
     }
 
     /**

@@ -37,6 +37,7 @@ public final class BuildChainBuilder {
     private final Map<BuildStepBuilder, StackTraceElement[]> steps = new HashMap<BuildStepBuilder, StackTraceElement[]>();
     private final Set<ItemId> initialIds = new HashSet<>();
     private final Set<ItemId> finalIds = new HashSet<>();
+    private ClassLoader classLoader = BuildChainBuilder.class.getClassLoader();
 
     BuildChainBuilder() {
         finalStep = addBuildStep(new FinalStep());
@@ -127,6 +128,19 @@ public final class BuildChainBuilder {
         Assert.checkNotNullParam("type", type);
         finalIds.add(new ItemId(type));
         return this;
+    }
+
+    ClassLoader getClassLoader() {
+        return classLoader;
+    }
+
+    /**
+     * Sets the ClassLoader for the build. Every build step will be run with this as the TCCL.
+     *
+     * @param classLoader The ClassLoader
+     */
+    public void setClassLoader(ClassLoader classLoader) {
+        this.classLoader = classLoader;
     }
 
     /**

@@ -2,9 +2,8 @@ package io.quarkus.vertx.http.runtime.security;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
@@ -15,6 +14,10 @@ import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.UniEmitter;
+import io.smallrye.mutiny.subscription.UniSubscriber;
+import io.smallrye.mutiny.subscription.UniSubscription;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -44,36 +47,36 @@ public class HttpAuthorizer {
      */
     private static final HttpSecurityPolicy.AuthorizationRequestContext CONTEXT = new HttpSecurityPolicy.AuthorizationRequestContext() {
         @Override
-        public CompletionStage<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context, SecurityIdentity identity,
+        public Uni<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context, SecurityIdentity identity,
                 BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> function) {
             if (BlockingOperationControl.isBlockingAllowed()) {
                 try {
                     HttpSecurityPolicy.CheckResult res = function.apply(context, identity);
-                    return CompletableFuture.completedFuture(res);
+                    return Uni.createFrom().item(res);
                 } catch (Throwable t) {
-                    CompletableFuture<HttpSecurityPolicy.CheckResult> res = new CompletableFuture<>();
-                    res.completeExceptionally(t);
-                    return res;
+                    return Uni.createFrom().failure(t);
                 }
             }
             try {
-                CompletableFuture<HttpSecurityPolicy.CheckResult> res = new CompletableFuture<>();
-                ExecutorRecorder.getCurrent().execute(new Runnable() {
+                return Uni.createFrom().emitter(new Consumer<UniEmitter<? super HttpSecurityPolicy.CheckResult>>() {
                     @Override
-                    public void run() {
-                        try {
-                            HttpSecurityPolicy.CheckResult val = function.apply(context, identity);
-                            res.complete(val);
-                        } catch (Throwable t) {
-                            res.completeExceptionally(t);
-                        }
+                    public void accept(UniEmitter<? super HttpSecurityPolicy.CheckResult> uniEmitter) {
+
+                        ExecutorRecorder.getCurrent().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    HttpSecurityPolicy.CheckResult val = function.apply(context, identity);
+                                    uniEmitter.complete(val);
+                                } catch (Throwable t) {
+                                    uniEmitter.fail(t);
+                                }
+                            }
+                        });
                     }
                 });
-                return res;
             } catch (Exception e) {
-                CompletableFuture<HttpSecurityPolicy.CheckResult> res = new CompletableFuture<>();
-                res.completeExceptionally(e);
-                return res;
+                return Uni.createFrom().failure(e);
             }
         }
     };
@@ -96,15 +99,15 @@ public class HttpAuthorizer {
 
     private void attemptAnonymousAuthentication(RoutingContext routingContext) {
         identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE)
-                .handle(new BiFunction<SecurityIdentity, Throwable, Object>() {
+                .subscribe().with(new Consumer<SecurityIdentity>() {
                     @Override
-                    public Object apply(SecurityIdentity identity, Throwable throwable) {
-                        if (throwable != null) {
-                            routingContext.fail(throwable);
-                        } else {
-                            doPermissionCheck(routingContext, identity, 0, policies);
-                        }
-                        return null;
+                    public void accept(SecurityIdentity identity) {
+                        doPermissionCheck(routingContext, identity, 0, policies);
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) {
+                        routingContext.fail(throwable);
                     }
                 });
     }
@@ -123,23 +126,23 @@ public class HttpAuthorizer {
         //get the current checker
         HttpSecurityPolicy res = permissionCheckers.get(index);
         res.checkPermission(routingContext, identity, CONTEXT)
-                .handle(new BiFunction<HttpSecurityPolicy.CheckResult, Throwable, Object>() {
+                .subscribe().with(new Consumer<HttpSecurityPolicy.CheckResult>() {
                     @Override
-                    public Object apply(HttpSecurityPolicy.CheckResult checkResult, Throwable throwable) {
-                        if (throwable != null) {
-                            routingContext.fail(throwable);
+                    public void accept(HttpSecurityPolicy.CheckResult checkResult) {
+                        if (!checkResult.isPermitted()) {
+                            doDeny(identity, routingContext);
                         } else {
-                            if (!checkResult.isPermitted()) {
-                                doDeny(identity, routingContext);
-                            } else {
-                                SecurityIdentity newIdentity = checkResult.getAugmentedIdentity() != null
-                                        ? checkResult.getAugmentedIdentity()
-                                        : identity;
-                                //attempt to run the next checker
-                                doPermissionCheck(routingContext, newIdentity, index + 1, permissionCheckers);
-                            }
+                            SecurityIdentity newIdentity = checkResult.getAugmentedIdentity() != null
+                                    ? checkResult.getAugmentedIdentity()
+                                    : identity;
+                            //attempt to run the next checker
+                            doPermissionCheck(routingContext, newIdentity, index + 1, permissionCheckers);
                         }
-                        return null;
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) {
+                        routingContext.fail(throwable);
                     }
                 });
     }
@@ -147,10 +150,20 @@ public class HttpAuthorizer {
     private void doDeny(SecurityIdentity identity, RoutingContext routingContext) {
         //if we were denied we send a challenge if we are not authenticated, otherwise we send a 403
         if (identity.isAnonymous()) {
-            httpAuthenticator.sendChallenge(routingContext, new Runnable() {
+            httpAuthenticator.sendChallenge(routingContext).subscribe().withSubscriber(new UniSubscriber<Boolean>() {
                 @Override
-                public void run() {
+                public void onSubscribe(UniSubscription subscription) {
+
+                }
+
+                @Override
+                public void onItem(Boolean item) {
                     routingContext.response().end();
+                }
+
+                @Override
+                public void onFailure(Throwable failure) {
+                    routingContext.fail(failure);
                 }
             });
         } else {

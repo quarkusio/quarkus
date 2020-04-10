@@ -62,7 +62,7 @@ class LiquibaseProcessor {
         return new CapabilityBuildItem(Capabilities.LIQUIBASE);
     }
 
-    @BuildStep(onlyIf = NativeBuild.class, loadsApplicationClasses = true)
+    @BuildStep(onlyIf = NativeBuild.class)
     void nativeImageConfiguration(
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflective,
@@ -135,7 +135,7 @@ class LiquibaseProcessor {
     }
 
     @Record(STATIC_INIT)
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     void build(
             LiquibaseRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,

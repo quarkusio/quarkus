@@ -192,8 +192,26 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             child.accept(visitor);
         }
 
+        final ArtifactDescriptorResult appArtifactDescr = mvn.resolveDescriptor(toAetherArtifact(appArtifact));
+        if (managedDeps == null) {
+            managedDeps = appArtifactDescr.getManagedDependencies();
+        } else {
+            final List<Dependency> mergedManagedDeps = new ArrayList<>(managedDeps.size());
+            final Set<AppArtifactKey> mergedKeys = new HashSet<>(managedDeps.size());
+            for (Dependency dep : managedDeps) {
+                mergedKeys.add(getKey(dep.getArtifact()));
+                mergedManagedDeps.add(dep);
+            }
+            for (Dependency dep : appArtifactDescr.getManagedDependencies()) {
+                final Artifact artifact = dep.getArtifact();
+                if (!mergedKeys.contains(getKey(artifact))) {
+                    mergedManagedDeps.add(dep);
+                }
+            }
+            managedDeps = mergedManagedDeps;
+        }
         final List<RemoteRepository> repos = mvn.aggregateRepositories(managedRepos,
-                mvn.newResolutionRepositories(mvn.resolveDescriptor(toAetherArtifact(appArtifact)).getRepositories()));
+                mvn.newResolutionRepositories(appArtifactDescr.getRepositories()));
 
         final DeploymentInjectingDependencyVisitor deploymentInjector = new DeploymentInjectingDependencyVisitor(mvn,
                 managedDeps, repos, appBuilder);
@@ -290,6 +308,11 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     public void install(AppArtifact appArtifact, Path localPath) throws AppModelResolverException {
         mvn.install(new DefaultArtifact(appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getClassifier(),
                 appArtifact.getType(), appArtifact.getVersion(), Collections.emptyMap(), localPath.toFile()));
+    }
+
+    private AppArtifactKey getKey(final Artifact artifact) {
+        return new AppArtifactKey(artifact.getGroupId(), artifact.getArtifactId(),
+                artifact.getClassifier(), artifact.getExtension());
     }
 
     private String getEarliest(final VersionRangeResult rangeResult) {

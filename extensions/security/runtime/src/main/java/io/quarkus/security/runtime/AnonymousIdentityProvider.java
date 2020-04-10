@@ -5,14 +5,13 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
+import io.smallrye.mutiny.Uni;
 
 public class AnonymousIdentityProvider implements IdentityProvider<AnonymousAuthenticationRequest> {
 
@@ -40,6 +39,11 @@ public class AnonymousIdentityProvider implements IdentityProvider<AnonymousAuth
         }
 
         @Override
+        public boolean hasRole(String role) {
+            return false;
+        }
+
+        @Override
         public <T extends Credential> T getCredential(Class<T> credentialType) {
             return null;
         }
@@ -60,10 +64,8 @@ public class AnonymousIdentityProvider implements IdentityProvider<AnonymousAuth
         }
 
         @Override
-        public CompletionStage<Boolean> checkPermission(Permission permission) {
-            CompletableFuture<Boolean> cf = new CompletableFuture<>();
-            cf.complete(false);
-            return cf;
+        public Uni<Boolean> checkPermission(Permission permission) {
+            return Uni.createFrom().item(false);
         }
     };
 
@@ -73,10 +75,8 @@ public class AnonymousIdentityProvider implements IdentityProvider<AnonymousAuth
     }
 
     @Override
-    public CompletionStage<SecurityIdentity> authenticate(AnonymousAuthenticationRequest request,
+    public Uni<SecurityIdentity> authenticate(AnonymousAuthenticationRequest request,
             AuthenticationRequestContext context) {
-        CompletableFuture<SecurityIdentity> cf = new CompletableFuture<>();
-        cf.complete(instance);
-        return cf;
+        return Uni.createFrom().item(instance);
     }
 }

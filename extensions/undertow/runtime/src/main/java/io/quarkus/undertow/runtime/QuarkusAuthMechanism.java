@@ -36,12 +36,8 @@ public class QuarkusAuthMechanism implements AuthenticationMechanism {
             exchange.endExchange();
             return new ChallengeResult(true, exchange.getStatusCode());
         }
-        authenticator.sendChallenge(context, new Runnable() {
-            @Override
-            public void run() {
-                exchange.endExchange();
-            }
-        }).toCompletableFuture().join();
+        authenticator.sendChallenge(context).await().indefinitely();
+        exchange.endExchange();
         return new ChallengeResult(true, exchange.getStatusCode());
     }
 }

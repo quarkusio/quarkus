@@ -33,10 +33,15 @@ public class PackageConfig {
     public ManifestConfig manifest;
 
     /**
-     * The entry point of the application. In most cases this should not be modified.
+     * The entry point of the application. This can either be a a fully qualified name of a standard Java
+     * class with a main method, or {@link io.quarkus.runtime.QuarkusApplication}.
+     * 
+     * If your application has main classes annotated with {@link io.quarkus.runtime.annotations.QuarkusMain}
+     * then this can also reference the name given in the annotation, to avoid the need to specify fully qualified
+     * names in the config.
      */
-    @ConfigItem(defaultValue = "io.quarkus.runner.GeneratedMain")
-    public String mainClass;
+    @ConfigItem
+    public Optional<String> mainClass;
 
     /**
      * Files that should not be copied to the output artifact

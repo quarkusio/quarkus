@@ -27,6 +27,9 @@ import java.util.stream.Stream;
  */
 public class BootstrapMavenOptions {
 
+    public static final String QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS = "quarkus-internal.maven-cmd-line-args";
+    private static final String MAVEN_CMD_LINE_ARGS = "MAVEN_CMD_LINE_ARGS";
+
     private static final String ACTIVATE_PROFILES = "P";
 
     public static Map<String, Object> parse(String cmdLine) {
@@ -72,6 +75,11 @@ public class BootstrapMavenOptions {
         } finally {
             Thread.currentThread().setContextClassLoader(originalCl);
         }
+    }
+
+    public static BootstrapMavenOptions newInstance() {
+        final String mvnCmd = PropertyUtils.getProperty(QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS);
+        return newInstance(mvnCmd == null ? System.getenv(MAVEN_CMD_LINE_ARGS) : mvnCmd);
     }
 
     public static BootstrapMavenOptions newInstance(String cmdLine) {

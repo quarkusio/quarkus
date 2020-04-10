@@ -43,8 +43,7 @@ public @interface Scheduled {
      * Defines a cron-like expression. For example "0 15 10 * * ?" fires at 10:15am every day.
      * <p>
      * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property
-     * and use the configured value
-     * instead: {@code &#64;Scheduled(cron = "{myservice.check.cron.expr}")}.
+     * and use the configured value instead: {@code &#64;Scheduled(cron = "{myservice.check.cron.expr}")}.
      *
      * @return the cron-like expression
      */
@@ -54,13 +53,11 @@ public @interface Scheduled {
      * Defines a period between invocations.
      * <p>
      * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit, "PT" prefix
-     * is added automatically, so for
-     * example, {@code 15m} can be used instead of {@code PT15M} and is parsed as "15 minutes". Note that the absolute value of
-     * the value is always used.
+     * is added automatically, so for example, {@code 15m} can be used instead of {@code PT15M} and is parsed as "15 minutes".
+     * Note that the absolute value of the value is always used.
      * <p>
      * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property
-     * and use the configured value
-     * instead: {@code &#64;Scheduled(every = "{myservice.check.every.expr}")}.
+     * and use the configured value instead: {@code &#64;Scheduled(every = "{myservice.check.every.expr}")}.
      *
      * @return the period expression based on the ISO-8601 duration format {@code PnDTnHnMn.nS}
      */
@@ -78,8 +75,24 @@ public @interface Scheduled {
     /**
      * 
      * @return the unit of initial delay
+     * @see Scheduled#delay()
      */
     TimeUnit delayUnit() default TimeUnit.MINUTES;
+
+    /**
+     * Defines a period after which the trigger should start. It's an alternative to {@link #delay()}. If {@link #delay()} is
+     * set to a value greater then zero the value of {@link #delayed()} is ignored.
+     * <p>
+     * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit, "PT" prefix
+     * is added automatically, so for example, {@code 15s} can be used instead of {@code PT15S} and is parsed as "15 seconds".
+     * Note that the absolute value of the value is always used.
+     * <p>
+     * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property
+     * and use the configured value instead: {@code &#64;Scheduled(delayed = "{myservice.delayed}")}.
+     *
+     * @return the period expression based on the ISO-8601 duration format {@code PnDTnHnMn.nS}
+     */
+    String delayed() default "";
 
     @Retention(RUNTIME)
     @Target(METHOD)

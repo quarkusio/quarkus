@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.persistence.PersistenceException;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
+import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.boot.CacheRegionDefinition;
 import org.hibernate.boot.MetadataBuilder;
 import org.hibernate.boot.MetadataSources;
@@ -42,7 +43,6 @@ import org.hibernate.boot.model.process.spi.MetadataBuildingProcess;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
 import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.MetadataBuilderContributor;
@@ -52,6 +52,7 @@ import org.hibernate.cache.internal.CollectionCacheInvalidator;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
@@ -76,12 +77,14 @@ import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatform;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
+import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordableBootstrap;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.recording.RecordingDialectFactory;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
+import io.quarkus.hibernate.orm.runtime.tenant.HibernateMultiTenantConnectionProvider;
 
 /**
  * Alternative to EntityManagerFactoryBuilderImpl so to have full control of how MetadataBuilderImplementor
@@ -99,12 +102,16 @@ public class FastBootMetadataBuilder {
     private final Object validatorFactory;
     private final Collection<Class<? extends Integrator>> additionalIntegrators;
     private final Collection<ProvidedService> providedServices;
+    private final PreGeneratedProxies preGeneratedProxies;
+    private final MultiTenancyStrategy multiTenancyStrategy;
 
     @SuppressWarnings("unchecked")
     public FastBootMetadataBuilder(final PersistenceUnitDescriptor persistenceUnit, Scanner scanner,
-            Collection<Class<? extends Integrator>> additionalIntegrators) {
+            Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies,
+            MultiTenancyStrategy strategy) {
         this.persistenceUnit = persistenceUnit;
         this.additionalIntegrators = additionalIntegrators;
+        this.preGeneratedProxies = preGeneratedProxies;
         final ClassLoaderService providedClassLoaderService = FlatClassLoaderService.INSTANCE;
 
         // Copying semantics from: new EntityManagerFactoryBuilderImpl( unit,
@@ -121,7 +128,9 @@ public class FastBootMetadataBuilder {
         // merge configuration sources and build the "standard" service registry
         final RecordableBootstrap ssrBuilder = new RecordableBootstrap(bsr);
 
-        insertStateRecorders(ssrBuilder);
+        if (strategy != null && strategy != MultiTenancyStrategy.NONE) {
+            ssrBuilder.addService(MultiTenantConnectionProvider.class, new HibernateMultiTenantConnectionProvider());
+        }
 
         final MergedSettings mergedSettings = mergeSettings(persistenceUnit);
         this.buildTimeSettings = new BuildTimeSettings(mergedSettings.getConfigurationValues());
@@ -182,6 +191,8 @@ public class FastBootMetadataBuilder {
         // for the time being we want to revoke access to the temp ClassLoader if one
         // was passed
         metamodelBuilder.applyTempClassLoader(null);
+
+        this.multiTenancyStrategy = strategy;
     }
 
     private void addPUManagedClassNamesToMetadataSources(PersistenceUnitDescriptor persistenceUnit,
@@ -189,11 +200,6 @@ public class FastBootMetadataBuilder {
         for (String className : persistenceUnit.getManagedClassNames()) {
             metadataSources.addAnnotatedClassName(className);
         }
-    }
-
-    private void insertStateRecorders(StandardServiceRegistryBuilder ssrBuilder) {
-        //        ssrBuilder.addService( DialectFactory.class, new RecordingDialectFactory() );
-        //        ssrBuilder.addInitiator(  )
     }
 
     private BootstrapServiceRegistry buildBootstrapServiceRegistry(ClassLoaderService providedClassLoaderService) {
@@ -337,9 +343,9 @@ public class FastBootMetadataBuilder {
         PrevalidatedQuarkusMetadata storeableMetadata = trimBootstrapMetadata(fullMeta);
         //Make sure that the service is destroyed after the metadata has been validated and trimmed, as validation needs to use it.
         destroyServiceRegistry(fullMeta);
-        ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata);
+        ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata, preGeneratedProxies);
         return new RecordedState(dialect, jtaPlatform, storeableMetadata, buildTimeSettings, getIntegrators(),
-                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions);
+                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, multiTenancyStrategy);
     }
 
     private void destroyServiceRegistry(MetadataImplementor fullMeta) {

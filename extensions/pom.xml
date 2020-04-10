@@ -109,6 +109,7 @@
         <module>elytron-security-common</module>
         <module>elytron-security</module>
         <module>elytron-security-jdbc</module>
+        <module>elytron-security-ldap</module>
         <module>elytron-security-properties-file</module>
         <module>elytron-security-oauth2</module>
         <module>smallrye-jwt</module>
@@ -129,6 +130,7 @@
         <module>amazon-lambda-xray</module>
         <module>amazon-lambda-http</module>
         <module>amazon-dynamodb</module>
+        <module>amazon-alexa</module>
         <module>azure-functions-http</module>
 
         <!-- New Frameworks -->
@@ -145,6 +147,7 @@
         <module>container-image</module>
         <module>kubernetes</module>
         <module>kubernetes-client</module>
+        <module>kubernetes-config</module>
 
         <!-- Database migrations -->
         <module>flyway</module>
@@ -153,6 +156,7 @@
         <!-- Business automation -->
         <module>optaplanner</module>
         <module>optaplanner-jackson</module>
+        <module>optaplanner-jsonb</module>
 
         <!-- vault -->
         <module>vault</module>

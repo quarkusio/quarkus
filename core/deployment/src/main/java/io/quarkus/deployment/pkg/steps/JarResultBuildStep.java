@@ -57,6 +57,7 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -144,13 +145,15 @@ public class JarResultBuildStep {
             PackageConfig packageConfig,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
-            List<UberJarRequiredBuildItem> uberJarRequired) throws Exception {
+            List<UberJarRequiredBuildItem> uberJarRequired,
+            MainClassBuildItem mainClassBuildItem) throws Exception {
         if (!uberJarRequired.isEmpty() || packageConfig.uberJar) {
             return buildUberJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
-                    packageConfig, applicationInfo, generatedClasses, generatedResources);
+                    packageConfig, applicationInfo, generatedClasses, generatedResources,
+                    mainClassBuildItem);
         } else {
             return buildThinJar(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses, applicationArchivesBuildItem,
-                    packageConfig, applicationInfo, generatedClasses, generatedResources);
+                    packageConfig, applicationInfo, generatedClasses, generatedResources, mainClassBuildItem);
         }
     }
 
@@ -161,7 +164,8 @@ public class JarResultBuildStep {
             PackageConfig packageConfig,
             ApplicationInfoBuildItem applicationInfo,
             List<GeneratedClassBuildItem> generatedClasses,
-            List<GeneratedResourceBuildItem> generatedResources) throws Exception {
+            List<GeneratedResourceBuildItem> generatedResources,
+            MainClassBuildItem mainClassBuildItem) throws Exception {
 
         //for uberjars we move the original jar, so there is only a single jar in the output directory
         Path standardJar = outputTargetBuildItem.getOutputDirectory().resolve(outputTargetBuildItem.getBaseName() + ".jar");
@@ -194,7 +198,8 @@ public class JarResultBuildStep {
             AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
             // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
             // see https://bugs.openjdk.java.net/browse/JDK-8031748
-            generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact, applicationInfo);
+            generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact, mainClassBuildItem,
+                    applicationInfo);
 
             for (AppDependency appDep : appDeps) {
                 final AppArtifact depArtifact = appDep.getArtifact();
@@ -310,7 +315,8 @@ public class JarResultBuildStep {
             PackageConfig packageConfig,
             ApplicationInfoBuildItem applicationInfo,
             List<GeneratedClassBuildItem> generatedClasses,
-            List<GeneratedResourceBuildItem> generatedResources) throws Exception {
+            List<GeneratedResourceBuildItem> generatedResources,
+            MainClassBuildItem mainClassBuildItem) throws Exception {
 
         Path runnerJar = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + packageConfig.runnerSuffix + ".jar");
@@ -324,7 +330,7 @@ public class JarResultBuildStep {
             log.info("Building thin jar: " + runnerJar);
 
             doThinJarGeneration(curateOutcomeBuildItem, transformedClasses, applicationArchivesBuildItem, applicationInfo,
-                    packageConfig, generatedResources, libDir, generatedClasses, runnerZipFs);
+                    packageConfig, generatedResources, libDir, generatedClasses, runnerZipFs, mainClassBuildItem);
         }
         runnerJar.toFile().setReadable(true, false);
 
@@ -344,7 +350,8 @@ public class JarResultBuildStep {
             PackageConfig packageConfig,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedNativeImageClassBuildItem> nativeImageResources,
-            List<GeneratedResourceBuildItem> generatedResources) throws Exception {
+            List<GeneratedResourceBuildItem> generatedResources,
+            MainClassBuildItem mainClassBuildItem) throws Exception {
         Path thinJarDirectory = outputTargetBuildItem.getOutputDirectory()
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
         IoUtils.recursiveDelete(thinJarDirectory);
@@ -366,7 +373,7 @@ public class JarResultBuildStep {
             log.info("Building native image source jar: " + runnerJar);
 
             doThinJarGeneration(curateOutcomeBuildItem, transformedClasses, applicationArchivesBuildItem, applicationInfo,
-                    packageConfig, generatedResources, libDir, allClasses, runnerZipFs);
+                    packageConfig, generatedResources, libDir, allClasses, runnerZipFs, mainClassBuildItem);
         }
         runnerJar.toFile().setReadable(true, false);
         return new NativeImageSourceJarBuildItem(runnerJar, libDir);
@@ -427,7 +434,8 @@ public class JarResultBuildStep {
             List<GeneratedResourceBuildItem> generatedResources,
             Path libDir,
             List<GeneratedClassBuildItem> allClasses,
-            FileSystem runnerZipFs)
+            FileSystem runnerZipFs,
+            MainClassBuildItem mainClassBuildItem)
             throws BootstrapDependencyProcessingException, AppModelResolverException, IOException {
         final Map<String, String> seen = new HashMap<>();
         final StringBuilder classPath = new StringBuilder();
@@ -441,7 +449,7 @@ public class JarResultBuildStep {
         AppArtifact appArtifact = curateOutcomeBuildItem.getEffectiveModel().getAppArtifact();
         // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
         // see https://bugs.openjdk.java.net/browse/JDK-8031748
-        generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact, applicationInfo);
+        generateManifest(runnerZipFs, classPath.toString(), packageConfig, appArtifact, mainClassBuildItem, applicationInfo);
         copyCommonContent(runnerZipFs, services, applicationArchivesBuildItem, transformedClasses, allClasses,
                 generatedResources, seen);
     }
@@ -607,6 +615,7 @@ public class JarResultBuildStep {
      * Otherwise this manifest manipulation will be useless.
      */
     private void generateManifest(FileSystem runnerZipFs, final String classPath, PackageConfig config, AppArtifact appArtifact,
+            MainClassBuildItem mainClassBuildItem,
             ApplicationInfoBuildItem applicationInfo)
             throws IOException {
         final Path manifestPath = runnerZipFs.getPath("META-INF", "MANIFEST.MF");
@@ -629,11 +638,11 @@ public class JarResultBuildStep {
         attributes.put(Attributes.Name.CLASS_PATH, classPath);
         if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
             String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
-            if (!config.mainClass.equals(existingMainClass)) {
+            if (!mainClassBuildItem.getClassName().equals(existingMainClass)) {
                 log.warn("Your MANIFEST.MF already defined a MAIN_CLASS entry. Quarkus has overwritten your existing entry.");
             }
         }
-        attributes.put(Attributes.Name.MAIN_CLASS, config.mainClass);
+        attributes.put(Attributes.Name.MAIN_CLASS, mainClassBuildItem.getClassName());
         if (config.manifest.addImplementationEntries && !attributes.containsKey(Attributes.Name.IMPLEMENTATION_TITLE)) {
             String name = ApplicationInfoBuildItem.UNSET_VALUE.equals(applicationInfo.getName()) ? appArtifact.getArtifactId()
                     : applicationInfo.getName();

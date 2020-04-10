@@ -92,11 +92,18 @@ public class CodeFlowTest {
 
             assertEquals("Welcome to Test App", page.getTitleText());
             assertNull(getStateCookie(webClient));
+            Cookie sessionCookie = getSessionCookie(webClient);
+            assertNotNull(sessionCookie);
+            assertEquals("/", sessionCookie.getPath());
 
-            Thread.sleep(10000);
+            Thread.sleep(5000);
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
+            assertEquals(302, webResponse.getStatusCode());
+            assertNull(getSessionCookie(webClient));
 
-            webClient.getPage("http://localhost:8081/index.html");
-
+            webClient.getOptions().setRedirectEnabled(true);
             page = webClient.getPage("http://localhost:8081/index.html");
 
             assertEquals("Log in to quarkus", page.getTitleText());
@@ -152,7 +159,7 @@ public class CodeFlowTest {
     @Test
     public void testIdTokenInjectionWithoutRestoredPathDifferentRoot() throws IOException, InterruptedException {
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-before-redirect?tenantId=tenant-2");
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app2/callback-before-redirect?tenantId=tenant-2");
             assertNotNull(getStateCookieStateParam(webClient));
             assertNull(getStateCookieSavedPath(webClient));
 
@@ -166,6 +173,28 @@ public class CodeFlowTest {
             page = loginForm.getInputByName("login").click();
 
             assertEquals("web-app2:alice", page.getBody().asText());
+
+            page = webClient.getPage("http://localhost:8081/web-app2/name");
+
+            assertEquals("web-app2:alice", page.getBody().asText());
+
+            assertNull(getStateCookie(webClient));
+            Cookie sessionCookie = getSessionCookie(webClient);
+            assertNotNull(sessionCookie);
+            assertEquals("/web-app2", sessionCookie.getPath());
+
+            Thread.sleep(5000);
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/web-app2/name").toURL()));
+            assertEquals(302, webResponse.getStatusCode());
+            assertNull(getSessionCookie(webClient));
+
+            webClient.getOptions().setRedirectEnabled(true);
+            page = webClient.getPage("http://localhost:8081/web-app2/name");
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+
             webClient.getCookieManager().clearCookies();
         }
     }

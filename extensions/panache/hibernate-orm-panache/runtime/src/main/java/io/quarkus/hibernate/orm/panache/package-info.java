@@ -75,6 +75,9 @@
  * <li><code>set? &lt;update-query&gt;</code> will expand to
  * <code>update from EntityName set &lt;update-query&gt; = ?</code></li>
  * </ul>
+ *
+ * We also support named queries, for Panache to know that a query is a named query and not an HQL one, you need
+ * to prefix the name of the query with '#'.
  * 
  * @author Stéphane Épardaud
  */

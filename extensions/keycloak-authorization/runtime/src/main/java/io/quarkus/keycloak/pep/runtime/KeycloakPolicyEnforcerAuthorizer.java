@@ -4,8 +4,6 @@ import java.security.Permission;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -25,6 +23,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 @Singleton
@@ -35,7 +34,7 @@ public class KeycloakPolicyEnforcerAuthorizer
     private volatile long readTimeout;
 
     @Override
-    public CompletionStage<CheckResult> checkPermission(RoutingContext request, SecurityIdentity identity,
+    public Uni<CheckResult> checkPermission(RoutingContext request, SecurityIdentity identity,
             AuthorizationRequestContext requestContext) {
         return requestContext.runBlocking(request, identity, this);
     }
@@ -57,33 +56,35 @@ public class KeycloakPolicyEnforcerAuthorizer
             AuthorizationContext context) {
         Map<String, Object> attributes = new HashMap<>(current.getAttributes());
 
-        attributes.put("permissions", context.getPermissions());
+        if (context != null) {
+            attributes.put("permissions", context.getPermissions());
+        }
 
         return new QuarkusSecurityIdentity.Builder()
                 .addAttributes(attributes)
                 .setPrincipal(current.getPrincipal())
                 .addRoles(current.getRoles())
                 .addCredentials(current.getCredentials())
-                .addPermissionChecker(new Function<Permission, CompletionStage<Boolean>>() {
+                .addPermissionChecker(new Function<Permission, Uni<Boolean>>() {
                     @Override
-                    public CompletionStage<Boolean> apply(Permission permission) {
+                    public Uni<Boolean> apply(Permission permission) {
                         if (context != null) {
                             String scopes = permission.getActions();
 
                             if (scopes == null) {
-                                return CompletableFuture.completedFuture(context.hasResourcePermission(permission.getName()));
+                                return Uni.createFrom().item(context.hasResourcePermission(permission.getName()));
                             }
 
                             for (String scope : scopes.split(",")) {
                                 if (!context.hasPermission(permission.getName(), scope)) {
-                                    return CompletableFuture.completedFuture(false);
+                                    return Uni.createFrom().item(false);
                                 }
                             }
 
-                            return CompletableFuture.completedFuture(true);
+                            return Uni.createFrom().item(true);
                         }
 
-                        return CompletableFuture.completedFuture(false);
+                        return Uni.createFrom().item(false);
                     }
                 }).build();
     }
@@ -150,16 +151,12 @@ public class KeycloakPolicyEnforcerAuthorizer
                     PolicyEnforcerConfig.EnforcementMode.valueOf(config.policyEnforcer.enforcementMode));
             enforcerConfig.setHttpMethodAsScope(config.policyEnforcer.httpMethodAsScope);
 
-            Optional<KeycloakPolicyEnforcerConfig.KeycloakConfigPolicyEnforcer.PathCacheConfig> pathCache = config.policyEnforcer.pathCache;
+            KeycloakPolicyEnforcerConfig.KeycloakConfigPolicyEnforcer.PathCacheConfig pathCache = config.policyEnforcer.pathCache;
 
-            if (pathCache.isPresent()) {
-                PolicyEnforcerConfig.PathCacheConfig pathCacheConfig = new PolicyEnforcerConfig.PathCacheConfig();
-
-                pathCacheConfig.setLifespan(pathCache.get().lifespan);
-                pathCacheConfig.setMaxEntries(pathCache.get().maxEntries);
-
-                enforcerConfig.setPathCacheConfig(pathCacheConfig);
-            }
+            PolicyEnforcerConfig.PathCacheConfig pathCacheConfig = new PolicyEnforcerConfig.PathCacheConfig();
+            pathCacheConfig.setLifespan(pathCache.lifespan);
+            pathCacheConfig.setMaxEntries(pathCache.maxEntries);
+            enforcerConfig.setPathCacheConfig(pathCacheConfig);
 
             enforcerConfig.setClaimInformationPointConfig(
                     getClaimInformationPointConfig(config.policyEnforcer.claimInformationPoint));

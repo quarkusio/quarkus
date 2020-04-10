@@ -205,6 +205,12 @@ public class SmallRyeFaultToleranceProcessor {
     }
 
     private boolean hasFTAnnotations(IndexView index, AnnotationStore annotationStore, ClassInfo info) {
+        if (info == null) {
+            //should not happen, but guard against it
+            //happens in this case due to a bug involving array types
+
+            return false;
+        }
         // first check annotations on type
         if (annotationStore.hasAnyAnnotation(info, FT_ANNOTATIONS)) {
             return true;
@@ -219,11 +225,13 @@ public class SmallRyeFaultToleranceProcessor {
 
         // then check on the parent
         DotName parentClassName = info.superName();
-        ClassInfo parentClassInfo = index.getClassByName(parentClassName);
-        if (parentClassName.equals(DotNames.OBJECT) || parentClassInfo == null) {
-            return false; //no more parents
+        if (parentClassName == null || parentClassName.equals(DotNames.OBJECT)) {
+            return false;
         }
-
+        ClassInfo parentClassInfo = index.getClassByName(parentClassName);
+        if (parentClassInfo == null) {
+            return false;
+        }
         return hasFTAnnotations(index, annotationStore, parentClassInfo);
     }
 

@@ -812,10 +812,59 @@ NOTE: `BuildStep.applicationArchiveMarkers()` is deprecated and will be removed 
 
 ==== Using Thread's Context Class Loader
 
-If `@BuildStep.loadsApplicationClasses()` is set to `true` the build step will be run with a TCCL that can load user classes from the deployment in a transformer-safe way.
+The build step will be run with a TCCL that can load user classes from the deployment in a transformer-safe way.
 This class loader only lasts for the life of the augmentation, and is discarded afterwards.
 The classes will be loaded again in a different class loader at runtime.
 This means that loading a class during augmentation does not stop it from being transformed when running in the development/test mode.
+
+==== Adding external JARs to the indexer with IndexDependencyBuildItem
+
+The index of scanned classes will not automatically include your external class dependencies.
+To add dependencies, create a `@BuildStep` that produces `IndexDependencyBuildItem` objects, for a `groupId` and `artifactId`.
+
+NOTE: It is important to specify all the required artifacts to be added to the indexer. No artifacts are implicitly added transitively.
+
+The `Amazon Alexa` extension adds dependent libraries from the Alexa SDK that are used in Jackson JSON transformations, in order for the reflective classes to identified and included at `BUILD_TIME`.
+
+[source%nowrap,java]
+----
+   @BuildStep
+    void addDependencies(BuildProducer<IndexDependencyBuildItem> indexDependency) {
+        indexDependency.produce(new IndexDependencyBuildItem("com.amazon.alexa", "ask-sdk"));
+        indexDependency.produce(new IndexDependencyBuildItem("com.amazon.alexa", "ask-sdk-runtime"));
+        indexDependency.produce(new IndexDependencyBuildItem("com.amazon.alexa", "ask-sdk-model"));
+        indexDependency.produce(new IndexDependencyBuildItem("com.amazon.alexa", "ask-sdk-lambda-support"));
+        indexDependency.produce(new IndexDependencyBuildItem("com.amazon.alexa", "ask-sdk-servlet-support"));
+        indexDependency.produce(new IndexDependencyBuildItem("com.amazon.alexa", "ask-sdk-dynamodb-persistence-adapter"));
+        indexDependency.produce(new IndexDependencyBuildItem("com.amazon.alexa", "ask-sdk-apache-client"));
+        indexDependency.produce(new IndexDependencyBuildItem("com.amazon.alexa", "ask-sdk-model-runtime"));
+    }
+----
+
+With the artifacts added to the `Jandex` indexer, you can now search the index to identify classes implementing an interface, sub-classes of a specific class, or classes with a target annotation.
+
+For example, the `Jackson` extension uses code like below to search for annotations used in JSON deserialization,
+and add them to the reflective hierarchy for `BUILD_TIME` analysis.
+
+[source%nowrap,java]
+----
+
+    DotName JSON_DESERIALIZE = DotName.createSimple(JsonDeserialize.class.getName());
+
+    IndexView index = combinedIndexBuildItem.getIndex();
+
+    // handle the various @JsonDeserialize cases
+    for (AnnotationInstance deserializeInstance : index.getAnnotations(JSON_DESERIALIZE)) {
+        AnnotationTarget annotationTarget = deserializeInstance.target();
+        if (CLASS.equals(annotationTarget.kind())) {
+            DotName dotName = annotationTarget.asClass().name();
+            Type jandexType = Type.create(dotName, Type.Kind.CLASS);
+            reflectiveHierarchyClass.produce(new ReflectiveHierarchyBuildItem(jandexType));
+        }
+
+    }
+
+----
 
 === Configuration
 
@@ -1853,6 +1902,10 @@ Otherwise, Quarkus attempts to monitor the extension classes and this may result
 ----
 ./mvnw compile quarkus:dev -DnoDeps
 ----
+
+==== Indexer does not include your external dependency
+
+Remember to add `IndexDependencyBuildItem` artifacts to your `@BuildStep`.
 
 === Sample Test Extension
 We have an extension that is used to test for regressions in the extension processing. It is located in {quarkus-tree-url}/core/test-extension directory. In this section we touch on some of the tasks an extension

@@ -67,8 +67,8 @@ import org.twdata.maven.mojoexecutor.MojoExecutor;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.dev.DevModeContext;
-import io.quarkus.dev.DevModeMain;
+import io.quarkus.deployment.dev.DevModeContext;
+import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.utilities.JavaBinFinder;
@@ -645,7 +645,7 @@ public class DevMojo extends AbstractMojo {
 
         private void addQuarkusDevModeDeps(StringBuilder classPathManifest, final DevModeContext devModeContext)
                 throws MojoExecutionException, DependencyResolutionException {
-            final String pomPropsPath = "META-INF/maven/io.quarkus/quarkus-development-mode/pom.properties";
+            final String pomPropsPath = "META-INF/maven/io.quarkus/quarkus-core-deployment/pom.properties";
             final InputStream devModePomPropsIs = DevModeMain.class.getClassLoader().getResourceAsStream(pomPropsPath);
             if (devModePomPropsIs == null) {
                 throw new MojoExecutionException("Failed to locate " + pomPropsPath + " on the classpath");
@@ -678,8 +678,11 @@ public class DevMojo extends AbstractMojo {
                                             .setRepositories(repos)));
 
             for (ArtifactResult appDep : cpRes.getArtifactResults()) {
-                File file = appDep.getArtifact().getFile();
-                addToClassPaths(classPathManifest, devModeContext, file);
+                //we only use the launcher for launching from the IDE, we need to exclude it
+                if (!(appDep.getArtifact().getGroupId().equals("io.quarkus")
+                        && appDep.getArtifact().getArtifactId().equals("quarkus-ide-launcher"))) {
+                    addToClassPaths(classPathManifest, devModeContext, appDep.getArtifact().getFile());
+                }
             }
         }
 

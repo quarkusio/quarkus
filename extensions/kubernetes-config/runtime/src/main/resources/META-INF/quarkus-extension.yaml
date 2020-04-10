@@ -1,0 +1,9 @@
+---
+name: "Kubernetes Config"
+metadata:
+  keywords:
+  - "kubernetes-config"
+  guide: "https://quarkus.io/guides/kubernetes-config"
+  categories:
+  - "cloud"
+  status: "preview"

@@ -35,11 +35,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <version.junit>5.6.1</version.junit>
+        <version.junit>5.6.2</version.junit>
         <version.gizmo>1.0.2.Final</version.gizmo>
         <version.jboss-logging>3.3.2.Final</version.jboss-logging>
         <version.reactivestreams>1.0.3</version.reactivestreams>
-        <version.mutiny>0.4.2</version.mutiny>
+        <version.mutiny>0.4.4</version.mutiny>
         <version.nexus-staging-maven-plugin>1.6.8</version.nexus-staging-maven-plugin>
     </properties>
 

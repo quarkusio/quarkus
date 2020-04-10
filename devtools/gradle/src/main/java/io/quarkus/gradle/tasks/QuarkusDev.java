@@ -1,32 +1,23 @@
 package io.quarkus.gradle.tasks;
 
-import static java.util.stream.Collectors.joining;
-
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
@@ -58,8 +49,8 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.dev.DevModeContext;
-import io.quarkus.dev.DevModeMain;
+import io.quarkus.deployment.dev.DevModeContext;
+import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.gradle.AppModelGradleResolver;
 import io.quarkus.gradle.QuarkusPluginExtension;
 import io.quarkus.runtime.LaunchMode;
@@ -75,7 +66,7 @@ public class QuarkusDev extends QuarkusTask {
 
     private String workingDir;
 
-    private String jvmArgs;
+    private List<String> jvmArgs;
 
     private boolean preventnoverify = false;
 
@@ -128,12 +119,12 @@ public class QuarkusDev extends QuarkusTask {
 
     @Optional
     @Input
-    public String getJvmArgs() {
+    public List<String> getJvmArgs() {
         return jvmArgs;
     }
 
     @Option(description = "Set JVM arguments", option = "jvm-args")
-    public void setJvmArgs(String jvmArgs) {
+    public void setJvmArgs(List<String> jvmArgs) {
         this.jvmArgs = jvmArgs;
     }
 
@@ -220,7 +211,7 @@ public class QuarkusDev extends QuarkusTask {
                 }
             }
             if (getJvmArgs() != null) {
-                args.addAll(Arrays.asList(getJvmArgs().split(" ")));
+                args.addAll(getJvmArgs());
             }
 
             // the following flags reduce startup time and are acceptable only for dev purposes
@@ -325,16 +316,7 @@ public class QuarkusDev extends QuarkusTask {
                     extension.outputDirectory().getAbsolutePath(),
                     res);
             context.getModules().add(moduleInfo);
-
-            final String outputClassDirectory = extension.outputDirectory().getAbsolutePath();
-            final String outputResourcesDirectory = extension.outputConfigDirectory().getAbsolutePath();
             context.getClassesRoots().add(extension.outputDirectory().getAbsoluteFile());
-            if (!outputClassDirectory.equals(outputResourcesDirectory)) {
-                final File configDir = extension.outputConfigDirectory().getAbsoluteFile();
-                if (configDir.exists()) {
-                    context.getClassesRoots().add(configDir);
-                }
-            }
             context.setFrameworkClassesDir(wiringClassesDirectory.getAbsoluteFile());
             context.setCacheDir(new File(getBuildDir(), "transformer-cache").getAbsoluteFile());
 
@@ -381,30 +363,15 @@ public class QuarkusDev extends QuarkusTask {
 
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
-            ProcessBuilder pb = new ProcessBuilder(args)
-                    .redirectErrorStream(true)
-                    .redirectInput(ProcessBuilder.Redirect.INHERIT)
-                    .directory(getWorkingDir());
             if (getLogger().isDebugEnabled()) {
-                getLogger().debug("Launching JVM with command line: {}", pb.command().stream().collect(joining(" ")));
+                getLogger().debug("Launching JVM with command line: {}", String.join(" ", args));
             }
-            Process p = pb.start();
-            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    p.destroy();
-                }
-            }, "Development Mode Shutdown Hook"));
-            try {
-                ExecutorService es = Executors.newSingleThreadExecutor();
-                es.submit(() -> copyOutputToConsole(p.getInputStream()));
-                es.shutdown();
-                p.waitFor();
-            } catch (Exception e) {
-                p.destroy();
-                throw e;
-            }
-
+            project.exec(action -> {
+                action.commandLine(args).workingDir(getWorkingDir());
+                action.setStandardInput(System.in)
+                        .setErrorOutput(System.out)
+                        .setStandardOutput(System.out);
+            });
         } catch (Exception e) {
             throw new GradleException("Failed to run", e);
         }
@@ -416,18 +383,6 @@ public class QuarkusDev extends QuarkusTask {
             return ((JavaCompile) javaCompile).getOptions().getEncoding();
         }
         return null;
-    }
-
-    private void copyOutputToConsole(InputStream is) {
-        try (InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);
-                BufferedReader br = new BufferedReader(isr)) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                System.out.println(line);
-            }
-        } catch (Exception e) {
-            throw new GradleException("Failed to copy output to console", e);
-        }
     }
 
     private void addGradlePluginDeps(StringBuilder classPathManifest, DevModeContext context) {

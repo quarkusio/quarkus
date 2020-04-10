@@ -45,7 +45,7 @@ public class BeanArchiveProcessor {
     @Inject
     BuildProducer<GeneratedClassBuildItem> generatedClass;
 
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     public BeanArchiveIndexBuildItem build() throws Exception {
 
         // First build an index from application archives

@@ -43,6 +43,10 @@ public class MyService {
                 .limit(limit).collect(Collectors.toList());
     }
 
+    public List<String> getList(String name) {
+        return Collections.emptyList();
+    }
+
     public CompletionStage<String> getTestName() {
         return CompletableFuture.completedFuture("oof");
     }

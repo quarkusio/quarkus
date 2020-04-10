@@ -236,7 +236,7 @@ public class SmallRyeOpenApiProcessor {
         }
     }
 
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     public void build(ApplicationArchivesBuildItem archivesBuildItem,
             BuildProducer<FeatureBuildItem> feature,
             Optional<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,

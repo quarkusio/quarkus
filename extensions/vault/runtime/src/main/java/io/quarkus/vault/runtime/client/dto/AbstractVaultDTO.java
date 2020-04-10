@@ -13,7 +13,7 @@ public class AbstractVaultDTO<DATA, AUTH> implements VaultModel {
     public int leaseDurationSecs;
     public DATA data;
     @JsonProperty("wrap_info")
-    public Object wrapInfo;
+    public WrapInfo wrapInfo;
     public Object warnings;
     public AUTH auth;
 

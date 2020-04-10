@@ -117,6 +117,8 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
 
     @Override
     public void stop() {
+        if (undertow == null)
+            return;
         undertow.stop();
         undertow = null;
 

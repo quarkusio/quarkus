@@ -78,6 +78,7 @@ import io.dekorate.utils.Maps;
 import io.quarkus.container.image.deployment.util.ImageUtil;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
+import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -135,13 +136,22 @@ class KubernetesProcessor {
     }
 
     @BuildStep
-    public List<KubernetesLabelBuildItem> createLabels(KubernetesConfig kubernetesConfig, OpenshiftConfig openshiftConfig,
-            KnativeConfig knativeConfig) {
-        List<KubernetesLabelBuildItem> items = new ArrayList<KubernetesLabelBuildItem>();
-        kubernetesConfig.labels.forEach((k, v) -> items.add(new KubernetesLabelBuildItem(k, v, KUBERNETES)));
-        openshiftConfig.labels.forEach((k, v) -> items.add(new KubernetesLabelBuildItem(k, v, OPENSHIFT)));
-        knativeConfig.labels.forEach((k, v) -> items.add(new KubernetesLabelBuildItem(k, v, KNATIVE)));
-        return items;
+    public void createLabels(KubernetesConfig kubernetesConfig, OpenshiftConfig openshiftConfig,
+            KnativeConfig knativeConfig,
+            BuildProducer<KubernetesLabelBuildItem> kubernetesLabelsProducer,
+            BuildProducer<ContainerImageLabelBuildItem> containerImageLabelsProducer) {
+        kubernetesConfig.labels.forEach((k, v) -> {
+            kubernetesLabelsProducer.produce(new KubernetesLabelBuildItem(k, v, KUBERNETES));
+            containerImageLabelsProducer.produce(new ContainerImageLabelBuildItem(k, v));
+        });
+        openshiftConfig.labels.forEach((k, v) -> {
+            kubernetesLabelsProducer.produce(new KubernetesLabelBuildItem(k, v, OPENSHIFT));
+            containerImageLabelsProducer.produce(new ContainerImageLabelBuildItem(k, v));
+        });
+        knativeConfig.labels.forEach((k, v) -> {
+            kubernetesLabelsProducer.produce(new KubernetesLabelBuildItem(k, v, KNATIVE));
+            containerImageLabelsProducer.produce(new ContainerImageLabelBuildItem(k, v));
+        });
     }
 
     @BuildStep
@@ -402,6 +412,10 @@ class KubernetesProcessor {
         configMap.put(KUBERNETES, kubernetesConfig);
         configMap.put(OPENSHIFT, openshiftConfig);
         configMap.put(KNATIVE, knativeConfig);
+
+        //Replicas
+        session.resources().decorate(new KubernetesApplyReplicasDecorator(kubernetesName, kubernetesConfig.getReplicas()));
+        session.resources().decorate(new OpenshiftApplyReplicasDecorator(openshiftConfig.getReplicas()));
 
         kubernetesAnnotations.forEach(a -> {
             session.resources().decorate(a.getTarget(), new AddAnnotationDecorator(new Annotation(a.getKey(), a.getValue())));

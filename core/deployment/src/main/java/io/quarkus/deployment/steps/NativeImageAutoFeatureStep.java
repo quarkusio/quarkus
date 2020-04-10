@@ -30,7 +30,6 @@ import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.DeploymentClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -71,13 +70,13 @@ public class NativeImageAutoFeatureStep {
 
     @BuildStep
     List<NativeImageResourceBuildItem> registerPackageResources(
-            List<NativeImageResourceDirectoryBuildItem> nativeImageResourceDirectories,
-            DeploymentClassLoaderBuildItem classLoader)
+            List<NativeImageResourceDirectoryBuildItem> nativeImageResourceDirectories)
             throws IOException, URISyntaxException {
         List<NativeImageResourceBuildItem> resources = new ArrayList<>();
 
         for (NativeImageResourceDirectoryBuildItem nativeImageResourceDirectory : nativeImageResourceDirectories) {
-            String path = classLoader.getClassLoader().getResource(nativeImageResourceDirectory.getPath()).getPath();
+            String path = Thread.currentThread().getContextClassLoader().getResource(nativeImageResourceDirectory.getPath())
+                    .getPath();
             File resourceFile = Paths.get(new URL(path.substring(0, path.indexOf("!"))).toURI()).toFile();
             try (JarFile jarFile = new JarFile(resourceFile)) {
                 Enumeration<JarEntry> entries = jarFile.entries();

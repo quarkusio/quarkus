@@ -69,7 +69,7 @@ class InfinispanClientProcessor {
      */
     InfinispanClientBuildTimeConfig infinispanClient;
 
-    @BuildStep(loadsApplicationClasses = true)
+    @BuildStep
     InfinispanPropertiesBuildItem setup(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeployment,

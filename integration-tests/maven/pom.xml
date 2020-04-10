@@ -79,6 +79,7 @@
                             <goal>validate-extensions-json</goal>
                         </goals>
                         <configuration>
+                            <skip>${skipTests}</skip>
                             <jsonGroupId>io.quarkus</jsonGroupId>
                             <jsonArtifactId>quarkus-bom-descriptor-json</jsonArtifactId>
                             <jsonVersion>${project.version}</jsonVersion>

@@ -2,7 +2,6 @@ package io.quarkus.security.jpa.runtime;
 
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 import javax.inject.Inject;
@@ -26,6 +25,7 @@ import io.quarkus.security.identity.request.UsernamePasswordAuthenticationReques
 import io.quarkus.security.runtime.QuarkusPrincipal;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
+import io.smallrye.mutiny.Uni;
 
 public abstract class JpaIdentityProvider implements IdentityProvider<UsernamePasswordAuthenticationRequest> {
 
@@ -40,7 +40,7 @@ public abstract class JpaIdentityProvider implements IdentityProvider<UsernamePa
     }
 
     @Override
-    public CompletionStage<SecurityIdentity> authenticate(UsernamePasswordAuthenticationRequest request,
+    public Uni<SecurityIdentity> authenticate(UsernamePasswordAuthenticationRequest request,
             AuthenticationRequestContext context) {
         return context.runBlocking(new Supplier<SecurityIdentity>() {
             @Override

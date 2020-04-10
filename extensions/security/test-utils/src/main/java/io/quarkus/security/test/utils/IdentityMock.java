@@ -5,7 +5,6 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 
 import javax.annotation.Priority;
 import javax.enterprise.context.ApplicationScoped;
@@ -13,6 +12,7 @@ import javax.enterprise.inject.Alternative;
 
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.mutiny.Uni;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
@@ -47,6 +47,14 @@ public class IdentityMock implements SecurityIdentity {
     }
 
     @Override
+    public boolean hasRole(String role) {
+        if (roles == null) {
+            return false;
+        }
+        return getRoles().contains(role);
+    }
+
+    @Override
     public boolean isAnonymous() {
         return anonymous;
     }
@@ -77,7 +85,7 @@ public class IdentityMock implements SecurityIdentity {
     }
 
     @Override
-    public CompletionStage<Boolean> checkPermission(Permission permission) {
+    public Uni<Boolean> checkPermission(Permission permission) {
         return null;
     }
 

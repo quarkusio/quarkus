@@ -128,6 +128,15 @@ public class ArcRecorder {
         };
     }
 
+    public BeanContainerListener initCommandLineArgs(Supplier<String[]> args) {
+        return new BeanContainerListener() {
+            @Override
+            public void created(BeanContainer container) {
+                container.instance(CommandLineArgumentsProducer.class).setCommandLineArgs(args);
+            }
+        };
+    }
+
     private static final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {
 
         final Class<T> type;

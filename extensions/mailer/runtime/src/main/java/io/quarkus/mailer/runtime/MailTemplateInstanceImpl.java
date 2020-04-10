@@ -110,14 +110,14 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
             List<Uni<String>> unis = results.stream().map(Result::getValue).collect(Collectors.toList());
             return Uni.combine().all().unis(unis)
                     .combinedWith(combine(results))
-                    .onItem().produceUni(m -> mailer.send((Mail) m))
+                    .onItem().produceUni(m -> mailer.send(m))
                     .subscribeAsCompletionStage();
         } else {
             throw new IllegalStateException("No template variant found");
         }
     }
 
-    private Function<List<String>, Mail> combine(List<Result> results) {
+    private Function<List<?>, Mail> combine(List<Result> results) {
         return ignored -> {
             for (Result res : results) {
                 // We can safely access the content here: 1. it has been resolved, 2. it's cached.

@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.internal.resource.LoadableResource;
+import org.flywaydb.core.internal.scanner.LocationScannerCache;
 import org.flywaydb.core.internal.scanner.ResourceNameCache;
 import org.flywaydb.core.internal.scanner.classpath.ResourceAndClassScanner;
 
@@ -31,11 +32,12 @@ public final class ScannerSubstitutions {
      * Replaces the original method that tries to detect migrations using reflection techniques that are not allowed
      * in native mode
      *
-     * @see org.flywaydb.core.internal.scanner.Scanner#Scanner(Class, Collection, ClassLoader, Charset)
+     * @see org.flywaydb.core.internal.scanner.Scanner#Scanner(Class, Collection, ClassLoader, Charset, ResourceNameCache,
+     *      LocationScannerCache)
      */
     @Substitute
     public ScannerSubstitutions(Class<?> implementedInterface, Collection<Location> locations, ClassLoader classLoader,
-            Charset encoding, ResourceNameCache resourceNameCache) {
+            Charset encoding, ResourceNameCache resourceNameCache, LocationScannerCache locationScannerCache) {
         ResourceAndClassScanner quarkusScanner = new QuarkusPathLocationScanner(locations);
         resources.addAll(quarkusScanner.scanForResources());
         classes.addAll(quarkusScanner.scanForClasses());

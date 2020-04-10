@@ -55,6 +55,7 @@ public class KubernetesWithApplicationPropertiesTest {
                 });
 
                 assertThat(d.getSpec()).satisfies(deploymentSpec -> {
+                    assertThat(deploymentSpec.getReplicas()).isEqualTo(3);
                     assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                         assertThat(t.getSpec()).satisfies(podSpec -> {
                             assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {

@@ -3,8 +3,7 @@ package io.quarkus.it.keycloak;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import javax.inject.Inject;
 import javax.security.auth.AuthPermission;
@@ -20,6 +19,7 @@ import javax.ws.rs.core.MediaType;
 import org.keycloak.representations.idm.authorization.Permission;
 
 import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
 @Path("/api/permission")
@@ -30,13 +30,16 @@ public class ProtectedResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public CompletionStage<List<Permission>> permissions() {
-        return identity.checkPermission(new AuthPermission("Permission Resource"))
-                .thenCompose(granted -> {
-                    if (granted) {
-                        return CompletableFuture.completedFuture(identity.getAttribute("permissions"));
+    public Uni<List<Permission>> permissions() {
+        return identity.checkPermission(new AuthPermission("Permission Resource")).onItem()
+                .apply(new Function<Boolean, List<Permission>>() {
+                    @Override
+                    public List<Permission> apply(Boolean granted) {
+                        if (granted) {
+                            return identity.getAttribute("permissions");
+                        }
+                        throw new ForbiddenException();
                     }
-                    throw new ForbiddenException();
                 });
     }
 

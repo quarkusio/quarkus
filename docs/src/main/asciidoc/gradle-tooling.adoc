@@ -261,8 +261,15 @@ Native executables make Quarkus applications ideal for containers and serverless
 
 Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
 
-Create a native executable using: `./gradlew buildNative`.
+Create a native executable using: `./gradlew build -Dquarkus.package.type=native`.
 A native executable will be present in `build/`.
+
+[WARNING]
+====
+The `buildNative` task has been deprecated in favor of
+`build -Dquarkus.package.type=native`.
+Native related properties can either be added in `application.properties` file or as command line arguments.
+====
 
 === Build a container friendly executable
 
@@ -271,18 +278,7 @@ To create an executable that will run in a container, use the following:
 
 [source,shell]
 ----
-./gradlew buildNative
-----
-
-==== Customize the build native task
-
-There are situations where it may be required to alter the default values of the `buildNative` task (whose implementation can be found link:https://github.com/quarkusio/quarkus/blob/master/devtools/gradle/src/main/java/io/quarkus/gradle/tasks/QuarkusNative.java[here]).
-
-The easiest way to supply custom configuration is via the command line. For example to use docker to build the native image, simply add the `--docker-build=true` flag like so:
-
-[source,shell]
-----
-./gradlew buildNative --docker-build=true
+./gradlew build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
 ----
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
@@ -300,35 +296,6 @@ The list of the available Docker images can be found on https://quay.io/reposito
 Be aware that a given Quarkus version might not be compatible with all the images available.
 ====
 
-Another way of customizing the native build image build process is to configure the task inside the Gradle build script. If for example it is required to set the `enableHttpUrlHandler`, it can be done like so:
-
-[source,groovy]
-----
-buildNative {
-    enableHttpUrlHandler = true
-}
-----
-
-or, if you use the Gradle Kotlin DSL:
-
-[source,kotlin,subs=attributes+]
-----
-tasks {
-    named<QuarkusNative>("buildNative") {
-        setEnableHttpUrlHandler(true)
-    }
-}
-----
-
-
-The native executable would then be produced by executing:
-
-[source,shell]
-----
-./gradlew buildNative
-----
-
-
 == Running native tests
 
 Run the native tests using:
@@ -338,7 +305,7 @@ Run the native tests using:
 ./gradlew testNative
 ----
 
-This task depends on `buildNative`, so it will generate the native image before running the tests.
+This task depends on `quarkusBuild`, so it will generate the native image before running the tests.
 
 == Building Uber-Jars
 
@@ -360,4 +327,4 @@ The entries are relative to the root of the generated Uber-Jar. You can specify 
 
 == Building with `./gradlew build`
 
-Starting from 1.1.0.Final, `./gradlew build` will no longer build the native image. Use the `buildNative` task explicitly as explained above if needed.
+Starting from 1.1.0.Final, `./gradlew build` will no longer build the native image. Add `-Dquarkus.package.type=native` build argument explicitly as explained above if needed.

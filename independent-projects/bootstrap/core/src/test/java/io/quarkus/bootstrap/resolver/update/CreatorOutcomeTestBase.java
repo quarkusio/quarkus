@@ -42,7 +42,7 @@ public abstract class CreatorOutcomeTestBase extends ResolverSetupCleanup {
                 .setAppModelResolver(resolver);
 
         if (createWorkspace) {
-            IoUtils.recursiveDelete(ws);
+            System.setProperty("basedir", ws.toAbsolutePath().toString());
             final Path classesDir = outputDir.resolve("classes");
             ZipUtils.unzip(resolver.resolve(appJar.toAppArtifact()), classesDir);
             ModelUtils.persistModel(ws.resolve("pom.xml"), appJar.getPomModel());

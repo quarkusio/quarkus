@@ -109,7 +109,15 @@ public class HibernateOrmConfig {
      * @asciidoclet
      */
     @ConfigItem
-    public Optional<String> multiTenant;
+    public Optional<String> multitenant;
+
+    /**
+     * Defines the name of the data source to use in case of SCHEMA approach. The default data source will be used if not set.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem
+    public Optional<String> multitenantSchemaDatasource;
 
     /**
      * Defines if the tenant identifier of the "current sessions" should be validated every time the tenant identifier is
@@ -118,7 +126,7 @@ public class HibernateOrmConfig {
      * @asciidoclet
      */
     @ConfigItem
-    public Optional<String> validateTenantInCurrentSessions;
+    public Optional<Boolean> validateTenantInCurrentSessions;
 
     /**
      * Query related configuration.
@@ -188,7 +196,7 @@ public class HibernateOrmConfig {
                 database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
                 log.isAnyPropertySet() ||
-                multiTenant.isPresent() ||
+                multitenant.isPresent() ||
                 validateTenantInCurrentSessions.isPresent() ||
                 !cache.isEmpty();
     }

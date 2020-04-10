@@ -18,6 +18,14 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <configuration>
+                    <lesserPriorityArtifacts>
+                        <!--
+                        see https://github.com/quarkusio/quarkus/issues/8405
+                        -->
+                        <lesserPriorityArtifact>org.jetbrains.kotlin:kotlin-compiler</lesserPriorityArtifact>
+                    </lesserPriorityArtifacts>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -31,7 +31,6 @@ import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.hibernate.jpa.QueryHints;
 import org.junit.jupiter.api.Assertions;
 
-import io.quarkus.hibernate.orm.panache.Panache;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
@@ -151,6 +150,24 @@ public class TestEndpoint {
 
         Assertions.assertEquals(person, Person.find("name", "stef").firstResult());
         Assertions.assertEquals(person, Person.find("name", "stef").singleResult());
+
+        //named query
+        persons = Person.find("#Person.getByName", Parameters.with("name", "stef")).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+        Assertions.assertThrows(PanacheQueryException.class, () -> Person.find("#Person.namedQueryNotFound").list());
+        NamedQueryEntity.find("#NamedQueryMappedSuperClass.getAll").list();
+        NamedQueryEntity.find("#NamedQueryEntity.getAll").list();
+        NamedQueryWith2QueriesEntity.find("#NamedQueryWith2QueriesEntity.getAll1").list();
+        NamedQueryWith2QueriesEntity.find("#NamedQueryWith2QueriesEntity.getAll2").list();
+
+        //empty query
+        persons = Person.find("").list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+        persons = Person.find(null).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
 
         Person byId = Person.findById(person.id);
         Assertions.assertEquals(person, byId);
@@ -497,6 +514,10 @@ public class TestEndpoint {
     DogDao dogDao;
     @Inject
     AddressDao addressDao;
+    @Inject
+    NamedQueryRepository namedQueryRepository;
+    @Inject
+    NamedQueryWith2QueriesRepository namedQueryWith2QueriesRepository;
 
     @GET
     @Path("model-dao")
@@ -600,6 +621,24 @@ public class TestEndpoint {
         Assertions.assertEquals(person, personDao.find("name", "stef").firstResult());
         Assertions.assertEquals(person, personDao.find("name", "stef").singleResult());
         Assertions.assertEquals(person, personDao.find("name", "stef").singleResultOptional().get());
+
+        // named query
+        persons = personDao.find("#Person.getByName", Parameters.with("name", "stef")).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+        Assertions.assertThrows(PanacheQueryException.class, () -> personDao.find("#Person.namedQueryNotFound").list());
+        namedQueryRepository.find("#NamedQueryMappedSuperClass.getAll").list();
+        namedQueryRepository.find("#NamedQueryEntity.getAll").list();
+        namedQueryWith2QueriesRepository.find("#NamedQueryWith2QueriesEntity.getAll1").list();
+        namedQueryWith2QueriesRepository.find("#NamedQueryWith2QueriesEntity.getAll2").list();
+
+        //empty query
+        persons = personDao.find("").list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+        persons = personDao.find(null).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
 
         Person byId = personDao.findById(person.id);
         Assertions.assertEquals(person, byId);

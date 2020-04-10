@@ -21,6 +21,7 @@
     </properties>
 
     <modules>
+        <module>funqy-amazon-lambda</module>
         <module>class-transformer</module>
         <module>shared-library</module>
         <module>hibernate-validator</module>
@@ -70,6 +71,7 @@
         <module>amazon-lambda-http-resteasy</module>
         <module>container-image</module>
         <module>optaplanner-jackson</module>
+        <module>optaplanner-jsonb</module>
         <module>kubernetes</module>
         <module>kubernetes-client</module>
         <module>tika</module>
@@ -92,6 +94,7 @@
         <module>narayana-stm</module>
         <module>narayana-jta</module>
         <module>elytron-security-jdbc</module>
+        <module>elytron-security-ldap</module>
         <module>vertx-graphql</module>
         <module>jpa-without-entity</module>
         <module>quartz</module>
@@ -100,6 +103,7 @@
         <module>qute</module>
         <module>bootstrap-config</module>
         <module>injectmock</module>
+        <module>reactive-messaging-amqp</module>
     </modules>
 
     <build>

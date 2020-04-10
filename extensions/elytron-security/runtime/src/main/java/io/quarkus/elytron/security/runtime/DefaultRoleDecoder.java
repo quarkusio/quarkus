@@ -8,6 +8,7 @@ import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.authz.AuthorizationIdentity;
 import org.wildfly.security.authz.RoleDecoder;
@@ -21,7 +22,8 @@ import org.wildfly.security.authz.Roles;
  */
 public class DefaultRoleDecoder {
 
-    private static final String DEFAULT_ATTRIBUTE_NAME = "groups";
+    @ConfigProperty(name = "quarkus.security.roles-claim-name", defaultValue = "groups")
+    String groupsAttribute;
 
     @Inject
     @Any
@@ -46,8 +48,8 @@ public class DefaultRoleDecoder {
         }
     }
 
-    private Roles fromDefaultAttribute(AuthorizationIdentity authorizationIdentity) {
-        Attributes.Entry groups = authorizationIdentity.getAttributes().get(DEFAULT_ATTRIBUTE_NAME);
+    Roles fromDefaultAttribute(AuthorizationIdentity authorizationIdentity) {
+        Attributes.Entry groups = authorizationIdentity.getAttributes().get(groupsAttribute);
 
         if (groups == null) {
             return Roles.NONE;

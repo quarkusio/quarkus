@@ -7,6 +7,7 @@ import static org.objectweb.asm.Opcodes.ACC_VOLATILE;
 
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.MockableProxy;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
@@ -45,7 +46,9 @@ public class ClientProxyGenerator extends AbstractGenerator {
     static final String DELEGATE_METHOD_NAME = "arc$delegate";
     static final String GET_CONTEXTUAL_INSTANCE_METHOD_NAME = "arc_contextualInstance";
     static final String GET_BEAN = "arc_bean";
-    static final String MOCK_FIELD = "mock_field";
+    static final String BEAN_FIELD = "bean";
+    static final String MOCK_FIELD = "mock";
+    static final String CONTEXT_FIELD = "context";
 
     private final Predicate<DotName> applicationClassPredicate;
     private final boolean mockable;
@@ -60,6 +63,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
      *
      * @param bean
      * @param beanClassName Fully qualified class name
+     * @param reflectionRegistration
      * @return a collection of resources
      */
     Collection<Resource> generate(BeanInfo bean, String beanClassName, ReflectionRegistration reflectionRegistration) {
@@ -93,14 +97,21 @@ public class ClientProxyGenerator extends AbstractGenerator {
         ClassCreator clientProxy = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .superClass(superClass)
                 .interfaces(interfaces.toArray(new String[0])).build();
-        FieldCreator beanField = clientProxy.getFieldCreator("bean", DescriptorUtils.extToInt(beanClassName))
+        FieldCreator beanField = clientProxy.getFieldCreator(BEAN_FIELD, DescriptorUtils.extToInt(beanClassName))
                 .setModifiers(ACC_PRIVATE | ACC_FINAL);
         if (mockable) {
             clientProxy.getFieldCreator(MOCK_FIELD, Object.class).setModifiers(ACC_PRIVATE | ACC_VOLATILE);
         }
+        FieldCreator contextField = null;
+        if (BuiltinScope.APPLICATION.is(bean.getScope())) {
+            // It is safe to store the application context instance on the proxy
+            contextField = clientProxy.getFieldCreator(CONTEXT_FIELD, InjectableContext.class)
+                    .setModifiers(ACC_PRIVATE | ACC_FINAL);
+        }
 
-        createConstructor(clientProxy, beanClassName, superClass, beanField.getFieldDescriptor());
-        implementDelegate(clientProxy, providerTypeName, beanField.getFieldDescriptor());
+        createConstructor(clientProxy, beanClassName, superClass, beanField.getFieldDescriptor(),
+                contextField != null ? contextField.getFieldDescriptor() : null);
+        implementDelegate(clientProxy, providerTypeName, beanField.getFieldDescriptor(), bean);
         implementGetContextualInstance(clientProxy, providerTypeName);
         implementGetBean(clientProxy, beanField.getFieldDescriptor());
         if (mockable) {
@@ -204,14 +215,23 @@ public class ClientProxyGenerator extends AbstractGenerator {
         set.returnValue(null);
     }
 
-    void createConstructor(ClassCreator clientProxy, String beanClassName, String superClasName, FieldDescriptor beanField) {
+    void createConstructor(ClassCreator clientProxy, String beanClassName, String superClasName, FieldDescriptor beanField,
+            FieldDescriptor contextField) {
         MethodCreator creator = clientProxy.getMethodCreator(Methods.INIT, void.class, beanClassName);
         creator.invokeSpecialMethod(MethodDescriptor.ofConstructor(superClasName), creator.getThis());
-        creator.writeInstanceField(beanField, creator.getThis(), creator.getMethodParam(0));
+        ResultHandle beanHandle = creator.getMethodParam(0);
+        creator.writeInstanceField(beanField, creator.getThis(), beanHandle);
+        if (contextField != null) {
+            creator.writeInstanceField(contextField, creator.getThis(), creator.invokeInterfaceMethod(
+                    MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
+                    creator.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER), creator
+                            .invokeInterfaceMethod(MethodDescriptor.ofMethod(InjectableBean.class, "getScope", Class.class),
+                                    beanHandle)));
+        }
         creator.returnValue(null);
     }
 
-    void implementDelegate(ClassCreator clientProxy, String providerTypeName, FieldDescriptor beanField) {
+    void implementDelegate(ClassCreator clientProxy, String providerTypeName, FieldDescriptor beanField, BeanInfo bean) {
         MethodCreator creator = clientProxy.getMethodCreator(DELEGATE_METHOD_NAME, providerTypeName)
                 .setModifiers(Modifier.PRIVATE);
         if (mockable) {
@@ -221,28 +241,40 @@ public class ClientProxyGenerator extends AbstractGenerator {
             BytecodeCreator falseBranch = creator.ifNull(mock).falseBranch();
             falseBranch.returnValue(falseBranch.checkCast(mock, providerTypeName));
         }
-        // Arc.container()
-        ResultHandle container = creator.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
-        // bean.getScope()
-        ResultHandle bean = creator.readInstanceField(beanField, creator.getThis());
-        ResultHandle scope = creator
-                .invokeInterfaceMethod(MethodDescriptor.ofMethod(InjectableBean.class, "getScope", Class.class), bean);
-        // getContext()
-        ResultHandle context = creator.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
-                container, scope);
-        BytecodeCreator inactiveBranch = creator.ifNull(context).trueBranch();
-        ResultHandle exception = inactiveBranch.newInstance(
-                MethodDescriptor.ofConstructor(ContextNotActiveException.class, String.class),
-                inactiveBranch.invokeVirtualMethod(MethodDescriptors.OBJECT_TO_STRING, scope));
-        inactiveBranch.throwException(exception);
+
+        ResultHandle beanHandle = creator.readInstanceField(beanField, creator.getThis());
+        ResultHandle contextHandle;
+
+        if (BuiltinScope.APPLICATION.is(bean.getScope())) {
+            // Application context stored in a field and is always active
+            contextHandle = creator.readInstanceField(
+                    FieldDescriptor.of(clientProxy.getClassName(), CONTEXT_FIELD, InjectableContext.class), creator.getThis());
+        } else {
+            // Arc.container()
+            ResultHandle container = creator.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+            // bean.getScope()
+            ResultHandle scope = creator
+                    .invokeInterfaceMethod(MethodDescriptor.ofMethod(InjectableBean.class, "getScope", Class.class),
+                            beanHandle);
+            // getContext()
+            contextHandle = creator.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
+                    container, scope);
+
+            BytecodeCreator inactiveBranch = creator.ifNull(contextHandle).trueBranch();
+            ResultHandle exception = inactiveBranch.newInstance(
+                    MethodDescriptor.ofConstructor(ContextNotActiveException.class, String.class),
+                    inactiveBranch.invokeVirtualMethod(MethodDescriptors.OBJECT_TO_STRING, scope));
+            inactiveBranch.throwException(exception);
+        }
+
         AssignableResultHandle ret = creator.createVariable(Object.class);
-        creator.assign(ret, creator.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET_IF_PRESENT, context, bean));
+        creator.assign(ret, creator.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET_IF_PRESENT, contextHandle, beanHandle));
         BytecodeCreator isNullBranch = creator.ifNull(ret).trueBranch();
         // Create a new contextual instance - new CreationalContextImpl<>()
         ResultHandle creationContext = isNullBranch
-                .newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), bean);
+                .newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), beanHandle);
         isNullBranch.assign(ret,
-                isNullBranch.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, context, bean, creationContext));
+                isNullBranch.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, contextHandle, beanHandle, creationContext));
         creator.returnValue(ret);
     }
 

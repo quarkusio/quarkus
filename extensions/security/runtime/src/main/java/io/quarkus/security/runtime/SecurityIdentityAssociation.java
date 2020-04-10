@@ -43,9 +43,7 @@ public class SecurityIdentityAssociation implements CurrentIdentityAssociation {
     @Override
     public SecurityIdentity getIdentity() {
         if (identity == null) {
-            identity = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE)
-                    .toCompletableFuture()
-                    .join();
+            identity = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE).await().indefinitely();
         }
         return identity;
     }

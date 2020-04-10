@@ -68,7 +68,7 @@ final class Execution {
     }
 
     BuildContext getBuildContext(StepInfo stepInfo) {
-        return contextCache.computeIfAbsent(stepInfo, si -> new BuildContext(si, this));
+        return contextCache.computeIfAbsent(stepInfo, si -> new BuildContext(chain.getClassLoader(), si, this));
     }
 
     void removeBuildContext(StepInfo stepInfo, BuildContext buildContext) {

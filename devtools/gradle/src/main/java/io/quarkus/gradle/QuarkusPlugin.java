@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
@@ -25,13 +26,13 @@ import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusDev;
 import io.quarkus.gradle.tasks.QuarkusGenerateConfig;
 import io.quarkus.gradle.tasks.QuarkusListExtensions;
-import io.quarkus.gradle.tasks.QuarkusNative;
 import io.quarkus.gradle.tasks.QuarkusTestConfig;
 import io.quarkus.gradle.tasks.QuarkusTestNative;
 
 public class QuarkusPlugin implements Plugin<Project> {
 
     public static final String ID = "io.quarkus";
+    public static final String QUARKUS_PACKAGE_TYPE = "quarkus.package.type";
 
     public static final String EXTENSION_NAME = "quarkus";
     public static final String LIST_EXTENSIONS_TASK_NAME = "listExtensions";
@@ -39,6 +40,8 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String QUARKUS_BUILD_TASK_NAME = "quarkusBuild";
     public static final String GENERATE_CONFIG_TASK_NAME = "generateConfig";
     public static final String QUARKUS_DEV_TASK_NAME = "quarkusDev";
+
+    @Deprecated
     public static final String BUILD_NATIVE_TASK_NAME = "buildNative";
     public static final String TEST_NATIVE_TASK_NAME = "testNative";
     public static final String QUARKUS_TEST_CONFIG_TASK_NAME = "quarkusTestConfig";
@@ -69,8 +72,14 @@ public class QuarkusPlugin implements Plugin<Project> {
 
         Task quarkusBuild = tasks.create(QUARKUS_BUILD_TASK_NAME, QuarkusBuild.class);
         Task quarkusDev = tasks.create(QUARKUS_DEV_TASK_NAME, QuarkusDev.class);
-        Task buildNative = tasks.create(BUILD_NATIVE_TASK_NAME, QuarkusNative.class);
         Task quarkusTestConfig = tasks.create(QUARKUS_TEST_CONFIG_TASK_NAME, QuarkusTestConfig.class);
+
+        Task buildNative = tasks.create(BUILD_NATIVE_TASK_NAME, DefaultTask.class);
+        buildNative.finalizedBy(quarkusBuild);
+        buildNative.doFirst(t -> project.getLogger()
+                .warn("The 'buildNative' task has been deprecated in favor of 'build -Dquarkus.package.type=native'"));
+
+        configureBuildNativeTask(project);
 
         project.getPlugins().withType(
                 BasePlugin.class,
@@ -84,8 +93,6 @@ public class QuarkusPlugin implements Plugin<Project> {
                     quarkusDev.dependsOn(classesTask);
                     quarkusBuild.dependsOn(classesTask, tasks.getByName(JavaPlugin.JAR_TASK_NAME));
                     quarkusTestConfig.dependsOn(classesTask);
-
-                    buildNative.dependsOn(tasks.getByName(BasePlugin.ASSEMBLE_TASK_NAME));
 
                     SourceSetContainer sourceSets = project.getConvention().getPlugin(JavaPluginConvention.class)
                             .getSourceSets();
@@ -111,9 +118,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                             .extendsFrom(configurations.findByName(JavaPlugin.TEST_RUNTIME_ONLY_CONFIGURATION_NAME));
 
                     Task testNative = tasks.create(TEST_NATIVE_TASK_NAME, QuarkusTestNative.class);
-                    testNative.dependsOn(buildNative);
+                    testNative.dependsOn(quarkusBuild);
                     testNative.setShouldRunAfter(Collections.singletonList(tasks.findByName(JavaPlugin.TEST_TASK_NAME)));
-
                     Consumer<Test> configureTestTask = t -> {
                         // Quarkus test configuration task which should be executed before any Quarkus test
                         t.dependsOn(quarkusTestConfig);
@@ -130,6 +136,16 @@ public class QuarkusPlugin implements Plugin<Project> {
             throw new GradleException("Quarkus plugin requires Gradle 5.0 or later. Current version is: " +
                     GradleVersion.current());
         }
+    }
+
+    private void configureBuildNativeTask(Project project) {
+        project.getGradle().getTaskGraph().whenReady(taskGraph -> {
+            if (taskGraph.hasTask(project.getPath() + BUILD_NATIVE_TASK_NAME)
+                    || taskGraph.hasTask(project.getPath() + TEST_NATIVE_TASK_NAME)) {
+                project.getExtensions().getExtraProperties()
+                        .set(QUARKUS_PACKAGE_TYPE, "native");
+            }
+        });
     }
 
     private void afterEvaluate(Project project) {

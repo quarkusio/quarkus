@@ -62,6 +62,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
@@ -944,7 +945,11 @@ public class VertxHttpRecorder {
                                 //this can happen if blocking authentication is involved for get requests
                                 if (!event.request().isEnded()) {
                                     event.request().resume();
-                                    bodyHandler.handle(event);
+                                    if (CAN_HAVE_BODY.contains(event.request().method())) {
+                                        bodyHandler.handle(event);
+                                    } else {
+                                        event.next();
+                                    }
                                 } else {
                                     event.next();
                                 }
@@ -955,9 +960,16 @@ public class VertxHttpRecorder {
                     });
                 } else {
                     event.request().resume();
-                    bodyHandler.handle(event);
+                    if (CAN_HAVE_BODY.contains(event.request().method())) {
+                        bodyHandler.handle(event);
+                    } else {
+                        event.next();
+                    }
                 }
             }
         };
     }
+
+    private static final List<HttpMethod> CAN_HAVE_BODY = Arrays.asList(HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH,
+            HttpMethod.DELETE);
 }

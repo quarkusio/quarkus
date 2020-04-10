@@ -1,12 +1,10 @@
 package io.quarkus.undertow.runtime;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 import javax.inject.Singleton;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
+import io.smallrye.mutiny.Uni;
 import io.undertow.servlet.api.Deployment;
 import io.undertow.servlet.api.SecurityInfo;
 import io.undertow.servlet.api.SingleConstraintMatch;
@@ -22,13 +20,13 @@ public class ServletHttpSecurityPolicy implements HttpSecurityPolicy {
     private volatile String contextPath;
 
     @Override
-    public CompletionStage<CheckResult> checkPermission(RoutingContext request, SecurityIdentity identity,
+    public Uni<CheckResult> checkPermission(RoutingContext request, SecurityIdentity identity,
             AuthorizationRequestContext requestContext) {
 
         String requestPath = request.request().path();
         if (!requestPath.startsWith(contextPath)) {
             //anything outside the context path we don't have anything to do with
-            return CompletableFuture.completedFuture(CheckResult.PERMIT);
+            return Uni.createFrom().item(CheckResult.PERMIT);
         }
         if (!contextPath.equals("/")) {
             requestPath = requestPath.substring(contextPath.length() - 1);
@@ -40,27 +38,25 @@ public class ServletHttpSecurityPolicy implements HttpSecurityPolicy {
         if (mergedConstraint.getRequiredRoles().isEmpty()) {
             SecurityInfo.EmptyRoleSemantic emptyRoleSemantic = mergedConstraint.getEmptyRoleSemantic();
             if (emptyRoleSemantic == SecurityInfo.EmptyRoleSemantic.PERMIT) {
-                return CompletableFuture.completedFuture(CheckResult.PERMIT);
+                return Uni.createFrom().item(CheckResult.PERMIT);
             } else if (emptyRoleSemantic == SecurityInfo.EmptyRoleSemantic.DENY) {
-                return CompletableFuture.completedFuture(CheckResult.DENY);
+                return Uni.createFrom().item(CheckResult.DENY);
             } else if (emptyRoleSemantic == SecurityInfo.EmptyRoleSemantic.AUTHENTICATE) {
                 if (identity.isAnonymous()) {
-                    return CompletableFuture.completedFuture(CheckResult.DENY);
+                    return Uni.createFrom().item(CheckResult.DENY);
                 } else {
-                    return CompletableFuture.completedFuture(CheckResult.PERMIT);
+                    return Uni.createFrom().item(CheckResult.PERMIT);
                 }
             } else {
-                CompletableFuture<CheckResult> c = new CompletableFuture<>();
-                c.completeExceptionally(new RuntimeException("Unknown empty role semantic " + emptyRoleSemantic));
-                return c;
+                return Uni.createFrom().failure(new RuntimeException("Unknown empty role semantic " + emptyRoleSemantic));
             }
         } else {
             for (String i : mergedConstraint.getRequiredRoles()) {
                 if (identity.hasRole(i)) {
-                    return CompletableFuture.completedFuture(CheckResult.PERMIT);
+                    return Uni.createFrom().item(CheckResult.PERMIT);
                 }
             }
-            return CompletableFuture.completedFuture(CheckResult.DENY);
+            return Uni.createFrom().item(CheckResult.DENY);
         }
     }
 

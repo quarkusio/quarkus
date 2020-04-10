@@ -1,7 +1,6 @@
 package io.quarkus.vertx.http.security;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+import java.util.Optional;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -12,6 +11,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusPrincipal;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class TestIdentityProvider implements IdentityProvider<UsernamePasswordAuthenticationRequest> {
@@ -22,23 +22,21 @@ public class TestIdentityProvider implements IdentityProvider<UsernamePasswordAu
     }
 
     @Override
-    public CompletionStage<SecurityIdentity> authenticate(UsernamePasswordAuthenticationRequest request,
+    public Uni<SecurityIdentity> authenticate(UsernamePasswordAuthenticationRequest request,
             AuthenticationRequestContext context) {
         TestIdentityController.TestIdentity ident = TestIdentityController.idenitities.get(request.getUsername());
         if (ident == null) {
-            return CompletableFuture.completedFuture(null);
+            return Uni.createFrom().optional(Optional.empty());
         }
         if (!ident.password.equals(new String(request.getPassword().getPassword()))) {
-            CompletableFuture<SecurityIdentity> ret = new CompletableFuture<>();
-            ret.completeExceptionally(new AuthenticationFailedException());
-            return ret;
+            return Uni.createFrom().failure(new AuthenticationFailedException());
         }
         QuarkusSecurityIdentity identity = QuarkusSecurityIdentity.builder()
                 .setPrincipal(new QuarkusPrincipal(ident.username))
                 .addRoles(ident.roles)
                 .addCredential(request.getPassword())
                 .build();
-        return CompletableFuture.completedFuture(identity);
+        return Uni.createFrom().item(identity);
     }
 
 }

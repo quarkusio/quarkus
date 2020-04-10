@@ -4,8 +4,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.enterprise.inject.spi.CDI;
@@ -44,50 +43,50 @@ public class HttpSecurityRecorder {
                 }
                 //we put the authenticator into the routing context so it can be used by other systems
                 event.put(HttpAuthenticator.class.getName(), authenticator);
-                authenticator.attemptAuthentication(event).handle(new BiFunction<SecurityIdentity, Throwable, Object>() {
-                    @Override
-                    public Object apply(SecurityIdentity identity, Throwable throwable) {
-                        if (throwable != null) {
-                            while (throwable instanceof CompletionException && throwable.getCause() != null) {
-                                throwable = throwable.getCause();
+                authenticator.attemptAuthentication(event)
+                        .subscribe().with(new Consumer<SecurityIdentity>() {
+                            @Override
+                            public void accept(SecurityIdentity identity) {
+                                if (event.response().ended()) {
+                                    return;
+                                }
+                                if (identity != null) {
+                                    event.setUser(new QuarkusHttpUser(identity));
+                                }
+                                event.next();
                             }
-                            //auth failed
-                            if (throwable instanceof AuthenticationFailedException) {
-                                authenticator.sendChallenge(event, new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        event.response().end();
-                                    }
-                                }).exceptionally(new Function<Throwable, Void>() {
-                                    @Override
-                                    public Void apply(Throwable throwable) {
-                                        event.fail(throwable);
-                                        return null;
-                                    }
-                                });
-                            } else if (throwable instanceof AuthenticationCompletionException) {
-                                event.response().setStatusCode(401);
-                                event.response().end();
-                            } else if (throwable instanceof AuthenticationRedirectException) {
-                                AuthenticationRedirectException redirectEx = (AuthenticationRedirectException) throwable;
-                                event.response().setStatusCode(redirectEx.getCode());
-                                event.response().headers().set(HttpHeaders.LOCATION, redirectEx.getRedirectUri());
-                                event.response().end();
-                            } else {
-                                event.fail(throwable);
+                        }, new Consumer<Throwable>() {
+                            @Override
+                            public void accept(Throwable throwable) {
+                                while (throwable instanceof CompletionException && throwable.getCause() != null) {
+                                    throwable = throwable.getCause();
+                                }
+                                //auth failed
+                                if (throwable instanceof AuthenticationFailedException) {
+                                    authenticator.sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
+                                        @Override
+                                        public void accept(Boolean aBoolean) {
+                                            event.response().end();
+                                        }
+                                    }, new Consumer<Throwable>() {
+                                        @Override
+                                        public void accept(Throwable throwable) {
+                                            event.fail(throwable);
+                                        }
+                                    });
+                                } else if (throwable instanceof AuthenticationCompletionException) {
+                                    event.response().setStatusCode(401);
+                                    event.response().end();
+                                } else if (throwable instanceof AuthenticationRedirectException) {
+                                    AuthenticationRedirectException redirectEx = (AuthenticationRedirectException) throwable;
+                                    event.response().setStatusCode(redirectEx.getCode());
+                                    event.response().headers().set(HttpHeaders.LOCATION, redirectEx.getRedirectUri());
+                                    event.response().end();
+                                } else {
+                                    event.fail(throwable);
+                                }
                             }
-                            return null;
-                        }
-                        if (event.response().ended()) {
-                            return null;
-                        }
-                        if (identity != null) {
-                            event.setUser(new QuarkusHttpUser(identity));
-                        }
-                        event.next();
-                        return null;
-                    }
-                });
+                        });
             }
         };
     }

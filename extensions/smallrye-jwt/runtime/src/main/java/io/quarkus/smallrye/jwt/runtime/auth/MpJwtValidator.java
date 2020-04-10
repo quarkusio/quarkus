@@ -1,8 +1,6 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
 import java.util.HashSet;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -21,6 +19,7 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.jwt.auth.principal.DefaultJWTTokenParser;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.ParseException;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Validates a bearer token according to the MP-JWT rules
@@ -49,7 +48,7 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
     }
 
     @Override
-    public CompletionStage<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
+    public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
         try {
             JwtContext jwtContext = parser.parse(request.getToken().getToken(), authContextInfo);
@@ -63,16 +62,13 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
                 }
             }
             QuarkusJwtCallerPrincipal principal = new QuarkusJwtCallerPrincipal(name, claims);
-            return CompletableFuture
-                    .completedFuture(QuarkusSecurityIdentity.builder().setPrincipal(principal)
-                            .addRoles(new HashSet<>(claims.getStringListClaimValue("groups")))
-                            .addAttribute(SecurityIdentity.USER_ATTRIBUTE, principal).build());
+            return Uni.createFrom().item(QuarkusSecurityIdentity.builder().setPrincipal(principal)
+                    .addRoles(new HashSet<>(claims.getStringListClaimValue("groups")))
+                    .addAttribute(SecurityIdentity.USER_ATTRIBUTE, principal).build());
 
         } catch (ParseException | MalformedClaimException e) {
             log.debug("Authentication failed", e);
-            CompletableFuture<SecurityIdentity> cf = new CompletableFuture<SecurityIdentity>();
-            cf.completeExceptionally(new AuthenticationFailedException(e));
-            return cf;
+            return Uni.createFrom().failure(new AuthenticationFailedException(e));
         }
     }
 }

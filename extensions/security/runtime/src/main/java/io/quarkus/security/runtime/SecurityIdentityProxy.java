@@ -4,13 +4,13 @@ import java.security.Permission;
 import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.smallrye.mutiny.Uni;
 
 @RequestScoped
 public class SecurityIdentityProxy implements SecurityIdentity {
@@ -59,7 +59,7 @@ public class SecurityIdentityProxy implements SecurityIdentity {
     }
 
     @Override
-    public CompletionStage<Boolean> checkPermission(Permission permission) {
+    public Uni<Boolean> checkPermission(Permission permission) {
         return association.getIdentity().checkPermission(permission);
     }
 

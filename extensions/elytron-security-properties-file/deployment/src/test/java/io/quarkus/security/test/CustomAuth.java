@@ -8,8 +8,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -26,6 +24,7 @@ import io.quarkus.security.identity.request.UsernamePasswordAuthenticationReques
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -38,9 +37,13 @@ public class CustomAuth implements HttpAuthenticationMechanism {
     private static final String LOWERCASE_BASIC_PREFIX = BASIC_PREFIX.toLowerCase(Locale.ENGLISH);
     private static final int PREFIX_LENGTH = BASIC_PREFIX.length();
     private static final String COLON = ":";
+    protected static final ChallengeData CHALLENGE_DATA = new ChallengeData(
+            HttpResponseStatus.UNAUTHORIZED.code(),
+            HttpHeaderNames.WWW_AUTHENTICATE,
+            "BASIC realm=CUSTOM");
 
     @Override
-    public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
+    public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
         List<String> authHeaders = context.request().headers().getAll(HttpHeaderNames.AUTHORIZATION);
         if (authHeaders != null) {
@@ -65,24 +68,18 @@ public class CustomAuth implements HttpAuthenticationMechanism {
 
                     // By this point we had a header we should have been able to verify but for some reason
                     // it was not correctly structured.
-                    CompletableFuture<SecurityIdentity> cf = new CompletableFuture<>();
-                    cf.completeExceptionally(new AuthenticationFailedException());
-                    return cf;
+                    return Uni.createFrom().failure(new AuthenticationFailedException());
                 }
             }
         }
 
         // No suitable header has been found in this request,
-        return CompletableFuture.completedFuture(null);
+        return Uni.createFrom().nullItem();
     }
 
     @Override
-    public CompletionStage<ChallengeData> getChallenge(RoutingContext context) {
-        ChallengeData result = new ChallengeData(
-                HttpResponseStatus.UNAUTHORIZED.code(),
-                HttpHeaderNames.WWW_AUTHENTICATE,
-                "BASIC realm=CUSTOM");
-        return CompletableFuture.completedFuture(result);
+    public Uni<ChallengeData> getChallenge(RoutingContext context) {
+        return Uni.createFrom().item(CHALLENGE_DATA);
     }
 
     @Override

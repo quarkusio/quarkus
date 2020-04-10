@@ -1,6 +1,5 @@
 package io.quarkus.elytron.security.runtime;
 
-import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -17,6 +16,7 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.smallrye.mutiny.Uni;
 
 /**
  *
@@ -38,7 +38,7 @@ public class ElytronPasswordIdentityProvider implements IdentityProvider<Usernam
     }
 
     @Override
-    public CompletionStage<SecurityIdentity> authenticate(UsernamePasswordAuthenticationRequest request,
+    public Uni<SecurityIdentity> authenticate(UsernamePasswordAuthenticationRequest request,
             AuthenticationRequestContext context) {
         return context.runBlocking(new Supplier<SecurityIdentity>() {
             @Override

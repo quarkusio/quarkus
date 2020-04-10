@@ -2,7 +2,6 @@ package io.quarkus.oidc.runtime;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -15,6 +14,7 @@ import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
@@ -26,14 +26,14 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     private CodeAuthenticationMechanism codeAuth = new CodeAuthenticationMechanism();
 
     @Override
-    public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
+    public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
         return isWebApp(context) ? codeAuth.authenticate(context, identityProviderManager, resolver)
                 : bearerAuth.authenticate(context, identityProviderManager, resolver);
     }
 
     @Override
-    public CompletionStage<ChallengeData> getChallenge(RoutingContext context) {
+    public Uni<ChallengeData> getChallenge(RoutingContext context) {
         return isWebApp(context) ? codeAuth.getChallenge(context, resolver)
                 : bearerAuth.getChallenge(context, resolver);
     }

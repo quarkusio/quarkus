@@ -43,7 +43,7 @@ public class TokenRealmUnitTest {
 
         String jwt = TokenUtils.generateTokenString("/Token1.json", pk1Priv, "testTokenRealm");
         TokenAuthenticationRequest tokenEvidence = new TokenAuthenticationRequest(new TokenCredential(jwt, "bearer"));
-        SecurityIdentity securityIdentity = authenticator.authenticate(tokenEvidence).toCompletableFuture().get();
+        SecurityIdentity securityIdentity = authenticator.authenticate(tokenEvidence).await().indefinitely();
         Assertions.assertNotNull(securityIdentity);
         Assertions.assertEquals("jdoe@example.com", securityIdentity.getPrincipal().getName());
     }

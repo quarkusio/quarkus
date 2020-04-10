@@ -3,9 +3,8 @@ package io.quarkus.smallrye.jwt.runtime.auth;
 import static io.vertx.core.http.HttpHeaders.COOKIE;
 
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.spi.CDI;
@@ -27,6 +26,7 @@ import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.cdi.PrincipalProducer;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
+import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.Cookie;
 import io.vertx.ext.web.RoutingContext;
 
@@ -48,23 +48,23 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
     }
 
     @Override
-    public CompletionStage<SecurityIdentity> authenticate(RoutingContext context,
+    public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
         String jwtToken = new VertxBearerTokenExtractor(authContextInfo, context).getBearerToken();
         if (jwtToken != null) {
             return identityProviderManager
                     .authenticate(new TokenAuthenticationRequest(new TokenCredential(jwtToken, "bearer")));
         }
-        return CompletableFuture.completedFuture(null);
+        return Uni.createFrom().optional(Optional.empty());
     }
 
     @Override
-    public CompletionStage<ChallengeData> getChallenge(RoutingContext context) {
+    public Uni<ChallengeData> getChallenge(RoutingContext context) {
         ChallengeData result = new ChallengeData(
                 HttpResponseStatus.UNAUTHORIZED.code(),
                 HttpHeaderNames.WWW_AUTHENTICATE,
                 "Bearer {token}");
-        return CompletableFuture.completedFuture(result);
+        return Uni.createFrom().item(result);
     }
 
     private static class VertxBearerTokenExtractor extends AbstractBearerTokenExtractor {

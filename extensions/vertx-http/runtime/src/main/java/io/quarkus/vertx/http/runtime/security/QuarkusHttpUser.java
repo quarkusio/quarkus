@@ -21,13 +21,13 @@ public class QuarkusHttpUser implements User {
 
     @Override
     public User isAuthorized(String authority, Handler<AsyncResult<Boolean>> resultHandler) {
-        resultHandler.handle(Future.succeededFuture(securityIdentity.getRoles().contains(authority)));
+        resultHandler.handle(Future.succeededFuture(securityIdentity.hasRole(authority)));
         return this;
     }
 
     @Override
     public User isAuthorised(String authority, Handler<AsyncResult<Boolean>> resultHandler) {
-        resultHandler.handle(Future.succeededFuture(securityIdentity.getRoles().contains(authority)));
+        resultHandler.handle(Future.succeededFuture(securityIdentity.hasRole(authority)));
         return this;
     }
 

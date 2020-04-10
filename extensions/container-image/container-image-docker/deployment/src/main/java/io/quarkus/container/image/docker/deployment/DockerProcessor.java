@@ -125,7 +125,7 @@ public class DockerProcessor {
             throw dockerException(buildArgs);
         }
 
-        log.infof("Pushed container image %s (%s)\n", image, reader.getImageId());
+        log.infof("Built container image %s (%s)\n", image, reader.getImageId());
 
         if (pushRequested || containerImageConfig.push) {
             String registry = "docker.io";

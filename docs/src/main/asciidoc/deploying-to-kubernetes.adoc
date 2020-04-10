@@ -747,6 +747,7 @@ quarkus.kubernetes.env-vars.foo.configmap=myconfigmap
 ----
 
 
+
 == Deployment
 
 To trigger building and deploying a container image you need to enable the `quarkus.kubernetes.deploy` flag (the flag is disabled by default - furthermore it has no effect during test runs or dev mode).
@@ -774,3 +775,90 @@ This assumes that a `.kube/config` is available in your user directory that poin
 In other words the extension will use whatever cluster `kubectl` uses. The same applies to credentials.
 
 At the moment no additional options are provided for further customization.
+
+== Using existing resources
+
+Sometimes it's desirable to either provide additional resources (e.g. a ConfigMap, a Secret, a Deployment for a database etc) or provide custom ones that will be used as a `base` for the generation process.
+Those resources can be added under `src/main/kubernetes` directory and can be named after the target environment (e.g. kubernetes.json, openshift.json, knative.json, or the yml equivalents). Each of these files may contain one or more Kubernetes resources.
+
+Any resource found will be added in the generated manifests. Global modifications (e.g. labels, annotations etc) will also be applied to those resources.
+If one of the provided resources has the same name as one of the generated ones, then the generated resource will be created on top of the provided resource, respecting existing content when possible (e.g. existing labels, annotations, environment variables, mounts, replicas etc).
+
+The name of the resource is determined by the application name and may be overridden by `quarkus.kubernetes.name`, `quarkus.openshift.name` and `quarkus.knative.name`.
+
+For example, in the `kubernetes-quickstart` application, we can add a `kubernetes.yml` file in the `src/main/kubernetes` that looks like:
+
+[source,yaml]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubernetes-quickstart
+  labels:
+    app: quickstart
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: quickstart
+  template:
+    metadata:
+      labels:
+        app: quickstart
+    spec:
+      containers:
+      - name: kubernetes-quickstart
+        image: someimage:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: FOO
+          value: BAR
+---
+
+The generated `kubernetes.yml` will look like:
+
+[source,yaml]
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  annotations:
+    app.quarkus.io/build-timestamp: "2020-04-10 - 12:54:37 +0000"
+  labels:
+    app: "quickstart"
+  name: "kubernetes-quickstart"
+spec:
+  replicas: 3 <1>
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: "kubernetes-quickstart"
+      app.kubernetes.io/version: "1.0-SNAPSHOT"
+  template:
+    metadata:
+      annotations:
+        app.quarkus.io/build-timestamp: "2020-04-10 - 12:54:37 +0000"
+      labels:
+        app: "quickstart" <2>
+    spec:
+      containers:
+      - env:
+        - name: "FOO" <3>
+          value: "BAR"
+        image: "<<yourDockerUsernmae>>/kubernetes-quickstart:1.0-SNAPSHOT" <4>
+        imagePullPolicy: "Always"
+        name: "kubernetes-quickstart"
+        ports:
+        - containerPort: 8080 <5>
+          name: "http"
+          protocol: "TCP"
+      serviceAccount: "kubernetes-quickstart"
+---
+
+The provided replicas <1>, labels <2> and environment variables <3>  were retained. However, the image <4> and container port <5> were modified. Moreover, the default annotations have been added.
+
+[NOTE]
+====
+If the resource name does not match the application name (or the overridden name) instead of reusing the resource a new one will be added. Same goes for the container.
+If the name of the container does not match the application name (or the overridden name), container specific configuration will be ignored.
+====

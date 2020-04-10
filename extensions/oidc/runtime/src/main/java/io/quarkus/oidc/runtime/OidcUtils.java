@@ -8,9 +8,16 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.jwt.Claims;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.consumer.InvalidJwtException;
 
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.ForbiddenException;
+import io.quarkus.security.credential.TokenCredential;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -113,5 +120,37 @@ public final class OidcUtils {
             list.add(claimValue.getString(i));
         }
         return list;
+    }
+
+    static QuarkusSecurityIdentity validateAndCreateIdentity(TokenCredential credential,
+            OidcTenantConfig config, JsonObject tokenJson) {
+        try {
+            OidcUtils.validateClaims(config.getToken(), tokenJson);
+        } catch (OIDCException e) {
+            throw new AuthenticationFailedException(e);
+        }
+
+        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
+        builder.addCredential(credential);
+
+        JsonWebToken jwtPrincipal;
+        try {
+            JwtClaims jwtClaims = JwtClaims.parse(tokenJson.encode());
+            jwtClaims.setClaim(Claims.raw_token.name(), credential.getToken());
+            jwtPrincipal = new OidcJwtCallerPrincipal(jwtClaims, credential,
+                    config.token.principalClaim.isPresent() ? config.token.principalClaim.get() : null);
+        } catch (InvalidJwtException e) {
+            throw new AuthenticationFailedException(e);
+        }
+        builder.setPrincipal(jwtPrincipal);
+        try {
+            String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
+            for (String role : OidcUtils.findRoles(clientId, config.getRoles(), tokenJson)) {
+                builder.addRole(role);
+            }
+        } catch (Exception e) {
+            throw new ForbiddenException(e);
+        }
+        return builder.build();
     }
 }

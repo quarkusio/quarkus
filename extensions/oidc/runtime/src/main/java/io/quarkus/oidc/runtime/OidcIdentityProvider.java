@@ -1,25 +1,18 @@
 package io.quarkus.oidc.runtime;
 
+import static io.quarkus.oidc.runtime.OidcUtils.validateAndCreateIdentity;
+
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.jwt.Claims;
-import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-
-import io.quarkus.oidc.OIDCException;
-import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.security.AuthenticationFailedException;
-import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
-import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.AsyncResult;
@@ -92,7 +85,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                 JsonObject tokenJson = event.result().accessToken();
                                 try {
                                     uniEmitter.complete(
-                                            validateAndCreateIdentity(request, resolvedContext.oidcConfig, tokenJson));
+                                            validateAndCreateIdentity(request.getToken(), resolvedContext.oidcConfig,
+                                                    tokenJson));
                                 } catch (Throwable ex) {
                                     uniEmitter.fail(ex);
                                 }
@@ -116,43 +110,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             return Uni.createFrom().failure(new AuthenticationFailedException());
         } else {
             try {
-                return Uni.createFrom().item(validateAndCreateIdentity(request, resolvedContext.oidcConfig, tokenJson));
+                return Uni.createFrom()
+                        .item(validateAndCreateIdentity(request.getToken(), resolvedContext.oidcConfig, tokenJson));
             } catch (Throwable ex) {
                 return Uni.createFrom().failure(ex);
             }
         }
-    }
-
-    private QuarkusSecurityIdentity validateAndCreateIdentity(TokenAuthenticationRequest request,
-            OidcTenantConfig config, JsonObject tokenJson)
-            throws Exception {
-        try {
-            OidcUtils.validateClaims(config.getToken(), tokenJson);
-        } catch (OIDCException e) {
-            throw new AuthenticationFailedException(e);
-        }
-
-        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
-        builder.addCredential(request.getToken());
-
-        JsonWebToken jwtPrincipal;
-        try {
-            JwtClaims jwtClaims = JwtClaims.parse(tokenJson.encode());
-            jwtClaims.setClaim(Claims.raw_token.name(), request.getToken().getToken());
-            jwtPrincipal = new OidcJwtCallerPrincipal(jwtClaims, request.getToken(),
-                    config.token.principalClaim.isPresent() ? config.token.principalClaim.get() : null);
-        } catch (InvalidJwtException e) {
-            throw new AuthenticationFailedException(e);
-        }
-        builder.setPrincipal(jwtPrincipal);
-        try {
-            String clientId = config.getClientId().isPresent() ? config.getClientId().get() : null;
-            for (String role : OidcUtils.findRoles(clientId, config.getRoles(), tokenJson)) {
-                builder.addRole(role);
-            }
-        } catch (Exception e) {
-            throw new ForbiddenException(e);
-        }
-        return builder.build();
     }
 }

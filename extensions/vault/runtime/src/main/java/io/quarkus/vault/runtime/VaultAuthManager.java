@@ -4,20 +4,31 @@ import static io.quarkus.vault.runtime.LogConfidentialityLevel.LOW;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.APPROLE;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.KUBERNETES;
 import static io.quarkus.vault.runtime.config.VaultAuthenticationType.USERPASS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.vault.VaultException;
 import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.auth.AbstractVaultAuthAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultAppRoleGenerateNewSecretID;
 import io.quarkus.vault.runtime.client.dto.auth.VaultKubernetesAuthAuth;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelfAuth;
+import io.quarkus.vault.runtime.client.dto.auth.VaultTokenCreate;
+import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV1;
+import io.quarkus.vault.runtime.client.dto.kv.VaultKvSecretV2;
 import io.quarkus.vault.runtime.config.VaultAuthenticationType;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 
@@ -27,10 +38,13 @@ import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 public class VaultAuthManager {
 
     private static final Logger log = Logger.getLogger(VaultAuthManager.class.getName());
+    public static final String USERPASS_WRAPPING_TOKEN_PASSWORD_KEY = "password";
 
     private VaultRuntimeConfig serverConfig;
     private VaultClient vaultClient;
-    private AtomicReference<VaultToken> auth = new AtomicReference<>(null);
+    private AtomicReference<VaultToken> loginCache = new AtomicReference<>(null);
+    private Map<String, String> wrappedCache = new ConcurrentHashMap<>();
+    private Semaphore unwrapSem = new Semaphore(1);
 
     public VaultAuthManager(VaultClient vaultClient, VaultRuntimeConfig serverConfig) {
         this.vaultClient = vaultClient;
@@ -38,13 +52,24 @@ public class VaultAuthManager {
     }
 
     public String getClientToken() {
-        return serverConfig.authentication.clientToken.orElseGet(() -> login().clientToken);
+        return serverConfig.authentication.isDirectClientToken() ? getDirectClientToken() : login().clientToken;
+    }
+
+    private String getDirectClientToken() {
+
+        Optional<String> clientTokenOption = serverConfig.authentication.clientToken;
+        if (clientTokenOption.isPresent()) {
+            return clientTokenOption.get();
+        }
+
+        return unwrapWrappingTokenOnce("client token",
+                serverConfig.authentication.clientTokenWrappingToken.get(), unwrap -> unwrap.auth.clientToken,
+                VaultTokenCreate.class);
     }
 
     private VaultToken login() {
-        VaultAuthManager service = new VaultAuthManager(vaultClient, serverConfig);
-        VaultToken vaultToken = service.login(auth.get());
-        auth.set(vaultToken);
+        VaultToken vaultToken = login(loginCache.get());
+        loginCache.set(vaultToken);
         return vaultToken;
     }
 
@@ -105,17 +130,98 @@ public class VaultAuthManager {
             auth = loginKubernetes();
         } else if (type == USERPASS) {
             String username = serverConfig.authentication.userpass.username.get();
-            String password = serverConfig.authentication.userpass.password.get();
+            String password = getPassword();
             auth = vaultClient.loginUserPass(username, password).auth;
         } else if (type == APPROLE) {
             String roleId = serverConfig.authentication.appRole.roleId.get();
-            String secretId = serverConfig.authentication.appRole.secretId.get();
+            String secretId = getSecretId();
             auth = vaultClient.loginAppRole(roleId, secretId).auth;
         } else {
             throw new UnsupportedOperationException("unknown authType " + serverConfig.getAuthenticationType());
         }
 
         return new VaultToken(auth.clientToken, auth.renewable, auth.leaseDurationSecs);
+    }
+
+    private String getSecretId() {
+
+        Optional<String> secretIdOption = serverConfig.authentication.appRole.secretId;
+        if (secretIdOption.isPresent()) {
+            return secretIdOption.get();
+        }
+
+        return unwrapWrappingTokenOnce("secret id",
+                serverConfig.authentication.appRole.secretIdWrappingToken.get(), unwrap -> unwrap.data.secretId,
+                VaultAppRoleGenerateNewSecretID.class);
+    }
+
+    private String getPassword() {
+
+        Optional<String> passwordOption = serverConfig.authentication.userpass.password;
+        if (passwordOption.isPresent()) {
+            return passwordOption.get();
+        }
+
+        String wrappingToken = serverConfig.authentication.userpass.passwordWrappingToken.get();
+        if (serverConfig.kvSecretEngineVersion == 1) {
+            Function<VaultKvSecretV1, String> f = unwrap -> unwrap.data.get(USERPASS_WRAPPING_TOKEN_PASSWORD_KEY);
+            return unwrapWrappingTokenOnce("password", wrappingToken, f, VaultKvSecretV1.class);
+        } else {
+            Function<VaultKvSecretV2, String> f = unwrap -> unwrap.data.data.get(USERPASS_WRAPPING_TOKEN_PASSWORD_KEY);
+            return unwrapWrappingTokenOnce("password", wrappingToken, f, VaultKvSecretV2.class);
+        }
+    }
+
+    private <T> String unwrapWrappingTokenOnce(String type, String wrappingToken,
+            Function<T, String> f, Class<T> clazz) {
+
+        // if the wrapped info is already in the cache, no need to go through semaphore acquisition
+        String wrappedValue = wrappedCache.get(wrappingToken);
+        if (wrappedValue != null) {
+            return wrappedValue;
+        }
+
+        try {
+            boolean success = unwrapSem.tryAcquire(1, 10, SECONDS);
+            if (!success) {
+                throw new RuntimeException("unable to enter critical section when unwrapping " + type);
+            }
+            try {
+                // by the time we reach here, may be somebody has populated the cache
+                wrappedValue = wrappedCache.get(wrappingToken);
+                if (wrappedValue != null) {
+                    return wrappedValue;
+                }
+
+                T unwrap;
+
+                try {
+                    unwrap = vaultClient.unwrap(wrappingToken, clazz);
+                } catch (VaultClientException e) {
+                    if (e.getStatus() == 400) {
+                        String message = "wrapping token is not valid or does not exist; " +
+                                "this means that the token has already expired " +
+                                "(if so you can increase the ttl on the wrapping token) or " +
+                                "has been consumed by somebody else " +
+                                "(potentially indicating that the wrapping token has been stolen)";
+                        throw new VaultException(message, e);
+                    } else {
+                        throw e;
+                    }
+                }
+
+                wrappedValue = f.apply(unwrap);
+                wrappedCache.put(wrappingToken, wrappedValue);
+                String displayValue = serverConfig.logConfidentialityLevel.maskWithTolerance(wrappedValue, LOW);
+                log.debug("unwrapped " + type + ": " + displayValue);
+                return wrappedValue;
+
+            } finally {
+                unwrapSem.release();
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException("unable to enter critical section when unwrapping " + type, e);
+        }
     }
 
     private VaultKubernetesAuthAuth loginKubernetes() {

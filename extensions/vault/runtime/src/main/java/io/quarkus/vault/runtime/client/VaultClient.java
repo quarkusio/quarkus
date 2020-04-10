@@ -16,6 +16,7 @@ import io.quarkus.vault.runtime.client.dto.sys.VaultInitResponse;
 import io.quarkus.vault.runtime.client.dto.sys.VaultLeasesLookup;
 import io.quarkus.vault.runtime.client.dto.sys.VaultRenewLease;
 import io.quarkus.vault.runtime.client.dto.sys.VaultSealStatusResult;
+import io.quarkus.vault.runtime.client.dto.sys.VaultWrapResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyBody;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPCreateKeyResult;
 import io.quarkus.vault.runtime.client.dto.totp.VaultTOTPGenerateCodeResult;
@@ -96,4 +97,8 @@ public interface VaultClient {
     VaultSealStatusResult systemSealStatus();
 
     VaultInitResponse init(int secretShares, int secretThreshold);
+
+    VaultWrapResult wrap(String token, long ttl, Object object);
+
+    <T> T unwrap(String wrappingToken, Class<T> resultClass);
 }

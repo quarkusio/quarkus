@@ -20,4 +20,13 @@ public class VaultAppRoleAuthenticationConfig {
     @ConfigItem
     public Optional<String> secretId;
 
+    /**
+     * Wrapping token containing a Secret Id, obtained from:
+     * <p>
+     * vault write -wrap-ttl=60s -f auth/approle/role/myapp/secret-id
+     * <p>
+     * secret-id and secret-id-wrapping-token are exclusive
+     */
+    @ConfigItem
+    public Optional<String> secretIdWrappingToken;
 }

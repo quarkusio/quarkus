@@ -97,11 +97,14 @@ public class VaultAuthManagerTest {
             config.authentication.userpass = new VaultUserpassAuthenticationConfig();
             config.url = Optional.of(new URL("http://localhost:8200"));
             config.authentication.clientToken = Optional.empty();
+            config.authentication.clientTokenWrappingToken = Optional.empty();
             config.authentication.kubernetes.role = Optional.empty();
             config.authentication.appRole.roleId = Optional.empty();
             config.authentication.appRole.secretId = Optional.empty();
+            config.authentication.appRole.secretIdWrappingToken = Optional.empty();
             config.authentication.userpass.username = Optional.of("bob");
             config.authentication.userpass.password = Optional.of("sinclair");
+            config.authentication.userpass.passwordWrappingToken = Optional.empty();
             config.connectTimeout = Duration.ofSeconds(1);
             config.readTimeout = Duration.ofSeconds(1);
             config.tls.skipVerify = true;

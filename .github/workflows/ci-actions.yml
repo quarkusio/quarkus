@@ -365,7 +365,7 @@ jobs:
               elytron-undertow
               elytron-security-ldap
           - category: Security2
-            timeout: 50
+            timeout: 60
             keycloak: "true"
             test-modules: >
               elytron-resteasy

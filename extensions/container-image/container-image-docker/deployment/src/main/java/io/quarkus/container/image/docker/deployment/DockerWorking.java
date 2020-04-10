@@ -11,38 +11,35 @@ import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.deployment.util.ExecUtil;
 
-public class DockerBuild implements BooleanSupplier {
+public class DockerWorking implements BooleanSupplier {
 
-    private static final Logger LOGGER = Logger.getLogger(DockerBuild.class.getName());
-    private static boolean daemonFound = false;
-
-    private final ContainerImageConfig containerImageConfig;
-
-    public DockerBuild(ContainerImageConfig containerImageConfig) {
-        this.containerImageConfig = containerImageConfig;
-    }
+    private static final Logger LOGGER = Logger.getLogger(DockerWorking.class.getName());
 
     @Override
     public boolean getAsBoolean() {
-        // No need to perform the check multiple times.
-        if (daemonFound) {
-            return true;
-        }
         try {
-            OutputFilter filter = new OutputFilter();
-            if (ExecUtil.exec(new File("."), filter, "docker", "version", "--format", "'{{.Server.Version}}'")) {
-                LOGGER.info("Docker daemon found! Version:" + filter.getOutput());
-                daemonFound = true;
-                return true;
-            } else {
-                LOGGER.warn("Could not connect to docker daemon!");
+            if (!ExecUtil.execSilent("docker", "-v")) {
+                LOGGER.warn("'docker -v' returned an error code. Make sure your Docker binary is correct");
                 return false;
             }
         } catch (Exception e) {
-            LOGGER.warn("Could not connect to docker daemon!");
+            LOGGER.warn("No Docker binary found");
+            return false;
+        }
+
+        try {
+            OutputFilter filter = new OutputFilter();
+            if (ExecUtil.exec(new File("."), filter, "docker", "version", "--format", "'{{.Server.Version}}'")) {
+                LOGGER.info("Docker daemon found. Version:" + filter.getOutput());
+                return true;
+            } else {
+                LOGGER.warn("Could not determine version of Docker daemon");
+                return false;
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Unexpected error occurred while determining Docker daemon version", e);
             return false;
         }
     }

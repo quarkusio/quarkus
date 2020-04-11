@@ -10,12 +10,12 @@ import io.quarkus.arc.Subclass;
 public class ArcProxyBeanMetaDataClassNormalizer implements BeanMetaDataClassNormalizer {
 
     @Override
-    public Class<?> normalize(Class<?> clazz) {
-        if (Subclass.class.isAssignableFrom(clazz)) {
-            return clazz.getSuperclass();
+    public <T> Class<? super T> normalize(Class<T> beanClass) {
+        if (Subclass.class.isAssignableFrom(beanClass)) {
+            return beanClass.getSuperclass();
         }
 
-        return clazz;
+        return beanClass;
     }
 
 }

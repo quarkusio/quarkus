@@ -15,7 +15,8 @@ public class ProducingBean {
     @Outgoing("source")
     public Publisher<Long> generate() {
         return Multi.createFrom().ticks().every(Duration.ofMillis(100))
-                .on().overflow().drop();
+                .on().overflow().drop()
+                .onFailure().recoverWithItem(42L);
     }
 
 }

@@ -10,14 +10,18 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -28,13 +32,19 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.collection.CollectResult;
+import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyNode;
+import org.eclipse.aether.graph.DependencyVisitor;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.util.graph.visitor.TreeDependencyVisitor;
 
 /**
  * Generates Quarkus extension descriptor for the runtime artifact.
  *
  * <p/>
- * Also generates META-INF/quarkus-extension.json which includes properties of
+ * Also generates META-INF/quarkus-extension.yaml which includes properties of
  * the extension such as name, labels, maven coordinates, etc that are used by
  * the tools.
  *
@@ -240,9 +250,8 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             throws MojoExecutionException {
         ObjectNode metadata = null;
 
-        // Note: groupId and artifactId shouldn't normally be in the source json but
-        // just putting it
-        // here for completenes
+        // Note: groupId and artifactId shouldn't normally be in the source yaml but
+        // just putting it here for completeness
         if (extObject.get("groupId") != null) {
             extObject.set(GROUP_ID, extObject.get("groupId"));
             extObject.remove("groupId");
@@ -274,16 +283,50 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             metadata.set("short-name", extObject.get("shortName"));
             extObject.remove("shortName");
         }
-
+        // Add quarkus core version used to build this extension
+        String quarkusCoreVersion = resolveQuarkusCoreVersion();
+        if (quarkusCoreVersion != null) {
+            metadata.put("quarkus-core", quarkusCoreVersion);
+        }
         extObject.set("metadata", metadata);
+    }
 
-        //   updateSourceFiles(output, extObject, mapper);
+    private String resolveQuarkusCoreVersion() throws MojoExecutionException {
+        MavenArtifactResolver mvn = getMavenResolver();
+        DefaultArtifact artifact = new DefaultArtifact(project.getGroupId(),
+                project.getArtifactId(),
+                project.getPackaging(),
+                project.getVersion());
+        final CollectResult collectResult;
+        try {
+            collectResult = mvn.collectDependencies(artifact, Collections.emptyList());
+        } catch (AppModelResolverException e) {
+            return null;
+        }
+        final AtomicReference<String> version = new AtomicReference<>();
+        final TreeDependencyVisitor visitor = new TreeDependencyVisitor(new DependencyVisitor() {
+            @Override
+            public boolean visitEnter(DependencyNode node) {
+                return version.get() == null;
+            }
 
+            @Override
+            public boolean visitLeave(DependencyNode node) {
+                final Dependency dep = node.getDependency();
+                if (dep != null
+                        && dep.getArtifact().getArtifactId().equals("quarkus-core")
+                        && dep.getArtifact().getGroupId().equals("io.quarkus")) {
+                    version.set(dep.getArtifact().getVersion());
+                }
+                return version.get() == null;
+            }
+        });
+        collectResult.getRoot().accept(visitor);
+        return version.get();
     }
 
     /**
-     * parse yaml or json and then return jackson JSonNode for furhter processing
-     * 
+     * Parse yaml or json and then return jackson ObjectNode for further processing
      ***/
     private ObjectNode processPlatformArtifact(Path descriptor, ObjectMapper mapper)
             throws IOException {
@@ -304,6 +347,17 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             return new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
                     .enable(JsonParser.Feature.ALLOW_COMMENTS).enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS)
                     .setPropertyNamingStrategy(PropertyNamingStrategy.KEBAB_CASE);
+        }
+    }
+
+    private MavenArtifactResolver getMavenResolver() throws MojoExecutionException {
+        try {
+            return MavenArtifactResolver.builder().setRepositorySystem(repoSystem)
+                    .setRepositorySystemSession(repoSession)
+                    .setRemoteRepositories(repos)
+                    .build();
+        } catch (AppModelResolverException e) {
+            throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
         }
     }
 }

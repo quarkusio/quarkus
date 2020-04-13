@@ -2716,7 +2716,7 @@ You can also use the `@asciidoclet` tag as shown above.
 
 Generating the documentation is easy:
 
- * Running `./mvnw clean install -DskipTests -DskipITs` will do.
+ * Running `./mvnw clean install -DskipTests` will do.
  * You  can either do it globally or in a specific extension directory (e.g. `extensions/mailer`).
 
 The documentation is generated in the global `target/asciidoc/generated/config/` located at the root of the project.

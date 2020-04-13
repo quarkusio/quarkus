@@ -17,7 +17,7 @@ To run the functional tests, run the following command:
 Local development
 -----------------
 
-1. Build the entire Quarkus codebase by running `mvn clean install -DskipTests -DskipITs` in the project root 
+1. Build the entire Quarkus codebase by running `mvn clean install -DskipTests` in the project root 
     - This should install the Gradle plugin in your local maven repository.
 
 2. Create a sample project using the Maven plugin:

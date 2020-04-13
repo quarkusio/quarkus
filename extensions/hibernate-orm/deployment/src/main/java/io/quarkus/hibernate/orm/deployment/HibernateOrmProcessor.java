@@ -35,6 +35,7 @@ import javax.persistence.spi.PersistenceUnitTransactionType;
 
 import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricType;
+import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.annotations.Proxy;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl;
@@ -59,7 +60,6 @@ import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
-import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 
 import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
@@ -105,6 +105,7 @@ import io.quarkus.hibernate.orm.runtime.dialect.QuarkusH2Dialect;
 import io.quarkus.hibernate.orm.runtime.dialect.QuarkusPostgreSQL10Dialect;
 import io.quarkus.hibernate.orm.runtime.metrics.HibernateCounter;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
+import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.metrics.deployment.spi.MetricBuildItem;
 import net.bytebuddy.description.type.TypeDescription;
@@ -121,7 +122,6 @@ import net.bytebuddy.dynamic.DynamicType;
  */
 public final class HibernateOrmProcessor {
 
-    private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
     private static final String HIBERNATE_ORM_CONFIG_PREFIX = "quarkus.hibernate-orm.";
     private static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
 
@@ -277,10 +277,23 @@ public final class HibernateOrmProcessor {
         }
         PreGeneratedProxies proxyDefinitions = generatedProxies(entitiesToGenerateProxiesFor, compositeIndex,
                 generatedClassBuildItemBuildProducer);
+
+        // Multi tenancy mode (DATABASE, DISCRIMINATOR, NONE, SCHEMA)
+        MultiTenancyStrategy strategy = getMultiTenancyStrategy();
+        if (strategy == MultiTenancyStrategy.DISCRIMINATOR) {
+            // See https://hibernate.atlassian.net/browse/HHH-6054
+            throw new ConfigurationError("The Hibernate ORM multi tenancy strategy "
+                    + MultiTenancyStrategy.DISCRIMINATOR + " is currently not supported");
+        }
+
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
                         recorder.initMetadata(allDescriptors, scanner, integratorClasses, serviceContributorClasses,
-                                proxyDefinitions)));
+                                proxyDefinitions, strategy)));
+    }
+
+    private MultiTenancyStrategy getMultiTenancyStrategy() {
+        return MultiTenancyStrategy.valueOf(hibernateConfig.multitenant.orElse(MultiTenancyStrategy.NONE.name()));
     }
 
     private PreGeneratedProxies generatedProxies(Set<String> entityClassNames, IndexView combinedIndex,
@@ -403,9 +416,16 @@ public final class HibernateOrmProcessor {
             return;
         }
 
+        List<Class<?>> unremovableClasses = new ArrayList<>();
+        unremovableClasses.add(JPAConfig.class);
+        unremovableClasses.add(TransactionEntityManagers.class);
+        unremovableClasses.add(RequestScopedEntityManagerHolder.class);
+        if (getMultiTenancyStrategy() != MultiTenancyStrategy.NONE) {
+            unremovableClasses.add(DataSourceTenantConnectionResolver.class);
+        }
+
         additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                .addBeanClasses(JPAConfig.class, TransactionEntityManagers.class,
-                        RequestScopedEntityManagerHolder.class)
+                .addBeanClasses(unremovableClasses.toArray(new Class<?>[unremovableClasses.size()]))
                 .build());
 
         if (descriptors.size() == 1) {
@@ -440,9 +460,12 @@ public final class HibernateOrmProcessor {
         if (!hasEntities(jpaEntities, nonJpaModels)) {
             return;
         }
-
+        MultiTenancyStrategy strategy = MultiTenancyStrategy
+                .valueOf(hibernateConfig.multitenant.orElse(MultiTenancyStrategy.NONE.name()));
         buildProducer.produce(new BeanContainerListenerBuildItem(
-                recorder.initializeJpa(capabilities.isCapabilityPresent(Capabilities.TRANSACTIONS))));
+                recorder.initializeJpa(capabilities.isCapabilityPresent(Capabilities.TRANSACTIONS), strategy,
+                        hibernateConfig.multitenantSchemaDatasource.orElse(null))));
+
         // Bootstrap all persistence units
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : descriptors) {
             buildProducer.produce(new BeanContainerListenerBuildItem(

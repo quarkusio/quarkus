@@ -542,3 +542,216 @@ Datasource configuration is extremely simple, but is covered in a different guid
 it's implemented by the Agroal connection pool extension for Quarkus.
 
 Jump over to link:datasource[Quarkus - Datasources] for all details.
+
+== Multitenancy
+
+"The term multitenancy, in general, is applied to software development to indicate an architecture in which a single running instance of an application simultaneously serves multiple clients (tenants). This is highly common in SaaS solutions. Isolating information (data, customizations, etc.) pertaining to the various tenants is a particular challenge in these systems. This includes the data owned by each tenant stored in the database" (link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy[Hibernate User Guide]).
+
+Quarkus currently supports the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy-separate-database[separate database] and the link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#multitenacy-separate-schema[separate schema] approach. 
+
+=== Writing the application
+
+Let's start by implementing the `/{tenant}` endpoint. As you can see from the source code below it is just a regular JAX-RS resource:
+
+[source,java]
+----
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.persistence.EntityManager;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+
+@ApplicationScoped
+@Produces("application/json")
+@Consumes("application/json")
+@Path("/{tenant}")
+public class FruitResource {
+
+    @Inject
+    EntityManager entityManager;
+
+    @GET
+    @Path("fruits")
+    public Fruit[] getFruits() {
+        return entityManager.createNamedQuery("Fruits.findAll", Fruit.class)
+                .getResultList().toArray(new Fruit[0]);
+    }
+    
+}
+----
+
+In order to resolve the tenant from incoming requests and map it to a specific tenant configuration, you need to create an implementation for the `io.quarkus.hibernate.orm.runtime.tenant.TenantResolver` interface.
+
+[source,java]
+----
+import javax.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.Unremovable;
+import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
+import io.vertx.ext.web.RoutingContext;
+
+@@RequestScoped
+@Unremovable
+public class CustomTenantResolver implements TenantResolver {
+
+    @Inject
+    RoutingContext context;
+
+    @Override
+    public String getDefaultTenantId() {
+        return "base";
+    }
+    
+    @Override
+    public String resolveTenantId() {
+        String path = context.request().path();
+        String[] parts = path.split("/");
+
+        if (parts.length == 0) {
+            // resolve to default tenant config
+            return getDefaultTenantId();
+        }
+
+        return parts[1];
+    }
+    
+}
+----
+
+From the implementation above, tenants are resolved from the request path so that in case no tenant could be inferred, the default tenant identifier is returned.
+
+=== Configuring the application
+
+In general it is not possible to use the Hibernate ORM database generation feature in conjunction with a multitenancy setup.
+Therefore you have to disable it and you need to make sure that the tables are created per schema. 
+The following setup will use the link:https://quarkus.io/guides/flyway[Flyway] extension to achieve this goal.
+
+==== SCHEMA approach
+
+The same data source will be used for all tenants and a schema has to be created for every tenant inside that data source.
+CAUTION: Some databases like MariaDB/MySQL do not support database schemas. In these cases you have to use the DATABASE approach below. 
+
+[source,properties]
+----
+# Disable generation
+quarkus.hibernate-orm.database.generation=none
+
+# Enable SCHEMA approach and use default schema
+quarkus.hibernate-orm.multitenant=SCHEMA
+# You could use a non-default schema by using the following setting 
+# quarkus.hibernate-orm.multitenant-schema-datasource=other
+
+# The default data source used for all tenant schemas
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.username=quarkus_test
+quarkus.datasource.password=quarkus_test
+quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
+
+# Enable Flyway configuration to create schemas
+quarkus.flyway.schemas=base,mycompany
+quarkus.flyway.locations=classpath:schema
+quarkus.flyway.migrate-at-start=true
+----
+
+Here is an example of the Flyway SQL (`V1.0.0__create_fruits.sql`) to be created in the configured folder `src/main/resources/schema`.
+
+[source,sql]
+----
+CREATE SEQUENCE base.known_fruits_id_seq;
+SELECT setval('base."known_fruits_id_seq"', 3);
+CREATE TABLE base.known_fruits
+(
+  id   INT,
+  name VARCHAR(40)
+);
+INSERT INTO base.known_fruits(id, name) VALUES (1, 'Cherry');
+INSERT INTO base.known_fruits(id, name) VALUES (2, 'Apple');
+INSERT INTO base.known_fruits(id, name) VALUES (3, 'Banana');
+
+CREATE SEQUENCE mycompany.known_fruits_id_seq;
+SELECT setval('mycompany."known_fruits_id_seq"', 3);
+CREATE TABLE mycompany.known_fruits
+(
+  id   INT,
+  name VARCHAR(40)
+);
+INSERT INTO mycompany.known_fruits(id, name) VALUES (1, 'Avocado');
+INSERT INTO mycompany.known_fruits(id, name) VALUES (2, 'Apricots');
+INSERT INTO mycompany.known_fruits(id, name) VALUES (3, 'Blackberries');
+----
+
+
+
+==== DATABASE approach
+
+For every tenant you need to create a named data source with the same identifier that is returned by the `TenantResolver`. 
+
+[source,properties]
+----
+# Disable generation
+quarkus.hibernate-orm.database.generation=none
+
+# Enable DATABASE approach
+quarkus.hibernate-orm.multitenant=DATABASE
+
+# Default tenant 'base'
+quarkus.datasource.base.db-kind=postgresql
+quarkus.datasource.base.username=quarkus_test
+quarkus.datasource.base.password=quarkus_test
+quarkus.datasource.base.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
+
+# Tenant 'mycompany'
+quarkus.datasource.mycompany.db-kind=postgresql
+quarkus.datasource.mycompany.username=mycompany
+quarkus.datasource.mycompany.password=mycompany
+quarkus.datasource.mycompany.jdbc.url=jdbc:postgresql://localhost:5433/mycompany
+
+# Flyway configuration for the default datasource
+quarkus.flyway.locations=classpath:database/default
+quarkus.flyway.migrate-at-start=true
+
+# Flyway configuration for the mycompany datasource
+quarkus.flyway.mycompany.locations=classpath:database/mycompany
+quarkus.flyway.mycompany.migrate-at-start=true
+----
+
+Following are examples of the Flyway SQL files to be created in the configured folder `src/main/resources/database`.
+
+Default schema (`src/main/resources/database/default/V1.0.0__create_fruits.sql`):
+
+[source,sql]
+----
+CREATE SEQUENCE known_fruits_id_seq;
+SELECT setval('known_fruits_id_seq', 3);
+CREATE TABLE known_fruits
+(
+  id   INT,
+  name VARCHAR(40)
+);
+INSERT INTO known_fruits(id, name) VALUES (1, 'Cherry');
+INSERT INTO known_fruits(id, name) VALUES (2, 'Apple');
+INSERT INTO known_fruits(id, name) VALUES (3, 'Banana');
+----
+
+Mycompany schema (`src/main/resources/database/mycompany/V1.0.0__create_fruits.sql`):
+
+[source,sql]
+----
+CREATE SEQUENCE known_fruits_id_seq;
+SELECT setval('known_fruits_id_seq', 3);
+CREATE TABLE known_fruits
+(
+  id   INT,
+  name VARCHAR(40)
+);
+INSERT INTO known_fruits(id, name) VALUES (1, 'Avocado');
+INSERT INTO known_fruits(id, name) VALUES (2, 'Apricots');
+INSERT INTO known_fruits(id, name) VALUES (3, 'Blackberries');
+----
+
+=== Programmatically Resolving Tenants Connections
+
+If you need a more dynamic configuration for the different tenants you want to support and don't want to end up with multiple entries in your configuration file, you can use the `io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver` interface to implement your own logic for retrieving a connection. Creating an application scoped bean that implements this interface will replace the current Quarkus default implementation `io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver`. Your custom connection resolver would allow for example to read tenant information from a database and create a connection per tenant at runtime based on it.

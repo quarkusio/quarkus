@@ -159,7 +159,7 @@ public class ValuesGenerator {
                             .setScale(1, RoundingMode.HALF_UP)
                             .doubleValue();
 
-                    LOG.info("station: {}, temperature: {}", station.name, temperature);
+                    LOG.infov("station: {0}, temperature: {1}", station.name, temperature);
                     return KafkaRecord.of(station.id, Instant.now() + ";" + temperature);
                 });
     }
@@ -167,7 +167,7 @@ public class ValuesGenerator {
     @Outgoing("weather-stations")                               // <3>
     public Flowable<KafkaRecord<Integer, String>> weatherStations() {
         List<KafkaRecord<Integer, String>> stationsAsJson = stations.stream()
-            .map(s -> KafkaMessage.of(
+            .map(s -> KafkaRecord.of(
                     s.id,
                     "{ \"id\" : " + s.id +
                     ", \"name\" : \"" + s.name + "\" }"))
@@ -297,6 +297,7 @@ import java.math.RoundingMode;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
+@RegisterForReflection
 public class Aggregation {
 
     public int stationId;

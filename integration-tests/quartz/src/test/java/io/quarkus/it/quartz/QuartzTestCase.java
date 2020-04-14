@@ -15,8 +15,12 @@ public class QuartzTestCase {
     public void testCount() throws InterruptedException {
         // Wait at least 1 second
         Thread.sleep(1000);
-        Response response = given()
-                .when().get("/scheduler/count");
+        assertCounter("/scheduler/count");
+        assertCounter("/scheduler/count/fix-8555");
+    }
+
+    private void assertCounter(String counterPath) {
+        Response response = given().when().get(counterPath);
         String body = response.asString();
         int count = Integer.valueOf(body);
         assertTrue(count > 0);

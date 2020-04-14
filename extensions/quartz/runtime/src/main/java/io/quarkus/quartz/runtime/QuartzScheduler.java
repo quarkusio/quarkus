@@ -15,6 +15,8 @@ import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 import javax.interceptor.Interceptor;
+import javax.transaction.SystemException;
+import javax.transaction.UserTransaction;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
@@ -39,6 +41,8 @@ import com.cronutils.model.definition.CronDefinition;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.parser.CronParser;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
@@ -76,7 +80,13 @@ public class QuartzScheduler implements Scheduler {
             this.triggerNameSequence = new AtomicInteger();
             this.invokers = new HashMap<>();
 
-            try {
+            UserTransaction transaction = null;
+
+            try (InstanceHandle<UserTransaction> handle = Arc.container().instance(UserTransaction.class)) {
+                boolean manageTx = quartzSupport.getBuildTimeConfig().storeType.isNonManagedTxJobStore();
+                if (manageTx && handle.isAvailable()) {
+                    transaction = handle.get();
+                }
                 Properties props = getSchedulerConfigurationProperties(quartzSupport);
 
                 SchedulerFactory schedulerFactory = new StdSchedulerFactory(props);
@@ -88,7 +98,9 @@ public class QuartzScheduler implements Scheduler {
                 CronType cronType = context.getCronType();
                 CronDefinition def = CronDefinitionBuilder.instanceDefinitionFor(cronType);
                 CronParser parser = new CronParser(def);
-
+                if (transaction != null) {
+                    transaction.begin();
+                }
                 for (ScheduledMethodMetadata method : context.getScheduledMethods()) {
 
                     invokers.put(method.getInvokerClassName(), context.createInvoker(method.getInvokerClassName()));
@@ -155,7 +167,17 @@ public class QuartzScheduler implements Scheduler {
                                 scheduled);
                     }
                 }
-            } catch (SchedulerException e) {
+                if (transaction != null) {
+                    transaction.commit();
+                }
+            } catch (Throwable e) {
+                if (transaction != null) {
+                    try {
+                        transaction.rollback();
+                    } catch (SystemException ex) {
+                        LOGGER.error("Unable to rollback transaction", ex);
+                    }
+                }
                 throw new IllegalStateException("Unable to create Scheduler", e);
             }
         }
@@ -241,7 +263,7 @@ public class QuartzScheduler implements Scheduler {
         props.put(StdSchedulerFactory.PROP_SCHED_RMI_PROXY, "false");
         props.put(StdSchedulerFactory.PROP_JOB_STORE_CLASS, buildTimeConfig.storeType.clazz);
 
-        if (buildTimeConfig.storeType == StoreType.DB) {
+        if (buildTimeConfig.storeType.isDbStore()) {
             String dataSource = buildTimeConfig.dataSourceName.orElse("QUARKUS_QUARTZ_DEFAULT_DATASOURCE");
             QuarkusQuartzConnectionPoolProvider.setDataSourceName(dataSource);
             props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".useProperties", "true");
@@ -255,6 +277,10 @@ public class QuartzScheduler implements Scheduler {
             if (buildTimeConfig.clustered) {
                 props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".isClustered", "true");
                 props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".clusterCheckinInterval", "20000"); // 20 seconds
+            }
+
+            if (buildTimeConfig.storeType.isNonManagedTxJobStore()) {
+                props.put(StdSchedulerFactory.PROP_JOB_STORE_PREFIX + ".nonManagedTXDataSource", dataSource);
             }
         }
 

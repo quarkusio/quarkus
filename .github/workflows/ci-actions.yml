@@ -382,7 +382,7 @@ jobs:
               infinispan-embedded
               cache
           - category: HTTP
-            timeout: 35
+            timeout: 45
             test-modules: >
               resteasy-jackson
               resteasy-mutiny
@@ -390,6 +390,7 @@ jobs:
               vertx-http
               vertx-graphql
               virtual-http
+              rest-client
           - category: Misc1
             timeout: 40
             test-modules: >

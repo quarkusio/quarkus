@@ -104,6 +104,7 @@
         <module>bootstrap-config</module>
         <module>injectmock</module>
         <module>reactive-messaging-amqp</module>
+        <module>rest-client</module>
     </modules>
 
     <build>

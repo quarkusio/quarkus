@@ -117,6 +117,14 @@ public class OidcTenantConfig {
         @ConfigItem(defaultValue = "REQUIRED")
         Verification verification;
 
+        public Verification getVerification() {
+            return verification;
+        }
+
+        public void setVerification(Verification verification) {
+            this.verification = verification;
+        }
+
     }
 
     public Optional<Duration> getConnectionDelay() {
@@ -220,19 +228,25 @@ public class OidcTenantConfig {
 
         /**
          * Client secret which is used for a 'client_secret_basic' authentication method.
-         * Note that a 'client-secret' can be used instead but both properties are mutually exclusive.
+         * Note that a 'client-secret.value' can be used instead but both properties are mutually exclusive.
          */
         @ConfigItem
         Optional<String> secret = Optional.empty();
 
         /**
-         * Client secret credentials which can be used for the 'client_secret_basic' (default)
-         * and 'client_secret_post' authentication methods.
+         * Client secret which can be used for the 'client_secret_basic' (default) and 'client_secret_post'
+         * and 'client_secret_jwt' authentication methods.
          * Note that a 'secret.value' property can be used instead to support the 'client_secret_basic' method
          * but both properties are mutually exclusive.
          */
         @ConfigItem
         Secret clientSecret = new Secret();
+
+        /**
+         * Client JWT authentication methods
+         */
+        @ConfigItem
+        Jwt jwt = new Jwt();
 
         public Optional<String> getSecret() {
             return secret;
@@ -250,23 +264,24 @@ public class OidcTenantConfig {
             this.clientSecret = clientSecret;
         }
 
+        /**
+         * Supports the client authentication methods which involve sending a client secret.
+         *
+         * @see <a href=
+         *      "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication</a>
+         */
         @ConfigGroup
         public static class Secret {
 
-            /**
-             * Client secret authentication methods which specify how a client id and client secret
-             * have to be used to authenticate a client.
-             *
-             * @see <a href=
-             *      "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication</a>
-             */
             public static enum Method {
                 /**
-                 * client_secret_basic (default)
+                 * client_secret_basic (default): client id and secret are submitted with the HTTP Authorization Basic scheme
                  */
                 BASIC,
+
                 /**
-                 * client_secret_post
+                 * client_secret_post: client id and secret are submitted as the 'client_id' and 'client_secret' form
+                 * parameters.
                  */
                 POST
             }
@@ -297,6 +312,46 @@ public class OidcTenantConfig {
 
             public void setMethod(Method method) {
                 this.method = Optional.of(method);
+            }
+        }
+
+        /**
+         * Supports the client authentication methods which involve sending a signed JWT token.
+         * Currently only 'client_secret_jwt' is supported
+         *
+         * @see <a href=
+         *      "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication</a>
+         */
+        @ConfigGroup
+        public static class Jwt {
+            /**
+             * client_secret_jwt: JWT which includes client id as one of its claims is signed by the client secret and is
+             * submitted as a 'client_assertion' form parameter, while 'client_assertion_type' parameter is set to
+             * "urn:ietf:params:oauth:client-assertion-type:jwt-bearer".
+             */
+            @ConfigItem
+            Optional<String> secret = Optional.empty();
+
+            /**
+             * JWT life-span in seconds. It will be added to the time it was issued at to calculate the expiration time.
+             */
+            @ConfigItem(defaultValue = "10")
+            int lifespan = 10;
+
+            public Optional<String> getSecret() {
+                return secret;
+            }
+
+            public void setSecret(String secret) {
+                this.secret = Optional.of(secret);
+            }
+
+            public int getLifespan() {
+                return lifespan;
+            }
+
+            public void setLifespan(int lifespan) {
+                this.lifespan = lifespan;
             }
         }
     }

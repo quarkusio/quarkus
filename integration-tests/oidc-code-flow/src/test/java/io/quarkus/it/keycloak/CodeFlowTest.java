@@ -157,6 +157,52 @@ public class CodeFlowTest {
     }
 
     @Test
+    public void testIdTokenInjectionJwtMethod() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-jwt-before-redirect");
+            assertNotNull(getStateCookieStateParam(webClient));
+            assertNull(getStateCookieSavedPath(webClient));
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("callback-jwt:alice", page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testIdTokenInjectionJwtMethodButPostMethodUsed() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-jwt-not-used-before-redirect");
+            assertNotNull(getStateCookieStateParam(webClient));
+            assertNull(getStateCookieSavedPath(webClient));
+
+            assertEquals("Log in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            try {
+                loginForm.getInputByName("login").click();
+                fail("401 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+            }
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testIdTokenInjectionWithoutRestoredPathDifferentRoot() throws IOException, InterruptedException {
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/web-app2/callback-before-redirect?tenantId=tenant-2");
@@ -328,10 +374,6 @@ public class CodeFlowTest {
         return webClient;
     }
 
-    private Cookie getSessionCookie(WebClient webClient) {
-        return webClient.getCookieManager().getCookie("q_session");
-    }
-
     private Cookie getStateCookie(WebClient webClient) {
         return webClient.getCookieManager().getCookie("q_auth");
     }
@@ -343,5 +385,9 @@ public class CodeFlowTest {
     private String getStateCookieSavedPath(WebClient webClient) {
         String[] parts = getStateCookie(webClient).getValue().split("___");
         return parts.length == 2 ? parts[1] : null;
+    }
+
+    private Cookie getSessionCookie(WebClient webClient) {
+        return webClient.getCookieManager().getCookie("q_session");
     }
 }

@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.Permission;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +10,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.jboss.logging.Logger;
 
@@ -25,6 +29,7 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.AuthenticationCompletionException;
 import io.quarkus.vertx.http.runtime.security.AuthenticationRedirectException;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
+import io.smallrye.jwt.build.Jwt;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.http.Cookie;
@@ -188,9 +193,11 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         // Client secret has to be posted as a form parameter if OIDC requires the client_secret_post authentication
         Credentials creds = configContext.oidcConfig.getCredentials();
-        if (creds.clientSecret.value.isPresent() && creds.clientSecret.method.isPresent()
-                && Secret.Method.POST == creds.clientSecret.method.get()) {
+        if (creds.clientSecret.value.isPresent() && Secret.Method.POST == creds.clientSecret.method.orElse(null)) {
             params.put("client_secret", creds.clientSecret.value.get());
+        } else if (creds.jwt.secret.isPresent()) {
+            params.put("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer");
+            params.put("client_assertion", signJwtWithClientSecret(configContext.oidcConfig));
         }
 
         return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
@@ -226,6 +233,23 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 });
             }
         });
+    }
+
+    private String signJwtWithClientSecret(OidcTenantConfig cfg) {
+        final byte[] keyBytes = cfg.credentials.jwt.secret.get().getBytes(StandardCharsets.UTF_8);
+        SecretKey key = new SecretKeySpec(keyBytes, 0, keyBytes.length, "HMACSHA256");
+
+        // 'jti' claim is created by default.
+        final long iat = (System.currentTimeMillis() / 1000);
+        final long exp = iat + cfg.credentials.jwt.lifespan;
+
+        return Jwt.claims()
+                .issuer(cfg.clientId.get())
+                .subject(cfg.clientId.get())
+                .audience(cfg.authServerUrl.get())
+                .issuedAt(iat)
+                .expiresAt(exp)
+                .sign(key);
     }
 
     private void processSuccessfulAuthentication(RoutingContext context, TenantConfigContext configContext,

@@ -93,3 +93,21 @@ thread (A non-command mode application is essentially just running an applicatio
 
 If you want to shut down a running application and you are not in the main thread then you should call `Quarkus.asyncExit`
 in order to unblock the main thread and initiate the shutdown process.
+
+=== Dev mode
+
+Also for command mode applications the dev mode is supported. When running `mvn compile quarkus:dev`, the command mode application is executed and on press of the Enter key, is restarted.
+
+As command mode applications will often require arguments to be passed on the commandline, this is also possible in dev mode via:
+
+----
+mvn compile quarkus:dev -Dquarkus.args='--help'
+----
+
+The same can be achived with Gradle:
+
+----
+./gradlew quarkusDev --quarkus-args='--help'
+----
+
+

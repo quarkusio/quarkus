@@ -83,7 +83,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                 }
                             }
                         });
-                runner = start.runMainClass();
+                runner = start.runMainClass(context.getArgs());
             } catch (Throwable t) {
                 deploymentProblem = t;
                 if (context.isAbortOnFailedStart()) {
@@ -128,7 +128,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             //ok, we have resolved all the deps
             try {
                 StartupAction start = augmentAction.reloadExistingApplication(changedResources);
-                runner = start.runMainClass();
+                runner = start.runMainClass(context.getArgs());
             } catch (Throwable t) {
                 deploymentProblem = t;
                 log.error("Failed to start quarkus", t);

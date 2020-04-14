@@ -38,6 +38,8 @@ public class DevModeContext implements Serializable {
     // the jar file which is used to launch the DevModeMain
     private File devModeRunnerJarFile;
     private boolean localProjectDiscovery = true;
+    // args of the main-method
+    private String[] args;
 
     private List<String> compilerOptions;
     private String sourceJavaVersion;
@@ -174,6 +176,14 @@ public class DevModeContext implements Serializable {
     public DevModeContext setProjectDir(File projectDir) {
         this.projectDir = projectDir;
         return this;
+    }
+
+    public String[] getArgs() {
+        return args;
+    }
+
+    public void setArgs(String[] args) {
+        this.args = args;
     }
 
     public static class ModuleInfo implements Serializable {

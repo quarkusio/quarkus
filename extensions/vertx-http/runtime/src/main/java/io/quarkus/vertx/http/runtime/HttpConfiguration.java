@@ -180,6 +180,16 @@ public class HttpConfiguration {
     @ConfigItem(defaultValue = "false")
     public boolean domainSocketEnabled;
 
+    /**
+     * If this is true then the request start time will be recorded to enable logging of total request time.
+     * 
+     * This has a small performance penalty, so is disabled by default.
+     */
+    @ConfigItem
+    public boolean recordRequestStartTime;
+
+    AccessLogConfig accessLog;
+
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;
     }
@@ -188,7 +198,7 @@ public class HttpConfiguration {
         return launchMode == LaunchMode.TEST ? testSslPort : sslPort;
     }
 
-    public static enum InsecureRequests {
+    public enum InsecureRequests {
         ENABLED,
         REDIRECT,
         DISABLED;

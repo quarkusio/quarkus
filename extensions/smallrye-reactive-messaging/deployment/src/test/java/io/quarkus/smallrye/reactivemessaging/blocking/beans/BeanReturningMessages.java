@@ -22,7 +22,7 @@ public class BeanReturningMessages {
         try {
             Thread.sleep(200);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
         threads.add(Thread.currentThread().getName());
         return Message.of(count.incrementAndGet());

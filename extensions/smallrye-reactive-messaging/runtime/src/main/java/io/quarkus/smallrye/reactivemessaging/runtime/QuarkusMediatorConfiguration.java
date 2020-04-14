@@ -48,7 +48,7 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     private boolean blockingExecutionOrdered;
 
-    String workerPoolName;
+    private String workerPoolName;
 
     public String getBeanId() {
         return beanId;

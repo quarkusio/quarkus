@@ -59,14 +59,6 @@ jobs:
           echo Installing SDKMAN
           curl -s "https://get.sdkman.io" | bash
           source ~/.sdkman/bin/sdkman-init.sh && \
-          sdk install kotlin 1.3.61 && \
-
-          # we need to install Java 8 because kscript doesn't yet work with Java 11: https://github.com/holgerbrandl/kscript/issues/239
-          if [[ ${JAVA_VERSION} = 11 ]]; then
-            echo "y" | sdk install java $(sdk list java | grep open.*\s*8.0.* | awk '{print $8}')
-            export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
-          fi
-
-          sdk install kscript 2.9.0
+          sdk install jbang 0.21.0
           [[ ${JAVA_VERSION} = 8 ]] && ISSUE_NUMBER="6717" || ISSUE_NUMBER="6723"
-          kscript .github/NativeBuildReport.kts ${GITHUB_TOKEN} ${STATUS} ${ISSUE_NUMBER}
+          jbang .github/NativeBuildReport.java token="${GITHUB_TOKEN}" status="${STATUS}" issueRepo="${GITHUB_REPOSITORY}" issueNumber="${ISSUE_NUMBER}" thisRepo="${GITHUB_REPOSITORY}" runId="${GITHUB_RUN_ID}"

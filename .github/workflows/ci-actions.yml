@@ -14,7 +14,7 @@ on:
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/autoissuelabeler.yml'
       - '.github/boring-cyborg.yml'
-      - '.github/NativeBuildReport.kts'
+      - '.github/NativeBuildReport.java'
       - '.dependabot/**'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -28,7 +28,7 @@ on:
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/autoissuelabeler.yml'
       - '.github/boring-cyborg.yml'
-      - '.github/NativeBuildReport.kts'
+      - '.github/NativeBuildReport.java'
       - '.dependabot/**'
 
 env:

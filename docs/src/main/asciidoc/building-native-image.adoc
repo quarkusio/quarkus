@@ -343,6 +343,20 @@ EXPOSE 8080
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----
 
+[NOTE]
+.Ubi?
+====
+The provided `Dockerfiles` use https://access.redhat.com/containers/?tab=overview#/registry.access.redhat.com/ubi8/ubi[UBI] (Universal Base Image) as parent image.
+This base image has been tailored to work perfectly in containers.
+The `Dockerfiles` use the https://access.redhat.com/containers/#/registry.access.redhat.com/ubi8/ubi-minimal[_minimal_ version] of the base image to reduce the size of the produced image.
+
+You can read more about UBI on:
+
+* https://access.redhat.com/containers/?tab=overview#/registry.access.redhat.com/ubi8/ubi[the UBI image page]
+* https://access.redhat.com/containers/#/registry.access.redhat.com/ubi8/ubi-minimal[the _UBI-minimal_ image page]
+* https://access.redhat.com/containers/?tab=tags#/registry.access.redhat.com/ubi8/ubi-minimal[the list of _UBI-minimal_ tags]
+====
+
 Then, if you didn't delete the generated native executable, you can build the docker image with:
 
 [source,shell]

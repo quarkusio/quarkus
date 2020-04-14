@@ -1,6 +1,8 @@
 package io.quarkus.liquibase.runtime;
 
 import java.lang.annotation.Annotation;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.enterprise.inject.Default;
@@ -10,6 +12,7 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.liquibase.LiquibaseDataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
+import io.quarkus.liquibase.runtime.graal.LiquibaseServiceLoader;
 import io.quarkus.runtime.annotations.Recorder;
 import liquibase.Liquibase;
 import liquibase.exception.LiquibaseException;
@@ -19,6 +22,10 @@ import liquibase.exception.LiquibaseException;
  */
 @Recorder
 public class LiquibaseRecorder {
+
+    public void setServicesImplementations(Map<String, List<String>> serviceLoader) {
+        LiquibaseServiceLoader.setServicesImplementations(serviceLoader);
+    }
 
     /**
      * Sets the liquibase build configuration

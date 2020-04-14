@@ -183,7 +183,7 @@ Edit the `application.properties` file and add the below configuration:
 ----
 # Quartz configuration
 quarkus.quartz.clustered=true <1>
-quarkus.quartz.store-type=db <2>
+quarkus.quartz.store-type=jdbc-cmt <2>
 
 # Datasource configuration.
 quarkus.datasource.db-kind=postgresql

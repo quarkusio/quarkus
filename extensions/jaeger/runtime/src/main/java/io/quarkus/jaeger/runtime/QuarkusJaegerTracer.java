@@ -2,6 +2,8 @@ package io.quarkus.jaeger.runtime;
 
 import io.jaegertracing.Configuration;
 import io.jaegertracing.internal.JaegerTracer;
+import io.jaegertracing.internal.metrics.NoopMetricsFactory;
+import io.jaegertracing.spi.MetricsFactory;
 import io.opentracing.ScopeManager;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
@@ -14,9 +16,14 @@ public class QuarkusJaegerTracer implements Tracer {
     private volatile JaegerTracer tracer;
 
     private boolean logTraceContext;
+    private boolean metricsEnabled;
 
     void setLogTraceContext(boolean logTraceContext) {
         this.logTraceContext = logTraceContext;
+    }
+
+    void setMetricsEnabled(boolean metricsEnabled) {
+        this.metricsEnabled = metricsEnabled;
     }
 
     @Override
@@ -35,8 +42,11 @@ public class QuarkusJaegerTracer implements Tracer {
         if (tracer == null) {
             synchronized (this) {
                 if (tracer == null) {
+                    MetricsFactory metricsFactory = metricsEnabled
+                            ? new QuarkusJaegerMetricsFactory()
+                            : new NoopMetricsFactory();
                     tracer = Configuration.fromEnv()
-                            .withMetricsFactory(new QuarkusJaegerMetricsFactory())
+                            .withMetricsFactory(metricsFactory)
                             .getTracerBuilder()
                             .withScopeManager(getScopeManager())
                             .build();

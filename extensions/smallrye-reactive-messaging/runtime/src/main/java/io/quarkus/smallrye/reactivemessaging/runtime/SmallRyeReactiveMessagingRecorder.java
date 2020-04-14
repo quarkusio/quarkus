@@ -23,4 +23,8 @@ public class SmallRyeReactiveMessagingRecorder {
         mediatorManager.addAnalyzed(configurations);
     }
 
+    public void configureWorkerPool(BeanContainer container, String className, String name, String poolName) {
+        QuarkusWorkerPoolRegistry registry = container.instance(QuarkusWorkerPoolRegistry.class);
+        registry.defineWorker(className, name, poolName);
+    }
 }

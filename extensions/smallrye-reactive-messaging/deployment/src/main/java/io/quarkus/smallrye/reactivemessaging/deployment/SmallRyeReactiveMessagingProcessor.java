@@ -58,10 +58,12 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
+import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
 import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLifecycle;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder;
 import io.smallrye.reactive.messaging.Invoker;
+import io.smallrye.reactive.messaging.annotations.Blocking;
 
 /**
  * 
@@ -82,7 +84,7 @@ public class SmallRyeReactiveMessagingProcessor {
     AdditionalBeanBuildItem beans() {
         // We add the connector and channel qualifiers to make them part of the index.
         return new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class, Connector.class,
-                Channel.class, io.smallrye.reactive.messaging.annotations.Channel.class);
+                Channel.class, io.smallrye.reactive.messaging.annotations.Channel.class, QuarkusWorkerPoolRegistry.class);
     }
 
     @BuildStep
@@ -293,6 +295,14 @@ public class SmallRyeReactiveMessagingProcessor {
              * We could potentially lift this restriction with some extra CDI bean generation but it's probably not worth it
              */
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
+
+            if (methodInfo.hasAnnotation(ReactiveMessagingDotNames.BLOCKING)) {
+                AnnotationInstance blocking = methodInfo.annotation(ReactiveMessagingDotNames.BLOCKING);
+                String poolName = blocking.value() == null ? Blocking.DEFAULT_WORKER_POOL : blocking.value().asString();
+
+                recorder.configureWorkerPool(beanContainer.getValue(), methodInfo.declaringClass().toString(),
+                        methodInfo.name(), poolName);
+            }
 
             try {
                 QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil

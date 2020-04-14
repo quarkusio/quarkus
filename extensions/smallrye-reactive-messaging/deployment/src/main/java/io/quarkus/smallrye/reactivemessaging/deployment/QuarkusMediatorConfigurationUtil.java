@@ -119,10 +119,13 @@ final class QuarkusMediatorConfigurationUtil {
 
         AnnotationInstance blockingAnnotation = methodInfo.annotation(BLOCKING);
         if (blockingAnnotation != null) {
+            mediatorConfigurationSupport.validateBlocking(validationOutput);
             configuration.setBlocking(true);
-            configuration.setBlockingExecutionOrdered(blockingAnnotation.value("ordered").asBoolean());
-            String poolName = blockingAnnotation.value().asString();
-            if (!poolName.equals(Blocking.DEFAULT_WORKER_POOL)) {
+            AnnotationValue ordered = blockingAnnotation.value("ordered");
+            configuration.setBlockingExecutionOrdered(ordered == null || ordered.asBoolean());
+            String poolName;
+            if (blockingAnnotation.value() != null &&
+                    !(poolName = blockingAnnotation.value().asString()).equals(Blocking.DEFAULT_WORKER_POOL)) {
                 configuration.setWorkerPoolName(poolName);
             }
         }

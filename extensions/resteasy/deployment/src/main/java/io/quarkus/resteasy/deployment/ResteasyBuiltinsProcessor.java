@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -25,6 +26,7 @@ import io.quarkus.resteasy.runtime.ExceptionMapperRecorder;
 import io.quarkus.resteasy.runtime.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.runtime.NotFoundExceptionMapper;
+import io.quarkus.resteasy.runtime.SecurityContextFilter;
 import io.quarkus.resteasy.runtime.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
 import io.quarkus.security.spi.AdditionalSecuredClassesBuildIem;
@@ -64,10 +66,15 @@ public class ResteasyBuiltinsProcessor {
      * Install the JAX-RS security provider.
      */
     @BuildStep
-    void setUpSecurityExceptionMappers(BuildProducer<ResteasyJaxrsProviderBuildItem> providers) {
+    void setUpSecurity(BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItem, Capabilities capabilities) {
         providers.produce(new ResteasyJaxrsProviderBuildItem(UnauthorizedExceptionMapper.class.getName()));
         providers.produce(new ResteasyJaxrsProviderBuildItem(ForbiddenExceptionMapper.class.getName()));
         providers.produce(new ResteasyJaxrsProviderBuildItem(AuthenticationFailedExceptionMapper.class.getName()));
+        if (capabilities.isCapabilityPresent(Capabilities.SECURITY)) {
+            providers.produce(new ResteasyJaxrsProviderBuildItem(SecurityContextFilter.class.getName()));
+            additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(SecurityContextFilter.class));
+        }
     }
 
     @Record(STATIC_INIT)

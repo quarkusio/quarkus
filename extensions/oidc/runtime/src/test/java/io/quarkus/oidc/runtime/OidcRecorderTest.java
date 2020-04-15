@@ -6,6 +6,8 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.oidc.OidcTenantConfig;
+
 public class OidcRecorderTest {
 
     @Test

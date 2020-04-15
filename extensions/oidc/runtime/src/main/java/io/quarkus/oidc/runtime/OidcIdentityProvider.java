@@ -12,6 +12,7 @@ import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.AuthenticationRequestContext;

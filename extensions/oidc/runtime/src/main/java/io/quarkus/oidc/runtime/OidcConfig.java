@@ -2,6 +2,7 @@ package io.quarkus.oidc.runtime;
 
 import java.util.Map;
 
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigItem;

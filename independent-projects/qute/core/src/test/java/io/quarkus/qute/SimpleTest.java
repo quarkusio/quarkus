@@ -93,6 +93,8 @@ public class SimpleTest {
         Template template = engine
                 .parse("{name ? 'Name true' : 'Name false'}. {surname ? 'Surname true' : foo}.");
         assertEquals("Name true. baz.", template.data("name", true).data("foo", "baz").render());
+
+        assertEquals("1", engine.parse("{name ? 1 : 2}").data("name", "foo").render());
     }
 
     @Test

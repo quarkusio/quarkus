@@ -29,6 +29,7 @@ import io.quarkus.runtime.annotations.Recorder;
 public class HibernateValidatorRecorder {
 
     public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated,
+            Set<String> detectedBuiltinConstraints,
             ShutdownContext shutdownContext, LocalesBuildTimeConfig localesBuildTimeConfig) {
         BeanContainerListener beanContainerListener = new BeanContainerListener() {
 
@@ -46,6 +47,7 @@ public class HibernateValidatorRecorder {
                 }
 
                 configuration
+                        .builtinConstraints(detectedBuiltinConstraints)
                         .initializeBeanMetaData(classesToBeValidated)
                         .locales(localesBuildTimeConfig.locales)
                         .defaultLocale(localesBuildTimeConfig.defaultLocale)

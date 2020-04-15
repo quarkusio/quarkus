@@ -2,7 +2,6 @@ package io.quarkus.hibernate.validator.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import java.lang.annotation.Annotation;
 import java.lang.annotation.Repeatable;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
@@ -12,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 import javax.validation.ClockProvider;
 import javax.validation.Constraint;
@@ -83,6 +83,8 @@ class HibernateValidatorProcessor {
 
     private static final DotName REPEATABLE = DotName.createSimple(Repeatable.class.getName());
 
+    private static final Pattern BUILT_IN_CONSTRAINT_REPEATABLE_CONTAINER_PATTERN = Pattern.compile("\\$List$");
+
     private LocalesBuildTimeConfig localesBuildTimeConfig;
 
     @BuildStep
@@ -144,8 +146,10 @@ class HibernateValidatorProcessor {
 
         Set<DotName> consideredAnnotations = new HashSet<>();
 
+        Set<String> builtinConstraints = ConstraintHelper.getBuiltinConstraints();
+
         // Collect the constraint annotations provided by Hibernate Validator and Bean Validation
-        contributeBuiltinConstraints(consideredAnnotations);
+        contributeBuiltinConstraints(builtinConstraints, consideredAnnotations);
 
         // Add the constraint annotations present in the application itself
         for (AnnotationInstance constraint : indexView.getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
@@ -157,7 +161,6 @@ class HibernateValidatorProcessor {
                     consideredAnnotations.add(repeatableConstraint.value().asClass().name());
                 }
             }
-
         }
 
         // Also consider elements that are marked with @Valid
@@ -168,9 +171,21 @@ class HibernateValidatorProcessor {
 
         Set<DotName> classNamesToBeValidated = new HashSet<>();
         Map<DotName, Set<String>> inheritedAnnotationsToBeValidated = new HashMap<>();
+        Set<String> detectedBuiltinConstraints = new HashSet<>();
 
         for (DotName consideredAnnotation : consideredAnnotations) {
             Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(consideredAnnotation);
+
+            if (annotationInstances.isEmpty()) {
+                continue;
+            }
+
+            // we trim the repeatable container suffix if needed
+            String builtinConstraintCandidate = BUILT_IN_CONSTRAINT_REPEATABLE_CONTAINER_PATTERN
+                    .matcher(consideredAnnotation.toString()).replaceAll("");
+            if (builtinConstraints.contains(builtinConstraintCandidate)) {
+                detectedBuiltinConstraints.add(builtinConstraintCandidate);
+            }
 
             for (AnnotationInstance annotation : annotationInstances) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
@@ -221,7 +236,8 @@ class HibernateValidatorProcessor {
 
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
-                        recorder.initializeValidatorFactory(classesToBeValidated, shutdownContext, localesBuildTimeConfig)));
+                        recorder.initializeValidatorFactory(classesToBeValidated, detectedBuiltinConstraints, shutdownContext,
+                                localesBuildTimeConfig)));
     }
 
     @BuildStep
@@ -233,18 +249,15 @@ class HibernateValidatorProcessor {
                 .build();
     }
 
-    private static void contributeBuiltinConstraints(Set<DotName> constraintCollector) {
-        Set<Class<? extends Annotation>> builtinConstraints = new ConstraintHelper().getBuiltinConstraints();
-        for (Class<? extends Annotation> builtinConstraint : builtinConstraints) {
-            constraintCollector.add(DotName.createSimple(builtinConstraint.getName()));
+    private static void contributeBuiltinConstraints(Set<String> builtinConstraints,
+            Set<DotName> consideredAnnotationsCollector) {
+        for (String builtinConstraint : builtinConstraints) {
+            consideredAnnotationsCollector.add(DotName.createSimple(builtinConstraint));
 
-            if (builtinConstraint.isAnnotationPresent(Repeatable.class)) {
-                Repeatable repeatable = builtinConstraint.getAnnotation(Repeatable.class);
-                if (repeatable.value() != null) {
-                    constraintCollector.add(DotName.createSimple(repeatable.value().getName()));
-                }
-            }
-
+            // for all built-in constraints, we follow a strict convention for repeatable annotations,
+            // they are all inner classes called List
+            // while not all our built-in constraints are repeatable, let's avoid loading the class to check
+            consideredAnnotationsCollector.add(DotName.createSimple(builtinConstraint + "$List"));
         }
     }
 

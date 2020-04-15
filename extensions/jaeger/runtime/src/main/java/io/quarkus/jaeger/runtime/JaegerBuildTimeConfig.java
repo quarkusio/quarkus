@@ -14,4 +14,10 @@ public class JaegerBuildTimeConfig {
     @ConfigItem(defaultValue = "true")
     public boolean enabled;
 
+    /**
+     * Whether or not metrics are published in case the smallrye-metrics extension is present.
+     */
+    @ConfigItem(name = "metrics.enabled", defaultValue = "false")
+    public boolean metricsEnabled;
+
 }

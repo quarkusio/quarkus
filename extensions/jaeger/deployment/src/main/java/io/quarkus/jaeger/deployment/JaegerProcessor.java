@@ -28,7 +28,8 @@ public class JaegerProcessor {
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.JAEGER));
 
         if (buildTimeConfig.enabled) {
-            boolean metricsEnabled = capabilities.isCapabilityPresent(Capabilities.METRICS);
+            boolean metricsEnabled = capabilities.isCapabilityPresent(Capabilities.METRICS)
+                    && buildTimeConfig.metricsEnabled;
 
             if (metricsEnabled) {
                 jdr.registerTracerWithMetrics(jaeger, appConfig);

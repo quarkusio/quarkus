@@ -27,7 +27,7 @@ public class SecuredAmqpTest {
     public void test() {
         await().until(() -> {
             String value = RestAssured.get("/last").asString();
-            return !value.equalsIgnoreCase("-1");
+            return value.equalsIgnoreCase("20");
         });
     }
 }

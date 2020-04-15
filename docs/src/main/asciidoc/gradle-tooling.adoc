@@ -192,6 +192,40 @@ quarkusDev {
 }
 ----
 
+=== Remote Development Mode
+
+It is possible to use development mode remotely, so that you can run Quarkus in a container environment (such as OpenShift)
+and have changes made to your local files become immediately visible.
+
+This allows you to develop in the same environment you will actually run your app in, and with access to the same services.
+
+WARNING: Do not use this in production. This should only be used in a development environment. You should not run production applications in dev mode.
+
+To do this you must have the `quarkus-undertow-websockets` extension installed:
+
+[source,shell]
+----
+./gradlew addExtension --extensions="undertow-websockets"
+----
+
+You must also have the following config properties set:
+
+- `quarkus.live-reload.password`
+- `quarkus.live-reload.url`
+
+These can be set via `application.properties`, or any other way (e.g. system properties, environment vars etc). The
+password must be set on both the local and remote processes, while the url only needs to be set on the local host.
+
+Start Quarkus in dev mode on the remote host. Now you need to connect your local agent to the remote host:
+
+[source,shell]
+----
+./gradlew quarkusRemoteDev -Dquarkus.live-reload.url=http://my-remote-host:8080
+----
+
+Now every time you refresh the browser you should see any changes you have made locally immediately visible in the remote
+app.
+
 == Debugging
 
 In development mode, Quarkus starts by default with debug mode enabled, listening to port `5005` without suspending the JVM.

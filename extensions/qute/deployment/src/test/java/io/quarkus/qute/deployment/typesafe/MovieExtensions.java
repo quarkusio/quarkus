@@ -9,4 +9,12 @@ public class MovieExtensions {
         return 43l;
     }
 
+    static Long toLong(Movie movie, long... values) {
+        long ret = 0l;
+        for (long value : values) {
+            ret += value;
+        }
+        return ret;
+    }
+
 }

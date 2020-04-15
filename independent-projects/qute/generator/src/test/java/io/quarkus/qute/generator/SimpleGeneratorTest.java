@@ -51,6 +51,14 @@ public class SimpleGeneratorTest {
                 "getDummy", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
                 Type.create(DotName.createSimple(String.class.getName()), Kind.CLASS));
         extensionMethodGenerator.generate(extensionMethod, null, null);
+        extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
+                "getDummy", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
+                PrimitiveType.LONG);
+        extensionMethodGenerator.generate(extensionMethod, null, null);
+        extensionMethod = index.getClassByName(DotName.createSimple(MyService.class.getName())).method(
+                "getDummyVarargs", Type.create(myServiceClazz.name(), Kind.CLASS), PrimitiveType.INT,
+                Type.create(DotName.createSimple("[L" + String.class.getName() + ";"), Kind.ARRAY));
+        extensionMethodGenerator.generate(extensionMethod, null, null);
         generatedTypes.addAll(extensionMethodGenerator.getGeneratedTypes());
     }
 
@@ -95,19 +103,25 @@ public class SimpleGeneratorTest {
         Engine engine = builder.build();
         assertEquals(" FOO ", engine.parse("{#if isActive} {name.toUpperCase} {/if}").render(new MyService()));
         assertEquals("OK", engine.parse("{#if this.getList(5).size == 5}OK{/if}").render(new MyService()));
+        assertEquals("2", engine.parse("{this.getListVarargs('foo','bar').size}").render(new MyService()));
+        assertEquals("NOT_FOUND", engine.parse("{this.getAnotherTestName(1)}").render(new MyService()));
         assertEquals("Martin NOT_FOUND OK NOT_FOUND",
                 engine.parse("{name} {surname} {isStatic ?: 'OK'} {base}").render(new PublicMyService()));
         assertEquals("foo NOT_FOUND", engine.parse("{id} {bar}").render(new MyItem()));
-        try {
-            engine.parse("{this.getList(5,5)}").render(new MyService());
-            fail();
-        } catch (ClassCastException ClassCastException) {
-        }
-        try {
-            engine.parse("{service.getDummy(5,resultNotFound)}").data("service", new MyService()).render();
-            fail();
-        } catch (ClassCastException ClassCastException) {
-        }
+        // Param types don't match - NOT_FOUND
+        assertEquals("NOT_FOUND", engine.parse("{this.getList(5,5)}").render(new MyService()));
+        // Test multiple extension methods with the same number of parameters
+        assertEquals("1", engine.parse("{service.getDummy(5,2l).size}").data("service", new MyService()).render());
+        // No extension method matches the param types
+        assertEquals("NOT_FOUND",
+                engine.parse("{service.getDummy(5,resultNotFound)}").data("service", new MyService()).render());
+        // Extension method with varargs
+        assertEquals("alphabravo",
+                engine.parse("{#each service.getDummyVarargs(5,'alpha','bravo')}{it}{/}").data("service", new MyService())
+                        .render());
+        assertEquals("5",
+                engine.parse("{#each service.getDummyVarargs(5)}{it}{/}").data("service", new MyService())
+                        .render());
     }
 
     private ValueResolver newResolver(String className)

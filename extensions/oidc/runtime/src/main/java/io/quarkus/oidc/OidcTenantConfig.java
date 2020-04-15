@@ -1,4 +1,4 @@
-package io.quarkus.oidc.runtime;
+package io.quarkus.oidc;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -17,7 +17,7 @@ public class OidcTenantConfig {
      * resolve the tenant configuration dynamically and is optional in all other cases.
      */
     @ConfigItem
-    Optional<String> tenantId = Optional.empty();
+    public Optional<String> tenantId = Optional.empty();
 
     /**
      * If this tenant configuration is enabled.
@@ -45,57 +45,67 @@ public class OidcTenantConfig {
      * 'https://host:port/auth/realms/{realm}' where '{realm}' has to be replaced by the name of the Keycloak realm.
      */
     @ConfigItem
-    Optional<String> authServerUrl = Optional.empty();
+    public Optional<String> authServerUrl = Optional.empty();
+
     /**
      * Relative path of the RFC7662 introspection service.
      */
+
     @ConfigItem
-    Optional<String> introspectionPath = Optional.empty();
+    public Optional<String> introspectionPath = Optional.empty();
+
     /**
      * Relative path of the OIDC service returning a JWK set.
      */
     @ConfigItem
-    Optional<String> jwksPath = Optional.empty();
+    public Optional<String> jwksPath = Optional.empty();
+
     /**
      * Public key for the local JWT token verification.
      */
     @ConfigItem
-    Optional<String> publicKey = Optional.empty();
+    public Optional<String> publicKey = Optional.empty();
+
     /**
      * The client-id of the application. Each application has a client-id that is used to identify the application
      */
     @ConfigItem
-    Optional<String> clientId = Optional.empty();
+    public Optional<String> clientId = Optional.empty();
+
     /**
      * Configuration to find and parse a custom claim containing the roles information.
      */
     @ConfigItem
-    Roles roles = new Roles();
+    public Roles roles = new Roles();
+
     /**
      * Configuration how to validate the token claims.
      */
     @ConfigItem
-    Token token = new Token();
+    public Token token = new Token();
+
     /**
      * Credentials which the OIDC adapter will use to authenticate to the OIDC server.
      */
     @ConfigItem
-    Credentials credentials = new Credentials();
+    public Credentials credentials = new Credentials();
+
     /**
      * Options to configure a proxy that OIDC adapter will use for talking with OIDC server.
      */
     @ConfigItem
-    Proxy proxy = new Proxy();
+    public Proxy proxy = new Proxy();
+
     /**
      * Different options to configure authorization requests
      */
-    Authentication authentication = new Authentication();
+    public Authentication authentication = new Authentication();
 
     /**
      * TLS configurations
      */
     @ConfigItem
-    Tls tls = new Tls();
+    public Tls tls = new Tls();
 
     @ConfigGroup
     public static class Tls {
@@ -115,7 +125,7 @@ public class OidcTenantConfig {
          * {@link Verification}. Default is required.
          */
         @ConfigItem(defaultValue = "REQUIRED")
-        Verification verification;
+        public Verification verification;
 
         public Verification getVerification() {
             return verification;
@@ -231,7 +241,7 @@ public class OidcTenantConfig {
          * Note that a 'client-secret.value' can be used instead but both properties are mutually exclusive.
          */
         @ConfigItem
-        Optional<String> secret = Optional.empty();
+        public Optional<String> secret = Optional.empty();
 
         /**
          * Client secret which can be used for the 'client_secret_basic' (default) and 'client_secret_post'
@@ -240,13 +250,13 @@ public class OidcTenantConfig {
          * but both properties are mutually exclusive.
          */
         @ConfigItem
-        Secret clientSecret = new Secret();
+        public Secret clientSecret = new Secret();
 
         /**
          * Client JWT authentication methods
          */
         @ConfigItem
-        Jwt jwt = new Jwt();
+        public Jwt jwt = new Jwt();
 
         public Optional<String> getSecret() {
             return secret;
@@ -290,13 +300,13 @@ public class OidcTenantConfig {
              * The client secret
              */
             @ConfigItem
-            Optional<String> value = Optional.empty();
+            public Optional<String> value = Optional.empty();
 
             /**
              * Authentication method.
              */
             @ConfigItem
-            Optional<Method> method = Optional.empty();
+            public Optional<Method> method = Optional.empty();
 
             public Optional<String> getValue() {
                 return value;
@@ -330,13 +340,13 @@ public class OidcTenantConfig {
              * "urn:ietf:params:oauth:client-assertion-type:jwt-bearer".
              */
             @ConfigItem
-            Optional<String> secret = Optional.empty();
+            public Optional<String> secret = Optional.empty();
 
             /**
              * JWT life-span in seconds. It will be added to the time it was issued at to calculate the expiration time.
              */
             @ConfigItem(defaultValue = "10")
-            int lifespan = 10;
+            public int lifespan = 10;
 
             public Optional<String> getSecret() {
                 return secret;
@@ -377,14 +387,14 @@ public class OidcTenantConfig {
          * This property can be used if a token has no 'groups' claim but has the groups set in a different claim.
          */
         @ConfigItem
-        Optional<String> roleClaimPath = Optional.empty();
+        public Optional<String> roleClaimPath = Optional.empty();
         /**
          * Separator for splitting a string which may contain multiple group values.
          * It will only be used if the "role-claim-path" property points to a custom claim whose value is a string.
          * A single space will be used by default because the standard 'scope' claim may contain a space separated sequence.
          */
         @ConfigItem
-        Optional<String> roleClaimSeparator = Optional.empty();
+        public Optional<String> roleClaimSeparator = Optional.empty();
 
         public Optional<String> getRoleClaimPath() {
             return roleClaimPath;

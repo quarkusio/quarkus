@@ -11,10 +11,11 @@ import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.OIDCException;
-import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
-import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials;
-import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials.Secret;
-import io.quarkus.oidc.runtime.OidcTenantConfig.Tls.Verification;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.OidcTenantConfig.Credentials;
+import io.quarkus.oidc.OidcTenantConfig.Credentials.Secret;
+import io.quarkus.oidc.OidcTenantConfig.Tls.Verification;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.core.AsyncResult;

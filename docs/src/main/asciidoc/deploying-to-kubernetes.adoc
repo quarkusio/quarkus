@@ -109,7 +109,7 @@ The full source of the `kubernetes.json` file looks something like this:
               }
             } ],
             "image" : "yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT",
-            "imagePullPolicy" : "IfNotPresent",
+            "imagePullPolicy" : "Always",
             "name" : "test-quarkus-app"
           } ]
         }
@@ -390,7 +390,7 @@ The table below describe all the available configuration options.
 | quarkus.kubernetes.azure-disk-volumes              | Map<String, AzureDiskVolume>              |             |
 | quarkus.kubernetes.azure-file-volumes              | Map<String, AzureFileVolume>              |             |
 | quarkus.kubernetes.mounts                          | Map<String, Mount>                        |             |
-| quarkus.kubernetes.image-pull-policy               | ImagePullPolicy                           |             | IfNotPresent
+| quarkus.kubernetes.image-pull-policy               | ImagePullPolicy                           |             | Always
 | quarkus.kubernetes.image-pull-secrets              | String[]                                  |             |
 | quarkus.kubernetes.liveness-probe                  | Probe                                     |             | ( see Probe )
 | quarkus.kubernetes.readiness-probe                 | Probe                                     |             | ( see Probe )
@@ -453,7 +453,7 @@ Below you will find tables describing all available types.
 | arguments         | String[]                                |             |
 | ports             | Port[]                                  |             |
 | mounts            | Mount[]                                 |             |
-| image-pull-policy | ImagePullPolicy                         |             | IfNotPresent                             
+| image-pull-policy | ImagePullPolicy                         |             | Always                             
 | liveness-probe    | Probe                                   |             |                                          
 | readiness-probe   | Probe                                   |             |                                          
 |====
@@ -595,7 +595,7 @@ The OpenShift resources can be customized in a similar approach with Kubernetes.
 | quarkus.openshift.azure-disk-volumes              | Map<String, AzureDiskVolume>              |             |
 | quarkus.openshift.azure-file-volumes              | Map<String, AzureFileVolume>              |             |
 | quarkus.openshift.mounts                          | Map<String, Mount>                        |             |
-| quarkus.openshift.image-pull-policy               | ImagePullPolicy                           |             | IfNotPresent
+| quarkus.openshift.image-pull-policy               | ImagePullPolicy                           |             | Always
 | quarkus.openshift.image-pull-secrets              | String[]                                  |             |
 | quarkus.openshift.liveness-probe                  | Probe                                     |             | ( see Probe )
 | quarkus.openshift.readiness-probe                 | Probe                                     |             | ( see Probe )
@@ -645,7 +645,7 @@ The full source of the `quarkus.knative.json` file looks something like this:
             "spec" : {
               "container" : {
                 "image" : "dev.local/yourDockerUsername/test-quarkus-app:1.0-SNAPSHOT",
-                "imagePullPolicy" : "IfNotPresent"
+                "imagePullPolicy" : "Always"
               }
             }
           }
@@ -691,7 +691,7 @@ The generated service can be customized using the following properties:
 | quarkus.knative.azure-disk-volumes              | Map<String, AzureDiskVolume>              |             |
 | quarkus.knative.azure-file-volumes              | Map<String, AzureFileVolume>              |             |
 | quarkus.knative.mounts                          | Map<String, Mount>                        |             |
-| quarkus.knative.image-pull-policy               | ImagePullPolicy                           |             | IfNotPresent
+| quarkus.knative.image-pull-policy               | ImagePullPolicy                           |             | Always
 | quarkus.knative.image-pull-secrets              | String[]                                  |             |
 | quarkus.knative.liveness-probe                  | Probe                                     |             | ( see Probe )
 | quarkus.knative.readiness-probe                 | Probe                                     |             | ( see Probe )

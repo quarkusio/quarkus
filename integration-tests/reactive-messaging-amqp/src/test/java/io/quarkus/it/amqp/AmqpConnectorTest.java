@@ -20,7 +20,7 @@ public class AmqpConnectorTest {
 
     @Test
     public void test() {
-        await().until(() -> get("/amqp/people").as(TYPE_REF).size() >= 3);
+        await().until(() -> get("/amqp/people").as(TYPE_REF).size() >= 6);
     }
 
 }

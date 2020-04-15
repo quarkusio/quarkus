@@ -49,10 +49,12 @@ import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageResultBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -74,6 +76,11 @@ public class S2iProcessor {
     private static final String RUNNING = "Running";
 
     private static final Logger LOG = Logger.getLogger(S2iProcessor.class);
+
+    @BuildStep
+    public CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.CONTAINER_IMAGE_S2I);
+    }
 
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
     public void s2iRequirementsJvm(S2iConfig s2iConfig,

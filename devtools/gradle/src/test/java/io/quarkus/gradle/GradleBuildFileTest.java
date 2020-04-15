@@ -58,6 +58,11 @@ class GradleBuildFileTest {
     }
 
     @Test
+    void testGetTestClosure() throws IOException {
+        assertNull(buildFile.getProperty("test"));
+    }
+
+    @Test
     void testFindInstalled() throws IOException {
         Map<String, Dependency> installed = buildFile.findInstalled();
         assertNotNull(installed);

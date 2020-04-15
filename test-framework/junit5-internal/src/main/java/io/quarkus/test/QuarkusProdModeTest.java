@@ -48,6 +48,7 @@ import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.utilities.JavaBinFinder;
 
 /**
@@ -257,6 +258,19 @@ public class QuarkusProdModeTest
             }
         };
         timeoutTimer.schedule(timeoutTask, 1000 * 60 * 5);
+
+        ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
+        if (store.get(TestResourceManager.class.getName()) == null) {
+            TestResourceManager manager = new TestResourceManager(extensionContext.getRequiredTestClass());
+            manager.start();
+            store.put(TestResourceManager.class.getName(), new ExtensionContext.Store.CloseableResource() {
+
+                @Override
+                public void close() throws Throwable {
+                    manager.close();
+                }
+            });
+        }
 
         Class<?> testClass = extensionContext.getRequiredTestClass();
 

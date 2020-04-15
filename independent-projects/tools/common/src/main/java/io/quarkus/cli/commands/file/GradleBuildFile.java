@@ -102,6 +102,12 @@ public class GradleBuildFile extends BuildFile {
             res.append(System.lineSeparator()).append(versionLine)
                     .append(System.lineSeparator());
         }
+
+        res.append(System.lineSeparator())
+            .append("test {").append(System.lineSeparator())
+            .append("    systemProperty \"java.util.logging.manager\", \"org.jboss.logmanager.LogManager\"").append(System.lineSeparator())
+            .append("}");
+
         getModel().setBuildContent(res.toString());
     }
 

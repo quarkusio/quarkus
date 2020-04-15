@@ -24,9 +24,11 @@ import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageResultBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
@@ -42,6 +44,11 @@ public class DockerProcessor {
     private static final String DOCKERFILE_NATIVE = "Dockerfile.native";
 
     private final DockerWorking dockerWorking = new DockerWorking();
+
+    @BuildStep
+    public CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.CONTAINER_IMAGE_DOCKER);
+    }
 
     @BuildStep(onlyIf = { IsNormal.class }, onlyIfNot = NativeBuild.class)
     public void dockerBuildFromJar(DockerConfig dockerConfig,

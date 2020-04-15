@@ -30,7 +30,11 @@ public class JaegerProcessor {
         if (buildTimeConfig.enabled) {
             boolean metricsEnabled = capabilities.isCapabilityPresent(Capabilities.METRICS);
 
-            jdr.registerTracer(jaeger, appConfig, metricsEnabled);
+            if (metricsEnabled) {
+                jdr.registerTracerWithMetrics(jaeger, appConfig);
+            } else {
+                jdr.registerTracerWithoutMetrics(jaeger, appConfig);
+            }
         }
     }
 

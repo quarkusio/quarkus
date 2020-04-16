@@ -13,6 +13,7 @@ import javax.validation.valueextraction.ValueExtractor;
 
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
+import org.hibernate.validator.internal.engine.resolver.JPATraversableResolver;
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolver;
 import org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy;
 import org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory;
@@ -30,6 +31,7 @@ public class HibernateValidatorRecorder {
 
     public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated,
             Set<String> detectedBuiltinConstraints,
+            boolean hasXmlConfiguration, boolean jpaInClasspath,
             ShutdownContext shutdownContext, LocalesBuildTimeConfig localesBuildTimeConfig) {
         BeanContainerListener beanContainerListener = new BeanContainerListener() {
 
@@ -38,6 +40,11 @@ public class HibernateValidatorRecorder {
                 PredefinedScopeHibernateValidatorConfiguration configuration = Validation
                         .byProvider(PredefinedScopeHibernateValidator.class)
                         .configure();
+
+                if (!hasXmlConfiguration) {
+                    configuration.ignoreXmlConfiguration();
+                }
+
                 LocaleResolver localeResolver = null;
                 InstanceHandle<LocaleResolver> configuredLocaleResolver = Arc.container()
                         .instance(LocaleResolver.class);
@@ -71,6 +78,13 @@ public class HibernateValidatorRecorder {
                         .instance(TraversableResolver.class);
                 if (configuredTraversableResolver.isAvailable()) {
                     configuration.traversableResolver(configuredTraversableResolver.get());
+                } else {
+                    // we still define the one we want to use so that we do not rely on runtime automatic detection
+                    if (jpaInClasspath) {
+                        configuration.traversableResolver(new JPATraversableResolver());
+                    } else {
+                        configuration.traversableResolver(new TraverseAllTraversableResolver());
+                    }
                 }
 
                 InstanceHandle<ParameterNameProvider> configuredParameterNameProvider = Arc.container()

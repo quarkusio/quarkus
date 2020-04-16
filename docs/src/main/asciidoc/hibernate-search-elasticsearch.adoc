@@ -67,6 +67,7 @@ cd hibernate-search-elasticsearch-quickstart
 ----
 
 This command generates a Maven structure importing the following extensions:
+
  * Hibernate ORM with Panache,
  * the PostgreSQL JDBC driver,
  * Hibernate Search + Elasticsearch,

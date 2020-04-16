@@ -137,7 +137,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         //    }
         //}
 
-        //this is a big of a hack, but is nessesary to prevent service leakage
+        //this is a big of a hack, but is necessary to prevent service leakage
         //in some situations (looking at you gradle) the parent can contain the same
         //classes as the application. The parent aggregation stops this being a problem
         //in most cases, however if there are no actual implementations of the service

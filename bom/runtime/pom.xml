@@ -169,7 +169,7 @@
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
         <kubernetes-client.version>4.9.0</kubernetes-client.version>
-        <optaplanner.version>7.35.0.Final</optaplanner.version>
+        <optaplanner.version>7.36.0.Final</optaplanner.version>
         <!-- Namespaced to avoid clashing with the kogito version in the universe-bom. We're working on getting rid of this potential version mismatch -->
         <optaplanner-kogito.version>0.8.1</optaplanner-kogito.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->

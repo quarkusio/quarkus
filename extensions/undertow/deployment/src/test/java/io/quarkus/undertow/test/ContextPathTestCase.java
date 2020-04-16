@@ -19,6 +19,7 @@ public class ContextPathTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestServlet.class, TestGreeter.class)
+                    .addAsResource(new StringAsset("index"), "META-INF/resources/index.html")
                     .addAsResource(new StringAsset("quarkus.servlet.context-path=" + CONTEXT_PATH), "application.properties"));
 
     @Test
@@ -28,4 +29,12 @@ public class ContextPathTestCase {
                 .body(is("test servlet"));
     }
 
+    @Test
+    public void testNoSlash() {
+        RestAssured.given().redirects().follow(false).when().get("/foo").then()
+                .statusCode(302);
+        RestAssured.when().get("/foo").then()
+                .statusCode(200)
+                .body(is("index"));
+    }
 }

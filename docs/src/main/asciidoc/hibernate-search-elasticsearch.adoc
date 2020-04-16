@@ -515,7 +515,7 @@ The Hibernate Search DSL supports a significant subset of the Elasticsearch pred
 Feel free to explore the DSL using autocompletion.
 
 When that's not enough, you can always fall back to
-[defining a predicate using JSON directly](https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/#search-dsl-predicate-extensions-elasticsearch-from-json).
+link:https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/#search-dsl-predicate-extensions-elasticsearch-from-json[defining a predicate using JSON directly].
 ====
 
 == Configuring the application

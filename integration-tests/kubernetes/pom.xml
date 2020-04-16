@@ -14,8 +14,8 @@
   <packaging>pom</packaging>
 
   <modules>
-    <module>invoker</module>
-    <module>standard</module>
+    <module>maven-invoker-way</module>
+    <module>quarkus-standard-way</module>
   </modules>
 
 </project>

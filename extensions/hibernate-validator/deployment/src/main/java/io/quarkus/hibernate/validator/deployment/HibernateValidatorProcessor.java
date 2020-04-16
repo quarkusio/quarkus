@@ -43,6 +43,7 @@ import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -61,6 +62,8 @@ import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodAnnota
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 
 class HibernateValidatorProcessor {
+
+    private static final String META_INF_VALIDATION_XML = "META-INF/validation.xml";
 
     private static final DotName CONSTRAINT_VALIDATOR_FACTORY = DotName
             .createSimple(ConstraintValidatorFactory.class.getName());
@@ -89,7 +92,7 @@ class HibernateValidatorProcessor {
 
     @BuildStep
     HotDeploymentWatchedFileBuildItem configFile() {
-        return new HotDeploymentWatchedFileBuildItem("META-INF/validation.xml");
+        return new HotDeploymentWatchedFileBuildItem(META_INF_VALIDATION_XML);
     }
 
     @BuildStep
@@ -99,14 +102,15 @@ class HibernateValidatorProcessor {
 
     @BuildStep
     void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBean) {
+            BuildProducer<UnremovableBeanBuildItem> unremovableBean,
+            Capabilities capabilities) {
         // The bean encapsulating the Validator and ValidatorFactory
         additionalBeans.produce(new AdditionalBeanBuildItem(ValidatorProvider.class));
 
         // The CDI interceptor which will validate the methods annotated with @MethodValidated
         additionalBeans.produce(new AdditionalBeanBuildItem(MethodValidationInterceptor.class));
 
-        if (isResteasyInClasspath()) {
+        if (capabilities.isCapabilityPresent(Capabilities.RESTEASY)) {
             // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
             additionalBeans.produce(new AdditionalBeanBuildItem(
                     "io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
@@ -138,7 +142,8 @@ class HibernateValidatorProcessor {
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
             ShutdownContextBuildItem shutdownContext,
-            List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations) throws Exception {
+            List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
+            Capabilities capabilities) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_VALIDATOR));
 
@@ -236,7 +241,10 @@ class HibernateValidatorProcessor {
 
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
-                        recorder.initializeValidatorFactory(classesToBeValidated, detectedBuiltinConstraints, shutdownContext,
+                        recorder.initializeValidatorFactory(classesToBeValidated, detectedBuiltinConstraints,
+                                hasXmlConfiguration(),
+                                capabilities.isCapabilityPresent(Capabilities.HIBERNATE_ORM),
+                                shutdownContext,
                                 localesBuildTimeConfig)));
     }
 
@@ -317,12 +325,7 @@ class HibernateValidatorProcessor {
         }
     }
 
-    private static boolean isResteasyInClasspath() {
-        try {
-            Class.forName("org.jboss.resteasy.core.ResteasyContext");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
+    private static boolean hasXmlConfiguration() {
+        return Thread.currentThread().getContextClassLoader().getResource(META_INF_VALIDATION_XML) != null;
     }
 }

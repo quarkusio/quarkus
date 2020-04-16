@@ -41,3 +41,10 @@ INSERT INTO post(id, title, bypass, posted) VALUES (3, 'Quarkus 0.20 released', 
 INSERT INTO post_comment(id, post_id, review) VALUES (1, 1, 'Excellent!');
 INSERT INTO post_comment(id, post_id, review) VALUES (2, 1, 'Wonderful!');
 
+INSERT INTO song(id, title, author) VALUES (1, 'Consejo de sabios' , 'Vetusta Morla');
+INSERT INTO song(id, title, author) VALUES (2, 'Nothing else mothers' , 'Metallica');
+INSERT INTO song(id, title, author) VALUES (3, 'Ephedra' , 'My Sleeping Karma');
+INSERT INTO song(id, title, author) VALUES (4, 'Whatever it takes' , 'Imagine Dragons');
+INSERT INTO song(id, title, author) VALUES (5, 'Santos que yo te pinte' , 'Los planetas');
+INSERT INTO song(id, title, author) VALUES (6, 'Drinkee' , 'Sofi Tukker');
+

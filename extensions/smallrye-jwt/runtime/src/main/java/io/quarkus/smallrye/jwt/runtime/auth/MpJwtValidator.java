@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
 import java.util.HashSet;
+import java.util.function.Consumer;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -20,6 +21,7 @@ import io.smallrye.jwt.auth.principal.DefaultJWTTokenParser;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.auth.principal.ParseException;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.UniEmitter;
 
 /**
  * Validates a bearer token according to the MP-JWT rules
@@ -50,25 +52,31 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
     @Override
     public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
             AuthenticationRequestContext context) {
-        try {
-            JwtContext jwtContext = parser.parse(request.getToken().getToken(), authContextInfo);
+        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
+            @Override
+            public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
+                try {
+                    JwtContext jwtContext = parser.parse(request.getToken().getToken(), authContextInfo);
 
-            JwtClaims claims = jwtContext.getJwtClaims();
-            String name = claims.getClaimValue("upn", String.class);
-            if (name == null) {
-                name = claims.getClaimValue("preferred_username", String.class);
-                if (name == null) {
-                    name = claims.getSubject();
+                    JwtClaims claims = jwtContext.getJwtClaims();
+                    String name = claims.getClaimValue("upn", String.class);
+                    if (name == null) {
+                        name = claims.getClaimValue("preferred_username", String.class);
+                        if (name == null) {
+                            name = claims.getSubject();
+                        }
+                    }
+                    QuarkusJwtCallerPrincipal principal = new QuarkusJwtCallerPrincipal(name, claims);
+                    uniEmitter.complete(QuarkusSecurityIdentity.builder().setPrincipal(principal)
+                            .addRoles(new HashSet<>(claims.getStringListClaimValue("groups")))
+                            .addAttribute(SecurityIdentity.USER_ATTRIBUTE, principal).build());
+
+                } catch (ParseException | MalformedClaimException e) {
+                    log.debug("Authentication failed", e);
+                    uniEmitter.fail(new AuthenticationFailedException(e));
                 }
             }
-            QuarkusJwtCallerPrincipal principal = new QuarkusJwtCallerPrincipal(name, claims);
-            return Uni.createFrom().item(QuarkusSecurityIdentity.builder().setPrincipal(principal)
-                    .addRoles(new HashSet<>(claims.getStringListClaimValue("groups")))
-                    .addAttribute(SecurityIdentity.USER_ATTRIBUTE, principal).build());
+        });
 
-        } catch (ParseException | MalformedClaimException e) {
-            log.debug("Authentication failed", e);
-            return Uni.createFrom().failure(new AuthenticationFailedException(e));
-        }
     }
 }

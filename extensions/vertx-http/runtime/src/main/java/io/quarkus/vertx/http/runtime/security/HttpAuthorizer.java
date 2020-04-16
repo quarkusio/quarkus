@@ -13,7 +13,6 @@ import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 import io.smallrye.mutiny.subscription.UniSubscriber;
@@ -47,11 +46,11 @@ public class HttpAuthorizer {
      */
     private static final HttpSecurityPolicy.AuthorizationRequestContext CONTEXT = new HttpSecurityPolicy.AuthorizationRequestContext() {
         @Override
-        public Uni<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context, SecurityIdentity identity,
+        public Uni<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context, Uni<SecurityIdentity> identity,
                 BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> function) {
             if (BlockingOperationControl.isBlockingAllowed()) {
                 try {
-                    HttpSecurityPolicy.CheckResult res = function.apply(context, identity);
+                    HttpSecurityPolicy.CheckResult res = function.apply(context, identity.await().indefinitely());
                     return Uni.createFrom().item(res);
                 } catch (Throwable t) {
                     return Uni.createFrom().failure(t);
@@ -66,7 +65,8 @@ public class HttpAuthorizer {
                             @Override
                             public void run() {
                                 try {
-                                    HttpSecurityPolicy.CheckResult val = function.apply(context, identity);
+                                    HttpSecurityPolicy.CheckResult val = function.apply(context,
+                                            identity.await().indefinitely());
                                     uniEmitter.complete(val);
                                 } catch (Throwable t) {
                                     uniEmitter.fail(t);
@@ -87,38 +87,22 @@ public class HttpAuthorizer {
      *
      */
     public void checkPermission(RoutingContext routingContext) {
-        QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
-        if (user == null) {
-            //check the anonymous identity
-            attemptAnonymousAuthentication(routingContext);
-        } else {
-            //we have a user, check their permissions
-            doPermissionCheck(routingContext, user.getSecurityIdentity(), 0, policies);
-        }
-    }
-
-    private void attemptAnonymousAuthentication(RoutingContext routingContext) {
-        identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE)
-                .subscribe().with(new Consumer<SecurityIdentity>() {
-                    @Override
-                    public void accept(SecurityIdentity identity) {
-                        doPermissionCheck(routingContext, identity, 0, policies);
-                    }
-                }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) {
-                        routingContext.fail(throwable);
-                    }
-                });
+        //check their permissions
+        doPermissionCheck(routingContext, QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager), 0, null,
+                policies);
     }
 
     private void doPermissionCheck(RoutingContext routingContext,
-            SecurityIdentity identity, int index,
+            Uni<SecurityIdentity> identity, int index,
+            SecurityIdentity augmentedIdentity,
             List<HttpSecurityPolicy> permissionCheckers) {
         if (index == permissionCheckers.size()) {
             QuarkusHttpUser currentUser = (QuarkusHttpUser) routingContext.user();
-            if (!identity.isAnonymous() && (currentUser == null || currentUser.getSecurityIdentity() != identity)) {
-                routingContext.setUser(new QuarkusHttpUser(identity));
+            if (augmentedIdentity != null) {
+                if (!augmentedIdentity.isAnonymous()
+                        && (currentUser == null || currentUser.getSecurityIdentity() != augmentedIdentity)) {
+                    routingContext.setUser(new QuarkusHttpUser(augmentedIdentity));
+                }
             }
             routingContext.next();
             return;
@@ -132,11 +116,13 @@ public class HttpAuthorizer {
                         if (!checkResult.isPermitted()) {
                             doDeny(identity, routingContext);
                         } else {
-                            SecurityIdentity newIdentity = checkResult.getAugmentedIdentity() != null
-                                    ? checkResult.getAugmentedIdentity()
-                                    : identity;
-                            //attempt to run the next checker
-                            doPermissionCheck(routingContext, newIdentity, index + 1, permissionCheckers);
+                            if (checkResult.getAugmentedIdentity() != null) {
+                                doPermissionCheck(routingContext, Uni.createFrom().item(checkResult.getAugmentedIdentity()),
+                                        index + 1, checkResult.getAugmentedIdentity(), permissionCheckers);
+                            } else {
+                                //attempt to run the next checker
+                                doPermissionCheck(routingContext, identity, index + 1, augmentedIdentity, permissionCheckers);
+                            }
                         }
                     }
                 }, new Consumer<Throwable>() {
@@ -147,27 +133,43 @@ public class HttpAuthorizer {
                 });
     }
 
-    private void doDeny(SecurityIdentity identity, RoutingContext routingContext) {
-        //if we were denied we send a challenge if we are not authenticated, otherwise we send a 403
-        if (identity.isAnonymous()) {
-            httpAuthenticator.sendChallenge(routingContext).subscribe().withSubscriber(new UniSubscriber<Boolean>() {
-                @Override
-                public void onSubscribe(UniSubscription subscription) {
+    private void doDeny(Uni<SecurityIdentity> identity, RoutingContext routingContext) {
+        identity.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
+            @Override
+            public void onSubscribe(UniSubscription subscription) {
 
-                }
+            }
 
-                @Override
-                public void onItem(Boolean item) {
-                    routingContext.response().end();
-                }
+            @Override
+            public void onItem(SecurityIdentity identity) {
+                //if we were denied we send a challenge if we are not authenticated, otherwise we send a 403
+                if (identity.isAnonymous()) {
+                    httpAuthenticator.sendChallenge(routingContext).subscribe().withSubscriber(new UniSubscriber<Boolean>() {
+                        @Override
+                        public void onSubscribe(UniSubscription subscription) {
 
-                @Override
-                public void onFailure(Throwable failure) {
-                    routingContext.fail(failure);
+                        }
+
+                        @Override
+                        public void onItem(Boolean item) {
+                            routingContext.response().end();
+                        }
+
+                        @Override
+                        public void onFailure(Throwable failure) {
+                            routingContext.fail(failure);
+                        }
+                    });
+                } else {
+                    routingContext.fail(403);
                 }
-            });
-        } else {
-            routingContext.fail(403);
-        }
+            }
+
+            @Override
+            public void onFailure(Throwable failure) {
+                routingContext.fail(failure);
+            }
+        });
+
     }
 }

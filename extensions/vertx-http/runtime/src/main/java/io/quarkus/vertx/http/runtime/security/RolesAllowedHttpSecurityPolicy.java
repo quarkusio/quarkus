@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime.security;
 
 import java.util.List;
+import java.util.function.Function;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
@@ -29,13 +30,18 @@ public class RolesAllowedHttpSecurityPolicy implements HttpSecurityPolicy {
     }
 
     @Override
-    public Uni<CheckResult> checkPermission(RoutingContext request, SecurityIdentity identity,
+    public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
-        for (String i : rolesAllowed) {
-            if (identity.hasRole(i)) {
-                return Uni.createFrom().item(CheckResult.PERMIT);
+        return identity.map(new Function<SecurityIdentity, CheckResult>() {
+            @Override
+            public CheckResult apply(SecurityIdentity securityIdentity) {
+                for (String i : rolesAllowed) {
+                    if (securityIdentity.hasRole(i)) {
+                        return CheckResult.PERMIT;
+                    }
+                }
+                return CheckResult.DENY;
             }
-        }
-        return Uni.createFrom().item(CheckResult.DENY);
+        });
     }
 }

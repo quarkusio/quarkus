@@ -27,8 +27,11 @@ import io.quarkus.funqy.runtime.FunctionInvoker;
 import io.quarkus.funqy.runtime.FunqyServerResponse;
 import io.quarkus.funqy.runtime.RequestContextImpl;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.identity.IdentityProviderManager;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
@@ -58,6 +61,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         this.mapper = mapper;
         Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);
         this.association = association.isResolvable() ? association.get() : null;
+        Instance<IdentityProviderManager> identityProviderManager = CDI.current().select(IdentityProviderManager.class);
         currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
     }
 
@@ -261,9 +265,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     private FunqyServerResponse dispatch(RoutingContext routingContext, FunctionInvoker invoker, Object input) {
         ManagedContext requestContext = beanContainer.requestContext();
         requestContext.activate();
-        QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
-        if (user != null && association != null) {
-            association.setIdentity(user.getSecurityIdentity());
+        if (association != null) {
+            ((Consumer<Uni<SecurityIdentity>>) association).accept(QuarkusHttpUser.getSecurityIdentity(routingContext, null));
         }
         currentVertxRequest.setCurrent(routingContext);
         try {

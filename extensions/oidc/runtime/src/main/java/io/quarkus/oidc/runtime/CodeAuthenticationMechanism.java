@@ -261,8 +261,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             uniEmitter.fail(new AuthenticationCompletionException());
                                         }
                                         processSuccessfulAuthentication(context, configContext, result, identity);
-                                        uniEmitter.complete(augmentIdentity(identity, result.opaqueAccessToken(),
-                                                result.opaqueRefreshToken(), context));
+                                        if (configContext.oidcConfig.authentication.removeRedirectParameters
+                                                && context.request().query() != null) {
+                                            final String finalRedirectUri = buildUriWithoutQueryParams(context);
+                                            LOG.debugf("Final redirect URI: %s", finalRedirectUri);
+                                            uniEmitter.fail(new AuthenticationRedirectException(finalRedirectUri));
+                                        } else {
+                                            uniEmitter.complete(augmentIdentity(identity, result.opaqueAccessToken(),
+                                                    result.opaqueRefreshToken(), context));
+                                        }
                                     }
                                 }, new Consumer<Throwable>() {
                                     @Override
@@ -348,6 +355,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return new StringBuilder(context.request().scheme()).append("://")
                 .append(URI.create(context.request().absoluteURI()).getAuthority())
                 .append(path)
+                .toString();
+    }
+
+    private String buildUriWithoutQueryParams(RoutingContext context) {
+        URI absoluteUri = URI.create(context.request().absoluteURI());
+        return new StringBuilder(context.request().scheme()).append("://")
+                .append(absoluteUri.getAuthority())
+                .append(absoluteUri.getRawPath())
                 .toString();
     }
 

@@ -100,12 +100,21 @@ public class CodeFlowTest {
             assertNotNull(sessionCookie);
             assertEquals("/", sessionCookie.getPath());
 
-            Thread.sleep(5000);
             webClient.getOptions().setRedirectEnabled(false);
-            WebResponse webResponse = webClient
-                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
-            assertEquals(302, webResponse.getStatusCode());
-            assertNull(getSessionCookie(webClient));
+            webClient.getCache().clear();
+
+            await().atLeast(6, TimeUnit.SECONDS)
+                    .pollDelay(Duration.ofSeconds(6))
+                    .until(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            WebResponse webResponse = webClient
+                                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
+                            assertEquals(302, webResponse.getStatusCode());
+                            assertNull(getSessionCookie(webClient));
+                            return true;
+                        }
+                    });
 
             webClient.getOptions().setRedirectEnabled(true);
             page = webClient.getPage("http://localhost:8081/index.html");
@@ -241,19 +250,33 @@ public class CodeFlowTest {
     @Test
     public void testIdTokenInjectionJwtMethod() throws IOException, InterruptedException {
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-jwt-before-redirect");
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/web-app/callback-jwt-before-redirect").toURL()));
             assertNotNull(getStateCookieStateParam(webClient));
             assertNull(getStateCookieSavedPath(webClient));
 
+            HtmlPage page = webClient.getPage(webResponse.getResponseHeaderValue("location"));
             assertEquals("Log in to quarkus", page.getTitleText());
-
             HtmlForm loginForm = page.getForms().get(0);
-
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
 
+            // This is a redirect from the OIDC server to the endpoint
+            URI endpointLocationUri = URI.create(webResponse.getResponseHeaderValue("location"));
+            assertNotNull(endpointLocationUri.getRawQuery());
+            webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+
+            // This is a redirect from quarkus-oidc which drops the query parameters
+            URI endpointLocationUri2 = URI.create(webResponse.getResponseHeaderValue("location"));
+            assertNull(endpointLocationUri2.getRawQuery());
+
+            page = webClient.getPage(endpointLocationUri2.toString());
             assertEquals("callback-jwt:alice", page.getBody().asText());
             webClient.getCookieManager().clearCookies();
         }

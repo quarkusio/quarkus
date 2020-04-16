@@ -83,6 +83,8 @@ public class HttpSecurityRecorder {
                             AuthenticationRedirectException redirectEx = (AuthenticationRedirectException) throwable;
                             event.response().setStatusCode(redirectEx.getCode());
                             event.response().headers().set(HttpHeaders.LOCATION, redirectEx.getRedirectUri());
+                            event.response().headers().set(HttpHeaders.CACHE_CONTROL, "no-store");
+                            event.response().headers().set("Pragma", "no-cache");
                             event.response().end();
                         } else {
                             event.fail(throwable);

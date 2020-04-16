@@ -497,7 +497,14 @@ public class OidcTenantConfig {
          * the authentication will be restored after the user has been redirected back to the application.
          */
         @ConfigItem(defaultValue = "true")
-        public boolean restorePathAfterRedirect;
+        public boolean restorePathAfterRedirect = true;
+
+        /**
+         * Remove the query parameters such as 'code' and 'state' set by the OIDC server on the redirect URI
+         * after the user has authenticated by redirecting a user to the same URI but without the query parameters.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean removeRedirectParameters = true;
 
         /**
          * List of scopes

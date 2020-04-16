@@ -38,7 +38,6 @@ import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
-import io.quarkus.container.spi.ContainerImageResultBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -73,8 +72,7 @@ public class JibProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
-            BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer) {
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
         if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
                 && !pushRequest.isPresent()) {
@@ -86,9 +84,6 @@ public class JibProcessor {
         JibContainer container = containerize(applicationInfo, containerImageConfig, jibContainerBuilder,
                 pushRequest.isPresent());
 
-        ImageReference targetImage = container.getTargetImage();
-        containerImageResultProducer.produce(new ContainerImageResultBuildItem(JIB, container.getImageId().getHash(),
-                targetImage.getRepository(), targetImage.getTag()));
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
     }
 
@@ -99,8 +94,7 @@ public class JibProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
-            BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer) {
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
         if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
                 && !pushRequest.isPresent()) {
@@ -118,8 +112,6 @@ public class JibProcessor {
                 pushRequest.isPresent());
 
         ImageReference targetImage = container.getTargetImage();
-        containerImageResultProducer.produce(new ContainerImageResultBuildItem(JIB, container.getImageId().getHash(),
-                targetImage.getRepository(), targetImage.getTag()));
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
     }
 

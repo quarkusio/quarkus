@@ -13,7 +13,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.enterprise.inject.Instance;
@@ -47,11 +46,9 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
-import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
-import io.smallrye.mutiny.Uni;
 import io.undertow.httpcore.BufferAllocator;
 import io.undertow.httpcore.StatusCodes;
 import io.undertow.security.api.AuthenticationMode;
@@ -559,8 +556,8 @@ public class UndertowDeploymentRecorder {
                                         currentVertxRequest.setCurrent(rc);
 
                                         if (association != null) {
-                                            ((Consumer<Uni<SecurityIdentity>>) association)
-                                                    .accept(QuarkusHttpUser.getSecurityIdentity(rc, null));
+                                            association
+                                                    .setIdentity(QuarkusHttpUser.getSecurityIdentity(rc, null));
                                         }
 
                                         return action.call(exchange, context);

@@ -1,7 +1,6 @@
 package io.quarkus.security.runtime;
 
 import java.security.Principal;
-import java.util.function.Consumer;
 
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.event.Observes;
@@ -15,7 +14,7 @@ import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.smallrye.mutiny.Uni;
 
 @RequestScoped
-public class SecurityIdentityAssociation implements CurrentIdentityAssociation, Consumer<Uni<SecurityIdentity>> {
+public class SecurityIdentityAssociation implements CurrentIdentityAssociation {
 
     private volatile SecurityIdentity identity;
     private volatile Uni<SecurityIdentity> deferredIdentity;
@@ -37,18 +36,19 @@ public class SecurityIdentityAssociation implements CurrentIdentityAssociation, 
     }
 
     @Override
-    public SecurityIdentity setIdentity(@Observes SecurityIdentity identity) {
-        SecurityIdentity old = this.identity;
+    public void setIdentity(@Observes SecurityIdentity identity) {
         this.identity = identity;
-        return old;
+        this.deferredIdentity = null;
+    }
+
+    @Override
+    public void setIdentity(Uni<SecurityIdentity> identity) {
+        this.identity = null;
+        this.deferredIdentity = identity;
     }
 
     public Uni<SecurityIdentity> getDeferredIdentity() {
         return deferredIdentity;
-    }
-
-    public void setDeferredIdentity(Uni<SecurityIdentity> deferredIdentity) {
-        this.deferredIdentity = deferredIdentity;
     }
 
     @Override
@@ -62,12 +62,5 @@ public class SecurityIdentityAssociation implements CurrentIdentityAssociation, 
             }
         }
         return identity;
-    }
-
-    //THIS IS A TEMP HACK
-    //a setDeferredIdentity and corresponding getter method needs to be added to the interface
-    @Override
-    public void accept(Uni<SecurityIdentity> securityIdentityUni) {
-        deferredIdentity = securityIdentityUni;
     }
 }

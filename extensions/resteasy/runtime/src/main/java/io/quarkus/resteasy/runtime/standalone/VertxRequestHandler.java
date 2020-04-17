@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
@@ -21,11 +20,9 @@ import org.jboss.resteasy.spi.ResteasyDeployment;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
-import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.VertxInputStream;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
-import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -101,7 +98,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         routingContext.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
         QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
         if (association != null) {
-            ((Consumer<Uni<SecurityIdentity>>) association).accept(QuarkusHttpUser.getSecurityIdentity(routingContext, null));
+            association.setIdentity(QuarkusHttpUser.getSecurityIdentity(routingContext, null));
         }
         currentVertxRequest.setCurrent(routingContext);
         try {

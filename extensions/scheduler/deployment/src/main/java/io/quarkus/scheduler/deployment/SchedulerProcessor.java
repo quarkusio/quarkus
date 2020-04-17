@@ -31,7 +31,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
-import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -41,7 +40,6 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildIt
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
@@ -117,27 +115,22 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    void collectScheduledMethods(
-            SchedulerConfig config,
-            BeanArchiveIndexBuildItem beanArchives,
-            BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+    void collectScheduledMethods(BeanArchiveIndexBuildItem beanArchives, BeanRegistrationPhaseBuildItem beanRegistrationPhase,
             BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods,
-            BuildProducer<BeanConfiguratorBuildItem> beans) {
+            BuildProducer<BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem> beans) {
 
         AnnotationStore annotationStore = beanRegistrationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
 
         // We need to collect all business methods annotated with @Scheduled first
         for (BeanInfo bean : beanRegistrationPhase.getContext().beans().classBeans()) {
-            collectScheduledMethods(config, beanArchives.getIndex(), annotationStore, bean,
+            collectScheduledMethods(beanArchives.getIndex(), annotationStore, bean,
                     bean.getTarget().get().asClass(),
-                    scheduledBusinessMethods, beanRegistrationPhase.getContext());
+                    scheduledBusinessMethods);
         }
     }
 
-    private void collectScheduledMethods(SchedulerConfig config, IndexView index, AnnotationStore annotationStore,
-            BeanInfo bean, ClassInfo beanClass,
-            BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods,
-            BeanRegistrar.RegistrationContext context) {
+    private void collectScheduledMethods(IndexView index, AnnotationStore annotationStore, BeanInfo bean,
+            ClassInfo beanClass, BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
         for (MethodInfo method : beanClass.methods()) {
             List<AnnotationInstance> schedules = null;
@@ -163,8 +156,7 @@ public class SchedulerProcessor {
         if (superClassName != null) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
-                collectScheduledMethods(config, index, annotationStore, bean, superClass, scheduledBusinessMethods,
-                        context);
+                collectScheduledMethods(index, annotationStore, bean, superClass, scheduledBusinessMethods);
             }
         }
     }

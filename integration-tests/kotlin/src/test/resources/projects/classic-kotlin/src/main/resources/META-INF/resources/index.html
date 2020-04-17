@@ -123,6 +123,9 @@
             </li>
         </ul>
 
+        <h2>Do you like Quarkus?</h2>
+        <p>Go give it a star on <a href="https://github.com/quarkusio/quarkus">GitHub</a>.</p>
+
         <h2>How do I get rid of this page?</h2>
         <p>Just delete the <code>src/main/resources/META-INF/resources/index.html</code> file.</p>
     </div>

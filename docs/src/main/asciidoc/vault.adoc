@@ -11,6 +11,7 @@ include::./attributes.adoc[]
 :root-token: s.5VUS8pte13RqekCB2fmMT3u2
 :client-token: s.s93BVzJPzBiIGuYJHBTkG8Uw
 :extension-status: preview
+:vault-auth-guide: link:vault-auth[Vault Authentication guide]
 
 https://www.vaultproject.io/[HashiCorp Vault] is a multi-purpose tool aiming at protecting sensitive data, such as
 credentials, certificates, access tokens, encryption keys, ... In the context of Quarkus,
@@ -177,16 +178,7 @@ vault write auth/userpass/users/bob password=sinclair policies=vault-quickstart-
 
 [NOTE]
 ====
-The Vault extension also supports alternate authentication methods such as:
-
- - https://www.vaultproject.io/docs/auth/approle.html[approle]
- - https://www.vaultproject.io/docs/auth/kubernetes.html[kubernetes] when deploying the Quarkus application
-and Vault into Kubernetes
-
-It is also possible to directly pass a `quarkus.vault.authentication.client-token`, which will bypass the authentication process.
-This could be handy in development where revocation and ttl are not a concern.
-
-Check the extension configuration documentation for more information.
+Quarkus supports additional Vault Authentication methods. Check the {vault-auth-guide} for details.
 ====
 
 To check that the configuration is correct, try logging in:

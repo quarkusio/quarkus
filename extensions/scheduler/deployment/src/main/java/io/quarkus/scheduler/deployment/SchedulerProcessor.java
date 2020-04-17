@@ -6,7 +6,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Singleton;
 
@@ -165,6 +167,7 @@ public class SchedulerProcessor {
     void validateScheduledBusinessMethods(SchedulerConfig config, List<ScheduledBusinessMethodItem> scheduledMethods,
             ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors) {
         List<Throwable> errors = new ArrayList<>();
+        Map<String, AnnotationInstance> encounteredIdentities = new HashMap<>();
 
         for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
             MethodInfo method = scheduledMethod.getMethod();
@@ -185,7 +188,7 @@ public class SchedulerProcessor {
             // Validate cron() and every() expressions
             CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(config.cronType));
             for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
-                Throwable error = validateScheduled(parser, scheduled);
+                Throwable error = validateScheduled(parser, scheduled, encounteredIdentities);
                 if (error != null) {
                     errors.add(error);
                 }
@@ -294,7 +297,8 @@ public class SchedulerProcessor {
         return generatedName.replace('/', '.');
     }
 
-    private Throwable validateScheduled(CronParser parser, AnnotationInstance schedule) {
+    private Throwable validateScheduled(CronParser parser, AnnotationInstance schedule,
+            Map<String, AnnotationInstance> encounteredIdentities) {
         AnnotationValue cronValue = schedule.value("cron");
         if (cronValue != null && !cronValue.asString().trim().isEmpty()) {
             String cron = cronValue.asString().trim();
@@ -342,6 +346,20 @@ public class SchedulerProcessor {
                     return new IllegalStateException("Invalid delayed() expression on: " + schedule, e);
                 }
             }
+        }
+
+        AnnotationValue identityValue = schedule.value("identity");
+        if (identityValue != null) {
+            String identity = identityValue.asString().trim();
+            AnnotationInstance previousInstanceWithSameIdentity = encounteredIdentities.get(identity);
+            if (previousInstanceWithSameIdentity != null) {
+                String message = String.format("The identity: \"%s\" on: %s is not unique and it has already bean used by : %s",
+                        identity, schedule, previousInstanceWithSameIdentity);
+                return new IllegalStateException(message);
+            } else {
+                encounteredIdentities.put(identity, schedule);
+            }
+
         }
         return null;
     }

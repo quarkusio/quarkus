@@ -56,7 +56,6 @@ public class QuartzScheduler implements Scheduler {
     private static final String INVOKER_KEY = "invoker";
 
     private final org.quartz.Scheduler scheduler;
-    private final AtomicInteger triggerNameSequence;
     private final Map<String, ScheduledInvoker> invokers;
 
     @Produces
@@ -68,12 +67,10 @@ public class QuartzScheduler implements Scheduler {
     public QuartzScheduler(SchedulerSupport schedulerSupport, QuartzSupport quartzSupport, Config config) {
         if (!quartzSupport.getRuntimeConfig().forceStart && schedulerSupport.getScheduledMethods().isEmpty()) {
             LOGGER.infof("No scheduled business methods found - Quartz scheduler will not be started");
-            this.triggerNameSequence = null;
             this.scheduler = null;
             this.invokers = null;
 
         } else {
-            this.triggerNameSequence = new AtomicInteger();
             this.invokers = new HashMap<>();
 
             try {
@@ -92,6 +89,7 @@ public class QuartzScheduler implements Scheduler {
                 for (ScheduledMethodMetadata method : schedulerSupport.getScheduledMethods()) {
 
                     invokers.put(method.getInvokerClassName(), schedulerSupport.createInvoker(method.getInvokerClassName()));
+                    AtomicInteger triggerNameSequence = new AtomicInteger();
 
                     for (Scheduled scheduled : method.getSchedules()) {
                         String name = triggerNameSequence.getAndIncrement() + "_" + method.getInvokerClassName();

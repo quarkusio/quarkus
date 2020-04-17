@@ -7,10 +7,10 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 @ApplicationScoped
 public class ConsumingBean {
 
-    long last = -1;
+    volatile long last = -1;
 
     @Incoming("in")
-    public synchronized void consume(long content) {
+    public void consume(long content) {
         last = content;
     }
 

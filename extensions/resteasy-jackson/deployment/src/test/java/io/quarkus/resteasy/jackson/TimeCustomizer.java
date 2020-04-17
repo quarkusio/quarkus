@@ -16,6 +16,8 @@ import io.quarkus.jackson.ObjectMapperCustomizer;
 @Singleton
 public class TimeCustomizer implements ObjectMapperCustomizer {
 
+    public static final String HELLO = "hello";
+
     @Override
     public void customize(ObjectMapper objectMapper) {
         JavaTimeModule customDateModule = new JavaTimeModule();

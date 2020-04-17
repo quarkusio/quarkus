@@ -40,7 +40,7 @@ public class MultipleTimeModuleTest {
     }
 
     private void modifyResource() {
-        TEST.modifySourceFile("TimeCustomizer.java", s -> s.replace("hello",
+        TEST.modifySourceFile(TimeCustomizer.class, s -> s.replace("hello",
                 "hello2"));
     }
 

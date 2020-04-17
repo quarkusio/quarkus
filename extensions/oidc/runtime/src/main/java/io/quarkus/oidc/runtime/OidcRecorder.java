@@ -83,9 +83,9 @@ public class OidcRecorder {
             options.setValidateIssuer(false);
         }
 
-        if (oidcConfig.getToken().getExpirationGrace().isPresent()) {
+        if (oidcConfig.getToken().getLifespanGrace().isPresent()) {
             JWTOptions jwtOptions = new JWTOptions();
-            jwtOptions.setLeeway(oidcConfig.getToken().getExpirationGrace().get());
+            jwtOptions.setLeeway(oidcConfig.getToken().getLifespanGrace().get());
             options.setJWTOptions(jwtOptions);
         }
 

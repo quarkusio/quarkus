@@ -229,19 +229,21 @@ public class ResteasyServerCommonProcessor {
 
         Map<DotName, ClassInfo> scannedResources = new HashMap<>();
         Set<DotName> pathInterfaces = new HashSet<>();
-        Set<ClassInfo> withoutDefaultCtor = new HashSet<>();
+        Map<DotName, ClassInfo> withoutDefaultCtor = new HashMap<>();
         for (AnnotationInstance annotation : allPaths) {
             if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                 ClassInfo clazz = annotation.target().asClass();
                 if (!Modifier.isInterface(clazz.flags())) {
-                    String className = clazz.name().toString();
-                    if (!additionalPaths.contains(annotation)) { // scanned resources only contains real JAX-RS resources
-                        scannedResources.putIfAbsent(clazz.name(), clazz);
-                    }
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+                    if (!withoutDefaultCtor.containsKey(clazz.name())) {
+                        String className = clazz.name().toString();
+                        if (!additionalPaths.contains(annotation)) { // scanned resources only contains real JAX-RS resources
+                            scannedResources.putIfAbsent(clazz.name(), clazz);
+                        }
+                        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
 
-                    if (!clazz.hasNoArgsConstructor()) {
-                        withoutDefaultCtor.add(clazz);
+                        if (!clazz.hasNoArgsConstructor()) {
+                            withoutDefaultCtor.put(clazz.name(), clazz);
+                        }
                     }
                 } else {
                     pathInterfaces.add(clazz.name());
@@ -393,24 +395,26 @@ public class ResteasyServerCommonProcessor {
         if (pathInterfaces.isEmpty()) {
             return;
         }
-        Set<ClassInfo> pathInterfaceImplementors = new HashSet<>();
+        Map<DotName, ClassInfo> pathInterfaceImplementors = new HashMap<>();
         for (DotName iface : pathInterfaces) {
             for (ClassInfo implementor : index.getAllKnownImplementors(iface)) {
-                pathInterfaceImplementors.add(implementor);
+                if (!pathInterfaceImplementors.containsKey(implementor.name())) {
+                    pathInterfaceImplementors.put(implementor.name(), implementor);
+                }
             }
         }
         if (!pathInterfaceImplementors.isEmpty()) {
             AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
                     .setDefaultScope(resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName() : null)
                     .setUnremovable();
-            for (ClassInfo implementor : pathInterfaceImplementors) {
-                if (scopes.isScopeDeclaredOn(implementor)) {
+            for (Map.Entry<DotName, ClassInfo> implementor : pathInterfaceImplementors.entrySet()) {
+                if (scopes.isScopeDeclaredOn(implementor.getValue())) {
                     // It has a scope defined - just mark it as unremovable
                     unremovableBeans
-                            .produce(new UnremovableBeanBuildItem(new BeanClassNameExclusion(implementor.name().toString())));
+                            .produce(new UnremovableBeanBuildItem(new BeanClassNameExclusion(implementor.getKey().toString())));
                 } else {
                     // No built-in scope found - add as additional bean
-                    builder.addBeanClass(implementor.name().toString());
+                    builder.addBeanClass(implementor.getKey().toString());
                 }
             }
             additionalBeans.produce(builder.build());
@@ -565,7 +569,7 @@ public class ResteasyServerCommonProcessor {
     }
 
     private static void generateDefaultConstructors(BuildProducer<BytecodeTransformerBuildItem> transformers,
-            Set<ClassInfo> withoutDefaultCtor,
+            Map<DotName, ClassInfo> withoutDefaultCtor,
             List<AdditionalJaxRsResourceDefiningAnnotationBuildItem> additionalJaxRsResourceDefiningAnnotations) {
 
         final Set<String> allowedAnnotationPrefixes = new HashSet<>(1 + additionalJaxRsResourceDefiningAnnotations.size());
@@ -581,7 +585,8 @@ public class ResteasyServerCommonProcessor {
             }
         }
 
-        for (ClassInfo classInfo : withoutDefaultCtor) {
+        for (Map.Entry<DotName, ClassInfo> entry : withoutDefaultCtor.entrySet()) {
+            final ClassInfo classInfo = entry.getValue();
             // keep it super simple - only generate default constructor is the object is a direct descendant of Object
             if (!(classInfo.superClassType() != null && classInfo.superClassType().name().equals(DotNames.OBJECT))) {
                 return;

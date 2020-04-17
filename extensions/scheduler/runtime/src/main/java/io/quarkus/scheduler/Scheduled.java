@@ -40,6 +40,16 @@ import io.quarkus.scheduler.Scheduled.Schedules;
 public @interface Scheduled {
 
     /**
+     * Optionally defines a unique identifier for this job.
+     * <p>
+     * If the value is not given, Quarkus will generate a unique id.
+     * <p>
+     * 
+     * @return the unique identity of the schedule
+     */
+    String identity() default "";
+
+    /**
      * Defines a cron-like expression. For example "0 15 10 * * ?" fires at 10:15am every day.
      * <p>
      * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property

@@ -21,7 +21,7 @@ public class Counter {
         return counter.get();
     }
 
-    @Scheduled(cron = "0/1 * * * * ?")
+    @Scheduled(cron = "0/1 * * * * ?", identity = "counter")
     void increment() {
         counter.incrementAndGet();
     }

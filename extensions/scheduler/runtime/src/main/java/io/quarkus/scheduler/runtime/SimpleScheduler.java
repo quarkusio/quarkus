@@ -12,7 +12,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
@@ -51,15 +50,11 @@ public class SimpleScheduler implements Scheduler {
     private final ExecutorService executor;
     private volatile boolean running;
     private final List<ScheduledTask> scheduledTasks;
-    private final AtomicInteger triggerNameSequence;
-    private final Config config;
 
     public SimpleScheduler(SchedulerContext context, Config config) {
         this.running = true;
         this.scheduledTasks = new ArrayList<>();
-        this.triggerNameSequence = new AtomicInteger();
         this.executor = context.getExecutor();
-        this.config = config;
 
         if (context.getScheduledMethods().isEmpty()) {
             this.scheduledExecutor = null;
@@ -76,8 +71,11 @@ public class SimpleScheduler implements Scheduler {
 
             for (ScheduledMethodMetadata method : context.getScheduledMethods()) {
                 ScheduledInvoker invoker = context.createInvoker(method.getInvokerClassName());
+                int nameSequence = 0;
                 for (Scheduled scheduled : method.getSchedules()) {
-                    SimpleTrigger trigger = createTrigger(method.getInvokerClassName(), parser, scheduled);
+                    nameSequence++;
+                    SimpleTrigger trigger = createTrigger(method.getInvokerClassName(), parser, scheduled, nameSequence,
+                            config);
                     scheduledTasks.add(new ScheduledTask(trigger, invoker));
                 }
             }
@@ -147,8 +145,11 @@ public class SimpleScheduler implements Scheduler {
         running = true;
     }
 
-    SimpleTrigger createTrigger(String invokerClass, CronParser parser, Scheduled scheduled) {
-        String id = triggerNameSequence.getAndIncrement() + "_" + invokerClass;
+    SimpleTrigger createTrigger(String invokerClass, CronParser parser, Scheduled scheduled, int nameSequence, Config config) {
+        String id = scheduled.identity().trim();
+        if (id.isEmpty()) {
+            id = nameSequence + "_" + invokerClass;
+        }
         ZonedDateTime start = ZonedDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         Long millisToAdd = null;
         if (scheduled.delay() > 0) {

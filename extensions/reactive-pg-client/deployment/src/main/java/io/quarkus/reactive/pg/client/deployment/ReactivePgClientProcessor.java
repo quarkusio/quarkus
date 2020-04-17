@@ -11,6 +11,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
@@ -37,7 +38,8 @@ class ReactivePgClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void build(BuildProducer<FeatureBuildItem> feature, BuildProducer<PgPoolBuildItem> pgPool, PgPoolRecorder recorder,
+    ServiceStartBuildItem build(BuildProducer<FeatureBuildItem> feature, BuildProducer<PgPoolBuildItem> pgPool,
+            PgPoolRecorder recorder,
             VertxBuildItem vertx,
             BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
@@ -48,12 +50,14 @@ class ReactivePgClientProcessor {
             LegacyDataSourceReactivePostgreSQLConfig legacyDataSourceReactivePostgreSQLConfig) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.REACTIVE_PG_CLIENT));
+        // Make sure the PgPoolProducer is initialized before the StartupEvent is fired
+        ServiceStartBuildItem serviceStart = new ServiceStartBuildItem("pg-client");
 
         // Note: we had to tweak that logic to support the legacy configuration
         if (dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()
                 && (!DatabaseKind.isPostgreSQL(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get())
                         || !dataSourceReactiveBuildTimeConfig.enabled)) {
-            return;
+            return serviceStart;
         }
 
         boolean isLegacy = !dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent();
@@ -62,5 +66,7 @@ class ReactivePgClientProcessor {
                 dataSourcesRuntimeConfig, dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig,
                 legacyDataSourcesRuntimeConfig, legacyDataSourceReactivePostgreSQLConfig, isLegacy,
                 shutdown)));
+
+        return serviceStart;
     }
 }

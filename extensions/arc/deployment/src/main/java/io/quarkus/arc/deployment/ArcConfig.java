@@ -54,20 +54,6 @@ public class ArcConfig {
     public boolean autoInjectFields;
 
     /**
-     * If set to true, Arc will transform the bytecode of beans containing methods that need to be proxyable
-     * but have been declared as final. The transformation is simply a matter of removing final.
-     * This ensures that a proxy/subclass can be created properly.
-     * If the value is set to false, then an exception is thrown at build time indicating
-     * that a proxy could not be created because a method was final.
-     * 
-     * @deprecated This config property is ignored and will be removed at some point post Quarkus 1.4
-     * @see #transformUnproxyableClasses
-     */
-    @Deprecated
-    @ConfigItem(defaultValue = "true")
-    public boolean removeFinalForProxyableMethods;
-
-    /**
      * If set to true, the bytecode of unproxyable beans will be transformed. This ensures that a proxy/subclass
      * can be created properly. If the value is set to false, then an exception is thrown at build time indicating that a
      * subclass/proxy could not be created.

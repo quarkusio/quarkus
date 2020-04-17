@@ -22,19 +22,6 @@ public interface BeanDeploymentValidator extends BuildExtension {
     default void validate(ValidationContext context) {
     }
 
-    /**
-     * This method is deprecated and is not used internally.
-     * 
-     * @param target
-     * @param rule
-     * @return {@code true} if the given validation rule should be skipped for the specified target
-     * @deprecated This method will be removed at some point post Quarkus 1.4
-     */
-    @Deprecated
-    default boolean skipValidation(InjectionTargetInfo target, ValidationRule rule) {
-        return false;
-    }
-
     interface ValidationContext extends BuildContext {
 
         void addDeploymentProblem(Throwable t);
@@ -52,22 +39,6 @@ public interface BeanDeploymentValidator extends BuildExtension {
          * @return a new stream of beans that are considered {@code unused} and were removed from the deployment
          */
         BeanStream removedBeans();
-
-    }
-
-    @Deprecated
-    enum ValidationRule {
-
-        NO_ARGS_CONSTRUCTOR;
-
-        boolean skipFor(List<BeanDeploymentValidator> validators, InjectionTargetInfo target) {
-            for (BeanDeploymentValidator validator : validators) {
-                if (validator.skipValidation(target, this)) {
-                    return true;
-                }
-            }
-            return false;
-        }
 
     }
 

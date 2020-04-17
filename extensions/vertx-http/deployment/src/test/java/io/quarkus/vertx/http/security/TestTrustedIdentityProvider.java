@@ -1,4 +1,4 @@
-package io.quarkus.security.test.utils;
+package io.quarkus.vertx.http.security;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -10,6 +10,7 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusPrincipal;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.vertx.http.runtime.security.TrustedAuthenticationRequest;
 import io.smallrye.mutiny.Uni;
 

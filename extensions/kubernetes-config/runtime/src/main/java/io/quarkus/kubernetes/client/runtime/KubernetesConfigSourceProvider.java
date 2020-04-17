@@ -57,13 +57,7 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
                 }
                 ConfigMap configMap = client.configMaps().withName(configMapName).get();
                 if (configMap == null) {
-                    String message = "ConfigMap '" + configMap + "' not found in namespace '"
-                            + client.getConfiguration().getNamespace() + "'";
-                    if (config.failOnMissingConfig) {
-                        throw new RuntimeException(message);
-                    } else {
-                        log.info(message);
-                    }
+                    logMissingOrFail(configMapName, client.getNamespace(), "ConfigMap", config.failOnMissingConfig);
                 } else {
                     result.addAll(
                             configMapConfigSourceUtil.toConfigSources(configMap.getMetadata().getName(), configMap.getData()));
@@ -89,13 +83,7 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
                 }
                 Secret secret = client.secrets().withName(secretName).get();
                 if (secret == null) {
-                    String message = "Secret '" + secret + "' not found in namespace '"
-                            + client.getConfiguration().getNamespace() + "'";
-                    if (config.failOnMissingConfig) {
-                        throw new RuntimeException(message);
-                    } else {
-                        log.info(message);
-                    }
+                    logMissingOrFail(secretName, client.getNamespace(), "Secret", config.failOnMissingConfig);
                 } else {
                     result.addAll(secretConfigSourceUtil.toConfigSources(secret.getMetadata().getName(), secret.getData()));
                     if (log.isDebugEnabled()) {
@@ -107,6 +95,21 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
         } catch (Exception e) {
             throw new RuntimeException("Unable to obtain configuration for Secret objects for Kubernetes API Server at: "
                     + client.getConfiguration().getMasterUrl(), e);
+        }
+    }
+
+    private void logMissingOrFail(String name, String namespace, String type, boolean failOnMissingConfig) {
+        String message = type + " '" + name + "' not found";
+        if (namespace == null) {
+            message = message
+                    + ". No Kubernetes namespace was set (most likely because the application is running outside the Kubernetes cluster). Consider setting 'quarkus.kubernetes-client.namespace=my-namespace' to specify the namespace in which to look up the ConfigMap";
+        } else {
+            message = message + " in namespace '" + namespace + "'";
+        }
+        if (failOnMissingConfig) {
+            throw new RuntimeException(message);
+        } else {
+            log.info(message);
         }
     }
 }

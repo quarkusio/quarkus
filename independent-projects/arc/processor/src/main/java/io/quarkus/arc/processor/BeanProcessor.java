@@ -427,19 +427,6 @@ public class BeanProcessor {
         }
 
         /**
-         * Invocation of this method is a no-op, i.e. the value is ignored.
-         * 
-         * @param removeFinalForProxyableMethods
-         * @return self
-         * @see #setTransformUnproxyableClasses(boolean)
-         * @deprecated This method will be removed at some point post Quarkus 1.4
-         */
-        @Deprecated
-        public Builder setRemoveFinalFromProxyableMethods(boolean removeFinalForProxyableMethods) {
-            return this;
-        }
-
-        /**
          * If set to true the container will transform unproxyable bean classes during validation.
          * 
          * @param value

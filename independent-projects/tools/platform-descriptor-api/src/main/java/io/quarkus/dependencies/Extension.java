@@ -1,11 +1,13 @@
 package io.quarkus.dependencies;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.maven.model.Dependency;
@@ -14,7 +16,7 @@ import org.apache.maven.model.Dependency;
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
  * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>
  */
-public class Extension {
+public class Extension implements Serializable {
 
     public static final String GROUP_ID = "group-id";
 
@@ -45,7 +47,7 @@ public class Extension {
     private String description;
 
     private String simplifiedArtifactId;
-    private static final Pattern QUARKUS_PREFIX = Pattern.compile("^quarkus-");
+    private static final transient Pattern QUARKUS_PREFIX = Pattern.compile("^quarkus-");
 
     private Map<String, Object> metadata = new HashMap<String, Object>(3);
 
@@ -178,7 +180,7 @@ public class Extension {
      * Convert this Extension into a dependency
      * 
      * @param stripVersion if provided version will not be set on the Dependency
-     * @return
+     * @return a Maven {@link Dependency} object
      */
     public Dependency toDependency(boolean stripVersion) {
         Dependency dependency = new Dependency();
@@ -214,56 +216,22 @@ public class Extension {
     }
 
     @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((groupId == null) ? 0 : groupId.hashCode());
-        result = prime * result + ((artifactId == null) ? 0 : artifactId.hashCode());
-        result = prime * result + ((version == null) ? 0 : version.hashCode());
-
-        return result;
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Extension extension = (Extension) o;
+        return Objects.equals(artifactId, extension.artifactId) &&
+                Objects.equals(groupId, extension.groupId) &&
+                Objects.equals(version, extension.version);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-
-        if (obj == null) {
-            return false;
-        }
-
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-
-        Extension other = (Extension) obj;
-        if (groupId == null) {
-            if (other.groupId != null) {
-                return false;
-            }
-        } else if (!groupId.equals(other.groupId)) {
-            return false;
-        }
-
-        if (artifactId == null) {
-            if (other.artifactId != null) {
-                return false;
-            }
-        } else if (!artifactId.equals(other.artifactId)) {
-            return false;
-        }
-
-        if (version == null) {
-            if (other.version != null) {
-                return false;
-            }
-        } else if (!version.equals(other.version)) {
-            return false;
-        }
-
-        return true;
+    public int hashCode() {
+        return Objects.hash(artifactId, groupId, version);
     }
 
     public Extension setGuide(String guide) {
@@ -298,16 +266,16 @@ public class Extension {
         if (val == null) {
             return false;
         } else if (val instanceof Boolean) {
-            return ((Boolean) val).booleanValue();
+            return (Boolean) val;
         } else if (val instanceof String) {
-            return Boolean.valueOf((String) val);
+            return Boolean.parseBoolean((String) val);
         }
 
         return false;
     }
 
     public void setUnlisted(boolean unlisted) {
-        getMetadata().put(MD_UNLISTED, Boolean.valueOf(unlisted));
+        getMetadata().put(MD_UNLISTED, unlisted);
     }
 
     public Extension addMetadata(String key, Object value) {

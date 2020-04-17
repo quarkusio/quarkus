@@ -62,6 +62,11 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- These are needed to test the RESTEASY_JSON_EXTENSION representation of the NotFoundExceptionMapper-->
         <dependency>
             <groupId>org.jboss.resteasy</groupId>

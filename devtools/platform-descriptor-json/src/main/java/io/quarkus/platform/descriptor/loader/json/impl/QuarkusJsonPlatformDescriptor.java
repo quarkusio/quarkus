@@ -3,6 +3,7 @@ package io.quarkus.platform.descriptor.loader.json.impl;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
@@ -19,7 +20,7 @@ import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.DefaultMessageWriter;
 import io.quarkus.platform.tools.MessageWriter;
 
-public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor {
+public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor, Serializable {
 
     private String bomGroupId;
     private String bomArtifactId;
@@ -29,8 +30,8 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor 
     private List<Extension> extensions = Collections.emptyList();
     private List<Dependency> managedDeps = Collections.emptyList();
     private List<Category> categories = Collections.emptyList();
-    private ResourceLoader resourceLoader;
-    private MessageWriter log;
+    private transient ResourceLoader resourceLoader;
+    private transient MessageWriter log;
 
     public QuarkusJsonPlatformDescriptor() {
     }

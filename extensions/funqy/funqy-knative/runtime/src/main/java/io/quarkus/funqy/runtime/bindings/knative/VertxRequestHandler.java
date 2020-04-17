@@ -57,27 +57,15 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         this.executor = executor;
         this.mapper = mapper;
 
-        ceSource = or(
-                funqyCloudEventsConfig.source,
-                Optional.ofNullable(System.getenv("K_SERVICE")),
-                Optional.ofNullable(invoker.getName()));
-        ceType = or(
-                funqyCloudEventsConfig.type,
-                Optional.ofNullable(System.getenv("K_SERVICE")),
-                Optional.ofNullable(invoker.getName()));
+        final String k_service = System.getenv("K_SERVICE");
+        final String ceSourceFallback = k_service != null ? k_service : invoker.getName();
+        ceSource = funqyCloudEventsConfig.source.orElse(ceSourceFallback);
+        final String ceTypeFallback = ceSource + "/" + invoker.getOutputType().getName();
+        ceType = funqyCloudEventsConfig.type.orElse(ceTypeFallback);
 
         Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);
         this.association = association.isResolvable() ? association.get() : null;
         currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
-    }
-
-    private static <T> T or(Optional<T>... vals) {
-        for (Optional<T> v : vals) {
-            if (v.isPresent()) {
-                return v.get();
-            }
-        }
-        return null;
     }
 
     @Override

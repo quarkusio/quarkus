@@ -1,7 +1,7 @@
 package io.quarkus.it.spring.data.jpa;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.repository.PagingAndSortingRepository;
 
-public interface SongRepository extends JpaRepository<Song, Long> {
+public interface SongRepository extends PagingAndSortingRepository<Song, Long> {
 
 }

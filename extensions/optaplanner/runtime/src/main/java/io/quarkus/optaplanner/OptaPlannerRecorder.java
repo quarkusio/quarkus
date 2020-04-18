@@ -11,6 +11,9 @@ public class OptaPlannerRecorder {
 
     public BeanContainerListener initialize(SolverConfig solverConfig, SolverManagerConfig solverManagerConfig) {
         return container -> {
+            // Don't use the Quarkus build-time classloader at runtime
+            solverConfig.setClassLoader(
+                    solverConfig.getSolutionClass() == null ? null : solverConfig.getSolutionClass().getClassLoader());
             OptaPlannerBeanProvider.solverConfig = solverConfig;
             OptaPlannerBeanProvider.solverManagerConfig = solverManagerConfig;
         };

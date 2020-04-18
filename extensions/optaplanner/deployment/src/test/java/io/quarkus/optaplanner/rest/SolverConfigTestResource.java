@@ -19,7 +19,7 @@ public class SolverConfigTestResource {
     @GET
     @Path("/seconds-spent-limit")
     @Produces(MediaType.TEXT_PLAIN)
-    public String foo() {
+    public String secondsSpentLimit() {
         return "secondsSpentLimit=" + solverConfig.getTerminationConfig().getSecondsSpentLimit();
     }
 

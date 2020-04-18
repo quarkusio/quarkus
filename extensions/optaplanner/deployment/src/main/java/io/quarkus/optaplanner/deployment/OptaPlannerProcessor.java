@@ -4,6 +4,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,6 +22,8 @@ import org.optaplanner.core.config.score.director.ScoreDirectorFactoryConfig;
 import org.optaplanner.core.config.solver.SolverConfig;
 import org.optaplanner.core.config.solver.SolverManagerConfig;
 import org.optaplanner.core.config.solver.termination.TerminationConfig;
+import org.optaplanner.core.impl.score.director.easy.EasyScoreCalculator;
+import org.optaplanner.core.impl.score.director.incremental.IncrementalScoreCalculator;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -48,7 +51,7 @@ class OptaPlannerProcessor {
     }
 
     @BuildStep
-    HotDeploymentWatchedFileBuildItem configFile() {
+    HotDeploymentWatchedFileBuildItem watchSolverConfigXml() {
         String solverConfigXML;
         if (optaPlannerBuildTimeConfig.solverConfigXml.isPresent()) {
             solverConfigXML = optaPlannerBuildTimeConfig.solverConfigXml.get();
@@ -56,6 +59,11 @@ class OptaPlannerProcessor {
             solverConfigXML = OptaPlannerBuildTimeConfig.DEFAULT_SOLVER_CONFIG_URL;
         }
         return new HotDeploymentWatchedFileBuildItem(solverConfigXML);
+    }
+
+    @BuildStep
+    HotDeploymentWatchedFileBuildItem watchScoreDrl() {
+        return new HotDeploymentWatchedFileBuildItem(SolverBuildTimeConfig.DEFAULT_SCORE_DRL_URL);
     }
 
     @BuildStep
@@ -90,7 +98,7 @@ class OptaPlannerProcessor {
         solverConfig.setClassLoader(null);
 
         IndexView indexView = combinedIndex.getIndex();
-        applySolverProperties(recorder, recorderContext, indexView, solverConfig);
+        applySolverProperties(recorderContext, indexView, solverConfig);
 
         if (solverConfig.getSolutionClass() != null) {
             Type jandexType = Type.create(DotName.createSimple(solverConfig.getSolutionClass().getName()), Type.Kind.CLASS);
@@ -120,7 +128,7 @@ class OptaPlannerProcessor {
                         recorder.initialize(solverConfig, solverManagerConfig)));
     }
 
-    private void applySolverProperties(OptaPlannerRecorder recorder, RecorderContext recorderContext,
+    private void applySolverProperties(RecorderContext recorderContext,
             IndexView indexView, SolverConfig solverConfig) {
         if (solverConfig.getScanAnnotatedClassesConfig() != null) {
             throw new IllegalArgumentException("Do not use scanAnnotatedClasses with the Quarkus extension,"
@@ -135,7 +143,17 @@ class OptaPlannerProcessor {
         }
         if (solverConfig.getScoreDirectorFactoryConfig() == null) {
             ScoreDirectorFactoryConfig scoreDirectorFactoryConfig = new ScoreDirectorFactoryConfig();
-            scoreDirectorFactoryConfig.setConstraintProviderClass(findConstraintProviderClass(recorderContext, indexView));
+            scoreDirectorFactoryConfig.setEasyScoreCalculatorClass(
+                    findImplementingClass(EasyScoreCalculator.class, indexView));
+            scoreDirectorFactoryConfig.setConstraintProviderClass(
+                    findImplementingClass(ConstraintProvider.class, indexView));
+            scoreDirectorFactoryConfig.setIncrementalScoreCalculatorClass(
+                    findImplementingClass(IncrementalScoreCalculator.class, indexView));
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            if (classLoader.getResource(SolverBuildTimeConfig.DEFAULT_SCORE_DRL_URL) != null) {
+                scoreDirectorFactoryConfig.setScoreDrlList(Collections.singletonList(
+                        SolverBuildTimeConfig.DEFAULT_SCORE_DRL_URL));
+            }
             solverConfig.setScoreDirectorFactoryConfig(scoreDirectorFactoryConfig);
         }
         optaPlannerBuildTimeConfig.solver.environmentMode.ifPresent(solverConfig::setEnvironmentMode);
@@ -180,26 +198,24 @@ class OptaPlannerProcessor {
                 .collect(Collectors.toList());
     }
 
-    private Class<? extends ConstraintProvider> findConstraintProviderClass(RecorderContext recorderContext,
-            IndexView indexView) {
+    private <T> Class<? extends T> findImplementingClass(Class<T> targetClass, IndexView indexView) {
         Collection<ClassInfo> classInfos = indexView.getAllKnownImplementors(
-                DotName.createSimple(ConstraintProvider.class.getName()));
+                DotName.createSimple(targetClass.getName()));
         if (classInfos.size() > 1) {
             throw new IllegalStateException("Multiple classes (" + convertClassInfosToString(classInfos)
-                    + ") found that implement the interface " + ConstraintProvider.class.getSimpleName() + ".");
+                    + ") found that implement the interface " + targetClass.getSimpleName() + ".");
         }
         if (classInfos.isEmpty()) {
-            throw new IllegalStateException("No classes (" + convertClassInfosToString(classInfos)
-                    + ") found that implement the interface " + ConstraintProvider.class.getSimpleName() + ".");
+            return null;
         }
-        String constraintProviderClassName = classInfos.iterator().next().name().toString();
+        String className = classInfos.iterator().next().name().toString();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         try {
-            // Don't use recorderContext.classProxy(constraintProviderClassName)
+            // Don't use recorderContext.classProxy(className)
             // because ReflectiveClassBuildItem cannot cope with a class proxy
-            return (Class<? extends ConstraintProvider>) classLoader.loadClass(constraintProviderClassName);
+            return (Class<? extends T>) classLoader.loadClass(className);
         } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("The constraintProviderClass (" + constraintProviderClassName
+            throw new IllegalStateException("The class (" + className
                     + ") cannot be created during deployment.", e);
         }
     }

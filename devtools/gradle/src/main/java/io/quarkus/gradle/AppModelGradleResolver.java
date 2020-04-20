@@ -141,7 +141,7 @@ public class AppModelGradleResolver implements AppModelResolver {
         Map<ModuleIdentifier, ModuleVersionIdentifier> userModules = new HashMap<>();
 
         final String classpathConfigName = launchMode == LaunchMode.NORMAL ? JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME
-                : launchMode == LaunchMode.TEST ? JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME
+                : launchMode == LaunchMode.TEST ? JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME
                         : JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME;
 
         collectDependencies(project.getConfigurations().getByName(classpathConfigName),

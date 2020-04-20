@@ -39,8 +39,6 @@ import org.jgroups.util.Util;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -49,8 +47,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.infinispan.embedded.runtime.InfinispanEmbeddedProducer;
-import io.quarkus.infinispan.embedded.runtime.InfinispanEmbeddedRuntimeConfig;
-import io.quarkus.infinispan.embedded.runtime.InfinispanRecorder;
 
 class InfinispanEmbeddedProcessor {
     @BuildStep
@@ -202,11 +198,5 @@ class InfinispanEmbeddedProcessor {
             reflectiveClass.produce(new ReflectiveClassBuildItem(methods, fields,
                     classInfos.stream().map(ClassInfo::toString).toArray(String[]::new)));
         }
-    }
-
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep
-    void configureRuntimeProperties(InfinispanRecorder recorder, InfinispanEmbeddedRuntimeConfig runtimeConfig) {
-        recorder.configureRuntimeProperties(runtimeConfig);
     }
 }

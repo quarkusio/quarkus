@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.infinispan.commons.CacheConfigurationException;
@@ -25,11 +26,8 @@ import org.infinispan.transaction.lookup.JBossStandaloneJTAManagerLookup;
 @ApplicationScoped
 public class InfinispanEmbeddedProducer {
 
-    private volatile InfinispanEmbeddedRuntimeConfig config;
-
-    public void setRuntimeConfig(InfinispanEmbeddedRuntimeConfig config) {
-        this.config = config;
-    }
+    @Inject
+    InfinispanEmbeddedRuntimeConfig config;
 
     @Singleton
     @Produces

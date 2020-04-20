@@ -5,6 +5,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.jboss.logging.Logger;
 import org.wildfly.common.Assert;
 import org.wildfly.common.lock.Locks;
 
@@ -88,6 +89,12 @@ public abstract class Application implements Closeable {
             doStart(args);
         } catch (Throwable t) {
             stateLock.lock();
+            final ConfigProviderResolver cpr = ConfigProviderResolver.instance();
+            try {
+                cpr.releaseConfig(cpr.getConfig());
+            } catch (IllegalStateException ignored) {
+                // just means no config was installed, which is fine
+            }
             try {
                 state = ST_STOPPED;
                 stateCond.signalAll();
@@ -129,6 +136,15 @@ public abstract class Application implements Closeable {
      * stop, that exception is propagated.
      */
     public final void stop() {
+        stop(null);
+    }
+
+    /**
+     * Stop the application. If another thread is also trying to stop the application, this method waits for that
+     * thread to finish. Returns immediately if the application is already stopped. If an exception is thrown during
+     * stop, that exception is propagated.
+     */
+    public final void stop(Runnable afterStopTask) {
         final Lock stateLock = this.stateLock;
         stateLock.lock();
         try {
@@ -171,6 +187,13 @@ public abstract class Application implements Closeable {
             doStop();
         } finally {
             currentApplication = null;
+            if (afterStopTask != null) {
+                try {
+                    afterStopTask.run();
+                } catch (Throwable t) {
+                    Logger.getLogger(Application.class).error("Failed to run stop task", t);
+                }
+            }
             stateLock.lock();
             try {
                 state = ST_STOPPED;

@@ -32,7 +32,8 @@ public class HibernateValidatorRecorder {
     public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated,
             Set<String> detectedBuiltinConstraints,
             boolean hasXmlConfiguration, boolean jpaInClasspath,
-            ShutdownContext shutdownContext, LocalesBuildTimeConfig localesBuildTimeConfig) {
+            ShutdownContext shutdownContext, LocalesBuildTimeConfig localesBuildTimeConfig,
+            HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig) {
         BeanContainerListener beanContainerListener = new BeanContainerListener() {
 
             @Override
@@ -99,6 +100,14 @@ public class HibernateValidatorRecorder {
                 }
 
                 // Hibernate Validator-specific configuration
+
+                configuration.failFast(hibernateValidatorBuildTimeConfig.failFast);
+                configuration.allowOverridingMethodAlterParameterConstraint(
+                        hibernateValidatorBuildTimeConfig.methodValidation.allowOverridingParameterConstraints);
+                configuration.allowParallelMethodsDefineParameterConstraints(
+                        hibernateValidatorBuildTimeConfig.methodValidation.allowParameterConstraintsOnParallelMethods);
+                configuration.allowMultipleCascadedValidationOnReturnValues(
+                        hibernateValidatorBuildTimeConfig.methodValidation.allowMultipleCascadedValidationOnReturnValues);
 
                 InstanceHandle<ScriptEvaluatorFactory> configuredScriptEvaluatorFactory = Arc.container()
                         .instance(ScriptEvaluatorFactory.class);

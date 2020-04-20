@@ -12,8 +12,6 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
 import io.quarkus.cli.commands.AddExtensions;
-import io.quarkus.cli.commands.file.GradleBuildFile;
-import io.quarkus.cli.commands.writer.FileProjectWriter;
 
 public class QuarkusAddExtension extends QuarkusPlatformTask {
 
@@ -42,11 +40,7 @@ public class QuarkusAddExtension extends QuarkusPlatformTask {
                 .collect(toSet());
 
         try {
-            GradleBuildFile gradleBuildFile = getProject().getParent() == null
-                    ? new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir()))
-                    : new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir()),
-                            new FileProjectWriter(getProject().getRootProject().getProjectDir()));
-            new AddExtensions(gradleBuildFile, platformDescriptor())
+            new AddExtensions(getGradleBuildFile(), platformDescriptor())
                     .extensions(extensionsSet)
                     .execute();
         } catch (Exception e) {

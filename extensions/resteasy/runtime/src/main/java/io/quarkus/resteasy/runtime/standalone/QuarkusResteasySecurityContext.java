@@ -23,7 +23,7 @@ public class QuarkusResteasySecurityContext implements SecurityContext {
     @Override
     public Principal getUserPrincipal() {
         QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
-        if (user == null) {
+        if (user == null || user.getSecurityIdentity().isAnonymous()) {
             return null;
         }
         return user.getSecurityIdentity().getPrincipal();

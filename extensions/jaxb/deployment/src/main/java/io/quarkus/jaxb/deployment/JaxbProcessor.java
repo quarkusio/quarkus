@@ -254,8 +254,8 @@ class JaxbProcessor {
 
     private Stream<Path> iterateResources(String path) {
         return applicationArchivesBuildItem.getAllApplicationArchives().stream()
-                .map(arch -> arch.getArchiveRoot().resolve(path))
-                .filter(Files::isDirectory)
+                .map(arch -> arch.getChildPath(path))
+                .filter(p -> p != null && Files.isDirectory(p))
                 .flatMap(JaxbProcessor::safeWalk)
                 .filter(Files::isRegularFile);
     }

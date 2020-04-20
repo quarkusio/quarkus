@@ -199,9 +199,7 @@ public class AppModel implements Serializable {
                         && s.getArtifact().getArtifactId().equals("quarkus-ide-launcher")) {
                     return false;
                 }
-                return !excludedArtifacts
-                        .contains(new AppArtifactKey(s.getArtifact().getGroupId(), s.getArtifact().getArtifactId(),
-                                s.getArtifact().getClassifier(), s.getArtifact().getType()));
+                return !excludedArtifacts.contains(s.getArtifact().getKey());
             };
             List<AppDependency> runtimeDeps = this.runtimeDeps.stream().filter(includePredicate).collect(Collectors.toList());
             List<AppDependency> deploymentDeps = this.deploymentDeps.stream().filter(includePredicate)

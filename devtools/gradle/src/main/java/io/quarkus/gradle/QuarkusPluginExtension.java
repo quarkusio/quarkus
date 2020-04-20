@@ -3,12 +3,9 @@ package io.quarkus.gradle;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.Convention;
@@ -19,7 +16,6 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.jvm.tasks.Jar;
 
 import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.runtime.LaunchMode;
@@ -38,14 +34,8 @@ public class QuarkusPluginExtension {
 
     private File outputConfigDirectory;
 
-    private Map<AppArtifactKey, Task> projectDepJarTasks = new HashMap<>();
-
     public QuarkusPluginExtension(Project project) {
         this.project = project;
-    }
-
-    void addProjectDepJarTask(Project projectDep, Task jarTask) {
-        projectDepJarTasks.put(new AppArtifactKey(projectDep.getGroup().toString(), projectDep.getName()), jarTask);
     }
 
     public Path appJarOrClasses() {
@@ -66,7 +56,7 @@ public class QuarkusPluginExtension {
             JavaPluginConvention javaConvention = convention.findPlugin(JavaPluginConvention.class);
             if (javaConvention != null) {
                 final SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-                final String classesPath = QuarkusGradleUtils.getClassesDir(mainSourceSet, jarTask);
+                final String classesPath = QuarkusGradleUtils.getClassesDir(mainSourceSet, jarTask.getTemporaryDir());
                 if (classesPath != null) {
                     classesDir = Paths.get(classesPath);
                 }
@@ -151,7 +141,7 @@ public class QuarkusPluginExtension {
     }
 
     public AppModelResolver getAppModelResolver(LaunchMode mode) {
-        return new AppModelGradleResolver(project, mode, projectDepJarTasks);
+        return new AppModelGradleResolver(project, mode);
     }
 
     /**

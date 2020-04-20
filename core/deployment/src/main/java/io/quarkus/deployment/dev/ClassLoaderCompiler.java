@@ -28,7 +28,7 @@ import io.quarkus.bootstrap.model.AppDependency;
 
 /**
  * Class that handles compilation of source files
- * 
+ *
  * @author Stuart Douglas
  */
 public class ClassLoaderCompiler {
@@ -52,7 +52,9 @@ public class ClassLoaderCompiler {
 
         Set<URL> urls = new HashSet<>();
         for (AppDependency i : application.getAppModel().getUserDependencies()) {
-            urls.add(i.getArtifact().getPath().toUri().toURL());
+            for (Path p : i.getArtifact().getPaths()) {
+                urls.add(p.toUri().toURL());
+            }
         }
         urls.addAll(context.getClassPath());
 

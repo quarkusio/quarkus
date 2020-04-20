@@ -1,28 +1,33 @@
 package io.quarkus.deployment;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.nio.file.Path;
 
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.builder.item.MultiBuildItem;
 
-public final class ApplicationArchiveImpl extends MultiBuildItem implements ApplicationArchive, Closeable {
+public final class ApplicationArchiveImpl extends MultiBuildItem implements ApplicationArchive {
 
     private final IndexView indexView;
-    private final Path archiveRoot;
-    private final Closeable closeable;
+    private final PathsCollection rootDirs;
     private final boolean jar;
-    private final Path archiveLocation;
+    private final PathsCollection paths;
 
     public ApplicationArchiveImpl(IndexView indexView, Path archiveRoot, Closeable closeable, boolean jar,
             Path archiveLocation) {
         this.indexView = indexView;
-        this.archiveRoot = archiveRoot;
-        this.closeable = closeable;
+        this.rootDirs = PathsCollection.of(archiveRoot);
         this.jar = jar;
-        this.archiveLocation = archiveLocation;
+        this.paths = PathsCollection.of(archiveLocation);
+    }
+
+    public ApplicationArchiveImpl(IndexView indexView, PathsCollection rootDirs, PathsCollection paths) {
+        this.indexView = indexView;
+        this.rootDirs = rootDirs;
+        this.paths = paths;
+        jar = false;
     }
 
     @Override
@@ -31,24 +36,30 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
     }
 
     @Override
+    @Deprecated
     public Path getArchiveRoot() {
-        return archiveRoot;
+        return rootDirs.iterator().next();
     }
 
     @Override
+    @Deprecated
     public boolean isJarArchive() {
         return jar;
     }
 
     @Override
+    @Deprecated
     public Path getArchiveLocation() {
-        return archiveLocation;
+        return paths.iterator().next();
     }
 
     @Override
-    public void close() throws IOException {
-        if (closeable != null) {
-            closeable.close();
-        }
+    public PathsCollection getRootDirs() {
+        return rootDirs;
+    }
+
+    @Override
+    public PathsCollection getPaths() {
+        return paths;
     }
 }

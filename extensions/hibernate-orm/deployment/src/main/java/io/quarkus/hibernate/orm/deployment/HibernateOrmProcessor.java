@@ -769,8 +769,7 @@ public final class HibernateOrmProcessor {
 
                     if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
                         // enlist resource if present
-                        String resourceAsString = root.getArchiveRoot().relativize(loadScriptPath).toString();
-                        resourceProducer.produce(new NativeImageResourceBuildItem(resourceAsString));
+                        resourceProducer.produce(new NativeImageResourceBuildItem(importFile.get()));
                         desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile.get());
                         desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR,
                                 MultipleLinesSqlCommandExtractor.class.getName());

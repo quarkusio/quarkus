@@ -146,13 +146,4 @@ public class AppArtifactCoords implements Serializable {
         }
         return buf.append(':').append(type).append(':').append(version);
     }
-
-    public static void main(String[] args) {
-        AppArtifactCoords ga = fromString("g:a:v");
-        System.out.println(ga.getGroupId());
-        System.out.println(ga.getArtifactId());
-        System.out.println("'" + ga.getClassifier() + "'");
-        System.out.println(ga.getType());
-        System.out.println(ga.getVersion());
-    }
 }

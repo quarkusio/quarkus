@@ -140,9 +140,13 @@ public class SecurityProcessor {
             List<AdditionalSecurityCheckBuildItem> additionalSecurityChecks, SecurityBuildTimeConfig config) {
         classPredicate.produce(new ApplicationClassPredicateBuildItem(new SecurityCheckStorage.AppPredicate()));
 
-        Set<ClassInfo> additionalSecured = new HashSet<>();
+        final Map<DotName, ClassInfo> additionalSecured = new HashMap<>();
         for (AdditionalSecuredClassesBuildIem securedClasses : additionalSecuredClasses) {
-            additionalSecured.addAll(securedClasses.additionalSecuredClasses);
+            securedClasses.additionalSecuredClasses.forEach(c -> {
+                if (!additionalSecured.containsKey(c.name())) {
+                    additionalSecured.put(c.name(), c);
+                }
+            });
         }
 
         beanRegistrars.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {
@@ -207,7 +211,7 @@ public class SecurityProcessor {
 
     private Map<MethodInfo, Function<BytecodeCreator, ResultHandle>> gatherSecurityAnnotations(
             IndexView index,
-            Set<ClassInfo> additionalSecuredClasses, boolean denyUnannotated) {
+            Map<DotName, ClassInfo> additionalSecuredClasses, boolean denyUnannotated) {
 
         Map<MethodInfo, AnnotationInstance> methodToInstanceCollector = new HashMap<>();
         Map<MethodInfo, Function<BytecodeCreator, ResultHandle>> result = new HashMap<>(gatherSecurityAnnotations(
@@ -225,8 +229,8 @@ public class SecurityProcessor {
          * Handle additional secured classes by adding the denyAll check to all public non-static methods
          * that don't have security annotations
          */
-        for (ClassInfo additionalSecureClassInfo : additionalSecuredClasses) {
-            for (MethodInfo methodInfo : additionalSecureClassInfo.methods()) {
+        for (Map.Entry<DotName, ClassInfo> additionalSecureClassInfo : additionalSecuredClasses.entrySet()) {
+            for (MethodInfo methodInfo : additionalSecureClassInfo.getValue().methods()) {
                 if (!isPublicNonStaticNonConstructor(methodInfo)) {
                     continue;
                 }

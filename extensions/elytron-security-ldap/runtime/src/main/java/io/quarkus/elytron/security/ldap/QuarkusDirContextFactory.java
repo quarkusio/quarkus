@@ -4,10 +4,15 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Hashtable;
 
+import javax.naming.Context;
 import javax.naming.NamingException;
+import javax.naming.NoInitialContextException;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.ldap.InitialLdapContext;
+import javax.naming.spi.InitialContextFactory;
+import javax.naming.spi.InitialContextFactoryBuilder;
+import javax.naming.spi.NamingManager;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
@@ -107,6 +112,10 @@ public class QuarkusDirContextFactory implements DirContextFactory {
             InitialLdapContext initialContext;
 
             try {
+                if (!NamingManager.hasInitialContextFactoryBuilder()) {
+                    NamingManager.setInitialContextFactoryBuilder(new QuarkusInitialContextFactoryBuilder());
+                }
+
                 initialContext = new InitialLdapContext(env, null);
             } catch (NamingException ne) {
                 //                log.debugf(ne, "Could not create [%s]. Failed to connect to LDAP server.", InitialLdapContext.class);
@@ -148,4 +157,19 @@ public class QuarkusDirContextFactory implements DirContextFactory {
         return System.getSecurityManager() != null ? AccessController.doPrivileged(action) : action.run();
     }
 
+    private static final class QuarkusInitialContextFactoryBuilder implements InitialContextFactoryBuilder {
+        @Override
+        public InitialContextFactory createInitialContextFactory(Hashtable<?, ?> environment) throws NamingException {
+            final String className = (String) environment.get(Context.INITIAL_CONTEXT_FACTORY);
+            try {
+                final ClassLoader cl = Thread.currentThread().getContextClassLoader();
+                return (InitialContextFactory) Class.forName(className, true, cl).newInstance();
+            } catch (Exception e) {
+                NoInitialContextException ne = new NoInitialContextException(
+                        "Cannot instantiate class: " + className);
+                ne.setRootCause(e);
+                throw ne;
+            }
+        }
+    }
 }

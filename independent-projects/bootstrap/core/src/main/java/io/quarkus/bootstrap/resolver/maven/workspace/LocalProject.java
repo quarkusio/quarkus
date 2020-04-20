@@ -304,7 +304,6 @@ public class LocalProject {
     public AppArtifact getAppArtifact() {
         final AppArtifact appArtifact = new AppArtifact(groupId, artifactId, BootstrapConstants.EMPTY, rawModel.getPackaging(),
                 version);
-        appArtifact.setPath(getClassesDir());
         return appArtifact;
     }
 

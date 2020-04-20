@@ -32,6 +32,10 @@ public final class Capabilities extends SimpleBuildItem {
     public static final String QUARTZ = "io.quarkus.quartz";
     public static final String METRICS = "io.quarkus.metrics";
     public static final String RESTEASY_MUTINY_EXTENSION = "io.quarkus.resteasy-mutiny";
+    public static final String CONTAINER_IMAGE_JIB = "io.quarkus.container-image-jib";
+    public static final String CONTAINER_IMAGE_DOCKER = "io.quarkus.container-image-docker";
+    public static final String CONTAINER_IMAGE_S2I = "io.quarkus.container-image-s2i";
+    public static final String HIBERNATE_ORM = "io.quarkus.hibernate-orm";
 
     private final Set<String> capabilities;
 

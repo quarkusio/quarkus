@@ -1,5 +1,7 @@
 package io.quarkus.qute;
 
+import static io.quarkus.qute.Booleans.isFalsy;
+
 import io.quarkus.qute.Results.Result;
 import java.util.Collection;
 import java.util.Map;
@@ -105,10 +107,10 @@ public final class ValueResolvers {
 
             @Override
             public CompletionStage<Object> resolve(EvalContext context) {
-                if (Boolean.TRUE.equals(context.getBase())) {
-                    return context.evaluate(context.getParams().get(0));
+                if (isFalsy(context.getBase())) {
+                    return Results.NOT_FOUND;
                 }
-                return Results.NOT_FOUND;
+                return context.evaluate(context.getParams().get(0));
             }
 
         };

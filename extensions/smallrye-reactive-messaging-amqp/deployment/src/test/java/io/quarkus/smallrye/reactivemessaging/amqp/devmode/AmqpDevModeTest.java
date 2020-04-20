@@ -45,7 +45,7 @@ public class AmqpDevModeTest {
                 .atMost(1, TimeUnit.MINUTES)
                 .until(() -> {
                     String value = RestAssured.get("/last").asString();
-                    return !value.equalsIgnoreCase("-1");
+                    return value.equalsIgnoreCase("20");
                 });
 
         TEST.modifySourceFile(ProducingBean.class, s -> s.replace("* 2", "* 3"));
@@ -54,7 +54,7 @@ public class AmqpDevModeTest {
                 .atMost(1, TimeUnit.MINUTES)
                 .until(() -> {
                     String value = RestAssured.get("/last").asString();
-                    return !value.equalsIgnoreCase("-1");
+                    return value.equalsIgnoreCase("30");
                 });
 
     }

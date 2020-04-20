@@ -95,9 +95,10 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     private void dispatch(RoutingContext routingContext, InputStream is, VertxOutput output) {
         ManagedContext requestContext = beanContainer.requestContext();
         requestContext.activate();
+        routingContext.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
         QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
-        if (user != null && association != null) {
-            association.setIdentity(user.getSecurityIdentity());
+        if (association != null) {
+            association.setIdentity(QuarkusHttpUser.getSecurityIdentity(routingContext, null));
         }
         currentVertxRequest.setCurrent(routingContext);
         try {
@@ -117,7 +118,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                     dispatcher.getDispatcher(), vertxResponse, requestContext);
             vertxRequest.setInputStream(is);
             try {
-                ResteasyContext.pushContext(SecurityContext.class, new QuarkusResteasySecurityContext(request));
+                ResteasyContext.pushContext(SecurityContext.class, new QuarkusResteasySecurityContext(request, routingContext));
                 ResteasyContext.pushContext(RoutingContext.class, routingContext);
                 dispatcher.service(ctx, request, response, vertxRequest, vertxResponse, true);
             } catch (Failure e1) {

@@ -1,4 +1,4 @@
-package io.quarkus.resteasy.test.security.app;
+package io.quarkus.resteasy.test.security;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

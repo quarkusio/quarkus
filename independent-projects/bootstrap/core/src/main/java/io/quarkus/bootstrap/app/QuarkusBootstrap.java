@@ -78,6 +78,10 @@ public class QuarkusBootstrap implements Serializable {
     private QuarkusBootstrap(Builder builder) {
         this.applicationRoot = builder.applicationRoot;
         this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
+        if (applicationRoot != null) {
+            // this path has to be added last to give a chance the test directories override the app properties, etc
+            additionalApplicationArchives.add(AdditionalDependency.test(applicationRoot));
+        }
         this.excludeFromClassPath = new ArrayList<>(builder.excludeFromClassPath);
         this.projectRoot = builder.projectRoot != null ? builder.projectRoot.normalize() : null;
         this.buildSystemProperties = builder.buildSystemProperties;
@@ -123,7 +127,7 @@ public class QuarkusBootstrap implements Serializable {
                 .setAppArtifact(appArtifact)
                 .setManagingProject(managingProject)
                 .setForcedDependencies(forcedDependencies)
-                .setAppClasses(getProjectRoot() != null ? getProjectRoot()
+                .setProjectRoot(getProjectRoot() != null ? getProjectRoot()
                         : getApplicationRoot());
         if (mode == Mode.TEST || test) {
             appModelFactory.setTest(true);
@@ -172,6 +176,11 @@ public class QuarkusBootstrap implements Serializable {
         return offline;
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    @Deprecated
     public static Builder builder(Path applicationRoot) {
         return new Builder(applicationRoot);
     }
@@ -193,7 +202,7 @@ public class QuarkusBootstrap implements Serializable {
     }
 
     public static class Builder {
-        final Path applicationRoot;
+        Path applicationRoot;
         String baseName;
         Path projectRoot;
         ClassLoader baseClassLoader = ClassLoader.getSystemClassLoader();
@@ -216,8 +225,17 @@ public class QuarkusBootstrap implements Serializable {
         AppArtifact managingProject;
         List<AppDependency> forcedDependencies = new ArrayList<>();
 
+        public Builder() {
+        }
+
+        @Deprecated
         public Builder(Path applicationRoot) {
+            setApplicationRoot(applicationRoot);
+        }
+
+        public Builder setApplicationRoot(Path applicationRoot) {
             this.applicationRoot = applicationRoot;
+            return this;
         }
 
         public Builder addAdditionalApplicationArchive(AdditionalDependency path) {

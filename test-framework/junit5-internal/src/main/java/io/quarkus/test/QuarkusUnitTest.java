@@ -377,7 +377,8 @@ public class QuarkusUnitTest
             final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
 
             try {
-                QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder(deploymentDir)
+                QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
+                        .setApplicationRoot(deploymentDir)
                         .setMode(QuarkusBootstrap.Mode.TEST)
                         .addExcludedPath(testLocation)
                         .setProjectRoot(testLocation)

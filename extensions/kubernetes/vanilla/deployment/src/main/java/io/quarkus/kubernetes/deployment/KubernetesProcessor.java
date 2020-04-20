@@ -295,7 +295,7 @@ class KubernetesProcessor {
 
     /**
      * Apply changes to the target resource group
-     * 
+     *
      * @param session The session to apply the changes
      * @param target The deployment target (e.g. kubernetes, openshift, knative)
      * @param name The name of the resource to accept the configuration

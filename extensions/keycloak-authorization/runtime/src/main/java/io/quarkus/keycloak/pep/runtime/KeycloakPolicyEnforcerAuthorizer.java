@@ -17,8 +17,8 @@ import org.keycloak.adapters.authorization.PolicyEnforcer;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
 
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
-import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
@@ -34,7 +34,7 @@ public class KeycloakPolicyEnforcerAuthorizer
     private volatile long readTimeout;
 
     @Override
-    public Uni<CheckResult> checkPermission(RoutingContext request, SecurityIdentity identity,
+    public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
         return requestContext.runBlocking(request, identity, this);
     }

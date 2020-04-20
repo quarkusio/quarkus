@@ -1,9 +1,6 @@
 package io.quarkus.deployment;
 
 import java.io.Closeable;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,6 +30,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.RawCommandLineArgumentsBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
@@ -86,7 +84,7 @@ public class QuarkusAugmentor {
         long time = System.currentTimeMillis();
         log.debug("Beginning Quarkus augmentation");
         ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
-        FileSystem rootFs = null;
+        QuarkusBuildCloseablesBuildItem buildCloseables = new QuarkusBuildCloseablesBuildItem();
         try {
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
@@ -106,6 +104,7 @@ public class QuarkusAugmentor {
             chainBuilder.loadProviders(classLoader);
 
             chainBuilder
+                    .addInitial(QuarkusBuildCloseablesBuildItem.class)
                     .addInitial(DeploymentClassLoaderBuildItem.class)
                     .addInitial(ArchiveRootBuildItem.class)
                     .addInitial(ShutdownContextBuildItem.class)
@@ -126,14 +125,25 @@ public class QuarkusAugmentor {
                 i.accept(chainBuilder);
             }
 
-            BuildChain chain = chainBuilder
-                    .build();
-            if (!Files.isDirectory(root)) {
-                rootFs = FileSystems.newFileSystem(root, null);
+            final ArchiveRootBuildItem.Builder rootBuilder = ArchiveRootBuildItem.builder();
+            if (root != null) {
+                rootBuilder.addArchiveRoot(root);
+                rootBuilder.setArchiveLocation(root);
+            } else {
+                rootBuilder.setArchiveLocation(effectiveModel.getAppArtifact().getPaths().iterator().next());
             }
+            effectiveModel.getAppArtifact().getPaths().forEach(p -> {
+                if (!p.equals(root)) {
+                    rootBuilder.addArchiveRoot(p);
+                }
+            });
+            rootBuilder.setExcludedFromIndexing(excludedFromIndexing);
+
+            BuildChain chain = chainBuilder.build();
             BuildExecutionBuilder execBuilder = chain.createExecutionBuilder("main")
+                    .produce(buildCloseables)
                     .produce(liveReloadBuildItem)
-                    .produce(new ArchiveRootBuildItem(root, rootFs == null ? root : rootFs.getPath("/"), excludedFromIndexing))
+                    .produce(rootBuilder.build(buildCloseables))
                     .produce(new ShutdownContextBuildItem())
                     .produce(new RawCommandLineArgumentsBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode))
@@ -143,8 +153,7 @@ public class QuarkusAugmentor {
             for (Path i : additionalApplicationArchives) {
                 execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
             }
-            BuildResult buildResult = execBuilder
-                    .execute();
+            BuildResult buildResult = execBuilder.execute();
             String message = "Quarkus augmentation completed in " + (System.currentTimeMillis() - time) + "ms";
             if (launchMode == LaunchMode.NORMAL) {
                 log.info(message);
@@ -154,12 +163,6 @@ public class QuarkusAugmentor {
             }
             return buildResult;
         } finally {
-            if (rootFs != null) {
-                try {
-                    rootFs.close();
-                } catch (Exception e) {
-                }
-            }
             try {
                 ConfigProviderResolver.instance()
                         .releaseConfig(ConfigProviderResolver.instance().getConfig(deploymentClassLoader));
@@ -170,6 +173,7 @@ public class QuarkusAugmentor {
                 ((Closeable) deploymentClassLoader).close();
             }
             Thread.currentThread().setContextClassLoader(originalClassLoader);
+            buildCloseables.close();
         }
     }
 

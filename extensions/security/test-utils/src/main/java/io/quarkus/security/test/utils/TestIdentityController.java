@@ -1,4 +1,4 @@
-package io.quarkus.undertow.test;
+package io.quarkus.security.test.utils;
 
 import java.util.Arrays;
 import java.util.HashSet;

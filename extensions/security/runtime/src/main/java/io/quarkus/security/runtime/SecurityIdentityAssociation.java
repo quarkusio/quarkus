@@ -11,11 +11,13 @@ import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
+import io.smallrye.mutiny.Uni;
 
 @RequestScoped
 public class SecurityIdentityAssociation implements CurrentIdentityAssociation {
 
     private volatile SecurityIdentity identity;
+    private volatile Uni<SecurityIdentity> deferredIdentity;
 
     @Inject
     IdentityProviderManager identityProviderManager;
@@ -34,16 +36,30 @@ public class SecurityIdentityAssociation implements CurrentIdentityAssociation {
     }
 
     @Override
-    public SecurityIdentity setIdentity(@Observes SecurityIdentity identity) {
-        SecurityIdentity old = this.identity;
+    public void setIdentity(@Observes SecurityIdentity identity) {
         this.identity = identity;
-        return old;
+        this.deferredIdentity = null;
+    }
+
+    @Override
+    public void setIdentity(Uni<SecurityIdentity> identity) {
+        this.identity = null;
+        this.deferredIdentity = identity;
+    }
+
+    public Uni<SecurityIdentity> getDeferredIdentity() {
+        return deferredIdentity;
     }
 
     @Override
     public SecurityIdentity getIdentity() {
         if (identity == null) {
-            identity = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE).await().indefinitely();
+            if (deferredIdentity != null) {
+                identity = deferredIdentity.await().indefinitely();
+            }
+            if (identity == null) {
+                identity = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE).await().indefinitely();
+            }
         }
         return identity;
     }

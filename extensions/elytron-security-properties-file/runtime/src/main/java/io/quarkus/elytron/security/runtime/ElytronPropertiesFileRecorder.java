@@ -1,7 +1,6 @@
 package io.quarkus.elytron.security.runtime;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -35,6 +34,7 @@ import org.wildfly.security.password.spec.DigestPasswordSpec;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.util.ClassPathUtils;
 
 /**
  * The runtime security recorder class that provides methods for creating RuntimeValues for the deployment security objects.
@@ -87,9 +87,19 @@ public class ElytronPropertiesFileRecorder {
                         throw new IllegalStateException(msg);
                     }
                     LegacyPropertiesSecurityRealm propsRealm = (LegacyPropertiesSecurityRealm) secRealm;
-                    try (InputStream usersStream = users.openStream(); InputStream rolesStream = roles.openStream()) {
-                        propsRealm.load(usersStream, rolesStream);
-                    }
+                    ClassPathUtils.consumeStream(users, usersStream -> {
+                        try {
+                            ClassPathUtils.consumeStream(roles, rolesStream -> {
+                                try {
+                                    propsRealm.load(usersStream, rolesStream);
+                                } catch (IOException e) {
+                                    throw new UncheckedIOException(e);
+                                }
+                            });
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }

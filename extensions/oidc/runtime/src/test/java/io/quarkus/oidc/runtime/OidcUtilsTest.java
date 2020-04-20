@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.OidcTenantConfig;
 import io.vertx.core.json.JsonObject;
 
 public class OidcUtilsTest {

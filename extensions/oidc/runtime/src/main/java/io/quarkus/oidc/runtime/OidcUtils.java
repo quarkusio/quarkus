@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import org.eclipse.microprofile.jwt.Claims;
 
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.OidcTenantConfig;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 

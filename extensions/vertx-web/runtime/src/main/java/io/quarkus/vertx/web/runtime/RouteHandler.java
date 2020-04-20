@@ -15,11 +15,6 @@ import io.vertx.ext.web.RoutingContext;
 public interface RouteHandler extends Handler<RoutingContext> {
 
     /**
-     * Initialize the handler instance before it is put into service.
-     */
-    void initialize();
-
-    /**
      * Invokes the route method.
      * 
      * @param context
@@ -30,6 +25,7 @@ public interface RouteHandler extends Handler<RoutingContext> {
     default void handle(RoutingContext context) {
         QuarkusHttpUser user = (QuarkusHttpUser) context.user();
         ManagedContext requestContext = Arc.container().requestContext();
+        //todo: how should we handle non-proactive authentication here?
         if (requestContext.isActive()) {
             if (user != null) {
                 Arc.container().beanManager().fireEvent(user.getSecurityIdentity());

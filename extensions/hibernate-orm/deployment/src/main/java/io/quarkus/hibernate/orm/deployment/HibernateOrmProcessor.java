@@ -59,7 +59,6 @@ import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
-import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 
 import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
@@ -76,6 +75,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -121,7 +121,6 @@ import net.bytebuddy.dynamic.DynamicType;
  */
 public final class HibernateOrmProcessor {
 
-    private static final Logger LOG = Logger.getLogger(HibernateOrmProcessor.class);
     private static final String HIBERNATE_ORM_CONFIG_PREFIX = "quarkus.hibernate-orm.";
     private static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
 
@@ -136,6 +135,11 @@ public final class HibernateOrmProcessor {
      * Hibernate ORM configuration
      */
     HibernateOrmConfig hibernateConfig;
+
+    @BuildStep
+    CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.HIBERNATE_ORM);
+    }
 
     // We do our own enhancement during the compilation phase, so disable any
     // automatic entity enhancement by Hibernate ORM
@@ -769,8 +773,7 @@ public final class HibernateOrmProcessor {
 
                     if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
                         // enlist resource if present
-                        String resourceAsString = root.getArchiveRoot().relativize(loadScriptPath).toString();
-                        resourceProducer.produce(new NativeImageResourceBuildItem(resourceAsString));
+                        resourceProducer.produce(new NativeImageResourceBuildItem(importFile.get()));
                         desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, importFile.get());
                         desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES_SQL_EXTRACTOR,
                                 MultipleLinesSqlCommandExtractor.class.getName());

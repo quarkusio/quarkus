@@ -222,6 +222,8 @@ This could be useful to access data for which the key is overriden:
 |`{item.isActive ? item.name : 'Inactive item'}` outputs the value of `item.name` if `item.isActive` resolves to `true`.
 |===
 
+TIP: The condition in a ternary operator evaluates to `true` if the value is not considered `falsy` as described in the <<if_section>>.
+
 NOTE: In fact, the operators are implemented as "virtual methods" that consume one parameter and can be used with infix notation, i.e. `{person.name or 'John'}` is translated to `{person.name.or('John')}`.
 
 ===== Character Escapes
@@ -374,8 +376,9 @@ The output will be:
 [[if_section]]
 ===== If Section
 
-A basic control flow section.
-The simplest possible version accepts a single parameter and renders the content if it's evaluated to `true` (or `Boolean.TRUE`).
+The `if` section represents a basic control flow section.
+The simplest possible version accepts a single parameter and renders the content if the condition is evaluated to `true`.
+A condition without an operator evaluates to `true` if the value is not considered `falsy`, i.e. if the value is not `null`, `false`, an empty collection, an empty map, an empty array, an empty string/char sequence or a number equal to zero.
 
 [source]
 ----
@@ -384,7 +387,7 @@ The simplest possible version accepts a single parameter and renders the content
 {/if}
 ----
 
-You can also use the following operators:
+You can also use the following operators in a condition:
 
 |===
 |Operator |Aliases |Precedence (higher wins)
@@ -456,7 +459,7 @@ Precedence rules can be overridden by parentheses.
 ----
 
 
-You can add any number of `else` blocks:
+You can also add any number of `else` blocks:
 
 [source]
 ----

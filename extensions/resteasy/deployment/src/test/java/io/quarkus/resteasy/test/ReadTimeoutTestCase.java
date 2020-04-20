@@ -3,7 +3,10 @@ package io.quarkus.resteasy.test;
 import java.net.Socket;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
+import org.awaitility.Awaitility;
+import org.awaitility.core.ThrowingRunnable;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -59,9 +62,14 @@ public class ReadTimeoutTestCase {
         socket.getOutputStream().write(
                 "6789".getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().flush();
-        Thread.sleep(600);
-        //make sure the read timed out and the endpoint was not invoked
-        Assertions.assertTrue(PostEndpoint.invoked);
+        Awaitility.await().atMost(20, TimeUnit.SECONDS).pollInterval(50, TimeUnit.MILLISECONDS)
+                .untilAsserted(new ThrowingRunnable() {
+                    @Override
+                    public void run() throws Throwable {
+                        //make sure the read timed out and the endpoint was invoked
+                        Assertions.assertTrue(PostEndpoint.invoked);
+                    }
+                });
         socket.close();
     }
 

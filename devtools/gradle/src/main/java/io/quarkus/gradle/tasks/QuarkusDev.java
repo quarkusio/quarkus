@@ -11,10 +11,10 @@ import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,10 +30,9 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedDependency;
-import org.gradle.api.artifacts.component.ComponentIdentifier;
-import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.Input;
@@ -54,7 +53,6 @@ import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
-import io.quarkus.gradle.AppModelGradleResolver;
 import io.quarkus.gradle.QuarkusPluginExtension;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.utilities.JavaBinFinder;
@@ -249,7 +247,7 @@ public class QuarkusDev extends QuarkusTask {
             final AppModelResolver modelResolver = extension().getAppModelResolver(LaunchMode.DEVELOPMENT);
             try {
                 final AppArtifact appArtifact = extension.getAppArtifact();
-                appArtifact.setPath(extension.outputDirectory().toPath());
+                appArtifact.setPaths(QuarkusGradleUtils.getOutputPaths(project));
                 appModel = modelResolver.resolveModel(appArtifact);
             } catch (AppModelResolverException e) {
                 throw new GradleException("Failed to resolve application model " + extension.getAppArtifact() + " dependencies",
@@ -262,65 +260,24 @@ public class QuarkusDev extends QuarkusTask {
             addToClassPaths(classPathManifest, context, wiringClassesDirectory);
 
             StringBuilder resources = new StringBuilder();
-            String res = null;
             for (File file : extension.resourcesDir()) {
                 if (resources.length() > 0) {
                     resources.append(File.pathSeparator);
                 }
                 resources.append(file.getAbsolutePath());
-                res = file.getAbsolutePath();
             }
 
             final Set<AppArtifactKey> projectDependencies = new HashSet<>();
-            final Configuration compileCp = project.getConfigurations()
-                    .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
-
-            for (ResolvedArtifact dependency : compileCp.getResolvedConfiguration().getResolvedArtifacts()) {
-                final ComponentIdentifier componentId = dependency.getId().getComponentIdentifier();
-                if (!(componentId instanceof ProjectComponentIdentifier)) {
-                    continue;
-                }
-
-                Project dependencyProject = project.getRootProject()
-                        .findProject(((ProjectComponentIdentifier) componentId).getProjectPath());
-                JavaPluginConvention javaConvention = dependencyProject.getConvention().findPlugin(JavaPluginConvention.class);
-                if (javaConvention == null) {
-                    continue;
-                }
-
-                SourceSetContainer sourceSets = javaConvention.getSourceSets();
-                SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-                Set<String> sourcePaths = new HashSet<>();
-
-                for (File sourceDir : mainSourceSet.getAllJava().getSrcDirs()) {
-                    if (sourceDir.exists()) {
-                        sourcePaths.add(sourceDir.getAbsolutePath());
-                    }
-                }
-                if (sourcePaths.isEmpty()) {
-                    continue;
-                }
-
-                String resourcePaths = mainSourceSet.getResources().getSourceDirectories().getSingleFile().getAbsolutePath(); //TODO: multiple resource directories
-
-                DevModeContext.ModuleInfo wsModuleInfo = new DevModeContext.ModuleInfo(
-                        dependencyProject.getName(),
-                        dependencyProject.getProjectDir().getAbsolutePath(),
-                        sourcePaths,
-                        QuarkusGradleUtils.getClassesDir(mainSourceSet, this),
-                        resourcePaths);
-
-                context.getModules().add(wsModuleInfo);
-
-                final AppArtifact appArtifact = AppModelGradleResolver.toAppArtifact(dependency);
-                final AppArtifactKey key = new AppArtifactKey(appArtifact.getGroupId(), appArtifact.getArtifactId());
-                projectDependencies.add(key);
-            }
+            addSelfWithLocalDeps(project, context, new HashSet<>(), projectDependencies);
 
             for (AppDependency appDependency : appModel.getFullDeploymentDeps()) {
                 final AppArtifact appArtifact = appDependency.getArtifact();
                 if (!projectDependencies.contains(new AppArtifactKey(appArtifact.getGroupId(), appArtifact.getArtifactId()))) {
-                    addToClassPaths(classPathManifest, context, appArtifact.getPath().toFile());
+                    appArtifact.getPaths().forEach(p -> {
+                        if (Files.exists(p)) {
+                            addToClassPaths(classPathManifest, context, p.toFile());
+                        }
+                    });
                 }
             }
 
@@ -329,14 +286,7 @@ public class QuarkusDev extends QuarkusTask {
             //to the runner jar
             addGradlePluginDeps(classPathManifest, context);
 
-            DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo(
-                    project.getName(),
-                    project.getProjectDir().getAbsolutePath(),
-                    Collections.singleton(getSourceDir().getAbsolutePath()),
-                    extension.outputDirectory().getAbsolutePath(),
-                    res);
-            context.getModules().add(moduleInfo);
-            context.getClassesRoots().add(extension.outputDirectory().getAbsoluteFile());
+            appModel.getAppArtifact().getPaths().forEach(p -> context.getClassesRoots().add(p.toFile()));
             context.setFrameworkClassesDir(wiringClassesDirectory.getAbsoluteFile());
             context.setCacheDir(new File(getBuildDir(), "transformer-cache").getAbsoluteFile());
 
@@ -396,6 +346,59 @@ public class QuarkusDev extends QuarkusTask {
         } catch (Exception e) {
             throw new GradleException("Failed to run", e);
         }
+    }
+
+    private void addSelfWithLocalDeps(Project project, DevModeContext context, Set<String> visited,
+            Set<AppArtifactKey> addedDeps) {
+        if (!visited.add(project.getPath())) {
+            return;
+        }
+        final Configuration compileCp = project.getConfigurations()
+                .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
+        compileCp.getIncoming().getDependencies().forEach(d -> {
+            if (d instanceof ProjectDependency) {
+                addSelfWithLocalDeps(((ProjectDependency) d).getDependencyProject(), context, visited, addedDeps);
+            }
+        });
+
+        addLocalProject(project, context, addedDeps);
+    }
+
+    private void addLocalProject(Project project, DevModeContext context, Set<AppArtifactKey> addeDeps) {
+        final AppArtifactKey key = new AppArtifactKey(project.getGroup().toString(), project.getName());
+        if (addeDeps.contains(key)) {
+            return;
+        }
+
+        final JavaPluginConvention javaConvention = project.getConvention().findPlugin(JavaPluginConvention.class);
+        if (javaConvention == null) {
+            return;
+        }
+
+        SourceSetContainer sourceSets = javaConvention.getSourceSets();
+        SourceSet mainSourceSet = sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        Set<String> sourcePaths = new HashSet<>();
+
+        for (File sourceDir : mainSourceSet.getAllJava().getSrcDirs()) {
+            if (sourceDir.exists()) {
+                sourcePaths.add(sourceDir.getAbsolutePath());
+            }
+        }
+        if (sourcePaths.isEmpty()) {
+            return;
+        }
+        String resourcePaths = mainSourceSet.getResources().getSourceDirectories().getSingleFile().getAbsolutePath(); //TODO: multiple resource directories
+
+        DevModeContext.ModuleInfo wsModuleInfo = new DevModeContext.ModuleInfo(
+                project.getName(),
+                project.getProjectDir().getAbsolutePath(),
+                sourcePaths,
+                QuarkusGradleUtils.getClassesDir(mainSourceSet, project.getBuildDir()),
+                resourcePaths);
+
+        context.getModules().add(wsModuleInfo);
+
+        addeDeps.add(key);
     }
 
     private String getSourceEncoding() {

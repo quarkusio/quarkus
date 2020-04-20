@@ -1,9 +1,7 @@
 package io.quarkus.bootstrap.model;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Represents an application (or its dependency) artifact.
@@ -12,7 +10,7 @@ import java.nio.file.Paths;
  */
 public class AppArtifact extends AppArtifactCoords implements Serializable {
 
-    protected transient Path path;
+    protected PathsCollection paths;
 
     public AppArtifact(String groupId, String artifactId, String version) {
         super(groupId, artifactId, version);
@@ -22,27 +20,51 @@ public class AppArtifact extends AppArtifactCoords implements Serializable {
         super(groupId, artifactId, classifier, type, version);
     }
 
+    /**
+     * @deprecated in favor of {@link #getPaths()}
+     */
+    @Deprecated
     public Path getPath() {
-        return path;
+        return paths.getSinglePath();
     }
 
+    /**
+     * Associates the artifact with the given path
+     *
+     * @param path artifact location
+     */
     public void setPath(Path path) {
-        this.path = path;
+        setPaths(PathsCollection.of(path));
     }
 
+    /**
+     * Collection of the paths that collectively constitute the artifact's content.
+     * Normally, especially in the Maven world, an artifact is resolved to a single path,
+     * e.g. a JAR or a project's output directory. However, in Gradle, depending on the build/test phase,
+     * artifact's content may need to be represented as a collection of paths.
+     *
+     * @return collection of paths that constitute the artifact's content
+     */
+    public PathsCollection getPaths() {
+        return paths;
+    }
+
+    /**
+     * Associates the artifact with a collection of paths that constitute its content.
+     *
+     * @param paths collection of paths that constitute the artifact's content.
+     */
+    public void setPaths(PathsCollection paths) {
+        this.paths = paths;
+    }
+
+    /**
+     * Whether the artifact has been resolved, i.e. associated with paths
+     * that constitute its content.
+     *
+     * @return true if the artifact has been resolved, otherwise - false
+     */
     public boolean isResolved() {
-        return path != null;
-    }
-
-    private void writeObject(java.io.ObjectOutputStream out)
-            throws IOException {
-        out.defaultWriteObject();
-        out.writeUTF(path.toAbsolutePath().toString());
-    }
-
-    private void readObject(java.io.ObjectInputStream in)
-            throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        path = Paths.get(in.readUTF());
+        return paths != null && !paths.isEmpty();
     }
 }

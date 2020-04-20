@@ -3,9 +3,11 @@ package io.quarkus.platform.descriptor.loader.json.impl;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.maven.model.Dependency;
@@ -18,7 +20,7 @@ import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.DefaultMessageWriter;
 import io.quarkus.platform.tools.MessageWriter;
 
-public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor {
+public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor, Serializable {
 
     private String bomGroupId;
     private String bomArtifactId;
@@ -28,8 +30,8 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor 
     private List<Extension> extensions = Collections.emptyList();
     private List<Dependency> managedDeps = Collections.emptyList();
     private List<Category> categories = Collections.emptyList();
-    private ResourceLoader resourceLoader;
-    private MessageWriter log;
+    private transient ResourceLoader resourceLoader;
+    private transient MessageWriter log;
 
     public QuarkusJsonPlatformDescriptor() {
     }
@@ -127,5 +129,24 @@ public class QuarkusJsonPlatformDescriptor implements QuarkusPlatformDescriptor 
     @Override
     public List<Category> getCategories() {
         return categories;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        QuarkusJsonPlatformDescriptor that = (QuarkusJsonPlatformDescriptor) o;
+        return bomGroupId.equals(that.bomGroupId) &&
+                bomArtifactId.equals(that.bomArtifactId) &&
+                bomVersion.equals(that.bomVersion);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(bomGroupId, bomArtifactId, bomVersion);
     }
 }

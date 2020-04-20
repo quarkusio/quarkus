@@ -9,7 +9,7 @@ public class DenySecurityPolicy implements HttpSecurityPolicy {
     public static final DenySecurityPolicy INSTANCE = new DenySecurityPolicy();
 
     @Override
-    public Uni<CheckResult> checkPermission(RoutingContext request, SecurityIdentity identity,
+    public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
         return Uni.createFrom().item(CheckResult.DENY);
     }

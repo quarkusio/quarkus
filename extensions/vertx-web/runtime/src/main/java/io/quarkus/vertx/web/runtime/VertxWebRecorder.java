@@ -1,8 +1,6 @@
 package io.quarkus.vertx.web.runtime;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
 
 import io.quarkus.runtime.annotations.Recorder;
@@ -15,8 +13,6 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class VertxWebRecorder {
 
-    static volatile List<RouteHandler> handlers = new ArrayList<>();
-
     @SuppressWarnings("unchecked")
     public Handler<RoutingContext> createHandler(String handlerClassName) {
         try {
@@ -27,19 +23,11 @@ public class VertxWebRecorder {
             Class<? extends Handler<RoutingContext>> handlerClazz = (Class<? extends Handler<RoutingContext>>) cl
                     .loadClass(handlerClassName);
             RouteHandler handler = (RouteHandler) handlerClazz.getDeclaredConstructor().newInstance();
-            handlers.add(handler);
             return handler;
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException
                 | InvocationTargetException e) {
             throw new IllegalStateException("Unable to create route handler: " + handlerClassName, e);
         }
-    }
-
-    public void initHandlers() {
-        for (RouteHandler routeHandler : handlers) {
-            routeHandler.initialize();
-        }
-        handlers.clear();
     }
 
     public Function<Router, io.vertx.ext.web.Route> createRouteFunction(RouteMatcher matcher,

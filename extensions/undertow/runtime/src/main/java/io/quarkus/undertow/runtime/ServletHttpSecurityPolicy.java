@@ -1,5 +1,7 @@
 package io.quarkus.undertow.runtime;
 
+import java.util.function.Function;
+
 import javax.inject.Singleton;
 
 import io.quarkus.security.identity.SecurityIdentity;
@@ -20,7 +22,7 @@ public class ServletHttpSecurityPolicy implements HttpSecurityPolicy {
     private volatile String contextPath;
 
     @Override
-    public Uni<CheckResult> checkPermission(RoutingContext request, SecurityIdentity identity,
+    public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
 
         String requestPath = request.request().path();
@@ -42,21 +44,31 @@ public class ServletHttpSecurityPolicy implements HttpSecurityPolicy {
             } else if (emptyRoleSemantic == SecurityInfo.EmptyRoleSemantic.DENY) {
                 return Uni.createFrom().item(CheckResult.DENY);
             } else if (emptyRoleSemantic == SecurityInfo.EmptyRoleSemantic.AUTHENTICATE) {
-                if (identity.isAnonymous()) {
-                    return Uni.createFrom().item(CheckResult.DENY);
-                } else {
-                    return Uni.createFrom().item(CheckResult.PERMIT);
-                }
+                return identity.map(new Function<SecurityIdentity, CheckResult>() {
+                    @Override
+                    public CheckResult apply(SecurityIdentity securityIdentity) {
+                        if (securityIdentity.isAnonymous()) {
+                            return CheckResult.DENY;
+                        } else {
+                            return CheckResult.PERMIT;
+                        }
+                    }
+                });
             } else {
                 return Uni.createFrom().failure(new RuntimeException("Unknown empty role semantic " + emptyRoleSemantic));
             }
         } else {
-            for (String i : mergedConstraint.getRequiredRoles()) {
-                if (identity.hasRole(i)) {
-                    return Uni.createFrom().item(CheckResult.PERMIT);
+            return identity.map(new Function<SecurityIdentity, CheckResult>() {
+                @Override
+                public CheckResult apply(SecurityIdentity securityIdentity) {
+                    for (String i : mergedConstraint.getRequiredRoles()) {
+                        if (securityIdentity.hasRole(i)) {
+                            return CheckResult.PERMIT;
+                        }
+                    }
+                    return CheckResult.DENY;
                 }
-            }
-            return Uni.createFrom().item(CheckResult.DENY);
+            });
         }
     }
 

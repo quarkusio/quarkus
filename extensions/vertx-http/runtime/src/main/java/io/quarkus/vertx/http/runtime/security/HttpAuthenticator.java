@@ -82,9 +82,14 @@ public class HttpAuthenticator {
         }
     }
 
+    IdentityProviderManager getIdentityProviderManager() {
+        return identityProviderManager;
+    }
+
     /**
      * Attempts authentication with the contents of the request. If this is possible the Uni
-     * will resolve to a valid SecurityIdentity.
+     * will resolve to a valid SecurityIdentity when it is subscribed to. Note that Uni is lazy,
+     * so this may not happen until the Uni is subscribed to.
      *
      * If invalid credentials are present then the completion stage will resolve to a
      * {@link io.quarkus.security.AuthenticationFailedException}

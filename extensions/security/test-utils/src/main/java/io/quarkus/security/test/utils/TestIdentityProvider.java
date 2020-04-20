@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.security;
+package io.quarkus.security.test.utils;
 
 import java.util.Optional;
 

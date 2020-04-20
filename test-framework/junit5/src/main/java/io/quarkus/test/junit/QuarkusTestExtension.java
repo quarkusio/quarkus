@@ -1,6 +1,6 @@
 package io.quarkus.test.junit;
 
-import static io.quarkus.test.common.PathTestHelper.getAppClassLocation;
+import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.Closeable;
@@ -93,17 +93,17 @@ public class QuarkusTestExtension
             final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
 
             Class<?> requiredTestClass = context.getRequiredTestClass();
-            Path appClassLocation = getAppClassLocation(requiredTestClass);
+            testClassLocation = getTestClassesLocation(requiredTestClass);
+            final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
 
-            final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder(appClassLocation)
+            originalCl = Thread.currentThread().getContextClassLoader();
+
+            final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
                     .setIsolateDeployment(true)
                     .setMode(QuarkusBootstrap.Mode.TEST);
 
-            originalCl = Thread.currentThread().getContextClassLoader();
-            testClassLocation = getTestClassesLocation(requiredTestClass);
-
             if (!appClassLocation.equals(testClassLocation)) {
-                runnerBuilder.addAdditionalApplicationArchive(new AdditionalDependency(testClassLocation, false, true, true));
+                runnerBuilder.addAdditionalApplicationArchive(AdditionalDependency.test(testClassLocation));
             }
             CuratedApplication curatedApplication = runnerBuilder
                     .setTest(true)

@@ -3,6 +3,7 @@ package io.quarkus.funqy.runtime.bindings.http;
 import java.io.InputStream;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.spi.CDI;
@@ -20,8 +21,10 @@ import io.quarkus.funqy.runtime.FunctionInvoker;
 import io.quarkus.funqy.runtime.FunctionRecorder;
 import io.quarkus.funqy.runtime.RequestContextImpl;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
@@ -106,9 +109,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     private void dispatch(RoutingContext routingContext, FunctionInvoker invoker, Object input) {
         ManagedContext requestContext = beanContainer.requestContext();
         requestContext.activate();
-        QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
-        if (user != null && association != null) {
-            association.setIdentity(user.getSecurityIdentity());
+        if (association != null) {
+            ((Consumer<Uni<SecurityIdentity>>) association).accept(QuarkusHttpUser.getSecurityIdentity(routingContext, null));
         }
         currentVertxRequest.setCurrent(routingContext);
         try {

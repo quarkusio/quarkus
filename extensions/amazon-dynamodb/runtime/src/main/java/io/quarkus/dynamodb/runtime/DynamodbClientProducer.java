@@ -8,6 +8,7 @@ import java.util.Objects;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
+import javax.inject.Inject;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -35,18 +36,12 @@ import software.amazon.awssdk.utils.ThreadFactoryBuilder;
 public class DynamodbClientProducer {
     private static final Log LOG = LogFactory.getLog(DynamodbClientProducer.class);
 
-    private DynamodbConfig runtimeConfig;
+    @Inject
+    DynamodbConfig runtimeConfig;
     private DynamoDbClient client;
     private DynamoDbAsyncClient asyncClient;
-    private DynamodbBuildTimeConfig buildTimeConfig;
-
-    public void setBuildTimeConfig(DynamodbBuildTimeConfig buildTimeConfig) {
-        this.buildTimeConfig = buildTimeConfig;
-    }
-
-    public void setRuntimeConfig(DynamodbConfig runtimeConfig) {
-        this.runtimeConfig = runtimeConfig;
-    }
+    @Inject
+    DynamodbBuildTimeConfig buildTimeConfig;
 
     @Produces
     @ApplicationScoped

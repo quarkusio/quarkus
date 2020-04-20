@@ -55,6 +55,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.hibernate.validator.runtime.HibernateValidatorBuildTimeConfig;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
@@ -89,6 +90,8 @@ class HibernateValidatorProcessor {
     private static final Pattern BUILT_IN_CONSTRAINT_REPEATABLE_CONTAINER_PATTERN = Pattern.compile("\\$List$");
 
     private LocalesBuildTimeConfig localesBuildTimeConfig;
+
+    private HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig;
 
     @BuildStep
     HotDeploymentWatchedFileBuildItem configFile() {
@@ -245,7 +248,8 @@ class HibernateValidatorProcessor {
                                 hasXmlConfiguration(),
                                 capabilities.isCapabilityPresent(Capabilities.HIBERNATE_ORM),
                                 shutdownContext,
-                                localesBuildTimeConfig)));
+                                localesBuildTimeConfig,
+                                hibernateValidatorBuildTimeConfig)));
     }
 
     @BuildStep

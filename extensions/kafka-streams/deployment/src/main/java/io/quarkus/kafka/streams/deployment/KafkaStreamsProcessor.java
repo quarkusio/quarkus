@@ -192,8 +192,6 @@ class KafkaStreamsProcessor {
         // Explicitly loading RocksDB native libs, as that's normally done from within
         // static initializers which already ran during build
         recorder.loadRocksDb();
-
-        recorder.configureRuntimeProperties(runtimeConfig);
     }
 
     @BuildStep

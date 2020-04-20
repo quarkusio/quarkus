@@ -48,10 +48,12 @@ public class KafkaStreamsTopologyManager {
 
     private final ExecutorService executor;
     private volatile KafkaStreams streams;
-    private volatile KafkaStreamsRuntimeConfig runtimeConfig;
     private volatile Instance<Topology> topology;
     private volatile Properties properties;
     private volatile Map<String, Object> adminClientConfig;
+
+    @Inject
+    KafkaStreamsRuntimeConfig runtimeConfig;
 
     KafkaStreamsTopologyManager() {
         executor = null;
@@ -193,10 +195,6 @@ public class KafkaStreamsTopologyManager {
             }
         }
         return adminClientConfig;
-    }
-
-    public void setRuntimeConfig(KafkaStreamsRuntimeConfig runtimeConfig) {
-        this.runtimeConfig = runtimeConfig;
     }
 
     public void configure(Properties properties) {

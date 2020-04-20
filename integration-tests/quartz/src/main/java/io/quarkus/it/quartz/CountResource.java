@@ -12,9 +12,19 @@ public class CountResource {
     @Inject
     Counter counter;
 
+    @Inject
+    ManualScheduledCounter manualScheduledCounter;
+
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public Integer getCount() {
         return counter.get();
+    }
+
+    @GET
+    @Path("fix-8555")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Integer fix8555() {
+        return manualScheduledCounter.get();
     }
 }

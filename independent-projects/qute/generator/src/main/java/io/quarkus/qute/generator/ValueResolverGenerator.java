@@ -81,7 +81,7 @@ public class ValueResolverGenerator {
     private final Set<String> generatedTypes;
     private final IndexView index;
     private final ClassOutput classOutput;
-    private final Map<ClassInfo, AnnotationInstance> uncontrolled;
+    private final Map<DotName, AnnotationInstance> uncontrolled;
 
     /**
      * 
@@ -89,7 +89,7 @@ public class ValueResolverGenerator {
      * @param classOutput
      * @param uncontrolled The map of {@link TemplateData} metadata for classes that are not controlled by the client
      */
-    ValueResolverGenerator(IndexView index, ClassOutput classOutput, Map<ClassInfo, AnnotationInstance> uncontrolled) {
+    ValueResolverGenerator(IndexView index, ClassOutput classOutput, Map<DotName, AnnotationInstance> uncontrolled) {
         this.analyzedTypes = new HashSet<>();
         this.generatedTypes = new HashSet<>();
         this.classOutput = classOutput;
@@ -106,7 +106,7 @@ public class ValueResolverGenerator {
     }
 
     public void generate(ClassInfo clazz) {
-
+        Objects.requireNonNull(clazz);
         String clazzName = clazz.name().toString();
         if (analyzedTypes.contains(clazzName)) {
             return;
@@ -118,7 +118,7 @@ public class ValueResolverGenerator {
         AnnotationInstance templateData = clazz.classAnnotation(TEMPLATE_DATA);
         if (templateData == null) {
             // Try to find @TemplateData declared on other classes
-            templateData = uncontrolled.get(clazz);
+            templateData = uncontrolled.get(clazz.name());
         } else {
             AnnotationValue ignoreSuperclassesValue = templateData.value(IGNORE_SUPERCLASSES);
             if (ignoreSuperclassesValue != null) {
@@ -551,7 +551,7 @@ public class ValueResolverGenerator {
 
         private IndexView index;
         private ClassOutput classOutput;
-        private Map<ClassInfo, AnnotationInstance> uncontrolled;
+        private Map<DotName, AnnotationInstance> uncontrolled;
 
         public Builder setIndex(IndexView index) {
             this.index = index;
@@ -563,7 +563,7 @@ public class ValueResolverGenerator {
             return this;
         }
 
-        public Builder setUncontrolled(Map<ClassInfo, AnnotationInstance> uncontrolled) {
+        public Builder setUncontrolled(Map<DotName, AnnotationInstance> uncontrolled) {
             this.uncontrolled = uncontrolled;
             return this;
         }

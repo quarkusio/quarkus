@@ -551,23 +551,24 @@ public class QuteProcessor {
             }
         };
 
-        Set<ClassInfo> controlled = new HashSet<>();
-        Map<ClassInfo, AnnotationInstance> uncontrolled = new HashMap<>();
+        Map<DotName, ClassInfo> nameToClass = new HashMap<>();
+        Set<DotName> controlled = new HashSet<>();
+        Map<DotName, AnnotationInstance> uncontrolled = new HashMap<>();
         for (AnnotationInstance templateData : index.getAnnotations(ValueResolverGenerator.TEMPLATE_DATA)) {
-            processsTemplateData(index, templateData, templateData.target(), controlled, uncontrolled);
+            processsTemplateData(index, templateData, templateData.target(), controlled, uncontrolled, nameToClass);
         }
         for (AnnotationInstance containerInstance : index.getAnnotations(ValueResolverGenerator.TEMPLATE_DATA_CONTAINER)) {
             for (AnnotationInstance templateData : containerInstance.value().asNestedArray()) {
-                processsTemplateData(index, templateData, containerInstance.target(), controlled, uncontrolled);
+                processsTemplateData(index, templateData, containerInstance.target(), controlled, uncontrolled, nameToClass);
             }
         }
 
         for (ImplicitValueResolverBuildItem implicit : implicitClasses) {
-            if (controlled.contains(implicit.getClazz())) {
+            if (controlled.contains(implicit.getClazz().name())) {
                 LOGGER.debugf("Implicit value resolver build item ignored: %s is annotated with @TemplateData");
                 continue;
             }
-            AnnotationInstance templateData = uncontrolled.get(implicit.getClazz());
+            AnnotationInstance templateData = uncontrolled.get(implicit.getClazz().name());
             if (templateData != null) {
                 if (!templateData.equals(implicit.getTemplateData())) {
                     throw new IllegalStateException("Multiple implicit value resolver build items produced for "
@@ -575,7 +576,8 @@ public class QuteProcessor {
                 }
                 continue;
             }
-            uncontrolled.put(implicit.getClazz(), implicit.getTemplateData());
+            uncontrolled.put(implicit.getClazz().name(), implicit.getTemplateData());
+            nameToClass.put(implicit.getClazz().name(), implicit.getClazz());
         }
 
         ValueResolverGenerator generator = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput)
@@ -583,12 +585,12 @@ public class QuteProcessor {
                 .build();
 
         // @TemplateData
-        for (ClassInfo data : controlled) {
-            generator.generate(data);
+        for (DotName name : controlled) {
+            generator.generate(nameToClass.get(name));
         }
         // Uncontrolled classes
-        for (ClassInfo data : uncontrolled.keySet()) {
-            generator.generate(data);
+        for (DotName name : uncontrolled.keySet()) {
+            generator.generate(nameToClass.get(name));
         }
 
         Set<String> generatedTypes = new HashSet<>();
@@ -1026,15 +1028,18 @@ public class QuteProcessor {
     }
 
     private void processsTemplateData(IndexView index, AnnotationInstance templateData, AnnotationTarget annotationTarget,
-            Set<ClassInfo> controlled, Map<ClassInfo, AnnotationInstance> uncontrolled) {
+            Set<DotName> controlled, Map<DotName, AnnotationInstance> uncontrolled, Map<DotName, ClassInfo> nameToClass) {
         AnnotationValue targetValue = templateData.value("target");
         if (targetValue == null || targetValue.asClass().name().equals(ValueResolverGenerator.TEMPLATE_DATA)) {
-            controlled.add(annotationTarget.asClass());
+            ClassInfo annotationTargetClass = annotationTarget.asClass();
+            controlled.add(annotationTargetClass.name());
+            nameToClass.put(annotationTargetClass.name(), annotationTargetClass);
         } else {
             ClassInfo uncontrolledClass = index.getClassByName(targetValue.asClass().name());
             if (uncontrolledClass != null) {
-                uncontrolled.compute(uncontrolledClass, (c, v) -> {
+                uncontrolled.compute(uncontrolledClass.name(), (c, v) -> {
                     if (v == null) {
+                        nameToClass.put(uncontrolledClass.name(), uncontrolledClass);
                         return templateData;
                     }
                     if (!Objects.equals(v.value(ValueResolverGenerator.IGNORE),
@@ -1052,7 +1057,6 @@ public class QuteProcessor {
                 LOGGER.warnf("@TemplateData#target() not available: %s", annotationTarget.asClass().name());
             }
         }
-
     }
 
     private Set<Expression> collectInjectExpressions(TemplatesAnalysisBuildItem analysis) {

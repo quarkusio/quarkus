@@ -20,8 +20,8 @@ class FlywayProducerTest {
 
     @BeforeEach
     void beforeEach() {
-        flywayProducer.setFlywayBuildConfig(buildDataSourceConfig);
-        flywayProducer.setFlywayRuntimeConfig(runtimeDataSourceConfig);
+        flywayProducer.flywayBuildConfig = buildDataSourceConfig;
+        flywayProducer.flywayRuntimeConfig = runtimeDataSourceConfig;
     }
 
     @Test
@@ -33,14 +33,14 @@ class FlywayProducerTest {
     @Test
     @DisplayName("fail on missing build configuration")
     void testMissingBuildConfig() {
-        flywayProducer.setFlywayBuildConfig(null);
+        flywayProducer.flywayBuildConfig = null;
         assertThrows(IllegalStateException.class, () -> flywayProducer.createFlyway(null, DEFAULT_DATASOURCE));
     }
 
     @Test
     @DisplayName("fail on missing runtime configuration")
     void testMissingRuntimeConfig() {
-        flywayProducer.setFlywayRuntimeConfig(null);
+        flywayProducer.flywayRuntimeConfig = null;
         assertThrows(IllegalStateException.class, () -> flywayProducer.createFlyway(null, DEFAULT_DATASOURCE));
     }
 }

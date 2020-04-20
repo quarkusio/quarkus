@@ -10,7 +10,6 @@ import javax.enterprise.util.AnnotationLiteral;
 import org.flywaydb.core.Flyway;
 
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.flyway.FlywayDataSource;
 import io.quarkus.flyway.runtime.graal.QuarkusPathLocationScanner;
 import io.quarkus.runtime.annotations.Recorder;
@@ -19,17 +18,6 @@ import io.quarkus.runtime.annotations.Recorder;
 public class FlywayRecorder {
     public void setApplicationMigrationFiles(List<String> migrationFiles) {
         QuarkusPathLocationScanner.setApplicationMigrationFiles(migrationFiles);
-    }
-
-    public BeanContainerListener setFlywayBuildConfig(FlywayBuildTimeConfig flywayBuildConfig) {
-        return beanContainer -> {
-            FlywayProducer producer = beanContainer.instance(FlywayProducer.class);
-            producer.setFlywayBuildConfig(flywayBuildConfig);
-        };
-    }
-
-    public void configureFlywayProperties(FlywayRuntimeConfig flywayRuntimeConfig, BeanContainer container) {
-        container.instance(FlywayProducer.class).setFlywayRuntimeConfig(flywayRuntimeConfig);
     }
 
     public void doStartActions(FlywayRuntimeConfig config, BeanContainer container) {

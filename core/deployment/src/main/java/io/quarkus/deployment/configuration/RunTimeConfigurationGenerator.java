@@ -687,7 +687,7 @@ public final class RunTimeConfigurationGenerator {
             ResultHandle niceErrorMessage = isError
                     .invokeStaticMethod(
                             MethodDescriptor.ofMethod(ConfigDiagnostic.class, "getNiceErrorMessage", String.class));
-            readConfig.invokeStaticMethod(CD_RESET_ERROR);
+            isError.invokeStaticMethod(CD_RESET_ERROR);
 
             // throw the proper exception
             final ResultHandle finalErrorMessageBuilder = isError.newInstance(SB_NEW);

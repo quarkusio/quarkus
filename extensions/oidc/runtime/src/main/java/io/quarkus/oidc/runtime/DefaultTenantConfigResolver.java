@@ -82,7 +82,14 @@ public class DefaultTenantConfigResolver {
     }
 
     boolean isBlocking(RoutingContext context) {
-        return getTenantConfigFromConfigResolver(context, false) == null;
+        TenantConfigContext resolver = getTenantConfigFromConfigResolver(context, false);
+
+        if (resolver != null) {
+            // we always run blocking if refresh token is enabled even if the tenant was already resolved
+            return resolver.oidcConfig.token.refreshExpired;
+        }
+
+        return resolver == null;
     }
 
     private TenantConfigContext getTenantConfigFromConfigResolver(RoutingContext context, boolean create) {

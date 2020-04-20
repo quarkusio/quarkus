@@ -79,6 +79,12 @@ public class ProtectedResource {
     }
 
     @GET
+    @Path("tenant-logout")
+    public String getTenantLogout() {
+        return "Tenant Logout";
+    }
+
+    @GET
     @Path("access")
     public String getAccessToken() {
         if (!accessTokenCredential.getToken().equals(accessToken.getRawToken())) {

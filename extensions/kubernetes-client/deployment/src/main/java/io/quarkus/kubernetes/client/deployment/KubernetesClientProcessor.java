@@ -1,7 +1,5 @@
 package io.quarkus.kubernetes.client.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -13,10 +11,8 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
@@ -24,9 +20,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
-import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
-import io.quarkus.kubernetes.client.runtime.KubernetesClientRecorder;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 
 public class KubernetesClientProcessor {
@@ -49,15 +43,10 @@ public class KubernetesClientProcessor {
     @Inject
     BuildProducer<KubernetesRoleBuildItem> roleProducer;
 
-    KubernetesClientBuildConfig buildConfig;
-
-    @Record(STATIC_INIT)
     @BuildStep
     public void process(ApplicationIndexBuildItem applicationIndex, CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            BuildProducer<BeanContainerListenerBuildItem> beanContainerListenerBuildItem,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem,
-            KubernetesClientRecorder recorder) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem) {
 
         featureProducer.produce(new FeatureBuildItem(FeatureBuildItem.KUBERNETES_CLIENT));
         roleProducer.produce(new KubernetesRoleBuildItem("view"));
@@ -142,7 +131,5 @@ public class KubernetesClientProcessor {
 
         // wire up the KubernetesClient bean support
         additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientProducer.class));
-        beanContainerListenerBuildItem.produce(new BeanContainerListenerBuildItem(
-                recorder.setBuildConfig(buildConfig)));
     }
 }

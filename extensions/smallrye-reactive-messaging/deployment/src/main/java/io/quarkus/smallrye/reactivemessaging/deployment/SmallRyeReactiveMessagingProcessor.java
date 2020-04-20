@@ -137,6 +137,8 @@ public class SmallRyeReactiveMessagingProcessor {
                         ReactiveMessagingDotNames.INCOMING);
                 AnnotationInstance outgoing = annotationStore.getAnnotation(method,
                         ReactiveMessagingDotNames.OUTGOING);
+                AnnotationInstance blocking = annotationStore.getAnnotation(method,
+                        ReactiveMessagingDotNames.BLOCKING);
                 if (incoming != null || outgoing != null) {
                     if (incoming != null && incoming.value().asString().isEmpty()) {
                         validationPhase.getContext().addDeploymentProblem(
@@ -149,6 +151,10 @@ public class SmallRyeReactiveMessagingProcessor {
                     // TODO: validate method params and return type?
                     mediatorMethods.produce(new MediatorBuildItem(bean, method));
                     LOGGER.debugf("Found mediator business method %s declared on %s", method, bean);
+                } else if (blocking != null) {
+                    validationPhase.getContext().addDeploymentProblem(
+                            new DeploymentException(
+                                    "@Blocking used on " + method + " which has no @Incoming or @Outgoing annotation"));
                 }
             }
         }

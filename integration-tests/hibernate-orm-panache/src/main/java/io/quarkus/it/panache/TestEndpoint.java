@@ -43,6 +43,10 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
 @Path("test")
 public class TestEndpoint {
 
+    // fake unused injection point to force ArC to not remove this otherwise I can't mock it in the tests
+    @Inject
+    MockablePersonRepository mockablePersonRepository;
+
     @GET
     @Path("model")
     @Transactional

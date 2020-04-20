@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
@@ -51,6 +52,8 @@ import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepositoryBase;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
+import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
+import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
 public class PanacheResourceProcessor {
@@ -133,7 +136,11 @@ public class PanacheResourceProcessor {
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
-            BuildProducer<PanacheEntityClassesBuildItem> entityClasses) {
+            BuildProducer<PanacheEntityClassesBuildItem> entityClasses,
+            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {
+
+        List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
+                .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
         PanacheMongoRepositoryEnhancer daoEnhancer = new PanacheMongoRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
@@ -167,7 +174,7 @@ public class PanacheResourceProcessor {
             propertyMappingClass.produce(new PropertyMappingClassBuildStep(parameterType.name().toString()));
         }
 
-        PanacheMongoEntityEnhancer modelEnhancer = new PanacheMongoEntityEnhancer(index.getIndex());
+        PanacheMongoEntityEnhancer modelEnhancer = new PanacheMongoEntityEnhancer(index.getIndex(), methodCustomizers);
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheMongoEntity if we ask for subtypes of PanacheMongoEntityBase
@@ -214,7 +221,11 @@ public class PanacheResourceProcessor {
             ApplicationIndexBuildItem applicationIndex,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
-            BuildProducer<BytecodeTransformerBuildItem> transformers) {
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
+            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {
+
+        List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
+                .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
         ReactivePanacheMongoRepositoryEnhancer daoEnhancer = new ReactivePanacheMongoRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
@@ -249,7 +260,8 @@ public class PanacheResourceProcessor {
             propertyMappingClass.produce(new PropertyMappingClassBuildStep(parameterType.name().toString()));
         }
 
-        ReactivePanacheMongoEntityEnhancer modelEnhancer = new ReactivePanacheMongoEntityEnhancer(index.getIndex());
+        ReactivePanacheMongoEntityEnhancer modelEnhancer = new ReactivePanacheMongoEntityEnhancer(index.getIndex(),
+                methodCustomizers);
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheMongoEntity if we ask for subtypes of PanacheMongoEntityBase

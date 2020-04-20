@@ -867,6 +867,181 @@ public Multi<ReactivePerson> streamPersons() {
 
 TIP: `@SseElementType(MediaType.APPLICATION_JSON)` tells RESTEasy to serialize the object in JSON.
 
+== Mocking
+
+=== Using the active-record pattern
+
+If you are using the active-record pattern you cannot use Mockito directly as it does not support mocking static methods,
+but you can use the `quarkus-panache-mock` module which allows you to use Mockito to mock all provided static
+methods, including your own.
+
+Add this dependency to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-panache-mock</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+Given this simple entity:
+
+[source,java]
+----
+public class Person extends PanacheMongoEntity {
+
+    public String name;
+
+    public static List<Person> findOrdered() {
+        return findAll(Sort.by("lastname", "firstname")).list();
+    }
+}
+----
+
+You can write your mocking test like this:
+
+[source,java]
+----
+@QuarkusTest
+public class PanacheFunctionalityTest {
+
+    @Test
+    public void testPanacheMocking() {
+        PanacheMock.mock(Person.class);
+
+        // Mocked classes always return a default value
+        Assertions.assertEquals(0, Person.count());
+
+        // Now let's specify the return value
+        Mockito.when(Person.count()).thenReturn(23l);
+        Assertions.assertEquals(23, Person.count());
+
+        // Now let's change the return value
+        Mockito.when(Person.count()).thenReturn(42l);
+        Assertions.assertEquals(42, Person.count());
+
+        // Now let's call the original method
+        Mockito.when(Person.count()).thenCallRealMethod();
+        Assertions.assertEquals(0, Person.count());
+
+        // Check that we called it 4 times
+        PanacheMock.verify(Person.class, Mockito.times(4)).count();// <1>
+
+        // Mock only with specific parameters
+        Person p = new Person();
+        Mockito.when(Person.findById(12l)).thenReturn(p);
+        Assertions.assertSame(p, Person.findById(12l));
+        Assertions.assertNull(Person.findById(42l));
+
+        // Mock throwing
+        Mockito.when(Person.findById(12l)).thenThrow(new WebApplicationException());
+        Assertions.assertThrows(WebApplicationException.class, () -> Person.findById(12l));
+
+        // We can even mock your custom methods
+        Mockito.when(Person.findOrdered()).thenReturn(Collections.emptyList());
+        Assertions.assertTrue(Person.findOrdered().isEmpty());
+
+        PanacheMock.verify(Person.class).findOrdered();
+        PanacheMock.verify(Person.class, Mockito.atLeastOnce()).findById(Mockito.any());
+        PanacheMock.verifyNoMoreInteractions(Person.class);
+    }
+}
+----
+<1> Be sure to call your `verify` methods on `PanacheMock` rather than `Mockito`, otherwise you won't know
+what mock object to pass.
+
+=== Using the repository pattern
+
+If you are using the repository pattern you can use Mockito directly, using the `quarkus-junit5-mockito` module,
+which makes mocking beans much easier:
+
+[source,java]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5-mockito</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+Given this simple entity:
+
+[source,java]
+----
+public class Person {
+
+    @BsonId
+    public Long id;
+
+    public String name;
+}
+----
+
+And this repository:
+
+[source,java]
+----
+@ApplicationScoped
+public class PersonRepository implements PanacheMongoRepository<Person> {
+    public List<Person> findOrdered() {
+        return findAll(Sort.by("lastname", "firstname")).list();
+    }
+}
+----
+
+You can write your mocking test like this:
+
+[source,java]
+----
+@QuarkusTest
+public class PanacheFunctionalityTest {
+    @InjectMock
+    PersonRepository personRepository;
+
+    @Test
+    public void testPanacheRepositoryMocking() throws Throwable {
+        // Mocked classes always return a default value
+        Assertions.assertEquals(0, personRepository.count());
+
+        // Now let's specify the return value
+        Mockito.when(personRepository.count()).thenReturn(23l);
+        Assertions.assertEquals(23, personRepository.count());
+
+        // Now let's change the return value
+        Mockito.when(personRepository.count()).thenReturn(42l);
+        Assertions.assertEquals(42, personRepository.count());
+
+        // Now let's call the original method
+        Mockito.when(personRepository.count()).thenCallRealMethod();
+        Assertions.assertEquals(0, personRepository.count());
+
+        // Check that we called it 4 times
+        Mockito.verify(personRepository, Mockito.times(4)).count();
+
+        // Mock only with specific parameters
+        Person p = new Person();
+        Mockito.when(personRepository.findById(12l)).thenReturn(p);
+        Assertions.assertSame(p, personRepository.findById(12l));
+        Assertions.assertNull(personRepository.findById(42l));
+
+        // Mock throwing
+        Mockito.when(personRepository.findById(12l)).thenThrow(new WebApplicationException());
+        Assertions.assertThrows(WebApplicationException.class, () -> personRepository.findById(12l));
+
+        Mockito.when(personRepository.findOrdered()).thenReturn(Collections.emptyList());
+        Assertions.assertTrue(personRepository.findOrdered().isEmpty());
+
+        // We can even mock your custom methods
+        Mockito.verify(personRepository).findOrdered();
+        Mockito.verify(personRepository, Mockito.atLeastOnce()).findById(Mockito.any());
+        Mockito.verifyNoMoreInteractions(personRepository);
+    }
+}
+----
+
+
 == How and why we simplify MongoDB API
 
 When it comes to writing MongoDB entities, there are a number of annoying things that users have grown used to

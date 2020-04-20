@@ -2,6 +2,7 @@ package io.quarkus.mongodb.panache.deployment;
 
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.bson.codecs.pojo.annotations.BsonIgnore;
@@ -19,6 +20,7 @@ import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityEnhancer;
+import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 
 public class PanacheMongoEntityEnhancer extends PanacheEntityEnhancer<MetamodelInfo<EntityModel<EntityField>>> {
     public final static String MONGO_OPERATIONS_NAME = MongoOperations.class.getName();
@@ -28,23 +30,23 @@ public class PanacheMongoEntityEnhancer extends PanacheEntityEnhancer<MetamodelI
 
     final Map<String, EntityModel> entities = new HashMap<>();
 
-    public PanacheMongoEntityEnhancer(IndexView index) {
-        super(index, PanacheResourceProcessor.DOTNAME_PANACHE_ENTITY_BASE);
+    public PanacheMongoEntityEnhancer(IndexView index, List<PanacheMethodCustomizer> methodCustomizers) {
+        super(index, PanacheResourceProcessor.DOTNAME_PANACHE_ENTITY_BASE, methodCustomizers);
         modelInfo = new MetamodelInfo<>();
     }
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
         return new PanacheMongoEntityClassVisitor(className, outputClassVisitor, modelInfo, panacheEntityBaseClassInfo,
-                indexView.getClassByName(DotName.createSimple(className)));
+                indexView.getClassByName(DotName.createSimple(className)), methodCustomizers);
     }
 
     static class PanacheMongoEntityClassVisitor extends PanacheEntityClassVisitor<EntityField> {
 
         public PanacheMongoEntityClassVisitor(String className, ClassVisitor outputClassVisitor,
                 MetamodelInfo<EntityModel<EntityField>> modelInfo, ClassInfo panacheEntityBaseClassInfo,
-                ClassInfo entityInfo) {
-            super(className, outputClassVisitor, modelInfo, panacheEntityBaseClassInfo, entityInfo);
+                ClassInfo entityInfo, List<PanacheMethodCustomizer> methodCustomizers) {
+            super(className, outputClassVisitor, modelInfo, panacheEntityBaseClassInfo, entityInfo, methodCustomizers);
         }
 
         @Override

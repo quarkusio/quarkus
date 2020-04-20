@@ -1,9 +1,9 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.TimeZone;
 
 import io.vertx.ext.web.RoutingContext;
 
@@ -15,26 +15,16 @@ public class DateTimeAttribute implements ExchangeAttribute {
 
     private static final String COMMON_LOG_PATTERN = "[dd/MMM/yyyy:HH:mm:ss Z]";
 
-    private static final ThreadLocal<SimpleDateFormat> COMMON_LOG_PATTERN_FORMAT = new ThreadLocal<SimpleDateFormat>() {
-        @Override
-        protected SimpleDateFormat initialValue() {
-            SimpleDateFormat df = new SimpleDateFormat(COMMON_LOG_PATTERN, Locale.US);
-            return df;
-        }
-    };
-
     public static final String DATE_TIME_SHORT = "%t";
     public static final String DATE_TIME = "%{DATE_TIME}";
     public static final String CUSTOM_TIME = "%{time,";
 
     public static final ExchangeAttribute INSTANCE = new DateTimeAttribute();
 
-    private final String dateFormat;
-    private final ThreadLocal<SimpleDateFormat> cachedFormat;
+    private final DateTimeFormatter formatter;
 
     private DateTimeAttribute() {
-        this.dateFormat = null;
-        this.cachedFormat = null;
+        this(COMMON_LOG_PATTERN, null);
     }
 
     public DateTimeAttribute(final String dateFormat) {
@@ -42,27 +32,16 @@ public class DateTimeAttribute implements ExchangeAttribute {
     }
 
     public DateTimeAttribute(final String dateFormat, final String timezone) {
-        this.dateFormat = dateFormat;
-        this.cachedFormat = new ThreadLocal<SimpleDateFormat>() {
-            @Override
-            protected SimpleDateFormat initialValue() {
-                final SimpleDateFormat format = new SimpleDateFormat(dateFormat);
-                if (timezone != null) {
-                    format.setTimeZone(TimeZone.getTimeZone(timezone));
-                }
-                return format;
-            }
-        };
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern(dateFormat, Locale.US);
+        if (timezone != null) {
+            fmt = fmt.withZone(ZoneId.of(timezone));
+        }
+        this.formatter = fmt;
     }
 
     @Override
     public String readAttribute(final RoutingContext exchange) {
-        if (dateFormat == null) {
-            return COMMON_LOG_PATTERN_FORMAT.get().format(new Date());
-        } else {
-            final SimpleDateFormat dateFormat = this.cachedFormat.get();
-            return dateFormat.format(new Date());
-        }
+        return formatter.format(LocalDateTime.now());
     }
 
     @Override

@@ -33,6 +33,15 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
         this.sort = sort;
     }
 
+    private ReactivePanacheQueryImpl(ReactivePanacheQueryImpl previousQuery, Document projections) {
+        this.collection = previousQuery.collection;
+        this.mongoQuery = previousQuery.mongoQuery;
+        this.sort = previousQuery.sort;
+        this.projections = projections;
+        this.page = previousQuery.page;
+        this.count = previousQuery.count;
+    }
+
     // Builder
 
     @Override
@@ -41,12 +50,12 @@ public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<En
         Set<String> fieldNames = MongoPropertyUtil.collectFields(type);
 
         // create the projection document
-        this.projections = new Document();
+        Document projections = new Document();
         for (String fieldName : fieldNames) {
-            this.projections.append(fieldName, 1);
+            projections.append(fieldName, 1);
         }
 
-        return (ReactivePanacheQuery<T>) this;
+        return new ReactivePanacheQueryImpl(this, projections);
     }
 
     @Override

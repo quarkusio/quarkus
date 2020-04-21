@@ -23,7 +23,7 @@ public interface PanacheQuery<Entity> {
      * Defines a projection class: the getters, and the public fields, will be used to restrict which fields should be
      * retrieved from the database.
      *
-     * @return this query, modified
+     * @return a new query with the same state as the previous one (params, page, range, ...).
      */
     public <T> PanacheQuery<T> project(Class<T> type);
 

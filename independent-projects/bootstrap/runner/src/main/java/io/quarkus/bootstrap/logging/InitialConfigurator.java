@@ -1,8 +1,7 @@
-package io.quarkus.runtime.logging;
+package io.quarkus.bootstrap.logging;
 
 import java.util.logging.Handler;
 import java.util.logging.Level;
-
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logmanager.EmbeddedConfigurator;
 import org.jboss.logmanager.formatters.PatternFormatter;
@@ -58,7 +57,7 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
                 return new Handler[] { DELAYED_HANDLER };
             }
         } else {
-            return NO_HANDLERS;
+            return EmbeddedConfigurator.NO_HANDLERS;
         }
     }
 

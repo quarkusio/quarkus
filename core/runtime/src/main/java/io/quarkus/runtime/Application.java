@@ -9,16 +9,17 @@ import org.jboss.logging.Logger;
 import org.wildfly.common.Assert;
 import org.wildfly.common.lock.Locks;
 
+import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.runtime.shutdown.ShutdownRecorder;
 
 /**
  * The application base class, which is extended and implemented by a generated class which implements the application
  * setup logic. The base class does some basic error checking, and maintains the application state.
- * 
+ *
  * Note that this class does not manage the application lifecycle in any way, it is solely responsible for starting and
  * stopping the application.
- * 
+ *
  */
 @SuppressWarnings("restriction")
 public abstract class Application implements Closeable {

@@ -4,7 +4,7 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-import io.quarkus.runtime.Timing;
+import io.quarkus.bootstrap.runner.Timing;
 
 @TargetClass(Timing.class)
 final class TimingReplacement {

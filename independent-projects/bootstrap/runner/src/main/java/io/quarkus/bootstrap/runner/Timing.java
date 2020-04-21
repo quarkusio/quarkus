@@ -1,12 +1,10 @@
-package io.quarkus.runtime;
+package io.quarkus.bootstrap.runner;
 
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import java.math.BigDecimal;
 import java.util.logging.Handler;
-
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
-
-import io.quarkus.runtime.logging.InitialConfigurator;
 
 /**
  * Class that is responsible for printing out timing results.

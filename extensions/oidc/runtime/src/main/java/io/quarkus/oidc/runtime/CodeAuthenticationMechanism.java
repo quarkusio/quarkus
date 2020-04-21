@@ -303,8 +303,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .append(COOKIE_DELIM)
                 .append(result.opaqueRefreshToken()).toString());
         long maxAge = result.idToken().getLong("exp") - result.idToken().getLong("iat");
-        if (configContext.oidcConfig.token.expirationGrace.isPresent()) {
-            maxAge += configContext.oidcConfig.token.expirationGrace.get();
+        if (configContext.oidcConfig.token.lifespanGrace.isPresent()) {
+            maxAge += configContext.oidcConfig.token.lifespanGrace.get();
         }
         LOG.debugf("Session cookie 'max-age' parameter is set to %d", maxAge);
         cookie.setMaxAge(maxAge);

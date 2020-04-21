@@ -589,11 +589,14 @@ public class OidcTenantConfig {
         public Optional<List<String>> audience = Optional.empty();
 
         /**
-         * Expiration grace period in seconds. A token expiration time will be reduced by
-         * the value of this property before being compared to the current time.
+         * Life span grace period in seconds.
+         * When checking token expiry, current time is allowed to be later than token expiration time by at most the configured
+         * number of seconds.
+         * When checking token issuance, current time is allowed to be sooner than token issue time by at most the configured
+         * number of seconds.
          */
         @ConfigItem
-        public Optional<Integer> expirationGrace = Optional.empty();
+        public Optional<Integer> lifespanGrace = Optional.empty();
 
         /**
          * Name of the claim which contains a principal name. By default, the 'upn', 'preferred_username' and `sub` claims are
@@ -629,12 +632,12 @@ public class OidcTenantConfig {
             this.audience = Optional.of(audience);
         }
 
-        public Optional<Integer> getExpirationGrace() {
-            return expirationGrace;
+        public Optional<Integer> getLifespanGrace() {
+            return lifespanGrace;
         }
 
-        public void setExpirationGrace(int expirationGrace) {
-            this.expirationGrace = Optional.of(expirationGrace);
+        public void setLifespanGrace(int lifespanGrace) {
+            this.lifespanGrace = Optional.of(lifespanGrace);
         }
 
         public Optional<String> getPrincipalClaim() {

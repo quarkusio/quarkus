@@ -199,7 +199,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         }
 
         final ArtifactDescriptorResult appArtifactDescr = mvn.resolveDescriptor(toAetherArtifact(appArtifact));
-        if (managedDeps == null) {
+        if (managingProject == null) {
             managedDeps = appArtifactDescr.getManagedDependencies();
         } else {
             final List<Dependency> mergedManagedDeps = new ArrayList<>(managedDeps.size());

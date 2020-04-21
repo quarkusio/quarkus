@@ -335,8 +335,11 @@ public class QuarkusDevModeTest
                             data = FileUtil.readFileContents(in);
 
                         }
-                        String content = new String(data, StandardCharsets.UTF_8);
-                        content = mutator.apply(content);
+                        String oldContent = new String(data, StandardCharsets.UTF_8);
+                        String content = mutator.apply(oldContent);
+                        if (content.equals(oldContent)) {
+                            throw new RuntimeException("File was not modified, mutator function had no effect");
+                        }
 
                         sleepForFileChanges(path);
                         Files.write(s, content.getBytes(StandardCharsets.UTF_8));

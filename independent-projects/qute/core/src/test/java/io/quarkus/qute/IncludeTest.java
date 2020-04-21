@@ -76,4 +76,15 @@ public class IncludeTest {
                         .render());
     }
 
+    @Test
+    public void testUserTagInsideInsert() {
+        Engine engine = Engine.builder().addDefaults().addSectionHelper(new UserTagSectionHelper.Factory("hello", "hello"))
+                .build();
+        engine.putTemplate("hello", engine.parse("{name}"));
+        engine.putTemplate("base", engine.parse("{#insert snippet}{/insert}"));
+        assertEquals("foo",
+                engine.parse("{#include base} {#snippet}{#hello name='foo'/}{/snippet} {/include}")
+                        .render());
+    }
+
 }

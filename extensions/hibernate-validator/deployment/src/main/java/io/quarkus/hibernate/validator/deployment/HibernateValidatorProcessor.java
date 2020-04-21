@@ -89,10 +89,6 @@ class HibernateValidatorProcessor {
 
     private static final Pattern BUILT_IN_CONSTRAINT_REPEATABLE_CONTAINER_PATTERN = Pattern.compile("\\$List$");
 
-    private LocalesBuildTimeConfig localesBuildTimeConfig;
-
-    private HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig;
-
     @BuildStep
     HotDeploymentWatchedFileBuildItem configFile() {
         return new HotDeploymentWatchedFileBuildItem(META_INF_VALIDATION_XML);
@@ -146,7 +142,9 @@ class HibernateValidatorProcessor {
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
             ShutdownContextBuildItem shutdownContext,
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
-            Capabilities capabilities) throws Exception {
+            Capabilities capabilities,
+            LocalesBuildTimeConfig localesBuildTimeConfig,
+            HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_VALIDATOR));
 

@@ -253,6 +253,16 @@ Your extension project should be setup as a multi-module project with two submod
 
 TIP: You may want to use the `create-extension` mojo of `io.quarkus:quarkus-maven-plugin` to create these Maven modules - see the next section.
 
+==== Naming
+
+If your extension are not part of Quarkus it should have a distinct namespace. Do not start your extension group and artifact id with `quarkus`. This is to avoid name clashes between extensions.
+
+General rule to follow when doing an external extension is `<your-groupid>.<extension-name>-quarkus`, for example an extension for `ngrok` should be named `io.myext:ngrok-quarkus`.
+
+Where as if `ngrok` would be part of Quarkus it would be named `io.quarkus:quarkus-ngrok`.
+
+=== Artifacts
+
 Your runtime artifact should depend on `io.quarkus:quarkus-core`, and possibly the runtime artifacts of other Quarkus
 modules if you want to use functionality provided by them.
 You will also need to include the `io.quarkus:quarkus-bootstrap-maven-plugin` to generate the Quarkus extension descriptor included into the runtime artifact, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.

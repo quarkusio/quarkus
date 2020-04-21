@@ -1,0 +1,10 @@
+plugins {
+    id 'io.quarkus'
+}
+
+dependencies {
+    implementation project(":common-base")
+    implementation project(":common-one")
+    implementation project(":common-two")
+
+}

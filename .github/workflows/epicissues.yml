@@ -5,6 +5,7 @@ on:
 
 jobs:
     autolabel:
+      if: github.repository == 'quarkusio/quarkus'
       runs-on: ubuntu-latest
       name: auto label
       steps:

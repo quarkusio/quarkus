@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
@@ -60,7 +59,6 @@ public class QuartzScheduler implements Scheduler {
     private static final String INVOKER_KEY = "invoker";
 
     private final org.quartz.Scheduler scheduler;
-    private final AtomicInteger triggerNameSequence;
     private final Map<String, ScheduledInvoker> invokers;
 
     @Produces
@@ -72,12 +70,10 @@ public class QuartzScheduler implements Scheduler {
     public QuartzScheduler(SchedulerContext context, QuartzSupport quartzSupport, Config config) {
         if (!quartzSupport.getRuntimeConfig().forceStart && context.getScheduledMethods().isEmpty()) {
             LOGGER.infof("No scheduled business methods found - Quartz scheduler will not be started");
-            this.triggerNameSequence = null;
             this.scheduler = null;
             this.invokers = null;
 
         } else {
-            this.triggerNameSequence = new AtomicInteger();
             this.invokers = new HashMap<>();
 
             UserTransaction transaction = null;
@@ -104,11 +100,15 @@ public class QuartzScheduler implements Scheduler {
                 for (ScheduledMethodMetadata method : context.getScheduledMethods()) {
 
                     invokers.put(method.getInvokerClassName(), context.createInvoker(method.getInvokerClassName()));
+                    int nameSequence = 0;
 
                     for (Scheduled scheduled : method.getSchedules()) {
-                        String name = triggerNameSequence.getAndIncrement() + "_" + method.getInvokerClassName();
+                        String identity = scheduled.identity().trim();
+                        if (identity.isEmpty()) {
+                            identity = ++nameSequence + "_" + method.getInvokerClassName();
+                        }
                         JobBuilder jobBuilder = JobBuilder.newJob(InvokerJob.class)
-                                .withIdentity(name, Scheduler.class.getName())
+                                .withIdentity(identity, Scheduler.class.getName())
                                 .usingJobData(INVOKER_KEY, method.getInvokerClassName())
                                 .requestRecovery();
                         ScheduleBuilder<?> scheduleBuilder;
@@ -143,7 +143,7 @@ public class QuartzScheduler implements Scheduler {
                         }
 
                         TriggerBuilder<?> triggerBuilder = TriggerBuilder.newTrigger()
-                                .withIdentity(name + "_trigger", Scheduler.class.getName())
+                                .withIdentity(identity + "_trigger", Scheduler.class.getName())
                                 .withSchedule(scheduleBuilder);
 
                         Long millisToAdd = null;

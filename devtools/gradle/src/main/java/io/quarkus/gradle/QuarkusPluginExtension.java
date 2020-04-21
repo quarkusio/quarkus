@@ -3,6 +3,7 @@ package io.quarkus.gradle;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Set;
 
 import org.gradle.api.Project;
@@ -13,9 +14,12 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.testing.Test;
 import org.gradle.jvm.tasks.Jar;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.runtime.LaunchMode;
@@ -36,6 +40,24 @@ public class QuarkusPluginExtension {
 
     public QuarkusPluginExtension(Project project) {
         this.project = project;
+    }
+
+    void beforeTest(Test task) {
+        try {
+            final Map<String, Object> props = task.getSystemProperties();
+
+            final AppModel deploymentDeps = getAppModelResolver(LaunchMode.TEST)
+                    .resolveModel(getAppArtifact());
+            final Path serializedModel = QuarkusGradleUtils.serializeAppModel(deploymentDeps, task);
+            props.put(BootstrapConstants.SERIALIZED_APP_MODEL, serializedModel.toString());
+
+            final String nativeRunner = task.getProject().getBuildDir().toPath().resolve(finalName() + "-runner")
+                    .toAbsolutePath()
+                    .toString();
+            props.put("native.image.path", nativeRunner);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to resolve deployment classpath", e);
+        }
     }
 
     public Path appJarOrClasses() {

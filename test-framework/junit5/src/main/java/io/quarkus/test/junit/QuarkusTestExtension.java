@@ -4,13 +4,13 @@ import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLo
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -102,12 +102,20 @@ public class QuarkusTestExtension
                     .setIsolateDeployment(true)
                     .setMode(QuarkusBootstrap.Mode.TEST);
 
+            if (Files.isDirectory(appClassLocation)) {
+                // this is a project that is a part of the workspace
+                runnerBuilder.setProjectRoot(Paths.get("").normalize().toAbsolutePath());
+            } else {
+                // this is an external JAR
+                runnerBuilder.setApplicationRoot(appClassLocation);
+            }
+
             if (!appClassLocation.equals(testClassLocation)) {
                 runnerBuilder.addAdditionalApplicationArchive(AdditionalDependency.test(testClassLocation));
             }
+
             CuratedApplication curatedApplication = runnerBuilder
                     .setTest(true)
-                    .setProjectRoot(Files.isDirectory(appClassLocation) ? new File("").toPath() : null)
                     .build()
                     .bootstrap();
 

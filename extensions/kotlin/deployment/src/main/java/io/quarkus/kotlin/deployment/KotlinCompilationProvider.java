@@ -25,7 +25,7 @@ public class KotlinCompilationProvider implements CompilationProvider {
 
     private static final Logger log = Logger.getLogger(KotlinCompilationProvider.class);
 
-    // see: https://github.com/JetBrains/kotlin/blob/v1.3.71/libraries/tools/kotlin-maven-plugin/src/main/java/org/jetbrains/kotlin/maven/KotlinCompileMojoBase.java#L181
+    // see: https://github.com/JetBrains/kotlin/blob/v1.3.72/libraries/tools/kotlin-maven-plugin/src/main/java/org/jetbrains/kotlin/maven/KotlinCompileMojoBase.java#L181
     private final static Pattern OPTION_PATTERN = Pattern.compile("([^:]+):([^=]+)=(.*)");
     private static final String KOTLIN_PACKAGE = "org.jetbrains.kotlin";
 
@@ -75,7 +75,7 @@ public class KotlinCompilationProvider implements CompilationProvider {
                 compilerArguments);
 
         if (exitCode != ExitCode.OK && exitCode != ExitCode.COMPILATION_ERROR) {
-            throw new RuntimeException("Unable to invoke Kotlin compiler");
+            throw new RuntimeException("Unable to invoke Kotlin compiler. " + String.join("\n", messageCollector.getErrors()));
         }
 
         if (messageCollector.hasErrors()) {

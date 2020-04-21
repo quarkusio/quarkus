@@ -15,7 +15,7 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
     testImplementation 'io.quarkus:quarkus-junit5'
-    testImplementation 'io.rest-assured:rest-assured'
+    testImplementation 'io.rest-assured:kotlin-extensions'
 }
 
 group '${project_groupId}'

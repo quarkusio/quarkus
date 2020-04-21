@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import io.quarkus.bootstrap.BootstrapException;
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
@@ -107,6 +108,7 @@ public class BootstrapMavenContext {
     private File globalSettings;
     private Boolean offline;
     private LocalWorkspace workspace;
+    private LocalProject currentProject;
     private Settings settings;
     private List<org.apache.maven.model.Profile> activeSettingsProfiles;
     private RepositorySystem repoSystem;
@@ -140,7 +142,12 @@ public class BootstrapMavenContext {
         this.repoSystem = config.repoSystem;
         this.repoSession = config.repoSession;
         this.remoteRepos = config.remoteRepos;
-        this.workspace = config.workspace == null ? (config.workspaceDiscovery ? resolveWorkspace() : null) : config.workspace;
+        if (config.workspace != null) {
+            this.workspace = config.workspace;
+        } else if (config.workspaceDiscovery) {
+            currentProject = resolveCurrentProject();
+            this.workspace = currentProject == null ? null : currentProject.getWorkspace();
+        }
         userSettings = config.userSettings == null
                 ? resolveSettingsFile(getCliOptions().getOptionValue(ALTERNATE_USER_SETTINGS),
                         () -> new File(userMavenConfigurationHome, SETTINGS_XML))
@@ -149,6 +156,18 @@ public class BootstrapMavenContext {
             final String envM2Home = System.getenv(MAVEN_HOME);
             return new File(PropertyUtils.getProperty(MAVEN_DOT_HOME, envM2Home != null ? envM2Home : ""), "conf/settings.xml");
         });
+    }
+
+    public AppArtifact getCurrentProjectArtifact(String extension) throws AppModelResolverException {
+        if (currentProject != null) {
+            return currentProject.getAppArtifact(extension);
+        }
+        final Model model = loadCurrentProjectModel();
+        if (model == null) {
+            return null;
+        }
+        return new AppArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), "", extension,
+                ModelUtils.getVersion(model));
     }
 
     public LocalWorkspace getWorkspace() {
@@ -219,12 +238,11 @@ public class BootstrapMavenContext {
         return localRepo == null ? localRepo = resolveLocalRepo(getEffectiveSettings()) : localRepo;
     }
 
-    private LocalWorkspace resolveWorkspace() throws AppModelResolverException {
+    private LocalProject resolveCurrentProject() throws AppModelResolverException {
         try {
             return LocalProject.loadWorkspace(this);
         } catch (BootstrapException e) {
-            throw new AppModelResolverException(
-                    "Failed to load the workspace for the current project at " + getCurrentProjectPomOrNull());
+            throw new AppModelResolverException("Failed to load current project at " + getCurrentProjectPomOrNull());
         }
     }
 
@@ -391,20 +409,26 @@ public class BootstrapMavenContext {
                 .build();
     }
 
-    private List<RemoteRepository> resolveCurrentProjectRepos(List<RemoteRepository> repos)
-            throws AppModelResolverException {
+    private Model loadCurrentProjectModel() throws AppModelResolverException {
         final Path pom = getCurrentProjectPomOrNull();
         if (pom == null) {
-            return repos;
+            return null;
         }
-        final Artifact projectArtifact;
         try {
-            final Model model = ModelUtils.readModel(pom);
-            projectArtifact = new DefaultArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), "", "pom",
-                    ModelUtils.getVersion(model));
+            return ModelUtils.readModel(pom);
         } catch (IOException e) {
             throw new AppModelResolverException("Failed to parse " + pom, e);
         }
+    }
+
+    private List<RemoteRepository> resolveCurrentProjectRepos(List<RemoteRepository> repos)
+            throws AppModelResolverException {
+        final Model model = loadCurrentProjectModel();
+        if (model == null) {
+            return repos;
+        }
+        final Artifact projectArtifact = new DefaultArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), "", "pom",
+                ModelUtils.getVersion(model));
         try {
             return getRepositorySystem().readArtifactDescriptor(getRepositorySystemSession(), new ArtifactDescriptorRequest()
                     .setArtifact(projectArtifact)

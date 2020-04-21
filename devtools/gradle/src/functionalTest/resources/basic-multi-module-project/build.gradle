@@ -26,7 +26,6 @@ subprojects {
 
     test {
         dependsOn 'cleanTest'
-        dependsOn 'quarkusTestConfig'
         useJUnitPlatform()
         forkEvery 1
     }

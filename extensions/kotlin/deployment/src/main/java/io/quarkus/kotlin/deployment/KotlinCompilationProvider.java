@@ -75,7 +75,7 @@ public class KotlinCompilationProvider implements CompilationProvider {
                 compilerArguments);
 
         if (exitCode != ExitCode.OK && exitCode != ExitCode.COMPILATION_ERROR) {
-            throw new RuntimeException("Unable to invoke Kotlin compiler");
+            throw new RuntimeException("Unable to invoke Kotlin compiler. " + String.join("\n", messageCollector.getErrors()));
         }
 
         if (messageCollector.hasErrors()) {

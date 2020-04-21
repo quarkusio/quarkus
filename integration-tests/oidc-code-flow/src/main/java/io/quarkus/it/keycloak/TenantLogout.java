@@ -25,7 +25,7 @@ public class TenantLogout {
     @GET
     @Path("post-logout")
     public String postLogout(@QueryParam("state") String postLogoutState) {
-        Cookie cookie = headers.getCookies().get("q_post_logout");
+        Cookie cookie = headers.getCookies().get("q_post_logout_tenant-logout");
         if (cookie == null) {
             throw new InternalServerErrorException("q_post_logout cookie is not available");
         }

@@ -35,13 +35,57 @@ public class BearerTokenAuthorizationTest {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user");
             // State cookie is available but there must be no saved path parameter
             // as the tenant-web-app configuration does not set a redirect-path property
-            assertNull(getStateCookieSavedPath(webClient));
+            assertNull(getStateCookieSavedPath(webClient, "tenant-web-app"));
             assertEquals("Log in to quarkus-webapp", page.getTitleText());
             HtmlForm loginForm = page.getForms().get(0);
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
             assertEquals("tenant-web-app:alice", page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testResolveTenantIdentifierWebApp2() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user");
+            // State cookie is available but there must be no saved path parameter
+            // as the tenant-web-app configuration does not set a redirect-path property
+            assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
+            assertEquals("Log in to quarkus-webapp2", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            page = loginForm.getInputByName("login").click();
+            assertEquals("tenant-web-app2:alice", page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testReAuthenticateWhenSwitchingTenants() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            // tenant-web-app
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user");
+            assertNull(getStateCookieSavedPath(webClient, "tenant-web-app"));
+            assertEquals("Log in to quarkus-webapp", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            page = loginForm.getInputByName("login").click();
+            assertEquals("tenant-web-app:alice", page.getBody().asText());
+            // tenant-web-app2
+            page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user");
+            assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
+            assertEquals("Log in to quarkus-webapp2", page.getTitleText());
+            loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            page = loginForm.getInputByName("login").click();
+            assertEquals("tenant-web-app2:alice", page.getBody().asText());
+
+            webClient.getCookieManager().clearCookies();
         }
     }
 
@@ -104,12 +148,12 @@ public class BearerTokenAuthorizationTest {
         return webClient;
     }
 
-    private Cookie getStateCookie(WebClient webClient) {
-        return webClient.getCookieManager().getCookie("q_auth");
+    private Cookie getStateCookie(WebClient webClient, String tenantId) {
+        return webClient.getCookieManager().getCookie("q_auth" + (tenantId == null ? "" : "_" + tenantId));
     }
 
-    private String getStateCookieSavedPath(WebClient webClient) {
-        String[] parts = getStateCookie(webClient).getValue().split("___");
+    private String getStateCookieSavedPath(WebClient webClient, String tenantId) {
+        String[] parts = getStateCookie(webClient, tenantId).getValue().split("___");
         return parts.length == 2 ? parts[1] : null;
     }
 }

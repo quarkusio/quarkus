@@ -80,7 +80,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager,
             DefaultTenantConfigResolver resolver) {
-        Cookie sessionCookie = context.request().getCookie(SESSION_COOKIE_NAME);
+
+        Cookie sessionCookie = context.request().getCookie(
+                getSessionCookieName(resolver.resolve(context, false)));
 
         // if session already established, try to re-authenticate
         if (sessionCookie != null) {
@@ -136,8 +138,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     public Uni<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
+
         TenantConfigContext configContext = resolver.resolve(context, true);
-        removeCookie(context, configContext, SESSION_COOKIE_NAME);
+        removeCookie(context, configContext, getSessionCookieName(configContext));
 
         ChallengeData challenge;
         JsonObject params = new JsonObject();
@@ -180,8 +183,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
 
         TenantConfigContext configContext = resolver.resolve(context, true);
+        Cookie stateCookie = context.getCookie(getStateCookieName(configContext));
 
-        Cookie stateCookie = context.getCookie(STATE_COOKIE_NAME);
         if (stateCookie != null) {
             List<String> values = context.queryParam("state");
             // IDP must return a 'state' query parameter and the value of the state cookie must start with this parameter's value
@@ -211,10 +214,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     return Uni.createFrom().failure(new AuthenticationRedirectException(localRedirectUri));
                 }
                 // The original request path does not have to be restored, the state cookie is no longer needed
-                removeCookie(context, configContext, STATE_COOKIE_NAME);
+                removeCookie(context, configContext, getStateCookieName(configContext));
             } else {
                 // Local redirect restoring the original request path, the state cookie is no longer needed
-                removeCookie(context, configContext, STATE_COOKIE_NAME);
+                removeCookie(context, configContext, getStateCookieName(configContext));
             }
         } else {
             // State cookie must be available to minimize the risk of CSRF
@@ -303,7 +306,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private void processSuccessfulAuthentication(RoutingContext context, TenantConfigContext configContext,
             AccessToken result, SecurityIdentity securityIdentity) {
-        removeCookie(context, configContext, SESSION_COOKIE_NAME);
+        removeCookie(context, configContext, getSessionCookieName(configContext));
 
         String cookieValue = new StringBuilder(result.opaqueIdToken())
                 .append(COOKIE_DELIM)
@@ -315,7 +318,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (configContext.oidcConfig.token.lifespanGrace.isPresent()) {
             maxAge += configContext.oidcConfig.token.lifespanGrace.get();
         }
-        createCookie(context, configContext, SESSION_COOKIE_NAME, cookieValue, maxAge);
+        createCookie(context, configContext, getSessionCookieName(configContext), cookieValue, maxAge);
     }
 
     private String getRedirectPath(TenantConfigContext configContext, RoutingContext context) {
@@ -332,12 +335,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (auth.isRestorePathAfterRedirect() && !redirectPath.equals(context.request().path())) {
             cookieValue += (COOKIE_DELIM + context.request().path());
         }
-        return createCookie(context, configContext, STATE_COOKIE_NAME, cookieValue, 60 * 30).getValue();
+        return createCookie(context, configContext, getStateCookieName(configContext), cookieValue, 60 * 30).getValue();
     }
 
     private String generatePostLogoutState(RoutingContext context, TenantConfigContext configContext) {
-        removeCookie(context, configContext, POST_LOGOUT_COOKIE_NAME);
-        return createCookie(context, configContext, POST_LOGOUT_COOKIE_NAME, UUID.randomUUID().toString(), 60 * 30).getValue();
+        removeCookie(context, configContext, getPostLogoutCookieName(configContext));
+        return createCookie(context, configContext, getPostLogoutCookieName(configContext), UUID.randomUUID().toString(),
+                60 * 30).getValue();
     }
 
     private CookieImpl createCookie(RoutingContext context, TenantConfigContext configContext,
@@ -460,7 +464,27 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private AuthenticationRedirectException redirectToLogoutEndpoint(RoutingContext context, TenantConfigContext configContext,
             String idToken) {
-        removeCookie(context, configContext, SESSION_COOKIE_NAME);
+        removeCookie(context, configContext, getSessionCookieName(configContext));
         return new AuthenticationRedirectException(buildLogoutRedirectUri(configContext, idToken, context));
     }
+
+    private static String getSessionCookieName(TenantConfigContext configContext) {
+        String cookieSuffix = getCookieSuffix(configContext);
+        return SESSION_COOKIE_NAME + cookieSuffix;
+    }
+
+    private static String getStateCookieName(TenantConfigContext configContext) {
+        String cookieSuffix = getCookieSuffix(configContext);
+        return STATE_COOKIE_NAME + cookieSuffix;
+    }
+
+    private static String getPostLogoutCookieName(TenantConfigContext configContext) {
+        String cookieSuffix = getCookieSuffix(configContext);
+        return POST_LOGOUT_COOKIE_NAME + cookieSuffix;
+    }
+
+    private static String getCookieSuffix(TenantConfigContext configContext) {
+        return !"Default".equals(configContext.oidcConfig.tenantId.get()) ? "_" + configContext.oidcConfig.tenantId.get() : "";
+    }
+
 }

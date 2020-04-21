@@ -24,7 +24,7 @@ public class TenantResource {
     @GET
     @RolesAllowed("user")
     public String userName(@PathParam("tenant") String tenant) {
-        return tenant + ":" + ("tenant-web-app".equals(tenant) ? getNameWebAppType() : getNameServiceType());
+        return tenant + ":" + (tenant.startsWith("tenant-web-app") ? getNameWebAppType() : getNameServiceType());
     }
 
     private String getNameWebAppType() {

@@ -1,0 +1,18 @@
+name: "Epic issue lists"
+on:
+    issues:
+      types: [opened, edited, labeled]
+
+jobs:
+    autolabel:
+      runs-on: ubuntu-latest
+      name: auto label
+      steps:
+#      - name: Debug Action
+#        uses: hmarr/debug-action@v1.0.0
+      - name: epicmaker
+        uses: docker://maxandersen/jbang-epic-maker
+        env:
+          GITHUB_TOKEN: ${{ secrets.ISSUE_GITHUB_TOKEN }}
+          BOTNAME: quarkusbot
+          EPICLABEL: kind/epic

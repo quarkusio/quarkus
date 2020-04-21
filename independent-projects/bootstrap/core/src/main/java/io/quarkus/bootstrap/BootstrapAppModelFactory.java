@@ -8,6 +8,8 @@ import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
@@ -57,12 +59,12 @@ public class BootstrapAppModelFactory {
     private static final int CP_CACHE_FORMAT_ID = 2;
 
     private static final Logger log = Logger.getLogger(BootstrapAppModelFactory.class);
-    private AppArtifact managingProject;
 
     public static BootstrapAppModelFactory newInstance() {
         return new BootstrapAppModelFactory();
     }
 
+    private AppArtifact managingProject;
     private Path projectRoot;
     private List<Path> appCp = new ArrayList<>(0);
     private Boolean localProjectsDiscovery;
@@ -78,7 +80,7 @@ public class BootstrapAppModelFactory {
     private AppArtifact appArtifact;
     private MavenArtifactResolver mavenArtifactResolver;
 
-    private LocalProject workspace;
+    private LocalProject currentProject;
 
     private List<AppDependency> forcedDependencies = Collections.emptyList();
 
@@ -151,7 +153,6 @@ public class BootstrapAppModelFactory {
     }
 
     public AppModelResolver getAppModelResolver() {
-
         if (bootstrapAppModelResolver != null) {
             return bootstrapAppModelResolver;
         }
@@ -160,20 +161,11 @@ public class BootstrapAppModelFactory {
             if (projectRoot != null && !Files.isDirectory(projectRoot)) {
                 final MavenArtifactResolver mvn;
                 if (mavenArtifactResolver == null) {
-                    final MavenArtifactResolver.Builder mvnBuilder = MavenArtifactResolver.builder();
-                    if (offline != null) {
-                        mvnBuilder.setOffline(offline);
+                    final BootstrapMavenContext mvnCtx = createBootstrapMavenContext();
+                    if (managingProject == null) {
+                        managingProject = mvnCtx.getCurrentProjectArtifact("pom");
                     }
-                    final LocalProject localProject = isWorkspaceDiscoveryEnabled()
-                            ? LocalProject.loadWorkspace(Paths.get("").normalize().toAbsolutePath(), false)
-                            : null;
-                    if (localProject != null) {
-                        mvnBuilder.setWorkspace(localProject.getWorkspace());
-                        if (managingProject == null) {
-                            managingProject = localProject.getAppArtifact();
-                        }
-                    }
-                    mvn = mvnBuilder.build();
+                    mvn = new MavenArtifactResolver(mvnCtx);
                 } else {
                     mvn = mavenArtifactResolver;
                 }
@@ -185,17 +177,7 @@ public class BootstrapAppModelFactory {
 
             MavenArtifactResolver mvn = mavenArtifactResolver;
             if (mvn == null) {
-                final MavenArtifactResolver.Builder builder = MavenArtifactResolver.builder();
-                final LocalProject localProject = isWorkspaceDiscoveryEnabled()
-                        ? loadWorkspace()
-                        : null;
-                if (localProject != null) {
-                    builder.setWorkspace(localProject.getWorkspace());
-                }
-                if (offline != null) {
-                    builder.setOffline(offline);
-                }
-                mvn = builder.build();
+                mvn = new MavenArtifactResolver(createBootstrapMavenContext());
             }
             return bootstrapAppModelResolver = new BootstrapAppModelResolver(mvn)
                     .setTest(test)
@@ -203,6 +185,19 @@ public class BootstrapAppModelFactory {
         } catch (Exception e) {
             throw new RuntimeException("Failed to create application model resolver for " + projectRoot, e);
         }
+    }
+
+    private BootstrapMavenContext createBootstrapMavenContext() throws AppModelResolverException {
+        final BootstrapMavenContextConfig<?> config = BootstrapMavenContext.config();
+        if (offline != null) {
+            config.setOffline(offline);
+        }
+        if (currentProject != null) {
+            config.setWorkspace(currentProject.getWorkspace());
+        } else {
+            config.setWorkspaceDiscovery(isWorkspaceDiscoveryEnabled());
+        }
+        return new BootstrapMavenContext(config);
     }
 
     public CurationResult resolveAppModel() throws BootstrapException {
@@ -304,15 +299,16 @@ public class BootstrapAppModelFactory {
     }
 
     private boolean isWorkspaceDiscoveryEnabled() {
-        return localProjectsDiscovery == null ? projectRoot != null && (test || devMode) : localProjectsDiscovery;
+        return localProjectsDiscovery == null ? projectRoot != null && (test || devMode)
+                : localProjectsDiscovery;
     }
 
     private LocalProject loadWorkspace() throws BootstrapException {
-        return workspace == null
-                ? workspace = projectRoot == null ? null
-                        : LocalProject.loadWorkspace(projectRoot,
-                                false)
-                : workspace;
+        return currentProject == null
+                ? currentProject = projectRoot == null || !Files.isDirectory(projectRoot)
+                        ? null
+                        : LocalProject.loadWorkspace(projectRoot, false)
+                : currentProject;
     }
 
     private CurationResult createAppModelForJar(Path appArtifactPath) {
@@ -344,7 +340,6 @@ public class BootstrapAppModelFactory {
                     log.info("- located the state at " + statePath);
                 } catch (AppModelResolverException e) {
                     // for now let's assume this means artifact does not exist
-                    // System.out.println(" no state found");
                 }
 
                 if (statePath != null) {

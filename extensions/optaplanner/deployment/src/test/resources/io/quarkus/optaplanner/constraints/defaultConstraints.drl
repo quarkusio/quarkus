@@ -1,0 +1,18 @@
+package io.quarkus.optaplanner.constraints;
+    dialect "java"
+
+import org.optaplanner.core.api.score.buildin.simple.SimpleScoreHolder;
+
+import io.quarkus.optaplanner.domain.TestdataPlanningEntity;
+
+global SimpleScoreHolder scoreHolder;
+
+rule "Don't assign 2 entities the same value."
+    when
+        TestdataPlanningEntity()
+        // TODO Fix UnsupportedOperationException with kogito-drools
+//        $a : TestdataPlanningEntity(value != null, $v : value)
+//        TestdataPlanningEntity(value == $v, this != $a)
+    then
+        scoreHolder.addConstraintMatch(kcontext, -1);
+end

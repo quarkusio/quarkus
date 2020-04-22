@@ -13,24 +13,24 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
+import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.smallrye.mutiny.Uni;
 
-public abstract class JpaIdentityProvider extends AbstractJpaIdentityProvider
-        implements IdentityProvider<UsernamePasswordAuthenticationRequest> {
+public abstract class JpaTrustedIdentityProvider extends AbstractJpaIdentityProvider
+        implements IdentityProvider<TrustedAuthenticationRequest> {
 
-    private static Logger log = Logger.getLogger(JpaIdentityProvider.class);
+    private static Logger log = Logger.getLogger(JpaTrustedIdentityProvider.class);
 
     @Inject
     JPAConfig jpaConfig;
 
     @Override
-    public Class<UsernamePasswordAuthenticationRequest> getRequestType() {
-        return UsernamePasswordAuthenticationRequest.class;
+    public Class<TrustedAuthenticationRequest> getRequestType() {
+        return TrustedAuthenticationRequest.class;
     }
 
     @Override
-    public Uni<SecurityIdentity> authenticate(UsernamePasswordAuthenticationRequest request,
+    public Uni<SecurityIdentity> authenticate(TrustedAuthenticationRequest request,
             AuthenticationRequestContext context) {
         return context.runBlocking(new Supplier<SecurityIdentity>() {
             @Override
@@ -52,6 +52,5 @@ public abstract class JpaIdentityProvider extends AbstractJpaIdentityProvider
     }
 
     public abstract SecurityIdentity authenticate(EntityManager em,
-            UsernamePasswordAuthenticationRequest request);
-
+            TrustedAuthenticationRequest request);
 }

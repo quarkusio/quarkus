@@ -41,6 +41,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.quarkus.security.jpa.Password;
 import io.quarkus.security.jpa.PasswordType;
@@ -50,6 +51,7 @@ import io.quarkus.security.jpa.UserDefinition;
 import io.quarkus.security.jpa.Username;
 import io.quarkus.security.jpa.deployment.JpaSecurityDefinition.FieldOrMethod;
 import io.quarkus.security.jpa.runtime.JpaIdentityProvider;
+import io.quarkus.security.jpa.runtime.JpaTrustedIdentityProvider;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 
 class QuarkusSecurityJpaProcessor {
@@ -109,6 +111,9 @@ class QuarkusSecurityJpaProcessor {
             generateIdentityProvider(index.getIndex(), jpaSecurityDefinition,
                     passwordType != null ? passwordType.asEnum() : PasswordType.MCF.name(),
                     beanProducer, panacheEntities);
+
+            generateTrustedIdentityProvider(index.getIndex(), jpaSecurityDefinition,
+                    beanProducer, panacheEntities);
         }
     }
 
@@ -155,41 +160,7 @@ class QuarkusSecurityJpaProcessor {
 
                 // two strategies, depending on whether the username is natural id
                 AnnotationInstance naturalIdAnnotation = jpaSecurityDefinition.username.annotation(DOTNAME_NATURAL_ID);
-                ResultHandle user;
-                if (naturalIdAnnotation != null) {
-                    // Session session = em.unwrap(Session.class);
-                    ResultHandle session = methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(EntityManager.class, "unwrap", Object.class, Class.class),
-                            methodCreator.getMethodParam(0),
-                            methodCreator.loadClass(Session.class));
-                    // SimpleNaturalIdLoadAccess<PlainUserEntity> naturalIdLoadAccess = session.bySimpleNaturalId(PlainUserEntity.class);
-                    ResultHandle naturalIdLoadAccess = methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(Session.class, "bySimpleNaturalId",
-                                    SimpleNaturalIdLoadAccess.class, Class.class),
-                            methodCreator.checkCast(session, Session.class),
-                            methodCreator.loadClass(jpaSecurityDefinition.annotatedClass.name().toString()));
-                    // PlainUserEntity user = naturalIdLoadAccess.load(request.getUsername());
-                    user = methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(SimpleNaturalIdLoadAccess.class, "load",
-                                    Object.class, Object.class),
-                            naturalIdLoadAccess, username);
-                } else {
-                    // Query query = entityManager.createQuery("FROM Entity WHERE field = :name")
-                    String hql = "FROM " + jpaSecurityDefinition.annotatedClass.simpleName() + " WHERE "
-                            + jpaSecurityDefinition.username.name() + " = :name";
-                    ResultHandle query = methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(EntityManager.class, "createQuery", Query.class, String.class),
-                            methodCreator.getMethodParam(0), methodCreator.load(hql));
-                    // query.setParameter("name", request.getUsername())
-                    ResultHandle query2 = methodCreator.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(Query.class, "setParameter", Query.class, String.class, Object.class),
-                            query, methodCreator.load("name"), username);
-
-                    // UserEntity user = getSingleUser(query2);
-                    user = methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(name, "getSingleUser", Object.class, Query.class),
-                            methodCreator.getThis(), query2);
-                }
+                ResultHandle user = lookupUserById(jpaSecurityDefinition, name, methodCreator, username, naturalIdAnnotation);
 
                 String declaringClassName = jpaSecurityDefinition.annotatedClass.name().toString();
                 String declaringClassTypeDescriptor = "L" + declaringClassName.replace('.', '/') + ";";
@@ -233,86 +204,177 @@ class QuarkusSecurityJpaProcessor {
                 AssignableResultHandle builderVar = methodCreator.createVariable(QuarkusSecurityIdentity.Builder.class);
                 methodCreator.assign(builderVar, builder);
 
-                ResultHandle role = jpaSecurityDefinition.roles.readValue(methodCreator, userVar);
-                // role: user.getRole()
-                boolean handledRole = false;
-                Type rolesType = jpaSecurityDefinition.roles.type();
-                switch (rolesType.kind()) {
-                    case ARRAY:
-                        // FIXME: support non-JPA-backed array roles?
-                        break;
-                    case CLASS:
-                        if (rolesType.name().equals(DOTNAME_STRING)) {
-                            // addRoles(builder, :role)
-                            methodCreator.invokeVirtualMethod(
-                                    MethodDescriptor.ofMethod(name, "addRoles", void.class,
-                                            QuarkusSecurityIdentity.Builder.class, String.class),
-                                    methodCreator.getThis(),
-                                    builderVar,
-                                    role);
-                            handledRole = true;
-                        }
-                        break;
-                    case PARAMETERIZED_TYPE:
-                        DotName roleType = rolesType.name();
-                        if (roleType.equals(DOTNAME_LIST)
-                                || roleType.equals(DOTNAME_COLLECTION)
-                                || roleType.equals(DOTNAME_SET)) {
-                            Type elementType = rolesType.asParameterizedType().arguments().get(0);
-                            String elementClassName = elementType.name().toString();
-                            String elementClassTypeDescriptor = "L" + elementClassName.replace('.', '/') + ";";
-                            FieldOrMethod rolesFieldOrMethod;
-                            if (!elementType.name().equals(DOTNAME_STRING)) {
-                                ClassInfo roleClass = index.getClassByName(elementType.name());
-                                if (roleClass == null) {
-                                    throw new RuntimeException(
-                                            "The role element type must be indexed by Jandex: " + elementType);
-                                }
-                                AnnotationTarget annotatedRolesValue = getSingleAnnotatedElement(index, DOTNAME_ROLES_VALUE);
-                                rolesFieldOrMethod = JpaSecurityDefinition.getFieldOrMethod(index, roleClass,
-                                        annotatedRolesValue, isPanache(roleClass, panacheClasses));
-                                if (rolesFieldOrMethod == null) {
-                                    throw new RuntimeException(
-                                            "Missing @RoleValue annotation on (non-String) role element type: " + elementType);
-                                }
-                            } else {
-                                rolesFieldOrMethod = null;
-                            }
-                            // for(:elementType roleElement : :role){
-                            //    ret.addRoles(:role.roleField);
-                            //    // or for String collections:
-                            //    ret.addRoles(:role);
-                            // }
-                            foreach(methodCreator, role, elementClassTypeDescriptor, (creator, var) -> {
-                                ResultHandle roleElement;
-                                if (rolesFieldOrMethod != null) {
-                                    roleElement = rolesFieldOrMethod.readValue(creator, var);
-                                } else {
-                                    roleElement = var;
-                                }
-                                creator.invokeVirtualMethod(
-                                        MethodDescriptor.ofMethod(name, "addRoles", void.class,
-                                                QuarkusSecurityIdentity.Builder.class, String.class),
-                                        methodCreator.getThis(),
-                                        builderVar,
-                                        roleElement);
-                            });
-                            handledRole = true;
-                        }
-                        break;
-                }
-                if (!handledRole) {
-                    throw new RuntimeException("Unsupported @Roles field/getter type: " + rolesType);
-                }
-
-                // return builder.build()
-                methodCreator.returnValue(methodCreator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(QuarkusSecurityIdentity.Builder.class,
-                                "build",
-                                QuarkusSecurityIdentity.class),
-                        builderVar));
+                setupRoles(index, jpaSecurityDefinition, panacheClasses, name, methodCreator, userVar, builderVar);
             }
         }
+    }
+
+    private void generateTrustedIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
+            BuildProducer<GeneratedBeanBuildItem> beanProducer, Set<String> panacheClasses) {
+        GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
+
+        String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaTrustedIdentityProviderImpl";
+        try (ClassCreator classCreator = ClassCreator.builder()
+                .className(name)
+                .superClass(JpaTrustedIdentityProvider.class)
+                .classOutput(gizmoAdaptor)
+                .build()) {
+            classCreator.addAnnotation(Singleton.class);
+            try (MethodCreator methodCreator = classCreator.getMethodCreator("authenticate", SecurityIdentity.class,
+                    EntityManager.class, TrustedAuthenticationRequest.class)) {
+                methodCreator.setModifiers(Modifier.PUBLIC);
+
+                ResultHandle username = methodCreator.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(TrustedAuthenticationRequest.class, "getPrincipal", String.class),
+                        methodCreator.getMethodParam(1));
+
+                // two strategies, depending on whether the username is natural id
+                AnnotationInstance naturalIdAnnotation = jpaSecurityDefinition.username.annotation(DOTNAME_NATURAL_ID);
+                ResultHandle user = lookupUserById(jpaSecurityDefinition, name, methodCreator, username, naturalIdAnnotation);
+
+                String declaringClassName = jpaSecurityDefinition.annotatedClass.name().toString();
+                String declaringClassTypeDescriptor = "L" + declaringClassName.replace('.', '/') + ";";
+                AssignableResultHandle userVar = methodCreator.createVariable(declaringClassTypeDescriptor);
+                methodCreator.assign(userVar, methodCreator.checkCast(user, declaringClassName));
+
+                // if(user == null) return null;
+                try (BytecodeCreator trueBranch = methodCreator.ifNull(userVar).trueBranch()) {
+                    trueBranch.returnValue(trueBranch.loadNull());
+                }
+                // Builder builder = trusted(request);
+                ResultHandle builder = methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(name, "trusted",
+                        QuarkusSecurityIdentity.Builder.class,
+                        TrustedAuthenticationRequest.class),
+                        methodCreator.getThis(),
+                        methodCreator.getMethodParam(1));
+                AssignableResultHandle builderVar = methodCreator.createVariable(QuarkusSecurityIdentity.Builder.class);
+                methodCreator.assign(builderVar, builder);
+
+                setupRoles(index, jpaSecurityDefinition, panacheClasses, name, methodCreator, userVar, builderVar);
+            }
+        }
+    }
+
+    private void setupRoles(Index index, JpaSecurityDefinition jpaSecurityDefinition, Set<String> panacheClasses, String name,
+            MethodCreator methodCreator, AssignableResultHandle userVar, AssignableResultHandle builderVar) {
+        ResultHandle role = jpaSecurityDefinition.roles.readValue(methodCreator, userVar);
+        // role: user.getRole()
+        boolean handledRole = false;
+        Type rolesType = jpaSecurityDefinition.roles.type();
+        switch (rolesType.kind()) {
+            case ARRAY:
+                // FIXME: support non-JPA-backed array roles?
+                break;
+            case CLASS:
+                if (rolesType.name().equals(DOTNAME_STRING)) {
+                    // addRoles(builder, :role)
+                    methodCreator.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(name, "addRoles", void.class,
+                                    QuarkusSecurityIdentity.Builder.class, String.class),
+                            methodCreator.getThis(),
+                            builderVar,
+                            role);
+                    handledRole = true;
+                }
+                break;
+            case PARAMETERIZED_TYPE:
+                DotName roleType = rolesType.name();
+                if (roleType.equals(DOTNAME_LIST)
+                        || roleType.equals(DOTNAME_COLLECTION)
+                        || roleType.equals(DOTNAME_SET)) {
+                    Type elementType = rolesType.asParameterizedType().arguments().get(0);
+                    String elementClassName = elementType.name().toString();
+                    String elementClassTypeDescriptor = "L" + elementClassName.replace('.', '/') + ";";
+                    FieldOrMethod rolesFieldOrMethod;
+                    if (!elementType.name().equals(DOTNAME_STRING)) {
+                        ClassInfo roleClass = index.getClassByName(elementType.name());
+                        if (roleClass == null) {
+                            throw new RuntimeException(
+                                    "The role element type must be indexed by Jandex: " + elementType);
+                        }
+                        AnnotationTarget annotatedRolesValue = getSingleAnnotatedElement(index, DOTNAME_ROLES_VALUE);
+                        rolesFieldOrMethod = JpaSecurityDefinition.getFieldOrMethod(index, roleClass,
+                                annotatedRolesValue, isPanache(roleClass, panacheClasses));
+                        if (rolesFieldOrMethod == null) {
+                            throw new RuntimeException(
+                                    "Missing @RoleValue annotation on (non-String) role element type: " + elementType);
+                        }
+                    } else {
+                        rolesFieldOrMethod = null;
+                    }
+                    // for(:elementType roleElement : :role){
+                    //    ret.addRoles(:role.roleField);
+                    //    // or for String collections:
+                    //    ret.addRoles(:role);
+                    // }
+                    foreach(methodCreator, role, elementClassTypeDescriptor, (creator, var) -> {
+                        ResultHandle roleElement;
+                        if (rolesFieldOrMethod != null) {
+                            roleElement = rolesFieldOrMethod.readValue(creator, var);
+                        } else {
+                            roleElement = var;
+                        }
+                        creator.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(name, "addRoles", void.class,
+                                        QuarkusSecurityIdentity.Builder.class, String.class),
+                                methodCreator.getThis(),
+                                builderVar,
+                                roleElement);
+                    });
+                    handledRole = true;
+                }
+                break;
+        }
+        if (!handledRole) {
+            throw new RuntimeException("Unsupported @Roles field/getter type: " + rolesType);
+        }
+
+        // return builder.build()
+        methodCreator.returnValue(methodCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(QuarkusSecurityIdentity.Builder.class,
+                        "build",
+                        QuarkusSecurityIdentity.class),
+                builderVar));
+    }
+
+    private ResultHandle lookupUserById(JpaSecurityDefinition jpaSecurityDefinition, String name, MethodCreator methodCreator,
+            ResultHandle username, AnnotationInstance naturalIdAnnotation) {
+        ResultHandle user;
+        if (naturalIdAnnotation != null) {
+            // Session session = em.unwrap(Session.class);
+            ResultHandle session = methodCreator.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(EntityManager.class, "unwrap", Object.class, Class.class),
+                    methodCreator.getMethodParam(0),
+                    methodCreator.loadClass(Session.class));
+            // SimpleNaturalIdLoadAccess<PlainUserEntity> naturalIdLoadAccess = session.bySimpleNaturalId(PlainUserEntity.class);
+            ResultHandle naturalIdLoadAccess = methodCreator.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(Session.class, "bySimpleNaturalId",
+                            SimpleNaturalIdLoadAccess.class, Class.class),
+                    methodCreator.checkCast(session, Session.class),
+                    methodCreator.loadClass(jpaSecurityDefinition.annotatedClass.name().toString()));
+            // PlainUserEntity user = naturalIdLoadAccess.load(request.getUsername());
+            user = methodCreator.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(SimpleNaturalIdLoadAccess.class, "load",
+                            Object.class, Object.class),
+                    naturalIdLoadAccess, username);
+        } else {
+            // Query query = entityManager.createQuery("FROM Entity WHERE field = :name")
+            String hql = "FROM " + jpaSecurityDefinition.annotatedClass.simpleName() + " WHERE "
+                    + jpaSecurityDefinition.username.name() + " = :name";
+            ResultHandle query = methodCreator.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(EntityManager.class, "createQuery", Query.class, String.class),
+                    methodCreator.getMethodParam(0), methodCreator.load(hql));
+            // query.setParameter("name", request.getUsername())
+            ResultHandle query2 = methodCreator.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(Query.class, "setParameter", Query.class, String.class, Object.class),
+                    query, methodCreator.load("name"), username);
+
+            // UserEntity user = getSingleUser(query2);
+            user = methodCreator.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(name, "getSingleUser", Object.class, Query.class),
+                    methodCreator.getThis(), query2);
+        }
+        return user;
     }
 
     private void foreach(MethodCreator method, ResultHandle iterable, String type,

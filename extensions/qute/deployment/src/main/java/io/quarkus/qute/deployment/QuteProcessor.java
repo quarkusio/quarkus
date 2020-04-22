@@ -908,7 +908,7 @@ public class QuteProcessor {
         String name = info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name;
         for (TemplateExtensionMethodBuildItem extensionMethod : templateExtensionMethods) {
             if (!Types.isAssignableFrom(extensionMethod.getMatchClass().name(), matchClass.name(), index)) {
-                // If "Bar extends Foo" then Bar should be matched for extension method "int get(Foo)"   
+                // If "Bar extends Foo" then Bar should be matched for the extension method "int get(Foo)"   
                 continue;
             }
             if (!extensionMethod.matchesName(name)) {
@@ -918,32 +918,55 @@ public class QuteProcessor {
             if (info.isVirtualMethod()) {
                 // For virtual method validate the number of params and attempt to validate the parameter types if available
                 VirtualMethodPart virtualMethod = info.part.asVirtualMethod();
-                if (virtualMethod.getParameters().size() != (extensionMethod.getMethod().parameters().size() - 1)) {
-                    // Check number of parameters; the first param of an extension method must be ignored
-                    continue;
+                boolean isVarArgs = ValueResolverGenerator.isVarArgs(extensionMethod.getMethod());
+                List<Type> parameters = extensionMethod.getMethod().parameters();
+                int lastParamIdx = parameters.size() - 1;
+                int realParamSize = parameters.size() - (TemplateExtension.ANY.equals(extensionMethod.getMatchName()) ? 2 : 1);
+
+                if (isVarArgs) {
+                    // For varargs methods match the minimal number of params
+                    if ((realParamSize - 1) > virtualMethod.getParameters().size()) {
+                        continue;
+                    }
+                } else {
+                    if (virtualMethod.getParameters().size() != realParamSize) {
+                        // Check number of parameters; some of params of the extension method must be ignored
+                        continue;
+                    }
                 }
+
                 // Check parameter types if available
                 boolean matches = true;
-                byte idx = 0;
+                // Skip base and name param if needed
+                int idx = TemplateExtension.ANY.equals(extensionMethod.getMatchName()) ? 2 : 1;
+
                 for (Expression param : virtualMethod.getParameters()) {
-                    idx++;
+
                     Match result = results.get(param.toOriginalString());
                     if (result != null && !result.isEmpty()) {
                         // Type info available - validate parameter type
+                        Type paramType;
+                        if (isVarArgs && (idx >= lastParamIdx)) {
+                            // Replace the type for varargs methods
+                            paramType = parameters.get(lastParamIdx).asArrayType().component();
+                        } else {
+                            paramType = parameters.get(idx);
+                        }
                         if (!Types.isAssignableFrom(result.type,
-                                extensionMethod.getMethod().parameters().get(idx), index)) {
+                                paramType, index)) {
                             matches = false;
                             break;
                         }
                     } else {
                         LOGGER.debugf(
                                 "Type info not available - skip validation for parameter [%s] of extension method [%s] for expression [%s] in template [%s] on line %s",
-                                extensionMethod.getMethod().parameterName(idx + 1),
+                                extensionMethod.getMethod().parameterName(idx),
                                 extensionMethod.getMethod().declaringClass().name() + "#" + extensionMethod.getMethod(),
                                 expression.toOriginalString(),
                                 templateIdToPathFun.apply(expression.getOrigin().getTemplateId()),
                                 expression.getOrigin().getLine());
                     }
+                    idx++;
                 }
                 if (!matches) {
                     continue;
@@ -1006,18 +1029,41 @@ public class QuteProcessor {
         while (clazz != null) {
             for (MethodInfo method : clazz.methods()) {
                 if (Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags())
-                        && !ValueResolverGenerator.isSynthetic(method.flags()) && method.name().equals(virtualMethod.getName())
-                        && virtualMethod.getParameters().size() == method.parameters().size()) {
+                        && !ValueResolverGenerator.isSynthetic(method.flags())
+                        && method.name().equals(virtualMethod.getName())) {
+                    boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
+                    List<Type> parameters = method.parameters();
+                    int lastParamIdx = parameters.size() - 1;
+
+                    if (isVarArgs) {
+                        // For varargs methods match the minimal number of params
+                        if (lastParamIdx > virtualMethod.getParameters().size()) {
+                            continue;
+                        }
+                    } else {
+                        if (virtualMethod.getParameters().size() != parameters.size()) {
+                            // Number of params must be equal
+                            continue;
+                        }
+                    }
+
                     // Check parameter types if available
                     boolean matches = true;
                     byte idx = 0;
+
                     for (Expression param : virtualMethod.getParameters()) {
-                        idx++;
                         Match result = results.get(param.toOriginalString());
                         if (result != null && !result.isEmpty()) {
                             // Type info available - validate parameter type
+                            Type paramType;
+                            if (isVarArgs && idx >= lastParamIdx) {
+                                // Replace the type for varargs methods
+                                paramType = parameters.get(lastParamIdx).asArrayType().component();
+                            } else {
+                                paramType = parameters.get(idx);
+                            }
                             if (!Types.isAssignableFrom(result.type,
-                                    method.parameters().get(idx - 1), index)) {
+                                    paramType, index)) {
                                 matches = false;
                                 break;
                             }
@@ -1030,6 +1076,7 @@ public class QuteProcessor {
                                     templateIdToPathFun.apply(expression.getOrigin().getTemplateId()),
                                     expression.getOrigin().getLine());
                         }
+                        idx++;
                     }
                     return matches ? method : null;
                 }

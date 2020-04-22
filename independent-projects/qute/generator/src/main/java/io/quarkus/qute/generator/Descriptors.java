@@ -3,10 +3,11 @@ package io.quarkus.qute.generator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.qute.EvalContext;
+import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.Expression;
-import io.quarkus.qute.Futures;
-import io.quarkus.qute.Futures.EvaluatedParams;
+import io.quarkus.qute.Integers;
 import io.quarkus.qute.Results;
+import io.quarkus.qute.Results.Result;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -52,15 +53,24 @@ class Descriptors {
             CompletionStage.class, BiConsumer.class);
     static final MethodDescriptor BOOLEAN_LOGICAL_OR = MethodDescriptor.ofMethod(Boolean.class, "logicalOr",
             boolean.class, boolean.class, boolean.class);
-    static final MethodDescriptor FUTURES_EVALUATE_PARAMS = MethodDescriptor.ofMethod(Futures.class, "evaluateParams",
+    static final MethodDescriptor EVALUATED_PARAMS_EVALUATE = MethodDescriptor.ofMethod(EvaluatedParams.class, "evaluate",
             EvaluatedParams.class,
             EvalContext.class);
     static final MethodDescriptor EVALUATED_PARAMS_GET_RESULT = MethodDescriptor.ofMethod(EvaluatedParams.class, "getResult",
             Object.class,
             int.class);
+    static final MethodDescriptor EVALUATED_PARAMS_PARAM_TYPES_MATCH = MethodDescriptor.ofMethod(EvaluatedParams.class,
+            "parameterTypesMatch", boolean.class, boolean.class, Class[].class);
+    static final MethodDescriptor EVALUATED_PARAMS_GET_VARARGS_RESULTS = MethodDescriptor.ofMethod(EvaluatedParams.class,
+            "getVarargsResults", Object.class, int.class,
+            Class.class);
+    static final MethodDescriptor INTEGERS_IS_GT = MethodDescriptor.ofMethod(Integers.class,
+            "isGt", boolean.class, int.class, int.class);
 
-    static final FieldDescriptor RESULT_NOT_FOUND = FieldDescriptor.of(Results.class, "NOT_FOUND",
+    static final FieldDescriptor RESULTS_NOT_FOUND = FieldDescriptor.of(Results.class, "NOT_FOUND",
             CompletionStage.class);
+    static final FieldDescriptor RESULT_NOT_FOUND = FieldDescriptor.of(Result.class, "NOT_FOUND",
+            Result.class);
     static final FieldDescriptor EVALUATED_PARAMS_STAGE = FieldDescriptor.of(EvaluatedParams.class, "stage",
             CompletionStage.class);
 

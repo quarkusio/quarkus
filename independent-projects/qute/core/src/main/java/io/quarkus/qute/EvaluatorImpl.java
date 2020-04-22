@@ -30,7 +30,7 @@ class EvaluatorImpl implements Evaluator {
             NamespaceResolver resolver = findNamespaceResolver(expression.getNamespace(), resolutionContext);
             if (resolver == null) {
                 LOGGER.errorf("No namespace resolver found for: %s", expression.getNamespace());
-                return Futures.failure(new IllegalStateException("No resolver for namespace: " + expression.getNamespace()));
+                return Futures.failure(new TemplateException("No resolver for namespace: " + expression.getNamespace()));
             }
             EvalContext context = new EvalContextImpl(false, null, parts.next(), resolutionContext);
             LOGGER.debugf("Found '%s' namespace resolver: %s", expression.getNamespace(), resolver.getClass());

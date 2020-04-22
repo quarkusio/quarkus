@@ -31,8 +31,13 @@ public class ValidationSuccessTest {
                             + "{movie.findService('foo')} "
                             // Name and number of params ok; name type ignored, age ok
                             + "{movie.findServices(name,age)} "
+                            // Varargs method
+                            + "{movie.findNames(age,'foo',surname)} "
                             // Name, number of params and type ok for extension method
                             + "{movie.toNumber(surname)} "
+                            // Varargs extension method
+                            + "{movie.toLong(1l,2l)} "
+                            // Field access
                             + "{#each movie.mainCharacters}{it.substring(1)}{/}"),
                             "templates/movie.html"));
 
@@ -42,7 +47,7 @@ public class ValidationSuccessTest {
     @Test
     public void testResult() {
         // Validation succeeded! Yay!
-        assertEquals("Jason Jason Mono 10 11 43 ohn",
+        assertEquals("Jason Jason Mono 10 11 ok 43 3 ohn",
                 movie.data("movie", new Movie("John")).data("name", "Vasik").data("surname", "Hu").data("age", 10l).render());
     }
 

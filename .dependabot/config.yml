@@ -127,6 +127,13 @@ update_configs:
           dependency_name: "org.jboss.narayana.jts:narayana-jts-integration"
       - match:
           dependency_name: "org.jboss.narayana.stm:stm"
+      # Agroal
+      - match:
+          dependency-name: "io.agroal:agroal-api"
+      - match:
+          dependency-name: "io.agroal:agroal-pool"
+      - match:
+          dependency-name: "io.agroal:agroal-narayana"
       #Jandex
       - match:
           dependency_name: "org.jboss:jandex"

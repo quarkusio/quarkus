@@ -1,11 +1,12 @@
 package io.quarkus.it.spring.data.jpa;
 
-import java.util.List;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 @Path("/song")
@@ -20,8 +21,18 @@ public class SongResource {
     @GET
     @Produces("application/json")
     @Path("/all")
-    public List<Song> all() {
+    public String all() {
         Pageable wholePage = Pageable.unpaged();
-        return songRepository.findAll();
+        Page<Song> page = songRepository.findAll(wholePage);
+        return page.hasPrevious() + " - " + page.hasNext() + " / " + page.getNumberOfElements();
+    }
+
+    @GET
+    @Produces("application/json")
+    @Path("/page/{num}/{size}")
+    public String songs(@PathParam("num") int pageNum, @PathParam("size") int pageSize) {
+        PageRequest pageRequest = PageRequest.of(pageNum, pageSize);
+        Page<Song> page = songRepository.findAll(pageRequest);
+        return page.hasPrevious() + " - " + page.hasNext() + " / " + page.getNumberOfElements();
     }
 }

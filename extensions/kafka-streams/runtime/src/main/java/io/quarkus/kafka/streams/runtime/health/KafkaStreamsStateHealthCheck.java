@@ -23,7 +23,7 @@ public class KafkaStreamsStateHealthCheck implements HealthCheck {
         HealthCheckResponseBuilder responseBuilder = HealthCheckResponse.named("Kafka Streams state health check");
         try {
             KafkaStreams.State state = manager.getStreams().state();
-            responseBuilder.state(state.isRunning())
+            responseBuilder.state(state == KafkaStreams.State.RUNNING)
                     .withData("state", state.name());
         } catch (Exception e) {
             responseBuilder.down().withData("technical_error", e.getMessage());

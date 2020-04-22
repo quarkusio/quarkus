@@ -3,9 +3,8 @@ package io.quarkus.resteasy.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.resteasy.deployment.SecurityTransformerUtils.hasSecurityAnnotation;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.ClassInfo;
@@ -48,7 +47,7 @@ public class ResteasyBuiltinsProcessor {
             ResteasyDeploymentBuildItem resteasyDeployment,
             BuildProducer<AdditionalSecuredClassesBuildIem> additionalSecuredClasses) {
         if (config.denyJaxRs) {
-            Set<ClassInfo> classes = new HashSet<>();
+            final List<ClassInfo> classes = new ArrayList<>();
 
             List<String> resourceClasses = resteasyDeployment.getDeployment().getScannedResourceClasses();
             for (String className : resourceClasses) {

@@ -1,14 +1,10 @@
 package io.quarkus.it.kubernetes;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -21,42 +17,27 @@ import io.fabric8.kubernetes.api.model.Probe;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
-import io.quarkus.test.LogFile;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithHealthTest {
+public class KubernetesWithHealthAndJibTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
-            .setApplicationName("health")
+            .setApplicationName("health-and-jib")
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
-            .withConfigurationResource("kubernetes-with-health.properties")
+            .withConfigurationResource("kubernetes-with-health-and-jib.properties")
             .setForcedDependencies(
-                    Collections.singletonList(
-                            new AppArtifact("io.quarkus", "quarkus-smallrye-health", Version.getVersion())));
+                    Arrays.asList(
+                            new AppArtifact("io.quarkus", "quarkus-smallrye-health", Version.getVersion()),
+                            new AppArtifact("io.quarkus", "quarkus-container-image-jib", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
-
-    @LogFile
-    private Path logfile;
-
-    @Test
-    public void assertApplicationRuns() {
-        assertThat(logfile).isRegularFile().hasFileName("k8s.log");
-        TestUtil.assertLogFileContents(logfile, "kubernetes", "health");
-
-        given()
-                .when().get("/greeting")
-                .then()
-                .statusCode(200)
-                .body(is("hello"));
-    }
 
     @Test
     public void assertGeneratedResources() throws IOException {
@@ -68,7 +49,7 @@ public class KubernetesWithHealthTest {
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("health");
+                assertThat(m.getName()).isEqualTo("with-health-and-jib");
             });
 
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
@@ -76,18 +57,10 @@ public class KubernetesWithHealthTest {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
                             assertThat(container.getReadinessProbe()).isNotNull().satisfies(p -> {
-                                assertThat(p.getInitialDelaySeconds()).isEqualTo(0);
                                 assertProbePath(p, "/health/ready");
-
-                                assertNotNull(p.getHttpGet());
-                                assertEquals(p.getHttpGet().getPort().getIntVal(), 9090);
                             });
                             assertThat(container.getLivenessProbe()).isNotNull().satisfies(p -> {
-                                assertThat(p.getInitialDelaySeconds()).isEqualTo(20);
                                 assertProbePath(p, "/health/live");
-
-                                assertNotNull(p.getHttpGet());
-                                assertEquals(p.getHttpGet().getPort().getIntVal(), 9090);
                             });
                         });
                     });

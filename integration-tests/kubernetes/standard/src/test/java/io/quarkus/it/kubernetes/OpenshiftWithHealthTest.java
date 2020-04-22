@@ -71,13 +71,13 @@ public class OpenshiftWithHealthTest {
             assertThat(h).extracting("spec").extracting("template").extracting("spec").isInstanceOfSatisfying(PodSpec.class,
                     podSpec -> {
                         assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
-                            assertThat(container.getReadinessProbe()).satisfies(p -> {
+                            assertThat(container.getReadinessProbe()).isNotNull().satisfies(p -> {
                                 assertThat(p.getPeriodSeconds()).isEqualTo(10);
                                 assertThat(p.getHttpGet()).satisfies(h1 -> {
                                     assertThat(h1.getPath()).isEqualTo("/health/ready");
                                 });
                             });
-                            assertThat(container.getLivenessProbe()).satisfies(p -> {
+                            assertThat(container.getLivenessProbe()).isNotNull().satisfies(p -> {
                                 assertThat(p.getPeriodSeconds()).isEqualTo(30);
                                 assertThat(p.getHttpGet()).isNull();
                                 assertThat(p.getExec()).satisfies(e -> {

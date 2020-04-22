@@ -12,18 +12,24 @@ include::./attributes.adoc[]
 :client-token: s.s93BVzJPzBiIGuYJHBTkG8Uw
 :extension-status: preview
 :vault-auth-guide: link:vault-auth[Vault Authentication guide]
+:vault-transit-guide: link:vault-transit[Vault Transit Secret Engine Guide]
+:vault-datasource-guide: link:vault-datasource[Vault Datasource Guide]
 
 https://www.vaultproject.io/[HashiCorp Vault] is a multi-purpose tool aiming at protecting sensitive data, such as
-credentials, certificates, access tokens, encryption keys, ... In the context of Quarkus,
-it is being used for 3 primary use cases:
+credentials, certificates, access tokens, encryption keys, ... In the context of Quarkus, several use cases
+are supported:
 
 * mounting a map of properties stored into the
 https://www.vaultproject.io/docs/secrets/kv/index.html[Vault kv secret engine] as an Eclipse MicroProfile config source
-* fetch credentials from Vault when configuring an Agroal datasource
-* access the Vault _kv secret engine_ programmatically
+* fetching credentials from Vault when configuring an Agroal datasource, as documented in the {vault-datasource-guide}
+* accessing Vault _kv secret engine_ programmatically
+* support for the https://www.vaultproject.io/docs/secrets/totp[TOTP Secret Engine]
+* support for the https://www.vaultproject.io/docs/secrets/transit[Transit Secret Engine] as documented
+in the {vault-transit-guide}
+* support for several authentication methods as documented in the {vault-auth-guide}
 
 Under the hood, the Quarkus Vault extension takes care of authentication when negotiating a client Vault token plus
-any transparent token or lease renewals according to ttl and max-ttl.
+any transparent token or lease renewals according to _ttl_ and _max-ttl._
 
 include::./status-include.adoc[]
 
@@ -99,7 +105,7 @@ in the following step)
 
 [NOTE]
 ====
-By default quarkus assumes that a _kv secret engine_ in version *2* mounted at path `secret/` will be used.
+By default Quarkus assumes that a _kv secret engine_ in version *2* mounted at path `secret/` will be used.
 If that is not the case, please use properties `quarkus.vault.kv-secret-engine-version`
 and `quarkus.vault.kv-secret-engine-mount-path` accordingly.
 ====
@@ -226,7 +232,7 @@ Key              Value
 a-private-key    123456
 ----
 
-== Create a quarkus application with a secret configuration
+== Create a Quarkus application with a secret configuration
 
 [source, shell, subs=attributes+]
 ----
@@ -235,7 +241,7 @@ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectArtifactId=vault-quickstart \
     -DclassName="org.acme.quickstart.GreetingResource" \
     -Dpath="/hello" \
-    -Dextensions="vault,hibernate-orm,jdbc-postgresql"
+    -Dextensions="vault"
 cd vault-quickstart
 ----
 
@@ -299,160 +305,11 @@ You should see:
 123456
 ----
 
-[[datasource]]
-== Fetching credentials from Vault for a datasource
-
-Start a PostgreSQL database:
-
-[source, shell]
-----
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgres-quarkus-hibernate -e POSTGRES_USER=sarah -e POSTGRES_PASSWORD=connor -e POSTGRES_DB=mydatabase -p 5432:5432 postgres:10.5
-----
-
-Create a simple service:
-
-[source, java]
-----
-@ApplicationScoped
-public class SantaClausService {
-
-    @Inject
-    EntityManager em;
-
-    @Transactional
-    public List<Gift> getGifts() {
-        return (List<Gift>) em.createQuery("select g from Gift g").getResultList();
-    }
-}
-----
-
-With its `Gift` entity:
-
-[source, java]
-----
-@Entity
-public class Gift {
-
-    private Long id;
-    private String name;
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="giftSeq")
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-}
-----
-
-Finally, add a new endpoint in `GreetingResource`:
-
-[source, java]
-----
-@Inject
-SantaClausService santaClausService;
-
-@GET
-@Path("/gift-count")
-@Produces(MediaType.TEXT_PLAIN)
-public int geGiftCount() {
-    return santaClausService.getGifts().size();
-}
-----
-
-Create a new path in Vault where the database password will be added:
-
-[source, shell, subs=attributes+]
-----
-# set the root token again
-export VAULT_TOKEN={root-token}
-vault kv put secret/myapps/vault-quickstart/db password=connor
-----
-
-Since we allowed read access on `secret/myapps/vault-quickstart/` subpaths in the policy, there is nothing else
-we have to do to allow the application to read it.
-
-When fetching credentials from Vault that are intended to be used by the Agroal connection pool, we need
-first to create a named Vault credentials provider in the {config-file}:
-
-[source, properties]
-----
-quarkus.vault.credentials-provider.mydatabase.kv-path=myapps/vault-quickstart/db
-----
-
-This defines a credentials provider `mydatabase` that will fetch the password from key `password`
-at path `myapps/vault-quickstart/db`.
-
-The credentials provider can now be used in the datasource configuration, in place of the `password`
-property:
-
-[source, properties]
-----
-# configure your datasource
-quarkus.datasource.db-kind = postgresql
-quarkus.datasource.username = sarah
-quarkus.datasource.credentials-provider = mydatabase
-quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/mydatabase
-
-# drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.database.generation=drop-and-create
-----
-
-[NOTE]
-====
-Another way to specify the datasource password is with property indirection. Assuming that vault path
-`myapps/vault-quickstart/config` contains key `my-db-password`, all is required on the datasource configuration is:
-
-[source, properties]
-----
-quarkus.datasource.username = sarah
-quarkus.datasource.password = ${my-db-password}
-----
-
-The only drawback is that the password will never be fetched again from Vault after the initial property loading.
-This means that if the db password was changed while running, the application would have to be restarted after
-vault has been updated with the new password.
-This contrasts with the credentials provider approach, which fetches the password from Vault every time a connection
-creation is attempted.
-====
-
-Restart the application after rebuilding it, and test it with the new endpoint:
-
-[source, shell]
-----
-curl http://localhost:8080/hello/gift-count
-----
-
-You should see:
-
-[source, shell]
-----
-0
-----
-
-[NOTE]
-====
-The Vault extension also supports using https://www.vaultproject.io/docs/secrets/databases/index.html[dynamic database credentials]
-through the `database-credentials-role` property on the `credentials-provider`. The Vault setup is more
-involved and goes beyond the scope of that quickstart guide.
-====
-
 == Programmatic access to the KV secret engine
 
 Sometimes secrets are retrieved from an arbitrary path that is known only at runtime through an application
 specific property, or a method argument for instance.
-In that case it is possible to inject a Quarkus VaultKVSecretEngine, and retrieve secrets programmatically.
+In that case it is possible to inject a Quarkus `VaultKVSecretEngine`, and retrieve secrets programmatically.
 
 For instance, in `GreetingResource`, add:
 
@@ -471,17 +328,23 @@ public String getSecrets(@PathParam("vault-path") String vaultPath) {
 }
 ----
 
+Add a new key in Vault:
+[source, shell]
+----
+vault kv put secret/myapps/vault-quickstart/private mysecret=abc
+----
+
 Restart the application after rebuilding it, and test it with the new endpoint:
 
 [source, shell]
 ----
-curl http://localhost:8080/hello/secrets/db
+curl http://localhost:8080/hello/secrets/private
 ----
 
 You should see:
 [source, shell]
 ----
-{password=connor}
+{mysecret=abc}
 ----
 
 [[totp]]

@@ -129,7 +129,7 @@
         <mutiny.version>0.4.4</mutiny.version>
         <axle-client.version>0.0.13</axle-client.version>
         <mutiny-client.version>0.0.13</mutiny-client.version>
-        <kafka2.version>2.4.1</kafka2.version>
+        <kafka2.version>2.5.0</kafka2.version>
         <debezium.version>1.1.1.Final</debezium.version>
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->

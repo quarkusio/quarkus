@@ -72,7 +72,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                     return;
                                 }
                                 System.out.println("Quarkus application exited with code " + integer);
-                                System.out.println("Press Enter to restart");
+                                System.out.println("Press Enter to restart or Ctrl + C to quit");
                                 try {
                                     while (System.in.read() != '\n') {
                                     }

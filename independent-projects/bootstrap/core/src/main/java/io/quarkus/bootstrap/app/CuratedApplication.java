@@ -176,9 +176,7 @@ public class CuratedApplication implements Serializable, Closeable {
                 processCpElement(i.getArtifact(), element -> addCpElement(builder, i.getArtifact(), element));
             }
 
-            appModel.getAppArtifact().getPaths().forEach(p -> {
-                builder.addElement(ClassPathElement.fromPath(p));
-            });
+            processCpElement(appModel.getAppArtifact(), element -> addCpElement(builder, appModel.getAppArtifact(), element));
 
             for (Path i : quarkusBootstrap.getAdditionalDeploymentArchives()) {
                 builder.addElement(ClassPathElement.fromPath(i));

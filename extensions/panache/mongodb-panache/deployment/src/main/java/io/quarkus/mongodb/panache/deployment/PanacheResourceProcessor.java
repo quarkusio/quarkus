@@ -139,7 +139,7 @@ public class PanacheResourceProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
             BuildProducer<PanacheEntityClassesBuildItem> entityClasses,
-            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) throws BuildException {
+            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {
 
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
                 .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
@@ -224,7 +224,7 @@ public class PanacheResourceProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
-            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) throws BuildException {
+            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {
 
         List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
                 .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());

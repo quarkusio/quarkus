@@ -327,7 +327,7 @@ public class JandexUtil {
             case TYPE:
                 return annotationInstance.target().asType().asClass(); // TODO is it legal here or should I throw ?
             default:
-                throw new RuntimeException(); // this should not occurs
+                throw new RuntimeException(); // this should not occur
         }
     }
 
@@ -343,7 +343,7 @@ public class JandexUtil {
         Type superType = info.superClassType();
         ClassInfo superClass = index.getClassByName(superType.name());
         if (superClass == null) {
-            // this can happens if the parent is not inside the Yandex index
+            // this can happens if the parent is not inside the Jandex index
             throw new BuildException("The class " + superType.name() + " is not inside the Jandex index",
                     Collections.emptyList());
         }

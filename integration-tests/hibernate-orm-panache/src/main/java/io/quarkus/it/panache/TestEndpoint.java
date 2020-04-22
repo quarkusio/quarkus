@@ -1082,6 +1082,34 @@ public class TestEndpoint {
     }
 
     @GET
+    @Path("projection")
+    @Transactional
+    public String testProjection() {
+        Assertions.assertEquals(1, Person.count());
+
+        PersonName person = Person.findAll().project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name", "2").project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name = ?1", "2").project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name = :name", Parameters.with("name", "2")).project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        PanacheQuery<PersonName> query = Person.findAll().project(PersonName.class).page(0, 2);
+        Assertions.assertEquals(1, query.list().size());
+        query.nextPage();
+        Assertions.assertEquals(0, query.list().size());
+
+        Assertions.assertEquals(1, Person.findAll().project(PersonName.class).count());
+
+        return "OK";
+    }
+
+    @GET
     @Path("model3")
     @Transactional
     public String testModel3() {

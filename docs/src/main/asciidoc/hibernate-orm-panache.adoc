@@ -577,6 +577,46 @@ Person.find("name = :name and status = :status",
 
 Every query operation accepts passing parameters by index (`Object...`), or by name (`Map<String,Object>` or `Parameters`).
 
+=== Query projection
+
+Query projection can be done with the `project(Class)` method on the `PanacheQuery` object that is returned by the `find()` methods.
+
+You can use it to restrict which fields will be returned by the database.
+
+Hibernate will use **DTO projection** and generate a SELECT clause with the attributes from the projection class.
+This is also called **dynamic instantiation** or **constructor expression**, more info can be found on the Hibernate guide:
+link:https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html#hql-select-clause[hql select clause]
+
+The projection class needs to be a valid Java Bean and have a constructor that contains all its attributes, this constructor will be used to
+instantiate the projection DTO instead of using the entity class. This must be the only constructor of the class.
+
+[source,java]
+----
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection // <1>
+public class PersonName {
+    public final String name; // <2>
+
+    public PersonName(String name){ // <3>
+        this.name = name;
+    }
+}
+
+// only 'name' will be loaded from the database
+PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
+----
+
+1. If you plan to deploy your application as a native executable, you must register manually the projection class for reflection.
+2. We use public fields here, but you can use private fields and getters/setters if you prefer.
+3. This constructor will be used by Hibernate, it must be the only constructor in your class and have all the class attributes as parameters.
+
+[WARNING]
+====
+The implementation of the `project(Class)` method uses the constructor's parameter names to build the select clause of the query,
+so the compiler must be configured to store parameter names inside the compiled class.
+This is enabled by default if you are using the Quarkus Maven archetype. If you are not using it, add the property `<maven.compiler.parameters>true</maven.compiler.parameters>` to your pom.xml.
+====
 
 == Transactions
 

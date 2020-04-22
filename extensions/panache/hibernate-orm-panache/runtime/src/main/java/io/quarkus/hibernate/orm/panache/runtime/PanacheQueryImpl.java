@@ -1,5 +1,8 @@
 package io.quarkus.hibernate.orm.panache.runtime;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Parameter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,9 +27,10 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     private static final Pattern SELECT_PATTERN = Pattern.compile("^\\s*SELECT\\s+((?:DISTINCT\\s+)?[^\\s]+)\\s+([^\\s]+.*)$",
             Pattern.CASE_INSENSITIVE);
 
-    private Query jpaQuery;
     private Object paramsArrayOrMap;
     private String query;
+    private String countQuery;
+    private String orderBy;
     private EntityManager em;
 
     private Page page;
@@ -34,14 +38,62 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     private Range range;
 
-    PanacheQueryImpl(EntityManager em, javax.persistence.Query jpaQuery, String query, Object paramsArrayOrMap) {
+    private LockModeType lockModeType;
+    private Map<String, Object> hints = new HashMap<>();
+
+    PanacheQueryImpl(EntityManager em, String query, String orderBy, Object paramsArrayOrMap) {
         this.em = em;
-        this.jpaQuery = jpaQuery;
         this.query = query;
+        this.orderBy = orderBy;
         this.paramsArrayOrMap = paramsArrayOrMap;
     }
 
+    private PanacheQueryImpl(PanacheQueryImpl previousQuery, String newQueryString, String countQuery) {
+        this.em = previousQuery.em;
+        this.query = newQueryString;
+        this.countQuery = countQuery;
+        this.orderBy = previousQuery.orderBy;
+        this.paramsArrayOrMap = previousQuery.paramsArrayOrMap;
+        this.page = previousQuery.page;
+        this.count = previousQuery.count;
+        this.range = previousQuery.range;
+        this.lockModeType = previousQuery.lockModeType;
+        this.hints = previousQuery.hints;
+    }
+
     // Builder
+
+    @Override
+    public <T> PanacheQuery<T> project(Class<T> type) {
+        if (JpaOperations.isNamedQuery(query)) {
+            throw new PanacheQueryException("Unable to perform a projection on a named query");
+        }
+
+        // We use the first constructor that we found and use the parameter names,
+        // so the projection class must have only one constructor,
+        // and the application must be built with parameter names.
+        // Maybe this should be improved some days ...
+        Constructor<?> constructor = type.getDeclaredConstructors()[0];
+
+        // build select clause with a constructor expression
+        StringBuilder select = new StringBuilder("SELECT new ").append(type.getName()).append(" (");
+        int selectInitialLength = select.length();
+        for (Parameter parameter : constructor.getParameters()) {
+            if (!parameter.isNamePresent()) {
+                throw new PanacheQueryException(
+                        "Your application must be built with parameter names, this should be the default if" +
+                                " using Quarkus artifacts. Check the maven or gradle compiler configuration to include '-parameters'.");
+            }
+
+            if (select.length() > selectInitialLength) {
+                select.append(", ");
+            }
+            select.append(parameter.getName());
+        }
+        select.append(") ");
+
+        return new PanacheQueryImpl(this, select.toString() + query, "select count(*) " + query);
+    }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -128,13 +180,13 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     @Override
     public <T extends Entity> PanacheQuery<T> withLock(LockModeType lockModeType) {
-        jpaQuery.setLockMode(lockModeType);
+        this.lockModeType = lockModeType;
         return (PanacheQuery<T>) this;
     }
 
     @Override
     public <T extends Entity> PanacheQuery<T> withHint(String hintName, Object value) {
-        jpaQuery.setHint(hintName, value);
+        hints.put(hintName, value);
         return (PanacheQuery<T>) this;
     }
 
@@ -148,11 +200,6 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         }
 
         if (count == null) {
-            // FIXME: this is crude but good enough for a first version
-            String lcQuery = query.toLowerCase();
-            int orderByIndex = lcQuery.lastIndexOf(" order by ");
-            if (orderByIndex != -1)
-                query = query.substring(0, orderByIndex);
             Query countQuery = em.createQuery(countQuery());
             if (paramsArrayOrMap instanceof Map)
                 JpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
@@ -164,30 +211,45 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     }
 
     protected String countQuery() {
-        Matcher selectMatcher = SELECT_PATTERN.matcher(query);
-        if (selectMatcher.matches()) {
-            return "SELECT COUNT(" + selectMatcher.group(1) + ") " + selectMatcher.group(2);
+        if (countQuery != null) {
+            return countQuery;
         }
-        return "SELECT COUNT(*) " + query;
+
+        // try to generate a good count query from the existing query
+        Matcher selectMatcher = SELECT_PATTERN.matcher(query);
+        String countQuery;
+        if (selectMatcher.matches()) {
+            countQuery = "SELECT COUNT(" + selectMatcher.group(1) + ") " + selectMatcher.group(2);
+        } else {
+            countQuery = "SELECT COUNT(*) " + query;
+        }
+
+        // remove the order by clause
+        String lcQuery = countQuery.toLowerCase();
+        int orderByIndex = lcQuery.lastIndexOf(" order by ");
+        if (orderByIndex != -1) {
+            countQuery = countQuery.substring(0, orderByIndex);
+        }
+        return countQuery;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Entity> List<T> list() {
-        manageOffsets();
+        Query jpaQuery = createQuery();
         return jpaQuery.getResultList();
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Entity> Stream<T> stream() {
-        manageOffsets();
+        Query jpaQuery = createQuery();
         return jpaQuery.getResultStream();
     }
 
     @Override
     public <T extends Entity> T firstResult() {
-        manageOffsets(1);
+        Query jpaQuery = createQuery(1);
         List<T> list = jpaQuery.getResultList();
         return list.isEmpty() ? null : list.get(0);
     }
@@ -200,14 +262,14 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Entity> T singleResult() {
-        manageOffsets();
+        Query jpaQuery = createQuery();
         return (T) jpaQuery.getSingleResult();
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Entity> Optional<T> singleResultOptional() {
-        manageOffsets(2);
+        Query jpaQuery = createQuery(2);
         List<T> list = jpaQuery.getResultList();
         if (list.size() > 1) {
             throw new NonUniqueResultException();
@@ -216,7 +278,9 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 
-    private void manageOffsets() {
+    private Query createQuery() {
+        Query jpaQuery = createBaseQuery();
+
         if (range != null) {
             jpaQuery.setFirstResult(range.getStartIndex());
             // range is 0 based, so we add 1
@@ -230,9 +294,13 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
             options.setFirstRow(null);
             options.setMaxRows(null);
         }
+
+        return jpaQuery;
     }
 
-    private void manageOffsets(int maxResults) {
+    private Query createQuery(int maxResults) {
+        Query jpaQuery = createBaseQuery();
+
         if (range != null) {
             jpaQuery.setFirstResult(range.getStartIndex());
         } else if (page != null) {
@@ -243,5 +311,33 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
             options.setFirstRow(null);
         }
         jpaQuery.setMaxResults(maxResults);
+
+        return jpaQuery;
     }
+
+    private Query createBaseQuery() {
+        Query jpaQuery;
+        if (JpaOperations.isNamedQuery(query)) {
+            String namedQuery = query.substring(1);
+            jpaQuery = em.createNamedQuery(namedQuery);
+        } else {
+            jpaQuery = em.createQuery(orderBy != null ? query + orderBy : query);
+        }
+
+        if (paramsArrayOrMap instanceof Map) {
+            JpaOperations.bindParameters(jpaQuery, (Map<String, Object>) paramsArrayOrMap);
+        } else {
+            JpaOperations.bindParameters(jpaQuery, (Object[]) paramsArrayOrMap);
+        }
+
+        if (this.lockModeType != null) {
+            jpaQuery.setLockMode(lockModeType);
+        }
+
+        for (Map.Entry<String, Object> hint : hints.entrySet()) {
+            jpaQuery.setHint(hint.getKey(), hint.getValue());
+        }
+        return jpaQuery;
+    }
+
 }

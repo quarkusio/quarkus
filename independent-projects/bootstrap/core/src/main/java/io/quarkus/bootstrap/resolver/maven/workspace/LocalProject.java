@@ -8,7 +8,6 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -262,31 +261,26 @@ public class LocalProject {
     }
 
     public Path getClassesDir() {
-        return getOutputDir().resolve("classes");
+        final String classesDir = rawModel.getBuild() == null ? null : rawModel.getBuild().getOutputDirectory();
+        return resolveRelativeToBaseDir(classesDir, "target/classes");
     }
 
     public Path getTestClassesDir() {
-        return getOutputDir().resolve("test-classes");
+        final String classesDir = rawModel.getBuild() == null ? null : rawModel.getBuild().getTestOutputDirectory();
+        return resolveRelativeToBaseDir(classesDir, "target/test-classes");
     }
 
     public Path getSourcesSourcesDir() {
-        if (getRawModel().getBuild() != null && getRawModel().getBuild().getSourceDirectory() != null) {
-            String originalValue = getRawModel().getBuild().getSourceDirectory();
-            return Paths
-                    .get(originalValue.startsWith(PROJECT_BASEDIR) ? originalValue.replace(PROJECT_BASEDIR, this.dir.toString())
-                            : originalValue);
-        }
-        return dir.resolve("src/main/java");
+        final String srcDir = rawModel.getBuild() == null ? null : rawModel.getBuild().getSourceDirectory();
+        return resolveRelativeToBaseDir(srcDir, "src/main/java");
     }
 
     public Path getResourcesSourcesDir() {
-        if (getRawModel().getBuild() != null && getRawModel().getBuild().getResources() != null) {
-            for (Resource i : getRawModel().getBuild().getResources()) {
-                //todo: support multiple resources dirs for config hot deployment
-                return Paths.get(i.getDirectory());
-            }
-        }
-        return dir.resolve("src/main/resources");
+        final List<Resource> resources = rawModel.getBuild() == null ? Collections.emptyList()
+                : rawModel.getBuild().getResources();
+        //todo: support multiple resources dirs for config hot deployment
+        final String resourcesDir = resources.isEmpty() ? null : resources.get(0).getDirectory();
+        return resolveRelativeToBaseDir(resourcesDir, "src/main/resources");
     }
 
     public Model getRawModel() {
@@ -341,5 +335,13 @@ public class LocalProject {
     private AppArtifactKey getKey(Dependency dep) {
         return new AppArtifactKey(PROJECT_GROUPID.equals(dep.getGroupId()) ? getGroupId() : dep.getGroupId(),
                 dep.getArtifactId());
+    }
+
+    private Path resolveRelativeToBaseDir(String path, String defaultPath) {
+        return dir.resolve(path == null ? defaultPath : stripProjectBasedirPrefix(path));
+    }
+
+    private static String stripProjectBasedirPrefix(String path) {
+        return path.startsWith(PROJECT_BASEDIR) ? path.substring(PROJECT_BASEDIR.length() + 1) : path;
     }
 }

@@ -184,13 +184,20 @@ It returns a `Uni` and thus can be composed to execute queries sequentially:
 
 [source,java]
 ----
- client.query("DROP TABLE IF EXISTS fruits")
-    .flatMap(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)"))
-    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Orange')"))
-    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Pear')"))
-    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Apple')"))
+ client.query("DROP TABLE IF EXISTS fruits").execute()
+    .flatMap(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)").execute())
+    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Orange')").execute())
+    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Pear')").execute())
+    .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Apple')").execute())
     .await().indefinitely();
 ----
+
+[IMPORTANT]
+.Breaking Change in Quarkus 1.5
+====
+Vert.x 3.9, integrated in Quarkus 1.5, introduces a breaking change regarding the `query` methods.
+To retrieve the result you need to call `.execute()`.
+====
 
 NOTE: Wondering why we need block until the latest query is completed?
 This code is part of a `@PostConstruct` method and Quarkus invokes it synchronously.
@@ -209,7 +216,7 @@ To retrieve all the data, we will use the `query` method again:
 
 [source,java]
 ----
-Uni<RowSet> rowSet = client.query("SELECT id, name FROM fruits ORDER BY name ASC");
+Uni<RowSet> rowSet = client.query("SELECT id, name FROM fruits ORDER BY name ASC").execute();
 ----
 
 When the operation completes, we will get a `RowSet` that has all the rows buffered in memory.
@@ -244,7 +251,7 @@ Putting it all together, the `Fruit.findAll` method looks like:
 .src/main/java/org/acme/vertx/Fruit.java
 ----
     public static Uni<List<Fruit>> findAll(PgPool client) {
-        return client.query("SELECT id, name FROM fruits ORDER BY name ASC")
+        return client.query("SELECT id, name FROM fruits ORDER BY name ASC").execute()
             .map(pgRowSet -> {
                 List<Fruit> list = new ArrayList<>(pgRowSet.size());
                 for (Row row : pgRowSet) {
@@ -288,7 +295,7 @@ The Reactive PostgreSQL Client can also prepare queries and take parameters that
 
 [source,java]
 ----
-client.preparedQuery("SELECT name FROM fruits WHERE id = $1", Tuple.of(id))
+client.preparedQuery("SELECT name FROM fruits WHERE id = $1", Tuple.of(id)).execute()
 ----
 
 TIP: The SQL string can refer to parameters by position, using $1, $2, ...etc.
@@ -300,7 +307,7 @@ Equipped with this tooling, we are able to safely use an `id` provided by the us
 .src/main/java/org/acme/vertx/Fruit.java
 ----
 public static Uni<Fruit> findById(PgPool client, Long id) {
-    return client.preparedQuery("SELECT id, name FROM fruits WHERE id = $1", Tuple.of(id)) // <1>
+    return client.preparedQuery("SELECT id, name FROM fruits WHERE id = $1", Tuple.of(id)).execute() // <1>
             .map(RowSet::iterator) // <2>
             .map(iterator -> iterator.hasNext() ? from(iterator.next()) : null); // <3>
 }
@@ -331,7 +338,7 @@ The same logic applies when saving a `Fruit`:
 .src/main/java/org/acme/vertx/Fruit.java
 ----
 public Uni<Long> save(PgPool client) {
-    return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)", Tuple.of(name))
+    return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)", Tuple.of(name)).execute()
             .map(pgRowSet -> pgRowSet.iterator().next().getLong("id"));
 }
 ----
@@ -362,7 +369,7 @@ Let's use this to support removal of fruits in the database:
 .src/main/java/org/acme/vertx/Fruit.java
 ----
 public static Uni<Boolean> delete(PgPool client, Long id) {
-    return client.preparedQuery("DELETE FROM fruits WHERE id = $1", Tuple.of(id))
+    return client.preparedQuery("DELETE FROM fruits WHERE id = $1", Tuple.of(id)).execute()
             .map(pgRowSet -> pgRowSet.rowCount() == 1); // <1>
 }
 ----

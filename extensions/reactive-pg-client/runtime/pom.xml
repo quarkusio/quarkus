@@ -29,6 +29,10 @@
             <artifactId>vertx-pg-client</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.ongres.scram</groupId>
+            <artifactId>client</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-axle-pg-client</artifactId>
         </dependency>

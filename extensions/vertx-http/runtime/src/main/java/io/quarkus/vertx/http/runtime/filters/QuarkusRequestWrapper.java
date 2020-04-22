@@ -9,6 +9,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.vertx.http.runtime.AbstractRequestWrapper;
 import io.vertx.core.Handler;
 import io.vertx.core.http.Cookie;
+import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 
@@ -197,6 +198,11 @@ public class QuarkusRequestWrapper extends AbstractRequestWrapper {
 
         @Override
         public Cookie setHttpOnly(boolean httpOnly) {
+            return null;
+        }
+
+        @Override
+        public Cookie setSameSite(CookieSameSite policy) {
             return null;
         }
 

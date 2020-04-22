@@ -101,7 +101,7 @@
         <wildfly-elytron.version>1.11.3.Final</wildfly-elytron.version>
         <jboss-modules.version>1.8.7.Final</jboss-modules.version>
         <jboss-threads.version>3.1.0.Final</jboss-threads.version>
-        <vertx.version>3.8.5</vertx.version>
+        <vertx.version>3.9.0</vertx.version>
         <httpclient.version>4.5.12</httpclient.version>
         <httpcore.version>4.4.13</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
@@ -122,13 +122,13 @@
         <infinispan.version>10.1.5.Final</infinispan.version>
         <infinispan.protostream.version>4.3.2.Final</infinispan.protostream.version>
         <caffeine.version>2.8.0</caffeine.version>
-        <netty.version>4.1.45.Final</netty.version>
+        <netty.version>4.1.48.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <test-containers.version>1.12.4</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <mutiny.version>0.4.4</mutiny.version>
-        <axle-client.version>0.0.13</axle-client.version>
-        <mutiny-client.version>0.0.13</mutiny-client.version>
+        <axle-client.version>0.0.15</axle-client.version>
+        <mutiny-client.version>0.0.15</mutiny-client.version>
         <kafka2.version>2.5.0</kafka2.version>
         <debezium.version>1.1.1.Final</debezium.version>
         <zookeeper.version>3.5.7</zookeeper.version>
@@ -192,6 +192,7 @@
         <error-prone-annotations.version>2.2.0</error-prone-annotations.version>
         <jib-core.version>0.13.1</jib-core.version>
         <google-http-client.version>1.34.0</google-http-client.version>
+        <scram-client.version>2.1</scram-client.version>
     </properties>
 
     <dependencyManagement>
@@ -2469,6 +2470,12 @@
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-mutiny-vertx-pg-client</artifactId>
                 <version>${mutiny-client.version}</version>
+            </dependency>
+            <dependency>
+                <!-- Used by the Reactive PG Client -->
+                <groupId>com.ongres.scram</groupId>
+                <artifactId>client</artifactId>
+                <version>${scram-client.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>

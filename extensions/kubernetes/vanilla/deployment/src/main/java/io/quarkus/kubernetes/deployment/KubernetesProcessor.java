@@ -105,6 +105,11 @@ class KubernetesProcessor {
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
 
     @BuildStep
+    FeatureBuildItem produceFeature() {
+        return new FeatureBuildItem(FeatureBuildItem.KUBERNETES);
+    }
+
+    @BuildStep
     public void checkKubernetes(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
         if (KubernetesConfigUtil.getDeploymentTargets().contains(KUBERNETES)) {
             deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT));
@@ -220,14 +225,14 @@ class KubernetesProcessor {
         //Apply configuration
         applyGlobalConfig(session, kubernetesConfig);
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
-        applyConfig(session, project, KUBERNETES, kubernetesConfig.name.orElse(applicationInfo.getName()), kubernetesConfig,
+        applyConfig(session, project, KUBERNETES, getResourceName(kubernetesConfig, applicationInfo), kubernetesConfig,
                 now);
-        applyConfig(session, project, OPENSHIFT, openshiftConfig.name.orElse(applicationInfo.getName()), openshiftConfig, now);
-        applyConfig(session, project, KNATIVE, knativeConfig.name.orElse(applicationInfo.getName()), knativeConfig, now);
+        applyConfig(session, project, OPENSHIFT, getResourceName(openshiftConfig, applicationInfo), openshiftConfig, now);
+        applyConfig(session, project, KNATIVE, getResourceName(knativeConfig, applicationInfo), knativeConfig, now);
 
         //apply build item configurations to the dekorate session.
         applyBuildItems(session,
-                applicationInfo.getName(),
+                applicationInfo,
                 kubernetesConfig,
                 openshiftConfig,
                 knativeConfig,
@@ -277,9 +282,8 @@ class KubernetesProcessor {
         }
     }
 
-    @BuildStep
-    FeatureBuildItem produceFeature() {
-        return new FeatureBuildItem(FeatureBuildItem.KUBERNETES);
+    private String getResourceName(PlatformConfiguration platformConfiguration, ApplicationInfoBuildItem applicationInfo) {
+        return platformConfiguration.getName().orElse(applicationInfo.getName());
     }
 
     /**
@@ -388,7 +392,7 @@ class KubernetesProcessor {
     }
 
     private void applyBuildItems(Session session,
-            String name,
+            ApplicationInfoBuildItem applicationInfo,
             KubernetesConfig kubernetesConfig,
             OpenshiftConfig openshiftConfig,
             KnativeConfig knativeConfig,
@@ -404,9 +408,9 @@ class KubernetesProcessor {
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPath) {
 
-        String kubernetesName = kubernetesConfig.name.orElse(name);
-        String openshiftName = openshiftConfig.name.orElse(name);
-        String knativeName = knativeConfig.name.orElse(name);
+        String kubernetesName = getResourceName(kubernetesConfig, applicationInfo);
+        String openshiftName = getResourceName(openshiftConfig, applicationInfo);
+        String knativeName = getResourceName(knativeConfig, applicationInfo);
 
         Map<String, PlatformConfiguration> configMap = new HashMap<>();
         configMap.put(KUBERNETES, kubernetesConfig);
@@ -491,48 +495,42 @@ class KubernetesProcessor {
         }
 
         // only use the probe config
-        deploymentTargets.forEach(target -> {
-            kubernetesHealthLivenessPath.ifPresent(l -> {
-                session.resources().decorate(target, new AddLivenessProbeDecorator(name, ProbeConverter
-                        .builder(configMap.get(target).getLivenessProbe()).withHttpActionPath(l.getPath()).build()));
-            });
-            kubernetesHealthReadinessPath.ifPresent(l -> {
-                session.resources().decorate(target, new AddReadinessProbeDecorator(name, ProbeConverter
-                        .builder(configMap.get(target).getReadinessProbe()).withHttpActionPath(l.getPath()).build()));
-            });
-        });
-        handleProbes(name, kubernetesConfig, openshiftConfig, knativeConfig, ports, kubernetesHealthLivenessPath,
+        handleProbes(applicationInfo, kubernetesConfig, openshiftConfig, knativeConfig, ports, kubernetesHealthLivenessPath,
                 kubernetesHealthReadinessPath, session);
     }
 
-    private void handleProbes(String name, KubernetesConfig kubernetesConfig, OpenshiftConfig openshiftConfig,
+    private void handleProbes(ApplicationInfoBuildItem applicationInfo, KubernetesConfig kubernetesConfig,
+            OpenshiftConfig openshiftConfig,
             KnativeConfig knativeConfig,
             Map<String, Integer> ports,
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem,
             Session session) {
         if (kubernetesConfig.deploymentTarget.contains(KUBERNETES)) {
-            handleLivenessProbe(name, KUBERNETES, kubernetesConfig.livenessProbe, kubernetesHealthLivenessPathBuildItem,
-                    session);
-            handleReadinessProbe(name, KUBERNETES, kubernetesConfig.readinessProbe, kubernetesHealthReadinessPathBuildItem,
-                    session);
-            session.resources().decorate(KUBERNETES,
-                    new ApplyHttpGetActionPortDecorator(ports.getOrDefault(HTTP_PORT, DEFAULT_HTTP_PORT)));
+            doHandleProbes(getResourceName(kubernetesConfig, applicationInfo), KUBERNETES, ports,
+                    kubernetesConfig.livenessProbe, kubernetesConfig.readinessProbe, kubernetesHealthLivenessPathBuildItem,
+                    kubernetesHealthReadinessPathBuildItem, session);
         }
         if (kubernetesConfig.deploymentTarget.contains(OPENSHIFT)) {
-            handleLivenessProbe(name, OPENSHIFT, openshiftConfig.livenessProbe, kubernetesHealthLivenessPathBuildItem, session);
-            handleReadinessProbe(name, OPENSHIFT, openshiftConfig.readinessProbe, kubernetesHealthReadinessPathBuildItem,
-                    session);
-            session.resources().decorate(OPENSHIFT,
-                    new ApplyHttpGetActionPortDecorator(ports.getOrDefault(HTTP_PORT, DEFAULT_HTTP_PORT)));
+            doHandleProbes(getResourceName(kubernetesConfig, applicationInfo), OPENSHIFT, ports, openshiftConfig.livenessProbe,
+                    openshiftConfig.readinessProbe, kubernetesHealthLivenessPathBuildItem,
+                    kubernetesHealthReadinessPathBuildItem, session);
         }
         if (kubernetesConfig.deploymentTarget.contains(KNATIVE)) {
-            handleLivenessProbe(name, KNATIVE, knativeConfig.livenessProbe, kubernetesHealthLivenessPathBuildItem, session);
-            handleReadinessProbe(name, KNATIVE, knativeConfig.readinessProbe, kubernetesHealthReadinessPathBuildItem,
+            doHandleProbes(getResourceName(kubernetesConfig, applicationInfo), KNATIVE, ports, knativeConfig.livenessProbe,
+                    knativeConfig.readinessProbe, kubernetesHealthLivenessPathBuildItem, kubernetesHealthReadinessPathBuildItem,
                     session);
-            session.resources().decorate(KNATIVE,
-                    new ApplyHttpGetActionPortDecorator(ports.getOrDefault(HTTP_PORT, DEFAULT_HTTP_PORT)));
         }
+    }
+
+    private void doHandleProbes(String name, String target, Map<String, Integer> ports, ProbeConfig livenessProbe,
+            ProbeConfig readinessProbe, Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
+            Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem, Session session) {
+        handleLivenessProbe(name, target, livenessProbe, kubernetesHealthLivenessPathBuildItem, session);
+        handleReadinessProbe(name, target, readinessProbe, kubernetesHealthReadinessPathBuildItem,
+                session);
+        session.resources().decorate(target,
+                new ApplyHttpGetActionPortDecorator(ports.getOrDefault(HTTP_PORT, DEFAULT_HTTP_PORT)));
     }
 
     private void handleLivenessProbe(String name, String target, ProbeConfig livenessProbe,

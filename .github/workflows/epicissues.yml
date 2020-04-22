@@ -14,6 +14,6 @@ jobs:
       - name: epicmaker
         uses: docker://maxandersen/jbang-epic-maker
         env:
-          GITHUB_TOKEN: ${{ secrets.ISSUE_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
           BOTNAME: quarkusbot
           EPICLABEL: kind/epic

@@ -14,7 +14,8 @@ public class MDCScopeManager implements ScopeManager {
 
     @Override
     public Scope activate(Span span, boolean finishSpanOnClose) {
-        return new MDCScope(wrapped.activate(span, finishSpanOnClose));
+        Scope current = wrapped.active();
+        return new MDCScope(current, wrapped.activate(span, finishSpanOnClose));
     }
 
     @Override

@@ -216,7 +216,6 @@ public class CreateProjectMojo extends AbstractMojo {
             success = createProject.execute().isSuccess();
 
             File createdDependenciesBuildFile = new File(projectRoot, buildToolEnum.getDependenciesFile());
-            File buildFile = new File(createdDependenciesBuildFile.getAbsolutePath());
             if (success) {
                 success = new AddExtensions(projectWriter, buildToolEnum, platform).extensions(extensions).execute()
                         .isSuccess();

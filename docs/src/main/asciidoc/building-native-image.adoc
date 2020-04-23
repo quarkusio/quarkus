@@ -385,8 +385,9 @@ In this guide we will use the first stage to generate the native executable usin
 ----
 ## Stage 1 : build with maven builder image with native capabilities
 FROM quay.io/quarkus/centos-quarkus-maven:{graalvm-flavor} AS build
+COPY pom.xml /usr/src/app/
+RUN mvn -f /usr/src/app/pom.xml -B de.qaware.maven:go-offline-maven-plugin:1.2.5:resolve-dependencies
 COPY src /usr/src/app/src
-COPY pom.xml /usr/src/app
 USER root
 RUN chown -R quarkus /usr/src/app
 USER quarkus

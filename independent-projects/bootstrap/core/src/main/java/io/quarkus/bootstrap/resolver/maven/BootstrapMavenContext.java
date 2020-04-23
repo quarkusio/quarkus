@@ -622,18 +622,85 @@ public class BootstrapMavenContext {
                 || currentProjectExists != null && !currentProjectExists) {
             return currentPom;
         }
-        String pomName = alternatePomName == null ? getCliOptions().getOptionValue(ALTERNATE_POM_FILE) : alternatePomName;
-        if (pomName == null) {
-            pomName = "pom.xml";
+        final Path pom = resolveCurrentPom();
+        return currentPom = (currentProjectExists = pom != null) ? pom : null;
+    }
+
+    private Path resolveCurrentPom() {
+
+        Path alternatePom = null;
+        // explicitly set absolute path has a priority
+        if (alternatePomName != null) {
+            alternatePom = Paths.get(alternatePomName);
+            if (alternatePom.isAbsolute()) {
+                Path pom = alternatePom;
+                if (Files.isDirectory(pom)) {
+                    pom = pom.resolve("pom.xml");
+                }
+                return Files.exists(pom) ? pom : null;
+            }
         }
-        Path pom = Paths.get(pomName);
-        if (!pom.isAbsolute()) {
-            pom = getCurrentProjectBaseDir().resolve(pom);
+
+        if (alternatePom == null) {
+            // check whether an alternate pom was provided as a CLI arg
+            final String cliPomName = getCliOptions().getOptionValue(ALTERNATE_POM_FILE);
+            if (cliPomName != null) {
+                alternatePom = Paths.get(cliPomName);
+            }
         }
-        if (Files.isDirectory(pom)) {
-            pom = pom.resolve("pom.xml");
+
+        final String basedirProp = PropertyUtils.getProperty(BASEDIR);
+        if (basedirProp != null) {
+            // this is the actual current project dir
+            final Path basedir = Paths.get(basedirProp);
+
+            // if the basedir matches the parent of the alternate pom, it's the alternate pom
+            if (alternatePom != null
+                    && alternatePom.isAbsolute()
+                    && alternatePom.getParent().equals(basedir)) {
+                return alternatePom;
+            }
+            // even if the alternate pom has been specified we try the default pom.xml first
+            // since unlike Maven CLI we don't know which project originated the build
+            Path pom = basedir.resolve("pom.xml");
+            if (Files.exists(pom)) {
+                return pom;
+            }
+
+            // if alternate pom path has a single element we can try it
+            // if it has more, it won't match the basedir
+            if (alternatePom != null && !alternatePom.isAbsolute() && alternatePom.getNameCount() == 1) {
+                pom = basedir.resolve(alternatePom);
+                if (Files.exists(pom)) {
+                    return pom;
+                }
+            }
+
+            // give up
+            return null;
         }
-        return currentPom = (currentProjectExists = Files.exists(pom)) ? pom : null;
+
+        // we are not in the context of a Maven build
+        if (alternatePom != null && alternatePom.isAbsolute()) {
+            return alternatePom;
+        }
+
+        // trying the current dir as the basedir
+        final Path basedir = Paths.get("").normalize().toAbsolutePath();
+
+        if (alternatePom != null) {
+            Path pom = basedir.resolve(alternatePom);
+            if (Files.exists(pom)) {
+                if (Files.isDirectory(pom)) {
+                    pom = pom.resolve("pom.xml");
+                    return Files.exists(pom) ? pom : null;
+                }
+                return pom;
+            }
+            return null;
+        }
+        final Path pom = basedir.resolve("pom.xml");
+        return Files.exists(pom) ? pom : null;
     }
 
     public Path getCurrentProjectBaseDir() {

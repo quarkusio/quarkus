@@ -1,6 +1,8 @@
 package io.quarkus.vertx.http.runtime.filters;
 
 import io.vertx.core.Handler;
+import io.vertx.ext.web.Route;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -21,5 +23,10 @@ public interface Filter {
      * @return the priority of the filter.
      */
     int getPriority();
+
+    /**
+     * Return the route for this filter.
+     */
+    Route route(Router router);
 
 }

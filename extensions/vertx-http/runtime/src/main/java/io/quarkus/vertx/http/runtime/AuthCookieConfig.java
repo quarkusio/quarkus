@@ -1,57 +1,23 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.time.Duration;
-import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 /**
- * config for the form authentication mechanism
+ * Config for the persistent login cookies used for JSON and FORM auth.
  */
 @ConfigGroup
-public class FormAuthConfig {
-    /**
-     * If form authentication is enabled
-     */
-    @ConfigItem
-    public boolean enabled;
-
-    /**
-     * The login page
-     */
-    @ConfigItem(defaultValue = "/login.html")
-    public String loginPage;
-
-    /**
-     * The error page
-     */
-    @ConfigItem(defaultValue = "/error.html")
-    public String errorPage;
-
-    /**
-     * The landing page to redirect to if there is no saved page to redirect back to
-     */
-    @ConfigItem(defaultValue = "/index.html")
-    public String landingPage;
-
-    /**
-     * Option to disable redirect to landingPage if there is no saved page to redirect back to. Form Auth POST is followed
-     * by redirect to landingPage by default.
-     */
-    @ConfigItem(defaultValue = "true")
-    public boolean redirectAfterLogin;
+public class AuthCookieConfig {
 
     /**
      * The inactivity (idle) timeout
      *
      * When inactivity timeout is reached, cookie is not renewed and a new login is enforced.
-     *
-     * @deprecated use quarkus.auth.cookie.timeout instead
      */
-    @Deprecated
-    @ConfigItem
-    public Optional<Duration> timeout;
+    @ConfigItem(defaultValue = "PT30M")
+    public Duration timeout;
 
     /**
      * How old a cookie can get before it will be replaced with a new cookie with an updated timeout, also
@@ -67,19 +33,13 @@ public class FormAuthConfig {
      *
      * In other words no timeout is tracked on the server side; the timestamp is encoded and encrypted in the cookie itself
      * and it is decrypted and parsed with each request.
-     *
-     * @deprecated use quarkus.auth.cookie.new-cookie-interval instead
      */
-    @Deprecated
-    @ConfigItem
-    public Optional<Duration> newCookieInterval;
+    @ConfigItem(defaultValue = "PT1M")
+    public Duration newCookieInterval;
 
     /**
      * The cookie that is used to store the persistent session
-     *
-     * @deprecated use quarkus.auth.cookie.cookie-name instead
      */
-    @Deprecated
-    @ConfigItem
-    public Optional<String> cookieName;
+    @ConfigItem(defaultValue = "quarkus-credential")
+    public String cookieName;
 }

@@ -28,6 +28,7 @@ import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
+import io.quarkus.vertx.http.runtime.security.JsonAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.PermitSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.RolesAllowedHttpSecurityPolicy;
@@ -70,10 +71,30 @@ public class HttpSecurityProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
+    SyntheticBeanBuildItem initJsonAuth(
+            HttpSecurityRecorder recorder,
+            BodyHandlerBuildItem bodyHandlerBuildItem,
+            HttpBuildTimeConfig buildTimeConfig,
+            BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
+            HttpConfiguration httpConfiguration) {
+        if (buildTimeConfig.auth.json.enabled) {
+            filterBuildItemBuildProducer.produce(new FilterBuildItem(bodyHandlerBuildItem.getHandler(), Integer.MAX_VALUE,
+                    recorder.jsonAuthRoute(buildTimeConfig.auth.json.postLocation)));
+            return SyntheticBeanBuildItem.configure(JsonAuthenticationMechanism.class)
+                    .types(HttpAuthenticationMechanism.class)
+                    .setRuntimeInit()
+                    .scope(Singleton.class)
+                    .supplier(recorder.setupJsonAuth(httpConfiguration, buildTimeConfig)).done();
+        }
+        return null;
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem initBasicAuth(
             HttpSecurityRecorder recorder,
             HttpBuildTimeConfig buildTimeConfig) {
-        if (buildTimeConfig.auth.form.enabled && !buildTimeConfig.auth.basic) {
+        if ((buildTimeConfig.auth.form.enabled || buildTimeConfig.auth.json.enabled) && !buildTimeConfig.auth.basic) {
             //if form auth is enabled and we are not then we don't install
             return null;
         }
@@ -83,7 +104,7 @@ public class HttpSecurityProcessor {
                 .setRuntimeInit()
                 .scope(Singleton.class)
                 .supplier(recorder.setupBasicAuth(buildTimeConfig));
-        if (!buildTimeConfig.auth.form.enabled && !buildTimeConfig.auth.basic) {
+        if (!buildTimeConfig.auth.form.enabled && !buildTimeConfig.auth.json.enabled && !buildTimeConfig.auth.basic) {
             //if not explicitly enabled we make this a default bean, so it is the fallback if nothing else is defined
             configurator.defaultBean();
         }

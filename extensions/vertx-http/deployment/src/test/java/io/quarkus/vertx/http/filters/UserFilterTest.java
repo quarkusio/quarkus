@@ -45,14 +45,14 @@ public class UserFilterTest {
                                 rc.response().putHeader("X-Filter", "filter 1");
                                 rc.next();
                             },
-                            10)
+                            10, null)
                     .register(
                             rc -> {
                                 rc.response().putHeader("X-Filter2", Long.toString(System.nanoTime()));
                                 rc.response().putHeader("X-Filter", "filter 2");
                                 rc.next();
                             },
-                            20);
+                            20, null);
 
         }
 

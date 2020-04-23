@@ -10,6 +10,6 @@ public class NewFilter {
         filters.register(rc -> {
             rc.response().putHeader("X-Header-2", "Some new header");
             rc.next();
-        }, 100);
+        }, 100, null);
     }
 }

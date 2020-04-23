@@ -54,12 +54,17 @@ however so extensions can add additional mechanisms (most notably OpenID Connect
 To enable basic authentication set `quarkus.http.auth.basic=true`. You must also have at least one extension installed
 that provides a username/password based `IdentityProvider`, such as link:security-jdbc[Elytron JDBC].
 
-=== Form Based Authentication
+=== Form and JSON Based Authentication
 
-Quarkus provides form based authentication that works in a similar manner to traditional Servlet form based auth. Unlike
+Quarkus provides form based authentication that works in a similar manner to traditional Servlet form based auth, and
+JSON based authentication that allows a username and password to be posted to an endpoint in JSON format. Unlike
 traditional form authentication the authenticated user is not stored in a HTTP session, as Quarkus does not provide
 clustered HTTP session support. Instead the authentication information is stored in an encrypted cookie, which can
 be read by all members of the cluster (provided they all share the same encryption key).
+
+JSON based auth can be use by sending a JSON POST request to the defined endpoint (`/login` by default). This request
+must have a `username` and `password` entry in the JSON object, which will be used to authenticate the user. Once the
+user is authenticated the encrypted cookie will be used to provide persistent authentication.
 
 The encryption key can be set using the `quarkus.http.auth.session.encryption-key` property, and it must be at least 16 characters
 long. This key is hashed using SHA-256 and the resulting digest is used as a key for AES-256 encryption of the cookie
@@ -67,9 +72,19 @@ value. This cookie contains a expiry time as part of the encrypted value, so all
 clocks synchronised. At one minute intervals a new cookie will be generated with an updated expiry time if the session
 is in use.
 
+The following properties can be used to configure the cookie used for form and JSON based auth:
+
+include::{generated-dir}/config/quarkus-vertx-http-config-group-auth-cookie-config.adoc[opts=optional, leveloffset=+1]
+
+
 The following properties can be used to configure form based auth:
 
 include::{generated-dir}/config/quarkus-vertx-http-config-group-form-auth-config.adoc[opts=optional, leveloffset=+1]
+
+
+The following properties can be used to configure JSON based auth:
+
+include::{generated-dir}/config/quarkus-vertx-http-config-group-json-auth-config.adoc[opts=optional, leveloffset=+1]
 
 === Proactive Authentication
 

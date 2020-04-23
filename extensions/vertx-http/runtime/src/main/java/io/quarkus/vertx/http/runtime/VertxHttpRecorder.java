@@ -227,7 +227,7 @@ public class VertxHttpRecorder {
         for (Filter filter : filterList) {
             if (filter.getHandler() != null) {
                 // Filters with high priority gets called first.
-                router.route().order(-1 * filter.getPriority()).handler(filter.getHandler());
+                filter.route(router).order(-1 * filter.getPriority()).handler(filter.getHandler());
             }
         }
 

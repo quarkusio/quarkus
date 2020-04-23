@@ -19,15 +19,19 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
+import io.quarkus.vertx.http.runtime.AuthCookieConfig;
 import io.quarkus.vertx.http.runtime.FormAuthConfig;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.quarkus.vertx.http.runtime.JsonAuthConfig;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
 import io.smallrye.mutiny.subscription.UniSubscription;
 import io.smallrye.mutiny.tuples.Functions;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.ext.web.Route;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -236,8 +240,10 @@ public class HttpSecurityRecorder {
                     key = httpConfiguration.encryptionKey.get();
                 }
                 FormAuthConfig form = buildTimeConfig.auth.form;
-                PersistentLoginManager loginManager = new PersistentLoginManager(key, form.cookieName, form.timeout.toMillis(),
-                        form.newCookieInterval.toMillis());
+                PersistentLoginManager loginManager = new PersistentLoginManager(key,
+                        form.cookieName.orElse(buildTimeConfig.auth.cookie.cookieName),
+                        form.timeout.orElse(buildTimeConfig.auth.cookie.timeout).toMillis(),
+                        form.newCookieInterval.orElse(buildTimeConfig.auth.cookie.newCookieInterval).toMillis());
                 String loginPage = form.loginPage.startsWith("/") ? form.loginPage : "/" + form.loginPage;
                 String errorPage = form.errorPage.startsWith("/") ? form.errorPage : "/" + form.errorPage;
                 String landingPage = form.landingPage.startsWith("/") ? form.landingPage : "/" + form.landingPage;
@@ -247,11 +253,51 @@ public class HttpSecurityRecorder {
         };
     }
 
+    public Supplier<JsonAuthenticationMechanism> setupJsonAuth(HttpConfiguration httpConfiguration,
+            HttpBuildTimeConfig buildTimeConfig) {
+
+        return new Supplier<JsonAuthenticationMechanism>() {
+            @Override
+            public JsonAuthenticationMechanism get() {
+                String key;
+                if (!httpConfiguration.encryptionKey.isPresent()) {
+                    if (encryptionKey != null) {
+                        //persist across dev mode restarts
+                        key = encryptionKey;
+                    } else {
+                        byte[] data = new byte[32];
+                        new SecureRandom().nextBytes(data);
+                        key = encryptionKey = Base64.getEncoder().encodeToString(data);
+                        log.warn("Encryption key was not specified for persistent FORM auth, using temporary key " + key);
+                    }
+                } else {
+                    key = httpConfiguration.encryptionKey.get();
+                }
+                JsonAuthConfig json = buildTimeConfig.auth.json;
+                AuthCookieConfig cookieConfig = buildTimeConfig.auth.cookie;
+                PersistentLoginManager loginManager = new PersistentLoginManager(key, cookieConfig.cookieName,
+                        cookieConfig.timeout.toMillis(),
+                        cookieConfig.newCookieInterval.toMillis());
+                String postLocation = json.postLocation.startsWith("/") ? json.postLocation : "/" + json.postLocation;
+                return new JsonAuthenticationMechanism(loginManager, postLocation);
+            }
+        };
+    }
+
     public Supplier<?> setupBasicAuth(HttpBuildTimeConfig buildTimeConfig) {
         return new Supplier<BasicAuthenticationMechanism>() {
             @Override
             public BasicAuthenticationMechanism get() {
                 return new BasicAuthenticationMechanism(buildTimeConfig.auth.realm, "BASIC", buildTimeConfig.auth.form.enabled);
+            }
+        };
+    }
+
+    public Function<Router, Route> jsonAuthRoute(String postLocation) {
+        return new Function<Router, Route>() {
+            @Override
+            public Route apply(Router router) {
+                return router.route(postLocation);
             }
         };
     }

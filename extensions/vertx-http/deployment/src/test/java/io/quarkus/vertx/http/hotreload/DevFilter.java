@@ -10,6 +10,6 @@ public class DevFilter {
         filters.register(rc -> {
             rc.response().putHeader("X-Header", "AAAA");
             rc.next();
-        }, 100);
+        }, 100, null);
     }
 }

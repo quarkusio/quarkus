@@ -17,7 +17,7 @@ The extension will expose a customizable HTTP endpoint which simply greets the v
 
 [NOTE]
 .Disclaimer
-To be sure it's extra clear you don't need and extension to add a Servlet to your application.
+To be sure it's extra clear you don't need an extension to add a Servlet to your application.
 This guide is a simplified example to explain the concepts of extensions development.
 Keep in mind it's not representative of the power of moving things to build time or simplifying the build of native images.
 
@@ -28,7 +28,7 @@ To complete this guide, you need:
 * less than 30 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven 3.6.2+
+* Apache Maven {maven-version}
 
 == Solution
 
@@ -58,7 +58,7 @@ The operation of compiling Java bytecode into a native system-specific machine c
 Usually, Java frameworks do their bootstrapping during the runtime before actually starting the application "Business oriented layer". During bootstrap, frameworks dynamically collect metadata by scanning the classpath to find configurations, entity definitions, dependency injection binding, etc. in order to instantiate proper objects through reflection. The main consequences are:
 
 * Delaying the readiness of your application: you need to wait a couple of seconds before actually serving a business request.
-* Having a peak of resource consumption at bootstrap: In a constrained environment, you will need to size the needed resources based on your technical boostrap need rather than your actual business needs.
+* Having a peak of resource consumption at bootstrap: in a constrained environment, you will need to size the needed resources based on your technical bootstrap needs rather than your actual business needs.
 
 Quarkus' philosophy is to prevent as much as possible slow and memory intensive dynamic code execution by shifting left these actions and eventually do them during the build time.
 A Quarkus extension is a Java piece of code acting as an adapter layer for your favorite libary or technology.
@@ -67,12 +67,15 @@ A Quarkus extension is a Java piece of code acting as an adapter layer for your 
 
 A Quarkus extension consists of two parts:
 
-* Runtime module : Represent the capabilities the extension developer exposes to the application's developer (an authentication filter, an enhanced data layer API, etc).
-Runtime dependencies are the ones the users will add into their POMs.
-* Deployment module: Used during the augmentation phase of the build, it describes how to "deploy" a library
+* The *runtime module* which represents the capabilities the extension developer exposes to the application's developer (an authentication filter, an enhanced data layer API, etc).
+Runtime dependencies are the ones the users will add as their application dependencies (in Maven POMs or Gradle build scripts).
+* The *deployment module* which is used during the augmentation phase of the build, it describes how to "deploy" a library
 following the Quarkus philosophy.
 In other words, it applies all the Quarkus optimizations to your application during the build.
 The deployment module is also where we prepare things for GraalVM's native compilation.
+
+IMPORTANT: Users should not be adding the deployment modules of extension as application dependencies. The deployment dependencies are resolved by
+Quarkus during the augmentation phase from the runtime dependencies of the application.
 
 At this point, you should have understood that most of the magic will happen at the Augmentation build time thanks to the deployment module.
 
@@ -80,145 +83,108 @@ At this point, you should have understood that most of the magic will happen at 
 
 There are three distinct bootstrap phases of a Quarkus application.
 
-* Augmentation: During the build time, the Quarkus extensions will load and scan your application's bytecode (including the dependencies) and configuration.
+* *Augmentation*. During the build time, the Quarkus extensions will load and scan your application's bytecode (including the dependencies) and configuration.
 At this stage, the extension can read configuration files, scan classes for specific annotations, etc.
-Once all the metadata collected, the extensions can pre-process the libraries bootstrap actions like your ORM, DI or REST controllers configurations.
+Once all the metadata has been collected, the extensions can pre-process the libraries bootstrap actions like your ORM, DI or REST controllers configurations.
 The result of the bootstrap is directly recorded into bytecode and will be part of your final application package.
-* Static Init: During the run time, Quarkus will execute first a static init method which contains some extensions actions/configurations.
-When you will do your native packaging, this static method will be pre-processed during the build time and the eventual generated objects will be serialized in the final native executable, so this code will not be executed in a native mode (Imagine you execute a Fibonacci function during this phase, the result of the computation will be directly recorded in the native executable).
+* *Static Init*. During the run time, Quarkus will execute first a static init method which contains some extensions actions/configurations.
+When you will do your native packaging, this static method will be pre-processed during the build time and the objects it has generated will be serialized into the final native executable, so the initialization code will not be executed in the native mode (imagine you execute a Fibonacci function during this phase, the result of the computation will be directly recorded in the native executable).
 When running the application in JVM mode, this static init phase is executed at the start of the application.
 
-* Runtime Init: Well nothing fancy here, we do classic run time code execution.
-So, the more code you run during the 2 phases above, the faster your application will start.
+* *Runtime Init*. Well nothing fancy here, we do classic run time code execution.
+So, the more code you run during the two phases above, the faster your application will start.
 
-Now that everything is explained, we can start coding!!
+Now that everything is explained, we can start coding!
 
 == Maven setup
 
-Quarkus provides a `create-extension` Maven Mojo to initialize your extension.
-The team is working hard to improve the dev experience but at the moment, you must manually create a root `pom.xml` before invoking the Mojo.
-
-[source, shell]
-----
-$ mkdir getting-started-extension && cd getting-started-extension
-$ cat << EOF > pom.xml
-<?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <modelVersion>4.0.0</modelVersion>
-
-    <groupId>org.acme</groupId>
-    <artifactId>getting-started-extension</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
-
-    <properties>
-        <quarkus.version>{quarkus-version}</quarkus.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-platform-bom-deployment</artifactId> #<1>
-                <version>\${quarkus.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId> #<2>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${maven.compiler.version}</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
-
-</project>
-EOF
-----
+Quarkus provides `create-extension` Maven Mojo to initialize your extension.
 
 <1> The https://github.com/quarkusio/quarkus-platform[`quarkus-universe-bom-deployment`] BOM gives access to all the existing Quarkus extensions (runtime and deployment modules).
 <2> Quarkus requires a recent version of the Maven compiler plugin supporting the `annotationProcessorPaths` configuration.
 
-Now you can invoke `quarkus-maven-plugin:create-extension` MOJO to initialize your extension.
 [source, shell]
 ----
 $ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
-    -Dquarkus.artifactIdBase=greeting \
-    -Dquarkus.artifactIdPrefix=quarkus- \
+    -DgroupId=org.acme \
+    -DartifactId=quarkus-greeting \
+    -Dversion=1.0-SNAPSHOT \
     -Dquarkus.nameBase="Greeting Extension"
 [INFO] Scanning for projects...
-[INFO]
-[INFO] -----------------< org.acme:getting-started-extension >-----------------
-[INFO] Building getting-started-extension 1.0-SNAPSHOT
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
 [INFO] --------------------------------[ pom ]---------------------------------
-[INFO]
-[INFO] --- quarkus-maven-plugin:{quarkus-version}:create-extension (default-cli) @ getting-started-extension ---
-[INFO] Adding module [greeting] to [/tmp/quarkus-quickstarts/getting-started-extension/pom.xml]
+[INFO] 
+[INFO] --- quarkus-maven-plugin:{quarkus-version}:create-extension (default-cli) @ standalone-pom ---
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  1.324 s
-[INFO] Finished at: 2020-01-26T16:57:32+01:00
+[INFO] Total time:  1.233 s
+[INFO] Finished at: 2020-04-22T23:28:15+02:00
 [INFO] ------------------------------------------------------------------------
 ----
 
-Maven has generated a `greeting` directory and added the freshly create module into the current `getting-started-extension/pom.xml`.
+Maven has generated a `quarkus-greeting` directory containing the extension project which consists of the parent `pom.xml`, the `runtime` and the `deployment` modules.
 
-[source, xml]
-----
-    <modules>
-        <module>greeting</module>
-    </modules>
-----
+=== The parent pom.xml
 
-Maven has generated couple of files inside `getting-started-extension/greeting`, let's see together what their role is.
-
-=== The parent module
-
-Your extension is a multi-module project. So let's start by the parent `./greeting/pom.xml`.
+Your extension is a multi-module project. So let's start by checking out the parent POM at `./quarkus-greeting/pom.xml`.
 
 [source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.acme</groupId>
-        <artifactId>getting-started-extension</artifactId>
-        <version>1.0-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
 
+    <groupId>org.acme</groupId>
     <artifactId>quarkus-greeting-parent</artifactId>
+    <version>1.0-SNAPSHOT</version>
     <name>Greeting Extension - Parent</name>
 
     <packaging>pom</packaging>
-    <modules> <!--1-->
+    <properties>
+        <quarkus.version>{quarkus-version}</quarkus.version>
+        <compiler-plugin.version>3.8.1</compiler-plugin.version>
+    </properties>
+    <modules> #<1>
         <module>deployment</module>
         <module>runtime</module>
     </modules>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom-deployment</artifactId> #<2>
+                <version>${quarkus.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${compiler-plugin.version}</version> #<3>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>
 ----
 
 <1> Your extension declares 2 sub-modules `deployment` and `runtime`.
+<2> The `quarkus-bom-deployment` aligns your dependencies with those used by Quarkus during the augmentation phase.
+<3> Quarkus requires a recent version of the Maven compiler plugin supporting the annotationProcessorPaths configuration.
 
 === The Deployment module
 
-Let's have a look at the deployment's `./greeting/deployment/pom.xml`.
+Let's have a look at the deployment's `./quarkus-greeting/deployment/pom.xml`.
 [source, xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -244,7 +210,7 @@ Let's have a look at the deployment's `./greeting/deployment/pom.xml`.
         </dependency>
         <dependency>
             <groupId>org.acme</groupId>
-            <artifactId>quarkus-greeting</artifactId>
+            <artifactId>quarkus-greeting</artifactId> <!--3-->
             <version>${project.version}</version>
         </dependency>
     </dependencies>
@@ -258,7 +224,7 @@ Let's have a look at the deployment's `./greeting/deployment/pom.xml`.
                     <annotationProcessorPaths>
                         <path>
                             <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-extension-processor</artifactId>  <!--3-->
+                            <artifactId>quarkus-extension-processor</artifactId>  <!--4-->
                             <version>${quarkus.version}</version>
                         </path>
                     </annotationProcessorPaths>
@@ -275,9 +241,10 @@ The key points are:
 <1> By convention, the deployment module has the `-deployment` suffix (`greeting-deployment`).
 <2> The deployment module depends on the `quarkus-core-deployment` artifact.
 We will see later which dependencies are convenient to add.
-<3> We add  the `quarkus-extension-processor` to the compiler annotation processors.
+<3> The deployment module also *must* depend on the runtime module.
+<4> We add  the `quarkus-extension-processor` to the compiler annotation processors.
 
-In addition of the `pom.xml` Maven also created the `org.acme.quarkus.greeting.deployment.GreetingProcessor` class.
+In addition to the `pom.xml` `create-extension` also generated the `org.acme.quarkus.greeting.deployment.GreetingProcessor` class.
 
 [source, java]
 ----
@@ -304,7 +271,7 @@ In other words, you are augmenting your application to use the `greeting` extens
 
 === The Runtime module
 
-Finally `./greeting/runtime/pom.xml`.
+Finally `./quarkus-greeting/runtime/pom.xml`.
 
 [source, xml]
 ----
@@ -322,6 +289,13 @@ Finally `./greeting/runtime/pom.xml`.
 
     <artifactId>quarkus-greeting</artifactId>  <!--1-->
     <name>Greeting Extension - Runtime</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core</artifactId>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -374,10 +348,9 @@ To do so, our extension will deploy, in the user application, a Servlet exposing
 
 The `runtime` module is where you develop the feature you want to propose to your users, so it's time to create our Web Servlet.
 
-To use Servlets you need to have a Servlet Container such as http://undertow.io[Undertow].
-There is a Quarkus Undertow extension to use the web server with all the Quarkus benefits.
-We need to add the extension as a dependency to `./greeting/runtime/pom.xml`.
-
+To use Servlets in your applications you need to have a Servlet Container such as http://undertow.io[Undertow].
+Luckily, `quarkus-bom-deployment` imported by our parent `pom.xml` already includes the Undertow Quarkus extension.
+All we need to do is add
 [source, xml]
 ----
     <dependencies>
@@ -387,6 +360,9 @@ We need to add the extension as a dependency to `./greeting/runtime/pom.xml`.
         </dependency>
     </dependencies>
 ----
+to our `./quarkus-greeting/runtime/pom.xml`.
+
+NOTE: We can remove the dependency on `quarkus-core` from out runtime POM generated by `create-extension` mojo. `quarkus-undertow` already depends on it anyway.
 
 Now we can create our Servlet `org.acme.quarkus.greeting.GreetingServlet` in the `runtime` module.
 [source, java]
@@ -414,7 +390,7 @@ public class GreetingServlet extends HttpServlet { // <1>
 
 === Deploying the Greeting feature
 
-Quarkus magic relies on bytecode generation at build time rather than waiting runtime code evaluation, that's the role of your extension's `deployment` module.
+Quarkus magic relies on bytecode generation at build time rather than waiting for the runtime code evaluation, that's the role of your extension's `deployment` module.
 Calm down, we know, bytecode is hard and you don't want to do it manually, Quarkus proposes a high level API to make your life easier.
 Thanks to basic concepts, you will describe the items to produce/consume and the corresponding steps in order to generate the bytecode to produce during the deployment time.
 
@@ -461,18 +437,13 @@ To create your `BuildItem` you can extend:
 * `io.quarkus.builder.item.MultiBuildItem` if you want to have multiple instances (e.g. `ServletBuildItem`, you can produce many Servlets during the deployment).
 
 It's now time to declare our HTTP endpoint. To do so, we need to produce a `ServletBuildItem`.
-At this point, we are sure you understood that if the `quarkus-undertow` dependency proposes Servlet support for our `runtime` module, we will need the `quarkus-undertow-deployment` dependency into our `deployment` module to have access to the `io.quarkus.undertow.deployment.ServletBuildItem`.
+At this point, we are sure you understood that if the `quarkus-undertow` dependency proposes Servlet support for our `runtime` module, we will need the `quarkus-undertow-deployment` dependency in our `deployment` module to have access to the `io.quarkus.undertow.deployment.ServletBuildItem`.
 
-Update the `./greeting/deployment/pom.xml` as follows:
+Update the `./quarkus-greeting/deployment/pom.xml` as follows:
 
 [source, xml]
 ----
     <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
-            <version>${quarkus.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.acme</groupId>
             <artifactId>quarkus-greeting</artifactId>
@@ -484,6 +455,8 @@ Update the `./greeting/deployment/pom.xml` as follows:
         </dependency>
     </dependencies>
 ----
+NOTE: The dependency on `quarkus-core-deployment` generated by the `create-extension` mojo can now be removed since
+`quarkus-undertow-deployment` already depends on it.
 
 We can now update `org.acme.quarkus.greeting.deployment.GreetingProcessor`:
 
@@ -526,7 +499,7 @@ Now, Quarkus will process this new task which will result in the bytecode genera
 When developing a Quarkus extension, you mainly want to test your feature is properly deployed in an application and works as expected.
 That's why the tests will be hosted in the `deployment` module.
 
-Let's add the testing dependencies into the  `./greeting/deployment/pom.xml` and `maven-surefire` configuration
+Let's add the testing dependencies into the  `./quarkus-greeting/deployment/pom.xml` and `maven-surefire` configuration
 
 [source, xml]
 ----
@@ -542,7 +515,7 @@ Let's add the testing dependencies into the  `./greeting/deployment/pom.xml` and
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-greeting-deployment</artifactId> <!--1-->
+    <artifactId>quarkus-greeting-deployment</artifactId>
     <name>Greeting Extension - Deployment</name>
 
     <properties>
@@ -550,16 +523,6 @@ Let's add the testing dependencies into the  `./greeting/deployment/pom.xml` and
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc-deployment</artifactId> <!--2-->
-            <version>${quarkus.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId> <!--2-->
-            <version>${quarkus.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.acme</groupId>
             <artifactId>quarkus-greeting</artifactId>
@@ -616,12 +579,11 @@ Let's add the testing dependencies into the  `./greeting/deployment/pom.xml` and
 <2> We will use http://rest-assured.io[RestAssured] (massively used in Quarkus) to test our HTTP endpoint.
 <3> In order to not fallback to JUnit 4 legacy mode you need to define a recent version of `maven-surefire` plugin.
 
-[NOTE]
-As for now, the `create-extension` Maven Mojo does not create the test structure. You need to create it:
+Currently, the `create-extension` Maven Mojo does not create the test structure. We'll create it ourselves:
 
 [source, shell]
 ----
-mkdir -p ./greeting/deployment/src/test/java/
+mkdir -p ./quarkus-greeting/deployment/src/test/java/
 ----
 
 To start testing your extension, create the following `org.acme.quarkus.greeting.deployment.GreetingTest` test class:
@@ -656,7 +618,7 @@ public class GreetingTest {
 <1> We register a Junit Extension which will start a Quarkus application with the Greeting extension.
 <2> We verify the application has a `greeting` endpoint responding to a HTTP GET request with a OK status (200) and a plain text body containing `Hello`
 
-Time to test!!
+Time to test!
 
 [source, shell]
 ----
@@ -675,7 +637,7 @@ $ mvn clean test
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running org.acme.quarkus.greeting.deployment.GreetingTest
-2020-01-28 22:40:54,913 INFO  [io.quarkus] (main) Quarkus 1.2.0.Final started in 0.289s. Listening on: http://0.0.0.0:8081
+2020-01-28 22:40:54,913 INFO  [io.quarkus] (main) Quarkus {quarkus-version} started in 0.289s. Listening on: http://0.0.0.0:8081
 2020-01-28 22:40:54,921 INFO  [io.quarkus] (main) Profile test activated.
 2020-01-28 22:40:54,922 INFO  [io.quarkus] (main) Installed features: [cdi, greeting, servlet]
 2020-01-28 22:40:55,691 INFO  [io.quarkus] (main) Quarkus stopped in 0.021s
@@ -700,7 +662,7 @@ $ mvn clean test
 [INFO] ------------------------------------------------------------------------
 ----
 
-Looks good!! Congratulations you just finished your first extension.
+Looks good! Congratulations you just finished your first extension.
 
 === Debugging your extension
 
@@ -768,7 +730,7 @@ Once published you can simply declare it with your project dependencies
         <dependencies>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-platform-bom</artifactId>
+                <artifactId>quarkus-bom</artifactId>
                 <version>{quarkus-version}</version>
                 <type>pom</type>
                 <scope>import</scope>
@@ -783,6 +745,7 @@ Once published you can simply declare it with your project dependencies
         <dependency>
             <groupId>org.acme</groupId>
             <artifactId>quarkus-greeting</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 ----
@@ -809,9 +772,9 @@ $ mvn clean compile quarkus:dev
 [INFO] Changes detected - recompiling the module!
 [INFO] Compiling 1 source file to /tmp/code-with-quarkus/target/classes
 [INFO]
-[INFO] --- quarkus-maven-plugin:1.2.0.Final:dev (default-cli) @ code-with-quarkus ---
+[INFO] --- quarkus-maven-plugin:{quarkus-version}:dev (default-cli) @ code-with-quarkus ---
 Listening for transport dt_socket at address: 5005
-2020-01-28 22:49:40,585 INFO  [io.quarkus] (main) code-with-quarkus 1.0.0-SNAPSHOT (running on Quarkus 1.2.0.Final) started in 1.025s. Listening on: http://0.0.0.0:8080
+2020-01-28 22:49:40,585 INFO  [io.quarkus] (main) code-with-quarkus 1.0.0-SNAPSHOT (running on Quarkus {quarkus-version}) started in 1.025s. Listening on: http://0.0.0.0:8080
 2020-01-28 22:49:40,600 INFO  [io.quarkus] (main) Profile dev activated. Live Coding activated.
 2020-01-28 22:49:40,600 INFO  [io.quarkus] (main) Installed features: [cdi, greeting, resteasy, servlet]
 ----
@@ -822,7 +785,7 @@ That's why there is the Quarkus Platform.
 
 *Quarkus Platform*
 
-Quarkus proposes a `quarkus-platform-bom` which is a certified list of extensions placed under the Quarkus Platform label. From an application developper, the objectives of the platform are:
+Quarkus proposes a `quarkus-universe-bom` which is a certified list of extensions placed under the Quarkus Platform label. From an application developper, the objectives of the platform are:
 
 * To guarantee a supportability of the extension (bugfix, security issues, dependency upgrades)
 * To ease the extension discovery through the Quarkus CLI or https://code.quarkus.io/

@@ -126,7 +126,7 @@
         <reactive-streams.version>1.0.3</reactive-streams.version>
         <test-containers.version>1.12.4</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
-        <mutiny.version>0.4.4</mutiny.version>
+        <mutiny.version>0.5.0</mutiny.version>
         <axle-client.version>0.0.15</axle-client.version>
         <mutiny-client.version>0.0.15</mutiny-client.version>
         <kafka2.version>2.5.0</kafka2.version>

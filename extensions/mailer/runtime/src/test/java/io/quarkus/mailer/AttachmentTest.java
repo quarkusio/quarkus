@@ -8,7 +8,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
-import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 
 import io.quarkus.mailer.runtime.MutinyMailerImpl;
+import io.smallrye.mutiny.Multi;
 import io.vertx.core.file.FileSystemException;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.mutiny.core.Vertx;
@@ -195,14 +195,11 @@ class AttachmentTest {
     void testCreationWithEmptyContent() {
         Attachment attachment1 = new Attachment("attachment-1", (byte[]) null, "text/plain");
         Attachment attachment2 = new Attachment("attachment-2", new byte[0], "text/plain");
-        Attachment attachment3 = new Attachment("attachment-3", ReactiveStreams.<Byte> empty().buildRs(), "text/plain");
+        Attachment attachment3 = new Attachment("attachment-3", Multi.createFrom().empty(), "text/plain");
 
-        assertThat(ReactiveStreams.fromPublisher(attachment1.getData()).findFirst().run().toCompletableFuture().join())
-                .isEmpty();
-        assertThat(ReactiveStreams.fromPublisher(attachment2.getData()).findFirst().run().toCompletableFuture().join())
-                .isEmpty();
-        assertThat(ReactiveStreams.fromPublisher(attachment3.getData()).findFirst().run().toCompletableFuture().join())
-                .isEmpty();
+        assertThat(Multi.createFrom().publisher(attachment1.getData()).collectItems().first().await().indefinitely()).isNull();
+        assertThat(Multi.createFrom().publisher(attachment2.getData()).collectItems().first().await().indefinitely()).isNull();
+        assertThat(Multi.createFrom().publisher(attachment3.getData()).collectItems().first().await().indefinitely()).isNull();
     }
 
     @Test

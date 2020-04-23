@@ -556,7 +556,7 @@ NOTE: Section blocks can also define an optional end tag - `{/title}`.
 ===== User-defined Tags
 
 User-defined tags can be used to include a template and optionally pass some parameters.
-Let's suppose we have a template called `item.html`:
+Let's suppose we have a template called `itemDetail.html`:
 
 [source]
 ----
@@ -567,30 +567,30 @@ Let's suppose we have a template called `item.html`:
 <1> `showImage` is a named parameter.
 <2> `it` is a special key that is replaced with the first unnamed param of the tag.
 
-Now if we register this template under the name `item` and if we add a `UserTagSectionHelper` to the engine:
+Now if we register this template under the name `itemDetail` and if we add a `UserTagSectionHelper` to the engine:
 
 [source,java]
 ----
 Engine engine = Engine.builder()
-                   .addSectionHelper(new UserTagSectionHelper.Factory("item"))
+                   .addSectionHelper(new UserTagSectionHelper.Factory("myItem","itemDetail.html"))
                    .build();
 ----
 
-NOTE: In Quarkus, all files from the `src/main/resources/templates/tags` are registered and monitored automatically.
+NOTE: In Quarkus, all files from the `src/main/resources/templates/tags` are registered and monitored automatically!
 
 We can include the tag like this:
 
 [source,html]
 ----
 <ul>
-{#each items}
+{#for item in items}
   <li>
-  {#item this showImage=true /} <1>
+  {#myItem item showImage=true /} <1>
   </li>
-{/each}
+{/for}
 </ul>
 ----
-<1> `this` is resolved to an iteration element and can be referenced using the `it` key in the tag template.
+<1> `item` is resolved to an iteration element and can be referenced using the `it` key in the tag template.
 
 === Engine Configuration
 

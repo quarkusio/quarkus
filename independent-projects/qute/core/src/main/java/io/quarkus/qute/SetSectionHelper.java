@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class SetSectionHelper implements SectionHelper {
 
     private static final String SET = "set";
+    private static final String LET = "let";
 
     private final Map<String, Expression> parameters;
 
@@ -48,7 +49,7 @@ public class SetSectionHelper implements SectionHelper {
 
         @Override
         public List<String> getDefaultAliases() {
-            return ImmutableList.of(SET);
+            return ImmutableList.of(SET, LET);
         }
 
         @Override

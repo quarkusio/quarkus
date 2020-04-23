@@ -33,6 +33,7 @@ import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.deployment.util.GlobUtil;
 
 public class NativeImageBuildStep {
 
@@ -227,6 +228,10 @@ public class NativeImageBuildStep {
             }
 
             nativeConfig.additionalBuildArgs.ifPresent(l -> l.stream().map(String::trim).forEach(command::add));
+            nativeConfig.resources.includes.ifPresent(l -> l.stream()
+                    .map(GlobUtil::toRegexPattern)
+                    .map(re -> "-H:IncludeResources=" + re.trim())
+                    .forEach(command::add));
             command.add("--initialize-at-build-time=");
             command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
             command.add("-H:+JNI");

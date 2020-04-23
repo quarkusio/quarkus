@@ -40,10 +40,11 @@ import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.model.process.spi.ManagedResources;
 import org.hibernate.boot.model.process.spi.MetadataBuildingProcess;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
-import org.hibernate.boot.registry.BootstrapServiceRegistryBuilder;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
+import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
+import org.hibernate.boot.registry.selector.internal.StrategySelectorBuilder;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.MetadataBuilderContributor;
 import org.hibernate.boot.spi.MetadataBuilderImplementor;
@@ -74,6 +75,7 @@ import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
+import io.quarkus.hibernate.orm.runtime.customized.QuarkusIntegratorServiceImpl;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatform;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
@@ -194,8 +196,6 @@ public class FastBootMetadataBuilder {
 
     private BootstrapServiceRegistry buildBootstrapServiceRegistry(ClassLoaderService providedClassLoaderService) {
 
-        final BootstrapServiceRegistryBuilder bsrBuilder = new BootstrapServiceRegistryBuilder();
-
         // N.B. support for custom IntegratorProvider injected via Properties (as
         // instance) removed
 
@@ -203,9 +203,10 @@ public class FastBootMetadataBuilder {
         // TODO see to inject a custom
         // org.hibernate.boot.registry.selector.spi.StrategySelector ?
 
-        bsrBuilder.applyClassLoaderService(providedClassLoaderService);
-
-        return bsrBuilder.build();
+        QuarkusIntegratorServiceImpl integratorService = new QuarkusIntegratorServiceImpl(providedClassLoaderService);
+        final StrategySelectorBuilder strategySelectorBuilder = new StrategySelectorBuilder();
+        final StrategySelector strategySelector = strategySelectorBuilder.buildSelector(providedClassLoaderService);
+        return new BootstrapServiceRegistryImpl(true, providedClassLoaderService, strategySelector, integratorService);
     }
 
     /**

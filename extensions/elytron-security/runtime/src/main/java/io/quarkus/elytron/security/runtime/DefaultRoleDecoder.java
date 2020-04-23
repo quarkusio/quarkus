@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
@@ -19,6 +20,7 @@ import org.wildfly.security.authz.Roles;
  * an application specific implementation of {@link RoleDecoder}, if provided.
  * 
  */
+@ApplicationScoped
 public class DefaultRoleDecoder {
 
     private static final String DEFAULT_ATTRIBUTE_NAME = "groups";

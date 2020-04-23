@@ -34,6 +34,15 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         this.sort = sort;
     }
 
+    private PanacheQueryImpl(PanacheQueryImpl previousQuery, Document projections) {
+        this.collection = previousQuery.collection;
+        this.mongoQuery = previousQuery.mongoQuery;
+        this.sort = previousQuery.sort;
+        this.projections = projections;
+        this.page = previousQuery.page;
+        this.count = previousQuery.count;
+    }
+
     // Builder
 
     @Override
@@ -42,12 +51,12 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         Set<String> fieldNames = MongoPropertyUtil.collectFields(type);
 
         // create the projection document
-        this.projections = new Document();
+        Document projections = new Document();
         for (String fieldName : fieldNames) {
-            this.projections.append(fieldName, 1);
+            projections.append(fieldName, 1);
         }
 
-        return (PanacheQuery<T>) this;
+        return new PanacheQueryImpl(this, projections);
     }
 
     @Override

@@ -17,17 +17,17 @@ public class UserTagTest {
 
         Template tag = engine.parse("{#if showImage}{it.name}{#else}nope{/if}");
         engine.putTemplate("my-tag-id", tag);
-        Template template1 = engine.parse("{#myTag order showImage=true /}");
-        Template template2 = engine.parse("{#myTag order /}");
-        Template template3 = engine.parse("{#myTag showImage=false /}");
-        Template template4 = engine.parse("{#each this}{#myTag showImage=false /}{/each}");
 
         Map<String, Object> order = new HashMap<>();
         order.put("name", "Herbert");
-        assertEquals("Herbert", template1.render(Collections.singletonMap("order", order)));
-        assertEquals("nope", template2.render(Collections.singletonMap("order", order)));
-        assertEquals("nope", template3.render(Collections.singletonMap("order", order)));
-        assertEquals("nope", template4.render(Collections.singletonMap("order", order)));
+        assertEquals("Herbert",
+                engine.parse("{#myTag order showImage=true /}").render(Collections.singletonMap("order", order)));
+        assertEquals("nope", engine.parse("{#myTag order /}").render(Collections.singletonMap("order", order)));
+        assertEquals("nope", engine.parse("{#myTag showImage=false /}").render(Collections.singletonMap("order", order)));
+        assertEquals("nope",
+                engine.parse("{#each this}{#myTag showImage=false /}{/each}").render(Collections.singletonMap("order", order)));
+        assertEquals("Herbert",
+                engine.parse("{#each this}{#myTag it showImage=true /}{/each}").render(Collections.singletonList(order)));
     }
 
 }

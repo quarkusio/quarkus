@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
@@ -20,6 +21,7 @@ import org.wildfly.security.authz.Roles;
  * an application specific implementation of {@link RoleDecoder}, if provided.
  * 
  */
+@ApplicationScoped
 public class DefaultRoleDecoder {
 
     @ConfigProperty(name = "quarkus.security.roles-claim-name", defaultValue = "groups")

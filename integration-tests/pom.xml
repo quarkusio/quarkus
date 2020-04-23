@@ -105,6 +105,7 @@
         <module>injectmock</module>
         <module>reactive-messaging-amqp</module>
         <module>rest-client</module>
+        <module>packaging</module>
     </modules>
 
     <build>

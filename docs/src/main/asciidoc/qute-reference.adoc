@@ -958,8 +958,8 @@ class DetailResource {
 
     @GET
     @Produces({ MediaType.TEXT_HTML, MediaType.TEXT_PLAIN })
-    public Rendering item() {
-        return item.data(new Item("Alpha", 1000)); <2>
+    public TemplateInstance item() {
+        return item.data("myItem", new Item("Alpha", 1000)); <2>
     }
 }
 ----

@@ -72,7 +72,7 @@ update_configs:
       - match:
           dependency_name: "org.apache.kafka:kafka-streams"
       - match:
-          dependency_name: "org.apache.kafka:kafka_2.12"
+          dependency_name: "org.apache.kafka:kafka_2.13"
       - match:
           dependency_name: "org.apache.zookeeper:zookeeper"
       # Debezium

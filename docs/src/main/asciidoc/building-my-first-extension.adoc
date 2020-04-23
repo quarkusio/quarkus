@@ -98,18 +98,15 @@ Now that everything is explained, we can start coding!
 
 == Maven setup
 
-Quarkus provides `create-extension` Maven Mojo to initialize your extension.
-
-<1> The https://github.com/quarkusio/quarkus-platform[`quarkus-universe-bom-deployment`] BOM gives access to all the existing Quarkus extensions (runtime and deployment modules).
-<2> Quarkus requires a recent version of the Maven compiler plugin supporting the `annotationProcessorPaths` configuration.
+Quarkus provides `create-extension` Maven Mojo to initialize your extension project.
 
 [source, shell]
 ----
 $ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
-    -DgroupId=org.acme \
-    -DartifactId=quarkus-greeting \
-    -Dversion=1.0-SNAPSHOT \
-    -Dquarkus.nameBase="Greeting Extension"
+    -DgroupId=org.acme \ #<1>
+    -DartifactId=quarkus-greeting \  #<2>
+    -Dversion=1.0-SNAPSHOT \ #<3>
+    -Dquarkus.nameBase="Greeting Extension" #<4>
 [INFO] Scanning for projects...
 [INFO] 
 [INFO] ------------------< org.apache.maven:standalone-pom >-------------------
@@ -124,6 +121,11 @@ $ mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
 [INFO] Finished at: 2020-04-22T23:28:15+02:00
 [INFO] ------------------------------------------------------------------------
 ----
+
+<1> Project's groupId
+<2> artifactId for the runtime artifact of the extension (the deployment artifactId will be derived from the runtime artifactId by appending `-deployment`)
+<3> Project's version
+<4> Prefix for the `<name>` element values in the generated POMs
 
 Maven has generated a `quarkus-greeting` directory containing the extension project which consists of the parent `pom.xml`, the `runtime` and the `deployment` modules.
 

@@ -270,6 +270,11 @@ public class BytecodeRecorderTestCase {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.object(emptyOptional);
         }, emptyOptional);
+        Optional<TestJavaBean> optionalWithCustomClass = Optional.of(new TestJavaBean());
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            recorder.object(optionalWithCustomClass);
+        }, optionalWithCustomClass);
         URL url = new URL("https://quarkus.io");
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);

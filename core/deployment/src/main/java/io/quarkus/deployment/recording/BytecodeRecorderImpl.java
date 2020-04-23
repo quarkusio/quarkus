@@ -547,6 +547,13 @@ public class BytecodeRecorderImpl implements RecorderContext {
             if (val.isPresent()) {
                 DeferredParameter res = loadObjectInstance(val.get(), existing, Object.class);
                 return new DeferredArrayStoreParameter() {
+
+                    @Override
+                    void doPrepare(MethodContext context) {
+                        res.prepare(context);
+                        super.doPrepare(context);
+                    }
+
                     @Override
                     ResultHandle createValue(MethodContext context, MethodCreator method, ResultHandle array) {
                         return method.invokeStaticMethod(ofMethod(Optional.class, "of", Optional.class, Object.class),

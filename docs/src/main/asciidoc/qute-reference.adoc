@@ -489,43 +489,31 @@ This could be useful to simplify the template structure:
 <1> The `name` will be resolved against the `item.parent`.
 <2> The `description` will be also resolved against the `item.parent`.
 
-It's also possible to specify an alias for the context object:
-
-[source,html]
-----
-{#with item.parent as myParent} <1>
-  <h1>{myParent.name}</h1>
-{/with}
-----
-<1> `myParent` is the alias that can be used inside the tag.
-
 This section might also come in handy when we'd like to avoid multiple expensive invocations:
 
 [source,html]
 ----
-{#with item.callExpensiveLogicToGetTheValue(true) as it}
-  {#if it is "fun"} <1>
+{#with item.callExpensiveLogicToGetTheValue(1,'foo',bazinga)}
+  {#if this is "fun"} <1>
     <h1>Yay!</h1>
   {#else}
-    <h1>{it} is not fun at all!</h1>
+    <h1>{this} is not fun at all!</h1>
   {/if}
 {/with}
 ----
-<1> `it` is the result of `item.callExpensiveLogicToGetTheValue(1,'foo',bazinga)`. The method is only invoked once even though the result may be used in multiple expressions.
+<1> `this` is the result of `item.callExpensiveLogicToGetTheValue(1,'foo',bazinga)`. The method is only invoked once even though the result may be used in multiple expressions.
 
 ===== Let/Set Section
 
-This section is an alternative to `{#with}` which allows to specify multiple named parameters:
+This section allows you to define named local variables:
 [source,html]
 ----
-{#let myParent=item.parent price=item.price}
+{#let myParent=order.item.parent}
   <h1>{myParent.name}</h1>
-  <p>Price: {price}
 {/let}
 ----
 
-The section tag is also registered under the `set` alias.
-The following snippet is equivalent to the previous snippet with `let`:
+The section tag is also registered under the `set` alias:
 
 [source,html]
 ----
@@ -589,12 +577,12 @@ Let's suppose we have a template called `itemDetail.html`:
 <1> `showImage` is a named parameter.
 <2> `it` is a special key that is replaced with the first unnamed param of the tag.
 
-Now if we register this template under the name `itemDetail` and if we add a `UserTagSectionHelper` to the engine:
+Now if we register this template under the name `itemDetail.html` and if we add a `UserTagSectionHelper` to the engine:
 
 [source,java]
 ----
 Engine engine = Engine.builder()
-                   .addSectionHelper(new UserTagSectionHelper.Factory("myItem","itemDetail.html"))
+                   .addSectionHelper(new UserTagSectionHelper.Factory("itemDetail","itemDetail.html"))
                    .build();
 ----
 
@@ -607,7 +595,7 @@ We can include the tag like this:
 <ul>
 {#for item in items}
   <li>
-  {#myItem item showImage=true /} <1>
+  {#itemDetail item showImage=true /} <1>
   </li>
 {/for}
 </ul>

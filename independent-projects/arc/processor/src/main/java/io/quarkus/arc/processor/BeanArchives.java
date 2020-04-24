@@ -44,11 +44,12 @@ public final class BeanArchives {
      * @param applicationIndexes
      * @return the final bean archive index
      */
-    public static IndexView buildBeanArchiveIndex(ClassLoader deploymentClassLoader, IndexView... applicationIndexes) {
+    public static IndexView buildBeanArchiveIndex(ClassLoader deploymentClassLoader, PersistentClassIndex persistentClassIndex,
+            IndexView... applicationIndexes) {
         List<IndexView> indexes = new ArrayList<>();
         Collections.addAll(indexes, applicationIndexes);
         indexes.add(buildAdditionalIndex());
-        return new IndexWrapper(CompositeIndex.create(indexes), deploymentClassLoader);
+        return new IndexWrapper(CompositeIndex.create(indexes), deploymentClassLoader, persistentClassIndex);
     }
 
     private static IndexView buildAdditionalIndex() {
@@ -74,15 +75,14 @@ public final class BeanArchives {
      */
     static class IndexWrapper implements IndexView {
 
-        private final Map<DotName, Optional<ClassInfo>> additionalClasses;
-
         private final IndexView index;
         private final ClassLoader deploymentClassLoader;
+        final Map<DotName, Optional<ClassInfo>> additionalClasses;
 
-        public IndexWrapper(IndexView index, ClassLoader deploymentClassLoader) {
+        public IndexWrapper(IndexView index, ClassLoader deploymentClassLoader, PersistentClassIndex persistentClassIndex) {
             this.index = index;
             this.deploymentClassLoader = deploymentClassLoader;
-            this.additionalClasses = new ConcurrentHashMap<>();
+            this.additionalClasses = persistentClassIndex.additionalClasses;
         }
 
         @Override
@@ -257,6 +257,11 @@ public final class BeanArchives {
             LOGGER.warnf(e, "Failed to index %s: %s", className, e.getMessage());
         }
         return result;
+    }
+
+    public static class PersistentClassIndex {
+
+        final Map<DotName, Optional<ClassInfo>> additionalClasses = new ConcurrentHashMap<>();
     }
 
 }

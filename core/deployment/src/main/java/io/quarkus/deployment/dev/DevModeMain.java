@@ -131,6 +131,12 @@ public class DevModeMain implements Closeable {
             return;
         }
         Path currentDir = Paths.get("").toAbsolutePath().normalize();
+        if (projectDir.toPath().equals(currentDir)) {
+            // the current directory is the same as the project directory so there is no need to copy the file as it's already in the proper location
+            // see https://github.com/quarkusio/quarkus/issues/8812
+            return;
+        }
+
         Path dotEnvPath = projectDir.toPath().resolve(".env");
         if (Files.exists(dotEnvPath)) {
             try {

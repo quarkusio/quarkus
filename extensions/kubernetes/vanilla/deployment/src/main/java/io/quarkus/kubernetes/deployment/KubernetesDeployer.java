@@ -1,7 +1,6 @@
 
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.container.image.deployment.util.ImageUtil.hasRegistry;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
@@ -67,11 +66,11 @@ public class KubernetesDeployer {
         }
 
         boolean isContainerImageS2IPresent = Capabilities.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability.get());
-        if (!hasRegistry(containerImageInfo.getImage()) && !isContainerImageS2IPresent) {
+        if (ContainerImageUtil.isRegistryMissingAndNotS2I(capabilities, containerImageInfo)) {
             log.warn(
                     "A Kubernetes deployment was requested, but the container image to be built will not be pushed to any registry"
                             + " because \"quarkus.container-image.registry\" has not been set. The Kubernetes deployment will only work properly"
-                            + " if the cluster is using the local Docker daemon.");
+                            + " if the cluster is using the local Docker daemon. For that reason 'ImagePullPolicy' is being force-set to 'IfNotPresent'");
         }
 
         //Get any build item but if the build was s2i, use openshift

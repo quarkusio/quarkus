@@ -62,6 +62,8 @@ public class KubernetesWithHealthAndJibTest {
                             assertThat(container.getLivenessProbe()).isNotNull().satisfies(p -> {
                                 assertProbePath(p, "/health/live");
                             });
+                            // since no registry was set and a container-image extension exists, we force-set 'IfNotPresent'
+                            assertThat(container.getImagePullPolicy()).isEqualTo("IfNotPresent");
                         });
                     });
                 });

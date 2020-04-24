@@ -1,6 +1,6 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import java.io.File;
 import java.util.List;
 import org.eclipse.aether.RepositorySystem;
@@ -11,7 +11,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
 
     protected String localRepo;
     protected Boolean offline;
-    protected LocalWorkspace workspace;
+    protected LocalProject currentProject;
     protected boolean workspaceDiscovery = true;
     protected RepositorySystem repoSystem;
     protected RepositorySystemSession repoSession;
@@ -22,7 +22,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
 
     /**
      * Local repository location
-     * 
+     *
      * @param localRepo local repository location
      * @return this instance
      */
@@ -34,7 +34,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
 
     /**
      * Whether to operate offline
-     * 
+     *
      * @param offline whether to operate offline
      * @return
      */
@@ -46,13 +46,13 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
 
     /**
      * Workspace in the context of which this configuration is being initialized
-     * 
-     * @param workspace current workspace
+     *
+     * @param currentProject current project
      * @return
      */
     @SuppressWarnings("unchecked")
-    public T setWorkspace(LocalWorkspace workspace) {
-        this.workspace = workspace;
+    public T setCurrentProject(LocalProject currentProject) {
+        this.currentProject = currentProject;
         return (T) this;
     }
 
@@ -76,7 +76,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
 
     /**
      * RepositorySystem that should be used by the resolver
-     * 
+     *
      * @param repoSystem
      * @return
      */
@@ -88,7 +88,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
 
     /**
      * RepositorySystemSession that should be used by the resolver
-     * 
+     *
      * @param repoSystem
      * @return
      */
@@ -100,7 +100,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
 
     /**
      * Remote repositories that should be used by the resolver
-     * 
+     *
      * @param repoSystem
      * @return
      */
@@ -125,7 +125,7 @@ public class BootstrapMavenContextConfig<T extends BootstrapMavenContextConfig<?
 
     /**
      * User Maven settings file location
-     * 
+     *
      * @param userSettings
      * @return
      */

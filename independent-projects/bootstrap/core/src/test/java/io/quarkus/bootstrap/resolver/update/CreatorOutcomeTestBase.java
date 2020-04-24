@@ -49,7 +49,7 @@ public abstract class CreatorOutcomeTestBase extends ResolverSetupCleanup {
             ModelUtils.persistModel(ws.resolve("pom.xml"), appJar.getPomModel());
             bootstrap.setProjectRoot(ws);
             bootstrap.setLocalProjectDiscovery(true);
-            bootstrap.setAppModelResolver(initResolver(LocalProject.loadWorkspace(classesDir).getWorkspace()));
+            bootstrap.setAppModelResolver(initResolver(LocalProject.loadWorkspace(classesDir)));
         }
 
         initProps(bootstrap);

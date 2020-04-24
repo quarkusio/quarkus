@@ -57,7 +57,30 @@ public abstract class BuildFile implements Closeable {
         }
     }
 
+    public boolean removeDependency(QuarkusPlatformDescriptor platform, Extension extension) throws IOException {
+        if (hasDependency(extension)) {
+            PRINTER.ok(" Removing extension " + extension.managementKey());
+            Dependency dep;
+            if (containsBOM(platform.getBomGroupId(), platform.getBomArtifactId())
+                    && isDefinedInBom(platform.getManagedDependencies(), extension)) {
+                dep = extension.toDependency(true);
+            } else {
+                dep = extension.toDependency(false);
+                if (getProperty(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_VERSION_NAME) != null) {
+                    dep.setVersion(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_VERSION_VALUE);
+                }
+            }
+            removeDependencyFromBuildFile(dep);
+            return true;
+        } else {
+            PRINTER.noop(" Skipping extension that does not exists " + extension.managementKey());
+            return false;
+        }
+    }
+
     protected abstract void addDependencyInBuildFile(Dependency dependency) throws IOException;
+
+    protected abstract void removeDependencyFromBuildFile(Dependency dependency) throws IOException;
 
     protected abstract boolean hasDependency(Extension extension) throws IOException;
 
@@ -73,6 +96,13 @@ public abstract class BuildFile implements Closeable {
             PRINTER.noop(" Skipping already present dependency " + parsed.getManagementKey());
             return false;
         }
+    }
+
+    public boolean removeExtensionAsGAV(String query) throws IOException {
+        Dependency parsed = MojoUtils.parse(query.trim());
+        PRINTER.ok(" Removing dependency " + parsed.getManagementKey());
+        removeDependencyFromBuildFile(parsed);
+        return true;
     }
 
     protected boolean isDefinedInBom(List<Dependency> dependencies, Extension extension) {

@@ -8,7 +8,10 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.attributes.Category;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.tasks.Internal;
 
+import io.quarkus.cli.commands.file.GradleBuildFile;
+import io.quarkus.cli.commands.writer.FileProjectWriter;
 import io.quarkus.platform.descriptor.CombinedQuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.descriptor.resolver.json.QuarkusJsonPlatformDescriptorResolver;
@@ -58,5 +61,13 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
             builder.addPlatform(platform);
         }
         return builder.build();
+    }
+
+    @Internal
+    protected GradleBuildFile getGradleBuildFile() {
+        return getProject().getParent() == null
+                ? new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir()))
+                : new GradleBuildFile(new FileProjectWriter(getProject().getProjectDir()),
+                        new FileProjectWriter(getProject().getRootProject().getProjectDir()));
     }
 }

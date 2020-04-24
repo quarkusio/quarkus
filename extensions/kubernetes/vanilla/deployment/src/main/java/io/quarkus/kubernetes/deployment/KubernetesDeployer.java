@@ -34,6 +34,7 @@ import io.quarkus.container.spi.ContainerImageResultBuildItem;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.client.deployment.KubernetesClientErrorHanlder;
@@ -54,7 +55,9 @@ public class KubernetesDeployer {
             List<ContainerImageResultBuildItem> containerImageResults,
             List<KubernetesDeploymentTargetBuildItem> kubernetesDeploymentTargets,
             OutputTargetBuildItem outputTarget,
-            BuildProducer<DeploymentResultBuildItem> deploymentResult) {
+            BuildProducer<DeploymentResultBuildItem> deploymentResult,
+            // needed to ensure that this step runs after the container image has been built
+            @SuppressWarnings("unused") List<ArtifactResultBuildItem> artifactResults) {
 
         if (!KubernetesDeploy.INSTANCE.check()) {
             return;

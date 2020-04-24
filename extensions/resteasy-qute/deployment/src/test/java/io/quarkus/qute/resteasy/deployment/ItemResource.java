@@ -7,14 +7,14 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
-import io.quarkus.qute.api.VariantTemplate;
 
 @Path("item")
 public class ItemResource {
 
     @Inject
-    VariantTemplate item;
+    Template item;
 
     @GET
     @Path("{id}")

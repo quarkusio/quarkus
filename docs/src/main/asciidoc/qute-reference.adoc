@@ -624,7 +624,7 @@ If you want to use Qute in your Quarkus application add the following dependency
 </dependency>
 ----
 
-In Quarkus, a preconfigured engine instance is provided and available for injection - a bean with scope `@Singleton`, bean type `io.quarkus.qute.Engine` and qualifier `@Default` is registered automatically.
+In Quarkus, a preconfigured engine instance is provided and available for injection - a bean with scope `@ApplicationScoped`, bean type `io.quarkus.qute.Engine` and qualifier `@Default` is registered automatically.
 Moreover, all templates located in the `src/main/resources/templates` directory are validated and can be easily injected. 
 
 [source,java]
@@ -648,6 +648,29 @@ class MyBean {
 <1> If there is no `ResourcePath` qualifier provided, the field name is used to locate the template. In this particular case, the container will attempt to locate a template with path `src/main/resources/templates/items.html`.
 <2> The `ResourcePath` qualifier instructs the container to inject a template from a path relative from `src/main/resources/templates`. In this case, the full path is `src/main/resources/templates/detail/items2_v1.html`. 
 <3> Inject the configured `Engine` instance.
+
+=== Template Variants
+
+Sometimes it's useful to render a specific variant of the template based on the content negotiation.
+This can be done by setting a special attribute via `TemplateInstance.setAttribute()`:
+
+[source,java]
+----
+class MyService {
+
+    @Inject
+    Template items; <1>
+    
+    @Inject
+    ItemManager manager;
+
+    String renderItems() {
+       return items.data("items",manager.findItems()).setAttribute(TemplateInstance.SELECTED_VARIANT, new Variant(Locale.getDefault(),"text/html","UTF-8")).render();
+    }
+}
+----
+
+NOTE: When using `quarkus-resteasy-qute` the content negotiation is performed automatically. See <<resteasy_integration>>.
 
 === Injecting Beans Directly In Templates
 
@@ -885,6 +908,7 @@ class Item {
 ----
 <1> The generated value resolver knows how to invoke the `BigDecimal.setScale()` method.
 
+[[resteasy_integration]]
 === RESTEasy Integration
 
 If you want to use Qute in your JAX-RS application, you'll need to add the `quarkus-resteasy-qute` extension first.
@@ -931,10 +955,9 @@ public class HelloResource {
 <2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
 <3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
 
-==== Variant Templates
 
-Sometimes it could be useful to render a specific variant of the template based on the content negotiation.
-`VariantTemplate` is a perfect match for this use case:
+The content negotiation is performed automatically.
+The resulting output depends on the `Accept` header received from the client.
 
 [source,java]
 ----
@@ -942,7 +965,7 @@ Sometimes it could be useful to render a specific variant of the template based 
 class DetailResource {
 
     @Inject
-    VariantTemplate item; <1>
+    Template item; <1>
 
     @GET
     @Produces({ MediaType.TEXT_HTML, MediaType.TEXT_PLAIN })
@@ -952,7 +975,7 @@ class DetailResource {
 }
 ----
 <1> Inject a variant template with base path derived from the injected field - `src/main/resources/templates/item`.
-<2> The resulting output depends on the `Accept` header received from the client. For `text/plain` the `src/main/resources/templates/item.txt` template is used. For `text/html` the `META-INF/resources/templates/item.html` template is used.
+<2> For `text/plain` the `src/main/resources/templates/item.txt` template is used. For `text/html` the `META-INF/resources/templates/item.html` template is used.
 
 
 === Development Mode

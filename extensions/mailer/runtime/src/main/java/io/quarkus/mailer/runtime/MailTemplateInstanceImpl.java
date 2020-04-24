@@ -1,8 +1,5 @@
 package io.quarkus.mailer.runtime;
 
-import static io.quarkus.qute.api.VariantTemplate.SELECTED_VARIANT;
-import static io.quarkus.qute.api.VariantTemplate.VARIANTS;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +13,6 @@ import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.MailTemplate.MailTemplateInstance;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
-import io.quarkus.qute.api.VariantTemplate;
 import io.smallrye.mutiny.Uni;
 
 class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
@@ -89,24 +85,22 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
 
     @Override
     public CompletionStage<Void> send() {
-        if (templateInstance.getAttribute(VariantTemplate.VARIANTS) != null) {
-
+        Object variantsAttr = templateInstance.getAttribute(TemplateInstance.VARIANTS);
+        if (variantsAttr != null) {
             List<Result> results = new ArrayList<>();
-
             @SuppressWarnings("unchecked")
-            List<Variant> variants = (List<Variant>) templateInstance.getAttribute(VARIANTS);
+            List<Variant> variants = (List<Variant>) variantsAttr;
             for (Variant variant : variants) {
                 if (variant.mediaType.equals(Variant.TEXT_HTML) || variant.mediaType.equals(Variant.TEXT_PLAIN)) {
                     results.add(new Result(variant,
                             Uni.createFrom().completionStage(
-                                    () -> templateInstance.setAttribute(SELECTED_VARIANT, variant).data(data).renderAsync())));
+                                    () -> templateInstance.setAttribute(TemplateInstance.SELECTED_VARIANT, variant).data(data)
+                                            .renderAsync())));
                 }
             }
-
             if (results.isEmpty()) {
                 throw new IllegalStateException("No suitable template variant found");
             }
-
             List<Uni<String>> unis = results.stream().map(Result::getValue).collect(Collectors.toList());
             return Uni.combine().all().unis(unis)
                     .combinedWith(combine(results))

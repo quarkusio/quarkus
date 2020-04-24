@@ -86,7 +86,6 @@ import io.quarkus.qute.TemplateLocator;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.ResourcePath;
-import io.quarkus.qute.api.VariantTemplate;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.Check;
 import io.quarkus.qute.deployment.TypeInfos.Info;
@@ -98,7 +97,6 @@ import io.quarkus.qute.runtime.QuteConfig;
 import io.quarkus.qute.runtime.QuteRecorder;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.quarkus.qute.runtime.TemplateProducer;
-import io.quarkus.qute.runtime.VariantTemplateProducer;
 import io.quarkus.qute.runtime.extensions.CollectionTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.MapTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.NumberTemplateExtensions;
@@ -108,10 +106,7 @@ public class QuteProcessor {
     private static final Logger LOGGER = Logger.getLogger(QuteProcessor.class);
 
     public static final DotName RESOURCE_PATH = DotName.createSimple(ResourcePath.class.getName());
-
     public static final DotName TEMPLATE = DotName.createSimple(Template.class.getName());
-
-    public static final DotName VARIANT_TEMPLATE = DotName.createSimple(VariantTemplate.class.getName());
 
     static final DotName ITERABLE = DotName.createSimple(Iterable.class.getName());
     static final DotName ITERATOR = DotName.createSimple(Iterator.class.getName());
@@ -164,7 +159,7 @@ public class QuteProcessor {
     AdditionalBeanBuildItem additionalBeans() {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
-                .addBeanClasses(EngineProducer.class, TemplateProducer.class, VariantTemplateProducer.class, ResourcePath.class,
+                .addBeanClasses(EngineProducer.class, TemplateProducer.class, ResourcePath.class,
                         Template.class, TemplateInstance.class, CollectionTemplateExtensions.class,
                         MapTemplateExtensions.class, NumberTemplateExtensions.class)
                 .build();
@@ -682,24 +677,6 @@ public class QuteProcessor {
                                 new IllegalStateException("No template found for " + injectionPoint.getTargetInfo())));
                     }
                 }
-
-            } else if (injectionPoint.getRequiredType().name().equals(VARIANT_TEMPLATE)) {
-
-                AnnotationInstance resourcePath = injectionPoint.getRequiredQualifier(RESOURCE_PATH);
-                String name;
-                if (resourcePath != null) {
-                    name = resourcePath.value().asString();
-                } else if (injectionPoint.hasDefaultedQualifier()) {
-                    name = getName(injectionPoint);
-                } else {
-                    name = null;
-                }
-                if (name != null) {
-                    if (filePaths.stream().noneMatch(path -> path.endsWith(name))) {
-                        validationErrors.produce(new ValidationErrorBuildItem(
-                                new IllegalStateException("No variant template found for " + injectionPoint.getTargetInfo())));
-                    }
-                }
             }
         }
     }
@@ -721,7 +698,7 @@ public class QuteProcessor {
                 variants.add(path);
             }
         }
-        LOGGER.debugf("Variant templates found: %s", baseToVariants);
+        LOGGER.debugf("Template variants found: %s", baseToVariants);
         return new TemplateVariantsBuildItem(baseToVariants);
     }
 

@@ -173,8 +173,9 @@ public class FunctionZipProcessor {
             if (toCheck.toFile().exists()) {
                 return toCheck;
             }
-            if (Files.exists(currentPath.getParent())) {
-                currentPath = currentPath.getParent();
+            Path parent = currentPath.getParent();
+            if (parent != null && Files.exists(parent)) {
+                currentPath = parent;
             } else {
                 return null;
             }

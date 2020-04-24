@@ -13,6 +13,7 @@ import org.gradle.api.Task;
 import org.gradle.api.UnknownTaskException;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.ProjectDependency;
+import org.gradle.api.artifacts.UnknownConfigurationException;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
@@ -189,15 +190,20 @@ public class QuarkusPlugin implements Plugin<Project> {
                 quarkusBuild.dependsOn(jarTask);
             }
         } catch (UnknownTaskException e) {
-            project.getLogger().debug("Project {} does not include {} task", dep, JavaPlugin.JAR_TASK_NAME, e);
+            project.getLogger().debug("Project {} does not include the {} task", dep, JavaPlugin.JAR_TASK_NAME);
         }
-        dep.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
-                .getIncoming().getDependencies()
-                .forEach(d -> {
-                    if (d instanceof ProjectDependency) {
-                        visitProjectDep(project, ((ProjectDependency) d).getDependencyProject(), visited);
-                    }
-                });
+        try {
+            dep.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
+                    .getIncoming().getDependencies()
+                    .forEach(d -> {
+                        if (d instanceof ProjectDependency) {
+                            visitProjectDep(project, ((ProjectDependency) d).getDependencyProject(), visited);
+                        }
+                    });
+        } catch (UnknownConfigurationException e) {
+            project.getLogger().debug("Project {} does not include the {} configuration", dep,
+                    JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
+        }
     }
 
     private static Task findTask(TaskContainer tasks, String name) {

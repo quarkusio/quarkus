@@ -20,7 +20,6 @@ import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 
-import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -40,8 +39,6 @@ import io.quarkus.vault.transit.VaultVerificationBatchException;
 import io.quarkus.vault.transit.VerificationRequest;
 
 public class VaultTransitITCase {
-
-    private static final Logger log = Logger.getLogger(VaultTransitITCase.class);
 
     public static final String COUCOU = "coucou";
     public static final String NEW_KEY = "new-key";

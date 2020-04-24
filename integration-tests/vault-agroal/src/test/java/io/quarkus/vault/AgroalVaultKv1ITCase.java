@@ -6,7 +6,6 @@ import java.sql.SQLException;
 
 import javax.inject.Inject;
 
-import org.jboss.logging.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -22,8 +21,6 @@ import io.quarkus.vault.test.VaultTestLifecycleManager;
 @DisabledOnOs(OS.WINDOWS) // https://github.com/quarkusio/quarkus/issues/3796
 @QuarkusTestResource(VaultTestLifecycleManager.class)
 public class AgroalVaultKv1ITCase {
-
-    private static final Logger log = Logger.getLogger(AgroalVaultKv1ITCase.class.getName());
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(

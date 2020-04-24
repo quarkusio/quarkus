@@ -85,8 +85,6 @@ public class VaultITCase {
 
     public static final String MY_PASSWORD = "my-password";
 
-    public static final String CRUD_PATH = "crud";
-
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)

@@ -18,7 +18,7 @@ import io.restassured.RestAssured;
 public class VaultTest {
 
     @Test
-    public void test() throws Exception {
+    public void test() {
         RestAssured.when().get("/vault").then().body(is("OK"));
     }
 

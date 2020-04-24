@@ -145,13 +145,13 @@ public class MongoClientConfig {
     /**
      * If connecting with TLS, this option enables insecure TLS connections.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean tlsInsecure;
 
     /**
      * Whether to connect using TLS.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean tls;
 
     /**

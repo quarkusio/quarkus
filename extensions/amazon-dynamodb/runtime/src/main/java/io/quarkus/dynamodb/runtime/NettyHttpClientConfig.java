@@ -94,7 +94,7 @@ public class NettyHttpClientConfig {
      * <p>
      * 0 means unlimited.
      */
-    @ConfigItem(defaultValue = "0")
+    @ConfigItem
     public int maxHttp2Streams;
 
     /**

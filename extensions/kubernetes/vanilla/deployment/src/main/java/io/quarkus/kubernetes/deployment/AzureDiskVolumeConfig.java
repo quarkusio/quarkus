@@ -51,7 +51,7 @@ public class AzureDiskVolumeConfig {
     /**
      * Wether the volumeName is read only or not.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     boolean readOnly;
 
 }

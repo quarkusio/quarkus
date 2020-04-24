@@ -47,18 +47,18 @@ public class ContainerImageConfig {
     /**
      * Whether or not insecure registries are allowed
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean insecure;
 
     /**
      * Whether or not a image build will be performed.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean build;
 
     /**
      * Whether or not an image push will be performed.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean push;
 }

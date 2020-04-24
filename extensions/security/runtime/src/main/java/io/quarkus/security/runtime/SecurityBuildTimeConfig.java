@@ -27,7 +27,7 @@ public class SecurityBuildTimeConfig {
      *   }
      * </pre>
      */
-    @ConfigItem(name = "deny-unannotated-members", defaultValue = "false")
+    @ConfigItem(name = "deny-unannotated-members")
     public boolean denyUnannotated;
 
 }

@@ -3,6 +3,7 @@ package io.quarkus.deployment.dev;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -32,7 +33,7 @@ import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runtime.Timing;
 
-public class RuntimeUpdatesProcessor implements HotReplacementContext {
+public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable {
     private static final String CLASS_EXTENSION = ".class";
     private static final Logger log = Logger.getLogger(RuntimeUpdatesProcessor.class.getPackage().getName());
 
@@ -461,4 +462,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         }
     }
 
+    @Override
+    public void close() throws IOException {
+        compiler.close();
+    }
 }

@@ -61,23 +61,20 @@ public class ParserTest {
                 + "{foo.name}"
                 + "{#for item in foo.items}"
                 + "{item.name}{bar.name}"
-                + "{/}"
+                + "{/for}"
                 + "{#each labels}"
                 + "{it.name}"
-                + "{/}"
+                + "{/each}"
                 + "{inject:bean.name}"
                 + "{#each inject:bean.labels}"
                 + "{it.value}"
-                + "{/}"
+                + "{/each}"
                 + "{#set baz=foo.bar}"
                 + "{baz.name}"
-                + "{/}"
-                + "{#with foo.bravo as delta}"
-                + "{delta.id}"
-                + "{/}"
+                + "{/set}"
                 + "{#for foo in foos}"
                 + "{foo.baz}"
-                + "{/}"
+                + "{/for}"
                 + "{foo.call(labels,bar)}");
         Set<Expression> expressions = template.getExpressions();
 
@@ -92,8 +89,6 @@ public class ParserTest {
         assertExpr(expressions, "it.value", 2, "bean.labels<for-element>.value");
         assertExpr(expressions, "foo.bar", 2, "|org.acme.Foo|.bar");
         assertExpr(expressions, "baz.name", 2, "|org.acme.Foo|.bar.name");
-        assertExpr(expressions, "foo.bravo", 2, "|org.acme.Foo|.bravo");
-        assertExpr(expressions, "delta.id", 2, "|org.acme.Foo|.bravo.id");
         assertExpr(expressions, "foo.baz", 2, null);
         assertExpr(expressions, "foo.call(labels,bar)", 2, "|org.acme.Foo|.call(labels,bar)");
     }

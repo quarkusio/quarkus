@@ -1385,7 +1385,7 @@ The metric name of all metrics should start with a short name of the extension t
 
 An example build step for build-time registration of metrics:
 
-[source%nowrap.java]
+[source%nowrap,java]
 ----
 @BuildStep
 void registerMetrics(BuildProducer<MetricBuildItem> metrics) {
@@ -1409,7 +1409,7 @@ In this example, there is a gauge per each data source that shows the current nu
 In this example, we provide an object that implements the logic of the metric, in the case of a gauge,
 it needs to implement `org.eclipse.microprofile.metrics.Gauge`. Example:
 
-[source%nowrap.java]
+[source%nowrap,java]
 ----
 public class ActiveCountGauge implements Gauge<Long> {
 
@@ -1444,7 +1444,7 @@ Look into the `AgroalProcessor#registerMetrics` method for an example how this w
 In this case, the dependency setup and build-time registration is the same as in case 2. The difference will be that instead of introducing
 custom metric objects that bridge between library-specific metrics and MP Metrics, the extension's code will contain metric collection code like this:
 
-[source%nowrap.java]
+[source%nowrap,java]
 ----
 public void methodThatShouldBeCounted() {
     if(metricsEnabled) {
@@ -1465,6 +1465,7 @@ because that would fail. The extension itself will need to provide such check, a
 The recommended way to implement this check would be to produce a specific `SystemPropertyBuildItem` during build, which will make it easy
 to evaluate these two conditions, and then check back to this system property at runtime. Example:
 
+[source%nowrap,java]
 ----
 @BuildStep
 SystemPropertyBuildItem produceMetricsEnabledProperty(AgroalBuildTimeConfig extensionSpecificConfig,

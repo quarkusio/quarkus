@@ -15,10 +15,6 @@
 [/#if]
 
     <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
-        </dependency>
 [#if additionalRuntimeDependencies?size > 0 ]
 [#list additionalRuntimeDependencies as dep]
         <dependency>

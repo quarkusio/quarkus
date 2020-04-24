@@ -15,10 +15,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.example</groupId>
             <artifactId>example-1</artifactId>
         </dependency>

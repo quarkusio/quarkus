@@ -37,6 +37,7 @@ import org.jboss.logging.Logger;
 
 import io.dekorate.Session;
 import io.dekorate.SessionWriter;
+import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.config.Annotation;
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.Label;
@@ -79,6 +80,7 @@ import io.quarkus.container.image.deployment.util.ImageUtil;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -179,6 +181,7 @@ class KubernetesProcessor {
             KubernetesConfig kubernetesConfig,
             OpenshiftConfig openshiftConfig,
             KnativeConfig knativeConfig,
+            Capabilities capabilities,
             List<KubernetesAnnotationBuildItem> kubernetesAnnotations,
             List<KubernetesLabelBuildItem> kubernetesLabels,
             List<KubernetesEnvBuildItem> kubernetesEnvs,
@@ -224,11 +227,16 @@ class KubernetesProcessor {
 
         //Apply configuration
         applyGlobalConfig(session, kubernetesConfig);
+
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+
+        boolean needToForceUpdateImagePullPolicy = needToForceUpdateImagePullPolicy(containerImage, capabilities);
         applyConfig(session, project, KUBERNETES, getResourceName(kubernetesConfig, applicationInfo), kubernetesConfig,
-                now);
-        applyConfig(session, project, OPENSHIFT, getResourceName(openshiftConfig, applicationInfo), openshiftConfig, now);
-        applyConfig(session, project, KNATIVE, getResourceName(knativeConfig, applicationInfo), knativeConfig, now);
+                now, determineImagePullPolicy(kubernetesConfig, needToForceUpdateImagePullPolicy));
+        applyConfig(session, project, OPENSHIFT, getResourceName(openshiftConfig, applicationInfo), openshiftConfig, now,
+                determineImagePullPolicy(openshiftConfig, needToForceUpdateImagePullPolicy));
+        applyConfig(session, project, KNATIVE, getResourceName(knativeConfig, applicationInfo), knativeConfig, now,
+                determineImagePullPolicy(knativeConfig, needToForceUpdateImagePullPolicy));
 
         //apply build item configurations to the dekorate session.
         applyBuildItems(session,
@@ -299,15 +307,16 @@ class KubernetesProcessor {
 
     /**
      * Apply changes to the target resource group
-     *
+     * 
      * @param session The session to apply the changes
      * @param target The deployment target (e.g. kubernetes, openshift, knative)
      * @param name The name of the resource to accept the configuration
      * @param config The {@link PlatformConfiguration} instance
-     * @param now
+     * @param now ZonedDateTime indicating the current time
+     * @param imagePullPolicy Kubernetes ImagePullPolicy to be used
      */
     private void applyConfig(Session session, Project project, String target, String name, PlatformConfiguration config,
-            ZonedDateTime now) {
+            ZonedDateTime now, ImagePullPolicy imagePullPolicy) {
         if (OPENSHIFT.equals(target)) {
             session.resources().decorate(OPENSHIFT, new AddLabelDecorator(new Label(OPENSHIFT_APP_RUNTIME, QUARKUS)));
         }
@@ -347,7 +356,7 @@ class KubernetesProcessor {
         });
 
         //Image Pull
-        session.resources().decorate(target, new ApplyImagePullPolicyDecorator(config.getImagePullPolicy()));
+        session.resources().decorate(target, new ApplyImagePullPolicyDecorator(imagePullPolicy));
         config.getImagePullSecrets().ifPresent(l -> {
             l.forEach(s -> session.resources().decorate(target, new AddImagePullSecretDecorator(name, s)));
         });
@@ -389,6 +398,29 @@ class KubernetesProcessor {
         config.getContainers().entrySet().forEach(e -> {
             session.resources().decorate(target, new AddSidecarDecorator(name, ContainerConverter.convert(e)));
         });
+    }
+
+    /**
+     * When there is no registry defined and s2i isn't being used, the only ImagePullPolicy that can work is 'IfNotPresent'.
+     * This case comes up when users want to deploy their application to a cluster like Minikube where no registry is used
+     * and instead they rely on the image being built directly into the docker daemon that the cluster uses.
+     */
+    private boolean needToForceUpdateImagePullPolicy(Optional<ContainerImageInfoBuildItem> containerImage,
+            Capabilities capabilities) {
+        boolean result = containerImage.isPresent()
+                && ContainerImageUtil.isRegistryMissingAndNotS2I(capabilities, containerImage.get());
+        if (result) {
+            log.warn("No registry was set for the container image, so 'ImagePullPolicy' is being force-set to 'IfNotPresent'");
+            return true;
+        }
+        return false;
+    }
+
+    private ImagePullPolicy determineImagePullPolicy(PlatformConfiguration config, boolean needToForceUpdateImagePullPolicy) {
+        if (needToForceUpdateImagePullPolicy) {
+            return ImagePullPolicy.IfNotPresent;
+        }
+        return config.getImagePullPolicy();
     }
 
     private void applyBuildItems(Session session,

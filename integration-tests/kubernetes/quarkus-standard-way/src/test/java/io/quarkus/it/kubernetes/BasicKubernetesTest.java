@@ -70,6 +70,7 @@ public class BasicKubernetesTest {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getContainers()).hasOnlyOneElementSatisfying(container -> {
+                            assertThat(container.getImagePullPolicy()).isEqualTo("Always"); // expect the default value
                             assertThat(container.getPorts()).hasOnlyOneElementSatisfying(p -> {
                                 assertThat(p.getContainerPort()).isEqualTo(8080);
                             });

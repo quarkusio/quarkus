@@ -38,6 +38,9 @@ public final class LiveReloadBuildItem extends SimpleBuildItem {
      * If this is a reload of an app in the same JVM then this will return true. If it is the first
      * time this app has started, or the app is not running in developer mode it will return false.
      *
+     * Note that unsuccessful attempts to start are not counted, if if the app initially failed to start
+     * the next attempt this will still return false.
+     *
      * @return <code>true</code> if this is a live reload
      */
     public boolean isLiveReload() {

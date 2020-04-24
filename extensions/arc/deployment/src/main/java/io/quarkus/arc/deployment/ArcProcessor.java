@@ -68,6 +68,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.TestClassPredicateBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -371,6 +372,7 @@ public class ArcProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            LiveReloadBuildItem liveReloadBuildItem,
             BuildProducer<GeneratedResourceBuildItem> generatedResource) throws Exception {
 
         for (ValidationErrorBuildItem validationError : validationErrors) {
@@ -381,6 +383,11 @@ public class ArcProcessor {
 
         BeanProcessor beanProcessor = validationPhase.getBeanProcessor();
         beanProcessor.processValidationErrors(validationPhase.getContext());
+        ExistingClasses existingClasses = liveReloadBuildItem.getContextObject(ExistingClasses.class);
+        if (existingClasses == null) {
+            existingClasses = new ExistingClasses();
+            liveReloadBuildItem.setContextObject(ExistingClasses.class, existingClasses);
+        }
 
         long start = System.currentTimeMillis();
         List<ResourceOutput.Resource> resources = beanProcessor.generateResources(new ReflectionRegistration() {
@@ -393,7 +400,7 @@ public class ArcProcessor {
             public void registerField(FieldInfo fieldInfo) {
                 reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
             }
-        });
+        }, existingClasses.existingClasses);
         for (ResourceOutput.Resource resource : resources) {
             switch (resource.getType()) {
                 case JAVA_CLASS:
@@ -401,6 +408,9 @@ public class ArcProcessor {
                             resource.getFullyQualifiedName());
                     generatedClass.produce(new GeneratedClassBuildItem(resource.isApplicationClass(), resource.getName(),
                             resource.getData(), resource.getSource()));
+                    if (!resource.isApplicationClass()) {
+                        existingClasses.existingClasses.add(resource.getName());
+                    }
                     break;
                 case SERVICE_PROVIDER:
                     generatedResource.produce(
@@ -547,5 +557,13 @@ public class ArcProcessor {
             }
             return false;
         }
+    }
+
+    /**
+     * This tracks beans etc from the platform that have already been generated. There is no need to spend time
+     * generating them again on a hot reload
+     */
+    static class ExistingClasses {
+        Set<String> existingClasses = new HashSet<>();
     }
 }

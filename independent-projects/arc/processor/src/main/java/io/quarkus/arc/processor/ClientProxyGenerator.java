@@ -23,9 +23,11 @@ import io.quarkus.gizmo.ResultHandle;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.spi.Contextual;
@@ -64,9 +66,11 @@ public class ClientProxyGenerator extends AbstractGenerator {
      * @param bean
      * @param beanClassName Fully qualified class name
      * @param reflectionRegistration
+     * @param existingClasses
      * @return a collection of resources
      */
-    Collection<Resource> generate(BeanInfo bean, String beanClassName, ReflectionRegistration reflectionRegistration) {
+    Collection<Resource> generate(BeanInfo bean, String beanClassName, ReflectionRegistration reflectionRegistration,
+            Set<String> existingClasses) {
 
         ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()),
                 generateSources);
@@ -77,6 +81,9 @@ public class ClientProxyGenerator extends AbstractGenerator {
         String baseName = getBaseName(bean, beanClassName);
         String targetPackage = getPackageName(bean);
         String generatedName = generatedNameFromTarget(targetPackage, baseName, CLIENT_PROXY_SUFFIX);
+        if (existingClasses.contains(generatedName)) {
+            return Collections.emptyList();
+        }
 
         // Foo_ClientProxy extends Foo implements ClientProxy
         List<String> interfaces = new ArrayList<>();

@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.enterprise.util.AnnotationLiteral;
@@ -55,26 +56,30 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
 
     /**
      *
-     * @param beanDeployment
      * @param annotationLiterals
+     * @param beanDeployment
+     * @param existingClasses
      * @return a collection of resources
      */
     Collection<Resource> generate(String name, BeanDeployment beanDeployment,
-            ComputingCache<Key, Literal> annotationLiteralsCache) {
+            ComputingCache<Key, Literal> annotationLiteralsCache, Set<String> existingClasses) {
         List<Resource> resources = new ArrayList<>();
         annotationLiteralsCache.forEachEntry((key, literal) -> {
             ResourceClassOutput classOutput = new ResourceClassOutput(literal.isApplicationClass, generateSources);
-            createSharedAnnotationLiteral(classOutput, key, literal);
+            createSharedAnnotationLiteral(classOutput, key, literal, existingClasses);
             resources.addAll(classOutput.getResources());
         });
         return resources;
     }
 
-    static void createSharedAnnotationLiteral(ClassOutput classOutput, Key key, Literal literal) {
+    static void createSharedAnnotationLiteral(ClassOutput classOutput, Key key, Literal literal, Set<String> existingClasses) {
         // Ljavax/enterprise/util/AnnotationLiteral<Lcom/foo/MyQualifier;>;Lcom/foo/MyQualifier;
         String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;",
                 key.annotationName.toString().replace('.', '/'));
         String generatedName = literal.className.replace('.', '/');
+        if (existingClasses.contains(generatedName)) {
+            return;
+        }
 
         ClassCreator annotationLiteral = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .superClass(AnnotationLiteral.class)

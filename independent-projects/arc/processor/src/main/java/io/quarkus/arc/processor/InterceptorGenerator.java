@@ -20,6 +20,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -51,9 +52,11 @@ public class InterceptorGenerator extends BeanGenerator {
      *
      * @param interceptor bean
      * @param reflectionRegistration
+     * @param existingClasses
      * @return a collection of resources
      */
-    Collection<Resource> generate(InterceptorInfo interceptor, ReflectionRegistration reflectionRegistration) {
+    Collection<Resource> generate(InterceptorInfo interceptor, ReflectionRegistration reflectionRegistration,
+            Set<String> existingClasses, Map<BeanInfo, String> beanToGeneratedName) {
 
         Type providerType = interceptor.getProviderType();
         ClassInfo interceptorClass = interceptor.getTarget().get().asClass();
@@ -67,6 +70,10 @@ public class InterceptorGenerator extends BeanGenerator {
         String providerTypeName = providerClass.name().toString();
         String targetPackage = DotNames.packageName(providerType.name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
+        beanToGeneratedName.put(interceptor, generatedName);
+        if (existingClasses.contains(generatedName)) {
+            return Collections.emptyList();
+        }
 
         boolean isApplicationClass = applicationClassPredicate.test(interceptor.getBeanClass());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,

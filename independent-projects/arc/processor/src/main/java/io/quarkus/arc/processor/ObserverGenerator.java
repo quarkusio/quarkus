@@ -74,9 +74,12 @@ public class ObserverGenerator extends AbstractGenerator {
     /**
      *
      * @param observer
+     * @param existingClasses
+     * @param observerToGeneratedName
      * @return a collection of resources
      */
-    Collection<Resource> generate(ObserverInfo observer, ReflectionRegistration reflectionRegistration) {
+    Collection<Resource> generate(ObserverInfo observer, ReflectionRegistration reflectionRegistration,
+            Set<String> existingClasses, Map<ObserverInfo, String> observerToGeneratedName) {
         // The name of the generated class differs:
         // "org.acme.Foo_Observer_fooMethod_hash" for normal observer where hash represents the signature of the observer method
         // "org.acme.Registrar_Observer_Synthetic_hash" for synthetic observer where hash represents the basic attrs of the observer
@@ -126,6 +129,10 @@ public class ObserverGenerator extends AbstractGenerator {
             targetPackage = DotNames.packageName(observer.getObserverMethod().declaringClass().name());
         }
         String generatedName = generatedNameFromTarget(targetPackage, baseName.toString(), "");
+        observerToGeneratedName.put(observer, generatedName);
+        if (existingClasses.contains(generatedName)) {
+            return Collections.emptyList();
+        }
 
         boolean isApplicationClass = applicationClassPredicate.test(observer.getBeanClass());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
@@ -229,13 +236,13 @@ public class ObserverGenerator extends AbstractGenerator {
                 .setModifiers(ACC_PUBLIC);
 
         if (observer.isSynthetic()) {
-            // Synthetic observers generate the notify method themselves 
+            // Synthetic observers generate the notify method themselves
             observer.getNotify().accept(notify);
             return;
         }
 
         boolean isStatic = Modifier.isStatic(observer.getObserverMethod().flags());
-        // It is safe to skip CreationalContext.release() for observers with noor normal scoped declaring provider, and 
+        // It is safe to skip CreationalContext.release() for observers with noor normal scoped declaring provider, and
         boolean skipRelease = observer.getInjection().injectionPoints.isEmpty();
 
         // Declaring bean instance, may be null
@@ -264,7 +271,7 @@ public class ObserverGenerator extends AbstractGenerator {
         } else {
             if (Reception.IF_EXISTS == observer.getReception()
                     && !BuiltinScope.DEPENDENT.is(observer.getDeclaringBean().getScope())) {
-                // If Reception.IF_EXISTS is used we must check the context of the declaring bean first   
+                // If Reception.IF_EXISTS is used we must check the context of the declaring bean first
                 ResultHandle container = notify.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
                 ResultHandle scope = notify.loadClass(observer.getDeclaringBean().getScope().getDotName().toString());
                 ResultHandle context = notify.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
@@ -287,7 +294,7 @@ public class ObserverGenerator extends AbstractGenerator {
                         MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
                         declaringProviderCtx));
             } else {
-                // Obtain contextual instance for non-dependent beans 
+                // Obtain contextual instance for non-dependent beans
                 ResultHandle container = notify.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
                 ResultHandle scope = notify.loadClass(observer.getDeclaringBean().getScope().getDotName().toString());
                 ResultHandle context = notify.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,

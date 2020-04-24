@@ -1,11 +1,15 @@
 package io.quarkus.panache.common.deployment;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ArrayType;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType.Primitive;
@@ -15,10 +19,12 @@ import org.jboss.jandex.TypeVariable;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.builder.BuildException;
 import io.quarkus.panache.common.impl.GenerateBridge;
 
 public class JandexUtil {
     public static final DotName DOTNAME_GENERATE_BRIDGE = DotName.createSimple(GenerateBridge.class.getName());
+    public static final DotName DOTNAME_OBJECT = DotName.createSimple(Object.class.getName());
 
     public static String getSignature(MethodInfo method, Function<String, String> typeArgMapper) {
         List<Type> parameters = method.parameters();
@@ -306,6 +312,42 @@ public class JandexUtil {
             }
         }
         return Opcodes.ALOAD;
+    }
+
+    public static ClassInfo getEnclosingClass(AnnotationInstance annotationInstance) {
+        switch (annotationInstance.target().kind()) {
+            case FIELD:
+                return annotationInstance.target().asField().declaringClass();
+            case METHOD:
+                return annotationInstance.target().asMethod().declaringClass();
+            case METHOD_PARAMETER:
+                return annotationInstance.target().asMethodParameter().method().declaringClass();
+            case CLASS:
+                return annotationInstance.target().asClass();
+            case TYPE:
+                return annotationInstance.target().asType().asClass(); // TODO is it legal here or should I throw ?
+            default:
+                throw new RuntimeException(); // this should not occur
+        }
+    }
+
+    public static boolean isSubclassOf(IndexView index, ClassInfo info, DotName parentName) throws BuildException {
+        if (info.superName().equals(DOTNAME_OBJECT)) {
+            return false;
+        }
+        if (info.superName().equals(parentName)) {
+            return true;
+        }
+
+        // climb up the hierarchy of classes
+        Type superType = info.superClassType();
+        ClassInfo superClass = index.getClassByName(superType.name());
+        if (superClass == null) {
+            // this can happens if the parent is not inside the Jandex index
+            throw new BuildException("The class " + superType.name() + " is not inside the Jandex index",
+                    Collections.emptyList());
+        }
+        return isSubclassOf(index, superClass, parentName);
     }
 
     public static void unboxIfRequired(MethodVisitor mv, Type jandexType) {

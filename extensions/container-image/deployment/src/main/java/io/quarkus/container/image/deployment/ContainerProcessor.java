@@ -26,7 +26,7 @@ public class ContainerProcessor {
         ensureSingleContainerImageExtension(capabilities);
 
         return new ContainerImageInfoBuildItem(containerImageConfig.registry,
-                containerImageConfig.group,
+                containerImageConfig.getEffectiveGroup(),
                 containerImageConfig.name.orElse(app.getName()),
                 containerImageConfig.tag.orElse(app.getVersion()));
     }

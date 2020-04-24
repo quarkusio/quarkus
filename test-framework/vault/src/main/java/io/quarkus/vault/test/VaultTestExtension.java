@@ -58,13 +58,16 @@ public class VaultTestExtension {
 
     private static final Logger log = Logger.getLogger(VaultTestExtension.class.getName());
 
-    static final String DB_NAME = "mydb";
-    static final String DB_USERNAME = "postgres";
+    private static final String DB_NAME = "mydb";
+    private static final String DB_USERNAME = "postgres";
     public static final String DB_PASSWORD = "bar";
     public static final String SECRET_VALUE = "s\u20accr\u20act";
-    static final String DEFAULT_VAULT_VERSION = "1.2.2";
-    static final int VAULT_PORT = 8200;
-    static final int MAPPED_POSTGRESQL_PORT = 6543;
+    private static final String DEFAULT_VAULT_VERSION = "1.2.2";
+    private static final int VAULT_PORT = 8200;
+    private static final String VAULT_URL = constructVaultUrl(8200);
+    private static String mappedVaultUrl;
+    private static int mappedPostgresqlPort;
+
     public static final String VAULT_AUTH_USERPASS_USER = "bob";
     public static final String VAULT_AUTH_USERPASS_PASSWORD = "sinclair";
     public static final String VAULT_AUTH_APPROLE = "myapprole";
@@ -72,10 +75,9 @@ public class VaultTestExtension {
     public static final String SECRET_PATH_V2 = "secret";
     public static final String VAULT_DBROLE = "mydbrole";
     public static final String APP_SECRET_PATH = "foo";
-    static final String APP_CONFIG_PATH = "config";
-    static final String VAULT_POLICY = "mypolicy";
-    static final String POSTGRESQL_HOST = "mypostgresdb";
-    static final String VAULT_URL = (useTls() ? "https" : "http") + "://localhost:" + VAULT_PORT;
+    private static final String APP_CONFIG_PATH = "config";
+    private static final String VAULT_POLICY = "mypolicy";
+    private static final String POSTGRESQL_HOST = "mypostgresdb";
     public static final String SECRET_KEY = "secret";
     public static final String ENCRYPTION_KEY_NAME = "my-encryption-key";
     public static final String ENCRYPTION_KEY2_NAME = "my-encryption-key2";
@@ -107,8 +109,6 @@ public class VaultTestExtension {
     public String passwordKvv1WrappingToken = null;
     public String passwordKvv2WrappingToken = null;
     public String anotherPasswordKvv2WrappingToken = null;
-
-    private VaultManager vaultManager = createVaultManager();
 
     private String db_default_ttl = "1m";
     private String db_max_ttl = "10m";
@@ -175,10 +175,18 @@ public class VaultTestExtension {
 
     private static Optional<URL> getVaultUrl() {
         try {
-            return Optional.of(new URL(VAULT_URL));
+            return Optional.of(new URL(mappedVaultUrl));
         } catch (MalformedURLException e) {
             throw new VaultException(e);
         }
+    }
+
+    static String getMappedVaultUrl() {
+        return mappedVaultUrl;
+    }
+
+    static int getMappedPostgresqlPort() {
+        return mappedPostgresqlPort;
     }
 
     public void start() throws InterruptedException, IOException {
@@ -198,8 +206,6 @@ public class VaultTestExtension {
                 .withNetworkAliases(POSTGRESQL_HOST)
                 .withExposedPorts(POSTGRESQL_PORT)
                 .withClasspathResourceMapping("postgres-init.sql", TMP_POSTGRES_INIT_SQL_FILE, READ_ONLY);
-
-        postgresContainer.setPortBindings(Arrays.asList(MAPPED_POSTGRESQL_PORT + ":" + POSTGRESQL_PORT));
 
         String configFile = useTls() ? "vault-config-tls.json" : "vault-config.json";
 
@@ -221,14 +227,18 @@ public class VaultTestExtension {
                 .withClasspathResourceMapping("vault-postgres-creation.sql", TMP_VAULT_POSTGRES_CREATION_SQL_FILE, READ_ONLY)
                 .withCommand("server", "-log-level=debug", "-config=" + TMP_VAULT_CONFIG_JSON_FILE);
 
-        vaultContainer.setPortBindings(Arrays.asList(VAULT_PORT + ":" + VAULT_PORT));
-
         postgresContainer.start();
+        mappedPostgresqlPort = postgresContainer.getFirstMappedPort();
         execPostgres(format("psql -U %s -d %s -f %s", DB_USERNAME, DB_NAME, TMP_POSTGRES_INIT_SQL_FILE));
 
         vaultContainer.start();
+        mappedVaultUrl = constructVaultUrl(vaultContainer.getFirstMappedPort());
         initVault();
         log.info("vault has started with root token: " + rootToken);
+    }
+
+    private static String constructVaultUrl(Integer port) {
+        return (useTls() ? "https" : "http") + "://localhost:" + port;
     }
 
     private String getVaultVersion() {
@@ -237,7 +247,7 @@ public class VaultTestExtension {
 
     private void initVault() throws InterruptedException, IOException {
 
-        TestVaultClient vaultClient = (TestVaultClient) vaultManager.getVaultClient();
+        TestVaultClient vaultClient = (TestVaultClient) createVaultManager().getVaultClient();
         VaultInitResponse vaultInit = vaultClient.init(1, 1);
         String unsealKey = vaultInit.keys.get(0);
         rootToken = vaultInit.rootToken;

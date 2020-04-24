@@ -6,6 +6,7 @@ import static io.quarkus.cache.runtime.NullValueConverter.toCacheValue;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -27,10 +28,12 @@ public class CaffeineCache {
 
     private Duration expireAfterAccess;
 
-    public CaffeineCache(CaffeineCacheInfo cacheInfo) {
+    public CaffeineCache(CaffeineCacheInfo cacheInfo, Executor executor) {
         this.name = cacheInfo.name;
         Caffeine<Object, Object> builder = Caffeine.newBuilder();
-
+        if (executor != null) {
+            builder.executor(executor);
+        }
         if (cacheInfo.initialCapacity != null) {
             this.initialCapacity = cacheInfo.initialCapacity;
             builder.initialCapacity(cacheInfo.initialCapacity);

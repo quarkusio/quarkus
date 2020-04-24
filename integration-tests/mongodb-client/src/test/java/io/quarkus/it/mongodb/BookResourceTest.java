@@ -118,11 +118,6 @@ public class BookResourceTest {
     }
 
     @Test
-    public void testLEgacyReactiveClients() {
-        callTheEndpoint("/legacy-reactive-books");
-    }
-
-    @Test
     public void health() throws Exception {
         RestAssured.when().get("/health/ready").then()
                 .body("status", is("UP"),

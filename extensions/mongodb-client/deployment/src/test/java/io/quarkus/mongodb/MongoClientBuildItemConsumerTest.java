@@ -31,8 +31,6 @@ public class MongoClientBuildItemConsumerTest {
     public void testContainerHasBeans() {
         assertThat(Arc.container().instance(MongoClient.class).get()).isNotNull();
         assertThat(Arc.container().instance(ReactiveMongoClient.class).get()).isNotNull();
-        // this one hasn't been made un-removeable because it's not used in MongoClientBuildItem
-        assertThat(Arc.container().instance(io.quarkus.mongodb.ReactiveMongoClient.class).get()).isNull();
     }
 
     protected static Consumer<BuildChainBuilder> buildCustomizer() {

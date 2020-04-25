@@ -88,7 +88,6 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private static final Class<?> SINGLETON_MAP_CLASS = Collections.singletonMap(1, 1).getClass();
 
     private static final AtomicInteger COUNT = new AtomicInteger();
-    private static final AtomicInteger OUTPUT_COUNT = new AtomicInteger();
     private static final String BASE_PACKAGE = "io.quarkus.deployment.steps.";
 
     private static final String PROXY_KEY = "proxykey";
@@ -128,9 +127,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
         this.className = className;
     }
 
-    public BytecodeRecorderImpl(boolean staticInit, String buildStepName, String methodName) {
+    public BytecodeRecorderImpl(boolean staticInit, String buildStepName, String methodName, String uniqueHash) {
         this(Thread.currentThread().getContextClassLoader(), staticInit,
-                BASE_PACKAGE + buildStepName + "$" + methodName + OUTPUT_COUNT.incrementAndGet());
+                BASE_PACKAGE + buildStepName + "$" + methodName + uniqueHash);
     }
 
     public boolean isEmpty() {

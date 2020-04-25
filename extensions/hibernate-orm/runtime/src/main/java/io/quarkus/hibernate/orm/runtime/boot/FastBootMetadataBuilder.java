@@ -274,8 +274,8 @@ public class FastBootMetadataBuilder {
         // Note: this one is not a boolean, just having the property enables it
         if (cfg.containsKey(JACC_ENABLED)) {
             LOG.warn("JACC is not supported. Disabling it.");
+            cfg.remove(JACC_ENABLED);
         }
-        cfg.remove(JACC_ENABLED);
 
         // here we are going to iterate the merged config settings looking for:
         // 1) additional JACC permissions

@@ -10,7 +10,7 @@ import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.UnknownTaskException;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.plugins.BasePlugin;
@@ -185,29 +185,23 @@ public class QuarkusPlugin implements Plugin<Project> {
             return;
         }
         project.getLogger().debug("Configuring {} task dependencies on {} tasks", project, dep);
-        try {
-            final Task jarTask = dep.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
-            final Task quarkusBuild = findTask(project.getTasks(), QUARKUS_BUILD_TASK_NAME);
+
+        final Task jarTask = dep.getTasks().findByName(JavaPlugin.JAR_TASK_NAME);
+        if (jarTask != null) {
+            final Task quarkusBuild = project.getTasks().findByName(QUARKUS_BUILD_TASK_NAME);
             if (quarkusBuild != null) {
                 quarkusBuild.dependsOn(jarTask);
             }
-        } catch (UnknownTaskException e) {
-            project.getLogger().debug("Project {} does not include {} task", dep, JavaPlugin.JAR_TASK_NAME, e);
         }
-        dep.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
-                .getIncoming().getDependencies()
-                .forEach(d -> {
-                    if (d instanceof ProjectDependency) {
-                        visitProjectDep(project, ((ProjectDependency) d).getDependencyProject(), visited);
-                    }
-                });
-    }
 
-    private static Task findTask(TaskContainer tasks, String name) {
-        try {
-            return tasks.findByName(name);
-        } catch (UnknownTaskException e) {
-            return null;
+        final Configuration compileConfig = dep.getConfigurations().findByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
+        if (compileConfig != null) {
+            compileConfig.getIncoming().getDependencies()
+                    .forEach(d -> {
+                        if (d instanceof ProjectDependency) {
+                            visitProjectDep(project, ((ProjectDependency) d).getDependencyProject(), visited);
+                        }
+                    });
         }
     }
 }

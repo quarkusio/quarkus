@@ -353,13 +353,14 @@ public class QuarkusDev extends QuarkusTask {
         if (!visited.add(project.getPath())) {
             return;
         }
-        final Configuration compileCp = project.getConfigurations()
-                .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
-        compileCp.getIncoming().getDependencies().forEach(d -> {
-            if (d instanceof ProjectDependency) {
-                addSelfWithLocalDeps(((ProjectDependency) d).getDependencyProject(), context, visited, addedDeps);
-            }
-        });
+        final Configuration compileCp = project.getConfigurations().findByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
+        if (compileCp != null) {
+            compileCp.getIncoming().getDependencies().forEach(d -> {
+                if (d instanceof ProjectDependency) {
+                    addSelfWithLocalDeps(((ProjectDependency) d).getDependencyProject(), context, visited, addedDeps);
+                }
+            });
+        }
 
         addLocalProject(project, context, addedDeps);
     }

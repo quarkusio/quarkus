@@ -192,7 +192,7 @@ public class EngineProducer {
         int suffixIdx = path.lastIndexOf('.');
         if (suffixIdx != -1) {
             String suffix = path.substring(suffixIdx);
-            return new Variant(null, VariantTemplateProducer.parseMediaType(suffix), null);
+            return new Variant(null, TemplateProducer.parseMediaType(suffix), null);
         }
         return null;
     }

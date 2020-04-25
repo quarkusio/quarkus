@@ -14,8 +14,8 @@ import javax.inject.Singleton;
 import org.jboss.logging.Logger;
 
 import io.quarkus.mailer.MailTemplate;
+import io.quarkus.qute.Template;
 import io.quarkus.qute.api.ResourcePath;
-import io.quarkus.qute.api.VariantTemplate;
 
 @Singleton
 public class MailTemplateProducer {
@@ -26,7 +26,7 @@ public class MailTemplateProducer {
     MutinyMailerImpl mailer;
 
     @Any
-    Instance<VariantTemplate> template;
+    Instance<Template> template;
 
     @Produces
     MailTemplate getDefault(InjectionPoint injectionPoint) {

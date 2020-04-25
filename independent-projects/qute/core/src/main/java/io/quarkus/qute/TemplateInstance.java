@@ -17,6 +17,16 @@ public interface TemplateInstance {
     String TIMEOUT = "timeout";
 
     /**
+     * Attribute key - all template variants found.
+     */
+    String VARIANTS = "variants";
+
+    /**
+     * Attribute key - a selected variant.
+     */
+    String SELECTED_VARIANT = "selectedVariant";
+
+    /**
      * Set the the root data object. Invocation of this method removes any data set previously by
      * {@link #data(String, Object)}.
      * 

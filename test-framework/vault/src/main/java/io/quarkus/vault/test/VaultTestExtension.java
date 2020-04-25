@@ -27,9 +27,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,6 +44,8 @@ import org.testcontainers.containers.Container;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
+
+import com.github.dockerjava.api.DockerClient;
 
 import io.quarkus.vault.VaultException;
 import io.quarkus.vault.VaultKVSecretEngine;
@@ -423,12 +428,43 @@ public class VaultTestExtension {
     public void close() {
 
         log.info("stop containers");
-
+        String vaultId = vaultContainer.getContainerId();
+        String pgId = postgresContainer.getContainerId();
+        DockerClient client = vaultContainer.getDockerClient();
         if (vaultContainer != null && vaultContainer.isRunning()) {
             vaultContainer.stop();
         }
+
         if (postgresContainer != null && postgresContainer.isRunning()) {
+            postgresContainer.getContainerId();
             postgresContainer.stop();
+        }
+
+        CountDownLatch latchVault = new CountDownLatch(1);
+        new Thread(() -> {
+            while (true) {
+                List<com.github.dockerjava.api.model.Container> containers = client.listContainersCmd()
+                        .withIdFilter(Arrays.asList(vaultId, pgId)).exec();
+                if (containers.isEmpty()) {
+                    latchVault.countDown();
+                    return;
+                } else {
+                    log.info("Awaiting termination of containers:");
+                    containers.forEach(
+                            c -> log.infof("\t [%s] %s %s (%s)", c.getId(), c.getImage(), c.getStatus(), c.getState()));
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+        }).start();
+
+        try {
+            latchVault.await(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
 
         VaultManager.getInstance().reset();

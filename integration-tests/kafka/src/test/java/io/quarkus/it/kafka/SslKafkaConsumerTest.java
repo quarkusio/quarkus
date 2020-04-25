@@ -21,12 +21,12 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-@QuarkusTestResource(KafkaSASLTestResource.class)
-public class SaslKafkaConsumerTest {
+@QuarkusTestResource(KafkaSSLTestResource.class)
+public class SslKafkaConsumerTest {
 
     private static void addSsl(Properties props) {
         try {
-            File sslDir = KafkaSASLTestResource.sslDir(null, false);
+            File sslDir = KafkaSSLTestResource.sslDir(null, false);
             File tsFile = new File(sslDir, "kafka-truststore.p12");
             props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
             props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, tsFile.getPath());
@@ -41,7 +41,7 @@ public class SaslKafkaConsumerTest {
     public static Producer<Integer, String> createProducer() {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19093");
-        props.put(ProducerConfig.CLIENT_ID_CONFIG, "sasl-test-producer");
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "test-ssl-producer");
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         addSsl(props);
@@ -53,7 +53,7 @@ public class SaslKafkaConsumerTest {
     public void testReception() {
         Producer<Integer, String> consumer = createProducer();
         consumer.send(new ProducerRecord<>("test-ssl-consumer", 1, "hi world"));
-        String string = RestAssured.when().get("/sasl").andReturn().asString();
+        String string = RestAssured.when().get("/ssl").andReturn().asString();
         Assertions.assertEquals("hi world", string);
     }
 

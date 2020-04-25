@@ -1,4 +1,4 @@
-package io.quarkus.it.kafka.sasl;
+package io.quarkus.it.kafka.ssl;
 
 import java.io.File;
 import java.time.Duration;
@@ -19,10 +19,10 @@ import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
 /**
- * Endpoint to check the SSL/SASL connection.
+ * Endpoint to check the SSL connection.
  */
-@Path("/sasl")
-public class SaslKafkaEndpoint {
+@Path("/ssl")
+public class SslKafkaEndpoint {
 
     private Consumer<Integer, String> consumer;
 

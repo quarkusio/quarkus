@@ -9,6 +9,8 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
 
+import org.hibernate.StatelessSession;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ResourceReferenceProvider;
@@ -56,8 +58,39 @@ public class JPAResourceReferenceProvider implements ResourceReferenceProvider {
                     };
                 }
             }
-        }
+        } else if (StatelessSession.class.equals(type)) {
+            PersistenceContext pc = getAnnotation(annotations, PersistenceContext.class);
+            if (pc != null) {
+                if (jpaConfig.isJtaEnabled()) {
+                    TransactionEntityManagers transactionEntityManagers = Arc.container()
+                            .instance(TransactionEntityManagers.class).get();
+                    ForwardingEntityManager entityManager = new ForwardingEntityManager() {
 
+                        @Override
+                        protected EntityManager delegate() {
+                            return transactionEntityManagers.getEntityManager(pc.unitName());
+                        }
+                    };
+                    return () -> entityManager;
+                } else {
+                    EntityManagerFactory entityManagerFactory = jpaConfig.getEntityManagerFactory(pc.unitName());
+                    EntityManager entityManager = entityManagerFactory.createEntityManager();
+                    return new InstanceHandle<Object>() {
+
+                        @Override
+                        public Object get() {
+                            return entityManager;
+                        }
+
+                        @Override
+                        public void destroy() {
+                            entityManager.close();
+                        }
+                    };
+                }
+            }
+
+        }
         return null;
     }
 

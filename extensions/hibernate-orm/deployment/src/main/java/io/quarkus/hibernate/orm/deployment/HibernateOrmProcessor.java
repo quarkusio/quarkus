@@ -95,6 +95,7 @@ import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationBu
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerFactoryProducer;
 import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerProducer;
+import io.quarkus.hibernate.orm.runtime.DefaultStatelessSessionProducer;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.JPAResourceReferenceProvider;
@@ -421,6 +422,7 @@ public final class HibernateOrmProcessor {
             if (isUserDefinedProducerMissing(combinedIndex.getIndex(), PERSISTENCE_CONTEXT)) {
                 additionalBeans.produce(new AdditionalBeanBuildItem(DefaultEntityManagerProducer.class));
             }
+            additionalBeans.produce(new AdditionalBeanBuildItem(DefaultStatelessSessionProducer.class));
         }
     }
 

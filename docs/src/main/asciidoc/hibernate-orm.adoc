@@ -139,6 +139,36 @@ WARNING: Make sure to wrap methods modifying your database (e.g. `entity.persist
 CDI bean method `@Transactional` will do that for you and make that method a transaction boundary. We recommend doing
 so at your application entry point boundaries like your REST endpoint controllers.
 
+=== Processing raw or large amount of data
+
+`StatelessSession` are supported too and can be injected and used standalone or inter-mixed with your `EntityManager`.
+The benefits of `StatelessSession` are that entities are not put in a session-level cache, allowing for more raw and in some cases higher performance
+data access. Especially useful when reading/processing large amount of data.
+
+[source,java]
+.Example application bean using Hibernate
+--
+@ApplicationScoped
+public class SantaClausService {
+@Inject
+StatelessSession session; <.>
+
+    @Transactional
+    public void queryGifts(String giftDescription) {
+        ScrollableResults gifts = session.getQuery("from Gift")
+        .scroll(ScrollMode.FORWARD_ONLY); <.>
+        while ( gifts.next() ) {
+            Gift gift = (Gift) gifts.get(0);
+            gift.updateStuff(...);
+            session.update(customer); <.>
+        }
+    }
+}
+--
+<.> Inject your stateless session and have fun; it will open or reuse the active transaction.
+<.> Using `scroll()` means you can process the data without loading the complete resultset or list of data in memory.
+<.> Since using a stateless session you need to explicitly call `update()` to save changes.
+
 [[hibernate-configuration-properties]]
 === Hibernate ORM configuration properties
 

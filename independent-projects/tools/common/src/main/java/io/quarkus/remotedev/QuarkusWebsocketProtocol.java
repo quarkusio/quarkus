@@ -1,7 +1,9 @@
 package io.quarkus.remotedev;
 
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.zip.DeflaterOutputStream;
 import javax.websocket.CloseReason;
@@ -51,7 +53,9 @@ public abstract class QuarkusWebsocketProtocol extends Endpoint implements Messa
         switch (bytes[0]) {
             case CLASS_CHANGE_REQUEST: {
                 logMessage("Scanning for changed classes");
-                sendChangedClasses();
+                // read the file path separator of the remote endpoint
+                final String filePathSeparator = new String(bytes, 1, bytes.length - 1, StandardCharsets.UTF_8);
+                sendChangedClasses(filePathSeparator);
                 break;
             }
             default: {
@@ -60,24 +64,33 @@ public abstract class QuarkusWebsocketProtocol extends Endpoint implements Messa
         }
     }
 
-    private void sendChangedClasses() {
+    private void sendChangedClasses(final String remoteFilePathSeparator) {
         final Map<String, byte[]> changedSrcs = changedSrcs();
         final Map<String, byte[]> changedResources = changedWebResources();
         logMessage("Scan complete changed srcs " + changedSrcs.keySet()
                 + " changes resources " + changedResources);
+        final boolean filePathSeparatorsDiffer = !File.separator.equals(remoteFilePathSeparator);
         try (OutputStream out = session.getBasicRemote().getSendStream()) {
 
             out.write(CLASS_CHANGE_RESPONSE);
             DataOutputStream data = new DataOutputStream(new DeflaterOutputStream(out));
             data.writeInt(changedSrcs.size());
             for (Map.Entry<String, byte[]> entry : changedSrcs.entrySet()) {
-                data.writeUTF(entry.getKey());
+                String path = entry.getKey();
+                if (filePathSeparatorsDiffer) {
+                    path = path.replace(File.separator, remoteFilePathSeparator);
+                }
+                data.writeUTF(path);
                 data.writeInt(entry.getValue().length);
                 data.write(entry.getValue());
             }
             data.writeInt(changedResources.size());
             for (Map.Entry<String, byte[]> entry : changedResources.entrySet()) {
-                data.writeUTF(entry.getKey());
+                String path = entry.getKey();
+                if (filePathSeparatorsDiffer) {
+                    path = path.replace(File.separator, remoteFilePathSeparator);
+                }
+                data.writeUTF(path);
                 data.writeInt(entry.getValue().length);
                 data.write(entry.getValue());
             }

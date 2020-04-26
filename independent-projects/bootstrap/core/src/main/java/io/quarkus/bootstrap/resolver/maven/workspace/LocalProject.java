@@ -10,13 +10,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -32,14 +28,6 @@ public class LocalProject {
 
     private static final String PROJECT_BASEDIR = "${project.basedir}";
     private static final String POM_XML = "pom.xml";
-
-    /**
-     * Matches specific properties that are allowed to be used in a version as per Maven spec.
-     *
-     * @see <a href="https://maven.apache.org/maven-ci-friendly.html">Maven CI Friendly Versions (maven.apache.org)</a>
-     */
-    private static final Pattern UNRESOLVED_VERSION_PATTERN = Pattern
-            .compile(Pattern.quote("${") + "(revision|sha1|changelist)" + Pattern.quote("}"));
 
     public static LocalProject load(Path path) throws BootstrapException {
         return load(path, true);
@@ -195,9 +183,9 @@ public class LocalProject {
         this.groupId = ModelUtils.getGroupId(rawModel);
         this.artifactId = rawModel.getArtifactId();
 
-        final String rawVersion = ModelUtils.getVersion(rawModel);
-        final boolean rawVersionIsUnresolved = isUnresolvedVersion(rawVersion);
-        String resolvedVersion = rawVersionIsUnresolved ? resolveVersion(rawVersion, rawModel) : rawVersion;
+        final String rawVersion = ModelUtils.getRawVersion(rawModel);
+        final boolean rawVersionIsUnresolved = ModelUtils.isUnresolvedVersion(rawVersion);
+        String resolvedVersion = rawVersionIsUnresolved ? ModelUtils.resolveVersion(rawVersion, rawModel) : rawVersion;
 
         if (workspace != null) {
             workspace.addProject(this, rawModel.getPomFile().lastModified());
@@ -216,28 +204,6 @@ public class LocalProject {
         }
 
         this.version = resolvedVersion;
-    }
-
-    static boolean isUnresolvedVersion(String version) {
-        return UNRESOLVED_VERSION_PATTERN.matcher(version).find();
-    }
-
-    private static String resolveVersion(String rawVersion, Model rawModel) {
-        final Map<String, String> props = new HashMap<>();
-        rawModel.getProperties().entrySet().forEach(e -> props.put(e.getKey().toString(), e.getValue().toString()));
-        System.getProperties().entrySet().forEach(e -> props.put(e.getKey().toString(), e.getValue().toString()));
-
-        Matcher matcher = UNRESOLVED_VERSION_PATTERN.matcher(rawVersion);
-        StringBuffer sb = new StringBuffer();
-        while (matcher.find()) {
-            final String resolved = props.get(matcher.group(1));
-            if (resolved == null) {
-                return null;
-            }
-            matcher.appendReplacement(sb, resolved);
-        }
-        matcher.appendTail(sb);
-        return sb.toString();
     }
 
     public String getGroupId() {

@@ -383,7 +383,6 @@ jobs:
               oidc
               oidc-code-flow
               oidc-tenancy
-              vault-app
               keycloak-authorization
           - category: Cache
             timeout: 30
@@ -434,6 +433,12 @@ jobs:
               spring-data-jpa
               spring-boot-properties
               spring-cloud-config-client
+          - category: Vault
+            timeout: 30
+            test-modules: >
+              vault
+              vault-app
+              vault-agroal
     steps:
       # These should be services, but services do not (yet) allow conditional execution
       - name: Postgres Service

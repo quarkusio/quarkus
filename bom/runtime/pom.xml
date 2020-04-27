@@ -245,7 +245,7 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Vert.X dependencies, imported as a BOM -->
+            <!-- Vert.x dependencies, imported as a BOM -->
             <dependency>
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-stack-depchain</artifactId>

@@ -91,13 +91,30 @@ jobs:
           path: maven-repo.tgz
 
   linux-jvm-tests:
-    name: JDK ${{matrix.java-version}} JVM Tests
+    name: JDK ${{matrix.java.name}} JVM Tests
     needs: build-jdk11
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        java-version: [8, 11, 14]
+        java :
+          - { name: Java8,
+              java-version: 8,
+              maven_args: "-pl !integration-tests/vault-app,!integration-tests/vault-agroal,!integration-tests/vault"
+          }
+          - {
+            name: "Java 8 - 242",
+            java-version: 8,
+            release: "jdk8u242-b08"
+          }
+          - {
+            name: Java 11,
+            java-version: 11
+          }
+          - {
+            name: Java 14,
+            java-version: 14
+          }
 
     runs-on: ubuntu-latest
 
@@ -157,11 +174,12 @@ jobs:
           docker run --rm --publish 127.0.0.1:3306:3306 --name build-mysql -e MYSQL_USER=$DB_USER -e MYSQL_PASSWORD=$DB_PASSWORD -e MYSQL_DATABASE=$DB_NAME -e MYSQL_RANDOM_ROOT_PASSWORD=true -e MYSQL_DATABASE=hibernate_orm_test -d mysql:5 --skip-ssl
       - uses: actions/checkout@v2
 
-      - name: Set up JDK ${{ matrix.java-version }}
+      - name: Set up JDK ${{ matrix.java.name }}
         # Uses sha for added security since tags can be updated
         uses: joschi/setup-jdk@b9cc6eabf7e7e3889766b5cee486f874c9e1bd2d
         with:
-          java-version: ${{ matrix.java-version }}
+          java-version: ${{ matrix.java.java-version }}
+          release: ${{ matrix.java.release }}
 
       - name: Download Maven Repo
         uses: actions/download-artifact@v1
@@ -172,7 +190,7 @@ jobs:
         shell: bash
         run: tar -xzvf maven-repo.tgz -C ~
       - name: Build with Maven
-        run: eval mvn $JVM_TEST_MAVEN_OPTS install
+        run: eval mvn $JVM_TEST_MAVEN_OPTS install ${{ matrix.java.maven_args}}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -181,7 +199,7 @@ jobs:
         uses: actions/upload-artifact@v1
         if: failure()
         with:
-          name: test-reports-linux-jvm${{matrix.java-version}}
+          name: test-reports-linux-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
 
   windows-jdk11-jvm-tests:

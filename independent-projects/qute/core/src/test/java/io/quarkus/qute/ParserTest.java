@@ -105,8 +105,8 @@ public class ParserTest {
                 + "{#for item in foo.items}\n\n"
                 + "{item.name}"
                 + "{/}");
-        assertEquals(6, find(template.getExpressions(), "foo.items").getOrigin().getLine());
-        assertEquals(8, find(template.getExpressions(), "item.name").getOrigin().getLine());
+        assertEquals(5, find(template.getExpressions(), "foo.items").getOrigin().getLine());
+        assertEquals(7, find(template.getExpressions(), "item.name").getOrigin().getLine());
     }
 
     @Test

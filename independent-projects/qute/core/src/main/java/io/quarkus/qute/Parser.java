@@ -51,6 +51,7 @@ class Parser implements Function<String, Expression> {
 
     private StringBuilder buffer;
     private State state;
+    private boolean lastWasParameterCommand;
     private int line;
     private int lineCharacter;
     private final Deque<SectionNode.Builder> sectionStack;
@@ -170,6 +171,10 @@ class Parser implements Function<String, Expression> {
     }
 
     private void text(char character) {
+        if (ignoreNewlineCharAfterParameterCommand(character)) {
+            return;
+        }
+
         if (character == START_DELIMITER) {
             state = State.TAG_CANDIDATE;
         } else if (character == ESCAPE_CHAR) {
@@ -181,6 +186,21 @@ class Parser implements Function<String, Expression> {
             }
             buffer.append(character);
         }
+    }
+
+    private boolean ignoreNewlineCharAfterParameterCommand(char character) {
+        if (lastWasParameterCommand) {
+            if (character == LINE_SEPARATOR_CR) {
+                return true;
+            } else if (character == LINE_SEPARATOR_LF) {
+                lastWasParameterCommand = false;
+                return true;
+            } else {
+                lastWasParameterCommand = false;
+                return false;
+            }
+        }
+        return false;
     }
 
     private void comment(char character) {
@@ -205,6 +225,7 @@ class Parser implements Function<String, Expression> {
         if (isValidIdentifierStart(character)) {
             // Real tag start, flush text if any
             flushText();
+            lastWasParameterCommand = character == Tag.PARAM.command;
             state = character == COMMENT_DELIMITER ? State.COMMENT : State.TAG_INSIDE;
             buffer.append(character);
         } else {

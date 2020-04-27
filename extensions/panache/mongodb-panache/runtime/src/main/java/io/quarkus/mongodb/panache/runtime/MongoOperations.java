@@ -43,6 +43,8 @@ public class MongoOperations {
     public static final String ID = "_id";
     public static final String MONGODB_DATABASE = "quarkus.mongodb.database";
 
+    private static volatile String defaultDatabaseName;
+
     //
     // Instance methods
 
@@ -277,9 +279,20 @@ public class MongoOperations {
         if (entity != null && !entity.database().isEmpty()) {
             return mongoClient.getDatabase(entity.database());
         }
-        String databaseName = ConfigProvider.getConfig()
-                .getValue(MONGODB_DATABASE, String.class);
+        String databaseName = getDefaultDatabaseName();
         return mongoClient.getDatabase(databaseName);
+    }
+
+    private static String getDefaultDatabaseName() {
+        if (defaultDatabaseName == null) {
+            synchronized (MongoOperations.class) {
+                if (defaultDatabaseName == null) {
+                    defaultDatabaseName = ConfigProvider.getConfig()
+                            .getValue(MONGODB_DATABASE, String.class);
+                }
+            }
+        }
+        return defaultDatabaseName;
     }
 
     private static MongoClient mongoClient(MongoEntity entity) {

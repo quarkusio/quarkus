@@ -150,7 +150,10 @@ public final class PanacheResourceProcessor {
             PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelInfo);
             for (ClassInfo classInfo : index.getIndex().getKnownClasses()) {
                 String className = classInfo.name().toString();
-                if (!modelClasses.contains(className)) {
+                //these classes can end up as application archives
+                //but there is no way they can reference entities
+                if (!modelClasses.contains(className) && !className.startsWith("io.smallrye.")
+                        && !className.startsWith("org.jboss.narayana.")) {
                     transformers.produce(new BytecodeTransformerBuildItem(className, panacheFieldAccessEnhancer));
                 }
             }

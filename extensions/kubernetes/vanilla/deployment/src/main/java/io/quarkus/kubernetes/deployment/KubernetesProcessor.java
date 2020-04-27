@@ -26,11 +26,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
@@ -162,15 +162,11 @@ class KubernetesProcessor {
     }
 
     @BuildStep
-    public List<KubernetesEnvBuildItem> createEnvVars(KubernetesConfig kubernetesConfig, OpenshiftConfig openshiftConfig,
+    public List<KubernetesEnvBuildItem> createEnv(KubernetesConfig kubernetesConfig, OpenshiftConfig openshiftConfig,
             KnativeConfig knativeConfig) {
-        List<KubernetesEnvBuildItem> items = new ArrayList<KubernetesEnvBuildItem>();
-        kubernetesConfig.envVars.forEach((k, v) -> items.add(new KubernetesEnvBuildItem(k, v.value.orElse(null),
-                v.secret.orElse(null), v.configmap.orElse(null), v.field.orElse(null), KUBERNETES)));
-        openshiftConfig.envVars.forEach((k, v) -> items.add(new KubernetesEnvBuildItem(k, v.value.orElse(null),
-                v.secret.orElse(null), v.configmap.orElse(null), v.field.orElse(null), OPENSHIFT)));
-        knativeConfig.envVars.forEach((k, v) -> items.add(new KubernetesEnvBuildItem(k, v.value.orElse(null),
-                v.secret.orElse(null), v.configmap.orElse(null), v.field.orElse(null), KNATIVE)));
+        List<KubernetesEnvBuildItem> items = new LinkedList<>(kubernetesConfig.convertToBuildItems());
+        items.addAll(openshiftConfig.convertToBuildItems());
+        items.addAll(knativeConfig.convertToBuildItems());
         return items;
     }
 
@@ -343,12 +339,11 @@ class KubernetesProcessor {
         });
 
         config.getCommand().ifPresent(c -> {
-            session.resources().decorate(target,
-                    new ApplyCommandDecorator(name, c.toArray(new String[c.size()])));
+            session.resources().decorate(target, new ApplyCommandDecorator(name, c.toArray(new String[0])));
         });
 
         config.getArguments().ifPresent(a -> {
-            session.resources().decorate(target, new ApplyArgsDecorator(name, a.toArray(new String[a.size()])));
+            session.resources().decorate(target, new ApplyArgsDecorator(name, a.toArray(new String[0])));
         });
 
         config.getServiceAccount().ifPresent(s -> {
@@ -468,27 +463,37 @@ class KubernetesProcessor {
         });
 
         kubernetesEnvs.forEach(e -> {
-            session.resources().decorate(e.getTarget(), new AddEnvVarDecorator(new EnvBuilder()
-                    .withName(e.getName() == null ? null : e.getName().toUpperCase().replaceAll(Pattern.quote("-"), "_"))
-                    .withValue(e.getValue())
-                    .withSecret(e.getSecret())
-                    .withConfigmap(e.getConfigmap())
-                    .withField(e.getField())
-                    .build()));
+            final String value = e.getValue();
+            final EnvBuilder envBuilder = new EnvBuilder()
+                    .withValue(value);
+            switch (e.getType()) {
+                case var:
+                    envBuilder.withName(EnvConverter.convertName(e.getName()));
+                    break;
+                case field:
+                    // env vars from fields need to have their name set in addition to their field field :)
+                    final String name = EnvConverter.convertName(e.getName());
+                    envBuilder.withField(value).withName(name);
+                    break;
+                case secret:
+                    envBuilder.withSecret(value);
+                    break;
+                case configmap:
+                    envBuilder.withConfigmap(value);
+                    break;
+            }
+            session.resources().decorate(e.getTarget(), new AddEnvVarDecorator(envBuilder.build()));
         });
 
         //Handle Command and arguments
         command.ifPresent(c -> {
-            session.resources()
-                    .decorate(new ApplyCommandDecorator(kubernetesName, new String[] { c.getCommand() }));
+            session.resources().decorate(new ApplyCommandDecorator(kubernetesName, new String[] { c.getCommand() }));
             session.resources().decorate(KUBERNETES, new ApplyArgsDecorator(kubernetesName, c.getArgs()));
 
-            session.resources()
-                    .decorate(new ApplyCommandDecorator(openshiftName, new String[] { c.getCommand() }));
+            session.resources().decorate(new ApplyCommandDecorator(openshiftName, new String[] { c.getCommand() }));
             session.resources().decorate(OPENSHIFT, new ApplyArgsDecorator(openshiftName, c.getArgs()));
 
-            session.resources()
-                    .decorate(new ApplyCommandDecorator(knativeName, new String[] { c.getCommand() }));
+            session.resources().decorate(new ApplyCommandDecorator(knativeName, new String[] { c.getCommand() }));
             session.resources().decorate(KNATIVE, new ApplyArgsDecorator(knativeName, c.getArgs()));
         });
 

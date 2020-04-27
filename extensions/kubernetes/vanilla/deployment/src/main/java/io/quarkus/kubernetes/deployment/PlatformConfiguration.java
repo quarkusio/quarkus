@@ -8,7 +8,7 @@ import java.util.Optional;
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
 
-public interface PlatformConfiguration {
+public interface PlatformConfiguration extends EnvVarHolder {
 
     Optional<String> getPartOf();
 
@@ -21,8 +21,6 @@ public interface PlatformConfiguration {
     Map<String, String> getAnnotations();
 
     boolean isAddBuildTimestamp();
-
-    Map<String, EnvConfig> getEnvVars();
 
     Optional<String> getWorkingDir();
 

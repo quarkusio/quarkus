@@ -52,12 +52,6 @@ public class KubernetesConfig implements PlatformConfiguration {
     boolean addBuildTimestamp;
 
     /**
-     * Environment variables to add to all containers
-     */
-    @ConfigItem
-    Map<String, EnvConfig> envVars;
-
-    /**
      * Working directory
      */
     @ConfigItem
@@ -230,8 +224,43 @@ public class KubernetesConfig implements PlatformConfiguration {
         return addBuildTimestamp;
     }
 
+    @Override
+    public String getTargetPlatformName() {
+        return Constants.KUBERNETES;
+    }
+
+    /**
+     * Environment variables to add to all containers using the old syntax.
+     *
+     * @deprecated Use {@link #env} instead using the new syntax as follows:
+     *             <ul>
+     *             <li>{@code quarkus.kubernetes.env-vars.foo.field=fieldName} becomes
+     *             {@code quarkus.kubernetes.env.fields.foo=fieldName}</li>
+     *             <li>{@code quarkus.kubernetes.env-vars.foo.value=value} becomes
+     *             {@code quarkus.kubernetes.env.vars.foo=bar}</li>
+     *             <li>{@code quarkus.kubernetes.env-vars.bar.configmap=configName} becomes
+     *             {@code quarkus.kubernetes.env.configmaps=configName}</li>
+     *             <li>{@code quarkus.kubernetes.env-vars.baz.secret=secretName} becomes
+     *             {@code quarkus.kubernetes.env.secrets=secretName}</li>
+     *             </ul>
+     */
+    @ConfigItem
+    @Deprecated
+    Map<String, EnvConfig> envVars;
+
+    /**
+     * Environment variables to add to all containers.
+     */
+    @ConfigItem
+    EnvVarsConfig env;
+
+    @Deprecated
     public Map<String, EnvConfig> getEnvVars() {
         return envVars;
+    }
+
+    public EnvVarsConfig getEnv() {
+        return env;
     }
 
     public Optional<String> getWorkingDir() {

@@ -18,7 +18,7 @@ public class ContainerConverter {
         c.workingDir.ifPresent(w -> b.withWorkingDir(w));
         c.readinessProbe.ifPresent(p -> b.withReadinessProbe(ProbeConverter.convert(p)));
         c.livenessProbe.ifPresent(p -> b.withLivenessProbe(ProbeConverter.convert(p)));
-        c.envVars.entrySet().forEach(e -> b.addToEnvVars(EnvConverter.convert(e)));
+        b.addAllToEnvVars(c.convertToEnvs());
         c.ports.entrySet().forEach(e -> b.addToPorts(PortConverter.convert(e)));
         c.mounts.entrySet().forEach(e -> b.addToMounts(MountConverter.convert(e)));
         return b;

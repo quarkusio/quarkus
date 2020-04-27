@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.orm.runtime;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.RequestScoped;
@@ -14,7 +14,7 @@ import javax.persistence.EntityManagerFactory;
 @RequestScoped
 public class RequestScopedEntityManagerHolder {
 
-    private final Map<String, EntityManager> entityManagers = new HashMap<>();
+    private final Map<String, EntityManager> entityManagers = new ConcurrentHashMap<>();
 
     public EntityManager getOrCreateEntityManager(String name, EntityManagerFactory factory) {
         return entityManagers.computeIfAbsent(name, (n) -> factory.createEntityManager());

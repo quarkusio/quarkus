@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
@@ -69,6 +70,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         registerTasks(project, quarkusExt);
     }
 
+    @SuppressWarnings("Convert2Lambda")
     private void registerTasks(Project project, QuarkusPluginExtension quarkusExt) {
         TaskContainer tasks = project.getTasks();
         tasks.create(LIST_EXTENSIONS_TASK_NAME, QuarkusListExtensions.class);
@@ -90,7 +92,13 @@ public class QuarkusPlugin implements Plugin<Project> {
 
         final Consumer<Test> configureTestTask = t -> {
             // Quarkus test configuration action which should be executed before any Quarkus test
-            t.doFirst((test) -> quarkusExt.beforeTest(t));
+            // Use anonymous classes in order to leverage task avoidance.
+            t.doFirst(new Action<Task>() {
+                @Override
+                public void execute(Task test) {
+                    quarkusExt.beforeTest(t);
+                }
+            });
             // also make each task use the JUnit platform since it's the only supported test environment
             t.useJUnitPlatform();
             // quarkusBuild is expected to run after the project has passed the tests

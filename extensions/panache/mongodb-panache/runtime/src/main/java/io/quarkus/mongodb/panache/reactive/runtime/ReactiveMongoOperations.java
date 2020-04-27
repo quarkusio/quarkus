@@ -337,7 +337,7 @@ public class ReactiveMongoOperations {
     @SuppressWarnings("rawtypes")
     public static ReactivePanacheQuery<?> find(Class<?> entityClass, String query, Sort sort, Object... params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         Document docSort = sortToDocument(sort);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return new ReactivePanacheQueryImpl(collection, docQuery, docSort);
@@ -428,7 +428,7 @@ public class ReactiveMongoOperations {
     @SuppressWarnings("rawtypes")
     public static ReactivePanacheQuery<?> find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         Document docSort = sortToDocument(sort);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return new ReactivePanacheQueryImpl(collection, docQuery, docSort);
@@ -574,14 +574,14 @@ public class ReactiveMongoOperations {
 
     public static Uni<Long> count(Class<?> entityClass, String query, Object... params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return collection.countDocuments(docQuery);
     }
 
     public static Uni<Long> count(Class<?> entityClass, String query, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return collection.countDocuments(docQuery);
     }
@@ -609,14 +609,14 @@ public class ReactiveMongoOperations {
 
     public static Uni<Long> delete(Class<?> entityClass, String query, Object... params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         return collection.deleteMany(docQuery).map(deleteResult -> deleteResult.getDeletedCount());
     }
 
     public static Uni<Long> delete(Class<?> entityClass, String query, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         return collection.deleteMany(docQuery).map(deleteResult -> deleteResult.getDeletedCount());
     }
@@ -644,15 +644,15 @@ public class ReactiveMongoOperations {
     }
 
     private static ReactivePanacheUpdate executeUpdate(Class<?> entityClass, String update, Object... params) {
-        String bindUpdate = ReactiveMongoOperations.bindUpdate(entityClass, update, params);
-        Document docUpdate = Document.parse(bindUpdate);
+        String bindUpdate = bindUpdate(entityClass, update, params);
+        BsonDocument docUpdate = BsonDocument.parse(bindUpdate);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         return new ReactivePanacheUpdateImpl(entityClass, docUpdate, collection);
     }
 
     private static ReactivePanacheUpdate executeUpdate(Class<?> entityClass, String update, Map<String, Object> params) {
-        String bindUpdate = ReactiveMongoOperations.bindUpdate(entityClass, update, params);
-        Document docUpdate = Document.parse(bindUpdate);
+        String bindUpdate = bindUpdate(entityClass, update, params);
+        BsonDocument docUpdate = BsonDocument.parse(bindUpdate);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         return new ReactivePanacheUpdateImpl(entityClass, docUpdate, collection);
     }

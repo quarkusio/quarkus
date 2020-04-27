@@ -2,7 +2,8 @@ package io.quarkus.mongodb.panache.runtime;
 
 import java.util.Map;
 
-import org.bson.Document;
+import org.bson.BsonDocument;
+import org.bson.conversions.Bson;
 
 import com.mongodb.client.MongoCollection;
 
@@ -11,10 +12,10 @@ import io.quarkus.panache.common.Parameters;
 
 public class PanacheUpdateImpl implements PanacheUpdate {
     private Class<?> entityClass;
-    private Document update;
+    private Bson update;
     private MongoCollection collection;
 
-    public PanacheUpdateImpl(Class<?> entityClass, Document update, MongoCollection collection) {
+    public PanacheUpdateImpl(Class<?> entityClass, Bson update, MongoCollection collection) {
         this.entityClass = entityClass;
         this.update = update;
         this.collection = collection;
@@ -23,14 +24,14 @@ public class PanacheUpdateImpl implements PanacheUpdate {
     @Override
     public long where(String query, Object... params) {
         String bindQuery = MongoOperations.bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         return collection.updateMany(docQuery, update).getModifiedCount();
     }
 
     @Override
     public long where(String query, Map<String, Object> params) {
         String bindQuery = MongoOperations.bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         return collection.updateMany(docQuery, update).getModifiedCount();
     }
 
@@ -41,6 +42,6 @@ public class PanacheUpdateImpl implements PanacheUpdate {
 
     @Override
     public long all() {
-        return collection.updateMany(new Document(), update).getModifiedCount();
+        return collection.updateMany(new BsonDocument(), update).getModifiedCount();
     }
 }

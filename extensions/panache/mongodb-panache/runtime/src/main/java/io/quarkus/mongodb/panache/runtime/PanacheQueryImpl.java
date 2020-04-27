@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -19,22 +20,22 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     private MongoCollection collection;
-    private Document mongoQuery;
-    private Document sort;
-    private Document projections;
+    private Bson mongoQuery;
+    private Bson sort;
+    private Bson projections;
 
     private Page page;
     private Long count;
 
     private Range range;
 
-    PanacheQueryImpl(MongoCollection<? extends Entity> collection, Document mongoQuery, Document sort) {
+    PanacheQueryImpl(MongoCollection<? extends Entity> collection, Bson mongoQuery, Bson sort) {
         this.collection = collection;
         this.mongoQuery = mongoQuery;
         this.sort = sort;
     }
 
-    private PanacheQueryImpl(PanacheQueryImpl previousQuery, Document projections) {
+    private PanacheQueryImpl(PanacheQueryImpl previousQuery, Bson projections) {
         this.collection = previousQuery.collection;
         this.mongoQuery = previousQuery.mongoQuery;
         this.sort = previousQuery.sort;

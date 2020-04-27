@@ -1,10 +1,13 @@
 package io.quarkus.undertow.websockets.runtime.devmode;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -96,7 +99,14 @@ public class HotReplacementWebsocketEndpoint {
             return;
         }
         try {
-            con.connection.getBasicRemote().sendBinary(ByteBuffer.wrap(new byte[] { CLASS_CHANGE_REQUEST }));
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            baos.write(CLASS_CHANGE_REQUEST);
+            // write out the file path separator that we expect the changed classes'/resources'
+            // to use in its response
+            for (final byte b : File.separator.getBytes(StandardCharsets.UTF_8)) {
+                baos.write(b);
+            }
+            con.connection.getBasicRemote().sendBinary(ByteBuffer.wrap(baos.toByteArray()));
         } catch (IOException e) {
             try {
                 con.connection.close();

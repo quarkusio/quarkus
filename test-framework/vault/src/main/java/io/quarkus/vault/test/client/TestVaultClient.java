@@ -1,7 +1,7 @@
 package io.quarkus.vault.test.client;
 
 import io.quarkus.vault.runtime.VaultManager;
-import io.quarkus.vault.runtime.client.OkHttpVaultClient;
+import io.quarkus.vault.runtime.client.MutinyVertxVaultClient;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitRandomBody;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
 import io.quarkus.vault.test.client.dto.VaultAppRoleRoleId;
@@ -10,7 +10,7 @@ import io.quarkus.vault.test.client.dto.VaultTransitHash;
 import io.quarkus.vault.test.client.dto.VaultTransitHashBody;
 import io.quarkus.vault.test.client.dto.VaultTransitRandom;
 
-public class TestVaultClient extends OkHttpVaultClient {
+public class TestVaultClient extends MutinyVertxVaultClient {
 
     public TestVaultClient() {
         this(VaultManager.getInstance().getServerConfig());

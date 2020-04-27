@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.vault.runtime.client.OkHttpVaultClient;
+import io.quarkus.vault.runtime.client.MutinyVertxVaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.auth.VaultLookupSelf;
 import io.quarkus.vault.runtime.client.dto.auth.VaultRenewSelf;
@@ -29,7 +29,7 @@ public class VaultAuthManagerTest {
 
     VaultRuntimeConfig config = createConfig();
     AtomicBoolean lookupSelfShouldReturn403 = new AtomicBoolean(false);
-    OkHttpVaultClient vaultClient = createVaultClient();
+    MutinyVertxVaultClient vaultClient = createVaultClient();
     VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultClient, config);
     VaultUserPassAuth vaultUserPassAuth = new VaultUserPassAuth();
     VaultLookupSelf vaultLookupSelf = new VaultLookupSelf();
@@ -116,8 +116,8 @@ public class VaultAuthManagerTest {
         }
     }
 
-    private OkHttpVaultClient createVaultClient() {
-        return new OkHttpVaultClient(config) {
+    private MutinyVertxVaultClient createVaultClient() {
+        return new MutinyVertxVaultClient(config) {
             @Override
             public VaultUserPassAuth loginUserPass(String user, String password) {
                 return vaultUserPassAuth;

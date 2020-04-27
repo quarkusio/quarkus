@@ -1,10 +1,9 @@
 package io.quarkus.vault.runtime.client;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
-import static io.quarkus.vault.runtime.client.OkHttpClientFactory.createHttpClient;
+import static io.quarkus.vault.runtime.client.MutinyVertxClientFactory.createHttpClient;
 import static java.util.Collections.emptyMap;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
@@ -57,24 +56,23 @@ import io.quarkus.vault.runtime.client.dto.transit.VaultTransitSignBody;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerify;
 import io.quarkus.vault.runtime.client.dto.transit.VaultTransitVerifyBody;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
-import okhttp3.HttpUrl;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
-public class OkHttpVaultClient implements VaultClient {
+public class MutinyVertxVaultClient implements VaultClient {
 
-    private static final Logger log = Logger.getLogger(OkHttpVaultClient.class);
+    private static final Logger log = Logger.getLogger(MutinyVertxVaultClient.class);
 
-    public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+    public static final String JSON = "application/json;charset=utf-8";
 
-    private OkHttpClient client;
+    private WebClient client;
     private URL url;
     private ObjectMapper mapper = new ObjectMapper();
 
-    public OkHttpVaultClient(VaultRuntimeConfig serverConfig) {
+    public MutinyVertxVaultClient(VaultRuntimeConfig serverConfig) {
         this.client = createHttpClient(serverConfig);
         this.url = serverConfig.url.get();
         this.mapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -268,18 +266,18 @@ public class OkHttpVaultClient implements VaultClient {
     // ---
 
     protected <T> T list(String path, String token, Class<T> resultClass) {
-        Request request = builder(path, token).method("LIST", null).build();
+        HttpRequest<Buffer> request = builder(path, token).rawMethod("LIST");
         return exec(request, resultClass);
     }
 
     protected <T> T delete(String path, String token, int expectedCode) {
-        Request request = builder(path, token).delete().build();
+        HttpRequest<Buffer> request = builder(path, token).method(HttpMethod.DELETE);
         return exec(request, expectedCode);
     }
 
     protected <T> T post(String path, String token, Object body, Class<T> resultClass, int expectedCode) {
-        Request request = builder(path, token).post(requestBody(body)).build();
-        return exec(request, resultClass, expectedCode);
+        HttpRequest<Buffer> request = builder(path, token);
+        return exec(request, body, resultClass, expectedCode);
     }
 
     protected <T> T post(String path, String token, Object body, Class<T> resultClass) {
@@ -287,110 +285,114 @@ public class OkHttpVaultClient implements VaultClient {
     }
 
     protected <T> T post(String path, String token, Map<String, String> headers, Object body, Class<T> resultClass) {
-        Request.Builder builder = builder(path, token).post(requestBody(body));
-        headers.forEach(builder::header);
-        Request request = builder.build();
-        return exec(request, resultClass);
+        HttpRequest<Buffer> request = builder(path, token).method(HttpMethod.POST);
+        headers.forEach(request::putHeader);
+        return exec(request, body, resultClass);
     }
 
     protected <T> T post(String path, String token, Object body, int expectedCode) {
-        Request request = builder(path, token).post(requestBody(body)).build();
-        return exec(request, expectedCode);
+        HttpRequest<Buffer> request = builder(path, token).method(HttpMethod.POST);
+        return exec(request, body, null, expectedCode);
     }
 
     protected <T> T put(String path, String token, Object body, Class<T> resultClass) {
-        Request request = builder(path, token).put(requestBody(body)).build();
-        return exec(request, resultClass);
+        HttpRequest<Buffer> request = builder(path, token).method(HttpMethod.PUT);
+        return exec(request, body, resultClass);
     }
 
     protected <T> T put(String path, Object body, Class<T> resultClass) {
-        Request request = builder(path).put(requestBody(body)).build();
-        return exec(request, resultClass);
+        HttpRequest<Buffer> request = builder(path).method(HttpMethod.PUT);
+        return exec(request, body, resultClass);
     }
 
     protected <T> T get(String path, String token, Class<T> resultClass) {
-        Request request = builder(path, token).get().build();
+        HttpRequest<Buffer> request = builder(path, token).method(HttpMethod.GET);
         return exec(request, resultClass);
     }
 
     protected <T> T get(String path, Map<String, String> queryParams, Class<T> resultClass) {
-        final Request request = builder(path, queryParams).get().build();
+        final HttpRequest<Buffer> request = builder(path, queryParams).method(HttpMethod.GET);
         return exec(request, resultClass);
     }
 
     protected int head(String path) {
-        final Request request = builder(path).head().build();
+        final HttpRequest<Buffer> request = builder(path).method(HttpMethod.HEAD);
         return exec(request);
     }
 
     protected int head(String path, Map<String, String> queryParams) {
-        final Request request = builder(path, queryParams).head().build();
+        final HttpRequest<Buffer> request = builder(path, queryParams).method(HttpMethod.HEAD);
         return exec(request);
     }
 
-    private <T> T exec(Request request, Class<T> resultClass) {
-        return exec(request, resultClass, 200);
+    private <T> T exec(HttpRequest<Buffer> request, Class<T> resultClass) {
+        return exec(request, null, resultClass, 200);
     }
 
-    private <T> T exec(Request request, int expectedCode) {
-        return exec(request, null, expectedCode);
+    private <T> T exec(HttpRequest<Buffer> request, int expectedCode) {
+        return exec(request, null, null, expectedCode);
     }
 
-    private <T> T exec(Request request, Class<T> resultClass, int expectedCode) {
-        try (Response response = client.newCall(request).execute()) {
-            if (response.code() != expectedCode) {
+    private <T> T exec(HttpRequest<Buffer> request, Object body, Class<T> resultClass) {
+        return exec(request, body, resultClass, 200);
+    }
+
+    private <T> T exec(HttpRequest<Buffer> request, Object body, Class<T> resultClass, int expectedCode) {
+        try {
+            HttpResponse<Buffer> response = body == null
+                    ? request.sendAndAwait()
+                    : request.sendJsonAndAwait(requestBody(body));
+            if (response.statusCode() != expectedCode) {
                 throwVaultException(response);
             }
-            String jsonBody = response.body().string();
+            String jsonBody = response.body().toString();
             return resultClass == null ? null : mapper.readValue(jsonBody, resultClass);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new VaultException(e);
         }
     }
 
-    private int exec(Request request) {
-        try (Response response = client.newCall(request).execute()) {
-            return response.code();
-        } catch (IOException e) {
+    private int exec(HttpRequest<Buffer> request) {
+        try {
+            return request.sendAndAwait().statusCode();
+        } catch (Exception e) {
             throw new VaultException(e);
         }
     }
 
-    private void throwVaultException(Response response) {
+    private void throwVaultException(HttpResponse<Buffer> response) {
         String body = null;
         try {
-            body = response.body().string();
+            body = response.body().toString();
         } catch (Exception e) {
             // ignore
         }
-        throw new VaultClientException(response.code(), body);
+        throw new VaultClientException(response.statusCode(), body);
     }
 
-    private Request.Builder builder(String path, String token) {
-        Request.Builder builder = new Request.Builder().url(getUrl(path));
+    private HttpRequest<Buffer> builder(String path, String token) {
+        HttpRequest<Buffer> request = builder(path);
         if (token != null) {
-            builder.header(X_VAULT_TOKEN, token);
+            request.putHeader(X_VAULT_TOKEN, token);
         }
-        return builder;
+        return request;
     }
 
-    private Request.Builder builder(String path) {
-        Request.Builder builder = new Request.Builder().url(getUrl(path));
-        return builder;
+    private HttpRequest<Buffer> builder(String path) {
+        return client.get(getUrl(path).toString());
     }
 
-    private Request.Builder builder(String path, Map<String, String> queryParams) {
-        HttpUrl.Builder httpBuilder = HttpUrl.parse(getUrl(path).toExternalForm()).newBuilder();
+    private HttpRequest<Buffer> builder(String path, Map<String, String> queryParams) {
+        HttpRequest<Buffer> request = builder(path);
         if (queryParams != null) {
-            queryParams.forEach((name, value) -> httpBuilder.addQueryParameter(name, value));
+            queryParams.forEach((name, value) -> request.addQueryParam(name, value));
         }
-        Request.Builder builder = new Request.Builder().url(httpBuilder.build());
-        return builder;
+        return request;
     }
 
-    private RequestBody requestBody(Object body) {
+    private String requestBody(Object body) {
         try {
-            return RequestBody.create(JSON, mapper.writeValueAsString(body));
+            return mapper.writeValueAsString(body);
         } catch (JsonProcessingException e) {
             throw new VaultException(e);
         }

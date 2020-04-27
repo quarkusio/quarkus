@@ -1,6 +1,6 @@
 package io.quarkus.vault.runtime;
 
-import io.quarkus.vault.runtime.client.OkHttpVaultClient;
+import io.quarkus.vault.runtime.client.MutinyVertxVaultClient;
 import io.quarkus.vault.runtime.client.VaultClient;
 import io.quarkus.vault.runtime.config.VaultBuildTimeConfig;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
@@ -36,7 +36,7 @@ public class VaultManager {
     }
 
     public VaultManager(VaultBuildTimeConfig vaultBuildTimeConfig, VaultRuntimeConfig serverConfig) {
-        this(vaultBuildTimeConfig, serverConfig, new OkHttpVaultClient(serverConfig));
+        this(vaultBuildTimeConfig, serverConfig, new MutinyVertxVaultClient(serverConfig));
     }
 
     public VaultManager(VaultBuildTimeConfig vaultBuildTimeConfig, VaultRuntimeConfig serverConfig, VaultClient vaultClient) {

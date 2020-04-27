@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.vault.runtime.client.OkHttpVaultClient;
+import io.quarkus.vault.runtime.client.MutinyVertxVaultClient;
 import io.quarkus.vault.runtime.client.VaultClientException;
 import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentials;
 import io.quarkus.vault.runtime.client.dto.database.VaultDatabaseCredentialsData;
@@ -34,7 +34,7 @@ public class VaultDbManagerTest {
     VaultLeasesLookup vaultLeasesLookup = new VaultLeasesLookup();
     AtomicBoolean lookupLeaseShouldReturn400 = new AtomicBoolean(false);
     VaultRenewLease vaultRenewLease = new VaultRenewLease();
-    OkHttpVaultClient vaultClient = createVaultClient();
+    MutinyVertxVaultClient vaultClient = createVaultClient();
     VaultAuthManager vaultAuthManager = new VaultAuthManager(vaultClient, config);
     VaultDbManager vaultDbManager = new VaultDbManager(vaultAuthManager, vaultClient, config);
     String mydbrole = "mydbrole";
@@ -122,8 +122,8 @@ public class VaultDbManagerTest {
         }
     }
 
-    private OkHttpVaultClient createVaultClient() {
-        return new OkHttpVaultClient(config) {
+    private MutinyVertxVaultClient createVaultClient() {
+        return new MutinyVertxVaultClient(config) {
             @Override
             public VaultDatabaseCredentials generateDatabaseCredentials(String token, String databaseCredentialsRole) {
                 return credentials;

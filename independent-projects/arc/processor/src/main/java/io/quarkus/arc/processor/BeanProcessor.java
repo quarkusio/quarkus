@@ -156,49 +156,45 @@ public class BeanProcessor {
             reflectionRegistration = this.reflectionRegistration;
         }
         PrivateMembersCollector privateMembers = new PrivateMembersCollector();
+        Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
+        Map<ObserverInfo, String> observerToGeneratedName = new HashMap<>();
+
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(sharedAnnotationLiterals,
                 applicationClassPredicate);
         BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate, privateMembers,
-                generateSources);
+                generateSources, reflectionRegistration, existingClasses, beanToGeneratedName);
         ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator(applicationClassPredicate, generateSources,
-                allowMocking);
+                allowMocking, reflectionRegistration, existingClasses);
         InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate,
-                privateMembers, generateSources);
+                privateMembers, generateSources, reflectionRegistration, existingClasses, beanToGeneratedName);
         SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals, applicationClassPredicate,
-                generateSources);
+                generateSources, reflectionRegistration, existingClasses);
         ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate,
-                privateMembers, generateSources);
+                privateMembers, generateSources, reflectionRegistration, existingClasses, observerToGeneratedName);
         AnnotationLiteralGenerator annotationLiteralsGenerator = new AnnotationLiteralGenerator(generateSources);
-
-        Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
-        Map<ObserverInfo, String> observerToGeneratedName = new HashMap<>();
 
         List<Resource> resources = new ArrayList<>();
 
         // Generate interceptors
         for (InterceptorInfo interceptor : beanDeployment.getInterceptors()) {
-            for (Resource resource : interceptorGenerator.generate(interceptor, reflectionRegistration, existingClasses,
-                    beanToGeneratedName)) {
+            for (Resource resource : interceptorGenerator.generate(interceptor)) {
                 resources.add(resource);
             }
         }
 
         // Generate beans
         for (BeanInfo bean : beanDeployment.getBeans()) {
-            for (Resource resource : beanGenerator.generate(bean, reflectionRegistration, existingClasses,
-                    beanToGeneratedName)) {
+            for (Resource resource : beanGenerator.generate(bean)) {
                 resources.add(resource);
                 if (SpecialType.BEAN.equals(resource.getSpecialType())) {
                     if (bean.getScope().isNormal()) {
                         // Generate client proxy
                         resources.addAll(
-                                clientProxyGenerator.generate(bean, resource.getFullyQualifiedName(), reflectionRegistration,
-                                        existingClasses));
+                                clientProxyGenerator.generate(bean, resource.getFullyQualifiedName()));
                     }
                     if (bean.isSubclassRequired()) {
                         resources.addAll(
-                                subclassGenerator.generate(bean, resource.getFullyQualifiedName(), reflectionRegistration,
-                                        existingClasses));
+                                subclassGenerator.generate(bean, resource.getFullyQualifiedName()));
                     }
                 }
             }
@@ -206,8 +202,7 @@ public class BeanProcessor {
 
         // Generate observers
         for (ObserverInfo observer : beanDeployment.getObservers()) {
-            for (Resource resource : observerGenerator.generate(observer, reflectionRegistration, existingClasses,
-                    observerToGeneratedName)) {
+            for (Resource resource : observerGenerator.generate(observer)) {
                 resources.add(resource);
             }
         }

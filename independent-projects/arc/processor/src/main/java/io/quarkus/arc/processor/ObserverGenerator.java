@@ -58,28 +58,31 @@ public class ObserverGenerator extends AbstractGenerator {
     static final String DECLARING_PROVIDER_SUPPLIER = "declaringProviderSupplier";
 
     private final AnnotationLiteralProcessor annotationLiterals;
-
     private final Predicate<DotName> applicationClassPredicate;
-
     private final PrivateMembersCollector privateMembers;
+    private final ReflectionRegistration reflectionRegistration;
+    private final Set<String> existingClasses;
+    private final Map<ObserverInfo, String> observerToGeneratedName;
 
     public ObserverGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
-            PrivateMembersCollector privateMembers, boolean generateSources) {
+            PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
+            Set<String> existingClasses,
+            Map<ObserverInfo, String> observerToGeneratedName) {
         super(generateSources);
         this.annotationLiterals = annotationLiterals;
         this.applicationClassPredicate = applicationClassPredicate;
         this.privateMembers = privateMembers;
+        this.reflectionRegistration = reflectionRegistration;
+        this.existingClasses = existingClasses;
+        this.observerToGeneratedName = observerToGeneratedName;
     }
 
     /**
      *
      * @param observer
-     * @param existingClasses
-     * @param observerToGeneratedName
      * @return a collection of resources
      */
-    Collection<Resource> generate(ObserverInfo observer, ReflectionRegistration reflectionRegistration,
-            Set<String> existingClasses, Map<ObserverInfo, String> observerToGeneratedName) {
+    Collection<Resource> generate(ObserverInfo observer) {
         // The name of the generated class differs:
         // "org.acme.Foo_Observer_fooMethod_hash" for normal observer where hash represents the signature of the observer method
         // "org.acme.Registrar_Observer_Synthetic_hash" for synthetic observer where hash represents the basic attrs of the observer

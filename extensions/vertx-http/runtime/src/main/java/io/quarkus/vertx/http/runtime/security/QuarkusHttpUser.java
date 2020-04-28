@@ -95,13 +95,13 @@ public class QuarkusHttpUser implements User {
      */
     public static Uni<SecurityIdentity> getSecurityIdentity(RoutingContext routingContext,
             IdentityProviderManager identityProviderManager) {
-        QuarkusHttpUser existing = (QuarkusHttpUser) routingContext.user();
-        if (existing != null) {
-            return Uni.createFrom().item(existing.getSecurityIdentity());
-        }
         Uni<SecurityIdentity> deferred = routingContext.get(DEFERRED_IDENTITY_KEY);
         if (deferred != null) {
             return deferred;
+        }
+        QuarkusHttpUser existing = (QuarkusHttpUser) routingContext.user();
+        if (existing != null) {
+            return Uni.createFrom().item(existing.getSecurityIdentity());
         }
         if (identityProviderManager != null) {
             return identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE);

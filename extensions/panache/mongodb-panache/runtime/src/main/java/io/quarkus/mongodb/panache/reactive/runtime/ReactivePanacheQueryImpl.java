@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import io.quarkus.mongodb.FindOptions;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheQuery;
@@ -18,22 +19,22 @@ import io.smallrye.mutiny.Uni;
 
 public class ReactivePanacheQueryImpl<Entity> implements ReactivePanacheQuery<Entity> {
     private ReactiveMongoCollection collection;
-    private Document mongoQuery;
-    private Document sort;
-    private Document projections;
+    private Bson mongoQuery;
+    private Bson sort;
+    private Bson projections;
 
     private Page page;
     private Uni<Long> count;
 
     private Range range;
 
-    ReactivePanacheQueryImpl(ReactiveMongoCollection<? extends Entity> collection, Document mongoQuery, Document sort) {
+    ReactivePanacheQueryImpl(ReactiveMongoCollection<? extends Entity> collection, Bson mongoQuery, Bson sort) {
         this.collection = collection;
         this.mongoQuery = mongoQuery;
         this.sort = sort;
     }
 
-    private ReactivePanacheQueryImpl(ReactivePanacheQueryImpl previousQuery, Document projections) {
+    private ReactivePanacheQueryImpl(ReactivePanacheQueryImpl previousQuery, Bson projections) {
         this.collection = previousQuery.collection;
         this.mongoQuery = previousQuery.mongoQuery;
         this.sort = previousQuery.sort;

@@ -570,10 +570,11 @@ final class Beans {
             priority1 = bean1.getDeclaringBean().getAlternativePriority();
         }
 
-        if (priority2 == null) {
-            return priority1 == null ? 0 : -1;
-        } else if (priority1 == null) {
-            return 1;
+        if (priority2 == null || priority1 == null) {
+            throw new IllegalStateException(String.format(
+                    "Alternative Bean priority should not be null. %s has priority %s; %s has priority %s",
+                    bean1.getBeanClass(), priority1,
+                    bean2.getBeanClass(), priority2));
         }
 
         return priority2.compareTo(priority1);

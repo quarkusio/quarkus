@@ -46,9 +46,9 @@ public class QuarkusPluginExtension {
         try {
             final Map<String, Object> props = task.getSystemProperties();
 
-            final AppModel deploymentDeps = getAppModelResolver(LaunchMode.TEST)
+            final AppModel appModel = getAppModelResolver(LaunchMode.TEST)
                     .resolveModel(getAppArtifact());
-            final Path serializedModel = QuarkusGradleUtils.serializeAppModel(deploymentDeps, task);
+            final Path serializedModel = QuarkusGradleUtils.serializeAppModel(appModel, task);
             props.put(BootstrapConstants.SERIALIZED_APP_MODEL, serializedModel.toString());
 
             final String nativeRunner = task.getProject().getBuildDir().toPath().resolve(finalName() + "-runner")

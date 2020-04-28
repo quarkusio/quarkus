@@ -112,6 +112,15 @@ public class QuarkusTestExtension
 
             if (!appClassLocation.equals(testClassLocation)) {
                 runnerBuilder.addAdditionalApplicationArchive(AdditionalDependency.test(testClassLocation));
+                // if test classes is a dir, we should also check whether test resources dir exists as a separate dir (gradle)
+                // TODO: this whole app/test path resolution logic is pretty dumb, it needs be re-worked using proper workspace discovery
+                if (Files.isDirectory(testClassLocation)) {
+                    final Path testResourcesLocation = testClassLocation.getParent().getParent().getParent()
+                            .resolve("resources").resolve("test");
+                    if (Files.exists(testResourcesLocation)) {
+                        runnerBuilder.addAdditionalApplicationArchive(AdditionalDependency.test(testResourcesLocation));
+                    }
+                }
             }
 
             CuratedApplication curatedApplication = runnerBuilder

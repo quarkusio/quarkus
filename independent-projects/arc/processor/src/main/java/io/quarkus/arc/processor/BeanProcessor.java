@@ -11,10 +11,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -28,14 +30,14 @@ import org.jboss.logging.Logger;
 /**
  * An integrator should create a new instance of the bean processor using the convenient {@link Builder} and then invoke the
  * "processing" methods in the following order:
- * 
+ *
  * <ol>
  * <li>{@link #registerCustomContexts()}</li>
  * <li>{@link #registerBeans()}</li>
  * <li>{@link #initialize(Consumer)}</li>
  * <li>{@link #validate(Consumer)}</li>
  * <li>{@link #processValidationErrors(io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext)}</li>
- * <li>{@link #generateResources(ReflectionRegistration)}</li>
+ * <li>{@link #generateResources(ReflectionRegistration, Set)}</li>
  * </ol>
  */
 public class BeanProcessor {
@@ -116,7 +118,7 @@ public class BeanProcessor {
     /**
      * Analyze the deployment and register all beans and observers declared on the classes. Furthermore, register all synthetic
      * beans provided by bean registrars.
-     * 
+     *
      * @return the context applied to {@link BeanRegistrar}
      */
     public BeanRegistrar.RegistrationContext registerBeans() {
@@ -128,7 +130,7 @@ public class BeanProcessor {
     }
 
     /**
-     * 
+     *
      * @param bytecodeTransformerConsumer Used to register a bytecode transformation
      */
     public void initialize(Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
@@ -136,7 +138,7 @@ public class BeanProcessor {
     }
 
     /**
-     * 
+     *
      * @param bytecodeTransformerConsumer Used to register a bytecode transformation
      * @return the validation context
      */
@@ -148,54 +150,51 @@ public class BeanProcessor {
         BeanDeployment.processErrors(validationContext.getDeploymentProblems());
     }
 
-    public List<Resource> generateResources(ReflectionRegistration reflectionRegistration) throws IOException {
+    public List<Resource> generateResources(ReflectionRegistration reflectionRegistration, Set<String> existingClasses)
+            throws IOException {
         if (reflectionRegistration == null) {
             reflectionRegistration = this.reflectionRegistration;
         }
         PrivateMembersCollector privateMembers = new PrivateMembersCollector();
+        Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
+        Map<ObserverInfo, String> observerToGeneratedName = new HashMap<>();
+
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(sharedAnnotationLiterals,
                 applicationClassPredicate);
         BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate, privateMembers,
-                generateSources);
+                generateSources, reflectionRegistration, existingClasses, beanToGeneratedName);
         ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator(applicationClassPredicate, generateSources,
-                allowMocking);
+                allowMocking, reflectionRegistration, existingClasses);
         InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate,
-                privateMembers, generateSources);
+                privateMembers, generateSources, reflectionRegistration, existingClasses, beanToGeneratedName);
         SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals, applicationClassPredicate,
-                generateSources);
+                generateSources, reflectionRegistration, existingClasses);
         ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate,
-                privateMembers, generateSources);
+                privateMembers, generateSources, reflectionRegistration, existingClasses, observerToGeneratedName);
         AnnotationLiteralGenerator annotationLiteralsGenerator = new AnnotationLiteralGenerator(generateSources);
-
-        Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
-        Map<ObserverInfo, String> observerToGeneratedName = new HashMap<>();
 
         List<Resource> resources = new ArrayList<>();
 
         // Generate interceptors
         for (InterceptorInfo interceptor : beanDeployment.getInterceptors()) {
-            for (Resource resource : interceptorGenerator.generate(interceptor, reflectionRegistration)) {
+            for (Resource resource : interceptorGenerator.generate(interceptor)) {
                 resources.add(resource);
-                if (SpecialType.INTERCEPTOR_BEAN.equals(resource.getSpecialType())) {
-                    beanToGeneratedName.put(interceptor, resource.getName());
-                }
             }
         }
 
         // Generate beans
         for (BeanInfo bean : beanDeployment.getBeans()) {
-            for (Resource resource : beanGenerator.generate(bean, reflectionRegistration)) {
+            for (Resource resource : beanGenerator.generate(bean)) {
                 resources.add(resource);
                 if (SpecialType.BEAN.equals(resource.getSpecialType())) {
                     if (bean.getScope().isNormal()) {
                         // Generate client proxy
                         resources.addAll(
-                                clientProxyGenerator.generate(bean, resource.getFullyQualifiedName(), reflectionRegistration));
+                                clientProxyGenerator.generate(bean, resource.getFullyQualifiedName()));
                     }
-                    beanToGeneratedName.put(bean, resource.getName());
                     if (bean.isSubclassRequired()) {
                         resources.addAll(
-                                subclassGenerator.generate(bean, resource.getFullyQualifiedName(), reflectionRegistration));
+                                subclassGenerator.generate(bean, resource.getFullyQualifiedName()));
                     }
                 }
             }
@@ -203,11 +202,8 @@ public class BeanProcessor {
 
         // Generate observers
         for (ObserverInfo observer : beanDeployment.getObservers()) {
-            for (Resource resource : observerGenerator.generate(observer, reflectionRegistration)) {
+            for (Resource resource : observerGenerator.generate(observer)) {
                 resources.add(resource);
-                if (SpecialType.OBSERVER.equals(resource.getSpecialType())) {
-                    observerToGeneratedName.put(observer, resource.getName());
-                }
             }
         }
 
@@ -221,7 +217,8 @@ public class BeanProcessor {
 
         // Generate AnnotationLiterals
         if (annotationLiterals.hasLiteralsToGenerate()) {
-            resources.addAll(annotationLiteralsGenerator.generate(name, beanDeployment, annotationLiterals.getCache()));
+            resources.addAll(
+                    annotationLiteralsGenerator.generate(name, beanDeployment, annotationLiterals.getCache(), existingClasses));
         }
 
         if (output != null) {
@@ -249,7 +246,7 @@ public class BeanProcessor {
         initialize(unsupportedBytecodeTransformer);
         ValidationContext validationContext = validate(unsupportedBytecodeTransformer);
         processValidationErrors(validationContext);
-        generateResources(null);
+        generateResources(null, new HashSet<>());
         return beanDeployment;
     }
 
@@ -428,7 +425,7 @@ public class BeanProcessor {
 
         /**
          * If set to true the container will transform unproxyable bean classes during validation.
-         * 
+         *
          * @param value
          * @return self
          */
@@ -440,7 +437,7 @@ public class BeanProcessor {
         /**
          * If set to true the will generate source files of all generated classes for debug purposes. The generated source is
          * not actually a source file but a textual representation of generated code.
-         * 
+         *
          * @param value
          * @return self
          */
@@ -453,7 +450,7 @@ public class BeanProcessor {
          * Can be used to compute a priority of an alternative bean. A non-null computed value always
          * takes precedence over the priority defined by {@link Priority}, {@link AlternativePriority} or an alternative
          * stereotype.
-         * 
+         *
          * @param priorities
          * @return self
          */

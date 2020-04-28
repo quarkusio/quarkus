@@ -58,17 +58,23 @@ public class ObserverGenerator extends AbstractGenerator {
     static final String DECLARING_PROVIDER_SUPPLIER = "declaringProviderSupplier";
 
     private final AnnotationLiteralProcessor annotationLiterals;
-
     private final Predicate<DotName> applicationClassPredicate;
-
     private final PrivateMembersCollector privateMembers;
+    private final ReflectionRegistration reflectionRegistration;
+    private final Set<String> existingClasses;
+    private final Map<ObserverInfo, String> observerToGeneratedName;
 
     public ObserverGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
-            PrivateMembersCollector privateMembers, boolean generateSources) {
+            PrivateMembersCollector privateMembers, boolean generateSources, ReflectionRegistration reflectionRegistration,
+            Set<String> existingClasses,
+            Map<ObserverInfo, String> observerToGeneratedName) {
         super(generateSources);
         this.annotationLiterals = annotationLiterals;
         this.applicationClassPredicate = applicationClassPredicate;
         this.privateMembers = privateMembers;
+        this.reflectionRegistration = reflectionRegistration;
+        this.existingClasses = existingClasses;
+        this.observerToGeneratedName = observerToGeneratedName;
     }
 
     /**
@@ -76,7 +82,7 @@ public class ObserverGenerator extends AbstractGenerator {
      * @param observer
      * @return a collection of resources
      */
-    Collection<Resource> generate(ObserverInfo observer, ReflectionRegistration reflectionRegistration) {
+    Collection<Resource> generate(ObserverInfo observer) {
         // The name of the generated class differs:
         // "org.acme.Foo_Observer_fooMethod_hash" for normal observer where hash represents the signature of the observer method
         // "org.acme.Registrar_Observer_Synthetic_hash" for synthetic observer where hash represents the basic attrs of the observer
@@ -126,6 +132,10 @@ public class ObserverGenerator extends AbstractGenerator {
             targetPackage = DotNames.packageName(observer.getObserverMethod().declaringClass().name());
         }
         String generatedName = generatedNameFromTarget(targetPackage, baseName.toString(), "");
+        observerToGeneratedName.put(observer, generatedName);
+        if (existingClasses.contains(generatedName)) {
+            return Collections.emptyList();
+        }
 
         boolean isApplicationClass = applicationClassPredicate.test(observer.getBeanClass());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass,
@@ -229,13 +239,13 @@ public class ObserverGenerator extends AbstractGenerator {
                 .setModifiers(ACC_PUBLIC);
 
         if (observer.isSynthetic()) {
-            // Synthetic observers generate the notify method themselves 
+            // Synthetic observers generate the notify method themselves
             observer.getNotify().accept(notify);
             return;
         }
 
         boolean isStatic = Modifier.isStatic(observer.getObserverMethod().flags());
-        // It is safe to skip CreationalContext.release() for observers with noor normal scoped declaring provider, and 
+        // It is safe to skip CreationalContext.release() for observers with noor normal scoped declaring provider, and
         boolean skipRelease = observer.getInjection().injectionPoints.isEmpty();
 
         // Declaring bean instance, may be null
@@ -264,7 +274,7 @@ public class ObserverGenerator extends AbstractGenerator {
         } else {
             if (Reception.IF_EXISTS == observer.getReception()
                     && !BuiltinScope.DEPENDENT.is(observer.getDeclaringBean().getScope())) {
-                // If Reception.IF_EXISTS is used we must check the context of the declaring bean first   
+                // If Reception.IF_EXISTS is used we must check the context of the declaring bean first
                 ResultHandle container = notify.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
                 ResultHandle scope = notify.loadClass(observer.getDeclaringBean().getScope().getDotName().toString());
                 ResultHandle context = notify.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
@@ -287,7 +297,7 @@ public class ObserverGenerator extends AbstractGenerator {
                         MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
                         declaringProviderCtx));
             } else {
-                // Obtain contextual instance for non-dependent beans 
+                // Obtain contextual instance for non-dependent beans
                 ResultHandle container = notify.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
                 ResultHandle scope = notify.loadClass(observer.getDeclaringBean().getScope().getDotName().toString());
                 ResultHandle context = notify.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,

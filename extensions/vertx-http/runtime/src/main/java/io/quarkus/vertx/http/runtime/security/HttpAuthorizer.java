@@ -102,6 +102,7 @@ public class HttpAuthorizer {
                 if (!augmentedIdentity.isAnonymous()
                         && (currentUser == null || currentUser.getSecurityIdentity() != augmentedIdentity)) {
                     routingContext.setUser(new QuarkusHttpUser(augmentedIdentity));
+                    routingContext.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, Uni.createFrom().item(augmentedIdentity));
                 }
             }
             routingContext.next();

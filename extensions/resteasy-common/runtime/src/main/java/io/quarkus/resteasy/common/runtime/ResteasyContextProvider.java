@@ -13,7 +13,10 @@ public class ResteasyContextProvider implements ThreadContextProvider {
 
     @Override
     public ThreadContextSnapshot currentContext(Map<String, String> props) {
-        Map<Class<?>, Object> context = ResteasyContext.getContextDataMap();
+        Map<Class<?>, Object> context = ResteasyContext.getContextDataMap(false);
+        if (context == null) {
+            return null;
+        }
         return () -> {
             ResteasyContext.pushContextDataMap(context);
             return () -> {

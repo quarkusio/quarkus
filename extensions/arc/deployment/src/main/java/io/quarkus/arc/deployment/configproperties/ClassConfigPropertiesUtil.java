@@ -307,17 +307,6 @@ final class ClassConfigPropertiesUtil {
                             createWriteValue(readOptionalResponse.getIsPresentTrue(), configObject, field, setter,
                                     useFieldAccess,
                                     readOptionalResponse.getValue());
-
-                            // if optional did not contain data, check the getter and see if there is a value
-                            BytecodeCreator isPresentFalse = readOptionalResponse.getIsPresentFalse();
-                            ResultHandle defaultValue;
-                            if (useFieldAccess) {
-                                defaultValue = isPresentFalse.readInstanceField(FieldDescriptor.of(field), configObject);
-                            } else {
-                                defaultValue = isPresentFalse.invokeVirtualMethod(
-                                        MethodDescriptor.ofMethod(configObjectClassStr, getterName, fieldTypeStr),
-                                        configObject);
-                            }
                         } else {
                             /*
                              * In this case we want a missing property to cause an exception that we don't handle

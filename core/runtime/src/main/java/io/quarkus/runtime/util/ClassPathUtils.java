@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
@@ -174,7 +175,13 @@ public class ClassPathUtils {
      */
     public static <R> R readStream(URL url, Function<InputStream, R> function) throws IOException {
         if (JAR.equals(url.getProtocol())) {
-            final String file = url.getFile();
+            final URI uri;
+            try {
+                uri = new URI(url.toString());
+            } catch (URISyntaxException e) {
+                throw new IOException(e);
+            }
+            final String file = uri.getSchemeSpecificPart();
             final int exclam = file.lastIndexOf('!');
             final Path jar = toLocalPath(exclam >= 0 ? new URL(file.substring(0, exclam)) : url);
             try (FileSystem jarFs = FileSystems.newFileSystem(jar, (ClassLoader) null)) {

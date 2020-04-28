@@ -172,7 +172,8 @@ Create a native executable using: `./mvnw package -Pnative`.
 .Issues with packaging on Windows
 ====
 The Microsoft Native Tools for Visual Studio must first be initialized before packaging. You can do this by starting
-the `x64 Native Tools Command Prompt` that was installed with the Visual Studio Build Tools.
+the `x64 Native Tools Command Prompt` that was installed with the Visual Studio Build Tools. At 
+`x64 Native Tools Command Prompt` you can navigate to your project folder and run `mvnw package -Pnative`.
 
 Another solution is to write a script to do this for you:
 
@@ -297,7 +298,8 @@ target directory you can specify the executable with the `-Dnative.image.path=` 
 
 == Creating a container
 
-IMPORTANT: Before going further, be sure to have a working container runtime (Docker, podman) environment.
+IMPORTANT: Before going further, be sure to have a working container runtime (Docker, podman) environment. If you use Docker 
+on Windows you should share your project's drive at Docker Desktop file share settings.
 
 You can run the application in a container using the JAR produced by the Quarkus Maven Plugin.
 However, in this guide we focus on creating a container image using the produced native executable.

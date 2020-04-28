@@ -71,6 +71,31 @@ The following properties can be used to configure form based auth:
 
 include::{generated-dir}/config/quarkus-vertx-http-config-group-form-auth-config.adoc[opts=optional, leveloffset=+1]
 
+=== Mutual TLS Client Authentication
+
+Quarkus provides mTLS client authentication so that your application can authenticate peers based on X.509 certificates. To authenticate using this method, the TLS connection between the peer and the application must have been established and you need to configure the server to request certificates from peers as well as configure your peers to provide their certificates.
+
+From an application perspective, you should have a configuration similar to this:
+
+[source,properties]
+--
+quarkus.http.ssl.certificate.key-store-file=server-keystore.jks        <1>              
+quarkus.http.ssl.certificate.key-store-password=password               <2>
+quarkus.http.ssl.certificate.trust-store-file=server-truststore.jks    <3>
+quarkus.http.ssl.certificate.trust-store-password=password             <4>
+quarkus.http.ssl.client-auth=REQUIRED                                  <5>
+--
+
+<1> The keystore where both private key and certificates of the application are being stored
+<2> The keystore password
+<3> The truststore where you store the certificates of the peers that you want to authenticate and accept requests from
+<4> The truststore password
+<5> Defines that the application should always request certificate from peers (`REQUIRED`). You may also use `REQUEST` in case you only want to authenticate if the client presents a certificate
+
+The steps <1> and <2> are basically enabling HTTP/TLS to your application. Whereas steps <3> to <5> configure the server to authenticate using mTLS client authentication.
+
+include::{generated-dir}/config/quarkus-vertx-http-config-group-server-ssl-config.adoc[opts=optional, leveloffset=+1]
+
 === Proactive Authentication
 
 By default Quarkus does what we call proactive authentication. This means that if an incoming request has a

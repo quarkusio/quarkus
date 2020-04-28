@@ -89,17 +89,20 @@ public class BannerProcessor {
     private Map.Entry<URL, Boolean> getBanner(BannerConfig config) throws IOException {
         Enumeration<URL> resources = Thread.currentThread().getContextClassLoader().getResources(config.path);
         URL defaultBanner = null;
-        URL selectedBanner = null;
-        while (resources.hasMoreElements()) {
+        URL firstNonDefaultBanner = null;
+        while (resources.hasMoreElements() && firstNonDefaultBanner == null) {
             URL url = resources.nextElement();
             if (defaultBanner == null && isQuarkusCoreBanner(url)) {
                 defaultBanner = url;
-            }
-            if (selectedBanner == null) {
-                selectedBanner = url;
+            } else {
+                firstNonDefaultBanner = url;
             }
         }
-        return new AbstractMap.SimpleEntry<>(selectedBanner, defaultBanner == selectedBanner);
+        if (firstNonDefaultBanner == null) {
+            return new AbstractMap.SimpleEntry<>(defaultBanner, true);
+        } else {
+            return new AbstractMap.SimpleEntry<>(firstNonDefaultBanner, false);
+        }
     }
 
     private boolean isQuarkusCoreBanner(URL url) throws IOException {

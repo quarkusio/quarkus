@@ -558,10 +558,24 @@ final class Beans {
 
     private static int compareAlternativeBeans(BeanInfo bean1, BeanInfo bean2) {
         // The highest priority wins
-        Integer priority2 = bean2.getDeclaringBean() != null ? bean2.getDeclaringBean().getAlternativePriority()
-                : bean2.getAlternativePriority();
-        Integer priority1 = bean1.getDeclaringBean() != null ? bean1.getDeclaringBean().getAlternativePriority()
-                : bean1.getAlternativePriority();
+        Integer priority1, priority2;
+
+        priority2 = bean2.getAlternativePriority();
+        if (priority2 == null) {
+            priority2 = bean2.getDeclaringBean().getAlternativePriority();
+        }
+
+        priority1 = bean1.getAlternativePriority();
+        if (priority1 == null) {
+            priority1 = bean1.getDeclaringBean().getAlternativePriority();
+        }
+
+        if (priority2 == null) {
+            return priority1 == null ? 0 : -1;
+        } else if (priority1 == null) {
+            return 1;
+        }
+
         return priority2.compareTo(priority1);
     }
 

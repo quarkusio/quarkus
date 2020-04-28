@@ -100,7 +100,7 @@ public class HomeResource {
 
 ----
 
-In order to resolve the tenant from incoming requests and map it to a specific `quarkus-oidc` configuration, you need to create an implementation for the `io.quarkus.oidc.TenantResolver` interface.
+In order to resolve the tenant from incoming requests and map it to a specific `quarkus-oidc` tenant configuration in application.properties, you need to create an implementation for the `io.quarkus.oidc.TenantResolver` interface.
 
 [source,java]
 ----
@@ -120,7 +120,7 @@ public class CustomTenantResolver implements TenantResolver {
         String[] parts = path.split("/");
 
         if (parts.length == 0) {
-            // resolve to default tenant config
+            // resolve to default tenant configuration
             return null;
         }
 
@@ -129,7 +129,7 @@ public class CustomTenantResolver implements TenantResolver {
 }
 ----
 
-From the implementation above, tenants are resolved from the request path so that in case no tenant could be inferred, `null` is returned to indicate that the default configuration should be used.
+From the implementation above, tenants are resolved from the request path so that in case no tenant could be inferred, `null` is returned to indicate that the default tenant configuration should be used.
 
 == Configuring the application
 
@@ -150,7 +150,7 @@ quarkus.http.auth.permission.authenticated.paths=/*
 quarkus.http.auth.permission.authenticated.policy=authenticated
 ----
 
-The first configuration is the configuration that should be used when the tenant can not be inferred from the request. This configuration is using a Keycloak instance to authenticate users.
+The first configuration is the default tenant configuration that should be used when the tenant can not be inferred from the request. This configuration is using a Keycloak instance to authenticate users.
 
 The second configuration is the configuration that will be used when an incoming request is mapped to the tenant `tenant-a`.
 
@@ -239,7 +239,7 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 
 [source,bash]
 ----
-./target/security-openid-connect-web-authentication-quickstart-runner
+./target/security-openid-connect-multi-tenancy-quickstart-runner
 ----
 
 == Testing the Application
@@ -293,7 +293,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
         String[] parts = path.split("/");
 
         if (parts.length == 0) {
-            // resolve to default tenant config
+            // resolve to default tenant configuration
             return null;
         }
 
@@ -313,12 +313,22 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
 
             return config;
         }
+
+        // resolve to default tenant configuration
         return null;
     }
 }
 ----
 
 The `OidcTenantConfig` returned from this method is the same used to parse the `oidc` namespace configuration from the `application.properties`. You can populate it using any of the settings supported by the `quarkus-oidc` extension.
+
+== Disabling Tenant Configurations
+
+Custom `TenantResolver` and `TenantConfigResolver` implementations may return `null` if no tenant can be inferred from the current request and a fallback to the default tenant configuration is required.
+
+If it is expected that the custom resolvers will always infer a tenant then the default tenant configuration is not needed. One can disable it with the `quarkus.oidc.tenant-enabled=false` setting.
+
+Note that tenant specific configurations can also be disabled, for example: `quarkus.oidc.tenant-a.tenant-enabled=false`.
 
 == Configuration Reference
 

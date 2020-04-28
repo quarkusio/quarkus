@@ -31,6 +31,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String HIBERNATE_ORM_PANACHE = "hibernate-orm-panache";
     public static final String HIBERNATE_ORM_PANACHE_KOTLIN = "hibernate-orm-panache-kotlin";
     public static final String HIBERNATE_ORM_REST_DATA_PANACHE = "hibernate-orm-rest-data-panache";
+    public static final String HIBERNATE_RX = "hibernate-rx";
     public static final String HIBERNATE_VALIDATOR = "hibernate-validator";
     public static final String HIBERNATE_SEARCH_ELASTICSEARCH = "hibernate-search-elasticsearch";
     public static final String INFINISPAN_CLIENT = "infinispan-client";

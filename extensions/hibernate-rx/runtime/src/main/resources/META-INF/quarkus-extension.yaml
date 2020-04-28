@@ -1,0 +1,9 @@
+---
+name: "Hibernate RX"
+metadata:
+  short-name: "HibernateRX"
+  keywords:
+  - "hibernate-rx"
+  categories:
+  - "data"
+  status: "stable"

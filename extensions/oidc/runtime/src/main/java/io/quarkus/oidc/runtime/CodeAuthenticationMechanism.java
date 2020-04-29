@@ -53,6 +53,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private static final String STATE_COOKIE_NAME = "q_auth";
     private static final String SESSION_COOKIE_NAME = "q_session";
+    private static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
     private static final String COOKIE_DELIM = "___";
 
     private static QuarkusSecurityIdentity augmentIdentity(SecurityIdentity securityIdentity,
@@ -154,7 +155,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         params.put("redirect_uri", redirectUriParam);
 
         // state
-        params.put("state", generateState(context, configContext, redirectPath));
+        params.put("state", generateCodeFlowState(context, configContext, redirectPath));
 
         // extra redirect parameters, see https://openid.net/specs/openid-connect-core-1_0.html#AuthRequests
         if (configContext.oidcConfig.authentication.getExtraParams() != null) {
@@ -304,23 +305,17 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             AccessToken result, SecurityIdentity securityIdentity) {
         removeCookie(context, configContext, SESSION_COOKIE_NAME);
 
-        CookieImpl cookie = new CookieImpl(SESSION_COOKIE_NAME, new StringBuilder(result.opaqueIdToken())
+        String cookieValue = new StringBuilder(result.opaqueIdToken())
                 .append(COOKIE_DELIM)
                 .append(result.opaqueAccessToken())
                 .append(COOKIE_DELIM)
-                .append(result.opaqueRefreshToken()).toString());
+                .append(result.opaqueRefreshToken()).toString();
+
         long maxAge = result.idToken().getLong("exp") - result.idToken().getLong("iat");
         if (configContext.oidcConfig.token.lifespanGrace.isPresent()) {
             maxAge += configContext.oidcConfig.token.lifespanGrace.get();
         }
-        LOG.debugf("Session cookie 'max-age' parameter is set to %d", maxAge);
-        cookie.setMaxAge(maxAge);
-        cookie.setSecure(context.request().isSSL());
-        cookie.setHttpOnly(true);
-        if (configContext.oidcConfig.authentication.cookiePath.isPresent()) {
-            cookie.setPath(configContext.oidcConfig.authentication.cookiePath.get());
-        }
-        context.response().addCookie(cookie);
+        createCookie(context, configContext, SESSION_COOKIE_NAME, cookieValue, maxAge);
     }
 
     private String getRedirectPath(TenantConfigContext configContext, RoutingContext context) {
@@ -328,7 +323,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return auth.getRedirectPath().isPresent() ? auth.getRedirectPath().get() : context.request().path();
     }
 
-    private String generateState(RoutingContext context, TenantConfigContext configContext,
+    private String generateCodeFlowState(RoutingContext context, TenantConfigContext configContext,
             String redirectPath) {
         String uuid = UUID.randomUUID().toString();
         String cookieValue = uuid;
@@ -337,18 +332,27 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (auth.isRestorePathAfterRedirect() && !redirectPath.equals(context.request().path())) {
             cookieValue += (COOKIE_DELIM + context.request().path());
         }
+        return createCookie(context, configContext, STATE_COOKIE_NAME, cookieValue, 60 * 30).getValue();
+    }
 
-        CookieImpl cookie = new CookieImpl(STATE_COOKIE_NAME, cookieValue);
+    private String generatePostLogoutState(RoutingContext context, TenantConfigContext configContext) {
+        removeCookie(context, configContext, POST_LOGOUT_COOKIE_NAME);
+        return createCookie(context, configContext, POST_LOGOUT_COOKIE_NAME, UUID.randomUUID().toString(), 60 * 30).getValue();
+    }
 
+    private CookieImpl createCookie(RoutingContext context, TenantConfigContext configContext,
+            String name, String value, long maxAge) {
+        CookieImpl cookie = new CookieImpl(name, value);
         cookie.setHttpOnly(true);
         cookie.setSecure(context.request().isSSL());
-        // max-age is 30 minutes
-        cookie.setMaxAge(60 * 30);
+        cookie.setMaxAge(maxAge);
+        LOG.debugf(name + " cookie 'max-age' parameter is set to %d", maxAge);
+        Authentication auth = configContext.oidcConfig.getAuthentication();
         if (auth.cookiePath.isPresent()) {
             cookie.setPath(auth.getCookiePath().get());
         }
         context.response().addCookie(cookie);
-        return uuid;
+        return cookie;
     }
 
     private String buildUri(RoutingContext context, String path) {
@@ -443,6 +447,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (configContext.oidcConfig.logout.postLogoutPath.isPresent()) {
             logoutUri.append("&post_logout_redirect_uri=").append(
                     buildUri(context, configContext.oidcConfig.logout.postLogoutPath.get()));
+            logoutUri.append("&state=").append(generatePostLogoutState(context, configContext));
         }
 
         return logoutUri.toString();

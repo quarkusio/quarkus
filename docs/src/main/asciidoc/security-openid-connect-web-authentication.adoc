@@ -160,6 +160,19 @@ After clicking the `Login` button you should be redirected back to the applicati
 
 The extension only supports logout based on the expiration time of the ID Token issued by the OpenID Connect Provider. When the token expires, users are redirected to the OpenID Connect Provider again to authenticate. If the session at the OpenID Connect Provider is still active, users are automatically re-authenticated without having to provide their credentials again.
 
+== Mutual TLS Client Authentication Using Keycloak
+
+When using OpenID Connect to authenticate users, your application is delegating all the authentication process to the OpenID Provider (OP)
+you are integrating with.
+
+By doing this, your application is able to leverage all the authentication capabilities provided by the OP while still
+authenticating and authorizing users in your application based on the tokens issued by the OP.
+
+In regards to mTLS Client Authentication, you can leverage Keycloak authentication capabilities and configure the server to
+authenticate your users based on X.509 certificates. For that, take a look at this https://www.keycloak.org/docs/latest/server_admin/#adding-x-509-client-certificate-authentication-to-a-browser-flow[documentation].
+
+In your Quarkus application you won't need to do much but consider the steps herein specified to enable the `quarkus-oidc` to your application.
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional]

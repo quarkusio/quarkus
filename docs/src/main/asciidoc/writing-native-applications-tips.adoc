@@ -92,17 +92,6 @@ When using Maven, we could use the following configuration:
 </profiles>
 ----
 
-When using Gradle, configuring the `buildNative` task like so suffices:
-
-[source,groovy]
-----
-buildNative {
-    additionalBuildArgs = [
-            '-H:ResourceConfigurationFiles=resources-config.json'
-    ]
-}
-----
-
 === Registering for reflection
 
 When building a native executable, GraalVM operates with a closed world assumption.
@@ -250,17 +239,6 @@ When using Maven, we could use the following configuration:
         </properties>
     </profile>
 </profiles>
-----
-
-When using Gradle, configuring the `buildNative` task like so suffices:
-
-[source,groovy]
-----
-buildNative {
-    additionalBuildArgs = [
-            '-H:ReflectionConfigurationFiles=reflection-config.json'
-    ]
-}
 ----
 
 === Delaying class initialization

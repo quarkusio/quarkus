@@ -1,5 +1,6 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.quarkus.kubernetes.deployment.Constants.*;
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_S2I_IMAGE_NAME;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
@@ -7,6 +8,7 @@ import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT_CONFIG;
 import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
+import static io.quarkus.kubernetes.deployment.Constants.MINIKUBE;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_APP_RUNTIME;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS;
@@ -17,13 +19,16 @@ import static io.quarkus.kubernetes.deployment.Constants.SERVICE;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -38,6 +43,7 @@ import org.jboss.logging.Logger;
 import io.dekorate.Session;
 import io.dekorate.SessionWriter;
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
+import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.Annotation;
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.Label;
@@ -105,6 +111,7 @@ class KubernetesProcessor {
     private static final Logger log = Logger.getLogger(KubernetesDeployer.class);
 
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
+    public static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
 
     @BuildStep
     FeatureBuildItem produceFeature() {
@@ -115,6 +122,13 @@ class KubernetesProcessor {
     public void checkKubernetes(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
         if (KubernetesConfigUtil.getDeploymentTargets().contains(KUBERNETES)) {
             deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT));
+        }
+    }
+
+    @BuildStep
+    public void checkMinikube(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
+        if (KubernetesConfigUtil.getDeploymentTargets().contains(MINIKUBE)) {
+            deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(MINIKUBE, DEPLOYMENT));
         }
     }
 
@@ -226,9 +240,12 @@ class KubernetesProcessor {
 
         ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
 
-        boolean needToForceUpdateImagePullPolicy = needToForceUpdateImagePullPolicy(containerImage, capabilities);
+        boolean needToForceUpdateImagePullPolicy = needToForceUpdateImagePullPolicy(deploymentTargets, containerImage,
+                capabilities);
         applyConfig(session, project, KUBERNETES, getResourceName(kubernetesConfig, applicationInfo), kubernetesConfig,
                 now, determineImagePullPolicy(kubernetesConfig, needToForceUpdateImagePullPolicy));
+        applyConfig(session, project, MINIKUBE, getResourceName(kubernetesConfig, applicationInfo), kubernetesConfig,
+                now, ImagePullPolicy.IfNotPresent);
         applyConfig(session, project, OPENSHIFT, getResourceName(openshiftConfig, applicationInfo), openshiftConfig, now,
                 determineImagePullPolicy(openshiftConfig, needToForceUpdateImagePullPolicy));
         applyConfig(session, project, KNATIVE, getResourceName(knativeConfig, applicationInfo), knativeConfig, now,
@@ -400,12 +417,19 @@ class KubernetesProcessor {
      * This case comes up when users want to deploy their application to a cluster like Minikube where no registry is used
      * and instead they rely on the image being built directly into the docker daemon that the cluster uses.
      */
-    private boolean needToForceUpdateImagePullPolicy(Optional<ContainerImageInfoBuildItem> containerImage,
+    private boolean needToForceUpdateImagePullPolicy(Collection<String> deploymentTargets,
+            Optional<ContainerImageInfoBuildItem> containerImage,
             Capabilities capabilities) {
+
+        // no need to change when we use Minikube only
+        if ((deploymentTargets.size() == 1) && deploymentTargets.contains(MINIKUBE)) {
+            return false;
+        }
+
         boolean result = containerImage.isPresent()
                 && ContainerImageUtil.isRegistryMissingAndNotS2I(capabilities, containerImage.get());
         if (result) {
-            log.warn("No registry was set for the container image, so 'ImagePullPolicy' is being force-set to 'IfNotPresent'");
+            log.warn("No registry was set for the container image, so 'ImagePullPolicy' is being force-set to 'IfNotPresent'.");
             return true;
         }
         return false;
@@ -441,6 +465,7 @@ class KubernetesProcessor {
 
         Map<String, PlatformConfiguration> configMap = new HashMap<>();
         configMap.put(KUBERNETES, kubernetesConfig);
+        configMap.put(MINIKUBE, kubernetesConfig);
         configMap.put(OPENSHIFT, openshiftConfig);
         configMap.put(KNATIVE, knativeConfig);
 
@@ -459,6 +484,7 @@ class KubernetesProcessor {
         containerImage.ifPresent(c -> {
             session.resources().decorate(OPENSHIFT, new ApplyContainerImageDecorator(openshiftName, c.getImage()));
             session.resources().decorate(KUBERNETES, new ApplyContainerImageDecorator(kubernetesName, c.getImage()));
+            session.resources().decorate(MINIKUBE, new ApplyContainerImageDecorator(kubernetesName, c.getImage()));
             session.resources().decorate(KNATIVE, new ApplyContainerImageDecorator(knativeName, c.getImage()));
         });
 
@@ -489,6 +515,7 @@ class KubernetesProcessor {
         command.ifPresent(c -> {
             session.resources().decorate(new ApplyCommandDecorator(kubernetesName, new String[] { c.getCommand() }));
             session.resources().decorate(KUBERNETES, new ApplyArgsDecorator(kubernetesName, c.getArgs()));
+            session.resources().decorate(MINIKUBE, new ApplyArgsDecorator(kubernetesName, c.getArgs()));
 
             session.resources().decorate(new ApplyCommandDecorator(openshiftName, new String[] { c.getCommand() }));
             session.resources().decorate(OPENSHIFT, new ApplyArgsDecorator(openshiftName, c.getArgs()));
@@ -511,12 +538,7 @@ class KubernetesProcessor {
                     .forEach(r -> session.resources().decorate(new AddRoleBindingResourceDecorator(r.getRole())));
         }
 
-        session.resources().decorate(KUBERNETES,
-                new ApplyServiceTypeDecorator(kubernetesName, kubernetesConfig.getServiceType().name()));
-        session.resources().decorate(OPENSHIFT,
-                new ApplyServiceTypeDecorator(openshiftName, openshiftConfig.getServiceType().name()));
-        session.resources().decorate(KNATIVE,
-                new ApplyServiceTypeDecorator(knativeName, knativeConfig.getServiceType().name()));
+        handleServices(session, kubernetesConfig, openshiftConfig, knativeConfig, kubernetesName, openshiftName, knativeName);
 
         //Handle custom s2i builder images
         if (deploymentTargets.contains(OPENSHIFT)) {
@@ -536,6 +558,48 @@ class KubernetesProcessor {
                 kubernetesHealthReadinessPath, session);
     }
 
+    private void handleServices(Session session, KubernetesConfig kubernetesConfig, OpenshiftConfig openshiftConfig,
+            KnativeConfig knativeConfig, String kubernetesName, String openshiftName, String knativeName) {
+        session.resources().decorate(KUBERNETES,
+                new ApplyServiceTypeDecorator(kubernetesName, kubernetesConfig.getServiceType().name()));
+        if ((kubernetesConfig.getServiceType() == ServiceType.NodePort) && kubernetesConfig.nodePort.isPresent()) {
+            session.resources().decorate(KUBERNETES, new AddNodePortDecorator(openshiftName, kubernetesConfig.nodePort.get()));
+        }
+        session.resources().decorate(MINIKUBE,
+                new ApplyServiceTypeDecorator(kubernetesName, ServiceType.NodePort.name()));
+        session.resources().decorate(MINIKUBE, new AddNodePortDecorator(kubernetesName, kubernetesConfig.nodePort
+                .orElseGet(() -> getStablePortNumberInRange(kubernetesName, MIN_NODE_PORT_VALUE, MAX_NODE_PORT_VALUE))));
+
+        session.resources().decorate(OPENSHIFT,
+                new ApplyServiceTypeDecorator(openshiftName, openshiftConfig.getServiceType().name()));
+        if ((openshiftConfig.getServiceType() == ServiceType.NodePort) && openshiftConfig.nodePort.isPresent()) {
+            session.resources().decorate(OPENSHIFT, new AddNodePortDecorator(openshiftName, openshiftConfig.nodePort.get()));
+        }
+
+        session.resources().decorate(KNATIVE,
+                new ApplyServiceTypeDecorator(knativeName, knativeConfig.getServiceType().name()));
+    }
+
+    /**
+     * Given a string, generate a port number within the supplied range
+     * The output is always the same (between {@code min} and {@code max})
+     * given the same input and it's useful when we need to generate a port number
+     * which needs to stay the same but we don't care about the exact value
+     */
+    private int getStablePortNumberInRange(String input, int min, int max) {
+        if (min < MIN_PORT_NUMBER || max > MAX_PORT_NUMBER) {
+            throw new IllegalArgumentException(
+                    String.format("Port number range must be within [%d-%d]", MIN_PORT_NUMBER, MAX_PORT_NUMBER));
+        }
+
+        try {
+            byte[] hash = MessageDigest.getInstance(DEFAULT_HASH_ALGORITHM).digest(input.getBytes(StandardCharsets.UTF_8));
+            return min + new BigInteger(hash).mod(BigInteger.valueOf(max - min)).intValue();
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to generate stable port number from input string: '" + input + "'", e);
+        }
+    }
+
     private void handleProbes(ApplicationInfoBuildItem applicationInfo, KubernetesConfig kubernetesConfig,
             OpenshiftConfig openshiftConfig,
             KnativeConfig knativeConfig,
@@ -545,6 +609,11 @@ class KubernetesProcessor {
             Session session) {
         if (kubernetesConfig.deploymentTarget.contains(KUBERNETES)) {
             doHandleProbes(getResourceName(kubernetesConfig, applicationInfo), KUBERNETES, ports,
+                    kubernetesConfig.livenessProbe, kubernetesConfig.readinessProbe, kubernetesHealthLivenessPathBuildItem,
+                    kubernetesHealthReadinessPathBuildItem, session);
+        }
+        if (kubernetesConfig.deploymentTarget.contains(MINIKUBE)) {
+            doHandleProbes(getResourceName(kubernetesConfig, applicationInfo), MINIKUBE, ports,
                     kubernetesConfig.livenessProbe, kubernetesConfig.readinessProbe, kubernetesHealthLivenessPathBuildItem,
                     kubernetesHealthReadinessPathBuildItem, session);
         }

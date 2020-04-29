@@ -102,6 +102,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     ServiceType serviceType;
 
     /**
+     * The nodePort to set when serviceType is set to node-port.
+     */
+    @ConfigItem
+    Optional<Integer> nodePort;
+
+    /**
      * Image pull policy
      */
     @ConfigItem(defaultValue = "Always")

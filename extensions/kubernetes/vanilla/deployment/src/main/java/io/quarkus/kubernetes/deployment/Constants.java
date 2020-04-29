@@ -3,6 +3,7 @@ package io.quarkus.kubernetes.deployment;
 public class Constants {
 
     static final String KUBERNETES = "kubernetes";
+    static final String MINIKUBE = "minikube";
     static final String DEPLOYMENT = "Deployment";
     static final String DOCKER = "docker";
 
@@ -29,4 +30,9 @@ public class Constants {
 
     static final String HTTP_PORT = "http";
     static final int DEFAULT_HTTP_PORT = 8080;
+
+    static final int MIN_PORT_NUMBER = 1;
+    static final int MAX_PORT_NUMBER = 65535;
+    static final int MIN_NODE_PORT_VALUE = 30000;
+    static final int MAX_NODE_PORT_VALUE = 31999;
 }

@@ -32,6 +32,22 @@
             <artifactId>quarkus-test-maven</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <exclusions>
+                <!-- Exclude Groovy because of classpath issue -->
+                <exclusion>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.codehaus.groovy</groupId>
+                    <artifactId>groovy-xml</artifactId>
+                 </exclusion>
+            </exclusions>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <testResources>
@@ -57,12 +73,20 @@
                 <configuration>
                     <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
                     <cloneClean>true</cloneClean>
+                    <preBuildHookScript>setup</preBuildHookScript>
                     <postBuildHookScript>verify</postBuildHookScript>
                     <addTestClassPath>true</addTestClassPath>
                     <skipInvocation>${skipTests}</skipInvocation>
                     <streamLogs>true</streamLogs>
                     <invokerPropertiesFile>invoker.properties</invokerPropertiesFile>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.groovy</groupId>
+                        <artifactId>groovy</artifactId>
+                        <version>3.0.2</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>

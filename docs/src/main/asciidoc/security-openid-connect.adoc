@@ -139,6 +139,41 @@ public class AdminResource {
 }
 ----
 
+Injection of the `SecurityIdentity` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
+
+=== Accessing JWT claims
+
+If you need to access `JsonWebToken` claims, you may simply inject the token itself:
+
+[source,java]
+----
+package org.acme.security.openid.connect;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+import javax.annotation.security.RolesAllowed;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/api/admin")
+public class AdminResource {
+
+    @Inject
+    JsonWebToken jwt;
+
+    @GET
+    @RolesAllowed("admin")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String admin() {
+        return "Access for subject " + jwt.getSubject() + " is granted";
+    }
+}
+----
+
+Injection of the `JsonWebToken` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
+
 == Configuring the application
 
 The OpenID Connect extension allows you to define the adapter configuration using the `application.properties` file which should be located at the `src/main/resources` directory.

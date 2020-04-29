@@ -403,7 +403,7 @@ jobs:
               oidc-tenancy
               keycloak-authorization
           - category: Cache
-            timeout: 30
+            timeout: 35
             test-modules: >
               infinispan-cache-jpa
               infinispan-client

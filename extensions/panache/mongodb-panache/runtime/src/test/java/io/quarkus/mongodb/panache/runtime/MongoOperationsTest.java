@@ -189,6 +189,21 @@ class MongoOperationsTest {
     }
 
     @Test
+    public void testBindOptionalPredicateByIndex() {
+        String query = MongoOperations.bindFilter(Object.class, "field? = ?1 and isOk = ?2", new Object[] { "a value", true });
+        assertEquals("{'field':'a value','isOk':true}", query);
+
+        query = MongoOperations.bindFilter(Object.class, "field? = ?1 and isOk = ?2", new Object[] { null, true });
+        assertEquals("{'isOk':true}", query);
+
+        query = MongoOperations.bindFilter(Object.class, "field? = ?1", new Object[] { "a value" });
+        assertEquals("{'field':'a value'}", query);
+
+        query = MongoOperations.bindFilter(Object.class, "field? = ?1", new Object[] { null });
+        assertEquals("{}", query);
+    }
+
+    @Test
     public void testBindEnhancedFilterByName() {
         String query = MongoOperations.bindFilter(Object.class, "field = :field",
                 Parameters.with("field", "a value").map());
@@ -238,6 +253,25 @@ class MongoOperationsTest {
         query = MongoOperations.bindFilter(Object.class, "field like :field",
                 Parameters.with("field", "a value").map());
         assertEquals("{'field':{'$regex':'a value'}}", query);
+    }
+
+    @Test
+    public void testBindOptionalPredicateByName() {
+        String query = MongoOperations.bindFilter(Object.class, "field? = :field and isOk = :isOk",
+                Parameters.with("field", "a value").and("isOk", true).map());
+        assertEquals("{'field':'a value','isOk':true}", query);
+
+        query = MongoOperations.bindFilter(Object.class, "field? = :field and isOk = :isOk",
+                Parameters.with("field", null).and("isOk", true).map());
+        assertEquals("{'isOk':true}", query);
+
+        query = MongoOperations.bindFilter(Object.class, "field? = :field",
+                Parameters.with("field", "a value").map());
+        assertEquals("{'field':'a value'}", query);
+
+        query = MongoOperations.bindFilter(Object.class, "field? = :field",
+                Parameters.with("field", null).map());
+        assertEquals("{}", query);
     }
 
     @Test

@@ -60,8 +60,6 @@ public class DocGeneratorUtil {
      * Retrieve a default value of a primitive type.
      * If type is not a primitive, returns false
      *
-     * @param primitiveType
-     * @return
      */
     static String getPrimitiveDefaultValue(String primitiveType) {
         return PRIMITIVE_DEFAULT_VALUES.get(primitiveType);

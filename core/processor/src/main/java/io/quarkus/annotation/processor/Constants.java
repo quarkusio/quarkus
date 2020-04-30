@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
@@ -14,7 +15,16 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.quarkus.annotation.processor.generate_doc.ConfigDocItem;
+
 final public class Constants {
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static TypeReference<List<ConfigDocItem>> LIST_OF_CONFIG_ITEMS_TYPE_REF = new TypeReference<List<ConfigDocItem>>() {
+    };
+
     public static final char DOT = '.';
     public static final String EMPTY = "";
     public static final String DASH = "-";
@@ -59,10 +69,17 @@ final public class Constants {
     public static final Boolean SKIP_DOCS_GENERATION = Boolean.valueOf(SYSTEM_PROPERTIES.getProperty("skipDocs", "false"));
 
     /**
-     * Holds the list of configuration items / configuration sections of each configuration roots.
+     * Holds the list of configuration items of each configuration roots.
      */
     public static final File ALL_CR_GENERATED_DOC = GENERATED_DOCS_PATH
             .resolve("all-configuration-roots-generated-doc.properties").toFile();
+
+    /**
+     * Holds the list of configuration items of each configuration groups.
+     * The items in this list may not have complete information as some depend on the configuration root.
+     */
+    public static final File ALL_CG_GENERATED_DOC = GENERATED_DOCS_PATH
+            .resolve("all-configuration-groups-generated-doc.properties").toFile();
 
     /**
      * Holds the list of computed file names and the list of configuration roots of this extension

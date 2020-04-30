@@ -26,18 +26,14 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.annotation.processor.Constants;
 
 final public class ConfigDocItemScanner {
     private static final String EXTENSION_LIST_SEPARATOR = ",";
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String IO_QUARKUS_TEST_EXTENSION_PACKAGE = "io.quarkus.extest.";
 
     private final Set<ConfigRootInfo> configRoots = new HashSet<>();
-    private final Map<String, TypeElement> configGroups = new HashMap<>();
+    private final Map<String, TypeElement> configGroupsToTypeElement = new HashMap<>();
 
     /**
      * Record configuration group. It will later be visited to find configuration items.
@@ -53,7 +49,7 @@ final public class ConfigDocItemScanner {
             return;
         }
 
-        configGroups.put(configGroupName, configGroup);
+        configGroupsToTypeElement.put(configGroupName, configGroup);
     }
 
     /**
@@ -105,14 +101,12 @@ final public class ConfigDocItemScanner {
     public Set<ConfigDocGeneratedOutput> scanExtensionsConfigurationItems(Properties javaDocProperties)
             throws IOException {
 
+        createOutputFolderAndFiles();
+
         Set<ConfigDocGeneratedOutput> configDocGeneratedOutputs = new HashSet<>();
-
-        final ConfigDoItemFinder configDoItemFinder = new ConfigDoItemFinder(configRoots, configGroups, javaDocProperties);
+        final ConfigDoItemFinder configDoItemFinder = new ConfigDoItemFinder(configRoots, configGroupsToTypeElement,
+                javaDocProperties);
         final ScannedConfigDocsItemHolder inMemoryScannedItemsHolder = configDoItemFinder.findInMemoryConfigurationItems();
-
-        if (!inMemoryScannedItemsHolder.isEmpty()) {
-            createOutputFolder();
-        }
 
         final Properties allExtensionGeneratedDocs = loadAllExtensionConfigItemsParConfigRoot();
         final Properties configurationRootsParExtensionFileName = loadExtensionConfigRootList();
@@ -134,9 +128,13 @@ final public class ConfigDocItemScanner {
         return configDocGeneratedOutputs;
     }
 
-    private void createOutputFolder() throws IOException {
+    private void createOutputFolderAndFiles() throws IOException {
         if (!Constants.GENERATED_DOCS_DIR.exists()) {
             Constants.GENERATED_DOCS_DIR.mkdirs();
+        }
+
+        if (!Constants.ALL_CG_GENERATED_DOC.exists()) {
+            Constants.ALL_CG_GENERATED_DOC.createNewFile();
         }
 
         if (!Constants.ALL_CR_GENERATED_DOC.exists()) {
@@ -150,9 +148,7 @@ final public class ConfigDocItemScanner {
 
     /**
      * Loads the list of configuration items per configuration root
-     * 
-     * @return
-     * @throws IOException
+     *
      */
     private Properties loadAllExtensionConfigItemsParConfigRoot() throws IOException {
         Properties allExtensionGeneratedDocs = new Properties();
@@ -167,9 +163,7 @@ final public class ConfigDocItemScanner {
 
     /**
      * Loads the list of comma separated configuration roots per extension file name
-     * 
-     * @return
-     * @throws IOException
+     *
      */
     private Properties loadExtensionConfigRootList() throws IOException {
         Properties configurationRootsParExtensionFileName = new Properties();
@@ -203,7 +197,7 @@ final public class ConfigDocItemScanner {
             Properties allExtensionGeneratedDocs, Properties configurationRootsParExtensionFileName) throws IOException {
         for (Map.Entry<String, List<ConfigDocItem>> entry : inMemoryScannedItemsHolder.getConfigRootConfigItems()
                 .entrySet()) {
-            String serializableConfigRootDoc = OBJECT_MAPPER.writeValueAsString(entry.getValue());
+            String serializableConfigRootDoc = Constants.OBJECT_MAPPER.writeValueAsString(entry.getValue());
             allExtensionGeneratedDocs.put(entry.getKey(), serializableConfigRootDoc);
             updateConfigurationRootsList(configurationRootsParExtensionFileName, entry);
         }
@@ -250,8 +244,8 @@ final public class ConfigDocItemScanner {
                 List<ConfigDocItem> configDocItems = inMemoryScannedItemsHolder.getConfigRootConfigItems().get(configRoot);
                 if (configDocItems == null) {
                     String serializedContent = allExtensionGeneratedDocs.getProperty(configRoot);
-                    configDocItems = OBJECT_MAPPER.readValue(serializedContent, new TypeReference<List<ConfigDocItem>>() {
-                    });
+                    configDocItems = Constants.OBJECT_MAPPER.readValue(serializedContent,
+                            Constants.LIST_OF_CONFIG_ITEMS_TYPE_REF);
                 }
 
                 DocGeneratorUtil.appendConfigItemsIntoExistingOnes(extensionConfigItems, configDocItems);
@@ -325,9 +319,9 @@ final public class ConfigDocItemScanner {
             if (serializedContent == null) {
                 continue;
             }
-            List<ConfigDocItem> configDocItems = OBJECT_MAPPER.readValue(serializedContent,
-                    new TypeReference<List<ConfigDocItem>>() {
-                    });
+
+            List<ConfigDocItem> configDocItems = Constants.OBJECT_MAPPER.readValue(serializedContent,
+                    Constants.LIST_OF_CONFIG_ITEMS_TYPE_REF);
 
             foundExtensionConfigurationItems.put(member, configDocItems);
         }
@@ -339,7 +333,7 @@ final public class ConfigDocItemScanner {
     public String toString() {
         return "ConfigDocItemScanner{" +
                 "configRoots=" + configRoots +
-                ", configGroups=" + configGroups +
+                ", configGroups=" + configGroupsToTypeElement +
                 '}';
     }
 }

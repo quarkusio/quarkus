@@ -166,6 +166,7 @@ public class AllConfigGenerator {
             DocGeneratorUtil.sort(configDocItems);
             // insert a header
             ConfigDocSection header = new ConfigDocSection();
+            header.setShowSection(true);
             header.setSectionDetailsTitle(entry.getKey());
             header.setAnchorPrefix(artifactIdsByName.get(entry.getKey()));
             header.setName(artifactIdsByName.get(entry.getKey()));

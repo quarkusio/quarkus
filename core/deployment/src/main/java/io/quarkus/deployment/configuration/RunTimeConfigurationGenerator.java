@@ -98,6 +98,8 @@ public final class RunTimeConfigurationGenerator {
             "runTimeDefaultsConfigSource", ConfigSource.class);
     static final MethodDescriptor C_BOOTSTRAP_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "readBootstrapConfig",
             void.class);
+    public static final MethodDescriptor REINIT = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "reinit",
+            void.class);
     public static final MethodDescriptor C_READ_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "readConfig", void.class,
             List.class);
     static final FieldDescriptor C_SPECIFIED_RUN_TIME_CONFIG_SOURCE = FieldDescriptor.of(CONFIG_CLASS_NAME,
@@ -233,16 +235,19 @@ public final class RunTimeConfigurationGenerator {
     }
 
     public static void generate(BuildTimeConfigurationReader.ReadResult readResult, final ClassOutput classOutput,
+            boolean devMode,
             final Map<String, String> runTimeDefaults, List<Class<?>> additionalTypes) {
-        new GenerateOperation.Builder().setBuildTimeReadResult(readResult).setClassOutput(classOutput)
+        new GenerateOperation.Builder().setBuildTimeReadResult(readResult).setClassOutput(classOutput).setDevMode(devMode)
                 .setRunTimeDefaults(runTimeDefaults).setAdditionalTypes(additionalTypes).build().run();
     }
 
     static final class GenerateOperation implements AutoCloseable {
+        final boolean devMode;
         final AccessorFinder accessorFinder;
         final ClassOutput classOutput;
         final ClassCreator cc;
         final MethodCreator clinit;
+        final MethodCreator reinit;
         final BytecodeCreator converterSetup;
         final MethodCreator readBootstrapConfig;
         final ResultHandle readBootstrapConfigNameBuilder;
@@ -280,6 +285,7 @@ public final class RunTimeConfigurationGenerator {
         int converterIndex = 0;
 
         GenerateOperation(Builder builder) {
+            this.devMode = builder.devMode;
             final BuildTimeConfigurationReader.ReadResult buildTimeReadResult = builder.buildTimeReadResult;
             buildTimeConfigResult = Assert.checkNotNullParam("buildTimeReadResult", buildTimeReadResult);
             specifiedRunTimeDefaultValues = Assert.checkNotNullParam("specifiedRunTimeDefaultValues",
@@ -296,6 +302,12 @@ public final class RunTimeConfigurationGenerator {
                 mc.setModifiers(Opcodes.ACC_PRIVATE);
                 mc.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), mc.getThis());
                 mc.returnValue(null);
+            }
+            if (devMode) {
+                reinit = cc.getMethodCreator(REINIT);
+                reinit.setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_PUBLIC);
+            } else {
+                reinit = null;
             }
 
             // create <clinit>
@@ -385,6 +397,30 @@ public final class RunTimeConfigurationGenerator {
             // make the build time config global until we read the run time config -
             // at run time (when we're ready) we update the factory and then release the build time config
             installConfiguration(clinitConfig, clinit);
+            if (devMode) {
+                final ResultHandle buildTimeRunTimeDefaultValuesConfigSource = reinit
+                        .readStaticField(C_BUILD_TIME_RUN_TIME_DEFAULTS_CONFIG_SOURCE);
+                // create the map for build time config source
+                final ResultHandle buildTimeValues = reinit.newInstance(HM_NEW);
+                for (Map.Entry<String, String> entry : buildTimeRunTimeVisibleValues.entrySet()) {
+                    reinit.invokeVirtualMethod(HM_PUT, buildTimeValues, reinit.load(entry.getKey()),
+                            reinit.load(entry.getValue()));
+                }
+                final ResultHandle buildTimeConfigSource = reinit.newInstance(PCS_NEW, buildTimeValues,
+                        reinit.load("Build time config = Reloaded"), reinit.load(100));
+                // the build time config, which is for user use only (not used by us other than for loading converters)
+                final ResultHandle buildTimeBuilder = reinit.invokeStaticMethod(CU_CONFIG_BUILDER, reinit.load(true));
+                final ResultHandle array = reinit.newArray(ConfigSource[].class, 2);
+                // build time values
+                reinit.writeArrayValue(array, 0, buildTimeConfigSource);
+                // build time defaults
+                reinit.writeArrayValue(array, 1, buildTimeRunTimeDefaultValuesConfigSource);
+                reinit.invokeVirtualMethod(SRCB_WITH_SOURCES, buildTimeBuilder, array);
+                ResultHandle clinitConfig = reinit.checkCast(reinit.invokeVirtualMethod(SRCB_BUILD, buildTimeBuilder),
+                        SmallRyeConfig.class);
+                installConfiguration(clinitConfig, reinit);
+                reinit.returnValue(null);
+            }
 
             // fill roots map
             for (RootDefinition root : roots) {
@@ -428,9 +464,14 @@ public final class RunTimeConfigurationGenerator {
 
             // create the map for run time specified values config source
             final ResultHandle specifiedRunTimeValues = clinit.newInstance(HM_NEW);
-            for (Map.Entry<String, String> entry : specifiedRunTimeDefaultValues.entrySet()) {
-                clinit.invokeVirtualMethod(HM_PUT, specifiedRunTimeValues, clinit.load(entry.getKey()),
-                        clinit.load(entry.getValue()));
+            if (!devMode) {
+                //we don't need these in devmode
+                //including it would just cache the first values
+                //but these can already just be read directly, as we are in the same JVM
+                for (Map.Entry<String, String> entry : specifiedRunTimeDefaultValues.entrySet()) {
+                    clinit.invokeVirtualMethod(HM_PUT, specifiedRunTimeValues, clinit.load(entry.getKey()),
+                            clinit.load(entry.getValue()));
+                }
             }
             for (Map.Entry<String, String> entry : runTimeDefaults.entrySet()) {
                 if (!specifiedRunTimeDefaultValues.containsKey(entry.getKey())) {
@@ -441,7 +482,8 @@ public final class RunTimeConfigurationGenerator {
             }
             final ResultHandle specifiedRunTimeSource = clinit.newInstance(PCS_NEW, specifiedRunTimeValues,
                     clinit.load("Specified default values"), clinit.load(Integer.MIN_VALUE + 100));
-            cc.getFieldCreator(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+            cc.getFieldCreator(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE)
+                    .setModifiers(Opcodes.ACC_STATIC | (devMode ? Opcodes.ACC_VOLATILE : Opcodes.ACC_FINAL));
             clinit.writeStaticField(C_SPECIFIED_RUN_TIME_CONFIG_SOURCE, specifiedRunTimeSource);
 
             // add in the custom sources that bootstrap config needs
@@ -557,11 +599,12 @@ public final class RunTimeConfigurationGenerator {
                 // specific actions based on config phase
                 String rootName = root.getRootName();
                 if (root.getConfigPhase() == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                    // config root field is final; we initialize it from clinit
+                    // config root field is volatile in dev mode, final otherwise; we initialize it from clinit, and readConfig in dev mode
                     cc.getFieldCreator(rootFieldDescriptor)
-                            .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+                            .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC
+                                    | (devMode ? Opcodes.ACC_VOLATILE : Opcodes.ACC_FINAL));
                     // construct instance in <clinit>
-                    final ResultHandle instance = clinit.invokeStaticMethod(ctor);
+                    ResultHandle instance = clinit.invokeStaticMethod(ctor);
                     // assign instance to field
                     clinit.writeStaticField(rootFieldDescriptor, instance);
                     instanceCache.put(rootFieldDescriptor, instance);
@@ -572,6 +615,19 @@ public final class RunTimeConfigurationGenerator {
                     }
                     clinit.invokeStaticMethod(initGroup, clinitConfig, clinitNameBuilder, instance);
                     clinit.invokeVirtualMethod(SB_SET_LENGTH, clinitNameBuilder, clInitOldLen);
+                    if (devMode) {
+                        //we don't regenerate this class in dev mode, but we do allow config to be reloaded
+                        instance = readConfig.invokeStaticMethod(ctor);
+                        // assign instance to field
+                        readConfig.writeStaticField(rootFieldDescriptor, instance);
+                        if (!rootName.isEmpty()) {
+                            readConfig.invokeVirtualMethod(SB_APPEND_CHAR, readConfigNameBuilder, readConfig.load('.'));
+                            readConfig.invokeVirtualMethod(SB_APPEND_STRING, readConfigNameBuilder,
+                                    readConfig.load(rootName));
+                        }
+                        readConfig.invokeStaticMethod(initGroup, runTimeConfig, readConfigNameBuilder, instance);
+                        readConfig.invokeVirtualMethod(SB_SET_LENGTH, readConfigNameBuilder, rcOldLen);
+                    }
                 } else if (root.getConfigPhase() == ConfigPhase.BOOTSTRAP) {
                     if (bootstrapConfigSetupNeeded()) {
                         // config root field is volatile; we initialize and read config from the readBootstrapConfig method
@@ -1362,6 +1418,7 @@ public final class RunTimeConfigurationGenerator {
         }
 
         static final class Builder {
+            private boolean devMode;
             private ClassOutput classOutput;
             private BuildTimeConfigurationReader.ReadResult buildTimeReadResult;
             private Map<String, String> runTimeDefaults;
@@ -1403,6 +1460,15 @@ public final class RunTimeConfigurationGenerator {
 
             Builder setAdditionalTypes(final List<Class<?>> additionalTypes) {
                 this.additionalTypes = additionalTypes;
+                return this;
+            }
+
+            public boolean isDevMode() {
+                return devMode;
+            }
+
+            public Builder setDevMode(boolean devMode) {
+                this.devMode = devMode;
                 return this;
             }
 

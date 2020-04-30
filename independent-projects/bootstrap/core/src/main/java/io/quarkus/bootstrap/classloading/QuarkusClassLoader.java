@@ -112,7 +112,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
             Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers,
             ClassLoader transformerClassLoader) {
         if (resettableElement == null) {
-            throw new IllegalStateException("Classloader is no resettable");
+            throw new IllegalStateException("Classloader is not resettable");
         }
         this.transformerClassLoader = transformerClassLoader;
         synchronized (this) {

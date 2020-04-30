@@ -344,7 +344,7 @@ jobs:
           - category: Data2
             mysql: "true"
             postgres: "true"
-            timeout: 30
+            timeout: 35
             test-modules: >
               jpa
               jpa-postgresql
@@ -352,7 +352,7 @@ jobs:
               reactive-mysql-client
           - category: Data3
             postgres: "true"
-            timeout: 40
+            timeout: 45
             test-modules: >
               flyway
               hibernate-orm-panache
@@ -432,7 +432,7 @@ jobs:
               quartz
               qute
           - category: Misc2
-            timeout: 40
+            timeout: 45
             test-modules: >
               tika
               hibernate-validator
@@ -447,7 +447,7 @@ jobs:
             test-modules: >
               kubernetes-client
           - category: Spring
-            timeout: 30
+            timeout: 40
             test-modules: >
               spring-di
               spring-web

@@ -245,6 +245,8 @@ public class DevMojo extends AbstractMojo {
     @Component
     private BuildPluginManager pluginManager;
 
+    private Boolean debugPortOk;
+
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
 
@@ -492,15 +494,18 @@ public class DevMojo extends AbstractMojo {
          */
         void prepare() throws Exception {
             if (debug == null) {
-                boolean useDebugMode = true;
                 // debug mode not specified
                 // make sure 5005 is not used, we don't want to just fail if something else is using it
-                try (Socket socket = new Socket(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), 5005)) {
-                    getLog().error("Port 5005 in use, not starting in debug mode");
-                    useDebugMode = false;
-                } catch (IOException e) {
+                // we don't check this on restarts, as the previous process is still running
+                if (debugPortOk == null) {
+                    try (Socket socket = new Socket(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), 5005)) {
+                        getLog().error("Port 5005 in use, not starting in debug mode");
+                        debugPortOk = false;
+                    } catch (IOException e) {
+                        debugPortOk = true;
+                    }
                 }
-                if (useDebugMode) {
+                if (debugPortOk) {
                     args.add("-Xdebug");
                     args.add("-Xrunjdwp:transport=dt_socket,address=0.0.0.0:5005,server=y,suspend=" + suspend);
                 }

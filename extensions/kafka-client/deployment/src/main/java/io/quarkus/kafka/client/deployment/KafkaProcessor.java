@@ -4,12 +4,17 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.security.auth.spi.LoginModule;
+
 import org.apache.kafka.clients.consumer.RangeAssignor;
 import org.apache.kafka.clients.consumer.RoundRobinAssignor;
 import org.apache.kafka.clients.consumer.StickyAssignor;
 import org.apache.kafka.clients.consumer.internals.PartitionAssignor;
 import org.apache.kafka.clients.producer.Partitioner;
 import org.apache.kafka.clients.producer.internals.DefaultPartitioner;
+import org.apache.kafka.common.security.authenticator.AbstractLogin;
+import org.apache.kafka.common.security.authenticator.DefaultLogin;
+import org.apache.kafka.common.security.authenticator.SaslClientCallbackHandler;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.ByteBufferDeserializer;
@@ -32,12 +37,18 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+import io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer;
 import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
@@ -67,7 +78,7 @@ public class KafkaProcessor {
             IntegerDeserializer.class,
             ByteBufferDeserializer.class,
             StringDeserializer.class,
-            FloatDeserializer.class,
+            FloatDeserializer.class
     };
 
     @BuildStep
@@ -109,6 +120,31 @@ public class KafkaProcessor {
         // classes needed to perform reflection on DirectByteBuffer - only really needed for Java 8
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "java.nio.DirectByteBuffer"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "sun.misc.Cleaner"));
+    }
+
+    @BuildStep
+    public AdditionalBeanBuildItem runtimeConfig() {
+        return AdditionalBeanBuildItem.builder()
+                .addBeanClass(KafkaRuntimeConfigProducer.class)
+                .setUnremovable()
+                .build();
+    }
+
+    @BuildStep
+    public void withSasl(BuildProducer<IndexDependencyBuildItem> indexDependency,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+
+        indexDependency.produce(new IndexDependencyBuildItem("org.apache.kafka", "kafka-clients"));
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, AbstractLogin.DefaultLoginCallbackHandler.class));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, SaslClientCallbackHandler.class));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, DefaultLogin.class));
+
+        final Type loginModuleType = Type
+                .create(DotName.createSimple(LoginModule.class.getCanonicalName()), Kind.CLASS);
+
+        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(loginModuleType));
     }
 
     private static void collectImplementors(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, Class<?> cls) {

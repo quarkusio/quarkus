@@ -94,6 +94,10 @@ public class KubernetesDeployer {
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
         if (userSpecifiedDeploymentTargets.isEmpty()) {
             selectedTarget = targets.getEntriesSortedByPriority().get(0);
+            if (targets.getEntriesSortedByPriority().size() > 1) {
+                log.info("Deploying target '" + selectedTarget.getName()
+                        + "' since it has the highest priority among the implicitly enabled deployment targets");
+            }
         } else {
             String firstUserSpecifiedDeploymentTarget = userSpecifiedDeploymentTargets.get(0);
             selectedTarget = targets

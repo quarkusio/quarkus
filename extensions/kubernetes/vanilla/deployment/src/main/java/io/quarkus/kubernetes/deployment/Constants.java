@@ -3,13 +3,13 @@ package io.quarkus.kubernetes.deployment;
 public class Constants {
 
     static final String KUBERNETES = "kubernetes";
-    static final String MINIKUBE = "minikube";
-    static final String DEPLOYMENT = "Deployment";
+    public static final String MINIKUBE = "minikube";
+    public static final String DEPLOYMENT = "Deployment";
     static final String DOCKER = "docker";
 
-    static final String OPENSHIFT = "openshift";
+    public static final String OPENSHIFT = "openshift";
+    public static final String DEPLOYMENT_CONFIG = "DeploymentConfig";
     static final String OPENSHIFT_APP_RUNTIME = "app.openshift.io/runtime";
-    static final String DEPLOYMENT_CONFIG = "DeploymentConfig";
     static final String S2I = "s2i";
     static final String DEFAULT_S2I_IMAGE_NAME = "s2i-java"; //refers to the Dekorate default image.
 

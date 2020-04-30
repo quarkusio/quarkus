@@ -1,0 +1,10 @@
+---
+name: "Minikube"
+metadata:
+  keywords:
+  - "kubernetes"
+  - "minikube"
+  guide: "https://quarkus.io/guides/kubernetes"
+  categories:
+  - "cloud"
+  status: "stable"

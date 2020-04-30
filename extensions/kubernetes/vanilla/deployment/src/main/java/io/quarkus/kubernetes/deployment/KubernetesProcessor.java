@@ -16,6 +16,7 @@ import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_BUI
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_COMMIT_ID;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_VCS_URL;
 import static io.quarkus.kubernetes.deployment.Constants.SERVICE;
+import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +30,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -113,37 +115,56 @@ class KubernetesProcessor {
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
     public static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
 
+    private static final int MINIKUBE_PRIORITY = DEFAULT_PRIORITY + 20;
+    private static final int OPENSHIFT_PRIORITY = DEFAULT_PRIORITY + 10;
+    private static final int KNATIVE_PRIORITY = DEFAULT_PRIORITY;
+
     @BuildStep
     FeatureBuildItem produceFeature() {
         return new FeatureBuildItem(FeatureBuildItem.KUBERNETES);
     }
 
     @BuildStep
-    public void checkKubernetes(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
-        if (KubernetesConfigUtil.getDeploymentTargets().contains(KUBERNETES)) {
-            deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT));
+    public void deploymentTargets(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
+        List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
+        if (userSpecifiedDeploymentTargets.isEmpty()) {
+            // when nothing was selected by the user, we enable vanilla Kubernetes by default
+            deploymentTargets.produce(
+                    new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT, VANILLA_KUBERNETES_PRIORITY, true));
         }
+
+        // even if these are disabled, they serve the purpose of setting the proper priorities
+
+        deploymentTargets
+                .produce(new KubernetesDeploymentTargetBuildItem(MINIKUBE, DEPLOYMENT, MINIKUBE_PRIORITY,
+                        userSpecifiedDeploymentTargets.contains(MINIKUBE)));
+
+        deploymentTargets
+                .produce(new KubernetesDeploymentTargetBuildItem(OPENSHIFT, DEPLOYMENT_CONFIG, OPENSHIFT_PRIORITY,
+                        userSpecifiedDeploymentTargets.contains(OPENSHIFT)));
+
+        deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KNATIVE, SERVICE, KNATIVE_PRIORITY,
+                userSpecifiedDeploymentTargets.contains(KNATIVE)));
+
+        deploymentTargets.produce(
+                new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT, VANILLA_KUBERNETES_PRIORITY,
+                        userSpecifiedDeploymentTargets.contains(KUBERNETES)));
     }
 
     @BuildStep
-    public void checkMinikube(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
-        if (KubernetesConfigUtil.getDeploymentTargets().contains(MINIKUBE)) {
-            deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(MINIKUBE, DEPLOYMENT));
-        }
-    }
+    public EnabledKubernetesDeploymentTargetsBuildItem enabledKubernetesDeploymentTargets(
+            List<KubernetesDeploymentTargetBuildItem> allDeploymentTargets) {
+        List<KubernetesDeploymentTargetBuildItem> mergedDeploymentTargets = mergeList(allDeploymentTargets);
+        Collections.sort(mergedDeploymentTargets);
 
-    @BuildStep
-    public void checkOpenshift(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
-        if (KubernetesConfigUtil.getDeploymentTargets().contains(OPENSHIFT)) {
-            deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(OPENSHIFT, DEPLOYMENT_CONFIG));
+        List<EnabledKubernetesDeploymentTargetsBuildItem.Entry> entries = new ArrayList<>(mergedDeploymentTargets.size());
+        for (KubernetesDeploymentTargetBuildItem deploymentTarget : mergedDeploymentTargets) {
+            if (deploymentTarget.isEnabled()) {
+                entries.add(new EnabledKubernetesDeploymentTargetsBuildItem.Entry(deploymentTarget.getName(),
+                        deploymentTarget.getKind(), deploymentTarget.getPriority()));
+            }
         }
-    }
-
-    @BuildStep
-    public void checkKnative(BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets) {
-        if (KubernetesConfigUtil.getDeploymentTargets().contains(KNATIVE)) {
-            deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KNATIVE, SERVICE));
-        }
+        return new EnabledKubernetesDeploymentTargetsBuildItem(entries);
     }
 
     @BuildStep
@@ -197,7 +218,7 @@ class KubernetesProcessor {
             List<KubernetesEnvBuildItem> kubernetesEnvs,
             List<KubernetesRoleBuildItem> kubernetesRoles,
             List<KubernetesPortBuildItem> kubernetesPorts,
-            List<KubernetesDeploymentTargetBuildItem> kubernetesDeploymentTargets,
+            EnabledKubernetesDeploymentTargetsBuildItem kubernetesDeploymentTargets,
             Optional<BaseImageInfoBuildItem> baseImage,
             Optional<ContainerImageInfoBuildItem> containerImage,
             Optional<KubernetesCommandBuildItem> command,
@@ -218,8 +239,8 @@ class KubernetesProcessor {
         }
 
         Map<String, Object> config = KubernetesConfigUtil.toMap(kubernetesConfig, openshiftConfig, knativeConfig);
-        Set<String> deploymentTargets = kubernetesDeploymentTargets.stream()
-                .map(KubernetesDeploymentTargetBuildItem::getName)
+        Set<String> deploymentTargets = kubernetesDeploymentTargets.getEntriesSortedByPriority().stream()
+                .map(EnabledKubernetesDeploymentTargetsBuildItem.Entry::getName)
                 .collect(Collectors.toSet());
 
         Path artifactPath = outputTarget.getOutputDirectory().resolve(
@@ -554,7 +575,8 @@ class KubernetesProcessor {
         }
 
         // only use the probe config
-        handleProbes(applicationInfo, kubernetesConfig, openshiftConfig, knativeConfig, ports, kubernetesHealthLivenessPath,
+        handleProbes(applicationInfo, kubernetesConfig, openshiftConfig, knativeConfig, deploymentTargets, ports,
+                kubernetesHealthLivenessPath,
                 kubernetesHealthReadinessPath, session);
     }
 
@@ -603,26 +625,26 @@ class KubernetesProcessor {
     private void handleProbes(ApplicationInfoBuildItem applicationInfo, KubernetesConfig kubernetesConfig,
             OpenshiftConfig openshiftConfig,
             KnativeConfig knativeConfig,
-            Map<String, Integer> ports,
+            Set<String> deploymentTargets, Map<String, Integer> ports,
             Optional<KubernetesHealthLivenessPathBuildItem> kubernetesHealthLivenessPathBuildItem,
             Optional<KubernetesHealthReadinessPathBuildItem> kubernetesHealthReadinessPathBuildItem,
             Session session) {
-        if (kubernetesConfig.deploymentTarget.contains(KUBERNETES)) {
+        if (deploymentTargets.contains(KUBERNETES)) {
             doHandleProbes(getResourceName(kubernetesConfig, applicationInfo), KUBERNETES, ports,
                     kubernetesConfig.livenessProbe, kubernetesConfig.readinessProbe, kubernetesHealthLivenessPathBuildItem,
                     kubernetesHealthReadinessPathBuildItem, session);
         }
-        if (kubernetesConfig.deploymentTarget.contains(MINIKUBE)) {
+        if (deploymentTargets.contains(MINIKUBE)) {
             doHandleProbes(getResourceName(kubernetesConfig, applicationInfo), MINIKUBE, ports,
                     kubernetesConfig.livenessProbe, kubernetesConfig.readinessProbe, kubernetesHealthLivenessPathBuildItem,
                     kubernetesHealthReadinessPathBuildItem, session);
         }
-        if (kubernetesConfig.deploymentTarget.contains(OPENSHIFT)) {
+        if (deploymentTargets.contains(OPENSHIFT)) {
             doHandleProbes(getResourceName(kubernetesConfig, applicationInfo), OPENSHIFT, ports, openshiftConfig.livenessProbe,
                     openshiftConfig.readinessProbe, kubernetesHealthLivenessPathBuildItem,
                     kubernetesHealthReadinessPathBuildItem, session);
         }
-        if (kubernetesConfig.deploymentTarget.contains(KNATIVE)) {
+        if (deploymentTargets.contains(KNATIVE)) {
             doHandleProbes(getResourceName(kubernetesConfig, applicationInfo), KNATIVE, ports, knativeConfig.livenessProbe,
                     knativeConfig.readinessProbe, kubernetesHealthLivenessPathBuildItem, kubernetesHealthReadinessPathBuildItem,
                     session);

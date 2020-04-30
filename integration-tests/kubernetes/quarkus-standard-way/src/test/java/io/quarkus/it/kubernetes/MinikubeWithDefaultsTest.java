@@ -36,7 +36,8 @@ public class MinikubeWithDefaultsTest {
         Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
         assertThat(kubernetesDir)
                 .isDirectoryContaining(p -> p.getFileName().endsWith("minikube.json"))
-                .isDirectoryContaining(p -> p.getFileName().endsWith("minikube.yml"));
+                .isDirectoryContaining(p -> p.getFileName().endsWith("minikube.yml"))
+                .satisfies(p -> assertThat(p.toFile().listFiles()).hasSize(2));
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("minikube.yml"));
 

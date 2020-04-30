@@ -2,7 +2,6 @@
 package io.quarkus.kubernetes.deployment;
 
 import static io.quarkus.container.image.deployment.util.ImageUtil.hasRegistry;
-import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.MINIKUBE;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
@@ -51,7 +50,7 @@ public class KubernetesDeployer {
     @BuildStep(onlyIf = { IsNormal.class, KubernetesDeploy.class })
     public void deploy(KubernetesClientBuildItem kubernetesClient,
             ContainerImageInfoBuildItem containerImageInfo,
-            List<KubernetesDeploymentTargetBuildItem> kubernetesDeploymentTargets,
+            EnabledKubernetesDeploymentTargetsBuildItem targets,
             OutputTargetBuildItem outputTarget,
             Capabilities capabilities,
             BuildProducer<DeploymentResultBuildItem> deploymentResult,
@@ -67,67 +66,63 @@ public class KubernetesDeployer {
                             + CONTAINER_IMAGE_EXTENSIONS_STR + ".");
         }
 
-        final KubernetesDeploymentTargetBuildItem selectedKubernetesDeploymentTargetBuildItem = determineDeploymentTarget(
-                containerImageInfo, kubernetesDeploymentTargets, activeContainerImageCapability.get());
+        final EnabledKubernetesDeploymentTargetsBuildItem.Entry selectedTarget = determineDeploymentTarget(
+                containerImageInfo, targets, activeContainerImageCapability.get());
 
         final KubernetesClient client = Clients.fromConfig(kubernetesClient.getClient().getConfiguration());
         deploymentResult
-                .produce(deploy(selectedKubernetesDeploymentTargetBuildItem, client, outputTarget.getOutputDirectory()));
+                .produce(deploy(selectedTarget, client, outputTarget.getOutputDirectory()));
     }
 
     /**
      * Determine a single deployment target out of the possible options.
      *
-     * When there is none selected, we choose vanilla kubernetes.
-     * When multiple options exist, we choose openshift if it exists, then minikube if it exists.
-     * If none of the above conditions match, we select the single option if there is only one, otherwise we thrown
-     * an {@code IllegalStateException} if there are multiple options to choose from, as there is no way clear way to
-     * pick one. This is better than picking one at random, which because the order in the list isn't fixed would lead
-     * to non-deterministic behavior.
+     * The selection is done as follows:
+     *
+     * If there is no target deployment at all, just use vanilla Kubernetes. This will happen in cases where the user does not
+     * select
+     * a deployment target and no extensions that specify one are are present
+     *
+     * If the user specifies deployment targets, pick the first one
      */
-    private KubernetesDeploymentTargetBuildItem determineDeploymentTarget(ContainerImageInfoBuildItem containerImageInfo,
-            List<KubernetesDeploymentTargetBuildItem> kubernetesDeploymentTargets, String activeContainerImageCapability) {
-        final KubernetesDeploymentTargetBuildItem selectedKubernetesDeploymentTargetBuildItem;
-        if (kubernetesDeploymentTargets.isEmpty()) {
-            log.debug("No Kubernetes Deployment target was explicitly set. Defaulting to 'kubernetes'.");
-            return new KubernetesDeploymentTargetBuildItem(KUBERNETES, DEPLOYMENT);
+    private EnabledKubernetesDeploymentTargetsBuildItem.Entry determineDeploymentTarget(
+            ContainerImageInfoBuildItem containerImageInfo,
+            EnabledKubernetesDeploymentTargetsBuildItem targets, String activeContainerImageCapability) {
+        final EnabledKubernetesDeploymentTargetsBuildItem.Entry selectedTarget;
+
+        boolean checkForMissingRegistry = true;
+        List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getUserSpecifiedDeploymentTargets();
+        if (userSpecifiedDeploymentTargets.isEmpty()) {
+            selectedTarget = targets.getEntriesSortedByPriority().get(0);
+        } else {
+            String firstUserSpecifiedDeploymentTarget = userSpecifiedDeploymentTargets.get(0);
+            selectedTarget = targets
+                    .getEntriesSortedByPriority()
+                    .stream()
+                    .filter(d -> d.getName().equals(firstUserSpecifiedDeploymentTarget))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("The specified value '" + firstUserSpecifiedDeploymentTarget
+                            + "' is not one of the allowed values of \"quarkus.kubernetes.deployment-target\""));
+            if (userSpecifiedDeploymentTargets.size() > 1) {
+                log.info(
+                        "Only the first deployment target (which is '" + firstUserSpecifiedDeploymentTarget
+                                + "') selected via \"quarkus.kubernetes.deployment-target\" will be deployed");
+            }
         }
 
-        Optional<KubernetesDeploymentTargetBuildItem> openshiftDeploymentTarget = getOptionalDeploymentTarget(
-                kubernetesDeploymentTargets, OPENSHIFT);
-        boolean checkForMissingRegistry = true;
-        if (openshiftDeploymentTarget.isPresent()) {
-            if (kubernetesDeploymentTargets.size() > 1) {
-                log.info("Multiple Kubernetes deployment targets were set. 'openshift' will be selected.");
-            }
-            selectedKubernetesDeploymentTargetBuildItem = openshiftDeploymentTarget.get();
-            // If we are using s2i there is no need warn about the missing registry
+        if (OPENSHIFT.equals(selectedTarget.getName())) {
             checkForMissingRegistry = Capabilities.CONTAINER_IMAGE_S2I.equals(activeContainerImageCapability);
-        } else {
-            Optional<KubernetesDeploymentTargetBuildItem> minikubeDeploymentTarget = getOptionalDeploymentTarget(
-                    kubernetesDeploymentTargets, MINIKUBE);
-            if (minikubeDeploymentTarget.isPresent()) {
-                if (kubernetesDeploymentTargets.size() > 1) {
-                    log.info("Multiple Kubernetes deployment targets were set. 'minikube' will be selected.");
-                }
-                selectedKubernetesDeploymentTargetBuildItem = minikubeDeploymentTarget.get();
-                // No need to check for a registry when using Minikube since Minikube can work with the local docker daemon
-                // Furthermore, the 'ImagePullPolicy' has already been set to 'IfNotPresent' for Minikube
-                checkForMissingRegistry = false;
-            } else if (kubernetesDeploymentTargets.size() > 1) {
-                throw new IllegalStateException(
-                        "Multiple Kubernetes deployment targets present with no known priorities. Please select a single deployment target using the \"quarkus.kubernetes.deployment-target\" property.");
-            } else {
-                selectedKubernetesDeploymentTargetBuildItem = kubernetesDeploymentTargets.get(0);
-            }
+        } else if (MINIKUBE.equals(selectedTarget.getName())) {
+            checkForMissingRegistry = false;
         }
+
         if (checkForMissingRegistry && !hasRegistry(containerImageInfo.getImage())) {
             log.warn(
                     "A Kubernetes deployment was requested, but the container image to be built will not be pushed to any registry"
                             + " because \"quarkus.container-image.registry\" has not been set. The Kubernetes deployment will only work properly"
                             + " if the cluster is using the local Docker daemon. For that reason 'ImagePullPolicy' is being force-set to 'IfNotPresent'.");
         }
-        return selectedKubernetesDeploymentTargetBuildItem;
+        return selectedTarget;
     }
 
     private Optional<KubernetesDeploymentTargetBuildItem> getOptionalDeploymentTarget(
@@ -135,7 +130,7 @@ public class KubernetesDeployer {
         return deploymentTargets.stream().filter(d -> name.equals(d.getName())).findFirst();
     }
 
-    private DeploymentResultBuildItem deploy(KubernetesDeploymentTargetBuildItem deploymentTarget,
+    private DeploymentResultBuildItem deploy(EnabledKubernetesDeploymentTargetsBuildItem.Entry deploymentTarget,
             KubernetesClient client, Path outputDir) {
         String namespace = Optional.ofNullable(client.getNamespace()).orElse("default");
         log.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()

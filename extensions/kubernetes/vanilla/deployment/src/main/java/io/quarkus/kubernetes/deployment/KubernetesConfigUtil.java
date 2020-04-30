@@ -9,6 +9,7 @@ import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.S2I;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,10 +34,14 @@ public class KubernetesConfigUtil {
     private static final String EXPOSE_PROPERTY_NAME = "expose";
     private static final String[] EXPOSABLE_GENERATORS = { OPENSHIFT, KUBERNETES };
 
-    public static List<String> getDeploymentTargets() {
+    public static List<String> getUserSpecifiedDeploymentTargets() {
         Config config = ConfigProvider.getConfig();
-        return Arrays.stream(config.getOptionalValue(DEPLOYMENT_TARGET, String.class)
-                .orElse(config.getOptionalValue(OLD_DEPLOYMENT_TARGET, String.class).orElse(KUBERNETES))
+        String configValue = config.getOptionalValue(DEPLOYMENT_TARGET, String.class)
+                .orElse(config.getOptionalValue(OLD_DEPLOYMENT_TARGET, String.class).orElse(""));
+        if (configValue.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(configValue
                 .split(","))
                 .map(String::trim)
                 .map(String::toLowerCase)

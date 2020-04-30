@@ -38,7 +38,8 @@ public class KubernetesAndMinikubeWithApplicationPropertiesTest {
                 .isDirectoryContaining(p -> p.getFileName().endsWith("minikube.json"))
                 .isDirectoryContaining(p -> p.getFileName().endsWith("minikube.yml"))
                 .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.json"))
-                .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.yml"));
+                .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.yml"))
+                .satisfies(p -> assertThat(p.toFile().listFiles()).hasSize(4));
         assertKubernetes(kubernetesDir);
         assertMinikube(kubernetesDir);
     }

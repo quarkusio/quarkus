@@ -193,11 +193,12 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     /**
      * The target deployment platform.
-     * Defaults to kubernetes. Can be kubernetes, openshift, knative etc, or any combination of the above as comma separated
+     * Defaults to kubernetes. Can be kubernetes, openshift, knative, minikube etc, or any combination of the above as comma
+     * separated
      * list.
      */
-    @ConfigItem(defaultValue = "kubernetes")
-    List<String> deploymentTarget;
+    @ConfigItem
+    Optional<List<String>> deploymentTarget;
 
     /**
      * If true, a Kubernetes Ingress will be created

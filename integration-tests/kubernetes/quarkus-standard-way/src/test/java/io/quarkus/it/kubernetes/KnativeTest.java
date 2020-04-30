@@ -30,6 +30,7 @@ public class KnativeTest {
         Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
         assertThat(kubernetesDir)
                 .isDirectoryContaining(p -> p.getFileName().endsWith("knative.json"))
-                .isDirectoryContaining(p -> p.getFileName().endsWith("knative.yml"));
+                .isDirectoryContaining(p -> p.getFileName().endsWith("knative.yml"))
+                .satisfies(p -> assertThat(p.toFile().listFiles()).hasSize(2));
     }
 }

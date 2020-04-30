@@ -44,7 +44,6 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
-import org.hibernate.boot.registry.selector.internal.StrategySelectorBuilder;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.MetadataBuilderContributor;
 import org.hibernate.boot.spi.MetadataBuilderImplementor;
@@ -77,6 +76,7 @@ import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusIntegratorServiceImpl;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatform;
+import io.quarkus.hibernate.orm.runtime.customized.QuarkusStrategySelectorBuilder;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
@@ -199,12 +199,8 @@ public class FastBootMetadataBuilder {
         // N.B. support for custom IntegratorProvider injected via Properties (as
         // instance) removed
 
-        // N.B. support for custom StrategySelector removed
-        // TODO see to inject a custom
-        // org.hibernate.boot.registry.selector.spi.StrategySelector ?
-
-        QuarkusIntegratorServiceImpl integratorService = new QuarkusIntegratorServiceImpl(providedClassLoaderService);
-        final StrategySelectorBuilder strategySelectorBuilder = new StrategySelectorBuilder();
+        final QuarkusIntegratorServiceImpl integratorService = new QuarkusIntegratorServiceImpl(providedClassLoaderService);
+        final QuarkusStrategySelectorBuilder strategySelectorBuilder = new QuarkusStrategySelectorBuilder();
         final StrategySelector strategySelector = strategySelectorBuilder.buildSelector(providedClassLoaderService);
         return new BootstrapServiceRegistryImpl(true, providedClassLoaderService, strategySelector, integratorService);
     }

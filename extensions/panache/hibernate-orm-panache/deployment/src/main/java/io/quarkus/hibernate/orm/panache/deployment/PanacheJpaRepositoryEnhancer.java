@@ -17,7 +17,7 @@ public class PanacheJpaRepositoryEnhancer extends PanacheRepositoryEnhancer {
             .createSimple(PanacheRepositoryBase.class.getName());
 
     public PanacheJpaRepositoryEnhancer(IndexView index) {
-        super(index, PanacheResourceProcessor.DOTNAME_PANACHE_REPOSITORY_BASE);
+        super(index, PanacheHibernateResourceProcessor.DOTNAME_PANACHE_REPOSITORY_BASE);
     }
 
     @Override

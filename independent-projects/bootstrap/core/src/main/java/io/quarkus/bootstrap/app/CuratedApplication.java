@@ -21,6 +21,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import org.objectweb.asm.ClassVisitor;
 
 /**
@@ -280,10 +281,12 @@ public class CuratedApplication implements Serializable, Closeable {
 
     public QuarkusClassLoader createRuntimeClassLoader(QuarkusClassLoader loader,
             Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers,
+            Map<String, Predicate<byte[]>> transformerPredicates,
             ClassLoader deploymentClassLoader, Map<String, byte[]> resources) {
         QuarkusClassLoader.Builder builder = QuarkusClassLoader.builder("Quarkus Runtime ClassLoader",
                 loader, false)
                 .setAggregateParentResources(true);
+        builder.setTransformerPredicates(transformerPredicates);
         builder.setTransformerClassLoader(deploymentClassLoader);
         if (quarkusBootstrap.getApplicationRoot() != null) {
             builder.addElement(ClassPathElement.fromPath(quarkusBootstrap.getApplicationRoot()));

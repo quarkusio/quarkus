@@ -29,6 +29,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.index.ConstPoolScanner;
 
 public class ClassTransformingBuildStep {
 
@@ -42,9 +43,17 @@ public class ClassTransformingBuildStep {
         }
         final Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = new HashMap<>(
                 bytecodeTransformerBuildItems.size());
+        Set<String> noConstScanning = new HashSet<>();
+        Map<String, Set<String>> constScanning = new HashMap<>();
         for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
             bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
                     .add(i.getVisitorFunction());
+            if (i.getRequireConstPoolEntry() == null || i.getRequireConstPoolEntry().isEmpty()) {
+                noConstScanning.add(i.getClassToTransform());
+            } else {
+                constScanning.computeIfAbsent(i.getClassToTransform(), (s) -> new HashSet<>())
+                        .addAll(i.getRequireConstPoolEntry());
+            }
         }
         Map<String, Path> transformedToArchive = new ConcurrentHashMap<>();
         // now copy all the contents to the runner jar
@@ -57,6 +66,7 @@ public class ClassTransformingBuildStep {
             for (Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> entry : bytecodeTransformers
                     .entrySet()) {
                 String className = entry.getKey();
+                Set<String> constValues = constScanning.get(className);
                 ApplicationArchive archive = appArchives.containingArchive(entry.getKey());
                 if (archive != null) {
                     List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = entry.getValue();
@@ -73,7 +83,14 @@ public class ClassTransformingBuildStep {
                                         throw new RuntimeException(
                                                 "Can't process class files larger than Integer.MAX_VALUE bytes");
                                     }
-                                    ClassReader cr = new ClassReader(Files.readAllBytes(classFile));
+                                    byte[] classData = Files.readAllBytes(classFile);
+
+                                    if (constValues != null && !noConstScanning.contains(className)) {
+                                        if (!ConstPoolScanner.constPoolEntryPresent(classData, constValues)) {
+                                            return null;
+                                        }
+                                    }
+                                    ClassReader cr = new ClassReader(classData);
                                     ClassWriter writer = new QuarkusClassWriter(cr,
                                             ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                                     ClassVisitor visitor = writer;
@@ -102,8 +119,10 @@ public class ClassTransformingBuildStep {
         if (!transformed.isEmpty()) {
             for (Future<TransformedClassesBuildItem.TransformedClass> i : transformed) {
                 final TransformedClassesBuildItem.TransformedClass res = i.get();
-                transformedClassesByJar.computeIfAbsent(transformedToArchive.get(res.getFileName()), (a) -> new HashSet<>())
-                        .add(res);
+                if (res != null) {
+                    transformedClassesByJar.computeIfAbsent(transformedToArchive.get(res.getFileName()), (a) -> new HashSet<>())
+                            .add(res);
+                }
             }
         }
         return new TransformedClassesBuildItem(transformedClassesByJar);

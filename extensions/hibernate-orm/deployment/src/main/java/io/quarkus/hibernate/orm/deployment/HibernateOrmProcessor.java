@@ -169,6 +169,7 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
+//<<<<<<< HEAD
     public void parsePersistenceXmlDescriptors(
             BuildProducer<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptorBuildItemBuildProducer) {
         List<ParsedPersistenceXmlDescriptor> explicitDescriptors = QuarkusPersistenceXmlParser.locatePersistenceUnits();
@@ -279,11 +280,12 @@ public final class HibernateOrmProcessor {
                 generatedClassBuildItemBuildProducer);
         return new ProxyDefinitionsBuildItem(proxyDefinitions);
     }
-
+    
     @SuppressWarnings("unchecked")
     @BuildStep
     @Record(STATIC_INIT)
     public void build(RecorderContext recorderContext, HibernateOrmRecorder recorder,
+    		Capabilities capabilities,
             JpaEntitiesBuildItem domainObjects,
             List<NonJpaModelBuildItem> nonJpaModelBuildItems,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
@@ -295,7 +297,10 @@ public final class HibernateOrmProcessor {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_ORM));
 
         final boolean enableORM = hasEntities(domainObjects, nonJpaModelBuildItems);
-        recorder.callHibernateFeatureInit(enableORM);
+        final boolean enableRX = capabilities.isCapabilityPresent(Capabilities.HIBERNATE_RX);
+        if (!enableRX) {
+            recorder.callHibernateFeatureInit(enableORM);
+        }
 
         if (!enableORM) {
             // we can bail out early
@@ -326,12 +331,14 @@ public final class HibernateOrmProcessor {
         // inspect service files for additional integrators
         Collection<Class<? extends Integrator>> integratorClasses = new LinkedHashSet<>();
         for (String integratorClassName : ServiceUtil.classNamesNamedIn(classLoader, INTEGRATOR_SERVICE_FILE)) {
+            System.out.println("@AGG integrator class: " + integratorClassName);
             integratorClasses.add((Class<? extends Integrator>) recorderContext.classProxy(integratorClassName));
         }
         // inspect service files for service contributors
         Collection<Class<? extends ServiceContributor>> serviceContributorClasses = new LinkedHashSet<>();
         for (String serviceContributorClassName : ServiceUtil.classNamesNamedIn(classLoader,
                 SERVICE_CONTRIBUTOR_SERVICE_FILE)) {
+            System.out.println("@AGG svc contributor: " + serviceContributorClassName);
             serviceContributorClasses
                     .add((Class<? extends ServiceContributor>) recorderContext.classProxy(serviceContributorClassName));
         }

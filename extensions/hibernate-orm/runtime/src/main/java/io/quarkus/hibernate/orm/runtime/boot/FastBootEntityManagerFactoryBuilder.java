@@ -32,11 +32,11 @@ import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.tenant.HibernateCurrentTenantIdentifierResolver;
 
-public final class FastBootEntityManagerFactoryBuilder implements EntityManagerFactoryBuilder {
+public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactoryBuilder {
 
-    private final PrevalidatedQuarkusMetadata metadata;
-    private final String persistenceUnitName;
-    private final StandardServiceRegistry standardServiceRegistry;
+    protected final PrevalidatedQuarkusMetadata metadata;
+    protected final String persistenceUnitName;
+    protected final StandardServiceRegistry standardServiceRegistry;
     private final RuntimeSettings runtimeSettings;
     private final Object validatorFactory;
     private final Object cdiBeanManager;
@@ -94,7 +94,7 @@ public final class FastBootEntityManagerFactoryBuilder implements EntityManagerF
         cancel();
     }
 
-    private PersistenceException persistenceException(String message, Exception cause) {
+    protected PersistenceException persistenceException(String message, Exception cause) {
         // Provide a comprehensible message if there is an issue with SSL support
         Throwable t = cause;
         while (t != null) {

@@ -16,6 +16,8 @@
 
     <properties>
         <postgres.image>postgres:10.5</postgres.image>
+        <postgres.url>jdbc:postgresql://192.168.1.22:5431/hibernate_orm_test</postgres.url>
+        <postgres.reactive.url>vertx-reactive:postgresql://192.168.1.22:5431/hibernate_orm_test</postgres.reactive.url>
     </properties>
 
     <dependencies>
@@ -31,15 +33,21 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-jsonb</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-mutiny</artifactId>
+        </dependency>
         
 <!--                 <dependency> -->
 <!--             <groupId>io.quarkus</groupId> -->
 <!--             <artifactId>quarkus-hibernate-orm</artifactId> -->
 <!--         </dependency> -->
-<!--         <dependency> -->
-<!--             <groupId>io.quarkus</groupId> -->
-<!--             <artifactId>quarkus-jdbc-postgresql</artifactId> -->
-<!--         </dependency> -->
+		<!-- We need to pull in JDBC because currently HibernateRX does not support schema gen
+		     and relies on JDBC/ORM to do that part -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql</artifactId>
+        </dependency>
 
 		<!-- test dependencies -->
         <dependency>

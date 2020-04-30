@@ -79,7 +79,7 @@
 
         <!-- The image to use for tests that run Keycloak -->
         <!-- IMPORTANT: If this is changed you must also update .github/workflows/ci-actions.yml to match the version -->
-        <keycloak.docker.image>quay.io/keycloak/keycloak:9.0.2</keycloak.docker.image>
+        <keycloak.docker.image>quay.io/keycloak/keycloak:10.0.0</keycloak.docker.image>
 
         <unboundid-ldap.version>4.0.13</unboundid-ldap.version>
 

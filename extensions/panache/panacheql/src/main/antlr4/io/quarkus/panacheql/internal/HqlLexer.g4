@@ -223,7 +223,7 @@ NULL 	: [nN] [uU] [lL] [lL];
 
 // Identifiers
 IDENTIFIER
-	:	('a'..'z'|'A'..'Z'|'_'|'$'|'\u0080'..'\ufffe')('a'..'z'|'A'..'Z'|'_'|'$'|'0'..'9'|'\u0080'..'\ufffe')*
+	:	('a'..'z'|'A'..'Z'|'_'|'$'|'\u0080'..'\ufffe')('a'..'z'|'A'..'Z'|'_'|'$'|'0'..'9'|'\u0080'..'\ufffe')*('?')?
 	;
 
 QUOTED_IDENTIFIER

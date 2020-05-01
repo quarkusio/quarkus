@@ -221,7 +221,7 @@ link:http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates-
 You can add HTTP request logging by configuring it in `application.properties`. There are two options for logging,
 either logging to the standard JBoss logging output, or logging to a dedicated file.
 
-include: quarkus-vertx-http-config-group-access-log-config.adoc
+include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-config.adoc[opts=optional, leveloffset=+1]
 
 [frame="topbot",options="header"]
 |===

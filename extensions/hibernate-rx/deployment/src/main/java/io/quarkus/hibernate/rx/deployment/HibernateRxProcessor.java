@@ -17,6 +17,7 @@ import io.quarkus.hibernate.orm.deployment.NonJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.rx.runtime.HibernateRxRecorder;
 import io.quarkus.hibernate.rx.runtime.RxSessionFactoryProducer;
+import io.quarkus.hibernate.rx.runtime.RxSessionProducer;
 import io.quarkus.reactive.pg.client.deployment.PgPoolBuildItem;
 
 public final class HibernateRxProcessor {
@@ -36,8 +37,10 @@ public final class HibernateRxProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem registerBean() {
-        return AdditionalBeanBuildItem.unremovableOf(RxSessionFactoryProducer.class);
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        // TODO @AGG make these DefaultXXX beans and do not register them if user-defined producers are present
+        additionalBeans.produce(new AdditionalBeanBuildItem(RxSessionFactoryProducer.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(RxSessionProducer.class));
     }
 
     @BuildStep

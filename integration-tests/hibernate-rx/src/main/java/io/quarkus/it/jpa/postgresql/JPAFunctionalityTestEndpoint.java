@@ -1,26 +1,18 @@
 package io.quarkus.it.jpa.postgresql;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionFactory;
-import org.hibernate.rx.mutiny.Mutiny;
-import org.hibernate.rx.util.impl.RxUtil;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
-import io.vertx.mutiny.sqlclient.SqlConnection;
 
 @Path("/tests")
 public class JPAFunctionalityTestEndpoint {
@@ -32,7 +24,9 @@ public class JPAFunctionalityTestEndpoint {
     @Inject
     PgPool pgPool;
 
-    private RxSession session;
+    @Inject
+    @io.quarkus.hibernate.rx.runtime.RxSession
+    RxSession session;
     //    private SessionFactory sessionFactory;
     //    private RxConnectionPoolProvider poolProvider;
 
@@ -67,12 +61,8 @@ public class JPAFunctionalityTestEndpoint {
         System.out.println("@AGG in reactiveFind1");
         System.out.println("@AGG injected sf=" + rxSessionFactory);
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
-        before();
         return populateDB()
-                .onItem().produceUni(i -> openMutinySession())
-                .onItem().produceUni(session -> session.find(GuineaPig.class, expectedPig.getId()));
-        //				.onItem().invoke( actualPig -> assertThatPigsAreEqual( context, expectedPig, actualPig ) )
-        //				.convert().toCompletionStage();
+                .onItem().produceCompletionStage(junk -> session.find(GuineaPig.class, expectedPig.getId()));
     }
 
     //	@Test
@@ -206,59 +196,57 @@ public class JPAFunctionalityTestEndpoint {
     //		context.assertEquals( expected.getName(), actual.get().getName() );
     //	}
 
-    public void before() {
-        //        poolProvider = registry.getService(RxConnectionPoolProvider.class);
+    //    public void before() {
+    //        //        poolProvider = registry.getService(RxConnectionPoolProvider.class);
+    //
+    //        // EITHER WAY WORKS:
+    //        // session = sessionFactory.openSession().unwrap(RxSession.class);
+    //        session = rxSessionFactory.unwrap(RxSessionFactory.class).openRxSession();
+    //    }
+    //
+    //    public void after() {
+    //        if (session != null) {
+    //            session.close();
+    //        }
+    //        rxSessionFactory.close();
+    //    }
 
-        // EITHER WAY WORKS:
-        // session = sessionFactory.openSession().unwrap(RxSession.class);
-        session = rxSessionFactory.unwrap(RxSessionFactory.class).openRxSession();
-    }
-
-    public void after() {
-        if (session != null) {
-            session.close();
-        }
-        rxSessionFactory.close();
-    }
-
-    protected CompletionStage<RxSession> openSession() {
-        return RxUtil.nullFuture().thenApply(v -> {
-            if (session != null) {
-                session.close();
-            }
-            session = rxSessionFactory.openRxSession();
-            return session;
-        });
-    }
-
-    protected Uni<SqlConnection> connection() {
-        return pgPool.getConnection();
-    }
+    //    protected CompletionStage<RxSession> openSession() {
+    //        return RxUtil.nullFuture().thenApply(v -> {
+    //            if (session != null) {
+    //                session.close();
+    //            }
+    //            session = rxSessionFactory.openRxSession();
+    //            return session;
+    //        });
+    //    }
 
     private Uni<RowSet<Row>> populateDB() {
-        return Uni.createFrom().completionStage(connection()
-                .flatMap(c -> c.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute())
-                .subscribeAsCompletionStage());
+        return pgPool.getConnection()
+                .flatMap(c -> c.preparedQuery("DELETE FROM Pig").execute().map(junk -> c))
+                .flatMap(c -> c.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute());
+        //        return Uni.createFrom().completionStage(connection()
+        //                .flatMap(c -> c.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute())
+        //                .subscribeAsCompletionStage());
     }
 
-    private CompletableFuture<RowSet<Row>> cleanDB() {
-        return connection()
-                .flatMap(c -> c.preparedQuery("DELETE FROM Pig").execute())
-                .subscribeAsCompletionStage();
+    private Uni<RowSet<Row>> cleanDB() {
+        return pgPool.getConnection()
+                .flatMap(c -> c.preparedQuery("DELETE FROM Pig").execute());
     }
 
-//    protected Configuration constructConfiguration() {
-//        Configuration configuration = new Configuration();
-//        configuration.setProperty(AvailableSettings.HBM2DDL_AUTO, "create-drop");
-//        String pgUrl = "jdbc:postgresql://192.168.1.22:5431/hibernate_orm_test";
-//        System.out.println("@AGG PG URL IS: " + pgUrl);
-//        configuration.setProperty(AvailableSettings.URL, pgUrl);
-//        configuration.setProperty(AvailableSettings.SHOW_SQL, "true");
-//        return configuration;
-//    }
+    //    protected Configuration constructConfiguration() {
+    //        Configuration configuration = new Configuration();
+    //        configuration.setProperty(AvailableSettings.HBM2DDL_AUTO, "create-drop");
+    //        String pgUrl = "jdbc:postgresql://192.168.1.22:5431/hibernate_orm_test";
+    //        System.out.println("@AGG PG URL IS: " + pgUrl);
+    //        configuration.setProperty(AvailableSettings.URL, pgUrl);
+    //        configuration.setProperty(AvailableSettings.SHOW_SQL, "true");
+    //        return configuration;
+    //    }
 
-    protected Uni<Mutiny.Session> openMutinySession() {
-        return Uni.createFrom().completionStage(openSession()).map(Mutiny.Session::new);
-    }
+    //    protected Uni<Mutiny.Session> openMutinySession() {
+    //        return Uni.createFrom().completionStage(openSession()).map(Mutiny.Session::new);
+    //    }
 
 }

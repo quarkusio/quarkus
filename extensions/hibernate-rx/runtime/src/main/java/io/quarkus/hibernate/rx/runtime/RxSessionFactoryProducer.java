@@ -12,12 +12,6 @@ import org.hibernate.rx.RxSessionFactory;
 @ApplicationScoped
 public class RxSessionFactoryProducer {
 
-    //    private volatile RxSessionFactory rxSessionFactory;
-    //
-    //    void initialize(RxSessionFactory rxSessionFactory) {
-    //        this.rxSessionFactory = rxSessionFactory;
-    //    }
-
     @Inject
     @PersistenceUnit
     private EntityManagerFactory emf;

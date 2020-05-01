@@ -103,7 +103,10 @@ public class DevModeMain implements Closeable {
                 if (i.getClassesPath() != null) {
                     Path classesPath = Paths.get(i.getClassesPath());
                     bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(classesPath, true, false));
-
+                }
+                if (i.getResourcesOutputPath() != null && !i.getResourcesOutputPath().equals(i.getClassesPath())) {
+                    Path resourceOutputPath = Paths.get(i.getResourcesOutputPath());
+                    bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(resourceOutputPath, true, false));
                 }
             }
 

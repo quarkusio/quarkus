@@ -74,12 +74,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private volatile ClassLoaderState state;
 
     private QuarkusClassLoader(Builder builder) {
-        //we need the parent to be null
-        //as MP has super broken class loading where it attempts to resolve stuff from the parent
-        //will hopefully be fixed in 1.4
-        //e.g. https://github.com/eclipse/microprofile-config/issues/390
-        //e.g. https://github.com/eclipse/microprofile-reactive-streams-operators/pull/130
-        super(null);
+        super(builder.parent);
         this.name = builder.name;
         this.elements = builder.elements;
         this.bytecodeTransformers = builder.bytecodeTransformers;

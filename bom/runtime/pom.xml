@@ -64,7 +64,7 @@
         <jaxb-api.version>2.3.1</jaxb-api.version>
         <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
-        <asm.version>7.3.1</asm.version>
+        <asm.version>8.0.1</asm.version>
         <commons-io.version>2.6</commons-io.version>
         <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
         <maven-core.version>3.6.3</maven-core.version>
@@ -82,7 +82,7 @@
         <commons-lang3.version>3.9</commons-lang3.version>
         <commons-codec.version>1.13</commons-codec.version>
         <classmate.version>1.3.4</classmate.version>
-        <hibernate-orm.version>5.4.14.Final</hibernate-orm.version>
+        <hibernate-orm.version>5.4.15.Final</hibernate-orm.version>
         <hibernate-validator.version>6.1.4.Final</hibernate-validator.version>
         <hibernate-search.version>6.0.0.Beta6</hibernate-search.version>
         <narayana.version>5.10.4.Final</narayana.version>

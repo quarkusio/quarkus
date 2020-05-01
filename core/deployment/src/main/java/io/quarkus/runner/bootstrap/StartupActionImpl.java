@@ -11,8 +11,12 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -46,7 +50,9 @@ public class StartupActionImpl implements StartupAction {
             ClassLoader deploymentClassLoader) {
         this.curatedApplication = curatedApplication;
         this.buildResult = buildResult;
-        Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = extractTransformers();
+        Set<String> eagerClasses = new HashSet<>();
+        Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = extractTransformers(
+                eagerClasses);
         QuarkusClassLoader baseClassLoader = curatedApplication.getBaseRuntimeClassLoader();
         QuarkusClassLoader runtimeClassLoader;
 
@@ -66,12 +72,47 @@ public class StartupActionImpl implements StartupAction {
             runtimeClassLoader = baseClassLoader;
         }
         this.runtimeClassLoader = runtimeClassLoader;
+        handleEagerClasses(runtimeClassLoader, eagerClasses);
+    }
+
+    private void handleEagerClasses(QuarkusClassLoader runtimeClassLoader, Set<String> eagerClasses) {
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        if (availableProcessors == 1) {
+            return;
+        }
+        //leave one processor for the main startup thread
+        ExecutorService loadingExecutor = Executors.newFixedThreadPool(availableProcessors - 1);
+        for (String i : eagerClasses) {
+            loadingExecutor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        //no need to restore the old TCCL, this thread is going away
+                        Thread.currentThread().setContextClassLoader(runtimeClassLoader);
+                        runtimeClassLoader.loadClass(i);
+                    } catch (ClassNotFoundException e) {
+                        log.debug("Failed to eagerly load class", e);
+                        //we just ignore this for now, the problem
+                        //will be reported for real in the startup sequence
+                    }
+                }
+            });
+        }
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                //when all the jobs are done we shut down
+                //we do this in a new thread to allow the main thread to continue doing startup
+                loadingExecutor.shutdown();
+            }
+        });
+        t.start();
     }
 
     /**
      * Runs the application by running the main method of the main class. As this is a blocking method a new
      * thread is created to run this task.
-     * 
+     *
      * Before this method is called an appropriate exit handler will likely need to
      * be set in {@link io.quarkus.runtime.ApplicationLifecycleManager#setDefaultExitCodeHandler(Consumer)}
      * of the JVM will exit when the app stops.
@@ -216,7 +257,7 @@ public class StartupActionImpl implements StartupAction {
         return runtimeClassLoader;
     }
 
-    private Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> extractTransformers() {
+    private Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> extractTransformers(Set<String> eagerClasses) {
         Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = new HashMap<>();
         List<BytecodeTransformerBuildItem> transformers = buildResult.consumeMulti(BytecodeTransformerBuildItem.class);
         for (BytecodeTransformerBuildItem i : transformers) {
@@ -225,6 +266,9 @@ public class StartupActionImpl implements StartupAction {
                 bytecodeTransformers.put(i.getClassToTransform(), list = new ArrayList<>());
             }
             list.add(i.getVisitorFunction());
+            if (i.isEager()) {
+                eagerClasses.add(i.getClassToTransform());
+            }
         }
         return bytecodeTransformers;
     }

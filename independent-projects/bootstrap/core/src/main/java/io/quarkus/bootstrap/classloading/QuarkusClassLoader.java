@@ -20,7 +20,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;

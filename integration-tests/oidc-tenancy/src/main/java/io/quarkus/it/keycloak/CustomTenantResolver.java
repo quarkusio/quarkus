@@ -10,6 +10,9 @@ public class CustomTenantResolver implements TenantResolver {
 
     @Override
     public String resolve(RoutingContext context) {
+        if (context.request().path().endsWith("/tenant-public-key")) {
+            return "tenant-public-key";
+        }
         return context.request().path().split("/")[2];
     }
 }

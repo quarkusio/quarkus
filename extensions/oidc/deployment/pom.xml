@@ -102,12 +102,7 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <systemPropertyVariables>
-                        <keycloak.not.required/>
-                    </systemPropertyVariables>
-                    <includes>
-                        <include>ServicePublicKeyTestCase.java</include>
-                    </includes>
+                    <skip>true</skip>
                 </configuration>
             </plugin>
         </plugins>
@@ -126,9 +121,6 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
-                            <excludes>
-                                <exclude>ServicePublicKeyTestCase.java</exclude>
-                            </excludes>
                             <systemPropertyVariables>
                                 <keycloak.url>${keycloak.url}</keycloak.url>
                             </systemPropertyVariables>

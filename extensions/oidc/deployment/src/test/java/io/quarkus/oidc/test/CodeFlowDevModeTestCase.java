@@ -24,7 +24,8 @@ import io.quarkus.test.common.QuarkusTestResource;
 public class CodeFlowDevModeTestCase {
 
     private static Class<?>[] testClasses = {
-            ProtectedResource.class
+            ProtectedResource.class,
+            CustomTenantConfigResolver.class
     };
 
     @RegisterExtension
@@ -35,6 +36,9 @@ public class CodeFlowDevModeTestCase {
 
     @Test
     public void testAccessAndRefreshTokenInjectionDevMode() throws IOException, InterruptedException {
+        // Default tenant is disabled, check that having TenantConfigResolver is enough
+        useTenantConfigResolver();
+
         try (final WebClient webClient = createWebClient()) {
             // Default tenant is disabled and client-id is wrong
             try {
@@ -72,6 +76,25 @@ public class CodeFlowDevModeTestCase {
             page = loginForm.getInputByName("login").click();
 
             assertEquals("alice-dev-mode", page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    private void useTenantConfigResolver() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8080/web-app/tenant/tenant-config-resolver");
+
+            assertEquals("Log in to devmode", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice-dev-mode");
+            loginForm.getInputByName("password").setValueAttribute("alice-dev-mode");
+
+            page = loginForm.getInputByName("login").click();
+
+            assertEquals("tenant-config-resolver:alice-dev-mode", page.getBody().asText());
+            webClient.getCookieManager().clearCookies();
         }
     }
 

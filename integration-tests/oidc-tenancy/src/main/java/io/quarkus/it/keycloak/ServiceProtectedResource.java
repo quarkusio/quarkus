@@ -1,4 +1,4 @@
-package io.quarkus.oidc.test;
+package io.quarkus.it.keycloak;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -8,7 +8,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.security.Authenticated;
 
-@Path("/service")
+@Path("/service/tenant-public-key")
 @Authenticated
 public class ServiceProtectedResource {
 
@@ -17,6 +17,6 @@ public class ServiceProtectedResource {
 
     @GET
     public String getName() {
-        return accessToken.getName();
+        return "tenant-public-key" + ":" + accessToken.getName();
     }
 }

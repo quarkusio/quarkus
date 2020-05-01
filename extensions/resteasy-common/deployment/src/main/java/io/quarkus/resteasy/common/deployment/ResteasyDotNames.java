@@ -18,6 +18,8 @@ import javax.ws.rs.ext.Provider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.DotName;
 
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
+
 public final class ResteasyDotNames {
 
     public static final DotName CONSUMES = DotName.createSimple(Consumes.class.getName());
@@ -62,17 +64,8 @@ public final class ResteasyDotNames {
 
         @Override
         public boolean test(DotName name) {
-            return ResteasyDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(name) ||
-                    isInIgnoredPackage(name.toString());
-        }
-
-        private boolean isInIgnoredPackage(String name) {
-            for (String containerPackageName : PACKAGES_IGNORED_FOR_REFLECTION) {
-                if (name.startsWith(containerPackageName)) {
-                    return true;
-                }
-            }
-            return false;
+            return ResteasyDotNames.TYPES_IGNORED_FOR_REFLECTION.contains(name)
+                    || ReflectiveHierarchyBuildItem.DefaultIgnorePredicate.INSTANCE.test(name);
         }
     }
 
@@ -101,7 +94,4 @@ public final class ResteasyDotNames {
             // Vert-x
             DotName.createSimple("io.vertx.core.json.JsonArray"),
             DotName.createSimple("io.vertx.core.json.JsonObject")));
-
-    private static final List<String> PACKAGES_IGNORED_FOR_REFLECTION = Arrays.asList("java.", "io.reactivex.",
-            "org.reactivestreams.");
 }

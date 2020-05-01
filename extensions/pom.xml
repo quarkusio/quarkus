@@ -136,10 +136,7 @@
         <module>azure-functions-http</module>
 
         <!-- New Frameworks -->
-        <module>funqy/funqy-server-common</module>
-        <module>funqy/funqy-http</module>
-        <module>funqy/funqy-knative</module>
-        <module>funqy/funqy-amazon-lambda</module>
+        <module>funqy</module>
 
         <!-- Additional languages -->
         <module>kotlin</module>

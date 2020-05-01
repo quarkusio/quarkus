@@ -98,6 +98,14 @@ public class FunctionInvoker {
         return name;
     }
 
+    public Class<?> getTargetClass() {
+        return targetClass;
+    }
+
+    public Method getMethod() {
+        return method;
+    }
+
     public void invoke(FunqyServerRequest request, FunqyServerResponse response) {
         Object[] args = null;
         if (parameterInjectors != null) {

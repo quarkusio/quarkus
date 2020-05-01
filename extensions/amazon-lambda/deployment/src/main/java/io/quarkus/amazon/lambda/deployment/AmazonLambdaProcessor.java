@@ -41,8 +41,6 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
-import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.runtime.LaunchMode;
@@ -250,30 +248,6 @@ public final class AmazonLambdaProcessor {
         if (config.enablePollingJvmMode && mode.isDevOrTest()) {
             recorder.startPollLoop(shutdownContextBuildItem);
         }
-    }
-
-    @BuildStep
-    public void generateScripts(OutputTargetBuildItem target,
-            Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
-            BuildProducer<ArtifactResultBuildItem> artifactResultProducer) throws Exception {
-        if (providedLambda.isPresent())
-            return; // assume these will be generated elsewhere
-        String output = LambdaUtil.copyResource("lambda/bootstrap-example.sh");
-        LambdaUtil.writeFile(target, "bootstrap-example.sh", output);
-
-        String lambdaName = LambdaUtil.artifactToLambda(target.getBaseName());
-
-        output = LambdaUtil.copyResource("lambda/manage.sh")
-                .replace("${lambdaName}", lambdaName);
-        LambdaUtil.writeFile(target, "manage.sh", output);
-
-        output = LambdaUtil.copyResource("lambda/sam.jvm.yaml")
-                .replace("${lambdaName}", lambdaName);
-        LambdaUtil.writeFile(target, "sam.jvm.yaml", output);
-
-        output = LambdaUtil.copyResource("lambda/sam.native.yaml")
-                .replace("${lambdaName}", lambdaName);
-        LambdaUtil.writeFile(target, "sam.native.yaml", output);
     }
 
 }

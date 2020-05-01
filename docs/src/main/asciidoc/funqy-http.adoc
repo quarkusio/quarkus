@@ -1,0 +1,103 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Funqy HTTP
+
+include::./attributes.adoc[]
+:extension-status: preview
+
+The guide walks through quickstart code to show you how you can deploy and invoke on Funqy functions in a pure HTTP environment.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* Read about link:funqy[Funqy Basics].  This is a short read!
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven {maven-version}
+
+== The Quickstart
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `funqy-http-quickstart` {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart[directory].
+
+== The Code
+
+If you look at the Java code, you'll see that there is no HTTP specific API.  Its just simple Java methods
+annotated with `@Funq`.  Simple, easy, straightforward.
+
+== Build Project
+
+[source, shell]
+----
+mvn clean quarkus:dev
+----
+
+This starts your functions in Quarkus dev mode.
+
+== Execute Funqy HTTP functions
+
+Funqy HTTP input and output is always JSON.  The Jackson JSON parser is used behind the scenes and you can
+use Jackson annotations to fine tune your JSON mappings for your input and output objects.
+
+The HTTP POST method can be used to execute any Funqy function.  HTTP GET can be used if your function does
+not have any input.  No other HTTP method can be used besides POST and GET.
+
+The URL path to execute a function is the function name.  For example if your function name is `foo` then the URL path
+to execute the function would be `/foo`.
+
+You can invoke the `hello` function defined in {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/PrimitiveFunctions.java[PrimitiveFunctions.java]
+by pointing your browser to http://localhost:8080/hello
+
+Invoking the other functions in the quickstart requires an HTTP POST.
+To execute the `greet` function defined in {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/GreetingFunction.java[GreetingFunction.java]
+invoke this curl script.
+
+[source, shell]
+----
+curl "http://localhost:8080/greet" \
+-X POST \
+-H "Content-Type: application/json" \
+-d '{"name":"Bill"}'
+----
+
+Primitive types can also be passed as input using the standard JSON mapping for them.
+To execute the `toLowerCase` function defined in {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/PrimitiveFunctions.java[PrimitiveFunctions.java]
+invoke this curl script:
+
+[source, shell]
+----
+curl "http://localhost:8080/toLowerCase" \
+-X POST \
+-H "Content-Type: application/json" \
+-d '"HELLO WORLD"'
+----
+
+To execute the `double` function defined in {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/PrimitiveFunctions.java[PrimitiveFunctions.java]
+invoke this curl script:
+
+[source, shell]
+----
+curl "http://localhost:8080/double" \
+-X POST \
+-H "Content-Type: application/json" \
+-d '2'
+----
+
+== Maven Dependencies
+
+To write Funqy HTTP functions, simply include the `quarkus-funqy-http` dependency into your Quarkus `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-funqy-http</artifactId>
+</dependency>
+----
+

@@ -805,7 +805,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-funqy-knative</artifactId>
+                <artifactId>quarkus-funqy-knative-events</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

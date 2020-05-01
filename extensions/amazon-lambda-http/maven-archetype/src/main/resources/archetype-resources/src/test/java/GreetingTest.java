@@ -30,4 +30,11 @@ public class GreetingTest
                 .body(equalTo("hello vertx"));
     }
 
+    @Test
+    public void testFunqy() {
+        RestAssured.when().get("/funqyHello").then()
+                .contentType("text/plain")
+                .body(equalTo("hello funqy"));
+    }
+
 }

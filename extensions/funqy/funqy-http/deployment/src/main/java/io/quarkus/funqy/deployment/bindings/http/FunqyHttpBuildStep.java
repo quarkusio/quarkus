@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
-import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -33,20 +32,6 @@ public class FunqyHttpBuildStep {
     private static final Logger log = Logger.getLogger(FunqyHttpBuildStep.class);
     public static final String FUNQY_HTTP_FEATURE = "funqy-http";
 
-    public static final class RootpathBuildItem extends SimpleBuildItem {
-
-        final String deploymentRootPath;
-
-        public RootpathBuildItem(String deploymentRootPath) {
-            if (deploymentRootPath != null) {
-                this.deploymentRootPath = deploymentRootPath.startsWith("/") ? deploymentRootPath : "/" + deploymentRootPath;
-            } else {
-                this.deploymentRootPath = null;
-            }
-        }
-
-    }
-
     @BuildStep
     public void markObjectMapper(BuildProducer<UnremovableBeanBuildItem> unremovable) {
         unremovable.produce(new UnremovableBeanBuildItem(
@@ -57,17 +42,16 @@ public class FunqyHttpBuildStep {
 
     @BuildStep()
     @Record(STATIC_INIT)
-    public RootpathBuildItem staticInit(FunqyHttpBindingRecorder binding,
+    public void staticInit(FunqyHttpBindingRecorder binding,
             BeanContainerBuildItem beanContainer, // dependency
             Optional<FunctionInitializedBuildItem> hasFunctions,
             HttpBuildTimeConfig httpConfig) throws Exception {
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
-            return null;
+            return;
 
         // The context path + the resources path
         String rootPath = httpConfig.rootPath;
-        binding.init(rootPath);
-        return new RootpathBuildItem(rootPath);
+        binding.init();
     }
 
     @BuildStep
@@ -77,17 +61,19 @@ public class FunqyHttpBuildStep {
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<RouteBuildItem> routes,
             CoreVertxBuildItem vertx,
-            RootpathBuildItem root,
+            Optional<FunctionInitializedBuildItem> hasFunctions,
             List<FunctionBuildItem> functions,
             BeanContainerBuildItem beanContainer,
+            HttpBuildTimeConfig httpConfig,
             ExecutorBuildItem executorBuildItem) throws Exception {
 
-        if (root == null)
+        if (!hasFunctions.isPresent() || hasFunctions.get() == null)
             return;
         feature.produce(new FeatureBuildItem(FUNQY_HTTP_FEATURE));
 
-        String rootPath = root.deploymentRootPath;
-        Handler<RoutingContext> handler = binding.start(vertx.getVertx(),
+        String rootPath = httpConfig.rootPath;
+        Handler<RoutingContext> handler = binding.start(rootPath,
+                vertx.getVertx(),
                 shutdown,
                 beanContainer.getValue(),
                 executorBuildItem.getExecutorProxy());
@@ -98,7 +84,8 @@ public class FunqyHttpBuildStep {
             else if (!rootPath.endsWith("/"))
                 rootPath += "/";
             String name = function.getFunctionName() == null ? function.getMethodName() : function.getFunctionName();
-            String path = rootPath + name;
+            //String path = rootPath + name;
+            String path = "/" + name;
             routes.produce(new RouteBuildItem(path, handler, false));
         }
     }

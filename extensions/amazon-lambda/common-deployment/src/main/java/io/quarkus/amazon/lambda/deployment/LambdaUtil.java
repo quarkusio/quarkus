@@ -66,4 +66,25 @@ public class LambdaUtil {
             return new String(byteArray, StandardCharsets.UTF_8);
         }
     }
+
+    public static void generateScripts(String handler, OutputTargetBuildItem target) throws Exception {
+        String output = copyResource("lambda/bootstrap-example.sh");
+        writeFile(target, "bootstrap-example.sh", output);
+
+        String lambdaName = artifactToLambda(target.getBaseName());
+
+        output = copyResource("lambda/manage.sh")
+                .replace("${handler}", handler)
+                .replace("${lambdaName}", lambdaName);
+        writeFile(target, "manage.sh", output);
+
+        output = copyResource("lambda/sam.jvm.yaml")
+                .replace("${handler}", handler)
+                .replace("${lambdaName}", lambdaName);
+        writeFile(target, "sam.jvm.yaml", output);
+
+        output = copyResource("lambda/sam.native.yaml")
+                .replace("${lambdaName}", lambdaName);
+        writeFile(target, "sam.native.yaml", output);
+    }
 }

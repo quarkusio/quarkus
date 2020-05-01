@@ -47,6 +47,11 @@
       <artifactId>quarkus-vertx-web</artifactId>
       <version>${quarkus.version}</version>
     </dependency>
+    <!-- remove if not using funqy -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-funqy-http</artifactId>
+    </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-azure-functions-http</artifactId>

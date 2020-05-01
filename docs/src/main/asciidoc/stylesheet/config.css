@@ -4,18 +4,22 @@ table.configuration-reference.tableblock {
   border: none;
 }
 
-table.configuration-reference.tableblock thead th.tableblock {
+table.configuration-reference.tableblock span.icon {
+  color: #0D1C2C;
+}
+
+table.configuration-reference.tableblock > thead > tr > th.tableblock {
   background-color: transparent;
   border: none;
   color: white;
   font-weight: bold;
 }
 
-table.configuration-reference.tableblock tbody tr:nth-child(even) th {
+table.configuration-reference.tableblock > tbody > tr:nth-child(even) > th {
   background: transparent;
 }
 
-table.configuration-reference.tableblock tbody tr th {
+table.configuration-reference.tableblock > tbody > tr > th {
   background-color: transparent;
   font-size: 1rem;
   height: 60px;
@@ -24,32 +28,32 @@ table.configuration-reference.tableblock tbody tr th {
   vertical-align: bottom;
 }
 
-table.configuration-reference.tableblock tbody tr:first-child th {
+table.configuration-reference.tableblock > tbody > tr:first-child > th {
   height: 30px;
 }
-table.configuration-reference.tableblock tbody tr th:nth-child(2),
-table.configuration-reference.tableblock tbody tr th:nth-child(3),
-table.configuration-reference.tableblock tbody tr td:nth-child(2),
-table.configuration-reference.tableblock tbody tr td:nth-child(3) {
+table.configuration-reference.tableblock > tbody > tr > th:nth-child(2),
+table.configuration-reference.tableblock > tbody > tr > th:nth-child(3),
+table.configuration-reference.tableblock > tbody > tr > td:nth-child(2),
+table.configuration-reference.tableblock > tbody > tr > td:nth-child(3) {
   text-align: right;
 }
 
-table.configuration-reference.tableblock tbody tr th:nth-child(2) p,
-table.configuration-reference.tableblock tbody tr th:nth-child(3) p {
+table.configuration-reference.tableblock > tbody > tr > th:nth-child(2) p,
+table.configuration-reference.tableblock > tbody > tr > th:nth-child(3) p {
   font-weight: normal;
   color: black;
 }
 
-table.configuration-reference.tableblock tbody tr th p {
+table.configuration-reference.tableblock > tbody > tr > th > p {
   font-weight: bold;
 }
 
-table.configuration-reference.tableblock tbody tr td {
+table.configuration-reference.tableblock > tbody > tr > td {
   padding-left: 30px;
   border: none;
 }
 
-table.configuration-reference.tableblock tbody tr td > .content > .paragraph .icon {
+table.configuration-reference.tableblock > tbody > tr > td > .content > .paragraph .icon {
   margin-left: -19px;
   margin-top: 5px;
   float: left;
@@ -151,3 +155,5 @@ table.configuration-reference.tableblock .description-decoration i {
   font-size: 0.7rem;
   color: #4695eb;
 }
+
+.configuration-legend span.icon { color: #0D1C2C; }

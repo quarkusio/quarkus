@@ -227,168 +227,58 @@ public class HibernateSearchElasticsearchRuntimeConfig {
     @ConfigGroup
     public static class AutomaticIndexingSynchronizationConfig {
 
+        // @formatter:off
         /**
          * The synchronization strategy to use when indexing automatically.
-         * <p>
+         *
          * Defines how complete indexing should be before resuming the application thread
          * after a database transaction is committed.
-         * <p>
+         *
          * Available values:
-         * <table>
-         * <thead>
-         * <tr>
-         * <th rowspan="2">
-         * <p>
-         * Strategy
-         * </p>
-         * </th>
-         * <th colspan="3">
-         * <p>
-         * Guarantees when the application thread resumes
-         * </p>
-         * </th>
-         * <th rowspan="2">
-         * <p>
-         * Throughput
-         * </p>
-         * </th>
-         * </tr>
-         * <tr>
-         * <th>
-         * <p>
-         * Changes applied
-         * </p>
-         * </th>
-         * <th>
-         * <p>
-         * Changes safe from crash/power loss
-         * </p>
-         * </th>
-         * <th>
-         * <p>
-         * Changes visible on search
-         * </p>
-         * </th>
-         * </tr>
-         * </thead>
-         * <tbody>
-         * <tr>
-         * <td>
-         * <p>
-         * <code>{@value AutomaticIndexingSynchronizationStrategyNames#ASYNC}</code>
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * No guarantee
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * No guarantee
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * No guarantee
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * Best
-         * </p>
-         * </td>
-         * </tr>
-         * <tr>
-         * <td>
-         * <p>
-         * <code>{@value AutomaticIndexingSynchronizationStrategyNames#WRITE_SYNC}</code> (<strong>default</strong>)
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * Guaranteed
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * Guaranteed
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * No guarantee
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * Medium
-         * </p>
-         * </td>
-         * </tr>
-         * <tr>
-         * <td>
-         * <p>
-         * <code>{@value AutomaticIndexingSynchronizationStrategyNames#READ_SYNC}</code>
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * Guaranteed
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * No guarantee
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * Guaranteed
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * Medium to worst
-         * </p>
-         * </td>
-         * </tr>
-         * <tr>
-         * <td>
-         * <p>
-         * <code>{@value AutomaticIndexingSynchronizationStrategyNames#SYNC}</code>
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * Guaranteed
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * Guaranteed
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * Guaranteed
-         * </p>
-         * </td>
-         * <td>
-         * <p>
-         * Worst
-         * </p>
-         * </td>
-         * </tr>
-         * </tbody>
-         * </table>
-         * <p>
+         *
+         * [cols=5]
+         * !===
+         * .2+h!Strategy
+         * .2+h!Throughput
+         * 3+^h!Guarantees when the application thread resumes
+         *
+         * h!Changes applied
+         * h!Changes safe from crash/power loss
+         * h!Changes visible on search
+         *
+         * !async
+         * !Best
+         * ^!icon:times[role=red]
+         * ^!icon:times[role=red]
+         * ^!icon:times[role=red]
+         *
+         * !write-sync (**default**)
+         * !Medium
+         * ^!icon:check[role=lime]
+         * ^!icon:check[role=lime]
+         * ^!icon:times[role=red]
+         *
+         * !read-sync
+         * !Medium to worst
+         * ^!icon:check[role=lime]
+         * ^!icon:times[role=red]
+         * ^!icon:check[role=lime]
+         *
+         * !sync
+         * !Worst
+         * ^!icon:check[role=lime]
+         * ^!icon:check[role=lime]
+         * ^!icon:check[role=lime]
+         * !===
+         *
          * See
-         * <a href=
-         * "https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/#mapper-orm-indexing-automatic-synchronization">this
-         * section of the reference documentation</a>
+         * https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/#mapper-orm-indexing-automatic-synchronization[this
+         * section of the reference documentation]
          * for more information.
+         *
+         * @asciidoclet
          */
+        // @formatter:on
         @ConfigItem(defaultValue = AutomaticIndexingSynchronizationStrategyNames.WRITE_SYNC)
         String strategy;
     }

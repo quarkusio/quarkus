@@ -175,17 +175,21 @@ public class ClassPathUtils {
      */
     public static <R> R readStream(URL url, Function<InputStream, R> function) throws IOException {
         if (JAR.equals(url.getProtocol())) {
-            final URI uri;
-            try {
-                uri = new URI(url.toString());
-            } catch (URISyntaxException e) {
-                throw new IOException(e);
-            }
+            final URI uri = toURI(url);
             final String file = uri.getSchemeSpecificPart();
-            final int exclam = file.lastIndexOf('!');
-            final Path jar = toLocalPath(exclam >= 0 ? new URL(file.substring(0, exclam)) : url);
+            final int fileExclam = file.lastIndexOf('!');
+            final URL jarURL;
+            if (fileExclam > 0) {
+                // we need to use the original url instead of the scheme specific part because it contains the properly encoded path
+                String urlFile = url.getFile();
+                int urlExclam = urlFile.lastIndexOf('!');
+                jarURL = new URL(urlFile.substring(0, urlExclam));
+            } else {
+                jarURL = url;
+            }
+            final Path jar = toLocalPath(jarURL);
             try (FileSystem jarFs = FileSystems.newFileSystem(jar, (ClassLoader) null)) {
-                try (InputStream is = Files.newInputStream(jarFs.getPath(file.substring(exclam + 1)))) {
+                try (InputStream is = Files.newInputStream(jarFs.getPath(file.substring(fileExclam + 1)))) {
                     return function.apply(is);
                 }
             }
@@ -198,6 +202,16 @@ public class ClassPathUtils {
         try (InputStream is = url.openStream()) {
             return function.apply(is);
         }
+    }
+
+    private static URI toURI(URL url) throws IOException {
+        final URI uri;
+        try {
+            uri = new URI(url.toString());
+        } catch (URISyntaxException e) {
+            throw new IOException(e);
+        }
+        return uri;
     }
 
     /**

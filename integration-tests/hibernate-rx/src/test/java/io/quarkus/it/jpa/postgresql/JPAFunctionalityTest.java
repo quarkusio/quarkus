@@ -14,11 +14,11 @@ import io.restassured.RestAssured;
 public class JPAFunctionalityTest {
 
     @Test
-    public void testJPAFunctionalityFromServlet() throws Exception {
+    public void reactiveFind1() {
         RestAssured.when()
                 .get("/tests/reactiveFind1")
                 .then()
-                .body(is("OK"));
+                .body(is("{\"id\":5,\"name\":\"Aloi\"}"));
     }
 
 }

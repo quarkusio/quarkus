@@ -1,60 +1,73 @@
 package io.quarkus.it.jpa.postgresql;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.hibernate.SessionFactory;
-import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionFactory;
 import org.hibernate.rx.mutiny.Mutiny;
-import org.hibernate.rx.service.RxConnection;
-import org.hibernate.rx.service.initiator.RxConnectionPoolProvider;
 import org.hibernate.rx.util.impl.RxUtil;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.axle.sqlclient.Tuple;
+import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.mutiny.sqlclient.SqlConnection;
 
 @Path("/tests")
 public class JPAFunctionalityTestEndpoint {
 
+    @Inject
+    @io.quarkus.hibernate.rx.runtime.RxSession
+    RxSessionFactory rxSessionFactory;
+
+    @Inject
+    PgPool pgPool;
+
     private RxSession session;
-    private SessionFactory sessionFactory;
-    private RxConnectionPoolProvider poolProvider;
+    //    private SessionFactory sessionFactory;
+    //    private RxConnectionPoolProvider poolProvider;
 
     //    @PersistenceUnit(unitName = "templatePU")
     //    EntityManagerFactory entityManagerFactory;
 
-    private Uni<String> selectNameFromId(Integer id) {
-        CompletionStage<String> result = connection().preparedQuery(
-                "SELECT name FROM Pig WHERE id = $1", Tuple.of(id)).thenApply(
-                        rowSet -> {
-                            if (rowSet.size() == 1) {
-                                // Only one result
-                                return rowSet.iterator().next().getString(0);
-                            } else if (rowSet.size() > 1) {
-                                throw new AssertionError("More than one result returned: " + rowSet.size());
-                            } else {
-                                // Size 0
-                                return null;
-                            }
-                        });
-        return Uni.createFrom().completionStage(result);
-    }
+    //    private Uni<String> selectNameFromId(Integer id) {
+    //        CompletionStage<String> result = connection()
+    //        		.flatMap(c -> {
+    //        			return c.preparedQuery("SELECT name FROM Pig WHERE id = $1").execute(Tuple.of(id));
+    //        		})
+    //        		.flatMap(o -> null);
+    ////                , Tuple.of(id)).thenApply(
+    ////                        rowSet -> {
+    ////                            if (rowSet.size() == 1) {
+    ////                                // Only one result
+    ////                                return rowSet.iterator().next().getString(0);
+    ////                            } else if (rowSet.size() > 1) {
+    ////                                throw new AssertionError("More than one result returned: " + rowSet.size());
+    ////                            } else {
+    ////                                // Size 0
+    ////                                return null;
+    ////                            }
+    ////                        });
+    //        return Uni.createFrom().completionStage(result);
+    //    }
 
     @GET
     @Path("/reactiveFind1")
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<GuineaPig> reactiveFind1() {
         System.out.println("@AGG in reactiveFind1");
+        System.out.println("@AGG injected sf=" + rxSessionFactory);
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
+        before();
         return populateDB()
                 .onItem().produceUni(i -> openMutinySession())
                 .onItem().produceUni(session -> session.find(GuineaPig.class, expectedPig.getId()));
@@ -194,23 +207,18 @@ public class JPAFunctionalityTestEndpoint {
     //	}
 
     public void before() {
-        StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
-                .applySettings(constructConfiguration().getProperties())
-                .build();
-
-        sessionFactory = constructConfiguration().buildSessionFactory(registry);
-        poolProvider = registry.getService(RxConnectionPoolProvider.class);
+        //        poolProvider = registry.getService(RxConnectionPoolProvider.class);
 
         // EITHER WAY WORKS:
         // session = sessionFactory.openSession().unwrap(RxSession.class);
-        session = sessionFactory.unwrap(RxSessionFactory.class).openRxSession();
+        session = rxSessionFactory.unwrap(RxSessionFactory.class).openRxSession();
     }
 
     public void after() {
         if (session != null) {
             session.close();
         }
-        sessionFactory.close();
+        rxSessionFactory.close();
     }
 
     protected CompletionStage<RxSession> openSession() {
@@ -218,32 +226,36 @@ public class JPAFunctionalityTestEndpoint {
             if (session != null) {
                 session.close();
             }
-            session = sessionFactory.unwrap(RxSessionFactory.class).openRxSession();
+            session = rxSessionFactory.openRxSession();
             return session;
         });
     }
 
-    protected RxConnection connection() {
-        return poolProvider.getConnection();
+    protected Uni<SqlConnection> connection() {
+        return pgPool.getConnection();
     }
 
-    private Uni<Integer> populateDB() {
-        return Uni.createFrom().completionStage(connection().update("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')"));
+    private Uni<RowSet<Row>> populateDB() {
+        return Uni.createFrom().completionStage(connection()
+                .flatMap(c -> c.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute())
+                .subscribeAsCompletionStage());
     }
 
-    private CompletionStage<Integer> cleanDB() {
-        return connection().update("DELETE FROM Pig");
+    private CompletableFuture<RowSet<Row>> cleanDB() {
+        return connection()
+                .flatMap(c -> c.preparedQuery("DELETE FROM Pig").execute())
+                .subscribeAsCompletionStage();
     }
 
-    protected Configuration constructConfiguration() {
-        Configuration configuration = new Configuration();
-        configuration.setProperty(AvailableSettings.HBM2DDL_AUTO, "create-drop");
-        String pgUrl = System.getProperty("quarkus.datasource.jdbc.url");
-        System.out.println("@AGG PG URL IS: " + pgUrl);
-        configuration.setProperty(AvailableSettings.URL, pgUrl);
-        configuration.setProperty(AvailableSettings.SHOW_SQL, "true");
-        return configuration;
-    }
+//    protected Configuration constructConfiguration() {
+//        Configuration configuration = new Configuration();
+//        configuration.setProperty(AvailableSettings.HBM2DDL_AUTO, "create-drop");
+//        String pgUrl = "jdbc:postgresql://192.168.1.22:5431/hibernate_orm_test";
+//        System.out.println("@AGG PG URL IS: " + pgUrl);
+//        configuration.setProperty(AvailableSettings.URL, pgUrl);
+//        configuration.setProperty(AvailableSettings.SHOW_SQL, "true");
+//        return configuration;
+//    }
 
     protected Uni<Mutiny.Session> openMutinySession() {
         return Uni.createFrom().completionStage(openSession()).map(Mutiny.Session::new);

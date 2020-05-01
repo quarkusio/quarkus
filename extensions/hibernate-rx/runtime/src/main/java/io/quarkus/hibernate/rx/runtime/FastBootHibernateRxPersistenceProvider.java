@@ -19,7 +19,6 @@ import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.rx.jpa.impl.DelegatorPersistenceUnitInfo;
 import org.hibernate.rx.jpa.impl.RxPersisterClassResolverInitiator;
-import org.hibernate.rx.service.initiator.RxConnectionProviderInitiator;
 import org.hibernate.rx.service.initiator.RxTransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.ProvidedService;
 import org.jboss.logging.Logger;
@@ -36,6 +35,9 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrations;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.rx.runtime.boot.FastBootRxEntityManagerFactoryBuilder;
+import io.quarkus.hibernate.rx.runtime.customized.AvailableRxSettings;
+import io.quarkus.hibernate.rx.runtime.customized.QuarkusRxConnectionProviderInitiator;
+import io.vertx.pgclient.PgPool;
 
 /**
  * This can not inherit from RxPersistenceProvider because it references HibernatePersistenceProvider
@@ -132,9 +134,9 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
 
-            // TODO @AGG make this a reactive datasource
             // Inject the datasource
             injectDataSource(persistenceUnitName, runtimeSettingsBuilder);
+            injectVertxPool(persistenceUnitName, runtimeSettingsBuilder);
 
             HibernateOrmIntegrations.contributeRuntimeProperties((k, v) -> runtimeSettingsBuilder.put(k, v));
 
@@ -161,9 +163,10 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(RuntimeSettings runtimeSettings,
             RecordedState rs) {
         PreconfiguredServiceRegistryBuilder serviceRegistryBuilder = new PreconfiguredServiceRegistryBuilder(rs);
-        serviceRegistryBuilder.addInitiator(RxConnectionProviderInitiator.INSTANCE);
+        serviceRegistryBuilder.addInitiator(QuarkusRxConnectionProviderInitiator.INSTANCE);
         serviceRegistryBuilder.addInitiator(RxTransactionCoordinatorBuilderInitiator.INSTANCE);
         serviceRegistryBuilder.addInitiator(RxPersisterClassResolverInitiator.INSTANCE);
+        // @AGG somehow the RxIntegrator is getting registered somewhere else
         //        serviceRegistryBuilder.addIntegrator(new RxIntegrator());
 
         runtimeSettings.getSettings().forEach((key, value) -> {
@@ -179,11 +182,6 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
         StandardServiceRegistryImpl standardServiceRegistry = serviceRegistryBuilder.buildNewServiceRegistry();
         return standardServiceRegistry;
     }
-
-    //    private void enforceRxConfig(Map<Object, Object> map) {
-    //        //we use a placeholder DS to make sure, Hibernate EntityManager (Ejb3Configuration) does not enforce a different connection provider
-    //        map.put(Environment.DATASOURCE, "---PlaceHolderDSForOGM---");
-    //    }
 
     @SuppressWarnings("rawtypes")
     private void verifyProperties(Map properties) {
@@ -229,6 +227,24 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
         DataSource ds = Arc.container().instance(DataSource.class).get();
         System.out.println("@AGG using injected datasource: " + ds);
         runtimeSettingsBuilder.put(AvailableSettings.DATASOURCE, ds);
+    }
+
+    private void injectVertxPool(String persistenceUnitName, RuntimeSettings.Builder runtimeSettingsBuilder) {
+        System.out.println("@AGG injecting Vertx pool...");
+        if (runtimeSettingsBuilder.isConfigured(AvailableSettings.URL) ||
+                runtimeSettingsBuilder.isConfigured(AvailableRxSettings.VERTX_POOL)) {
+            // the pool has been defined in the persistence unit, we can bail out
+            return;
+        }
+
+        // for now we only support one pool but this will change
+        InstanceHandle<PgPool> poolHandle = Arc.container().instance(PgPool.class);
+        System.out.println("@AGG is pool handle available? " + poolHandle.isAvailable());
+        if (!poolHandle.isAvailable()) {
+            throw new IllegalStateException("No pool has been defined for persistence unit " + persistenceUnitName);
+        }
+
+        runtimeSettingsBuilder.put(AvailableRxSettings.VERTX_POOL, poolHandle.get());
     }
 
     @Override

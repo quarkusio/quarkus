@@ -17,4 +17,8 @@ import javax.inject.Qualifier;
 @Documented
 @Qualifier
 public @interface RxSession {
+
+    // TODO @AGG: Rename this so it doesn't conflict with org.hibernate.rx.RxSession
+    // also, see if we can eliminate the need for this qualifier entirely
+
 }

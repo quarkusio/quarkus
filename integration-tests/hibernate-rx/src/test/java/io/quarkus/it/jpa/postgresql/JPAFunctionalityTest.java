@@ -14,11 +14,50 @@ import io.restassured.RestAssured;
 public class JPAFunctionalityTest {
 
     @Test
-    public void reactiveFind1() {
+    public void reactiveFindRx() {
         RestAssured.when()
-                .get("/tests/reactiveFind1")
+                .get("/tests/reactiveFindRx")
                 .then()
                 .body(is("{\"id\":5,\"name\":\"Aloi\"}"));
     }
 
+    @Test
+    public void reactiveFindMutiny() {
+        RestAssured.when()
+                .get("/tests/reactiveFindMutiny")
+                .then()
+                .body(is("{\"id\":5,\"name\":\"Aloi\"}"));
+    }
+
+    @Test
+    public void reactivePersist() {
+        RestAssured.when()
+                .get("/tests/reactivePersist")
+                .then()
+                .body(is("Tulip"));
+    }
+
+    @Test
+    public void reactiveRemoveTransientEntity() {
+        RestAssured.when()
+                .get("/tests/reactiveRemoveTransientEntity")
+                .then()
+                .body(is("OK"));
+    }
+
+    @Test
+    public void reactiveRemoveManagedEntity() {
+        RestAssured.when()
+                .get("/tests/reactiveRemoveManagedEntity")
+                .then()
+                .body(is("OK"));
+    }
+
+    @Test
+    public void reactiveUpdate() {
+        RestAssured.when()
+                .get("/tests/reactiveUpdate")
+                .then()
+                .body(is("Tina"));
+    }
 }

@@ -70,6 +70,9 @@ public class TestResource {
                 Parameters.with("category", "category1")).size());
         Document listQuery = new Document().append("category", "category1");
         Assertions.assertEquals(5, TestImperativeEntity.list(listQuery).size());
+        Assertions.assertEquals(0, TestImperativeEntity.list("category", (Object) null).size());
+        Assertions.assertEquals(0, TestImperativeEntity.list("category = :category",
+                Parameters.with("category", null)).size());
 
         // sort
         TestImperativeEntity entityA = new TestImperativeEntity("aaa", "aaa", "aaa");
@@ -180,6 +183,9 @@ public class TestResource {
                 Parameters.with("category", "category1")).size());
         Document listQuery = new Document().append("category", "category1");
         Assertions.assertEquals(5, testImperativeRepository.list(listQuery).size());
+        Assertions.assertEquals(0, testImperativeRepository.list("category", (Object) null).size());
+        Assertions.assertEquals(0, testImperativeRepository.list("category = :category",
+                Parameters.with("category", null)).size());
 
         // sort
         TestImperativeEntity entityA = new TestImperativeEntity("aaa", "aaa", "aaa");
@@ -364,6 +370,9 @@ public class TestResource {
                 Parameters.with("category", "category1")).await().indefinitely().size());
         Document listQuery = new Document().append("category", "category1");
         Assertions.assertEquals(5, TestReactiveEntity.list(listQuery).await().indefinitely().size());
+        Assertions.assertEquals(0, TestReactiveEntity.list("category", (Object) null).await().indefinitely().size());
+        Assertions.assertEquals(0, TestReactiveEntity.list("category = :category",
+                Parameters.with("category", null)).await().indefinitely().size());
 
         // sort
         TestReactiveEntity entityA = new TestReactiveEntity("aaa", "aaa", "aaa");
@@ -482,6 +491,9 @@ public class TestResource {
                 Parameters.with("category", "category1")).await().indefinitely().size());
         Document listQuery = new Document().append("category", "category1");
         Assertions.assertEquals(5, testReactiveRepository.list(listQuery).await().indefinitely().size());
+        Assertions.assertEquals(0, testReactiveRepository.list("category", (Object) null).await().indefinitely().size());
+        Assertions.assertEquals(0, testReactiveRepository.list("category = :category",
+                Parameters.with("category", null)).await().indefinitely().size());
 
         // sort
         TestReactiveEntity entityA = new TestReactiveEntity("aaa", "aaa", "aaa");

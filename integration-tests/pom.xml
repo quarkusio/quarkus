@@ -106,6 +106,7 @@
         <module>reactive-messaging-amqp</module>
         <module>rest-client</module>
         <module>packaging</module>
+        <module>simple with space</module>
     </modules>
 
     <build>

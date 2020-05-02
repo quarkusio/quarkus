@@ -1,6 +1,7 @@
 package io.quarkus.amazon.lambda.deployment;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -91,16 +92,20 @@ public final class AmazonLambdaProcessor {
         List<AmazonLambdaBuildItem> ret = new ArrayList<>();
 
         for (ClassInfo info : allKnownImplementors) {
+            if (Modifier.isAbstract(info.flags())) {
+                continue;
+            }
+
             final DotName name = info.name();
-            builder.addBeanClass(name.toString());
+            final String lambda = name.toString();
+            builder.addBeanClass(lambda);
+            reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, false, lambda));
+
             String cdiName = null;
             List<AnnotationInstance> named = info.annotations().get(NAMED);
             if (named != null && !named.isEmpty()) {
                 cdiName = named.get(0).value().asString();
             }
-
-            final String lambda = name.toString();
-            reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, false, lambda));
 
             ClassInfo current = info;
             boolean done = false;

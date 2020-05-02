@@ -13,27 +13,18 @@ import io.quarkus.arc.DefaultBean;
 
 public class OptaPlannerBeanProvider {
 
-    static volatile SolverConfig solverConfig;
-    static volatile SolverManagerConfig solverManagerConfig;
-
     @DefaultBean
     @Singleton
     @Produces
-    SolverConfig solverConfig() {
-        return solverConfig;
-    }
-
-    @DefaultBean
-    @Singleton
-    @Produces
-    <Solution_> SolverFactory<Solution_> solverFactory() {
+    <Solution_> SolverFactory<Solution_> solverFactory(SolverConfig solverConfig) {
         return SolverFactory.create(solverConfig);
     }
 
     @DefaultBean
     @Singleton
     @Produces
-    <Solution_, ProblemId_> SolverManager<Solution_, ProblemId_> solverManager(SolverFactory<Solution_> solverFactory) {
+    <Solution_, ProblemId_> SolverManager<Solution_, ProblemId_> solverManager(SolverFactory<Solution_> solverFactory,
+            SolverManagerConfig solverManagerConfig) {
         return SolverManager.create(solverFactory, solverManagerConfig);
     }
 

@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import javax.inject.Singleton;
+
 import org.quartz.core.QuartzSchedulerThread;
 import org.quartz.core.SchedulerSignalerImpl;
 import org.quartz.impl.StdSchedulerFactory;
@@ -25,7 +27,7 @@ import org.quartz.simpl.SimpleThreadPool;
 import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.deployment.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -55,7 +57,7 @@ public class QuartzProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem beans() {
-        return new AdditionalBeanBuildItem(QuartzScheduler.class, QuartzSupport.class);
+        return new AdditionalBeanBuildItem(QuartzScheduler.class);
     }
 
     @BuildStep
@@ -168,13 +170,22 @@ public class QuartzProcessor {
     }
 
     @BuildStep
-    @Record(RUNTIME_INIT)
-    public void build(QuartzRuntimeConfig runtimeConfig, QuartzBuildTimeConfig buildTimeConfig, QuartzRecorder recorder,
-            BeanContainerBuildItem beanContainer,
-            BuildProducer<ServiceStartBuildItem> serviceStart, QuartzJDBCDriverDialectBuildItem driverDialect,
-            List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
-        recorder.initialize(runtimeConfig, buildTimeConfig, beanContainer.getValue(), driverDialect.getDriver());
+    public void start(BuildProducer<ServiceStartBuildItem> serviceStart,
+            @SuppressWarnings("unused") List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem) {
         // Make sure that StartupEvent is fired after the init
         serviceStart.produce(new ServiceStartBuildItem("quartz"));
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    public void quartzSupportBean(QuartzRuntimeConfig runtimeConfig, QuartzBuildTimeConfig buildTimeConfig,
+            QuartzRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            QuartzJDBCDriverDialectBuildItem driverDialect) {
+
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(QuartzSupport.class)
+                .scope(Singleton.class)
+                .setRuntimeInit()
+                .supplier(recorder.quartzSupportSupplier(runtimeConfig, buildTimeConfig, driverDialect.getDriver())).done());
     }
 }

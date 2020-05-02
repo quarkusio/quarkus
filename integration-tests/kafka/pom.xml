@@ -184,16 +184,22 @@
 
     <profiles>
         <profile>
-            <id>docker</id>
+            <id>test-kafka</id>
             <activation>
                 <property>
-                    <name>docker</name>
+                    <name>test-kafka</name>
                 </property>
             </activation>
             <build>
                 <plugins>
                     <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>false</skip>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
                         </configuration>
@@ -221,7 +227,6 @@
                                     <goal>verify</goal>
                                 </goals>
                                 <configuration>
-                                    <skip>false</skip>
                                     <systemProperties>
                                         <native.image.path>${project.build.directory}/${project.build.finalName}-runner
                                         </native.image.path>

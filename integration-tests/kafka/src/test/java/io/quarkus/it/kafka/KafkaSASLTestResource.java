@@ -23,7 +23,7 @@ public class KafkaSASLTestResource implements QuarkusTestResourceLifecycleManage
     @Override
     public Map<String, String> start() {
         try {
-            File directory = Testing.Files.createTestingDirectory("kafka-data", true);
+            File directory = Testing.Files.createTestingDirectory("sasl-kafka-data", true);
             File sslDir = sslDir(directory, true);
 
             Path ksPath = new File(sslDir, "kafka-keystore.p12").toPath();
@@ -82,7 +82,7 @@ public class KafkaSASLTestResource implements QuarkusTestResourceLifecycleManage
 
     public static File sslDir(File directory, boolean removeExistingContent) throws IOException {
         if (directory == null) {
-            directory = Testing.Files.createTestingDirectory("kafka-data", removeExistingContent);
+            directory = Testing.Files.createTestingDirectory("sasl-kafka-data", removeExistingContent);
         }
 
         File targetDir = directory.getParentFile().getParentFile();

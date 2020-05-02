@@ -1,8 +1,9 @@
 package io.quarkus.vault.runtime;
 
-import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
 
-import io.quarkus.vault.CredentialsProvider;
+import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.vault.VaultException;
 import io.quarkus.vault.runtime.config.CredentialsProviderConfig;
 import io.quarkus.vault.runtime.config.VaultRuntimeConfig;
@@ -21,7 +22,7 @@ public class VaultCredentialsProvider implements CredentialsProvider {
     }
 
     @Override
-    public Properties getCredentials(String credentialsProviderName) {
+    public Map<String, String> getCredentials(String credentialsProviderName) {
 
         CredentialsProviderConfig config = serverConfig.credentialsProvider.get(credentialsProviderName);
 
@@ -35,8 +36,8 @@ public class VaultCredentialsProvider implements CredentialsProvider {
 
         if (config.kvPath.isPresent()) {
             String password = vaultKvManager.readSecret(config.kvPath.get()).get(config.kvKey);
-            Properties result = new Properties();
-            result.setProperty(PASSWORD_PROPERTY_NAME, password);
+            Map<String, String> result = new HashMap<>();
+            result.put(PASSWORD_PROPERTY_NAME, password);
             return result;
         }
 

@@ -1,6 +1,6 @@
 package io.quarkus.vault.runtime.config;
 
-import static io.quarkus.vault.CredentialsProvider.PASSWORD_PROPERTY_NAME;
+import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 
 import java.util.Optional;
 

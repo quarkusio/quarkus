@@ -1,9 +1,10 @@
 package io.quarkus.vault.runtime;
 
-import static io.quarkus.vault.CredentialsProvider.PASSWORD_PROPERTY_NAME;
-import static io.quarkus.vault.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
+import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 
-import java.util.Properties;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.logging.Logger;
@@ -29,12 +30,12 @@ public class VaultDbManager {
         this.serverConfig = serverConfig;
     }
 
-    public Properties getDynamicDbCredentials(String databaseCredentialsRole) {
+    public Map<String, String> getDynamicDbCredentials(String databaseCredentialsRole) {
         String clientToken = vaultAuthManager.getClientToken();
         VaultDynamicDatabaseCredentials currentCredentials = credentialsCache.get(databaseCredentialsRole);
         VaultDynamicDatabaseCredentials credentials = getCredentials(currentCredentials, clientToken, databaseCredentialsRole);
         credentialsCache.put(databaseCredentialsRole, credentials);
-        Properties properties = new Properties();
+        Map<String, String> properties = new HashMap<>();
         properties.put(USER_PROPERTY_NAME, credentials.username);
         properties.put(PASSWORD_PROPERTY_NAME, credentials.password);
         return properties;

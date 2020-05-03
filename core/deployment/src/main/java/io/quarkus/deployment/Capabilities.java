@@ -13,6 +13,7 @@ public final class Capabilities extends SimpleBuildItem {
     public static final String CDI_ARC = "io.quarkus.cdi";
     public static final String SERVLET = "io.quarkus.servlet";
     public static final String TRANSACTIONS = "io.quarkus.transactions";
+    public static final String LRA_PARTICIPANT = "io.quarkus.lra.participant";
     public static final String JACKSON = "io.quarkus.jackson";
     public static final String JSONB = "io.quarkus.jsonb";
     public static final String REST_JACKSON = "io.quarkus.rest.jackson";

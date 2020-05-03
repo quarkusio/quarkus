@@ -1,0 +1,43 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Narayana LRA (Long Running Action) Participant Support
+
+include::./attributes.adoc[]
+
+== Introduction
+
+Please refer to the `narayana-lra extension` guide for details about LRA.
+
+This guide is a follow up to the `narayana-lra extension` guide, which should be read in conjunction with this guide, where we examine the pros and cons of embedding an LRA coordinator with Quarkus services.
+The `narayana-lra extension` bundles a coordinator with the service whereas the `narayana-lra-participant extension` does not and must be configured with an external one (but note that the `narayana-lra extension` can also use an external coordinator).
+
+== Recap of the LRA Model
+
+Long Running Actions (LRAs) are a relaxed transaction model for loosely coupled services to coordinate work. Different services perform work in the context of an LRA and will confirm or compensate for any actions when the LRA is later finished (we say closed or cancelled). A coordinator manages the lifecycle and membership of LRAs and guarantees that services will be notified when the LRA finishes; even in the presence of network outages or service issues (such as a crashed or hung JVM) by retrying pending notifications until all services have responded, only then will an LRA be deemed finished. Each LRA has its own coordinator although a single coordinator may manage many LRAs. Coordinators expose two JAX-RS endpoints.
+
+After creating an LRA (via the `@LRA` annotation), a JAX-RS service can join with the LRA (via the `@LRA` annotation). Joining an LRA means that the service will be notified when the LRA finishes. Some service will eventually end the LRA (via the `@LRA` annotation).
+
+The lifecycle of an LRA is managed by a (LRA) coordinator which can be in-VM or remote. Services communicate with the coordinator via a JAX-RS interceptor that inspects the annotations on business methods.
+
+The `narayana-lra-participant` only bundles the JAX-RS interceptor with the service. The `narayana-lra extension` also includes coordinator behaviour).
+
+== Pros and Cons of the Two Extensions
+
+The factors to bear in mind when choosing which extension to use include (at least) the following:
+
+1. You do not want the management overhead of having to configure the address of an external coordinator.
+2. You do not want the 60K overhead that an embedded coordinator adds to a service.
+3. You do not want the overhead of an extra process in the external coordinator case.
+4. You want to centrally manage the storage (filesystem or JDBC accessible database) for LRAs (LRAs must be durable in order to survive crashes).
+5. You want to centrally manage coordinators.
+6. You want to shut down the service when it has finished its work in the context of an LRA (a coordinator has to be available to all services involved in an LRA in order to finish the LRA so if it's embedded with the service it must continue running (or be restarted) until all participants have been notified.
+7. You want the LRA initiator (the service that triggered the creation of the LRA) to manage the coordination internally to an organisation.
+8. You want the coordinator to have the same security config as your service.
+
+We recommend the `narayana-lra extension` (embedded coordinator) if any of 1, 3, 5, 7, 8 apply.
+We recommend the `narayana-lra-participant extension` (external coordinator) if any of 2, 4, 5, 6 apply.
+
+But for ease of use, to quickly get started using LRA we advise that you start out with an embedded coordinator and only consider an external one if any of the above mentioned factors come into effect.

@@ -1,0 +1,15 @@
+{
+  "name": "Narayana LRA - LRA Coordinator and Participant Support",
+  "guide": "https://quarkus.io/guides/lra-guide",
+  "metadata": {
+    "keywords": [
+      "compensations",
+      "narayana-lra",
+      "narayana",
+      "lra",
+      "transactions",
+      "transaction"
+    ]
+  }
+}
+

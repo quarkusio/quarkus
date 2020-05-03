@@ -18,4 +18,9 @@ public interface Scheduler {
      */
     void resume();
 
+    /**
+     * @return if a scheduler is running the triggers are fired and jobs are executed.
+     */
+    boolean isRunning();
+
 }

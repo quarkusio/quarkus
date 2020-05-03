@@ -50,14 +50,20 @@ public class SimpleScheduler implements Scheduler {
     private final ExecutorService executor;
     private volatile boolean running;
     private final List<ScheduledTask> scheduledTasks;
+    private final boolean enabled;
 
-    public SimpleScheduler(SchedulerContext context, Config config) {
+    public SimpleScheduler(SchedulerContext context, Config config, SchedulerRuntimeConfig schedulerRuntimeConfig) {
         this.running = true;
+        this.enabled = schedulerRuntimeConfig.enabled;
         this.scheduledTasks = new ArrayList<>();
         this.executor = context.getExecutor();
 
-        if (context.getScheduledMethods().isEmpty()) {
+        if (!schedulerRuntimeConfig.enabled) {
             this.scheduledExecutor = null;
+            LOGGER.info("Simple scheduler is disabled by config property and will not be started");
+        } else if (context.getScheduledMethods().isEmpty()) {
+            this.scheduledExecutor = null;
+            LOGGER.info("No scheduled business methods found - Simple scheduler will not be started");
         } else {
             this.scheduledExecutor = new JBossScheduledThreadPoolExecutor(1, new Runnable() {
                 @Override
@@ -137,12 +143,25 @@ public class SimpleScheduler implements Scheduler {
 
     @Override
     public void pause() {
-        running = false;
+        if (!enabled) {
+            LOGGER.warn("Scheduler is disabled and cannot be paused");
+        } else {
+            running = false;
+        }
     }
 
     @Override
     public void resume() {
-        running = true;
+        if (!enabled) {
+            LOGGER.warn("Scheduler is disabled and cannot be resumed");
+        } else {
+            running = true;
+        }
+    }
+
+    @Override
+    public boolean isRunning() {
+        return enabled && running;
     }
 
     SimpleTrigger createTrigger(String invokerClass, CronParser parser, Scheduled scheduled, int nameSequence, Config config) {

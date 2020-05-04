@@ -110,6 +110,11 @@
 
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devmode-test-utils</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-devtools-utilities</artifactId>
                 <version>${project.version}</version>
             </dependency>

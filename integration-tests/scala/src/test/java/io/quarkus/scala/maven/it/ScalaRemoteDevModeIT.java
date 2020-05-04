@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableMap;
 
 import io.quarkus.maven.it.RunAndCheckWithAgentMojoTestBase;
+import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class ScalaRemoteDevModeIT extends RunAndCheckWithAgentMojoTestBase {
 
@@ -31,7 +32,7 @@ public class ScalaRemoteDevModeIT extends RunAndCheckWithAgentMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains(uuid));
+                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains(uuid));
 
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
@@ -43,6 +44,6 @@ public class ScalaRemoteDevModeIT extends RunAndCheckWithAgentMojoTestBase {
         // Wait until we get "carambar"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("carambar"));
     }
 }

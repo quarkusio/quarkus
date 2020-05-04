@@ -1,0 +1,17 @@
+pluginManagement {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+      id 'io.quarkus' version "${quarkusPluginVersion}"
+      id 'org.jetbrains.kotlin.jvm' version "${kotlinVersion}"
+      id 'org.jetbrains.kotlin.plugin.allopen' version "${kotlinVersion}"
+    }
+}
+rootProject.name='quarkusmm'
+include 'web'
+include 'domain'
+include 'port'
+

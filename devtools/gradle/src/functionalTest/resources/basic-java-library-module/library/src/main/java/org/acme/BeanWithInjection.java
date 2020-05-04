@@ -9,4 +9,8 @@ import javax.inject.Inject;
 public class BeanWithInjection {
     @Inject
     KubernetesClient kubernetesClient;
+
+    public KubernetesClient getKubernetesClient() {
+        return kubernetesClient;
+    }
 }

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
+import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 @EnableForNative
 public class NativeImageIT extends MojoTestBase {
@@ -59,7 +60,7 @@ public class NativeImageIT extends MojoTestBase {
         final Process nativeImageRunWithAdditionalLibPath = runNativeImage(nativeImageRunner,
                 new String[] { "-Djava.library.path=" + tmpDir.toString() });
         try {
-            final String response = getHttpResponse("/hello/javaLibraryPath");
+            final String response = DevModeTestUtils.getHttpResponse("/hello/javaLibraryPath");
             Assertions.assertTrue(response.contains(tmpDir.toString()),
                     "Response " + response + " for java.library.path was expected to contain the " + tmpDir + ", but didn't");
         } finally {

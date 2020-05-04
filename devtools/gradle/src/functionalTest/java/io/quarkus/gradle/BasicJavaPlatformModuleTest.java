@@ -3,7 +3,6 @@ package io.quarkus.gradle;
 import java.io.File;
 import java.nio.file.Path;
 
-import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.Test;
 
@@ -17,10 +16,10 @@ public class BasicJavaPlatformModuleTest extends QuarkusGradleTestBase {
 
         final File projectDir = getProjectDir("basic-java-platform-module");
 
-        BuildResult build = GradleRunner.create()
+        GradleRunner.create()
                 .forwardOutput()
                 .withPluginClasspath()
-                .withArguments(arguments(":application:quarkusBuild"))
+                .withArguments(arguments("clean", ":application:build"))
                 .withProjectDir(projectDir)
                 .build();
 

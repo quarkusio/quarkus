@@ -37,7 +37,7 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.rx.runtime.boot.FastBootRxEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.rx.runtime.customized.AvailableRxSettings;
 import io.quarkus.hibernate.rx.runtime.customized.QuarkusRxConnectionProviderInitiator;
-import io.vertx.pgclient.PgPool;
+import io.vertx.sqlclient.Pool;
 
 /**
  * This can not inherit from RxPersistenceProvider because it references HibernatePersistenceProvider
@@ -208,8 +208,8 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
     }
 
     private void injectDataSource(String persistenceUnitName, RuntimeSettings.Builder runtimeSettingsBuilder) {
-        // first convert
-
+        // Once HibernateRX supports schema gen, the need for a JDBC datasource will be eliminated
+        // and this method can be removed
         if (runtimeSettingsBuilder.isConfigured(AvailableSettings.URL) ||
                 runtimeSettingsBuilder.isConfigured(AvailableSettings.DATASOURCE) ||
                 runtimeSettingsBuilder.isConfigured(AvailableSettings.JPA_JTA_DATASOURCE) ||
@@ -238,8 +238,8 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
         }
 
         // for now we only support one pool but this will change
-        InstanceHandle<PgPool> poolHandle = Arc.container().instance(PgPool.class);
-        System.out.println("@AGG is pool handle available? " + poolHandle.isAvailable());
+        InstanceHandle<Pool> poolHandle = Arc.container().instance(Pool.class);
+        System.out.println("@AGG is generic pool available? " + poolHandle.isAvailable());
         if (!poolHandle.isAvailable()) {
             throw new IllegalStateException("No pool has been defined for persistence unit " + persistenceUnitName);
         }
@@ -257,8 +257,7 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
             //that's why we override it when
             //new DelegatorPersistenceUnitInfo(info)
             return delegate.createContainerEntityManagerFactory(
-                    new DelegatorPersistenceUnitInfo(
-                            info),
+                    new DelegatorPersistenceUnitInfo(info),
                     protectiveCopy);
         }
         //not the right provider

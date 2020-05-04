@@ -191,7 +191,6 @@ public class PreconfiguredRxServiceRegistryBuilder {
 
         serviceInitiators.add(BatchBuilderInitiator.INSTANCE);
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);
-        //serviceInitiators.add(RxJdbcServicesInitiator.INSTANCE); // @AGG for some reason hibernate-rx doesn't register this?
         serviceInitiators.add(RefCursorSupportInitiator.INSTANCE);
 
         serviceInitiators.add(QueryTranslatorFactoryInitiator.INSTANCE);

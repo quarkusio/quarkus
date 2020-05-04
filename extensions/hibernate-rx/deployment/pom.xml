@@ -20,24 +20,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-deployment</artifactId>
-<!--             <exclusions> -->
-<!--                 <exclusion> -->
-<!--             		<groupId>io.quarkus</groupId> -->
-<!--             		<artifactId>quarkus-agroal</artifactId> -->
-<!--             	</exclusion> -->
-<!--             	<exclusion> -->
-<!--             		<groupId>io.quarkus</groupId> -->
-<!--             		<artifactId>quarkus-agroal-deployment</artifactId> -->
-<!--             	</exclusion> -->
-<!--             	<exclusion> -->
-<!--             		<groupId>io.quarkus</groupId> -->
-<!--             		<artifactId>quarkus-narayana-jta</artifactId> -->
-<!--             	</exclusion> -->
-<!--             	<exclusion> -->
-<!--             		<groupId>io.quarkus</groupId> -->
-<!--             		<artifactId>quarkus-narayana-jta-deployment</artifactId> -->
-<!--             	</exclusion> -->
-<!--             </exclusions> -->
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-datasource-deployment</artifactId>
         </dependency>
         <dependency>
         	<groupId>io.quarkus</groupId>
@@ -46,11 +32,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-rx</artifactId>
-        </dependency>
-        <!-- TODO @AGG remove this dep once a common VertxPoolBuildItem is created -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-reactive-pg-client-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -18,7 +18,7 @@ import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRu
 import io.quarkus.hibernate.rx.runtime.HibernateRxRecorder;
 import io.quarkus.hibernate.rx.runtime.RxSessionFactoryProducer;
 import io.quarkus.hibernate.rx.runtime.RxSessionProducer;
-import io.quarkus.reactive.pg.client.deployment.PgPoolBuildItem;
+import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 
 public final class HibernateRxProcessor {
 
@@ -57,11 +57,11 @@ public final class HibernateRxProcessor {
 
     @BuildStep
     void waitForVertxPool(
-            PgPoolBuildItem pgPool, // TODO @AGG: make this a generic pool build item so we don't need to depend on an impl
+            List<VertxPoolBuildItem> vertxPool,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
-        // Define a dependency on PgPoolBuildItem to ensure that any Pool instances are available
+        // Define a dependency on VertxPoolBuildItem to ensure that any Pool instances are available
         // when HibernateORM starts its persistence units
-        System.out.println("@AGG HibernateRX processor is configured with pool=" + pgPool.getPgPool());
+        System.out.println("@AGG HibernateRX processor is configured with pool(s)=" + vertxPool);
         runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_RX));
     }
 

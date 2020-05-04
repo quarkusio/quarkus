@@ -163,13 +163,15 @@ jobs:
         ports:
           - 127.0.0.1:7687:7687
       amazonServices:
-        image: localstack/localstack
+        image: localstack/localstack:0.11.1
         env:
-          SERVICES: s3,dynamodb
+          SERVICES: s3,dynamodb,sns,sqs
           START_WEB: 0
         ports:
           - 127.0.0.1:8000:4569
           - 127.0.0.1:8008:4572
+          - 127.0.0.1:8009:4575
+          - 127.0.0.1:8010:4576
 
     steps:
       - name: Start mysql
@@ -278,13 +280,15 @@ jobs:
         ports:
           - 7687:7687
       amazonServices:
-        image: localstack/localstack
+        image: localstack/localstack:0.11.1
         env:
-          SERVICES: s3,dynamodb
+          SERVICES: s3,dynamodb,sns,sqs
           START_WEB: 0
         ports:
           - 127.0.0.1:8000:4569
           - 127.0.0.1:8008:4572
+          - 127.0.0.1:8009:4575
+          - 127.0.0.1:8010:4576
 
     steps:
       - name: Start mysql
@@ -512,8 +516,8 @@ jobs:
         if: matrix.mssql
       - name: Amazon Services
         run: |
-          docker run --rm --publish 8000:4569 --publish 8008:4572 --name build-amazon-service-clients -e SERVICES=s3,dynamodb -e START_WEB=0 \
-            -d localstack/localstack
+          docker run --rm --publish 8000:4569 --publish 8008:4572 --publish 8009:4575 --publish 8010:4576 --name build-amazon-service-clients -e SERVICES=s3,dynamodb,sns,sqs -e START_WEB=0 \
+            -d localstack/localstack:0.11.1
         if: matrix.amazonServices
       - name: Neo4j Service
         run: |

@@ -2,15 +2,13 @@ package io.quarkus.it.kafka;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
-
-import org.apache.kafka.common.config.SslConfigs;
 
 import io.debezium.kafka.KafkaCluster;
 import io.debezium.util.Testing;
@@ -23,44 +21,21 @@ public class KafkaSASLTestResource implements QuarkusTestResourceLifecycleManage
     @Override
     public Map<String, String> start() {
         try {
-            File directory = Testing.Files.createTestingDirectory("sasl-kafka-data", true);
-            File sslDir = sslDir(directory, true);
+            File directory = Testing.Files.createTestingDirectory("kafka-data-sasl", true);
 
-            Path ksPath = new File(sslDir, "kafka-keystore.p12").toPath();
-            try (InputStream ksStream = getClass().getResourceAsStream("/kafka-keystore.p12")) {
-                Files.copy(
-                        ksStream,
-                        ksPath,
-                        StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            Path tsPath = new File(sslDir, "kafka-truststore.p12").toPath();
-            try (InputStream tsStream = getClass().getResourceAsStream("/kafka-truststore.p12")) {
-                Files.copy(
-                        tsStream,
-                        tsPath,
-                        StandardCopyOption.REPLACE_EXISTING);
-            }
-            String password = "Z_pkTh9xgZovK4t34cGB2o6afT4zZg0L";
-            String type = "PKCS12";
+            enableServerJaasConf();
 
             Properties props = new Properties();
             props.setProperty("zookeeper.connection.timeout.ms", "45000");
-            //See http://kafka.apache.org/documentation.html#security_ssl for detail
-            props.setProperty("listener.security.protocol.map", "CLIENT:SSL");
-            props.setProperty("listeners", "CLIENT://:19093");
+            props.setProperty("listener.security.protocol.map", "CLIENT:SASL_PLAINTEXT");
+            props.setProperty("listeners", "CLIENT://:19094");
             props.setProperty("inter.broker.listener.name", "CLIENT");
-            props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, ksPath.toString());
-            props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, password);
-            props.setProperty(SslConfigs.SSL_KEYSTORE_TYPE_CONFIG, type);
-            props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG, password);
-            props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, tsPath.toString());
-            props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, password);
-            props.setProperty(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG, type);
-            props.setProperty(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "");
+
+            props.setProperty("sasl.enabled.mechanisms", "PLAIN");
+            props.setProperty("sasl.mechanism.inter.broker.protocol", "PLAIN");
 
             kafka = new KafkaCluster()
-                    .withPorts(2183, 19093)
+                    .withPorts(2184, 19094)
                     .addBrokers(1)
                     .usingDirectory(directory)
                     .deleteDataUponShutdown(true)
@@ -70,6 +45,7 @@ public class KafkaSASLTestResource implements QuarkusTestResourceLifecycleManage
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
         return Collections.emptyMap();
     }
 
@@ -80,17 +56,32 @@ public class KafkaSASLTestResource implements QuarkusTestResourceLifecycleManage
         }
     }
 
-    public static File sslDir(File directory, boolean removeExistingContent) throws IOException {
-        if (directory == null) {
-            directory = Testing.Files.createTestingDirectory("sasl-kafka-data", removeExistingContent);
-        }
+    public static void enableServerJaasConf() throws IOException {
+        final Path conf = Files.createTempFile("kafka-server-jaas.", ".conf");
+        String serverConfiguration = "KafkaServer { "
+                + "org.apache.kafka.common.security.plain.PlainLoginModule required "
+                + "username=\"broker\" "
+                + "password=\"broker-secret\" "
+                + "user_broker=\"broker-secret\" "
+                + "user_client=\"client-secret\"; };";
 
-        File targetDir = directory.getParentFile().getParentFile();
-        File sslDir = new File(targetDir, "ssl_test");
-        if (!sslDir.exists()) {
-            //noinspection ResultOfMethodCallIgnored
-            sslDir.mkdir();
-        }
-        return sslDir;
+        Files.write(conf, ("client." + serverConfiguration).getBytes(StandardCharsets.UTF_8),
+                StandardOpenOption.CREATE);
+
+        System.setProperty("java.security.auth.login.config", conf.toAbsolutePath().toString());
+        System.setProperty("zookeeper.sasl.client", "false");
     }
+
+    /**
+     * Make sure this runs first otherwise system property {@code java.security.auth.login.config}
+     * is ignored since {@link javax.security.auth.login.Configuration#configuration}
+     * is already initialized with default, empty configuration.
+     *
+     * @return {@link Integer#MIN_VALUE}
+     */
+    @Override
+    public int order() {
+        return Integer.MIN_VALUE;
+    }
+
 }

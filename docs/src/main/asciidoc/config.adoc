@@ -322,7 +322,7 @@ for its own configuration. For example to configure the HTTP server port you can
 [IMPORTANT]
 ====
 As mentioned above, properties prefixed with `quarkus.` are effectively reserved for configuring Quarkus itself and
-therefore `quarkus.`should **never** be used as prefix for application specific properties.
+therefore `quarkus.` should **never** be used as prefix for application specific properties.
 
 In the previous examples using `quarkus.message` instead of `greeting.message` would result in unexpected behavior.
 ====
@@ -539,7 +539,7 @@ The default Quarkus application runtime profile is set to the profile used to bu
 For example:
 [source,shell]
 ----
-./mvnw package -Pnative -Dquarkus.profile=prod-aws`
+./mvnw package -Pnative -Dquarkus.profile=prod-aws
 ./target/my-app-1.0-runner // <1>
 ----
 <1> The command will run with the `prod-aws` profile. This can be overridden using the `quarkus.profile` system property.

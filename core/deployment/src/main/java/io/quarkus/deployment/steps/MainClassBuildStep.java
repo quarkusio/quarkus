@@ -35,6 +35,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
@@ -90,6 +91,7 @@ class MainClassBuildStep {
             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             LaunchModeBuildItem launchMode,
+            LiveReloadBuildItem liveReloadBuildItem,
             ApplicationInfoBuildItem applicationInfo) {
 
         appClassNameProducer.produce(new ApplicationClassNameBuildItem(Application.APP_CLASS_NAME));
@@ -125,7 +127,9 @@ class MainClassBuildStep {
 
         // ensure that the config class is initialized
         mv.invokeStaticMethod(RunTimeConfigurationGenerator.C_ENSURE_INITIALIZED);
-
+        if (liveReloadBuildItem.isLiveReload()) {
+            mv.invokeStaticMethod(RunTimeConfigurationGenerator.REINIT);
+        }
         // Init the LOG instance
         mv.writeStaticField(logField.getFieldDescriptor(), mv.invokeStaticMethod(
                 ofMethod(Logger.class, "getLogger", Logger.class, String.class), mv.load("io.quarkus.application")));
@@ -364,7 +368,7 @@ class MainClassBuildStep {
 
     /**
      * registers the generated application class for reflection, needed when launching via the Quarkus launcher
-     * 
+     *
      */
     @BuildStep
     ReflectiveClassBuildItem applicationReflection() {

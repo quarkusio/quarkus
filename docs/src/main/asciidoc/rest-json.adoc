@@ -182,7 +182,7 @@ public class FooSerializerRegistrationCustomizer implements JsonbConfigCustomize
 }
 ----
 
-A more advanced option would be to directly provide a bean of `javax.json.bind.JsonbConfig` or in the extreme case to provide a bean of type `javax.json.bind.Jsonb`.
+A more advanced option would be to directly provide a bean of `javax.json.bind.JsonbConfig` (with a `Dependent` scope) or in the extreme case to provide a bean of type `javax.json.bind.Jsonb` (with a `Singleton` scope).
 If the latter approach is leveraged it is very important to manually inject and apply all `io.quarkus.jsonb.JsonbConfigCustomizer` beans in the CDI producer that produces `javax.json.bind.Jsonb`.
 Failure to do so will prevent JSON-B specific customizations provided by various extensions from being applied.
 

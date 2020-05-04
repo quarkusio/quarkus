@@ -418,6 +418,9 @@ Below you will find tables describing all available types.
 
 === Basic Types
 
+.ServiceType
+Allowed values: `cluster-ip`, `node-port`, `load-balancer`, `external-name`
+
 .Env
 |====
 | Property  | Type   | Description | Default Value

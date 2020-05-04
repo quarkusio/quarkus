@@ -102,7 +102,7 @@ public class FunctionZipProcessor {
         Path zipDir = findNativeZipDir(target.getOutputDirectory());
 
         Path zipPath = target.getOutputDirectory().resolve("function.zip");
-        Files.delete(zipPath);
+        Files.deleteIfExists(zipPath);
         try (ZipArchiveOutputStream zip = new ZipArchiveOutputStream(zipPath.toFile())) {
             String executableName = "bootstrap";
             if (zipDir != null) {
@@ -173,8 +173,9 @@ public class FunctionZipProcessor {
             if (toCheck.toFile().exists()) {
                 return toCheck;
             }
-            if (Files.exists(currentPath.getParent())) {
-                currentPath = currentPath.getParent();
+            Path parent = currentPath.getParent();
+            if (parent != null && Files.exists(parent)) {
+                currentPath = parent;
             } else {
                 return null;
             }

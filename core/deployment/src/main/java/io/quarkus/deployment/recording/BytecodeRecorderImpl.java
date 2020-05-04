@@ -31,6 +31,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -99,10 +100,12 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private final boolean staticInit;
     private final ClassLoader classLoader;
 
-    private final Map<Class<?>, Object> existingProxyClasses = new HashMap<>();
+    private static final Map<Class<?>, ProxyFactory<?>> recordingProxyFactories = new ConcurrentHashMap<>();
+    private final Map<Class<?>, ProxyFactory<?>> returnValueProxy = new ConcurrentHashMap<>();
+
+    private final Map<Class<?>, Object> existingProxyClasses = new ConcurrentHashMap<>();
     private final List<BytecodeInstruction> storedMethodCalls = new ArrayList<>();
 
-    private final Map<Class, ProxyFactory<?>> returnValueProxy = new HashMap<>();
     private final IdentityHashMap<Class<?>, String> classProxies = new IdentityHashMap<>();
     private final Map<Class<?>, SubstitutionHolder> substitutions = new HashMap<>();
     private final Map<Class<?>, NonDefaultConstructorHolder> nonDefaultConstructors = new HashMap<>();
@@ -224,60 +227,66 @@ public class BytecodeRecorderImpl implements RecorderContext {
         if (existingProxyClasses.containsKey(theClass)) {
             return theClass.cast(existingProxyClasses.get(theClass));
         }
-        String proxyNameSuffix = "$$RecordingProxyProxy" + COUNT.incrementAndGet();
 
-        ProxyConfiguration<T> proxyConfiguration = new ProxyConfiguration<T>()
-                .setSuperClass(theClass)
-                .setClassLoader(classLoader)
-                .setAnchorClass(getClass())
-                .setProxyNameSuffix(proxyNameSuffix);
-        String proxyName = proxyConfiguration.getProxyName();
-        ProxyFactory<T> factory = new ProxyFactory<T>(proxyConfiguration);
-        try {
-            T recordingProxy = factory.newInstance(new InvocationHandler() {
-                @Override
-                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                    if (staticInit) {
-                        for (int i = 0; i < args.length; ++i) {
-                            if (args[i] instanceof ReturnedProxy) {
-                                ReturnedProxy p = (ReturnedProxy) args[i];
-                                if (!p.__static$$init()) {
-                                    throw new RuntimeException("Invalid proxy passed to recorder. Parameter " + i + " of type "
-                                            + method.getParameterTypes()[i]
-                                            + " was created in a runtime recorder method, while this recorder is for a static init method. The object will not have been created at the time this method is run.");
-                                }
+        InvocationHandler invocationHandler = new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                if (staticInit) {
+                    for (int i = 0; i < args.length; ++i) {
+                        if (args[i] instanceof ReturnedProxy) {
+                            ReturnedProxy p = (ReturnedProxy) args[i];
+                            if (!p.__static$$init()) {
+                                throw new RuntimeException("Invalid proxy passed to recorder. Parameter " + i + " of type "
+                                        + method.getParameterTypes()[i]
+                                        + " was created in a runtime recorder method, while this recorder is for a static init method. The object will not have been created at the time this method is run.");
                             }
                         }
                     }
-                    StoredMethodCall storedMethodCall = new StoredMethodCall(theClass, method, args);
-                    storedMethodCalls.add(storedMethodCall);
-                    Class<?> returnType = method.getReturnType();
-                    if (method.getName().equals("toString")
-                            && method.getParameterTypes().length == 0
-                            && returnType.equals(String.class)) {
-                        return proxyName;
-                    }
-
-                    boolean voidMethod = method.getReturnType().equals(void.class);
-                    if (!voidMethod && !isProxiable(method.getReturnType())) {
-                        throw new RuntimeException("Cannot use " + method
-                                + " as a recorder method as the return type cannot be proxied. Use RuntimeValue to wrap the return value instead.");
-                    }
-                    if (voidMethod) {
-                        return null;
-                    }
-                    ProxyInstance instance = getProxyInstance(returnType);
-                    if (instance == null) {
-                        return null;
-                    }
-
-                    storedMethodCall.returnedProxy = instance.proxy;
-                    storedMethodCall.proxyId = instance.key;
-                    return instance.proxy;
+                }
+                StoredMethodCall storedMethodCall = new StoredMethodCall(theClass, method, args);
+                storedMethodCalls.add(storedMethodCall);
+                Class<?> returnType = method.getReturnType();
+                if (method.getName().equals("toString")
+                        && method.getParameterTypes().length == 0
+                        && returnType.equals(String.class)) {
+                    return proxy.getClass().getName();
                 }
 
-            });
+                boolean voidMethod = method.getReturnType().equals(void.class);
+                if (!voidMethod && !isProxiable(method.getReturnType())) {
+                    throw new RuntimeException("Cannot use " + method
+                            + " as a recorder method as the return type cannot be proxied. Use RuntimeValue to wrap the return value instead.");
+                }
+                if (voidMethod) {
+                    return null;
+                }
+                ProxyInstance instance = getProxyInstance(returnType);
+                if (instance == null) {
+                    return null;
+                }
+
+                storedMethodCall.returnedProxy = instance.proxy;
+                storedMethodCall.proxyId = instance.key;
+                return instance.proxy;
+            }
+
+        };
+
+        try {
+            if (recordingProxyFactories.containsKey(theClass)) {
+                return (T) recordingProxyFactories.get(theClass).newInstance(invocationHandler);
+            }
+            String proxyNameSuffix = "$$RecordingProxyProxy" + COUNT.incrementAndGet();
+
+            ProxyConfiguration<T> proxyConfiguration = new ProxyConfiguration<T>()
+                    .setSuperClass(theClass)
+                    .setClassLoader(classLoader)
+                    .setAnchorClass(getClass())
+                    .setProxyNameSuffix(proxyNameSuffix);
+            ProxyFactory<T> factory = new ProxyFactory<T>(proxyConfiguration);
+            T recordingProxy = factory.newInstance(invocationHandler);
             existingProxyClasses.put(theClass, recordingProxy);
+            recordingProxyFactories.put(theClass, factory);
             return recordingProxy;
         } catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);

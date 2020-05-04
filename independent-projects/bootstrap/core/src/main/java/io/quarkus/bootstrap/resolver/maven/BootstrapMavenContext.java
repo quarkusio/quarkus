@@ -244,7 +244,7 @@ public class BootstrapMavenContext {
         try {
             return LocalProject.loadWorkspace(this);
         } catch (BootstrapException e) {
-            throw new AppModelResolverException("Failed to load current project at " + getCurrentProjectPomOrNull());
+            throw new AppModelResolverException("Failed to load current project at " + getCurrentProjectPomOrNull(), e);
         }
     }
 
@@ -635,11 +635,7 @@ public class BootstrapMavenContext {
         if (alternatePomName != null) {
             alternatePom = Paths.get(alternatePomName);
             if (alternatePom.isAbsolute()) {
-                Path pom = alternatePom;
-                if (Files.isDirectory(pom)) {
-                    pom = pom.resolve("pom.xml");
-                }
-                return Files.exists(pom) ? pom : null;
+                return pomXmlOrNull(alternatePom);
             }
         }
 
@@ -684,24 +680,23 @@ public class BootstrapMavenContext {
 
         // we are not in the context of a Maven build
         if (alternatePom != null && alternatePom.isAbsolute()) {
-            return alternatePom;
+            return pomXmlOrNull(alternatePom);
         }
 
         // trying the current dir as the basedir
         final Path basedir = Paths.get("").normalize().toAbsolutePath();
         if (alternatePom != null) {
-            Path pom = basedir.resolve(alternatePom);
-            if (Files.exists(pom)) {
-                if (Files.isDirectory(pom)) {
-                    pom = pom.resolve("pom.xml");
-                    return Files.exists(pom) ? pom : null;
-                }
-                return pom;
-            }
-            return null;
+            return pomXmlOrNull(basedir.resolve(alternatePom));
         }
         final Path pom = basedir.resolve("pom.xml");
         return Files.exists(pom) ? pom : null;
+    }
+
+    private static Path pomXmlOrNull(Path path) {
+        if (Files.isDirectory(path)) {
+            path = path.resolve("pom.xml");
+        }
+        return Files.exists(path) ? path : null;
     }
 
     public Path getCurrentProjectBaseDir() {
@@ -725,6 +720,12 @@ public class BootstrapMavenContext {
                 return null;
             }
         }
-        return Paths.get(rootBaseDir);
+        final Path rootProjectBaseDirPath = Paths.get(rootBaseDir);
+        // if the root project dir set by the Maven process (through the env variable) doesn't have a pom.xml
+        // then it probably isn't relevant
+        if (!Files.exists(rootProjectBaseDirPath.resolve("pom.xml"))) {
+            return null;
+        }
+        return rootProjectBaseDirPath;
     }
 }

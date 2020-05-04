@@ -16,6 +16,7 @@ import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -36,8 +37,12 @@ class ConfigBuildSteps {
 
     @BuildStep
     void generateConfigSources(List<RunTimeConfigurationSourceBuildItem> runTimeSources,
-            final BuildProducer<GeneratedClassBuildItem> generatedClass) {
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
+            final BuildProducer<GeneratedClassBuildItem> generatedClass,
+            LiveReloadBuildItem liveReloadBuildItem) {
+        if (liveReloadBuildItem.isLiveReload()) {
+            return;
+        }
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, false);
 
         try (ClassCreator cc = ClassCreator.builder().interfaces(ConfigSourceProvider.class).setFinal(true)
                 .className(PROVIDER_CLASS_NAME)

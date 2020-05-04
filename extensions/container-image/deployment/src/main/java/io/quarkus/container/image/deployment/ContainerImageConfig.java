@@ -61,4 +61,20 @@ public class ContainerImageConfig {
      */
     @ConfigItem(defaultValue = "false")
     public boolean push;
+
+    /**
+     * Since user.name which is default value can be uppercase and uppercase values are not allowed
+     * in the repository part of image references, we need to make the username lowercase.
+     *
+     * We purposely don't change the value of an explicitly set group.
+     */
+    public Optional<String> getEffectiveGroup() {
+        if (group.isPresent()) {
+            String originalGroup = group.get();
+            if (originalGroup.equals(System.getProperty("user.name"))) {
+                return Optional.of(originalGroup.toLowerCase());
+            }
+        }
+        return group;
+    }
 }

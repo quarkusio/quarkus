@@ -57,7 +57,7 @@ public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication 
             Method getConfig = configProviderClass.getMethod("getConfig", ClassLoader.class);
             Thread.currentThread().setContextClassLoader(classLoader);
             Object config = getConfig.invoke(null, classLoader);
-            return (Iterable<String>) getConfig.getReturnType().getMethod("getPropertyNames", String.class, Class.class)
+            return (Iterable<String>) getConfig.getReturnType().getMethod("getPropertyNames")
                     .invoke(config);
         } catch (Exception e) {
             throw new RuntimeException(e);

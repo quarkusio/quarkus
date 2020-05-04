@@ -191,11 +191,11 @@ public class AppModelGradleResolver implements AppModelResolver {
                 JavaPluginConvention javaConvention = convention.findPlugin(JavaPluginConvention.class);
                 if (javaConvention != null) {
                     final SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-                    final List<Path> list = new ArrayList<>(1);
+                    PathsCollection.Builder paths = PathsCollection.builder();
                     mainSourceSet.getOutput().filter(s -> s.exists()).forEach(f -> {
-                        list.add(f.toPath());
+                        paths.add(f.toPath());
                     });
-                    appArtifact.setPaths(PathsCollection.of(list.toArray(new Path[0])));
+                    appArtifact.setPaths(paths.build());
                 }
             }
         }

@@ -1,7 +1,9 @@
 package io.quarkus.deployment.builditem.nativeimage;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import org.jboss.jandex.DotName;
@@ -31,7 +33,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
 
     private final Type type;
     private IndexView index;
-    private Predicate<DotName> ignorePredicate;
+    private final Predicate<DotName> ignorePredicate;
 
     public ReflectiveHierarchyBuildItem(Type type) {
         this(type, DefaultIgnorePredicate.INSTANCE);
@@ -64,25 +66,26 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         return ignorePredicate;
     }
 
-    private static class DefaultIgnorePredicate implements Predicate<DotName> {
+    public static class DefaultIgnorePredicate implements Predicate<DotName> {
 
-        private static final DefaultIgnorePredicate INSTANCE = new DefaultIgnorePredicate();
+        public static final DefaultIgnorePredicate INSTANCE = new DefaultIgnorePredicate();
 
         private static final List<String> DEFAULT_IGNORED_PACKAGES = Arrays.asList("java.", "io.reactivex.",
                 "org.reactivestreams.");
+        // if this gets more complicated we will need to move to some tree like structure
+        private static final Set<String> WHITELISTED_FROM_IGNORED_PACKAGES = new HashSet<>(
+                Arrays.asList("java.math.BigDecimal", "java.math.BigInteger"));
 
         @Override
-        public boolean test(DotName name) {
-            return isInContainerPackage(name.toString());
-        }
-
-        private boolean isInContainerPackage(String name) {
+        public boolean test(DotName dotName) {
+            String name = dotName.toString();
             for (String containerPackageName : DEFAULT_IGNORED_PACKAGES) {
                 if (name.startsWith(containerPackageName)) {
-                    return true;
+                    return !WHITELISTED_FROM_IGNORED_PACKAGES.contains(name);
                 }
             }
             return false;
         }
+
     }
 }

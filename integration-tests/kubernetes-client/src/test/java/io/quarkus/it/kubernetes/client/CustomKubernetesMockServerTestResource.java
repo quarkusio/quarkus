@@ -14,6 +14,7 @@ public class CustomKubernetesMockServerTestResource extends KubernetesMockServer
                         .addToData("dummy", "dummy")
                         .addToData("some.prop1", "val1")
                         .addToData("some.prop2", "val2")
+                        .addToData("some.prop5", "val5")
                         .addToData("application.properties", "some.prop3=val3")
                         .addToData("application.yaml", "some:\n  prop4: val4").build())
                 .once();
@@ -21,6 +22,16 @@ public class CustomKubernetesMockServerTestResource extends KubernetesMockServer
         mockServer.expect().get().withPath("/api/v1/namespaces/test/configmaps/cmap2")
                 .andReturn(200, configMapBuilder("cmap2")
                         .addToData("application.yaml", "some:\n  prop4: val4").build())
+                .once();
+
+        mockServer.expect().get().withPath("/api/v1/namespaces/demo/configmaps/cmap3")
+                .andReturn(200, configMapBuilder("cmap3")
+                        .addToData("dummy", "dummyFromDemo")
+                        .addToData("some.prop1", "val1FromDemo")
+                        .addToData("some.prop2", "val2FromDemo")
+                        .addToData("some.prop5", "val5FromDemo")
+                        .addToData("application.properties", "some.prop3=val3FromDemo")
+                        .addToData("application.yaml", "some:\n  prop4: val4FromDemo").build())
                 .once();
     }
 

@@ -23,6 +23,9 @@ public class ConfigMapProperties {
     @ConfigProperty(name = "some.prop4")
     String someProp4;
 
+    @ConfigProperty(name = "some.prop5")
+    String someProp5;
+
     @GET
     @Path("/dummy")
     public String dummy() {
@@ -51,5 +54,11 @@ public class ConfigMapProperties {
     @Path("/someProp4")
     public String someProp4() {
         return someProp4;
+    }
+
+    @GET
+    @Path("/someProp5")
+    public String someProp5() {
+        return someProp5;
     }
 }

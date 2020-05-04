@@ -20,6 +20,7 @@ import io.quarkus.reactive.pg.client.runtime.DataSourceReactivePostgreSQLConfig;
 import io.quarkus.reactive.pg.client.runtime.LegacyDataSourceReactivePostgreSQLConfig;
 import io.quarkus.reactive.pg.client.runtime.PgPoolProducer;
 import io.quarkus.reactive.pg.client.runtime.PgPoolRecorder;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
 @SuppressWarnings("deprecation")
@@ -68,5 +69,11 @@ class ReactivePgClientProcessor {
                 shutdown)));
 
         return serviceStart;
+    }
+
+    @BuildStep
+    HealthBuildItem addHealthCheck(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
+        return new HealthBuildItem("io.quarkus.reactive.pg.client.runtime.health.ReactivePgDataSourceHealthCheck",
+                dataSourcesBuildTimeConfig.healthEnabled, "datasource");
     }
 }

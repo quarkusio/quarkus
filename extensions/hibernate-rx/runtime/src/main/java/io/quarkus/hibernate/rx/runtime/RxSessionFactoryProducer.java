@@ -2,6 +2,7 @@ package io.quarkus.hibernate.rx.runtime;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.Typed;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.persistence.EntityManagerFactory;
@@ -17,10 +18,9 @@ public class RxSessionFactoryProducer {
     private EntityManagerFactory emf;
 
     @Produces
-    @RxSession
+    @Typed(RxSessionFactory.class)
     @Singleton
     public RxSessionFactory rxSessionFactory() {
-        System.out.println("@AGG producing RxSessionFactory emf=" + emf);
         return emf.unwrap(RxSessionFactory.class);
     }
 

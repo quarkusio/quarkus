@@ -429,15 +429,20 @@ public final class BuildChainBuilder {
             final BuildStepBuilder stepBuilder = produce.getStepBuilder();
             if (included.contains(stepBuilder) && visited.add(stepBuilder)) {
                 includedDependencies++;
+                stepBuilder.getStepDependencyInfo().dependents.add(toBuild.getStepDependencyInfo());
+                toBuild.getStepDependencyInfo().dependencies.add(stepBuilder.getStepDependencyInfo());
             }
         }
         int includedDependents = 0;
         for (BuildStepBuilder dependent : dependentsOfThis) {
             if (included.contains(dependent)) {
                 includedDependents++;
+                dependent.getStepDependencyInfo().dependencies.add(toBuild.getStepDependencyInfo());
+                toBuild.getStepDependencyInfo().dependents.add(dependent.getStepDependencyInfo());
             }
         }
-        final StepInfo stepInfo = new StepInfo(toBuild, includedDependencies, dependentStepInfos);
+        final StepInfo stepInfo = new StepInfo(toBuild, includedDependencies, dependentStepInfos,
+                toBuild.getStepDependencyInfo());
         mapped.put(toBuild, stepInfo);
         if (includedDependencies == 0) {
             // it's a start step!

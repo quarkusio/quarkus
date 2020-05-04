@@ -226,6 +226,13 @@ public final class BuildContext {
         return execution.getExecutor();
     }
 
+    /**
+     *
+     * @return information about dependencies of this step
+     */
+    public StepDependencyInfo getStepDependencyInfo() {
+        return stepInfo.getDependencyInfo();
+    }
     // -- //
 
     private void doProduce(ItemId id, BuildItem value) {

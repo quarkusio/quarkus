@@ -1,20 +1,21 @@
 package io.quarkus.deployment.builditem;
 
+import io.quarkus.builder.StepDependencyInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 
-public final class MainBytecodeRecorderBuildItem extends MultiBuildItem {
+public final class MainBytecodeRecorderBuildItem extends MultiBuildItem implements RecordedBytecode {
 
     private final BytecodeRecorderImpl bytecodeRecorder;
-    private final String generatedStartupContextClassName;
+    private final StepDependencyInfo stepDependencyInfo;
 
-    public MainBytecodeRecorderBuildItem(BytecodeRecorderImpl bytecodeRecorder) {
+    public MainBytecodeRecorderBuildItem(BytecodeRecorderImpl bytecodeRecorder, StepDependencyInfo stepDependencyInfo) {
         this.bytecodeRecorder = bytecodeRecorder;
-        this.generatedStartupContextClassName = null;
+        this.stepDependencyInfo = stepDependencyInfo;
     }
 
-    public MainBytecodeRecorderBuildItem(String generatedStartupContextClassName) {
-        this.generatedStartupContextClassName = generatedStartupContextClassName;
+    public MainBytecodeRecorderBuildItem(String generatedStartupTaskClassName, StepDependencyInfo stepDependencyInfo) {
+        this.stepDependencyInfo = stepDependencyInfo;
         this.bytecodeRecorder = null;
     }
 
@@ -22,7 +23,7 @@ public final class MainBytecodeRecorderBuildItem extends MultiBuildItem {
         return bytecodeRecorder;
     }
 
-    public String getGeneratedStartupContextClassName() {
-        return generatedStartupContextClassName;
+    public StepDependencyInfo getStepDependencyInfo() {
+        return stepDependencyInfo;
     }
 }

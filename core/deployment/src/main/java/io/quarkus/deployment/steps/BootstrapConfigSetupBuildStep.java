@@ -5,14 +5,16 @@ import static io.quarkus.deployment.configuration.RunTimeConfigurationGenerator.
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BootstrapConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.runtime.StartupContext;
+import io.quarkus.runtime.BootstrapConfigRecorder;
 import io.quarkus.runtime.StartupTask;
 
 public class BootstrapConfigSetupBuildStep {
@@ -24,21 +26,22 @@ public class BootstrapConfigSetupBuildStep {
      * It runs before any StartupTask that uses configuration
      */
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
     @Produce(BootstrapConfigSetupCompleteBuildItem.class)
     void setupBootstrapConfig(BuildProducer<GeneratedClassBuildItem> generatedClass,
-            BuildProducer<MainBytecodeRecorderBuildItem> mainBytecodeRecorder) {
+            RecorderContext rc,
+            BootstrapConfigRecorder recorder) {
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
         try (ClassCreator clazz = ClassCreator.builder().classOutput(classOutput)
                 .className(BOOTSTRAP_CONFIG_STARTUP_TASK_CLASS_NAME)
-                .interfaces(StartupTask.class).build()) {
+                .interfaces(Runnable.class).build()) {
 
-            try (MethodCreator deploy = clazz.getMethodCreator("deploy", void.class, StartupContext.class)) {
+            try (MethodCreator deploy = clazz.getMethodCreator("run", void.class)) {
                 deploy.invokeStaticMethod(C_CREATE_BOOTSTRAP_CONFIG);
                 deploy.returnValue(null);
             }
         }
-
-        mainBytecodeRecorder.produce(new MainBytecodeRecorderBuildItem(BOOTSTRAP_CONFIG_STARTUP_TASK_CLASS_NAME));
+        recorder.run(rc.newInstance(BOOTSTRAP_CONFIG_STARTUP_TASK_CLASS_NAME));
     }
 }

@@ -157,6 +157,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
         loaders.add(loader);
     }
 
+    public boolean isStaticInit() {
+        return staticInit;
+    }
+
     @Override
     public Class<?> classProxy(String name) {
         // if it's a primitive there is no need to create a proxy (and doing so would result in errors when the value is used)

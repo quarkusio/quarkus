@@ -10,13 +10,15 @@ final class StepInfo {
     private final Set<StepInfo> dependents;
     private final Set<ItemId> consumes;
     private final Set<ItemId> produces;
+    private final StepDependencyInfo dependencyInfo;
 
-    StepInfo(final BuildStepBuilder builder, int dependencies, Set<StepInfo> dependents) {
+    StepInfo(final BuildStepBuilder builder, int dependencies, Set<StepInfo> dependents, StepDependencyInfo dependencyInfo) {
         buildStep = builder.getBuildStep();
         consumes = builder.getRealConsumes();
         produces = builder.getRealProduces();
         this.dependencies = dependencies;
         this.dependents = dependents;
+        this.dependencyInfo = dependencyInfo;
     }
 
     BuildStep getBuildStep() {
@@ -37,5 +39,9 @@ final class StepInfo {
 
     Set<ItemId> getProduces() {
         return produces;
+    }
+
+    public StepDependencyInfo getDependencyInfo() {
+        return dependencyInfo;
     }
 }

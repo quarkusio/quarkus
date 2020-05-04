@@ -15,19 +15,22 @@ import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
+import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BootstrapConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceValueBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.BootstrapConfigRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
@@ -45,11 +48,13 @@ public class RuntimeConfigSetupBuildStep {
      * configuration
      */
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(BootstrapConfigSetupCompleteBuildItem.class)
     @Produce(RuntimeConfigSetupCompleteBuildItem.class)
     void setupRuntimeConfig(List<RunTimeConfigurationSourceValueBuildItem> runTimeConfigurationSourceValues,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
-            BuildProducer<MainBytecodeRecorderBuildItem> mainBytecodeRecorder) {
+            RecorderContext recorderContext,
+            BootstrapConfigRecorder configRecorder) {
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
         try (ClassCreator clazz = ClassCreator.builder().classOutput(classOutput)
@@ -93,7 +98,20 @@ public class RuntimeConfigSetupBuildStep {
                 method.returnValue(null);
             }
         }
+        configRecorder.run(recorderContext.newInstance(RUNTIME_CONFIG_STARTUP_TASK_CLASS_NAME), new FakeStartup());
 
-        mainBytecodeRecorder.produce(new MainBytecodeRecorderBuildItem(RUNTIME_CONFIG_STARTUP_TASK_CLASS_NAME));
+    }
+
+    static class FakeStartup extends StartupContext implements BytecodeRecorderImpl.ReturnedProxy {
+
+        @Override
+        public String __returned$proxy$key() {
+            return StartupContext.class.getName();
+        }
+
+        @Override
+        public boolean __static$$init() {
+            return true;
+        }
     }
 }

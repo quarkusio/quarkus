@@ -50,6 +50,7 @@ import io.quarkus.builder.ConsumeFlag;
 import io.quarkus.builder.ConsumeFlags;
 import io.quarkus.builder.ProduceFlag;
 import io.quarkus.builder.ProduceFlags;
+import io.quarkus.builder.StepDependencyInfo;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.builder.item.SimpleBuildItem;
@@ -756,6 +757,7 @@ public final class ExtensionLoader {
                         }
                         methodParamFns.add((bc, bri) -> {
                             assert bri != null;
+                            bc.getStepDependencyInfo().getAttributes().put(BytecodeRecorderImpl.class.getName(), bri);
                             return bri.getRecordingProxy(parameterClass);
                         });
                     } else if (parameter.getType() == RecorderContext.class
@@ -765,6 +767,8 @@ public final class ExtensionLoader {
                                     "Cannot pass recorder context to method which is not annotated with " + Record.class);
                         }
                         methodParamFns.add((bc, bri) -> bri);
+                    } else if (parameter.getType() == StepDependencyInfo.class) {
+                        methodParamFns.add((bc, bri) -> bc.getStepDependencyInfo());
                     } else {
                         throw reportError(parameter, "Unsupported method parameter " + parameterType);
                     }
@@ -945,9 +949,9 @@ public final class ExtensionLoader {
                                 if (isRecorder) {
                                     // commit recorded data
                                     if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
-                                        bc.produce(new StaticBytecodeRecorderBuildItem(bri));
+                                        bc.produce(new StaticBytecodeRecorderBuildItem(bri, bc.getStepDependencyInfo()));
                                     } else {
-                                        bc.produce(new MainBytecodeRecorderBuildItem(bri));
+                                        bc.produce(new MainBytecodeRecorderBuildItem(bri, bc.getStepDependencyInfo()));
                                     }
 
                                 }

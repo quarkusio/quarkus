@@ -19,6 +19,7 @@ public final class BuildStepBuilder {
     private final Map<ItemId, Consume> consumes = new HashMap<>();
     private final Map<ItemId, Produce> produces = new HashMap<>();
     private BuildStep buildStep;
+    private StepDependencyInfo stepDependencyInfo;
 
     BuildStepBuilder(final BuildChainBuilder buildChainBuilder) {
         this.buildChainBuilder = buildChainBuilder;
@@ -241,6 +242,13 @@ public final class BuildStepBuilder {
         final HashMap<ItemId, Produce> map = new HashMap<>(produces);
         map.entrySet().removeIf(e -> e.getValue().getConstraint() == Constraint.ORDER_ONLY);
         return map.keySet();
+    }
+
+    StepDependencyInfo getStepDependencyInfo() {
+        if (stepDependencyInfo == null) {
+            stepDependencyInfo = new StepDependencyInfo(buildStep.toString());
+        }
+        return stepDependencyInfo;
     }
 
     @Override

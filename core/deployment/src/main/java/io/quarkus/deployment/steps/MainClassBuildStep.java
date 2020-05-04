@@ -5,11 +5,17 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.io.File;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.stream.Collectors;
@@ -22,6 +28,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.handlers.DelayedHandler;
 
+import io.quarkus.builder.StepDependencyInfo;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -39,6 +46,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
+import io.quarkus.deployment.builditem.RecordedBytecode;
 import io.quarkus.deployment.builditem.SslTrustStoreSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -57,6 +65,7 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.Application;
+import io.quarkus.runtime.AsyncStartupTask;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.NativeImageRuntimePropertiesRecorder;
 import io.quarkus.runtime.Quarkus;
@@ -137,10 +146,10 @@ class MainClassBuildStep {
         ResultHandle startupContext = mv.newInstance(ofConstructor(StartupContext.class));
         mv.writeStaticField(scField.getFieldDescriptor(), startupContext);
         TryBlock tryBlock = mv.tryBlock();
-        for (StaticBytecodeRecorderBuildItem holder : staticInitTasks) {
-            writeRecordedBytecode(holder.getBytecodeRecorder(), null, substitutions, loaders, gizmoOutput, startupContext,
-                    tryBlock);
-        }
+        writeRecordedBytecode(staticInitTasks, substitutions, loaders, gizmoOutput,
+                startupContext,
+                tryBlock);
+
         tryBlock.returnValue(null);
 
         CatchBlockCreator cb = tryBlock.addCatch(Throwable.class);
@@ -207,10 +216,8 @@ class MainClassBuildStep {
 
         tryBlock = mv.tryBlock();
 
-        for (MainBytecodeRecorderBuildItem holder : mainMethod) {
-            writeRecordedBytecode(holder.getBytecodeRecorder(), holder.getGeneratedStartupContextClassName(), substitutions,
-                    loaders, gizmoOutput, startupContext, tryBlock);
-        }
+        writeRecordedBytecode(mainMethod, substitutions,
+                loaders, gizmoOutput, startupContext, tryBlock);
 
         // Startup log messages
         ResultHandle featuresHandle = tryBlock.load(features.stream()
@@ -340,16 +347,29 @@ class MainClassBuildStep {
         return new MainClassBuildItem(mainClassName);
     }
 
-    private void writeRecordedBytecode(BytecodeRecorderImpl recorder, String fallbackGeneratedStartupTaskClassName,
+    private void writeRecordedBytecode(List<? extends RecordedBytecode> recorders,
             List<ObjectSubstitutionBuildItem> substitutions,
             List<BytecodeRecorderObjectLoaderBuildItem> loaders, GeneratedClassGizmoAdaptor gizmoOutput,
             ResultHandle startupContext, BytecodeCreator bytecodeCreator) {
 
-        if ((recorder == null || recorder.isEmpty()) && fallbackGeneratedStartupTaskClassName == null) {
-            return;
+        Map<BytecodeRecorderImpl, StepDependencyInfo> bcToSteps = new IdentityHashMap<>();
+        Map<BytecodeRecorderImpl, ResultHandle> recorderToHandle = new IdentityHashMap<>();
+        Map<StepDependencyInfo, BytecodeRecorderImpl> stepsToBc = new IdentityHashMap<>();
+        for (RecordedBytecode i : recorders) {
+            bcToSteps.put(i.getBytecodeRecorder(), i.getStepDependencyInfo());
+            stepsToBc.put(i.getStepDependencyInfo(), i.getBytecodeRecorder());
         }
 
-        if ((recorder != null) && !recorder.isEmpty()) {
+        List<ResultHandle> startingSteps = new ArrayList<>();
+        ResultHandle completableFuture = bytecodeCreator.newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));
+        ResultHandle executor = bytecodeCreator
+                .invokeStaticMethod(MethodDescriptor.ofMethod(AsyncStartupTask.class, "newExecutor", ExecutorService.class));
+
+        for (Map.Entry<BytecodeRecorderImpl, StepDependencyInfo> entry : bcToSteps.entrySet()) {
+            if (entry.getKey().isEmpty()) {
+                continue;
+            }
+            BytecodeRecorderImpl recorder = entry.getKey();
             for (ObjectSubstitutionBuildItem sub : substitutions) {
                 ObjectSubstitutionBuildItem.Holder holder1 = sub.holder;
                 recorder.registerSubstitution(holder1.from, holder1.to, holder1.substitution);
@@ -358,12 +378,74 @@ class MainClassBuildStep {
                 recorder.registerObjectLoader(item.getObjectLoader());
             }
             recorder.writeBytecode(gizmoOutput);
+
+            ResultHandle startupTaskForRecorder = bytecodeCreator
+                    .newInstance(ofConstructor(recorder.getClassName()));
+
+            List<BytecodeRecorderImpl> dependencies = entry.getValue().getDependencies().stream().map(stepDependencyInfo -> {
+                BytecodeRecorderImpl rec = (BytecodeRecorderImpl) stepDependencyInfo.getAttributes()
+                        .get(BytecodeRecorderImpl.class.getName());
+                if (rec != null) {
+                    if (rec.isStaticInit() == entry.getKey().isStaticInit() && !rec.isEmpty()) {
+                        return rec;
+                    }
+                }
+                return null;
+            }).filter(Objects::nonNull).collect(Collectors.toList());
+
+            ResultHandle asyncStartupTask = bytecodeCreator.newInstance(
+                    MethodDescriptor.ofConstructor(AsyncStartupTask.class, int.class, StartupContext.class, StartupTask.class,
+                            CompletableFuture.class, Executor.class),
+                    bytecodeCreator.load(dependencies.size()), startupContext, startupTaskForRecorder, completableFuture,
+                    executor);
+            recorderToHandle.put(recorder, asyncStartupTask);
+            if (dependencies.isEmpty()) {
+                startingSteps.add(asyncStartupTask);
+            }
+        }
+        //the task that has everything as a dependency, when it is complete startup is done
+        ResultHandle finishedTask = bytecodeCreator
+                .newInstance(MethodDescriptor.ofConstructor(AsyncStartupTask.class, int.class, CompletableFuture.class,
+                        Executor.class), bytecodeCreator.load(recorderToHandle.size()), completableFuture, executor);
+
+        for (Map.Entry<BytecodeRecorderImpl, ResultHandle> entry : recorderToHandle.entrySet()) {
+            List<BytecodeRecorderImpl> dependents = bcToSteps.get(entry.getKey()).getDependents().stream()
+                    .map(stepDependencyInfo -> {
+                        BytecodeRecorderImpl rec = (BytecodeRecorderImpl) stepDependencyInfo.getAttributes()
+                                .get(BytecodeRecorderImpl.class.getName());
+                        if (rec != null) {
+                            if (rec.isStaticInit() == entry.getKey().isStaticInit() && !rec.isEmpty()) {
+                                return rec;
+                            }
+                        }
+                        return null;
+                    }).filter(Objects::nonNull).collect(Collectors.toList());
+            ResultHandle array = bytecodeCreator.newArray(AsyncStartupTask.class, dependents.size() + 1);
+            bytecodeCreator.writeArrayValue(array, 0, finishedTask);
+            int index = 1;
+            for (BytecodeRecorderImpl i : dependents) {
+                ResultHandle value = recorderToHandle.get(i);
+                Objects.requireNonNull(value, "Quarkus Bug: recorder not found");
+                bytecodeCreator.writeArrayValue(array, index++, value);
+            }
+            bytecodeCreator.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(AsyncStartupTask.class, "setDependents", void.class, AsyncStartupTask[].class),
+                    entry.getValue(), array);
         }
 
-        ResultHandle dup = bytecodeCreator
-                .newInstance(ofConstructor(recorder != null ? recorder.getClassName() : fallbackGeneratedStartupTaskClassName));
-        bytecodeCreator.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup,
-                startupContext);
+        for (ResultHandle i : startingSteps) {
+            bytecodeCreator.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(Executor.class, "execute", void.class, Runnable.class), executor, i);
+        }
+        TryBlock finTry = bytecodeCreator.tryBlock();
+        finTry.invokeVirtualMethod(MethodDescriptor.ofMethod(CompletableFuture.class, "get", Object.class), completableFuture);
+        finTry.invokeInterfaceMethod(MethodDescriptor.ofMethod(ExecutorService.class, "shutdown", void.class), executor);
+
+        CatchBlockCreator catchThrow = finTry.addCatch(Throwable.class);
+        catchThrow.invokeInterfaceMethod(MethodDescriptor.ofMethod(ExecutorService.class, "shutdown", void.class), executor);
+        catchThrow.throwException(catchThrow.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(Throwable.class, "getCause", Throwable.class), catchThrow.getCaughtException()));
+
     }
 
     /**

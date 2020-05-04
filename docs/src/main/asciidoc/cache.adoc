@@ -331,6 +331,17 @@ quarkus.cache.caffeine."bar".maximum-size=1000 <2>
 <1> The `foo` cache is being configured.
 <2> The `bar` cache is being configured.
 
+== Context propagation
+
+This extension relies on non-blocking calls internally for cache values computations.
+By default, there's no context propagation between the calling thread (from your application) and a thread that performs such a computation.
+
+The context propagation can be enabled for this extension by simply adding the `quarkus-smallrye-context-propagation` extension to your project.
+
+If you see a `javax.enterprise.context.ContextNotActiveException` in your application log during a cache computation, then you probably need to enable the context propagation.
+
+You can find more information about context propagation in Quarkus in the link:context-propagation[dedicated guide].
+
 == Annotated beans examples
 
 === Implicit simple cache key

@@ -168,7 +168,7 @@
         <bootstrap.version>3.1.0</bootstrap.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kubernetes-client.version>4.9.1</kubernetes-client.version>
+        <kubernetes-client.version>4.10.0</kubernetes-client.version>
         <optaplanner.version>7.36.1.Final</optaplanner.version>
         <!-- Namespaced to avoid clashing with the kogito version in the universe-bom. We're working on getting rid of this potential version mismatch -->
         <optaplanner-kogito.version>0.10.1</optaplanner-kogito.version>

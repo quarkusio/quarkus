@@ -1,11 +1,13 @@
 package io.quarkus.it.spring.web;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/exception")
@@ -69,5 +71,10 @@ public class ExceptionThrowingController {
     @GetMapping("/string")
     public String stringWithStringException() {
         throw new HandledStringException("bad state");
+    }
+
+    @GetMapping("/responseStatusException")
+    public void responseStatusException() {
+        throw new ResponseStatusException(HttpStatus.BANDWIDTH_LIMIT_EXCEEDED, "bandwidth exceeded");
     }
 }

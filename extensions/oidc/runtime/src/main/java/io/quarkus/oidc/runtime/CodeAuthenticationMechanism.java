@@ -81,7 +81,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             IdentityProviderManager identityProviderManager,
             DefaultTenantConfigResolver resolver) {
         Cookie sessionCookie = context.request().getCookie(SESSION_COOKIE_NAME);
-        TenantConfigContext configContext = resolver.resolve(context, true);
 
         // if session already established, try to re-authenticate
         if (sessionCookie != null) {
@@ -90,6 +89,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             String accessToken = tokens[1];
             String refreshToken = tokens[2];
 
+            TenantConfigContext configContext = resolver.resolve(context, true);
             return authenticate(identityProviderManager, new IdTokenCredential(tokens[0], context))
                     .map(new Function<SecurityIdentity, SecurityIdentity>() {
                         @Override
@@ -136,7 +136,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     public Uni<ChallengeData> getChallenge(RoutingContext context, DefaultTenantConfigResolver resolver) {
-        TenantConfigContext configContext = resolver.resolve(context, false);
+        TenantConfigContext configContext = resolver.resolve(context, true);
         removeCookie(context, configContext, SESSION_COOKIE_NAME);
 
         ChallengeData challenge;
@@ -172,14 +172,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private Uni<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
             RoutingContext context, DefaultTenantConfigResolver resolver) {
-        TenantConfigContext configContext = resolver.resolve(context, true);
-
         JsonObject params = new JsonObject();
 
         String code = context.request().getParam("code");
         if (code == null) {
             return Uni.createFrom().optional(Optional.empty());
         }
+
+        TenantConfigContext configContext = resolver.resolve(context, true);
 
         Cookie stateCookie = context.getCookie(STATE_COOKIE_NAME);
         if (stateCookie != null) {

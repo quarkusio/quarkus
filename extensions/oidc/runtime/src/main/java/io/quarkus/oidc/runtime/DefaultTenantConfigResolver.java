@@ -82,14 +82,8 @@ public class DefaultTenantConfigResolver {
     }
 
     boolean isBlocking(RoutingContext context) {
-        TenantConfigContext resolver = getTenantConfigFromConfigResolver(context, false);
-
-        if (resolver != null) {
-            // we always run blocking if refresh token is enabled even if the tenant was already resolved
-            return resolver.oidcConfig.token.refreshExpired;
-        }
-
-        return resolver == null;
+        TenantConfigContext resolver = resolve(context, false);
+        return resolver != null && (resolver.auth == null || resolver.oidcConfig.token.refreshExpired);
     }
 
     private TenantConfigContext getTenantConfigFromConfigResolver(RoutingContext context, boolean create) {
@@ -112,10 +106,14 @@ public class DefaultTenantConfigResolver {
                         .orElseThrow(() -> new IllegalStateException("You must provide a tenant id"));
                 TenantConfigContext tenantContext = dynamicTenantsConfig.get(tenantId);
 
-                if (tenantContext == null && create) {
-                    synchronized (dynamicTenantsConfig) {
-                        return dynamicTenantsConfig.computeIfAbsent(tenantId,
-                                clientId -> tenantConfigBean.getTenantConfigContextFactory().apply(tenantConfig));
+                if (tenantContext == null) {
+                    if (create) {
+                        synchronized (dynamicTenantsConfig) {
+                            tenantContext = dynamicTenantsConfig.computeIfAbsent(tenantId,
+                                    clientId -> tenantConfigBean.getTenantConfigContextFactory().apply(tenantConfig));
+                        }
+                    } else {
+                        tenantContext = new TenantConfigContext(null, tenantConfig);
                     }
                 }
 

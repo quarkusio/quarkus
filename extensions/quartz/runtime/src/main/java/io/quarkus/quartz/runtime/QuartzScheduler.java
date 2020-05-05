@@ -59,7 +59,6 @@ public class QuartzScheduler implements Scheduler {
     private static final String INVOKER_KEY = "invoker";
 
     private final org.quartz.Scheduler scheduler;
-    private final Map<String, ScheduledInvoker> invokers;
 
     @Produces
     @Singleton
@@ -71,11 +70,9 @@ public class QuartzScheduler implements Scheduler {
         if (!quartzSupport.getRuntimeConfig().forceStart && context.getScheduledMethods().isEmpty()) {
             LOGGER.infof("No scheduled business methods found - Quartz scheduler will not be started");
             this.scheduler = null;
-            this.invokers = null;
 
         } else {
-            this.invokers = new HashMap<>();
-
+            Map<String, ScheduledInvoker> invokers = new HashMap<>();
             UserTransaction transaction = null;
 
             try (InstanceHandle<UserTransaction> handle = Arc.container().instance(UserTransaction.class)) {

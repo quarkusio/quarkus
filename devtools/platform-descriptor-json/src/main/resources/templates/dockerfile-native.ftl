@@ -16,13 +16,7 @@
 ###
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.1
 WORKDIR /work/
-COPY ${build_dir}/*-runner /work/application
-
-# set up permissions for user `1001`
-RUN chmod 775 /work /work/application \
-  && chown -R 1001 /work \
-  && chmod -R "g+rwX" /work \
-  && chown -R 1001:root /work
+COPY --chown=1001:root ${build_dir}/*-runner /work/application
 
 EXPOSE 8080
 USER 1001

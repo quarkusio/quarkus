@@ -32,6 +32,18 @@ public interface QuarkusTestResourceLifecycleManager {
     void stop();
 
     /**
+     * Arguments passed to the lifecycle manager before it starts
+     * These arguments are taken from {@code QuarkusTestResource#initArgs()}
+     *
+     * The {@code args} is never null
+     *
+     * @see QuarkusTestResource#initArgs()
+     */
+    default void init(Map<String, String> initArgs) {
+
+    }
+
+    /**
      * Allow each resource to provide custom injection of fields of the test class
      */
     default void inject(Object testInstance) {

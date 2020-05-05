@@ -144,6 +144,7 @@ public class QuarkusTestExtension
             testResourceManager = (Closeable) startupAction.getClassLoader().loadClass(TestResourceManager.class.getName())
                     .getConstructor(Class.class)
                     .newInstance(requiredTestClass);
+            testResourceManager.getClass().getMethod("init").invoke(testResourceManager);
             testResourceManager.getClass().getMethod("start").invoke(testResourceManager);
 
             populateCallbacks(startupAction.getClassLoader());

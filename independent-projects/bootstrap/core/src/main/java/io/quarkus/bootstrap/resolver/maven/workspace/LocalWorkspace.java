@@ -62,10 +62,11 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
     public Model resolveRawModel(String groupId, String artifactId, String versionConstraint)
             throws UnresolvableModelException {
         final LocalProject project = getProject(groupId, artifactId);
-        if (project == null || !project.getVersion().equals(versionConstraint)) {
-            return null;
-        }
-        return project.getRawModel();
+        return project != null
+                && (versionConstraint == null
+                        || versionConstraint.equals(ModelUtils.getVersion(project.getRawModel())))
+                                ? project.getRawModel()
+                                : null;
     }
 
     @Override
@@ -86,9 +87,11 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
     @Override
     public File findArtifact(Artifact artifact) {
         final LocalProject lp = getProject(artifact.getGroupId(), artifact.getArtifactId());
+        final String findVersion = artifact.getVersion();
         if (lp == null
-                || !lp.getVersion().equals(artifact.getVersion())
-                        && !(LocalProject.isUnresolvedVersion(artifact.getVersion())
+                || !findVersion.isEmpty()
+                        && !lp.getVersion().equals(findVersion)
+                        && !(ModelUtils.isUnresolvedVersion(findVersion)
                                 && lp.getVersion().equals(resolvedVersion))) {
             return null;
         }

@@ -78,12 +78,16 @@ public class BootstrapMavenOptions {
     }
 
     public static BootstrapMavenOptions newInstance() {
-        final String mvnCmd = PropertyUtils.getProperty(QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS);
-        return newInstance(mvnCmd == null ? System.getenv(MAVEN_CMD_LINE_ARGS) : mvnCmd);
+        return newInstance(getMavenCmdLine());
     }
 
     public static BootstrapMavenOptions newInstance(String cmdLine) {
         return new BootstrapMavenOptions(parse(cmdLine));
+    }
+
+    public static String getMavenCmdLine() {
+        final String mvnCmd = PropertyUtils.getProperty(QUARKUS_INTERNAL_MAVEN_CMD_LINE_ARGS);
+        return mvnCmd == null ? System.getenv(MAVEN_CMD_LINE_ARGS) : mvnCmd;
     }
 
     private final Map<String, Object> options;

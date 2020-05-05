@@ -193,6 +193,29 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testMultiModuleProjectWithRevisionVersion() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/multimodule-revision-prop");
+        final String projectVersion = System.getProperty("project.version");
+        runAndCheck("-Dquarkus.platform.version=" + projectVersion,
+                "-Dquarkus-plugin.version=" + projectVersion);
+
+        // Edit the "Hello" message.
+        File source = new File(testDir, "rest/src/main/java/org/acme/HelloResource.java");
+        final String uuid = UUID.randomUUID().toString();
+        filter(source, ImmutableMap.of("return \"hello\";", "return \"" + uuid + "\";"));
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains(uuid));
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+    }
+
+    @Test
     public void testThatTheApplicationIsReloadedOnNewResource() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-new-resource");
         runAndCheck();

@@ -67,6 +67,7 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import org.twdata.maven.mojoexecutor.MojoExecutor;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
@@ -647,10 +648,44 @@ public class DevMojo extends AbstractMojo {
             if (devModeContext.isEnablePreview()) {
                 args.add(DevModeContext.ENABLE_PREVIEW_FLAG);
             }
+
+            propagateUserProperties();
+
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
             if (argsString != null) {
                 args.addAll(Arrays.asList(CommandLineUtils.translateCommandline(argsString)));
+            }
+        }
+
+        private void propagateUserProperties() {
+            final String mavenCmdLine = BootstrapMavenOptions.getMavenCmdLine();
+            if (mavenCmdLine == null || mavenCmdLine.isEmpty()) {
+                return;
+            }
+            int i = mavenCmdLine.indexOf("-D");
+            if (i < 0) {
+                return;
+            }
+            final StringBuilder buf = new StringBuilder();
+            buf.append("-D");
+            i += 2;
+            while (i < mavenCmdLine.length()) {
+                final char ch = mavenCmdLine.charAt(i++);
+                if (!Character.isWhitespace(ch)) {
+                    buf.append(ch);
+                } else if (buf.length() > 2) {
+                    args.add(buf.toString());
+                    buf.setLength(2);
+                    i = mavenCmdLine.indexOf("-D", i);
+                    if (i < 0) {
+                        break;
+                    }
+                    i += 2;
+                }
+            }
+            if (buf.length() > 2) {
+                args.add(buf.toString());
             }
         }
 

@@ -74,6 +74,7 @@ public final class ResteasyDotNames {
             // javax.json
             DotName.createSimple("javax.json.JsonObject"),
             DotName.createSimple("javax.json.JsonArray"),
+            DotName.createSimple("javax.json.JsonValue"),
 
             // Jackson
             DotName.createSimple("com.fasterxml.jackson.databind.JsonNode"),

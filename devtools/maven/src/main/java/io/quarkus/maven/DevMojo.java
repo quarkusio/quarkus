@@ -310,9 +310,9 @@ public class DevMojo extends AbstractMojo {
             DevModeRunner runner = new DevModeRunner(args);
 
             runner.prepare();
+            Map<Path, Long> pomFiles = readPomFileTimestamps(runner);
             runner.run();
             long nextCheck = System.currentTimeMillis() + 100;
-            Map<Path, Long> pomFiles = readPomFileTimestamps(runner);
             for (;;) {
                 //we never suspend after the first run
                 suspend = "n";

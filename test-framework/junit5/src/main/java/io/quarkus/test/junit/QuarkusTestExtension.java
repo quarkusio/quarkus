@@ -232,6 +232,11 @@ public class QuarkusTestExtension
                     .getDeclaredMethod("clearURL").invoke(null);
             runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
                     .getDeclaredMethod("tearDown", boolean.class).invoke(null, nativeImageTest);
+            ExtensionState state = context.getRoot().getStore(ExtensionContext.Namespace.GLOBAL).get(
+                    ExtensionState.class.getName(),
+                    ExtensionState.class);
+            state.testResourceManager.getClass().getMethod("cleanup", Object.class).invoke(state.testResourceManager,
+                    actualTestInstance);
         }
     }
 

@@ -3,6 +3,7 @@ package io.quarkus.test.common;
 import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -79,6 +80,23 @@ public class TestResourceManager implements Closeable {
             ConfigProviderResolver cpr = ConfigProviderResolver.instance();
             cpr.releaseConfig(cpr.getConfig());
         } catch (Throwable ignored) {
+        }
+    }
+
+    public void cleanup(Object testInstance) {
+        for (QuarkusTestResourceLifecycleManager testResource : testResources) {
+            if (!QuarkusTestResourceWithCleanupLifecycleManager.class.isAssignableFrom(testResource.getClass())) {
+                return;
+            }
+            QuarkusTestResourceWithCleanupLifecycleManager testResourceWithCleanup = (QuarkusTestResourceWithCleanupLifecycleManager) testResource;
+            QuarkusTestResource[] annotations = testInstance.getClass()
+                    .getDeclaredAnnotationsByType(QuarkusTestResource.class);
+            if (annotations.length > 0) {
+                if (Arrays.stream(annotations)
+                        .anyMatch(it -> QuarkusTestResourceWithCleanupLifecycleManager.class.isAssignableFrom(it.value()))) {
+                    testResourceWithCleanup.cleanup();
+                }
+            }
         }
     }
 

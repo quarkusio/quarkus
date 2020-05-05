@@ -29,6 +29,7 @@ public class NativeTestExtension
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         if (!failedBoot) {
+            extractState(context).testResourceManager.cleanup(context.getTestInstance().get());
             RestAssuredURLManager.clearURL();
             TestScopeManager.tearDown(true);
         }
@@ -95,10 +96,15 @@ public class NativeTestExtension
     @Override
     public void postProcessTestInstance(Object testInstance, ExtensionContext context) throws Exception {
         TestHTTPResourceManager.inject(testInstance);
+        ExtensionState state = extractState(context);
+        state.testResourceManager.inject(testInstance);
+    }
+
+    private ExtensionState extractState(ExtensionContext context) {
         ExtensionContext root = context.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         ExtensionState state = store.get(ExtensionState.class.getName(), ExtensionState.class);
-        state.testResourceManager.inject(testInstance);
+        return state;
     }
 
     public class ExtensionState implements ExtensionContext.Store.CloseableResource {

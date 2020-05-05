@@ -124,7 +124,6 @@
         <caffeine.version>2.8.0</caffeine.version>
         <netty.version>4.1.49.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
-        <test-containers.version>1.14.1</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
         <mutiny.version>0.5.0</mutiny.version>
         <axle-client.version>0.0.15</axle-client.version>
@@ -181,7 +180,6 @@
         <mvel2.version>2.4.7.Final</mvel2.version>
         <htmlunit.version>2.36.0</htmlunit.version>
         <mockito.version>3.3.3</mockito.version>
-        <jna.version>5.3.1</jna.version>
         <antlr.version>4.7.2</antlr.version>
         <quarkus-security.version>1.1.1.Final</quarkus-security.version>
         <keycloak.version>9.0.2</keycloak.version>
@@ -1780,27 +1778,6 @@
                 <groupId>net.minidev</groupId>
                 <artifactId>json-smart</artifactId>
                 <version>${json-smart.version}</version>
-            </dependency>
-            <!-- JNA dependency is fixed due to transitive dependency issue on testcontainers-->
-            <dependency>
-                <groupId>net.java.dev.jna</groupId>
-                <artifactId>jna</artifactId>
-                <version>${jna.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers</artifactId>
-                <version>${test-containers.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${test-containers.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>${test-containers.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.plexus</groupId>

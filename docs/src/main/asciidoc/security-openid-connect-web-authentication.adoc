@@ -12,7 +12,7 @@ This guide demonstrates how to use the OpenID Connect Extension to protect your 
 The extension allows you to easily enable authentication to your web application based on the Authorization Code Flow so that your users are redirected to a
 OpenID Connect Provider (e.g.: Keycloak) to authenticate and, once the authentication is complete, return back to your application.
 
-We are going to give you a guideline on how to use OpenId Connect to authenticate users using the Quarkus OpenID Connect Extenson.
+We are going to give you a guideline on how to use OpenId Connect to authenticate users using the Quarkus OpenID Connect Extension.
 
 == Prerequisites
 

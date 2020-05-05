@@ -1,15 +1,12 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
-import java.util.HashSet;
 import java.util.function.Consumer;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.MalformedClaimException;
-import org.jose4j.jwt.consumer.JwtContext;
 
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -17,8 +14,7 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
-import io.smallrye.jwt.auth.principal.DefaultJWTTokenParser;
-import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
+import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
@@ -31,17 +27,15 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
 
     private static final Logger log = Logger.getLogger(MpJwtValidator.class);
 
-    final JWTAuthContextInfo authContextInfo;
-
-    private final DefaultJWTTokenParser parser = new DefaultJWTTokenParser();
+    final JWTParser parser;
 
     public MpJwtValidator() {
-        authContextInfo = null;
+        this.parser = null;
     }
 
     @Inject
-    public MpJwtValidator(JWTAuthContextInfo authContextInfo) {
-        this.authContextInfo = authContextInfo;
+    public MpJwtValidator(JWTParser parser) {
+        this.parser = parser;
     }
 
     @Override
@@ -56,22 +50,12 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
             @Override
             public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
                 try {
-                    JwtContext jwtContext = parser.parse(request.getToken().getToken(), authContextInfo);
+                    JsonWebToken jwtPrincipal = parser.parse(request.getToken().getToken());
+                    uniEmitter.complete(QuarkusSecurityIdentity.builder().setPrincipal(jwtPrincipal)
+                            .addRoles(jwtPrincipal.getGroups())
+                            .addAttribute(SecurityIdentity.USER_ATTRIBUTE, jwtPrincipal).build());
 
-                    JwtClaims claims = jwtContext.getJwtClaims();
-                    String name = claims.getClaimValue("upn", String.class);
-                    if (name == null) {
-                        name = claims.getClaimValue("preferred_username", String.class);
-                        if (name == null) {
-                            name = claims.getSubject();
-                        }
-                    }
-                    QuarkusJwtCallerPrincipal principal = new QuarkusJwtCallerPrincipal(name, claims);
-                    uniEmitter.complete(QuarkusSecurityIdentity.builder().setPrincipal(principal)
-                            .addRoles(new HashSet<>(claims.getStringListClaimValue("groups")))
-                            .addAttribute(SecurityIdentity.USER_ATTRIBUTE, principal).build());
-
-                } catch (ParseException | MalformedClaimException e) {
+                } catch (ParseException e) {
                     log.debug("Authentication failed", e);
                     uniEmitter.fail(new AuthenticationFailedException(e));
                 }

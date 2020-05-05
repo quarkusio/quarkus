@@ -52,4 +52,14 @@ public class DefaultGroupsUnitTest {
         // The missing 'groups' claim's default value, 'User' is expected
         Assertions.assertEquals("User", replyString);
     }
+
+    @Test
+    public void echoGroupsWithParser() {
+        io.restassured.response.Response response = RestAssured.given().auth()
+                .oauth2(token)
+                .get("/endp/echo-parser").andReturn();
+
+        Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
+        Assertions.assertEquals("parser:User", response.body().asString());
+    }
 }

@@ -42,7 +42,7 @@ public class CodeFlowTest {
             webClient.getOptions().setRedirectEnabled(false);
             WebResponse webResponse = webClient
                     .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
-            verifyLocationHeader(webClient, webResponse.getResponseHeaderValue("location"));
+            verifyLocationHeader(webClient, webResponse.getResponseHeaderValue("location"), false);
 
             webClient.getOptions().setRedirectEnabled(true);
             HtmlPage page = webClient.getPage("http://localhost:8081/index.html");
@@ -68,9 +68,22 @@ public class CodeFlowTest {
         }
     }
 
-    private void verifyLocationHeader(WebClient webClient, String loc) {
+    @Test
+    public void testCodeFlowForceHttpsRedirectUri() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/tenant-https").toURL()));
+            verifyLocationHeader(webClient, webResponse.getResponseHeaderValue("location"), true);
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    private void verifyLocationHeader(WebClient webClient, String loc, boolean forceHttps) {
         assertTrue(loc.startsWith("http://localhost:8180/auth/realms/quarkus/protocol/openid-connect/auth"));
-        assertTrue(loc.contains("redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Fweb-app"));
+        String scheme = forceHttps ? "https" : "http";
+        assertTrue(loc.contains("redirect_uri=" + scheme + "%3A%2F%2Flocalhost%3A8081%2Fweb-app"));
         assertTrue(loc.contains("state=" + getStateCookieStateParam(webClient)));
         assertTrue(loc.contains("scope=openid+profile+email+phone"));
         assertTrue(loc.contains("response_type=code"));
@@ -161,6 +174,7 @@ public class CodeFlowTest {
                             webClient.getOptions().setRedirectEnabled(false);
                             WebResponse webResponse = webClient
                                     .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/tenant-logout").toURL()));
+                            assertEquals(200, webResponse.getStatusCode());
                             // Should not redirect to OP but silently refresh token
                             Cookie newSessionCookie = getSessionCookie(webClient);
                             assertNotNull(newSessionCookie);

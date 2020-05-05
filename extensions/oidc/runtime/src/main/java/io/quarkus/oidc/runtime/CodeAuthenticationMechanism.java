@@ -150,7 +150,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         // redirect_uri
         String redirectPath = getRedirectPath(configContext, context);
-        String redirectUriParam = buildUri(context, redirectPath);
+        String redirectUriParam = buildUri(context, isForceHttps(configContext), redirectPath);
         LOG.debugf("Authentication request redirect_uri parameter: %s", redirectUriParam);
         params.put("redirect_uri", redirectUriParam);
 
@@ -206,7 +206,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         extraQuery += ("&" + context.request().query());
                     }
 
-                    String localRedirectUri = buildUri(context, extraPath + extraQuery);
+                    String localRedirectUri = buildUri(context, isForceHttps(configContext), extraPath + extraQuery);
                     LOG.debugf("Local redirect URI: %s", localRedirectUri);
                     return Uni.createFrom().failure(new AuthenticationRedirectException(localRedirectUri));
                 }
@@ -228,7 +228,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         // 'redirect_uri': typically it must match the 'redirect_uri' query parameter which was used during the code request.
         String redirectPath = getRedirectPath(configContext, context);
-        String redirectUriParam = buildUri(context, redirectPath);
+        String redirectUriParam = buildUri(context, isForceHttps(configContext), redirectPath);
         LOG.debugf("Token request redirect_uri parameter: %s", redirectUriParam);
         params.put("redirect_uri", redirectUriParam);
 
@@ -355,8 +355,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return cookie;
     }
 
-    private String buildUri(RoutingContext context, String path) {
-        return new StringBuilder(context.request().scheme()).append("://")
+    private String buildUri(RoutingContext context, boolean forceHttps, String path) {
+        final String scheme = forceHttps ? "https" : context.request().scheme();
+        return new StringBuilder(scheme).append("://")
                 .append(URI.create(context.request().absoluteURI()).getAuthority())
                 .append(path)
                 .toString();
@@ -387,7 +388,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         if (logoutPath.isPresent()) {
             return context.request().absoluteURI().equals(
-                    buildUri(context, logoutPath.get()));
+                    buildUri(context, false, logoutPath.get()));
         }
 
         return false;
@@ -446,11 +447,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         if (configContext.oidcConfig.logout.postLogoutPath.isPresent()) {
             logoutUri.append("&post_logout_redirect_uri=").append(
-                    buildUri(context, configContext.oidcConfig.logout.postLogoutPath.get()));
+                    buildUri(context, isForceHttps(configContext), configContext.oidcConfig.logout.postLogoutPath.get()));
             logoutUri.append("&state=").append(generatePostLogoutState(context, configContext));
         }
 
         return logoutUri.toString();
+    }
+
+    private boolean isForceHttps(TenantConfigContext configContext) {
+        return configContext.oidcConfig.authentication.forceRedirectHttpsScheme;
     }
 
     private AuthenticationRedirectException redirectToLogoutEndpoint(RoutingContext context, TenantConfigContext configContext,

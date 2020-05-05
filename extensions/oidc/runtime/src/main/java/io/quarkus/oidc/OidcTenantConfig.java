@@ -507,6 +507,13 @@ public class OidcTenantConfig {
         public boolean removeRedirectParameters = true;
 
         /**
+         * Force 'https' as the 'redirect_uri' parameter scheme when running behind an SSL terminating reverse proxy.
+         * This property, if enabled, will also affect the logout `post_logout_redirect_uri` and the local redirect requests.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean forceRedirectHttpsScheme;
+
+        /**
          * List of scopes
          */
         @ConfigItem
@@ -547,6 +554,14 @@ public class OidcTenantConfig {
 
         public void setExtraParams(Map<String, String> extraParams) {
             this.extraParams = extraParams;
+        }
+
+        public boolean isForceRedirectHttpsScheme() {
+            return forceRedirectHttpsScheme;
+        }
+
+        public void setForceRedirectHttpsScheme(boolean forceRedirectHttpsScheme) {
+            this.forceRedirectHttpsScheme = forceRedirectHttpsScheme;
         }
 
         public boolean isRestorePathAfterRedirect() {

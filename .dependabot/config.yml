@@ -110,7 +110,7 @@ update_configs:
       - match:
           dependency_name: "org.testcontainers:testcontainers"
       - match:
-          dependency_name: "org.testcontainers:junit-jupiter"
+          dependency_name: "org.testcontainers:postgresql"
       - match:
           dependency_name: "org.mockito:mockito-core"
       - match:

@@ -63,8 +63,9 @@ final public class Constants {
     private static final Properties SYSTEM_PROPERTIES = System.getProperties();
 
     private static final String DOCS_SRC_MAIN_ASCIIDOC_GENERATED = "/target/asciidoc/generated/config/";
-    public static final Path GENERATED_DOCS_PATH = Paths.get(SYSTEM_PROPERTIES.getProperty("maven.multiModuleProjectDirectory")
-            + Constants.DOCS_SRC_MAIN_ASCIIDOC_GENERATED).toAbsolutePath();
+    private static final String DOCS_OUT_DIR = System.getProperty("quarkus.docsOutputDir",
+            SYSTEM_PROPERTIES.getProperty("maven.multiModuleProjectDirectory", "."));
+    public static final Path GENERATED_DOCS_PATH = Paths.get(DOCS_OUT_DIR + DOCS_SRC_MAIN_ASCIIDOC_GENERATED).toAbsolutePath();
     public static final File GENERATED_DOCS_DIR = GENERATED_DOCS_PATH.toFile();
     public static final Boolean SKIP_DOCS_GENERATION = Boolean.valueOf(SYSTEM_PROPERTIES.getProperty("skipDocs", "false"));
 

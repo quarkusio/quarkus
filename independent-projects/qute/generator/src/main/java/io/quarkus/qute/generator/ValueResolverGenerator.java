@@ -605,8 +605,7 @@ public class ValueResolverGenerator {
         }
         // Match number of params
         if (methodParams >= 0) {
-            matchScope.ifNonZero(matchScope.invokeStaticMethod(Descriptors.INTEGER_COMPARE,
-                    matchScope.load(methodParams), paramsCount)).trueBranch().breakScope(matchScope);
+            matchScope.ifIntegerEqual(matchScope.load(methodParams), paramsCount).falseBranch().breakScope(matchScope);
 
         }
         return matchScope;

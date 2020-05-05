@@ -74,6 +74,12 @@ public class VertxCoreRecorder {
         };
     }
 
+    static void shutdownDevMode() {
+        if (vertx != null) {
+            vertx.get().close();
+        }
+    }
+
     public static Supplier<Vertx> getVertx() {
         return vertx;
     }

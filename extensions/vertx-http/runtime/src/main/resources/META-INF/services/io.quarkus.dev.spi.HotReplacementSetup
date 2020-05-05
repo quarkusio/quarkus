@@ -1,1 +1,1 @@
-io.quarkus.vertx.http.runtime.devmode.VertxHotReplacementSetup
+io.quarkus.vertx.http.runtime.devmode.VertxHttpHotReplacementSetup

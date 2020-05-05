@@ -9,7 +9,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
-public class VertxHotReplacementSetup implements HotReplacementSetup {
+public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
 
     private volatile long nextUpdate;
     private HotReplacementContext hotReplacementContext;

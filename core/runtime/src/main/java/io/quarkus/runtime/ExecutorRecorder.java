@@ -73,6 +73,10 @@ public class ExecutorRecorder {
         return devModeExecutor;
     }
 
+    static void shutdownDevMode() {
+        devModeExecutor.shutdown();
+    }
+
     private static Runnable createShutdownTask(ThreadPoolConfig threadPoolConfig, EnhancedQueueExecutor executor) {
         return new Runnable() {
             @Override

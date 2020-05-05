@@ -1,0 +1,15 @@
+plugins {
+    id 'java-platform'
+}
+
+repositories {
+     mavenLocal()
+     mavenCentral()
+}
+
+dependencies {
+    constraints {
+        api enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+        api 'io.quarkus:quarkus-kubernetes-client'
+    }
+}

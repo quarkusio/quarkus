@@ -17,6 +17,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationStartBuildItem;
+import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -119,8 +120,8 @@ class VertxHttpProcessor {
             BodyHandlerBuildItem bodyHandlerBuildItem,
             BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
             ShutdownConfig shutdownConfig,
-            CoreVertxBuildItem core // Injected to be sure that Vert.x has been produced before calling this method.
-    )
+            CoreVertxBuildItem core, // Injected to be sure that Vert.x has been produced before calling this method.
+            ExecutorBuildItem executorBuildItem)
             throws BuildException, IOException {
         Optional<DefaultRouteBuildItem> defaultRoute;
         if (defaultRoutes == null || defaultRoutes.isEmpty()) {
@@ -149,7 +150,7 @@ class VertxHttpProcessor {
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, vertx.getVertx(), router.getRouter(), httpBuildTimeConfig.rootPath, launchMode.getLaunchMode(),
                 !requireBodyHandlerBuildItems.isEmpty(), bodyHandler, httpConfiguration, gracefulShutdownFilter,
-                shutdownConfig);
+                shutdownConfig, executorBuildItem.getExecutorProxy());
 
         return new ServiceStartBuildItem("vertx-http");
     }

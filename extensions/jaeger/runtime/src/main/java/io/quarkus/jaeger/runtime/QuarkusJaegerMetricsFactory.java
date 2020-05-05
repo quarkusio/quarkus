@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.microprofile.metrics.Metadata;
+import org.eclipse.microprofile.metrics.MetricID;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.MetricType;
 import org.eclipse.microprofile.metrics.Tag;
@@ -21,7 +22,7 @@ public class QuarkusJaegerMetricsFactory implements MetricsFactory {
 
     @Override
     public Counter createCounter(final String name, final Map<String, String> tags) {
-        org.eclipse.microprofile.metrics.Counter counter = registry.counter(meta(name, MetricType.COUNTER), toTagArray(tags));
+        org.eclipse.microprofile.metrics.Counter counter = registry.counter(name, toTagArray(tags));
 
         return new Counter() {
             @Override
@@ -33,7 +34,7 @@ public class QuarkusJaegerMetricsFactory implements MetricsFactory {
 
     @Override
     public Timer createTimer(final String name, final Map<String, String> tags) {
-        org.eclipse.microprofile.metrics.Timer timer = registry.timer(meta(name, MetricType.TIMER), toTagArray(tags));
+        org.eclipse.microprofile.metrics.Timer timer = registry.timer(name, toTagArray(tags));
 
         return new Timer() {
             @Override
@@ -45,7 +46,7 @@ public class QuarkusJaegerMetricsFactory implements MetricsFactory {
 
     @Override
     public Gauge createGauge(final String name, final Map<String, String> tags) {
-        JaegerGauge gauge = registry.register(meta(name, MetricType.GAUGE), new JaegerGauge(), toTagArray(tags));
+        JaegerGauge gauge = (JaegerGauge) registry.getGauges().get(new MetricID(name, toTagArray(tags)));
 
         return new Gauge() {
             @Override
@@ -72,7 +73,7 @@ public class QuarkusJaegerMetricsFactory implements MetricsFactory {
                 .build();
     }
 
-    static class JaegerGauge implements org.eclipse.microprofile.metrics.Gauge<Long> {
+    public static class JaegerGauge implements org.eclipse.microprofile.metrics.Gauge<Long> {
         private AtomicLong value = new AtomicLong();
 
         public void update(long value) {

@@ -454,7 +454,7 @@ public class Fruit {
     }
 
     public static Multi<Fruit> findAll(PgPool client) {
-        return client.query("SELECT id, name FROM fruits ORDER BY name ASC")
+        return client.query("SELECT id, name FROM fruits ORDER BY name ASC").execute()
                 // Create a Multi from the set of rows:
                 .onItem().produceMulti(set -> Multi.createFrom().items(() -> StreamSupport.stream(set.spliterator(), false)))
                 // For each row create a fruit instance
@@ -462,23 +462,23 @@ public class Fruit {
     }
 
     public static Uni<Fruit> findById(PgPool client, Long id) {
-        return client.preparedQuery("SELECT id, name FROM fruits WHERE id = $1", Tuple.of(id))
+        return client.preparedQuery("SELECT id, name FROM fruits WHERE id = $1", Tuple.of(id)).execute()
                 .onItem().apply(RowSet::iterator)
                 .onItem().apply(iterator -> iterator.hasNext() ? from(iterator.next()) : null);
     }
 
     public Uni<Long> save(PgPool client) {
-        return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)", Tuple.of(name))
+        return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)", Tuple.of(name)).execute()
                 .onItem().apply(pgRowSet -> pgRowSet.iterator().next().getLong("id"));
     }
 
     public Uni<Boolean> update(PgPool client) {
-        return client.preparedQuery("UPDATE fruits SET name = $1 WHERE id = $2", Tuple.of(name, id))
+        return client.preparedQuery("UPDATE fruits SET name = $1 WHERE id = $2", Tuple.of(name, id)).execute()
                 .onItem().apply(pgRowSet -> pgRowSet.rowCount() == 1);
     }
 
     public static Uni<Boolean> delete(PgPool client, Long id) {
-        return client.preparedQuery("DELETE FROM fruits WHERE id = $1", Tuple.of(id))
+        return client.preparedQuery("DELETE FROM fruits WHERE id = $1", Tuple.of(id)).execute()
                 .onItem().apply(pgRowSet -> pgRowSet.rowCount() == 1);
     }
 
@@ -541,12 +541,12 @@ public class FruitResource {
     }
 
     private void initdb() {
-        client.query("DROP TABLE IF EXISTS fruits")
-                .flatMap(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)"))
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Kiwi')"))
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Durian')"))
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Pomelo')"))
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Lychee')"))
+        client.query("DROP TABLE IF EXISTS fruits").execute()
+                .flatMap(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)").execute())
+                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Kiwi')").execute())
+                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Durian')").execute())
+                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Pomelo')").execute())
+                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Lychee')").execute())
                 .await().indefinitely();
     }
 

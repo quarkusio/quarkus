@@ -41,7 +41,7 @@ public class Person extends PanacheEntity {
     @Transient
     public int serialisationTrick;
 
-    public static List<Dog> findOrdered() {
+    public static List<Person> findOrdered() {
         return find("ORDER BY name").list();
     }
 
@@ -54,5 +54,9 @@ public class Person extends PanacheEntity {
 
     public void setSerialisationTrick(int serialisationTrick) {
         this.serialisationTrick = serialisationTrick;
+    }
+
+    public static long methodWithPrimitiveParams(boolean b, byte bb, short s, int i, long l, float f, double d, char c) {
+        return 0;
     }
 }

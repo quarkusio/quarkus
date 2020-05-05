@@ -56,7 +56,18 @@ public class MojoTestBase {
     }
 
     public static File initProject(String name) {
-        return initProject(name, name);
+        File tc = new File("target/test-classes");
+        if (!tc.isDirectory()) {
+            boolean mkdirs = tc.mkdirs();
+            Logger.getLogger(MojoTestBase.class.getName())
+                    .log(Level.FINE, "test-classes created? %s", mkdirs);
+        }
+
+        File in = new File(tc, name);
+        if (!in.isDirectory()) {
+            throw new RuntimeException("Cannot find directory: " + in.getAbsolutePath());
+        }
+        return in;
     }
 
     public static File getTargetDir(String name) {

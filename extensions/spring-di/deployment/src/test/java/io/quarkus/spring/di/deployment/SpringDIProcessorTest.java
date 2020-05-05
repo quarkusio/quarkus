@@ -213,7 +213,8 @@ class SpringDIProcessorTest {
                 throw new IllegalStateException("Failed to index: " + className, e);
             }
         }
-        return BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(), indexer.complete());
+        return BeanArchives.buildBeanArchiveIndex(getClass().getClassLoader(), new BeanArchives.PersistentClassIndex(),
+                indexer.complete());
     }
 
     @SafeVarargs

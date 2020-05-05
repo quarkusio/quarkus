@@ -31,12 +31,14 @@ public class LiquibaseProducer {
     /**
      * The liquibase runtime configuration
      */
-    private LiquibaseRuntimeConfig liquibaseRuntimeConfig;
+    @Inject
+    LiquibaseRuntimeConfig liquibaseRuntimeConfig;
 
     /**
      * The liquibase build configuration
      */
-    private LiquibaseBuildTimeConfig liquibaseBuildConfig;
+    @Inject
+    LiquibaseBuildTimeConfig liquibaseBuildConfig;
 
     /**
      * The default quarkus liquibase producer method
@@ -48,24 +50,6 @@ public class LiquibaseProducer {
     @Default
     public LiquibaseFactory produceLiquibase() {
         return createDefaultLiquibase(defaultDataSource.get());
-    }
-
-    /**
-     * Sets the liquibase runtime configuration
-     * 
-     * @param liquibaseRuntimeConfig the liquibase runtime configuration
-     */
-    public void setLiquibaseRuntimeConfig(LiquibaseRuntimeConfig liquibaseRuntimeConfig) {
-        this.liquibaseRuntimeConfig = liquibaseRuntimeConfig;
-    }
-
-    /**
-     * Sets the liquibase build configuration
-     * 
-     * @param liquibaseBuildConfig the liquibase build configuration
-     */
-    public void setLiquibaseBuildConfig(LiquibaseBuildTimeConfig liquibaseBuildConfig) {
-        this.liquibaseBuildConfig = liquibaseBuildConfig;
     }
 
     /**

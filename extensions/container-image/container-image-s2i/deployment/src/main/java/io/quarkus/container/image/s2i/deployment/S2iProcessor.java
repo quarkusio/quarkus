@@ -48,11 +48,12 @@ import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
-import io.quarkus.container.spi.ContainerImageResultBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -74,6 +75,11 @@ public class S2iProcessor {
     private static final String RUNNING = "Running";
 
     private static final Logger LOG = Logger.getLogger(S2iProcessor.class);
+
+    @BuildStep
+    public CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.CONTAINER_IMAGE_S2I);
+    }
 
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
     public void s2iRequirementsJvm(S2iConfig s2iConfig,
@@ -165,7 +171,6 @@ public class S2iProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer,
             // used to ensure that the jar has been built
             JarBuildItem jar) {
 
@@ -193,8 +198,6 @@ public class S2iProcessor {
         createContainerImage(kubernetesClient, openshiftYml.get(), s2iConfig, out.getOutputDirectory(), jar.getPath(),
                 out.getOutputDirectory().resolve("lib"));
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
-        containerImageResultProducer.produce(
-                new ContainerImageResultBuildItem(S2I, null, ImageUtil.getRepository(image), ImageUtil.getTag(image)));
     }
 
     @BuildStep(onlyIf = { IsNormal.class, S2iBuild.class, NativeBuild.class })
@@ -206,7 +209,6 @@ public class S2iProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer,
             NativeImageBuildItem nativeImage) {
 
         if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
@@ -227,8 +229,7 @@ public class S2iProcessor {
 
         createContainerImage(kubernetesClient, openshiftYml, s2iConfig, out.getOutputDirectory(), nativeImage.getPath());
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
-        containerImageResultProducer
-                .produce(new ContainerImageResultBuildItem(S2I, null, ImageUtil.getRepository(image), ImageUtil.getTag(image)));
+        ;
     }
 
     public static void createContainerImage(KubernetesClientBuildItem kubernetesClient,
@@ -315,7 +316,7 @@ public class S2iProcessor {
     /**
      * Performs the binary build of the specified {@link BuildConfig} with the given
      * binary input.
-     * 
+     *
      * @param client The openshift client instance
      * @param buildConfig The build config
      * @param binaryFile The binary file

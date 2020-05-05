@@ -10,6 +10,7 @@ import javax.inject.Inject;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
@@ -81,7 +82,8 @@ public class DefaultTenantConfigResolver {
     }
 
     boolean isBlocking(RoutingContext context) {
-        return getTenantConfigFromConfigResolver(context, false) == null;
+        TenantConfigContext resolver = resolve(context, false);
+        return resolver != null && (resolver.auth == null || resolver.oidcConfig.token.refreshExpired);
     }
 
     private TenantConfigContext getTenantConfigFromConfigResolver(RoutingContext context, boolean create) {
@@ -104,10 +106,14 @@ public class DefaultTenantConfigResolver {
                         .orElseThrow(() -> new IllegalStateException("You must provide a tenant id"));
                 TenantConfigContext tenantContext = dynamicTenantsConfig.get(tenantId);
 
-                if (tenantContext == null && create) {
-                    synchronized (dynamicTenantsConfig) {
-                        return dynamicTenantsConfig.computeIfAbsent(tenantId,
-                                clientId -> tenantConfigBean.getTenantConfigContextFactory().apply(tenantConfig));
+                if (tenantContext == null) {
+                    if (create) {
+                        synchronized (dynamicTenantsConfig) {
+                            tenantContext = dynamicTenantsConfig.computeIfAbsent(tenantId,
+                                    clientId -> tenantConfigBean.getTenantConfigContextFactory().apply(tenantConfig));
+                        }
+                    } else {
+                        tenantContext = new TenantConfigContext(null, tenantConfig);
                     }
                 }
 

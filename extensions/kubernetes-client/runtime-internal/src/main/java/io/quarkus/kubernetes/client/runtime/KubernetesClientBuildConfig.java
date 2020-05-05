@@ -13,7 +13,7 @@ public class KubernetesClientBuildConfig {
     /**
      * Whether or not the client should trust a self signed certificate if so presented by the API server
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean trustCerts;
 
     /**

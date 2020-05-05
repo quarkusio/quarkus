@@ -477,6 +477,35 @@ public class TracerConfiguration {
 
 NOTE: The runtime profile has absolutely no effect on the bean resolution using `@IfBuildProfile` and `@UnlessBuildProfile`.
 
+=== Enabling Beans for Quarkus Build Properties
+
+Quarkus adds a capability that CDI currently does not support which is to conditionally enable a bean when a Quarkus build time property has a specific value,
+via the `@io.quarkus.arc.properties.IfBuildProperty` annotation.
+When used in conjunction with `@io.quarkus.arc.DefaultBean`, this annotation allow for the creation of different bean configurations for different build properties.
+
+The scenario we mentioned above with `Tracer` could also be implemented in the following way:
+
+[source,java]
+----
+@Dependent
+public class TracerConfiguration {
+
+    @Produces
+    @IfBuildProperty(name = "some.tracer.enabled", stringValue = "true")
+    public Tracer realTracer(Reporter reporter, Configuration configuration) {
+        return new RealTracer(reporter, configuration);
+    }
+
+    @Produces
+    @DefaultBean
+    public Tracer noopTracer() {
+        return new NoopTracer();
+    }
+}
+----
+
+NOTE: Properties set at runtime have absolutely no effect on the bean resolution using `@IfBuildProperty`.
+
 === Declaring Selected Alternatives
 
 In CDI, an alternative bean may be selected either globally for an application by means of `@Priority`, or for a bean archive using a `beans.xml` descriptor.

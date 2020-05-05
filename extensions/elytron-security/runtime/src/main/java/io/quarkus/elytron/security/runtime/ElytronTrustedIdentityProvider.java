@@ -16,8 +16,8 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
-import io.quarkus.vertx.http.runtime.security.TrustedAuthenticationRequest;
 import io.smallrye.mutiny.Uni;
 
 /**

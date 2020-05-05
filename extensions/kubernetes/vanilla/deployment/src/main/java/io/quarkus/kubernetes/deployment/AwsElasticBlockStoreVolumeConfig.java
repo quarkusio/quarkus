@@ -30,7 +30,7 @@ public class AwsElasticBlockStoreVolumeConfig {
     /**
      * Wether the volumeName is read only or not.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     boolean readOnly;
 
 }

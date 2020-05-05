@@ -145,7 +145,7 @@ public class HibernateOrmConfig {
     /**
      * Whether or not metrics are published in case the smallrye-metrics extension is present (default to false).
      */
-    @ConfigItem(name = "metrics.enabled", defaultValue = "false")
+    @ConfigItem(name = "metrics.enabled")
     public boolean metricsEnabled;
 
     /**
@@ -212,7 +212,7 @@ public class HibernateOrmConfig {
         /**
          * Whether we should stop on the first error when applying the schema.
          */
-        @ConfigItem(name = "generation.halt-on-error", defaultValue = "false")
+        @ConfigItem(name = "generation.halt-on-error")
         public boolean generationHaltOnError;
 
         /**
@@ -236,7 +236,7 @@ public class HibernateOrmConfig {
         /**
          * Whether Hibernate should quote all identifiers.
          */
-        @ConfigItem(defaultValue = "false")
+        @ConfigItem
         public boolean globallyQuotedIdentifiers;
 
         public boolean isAnyPropertySet() {
@@ -281,7 +281,7 @@ public class HibernateOrmConfig {
          * <p>
          * Setting it to true is obviously not recommended in production.
          */
-        @ConfigItem(defaultValue = "false")
+        @ConfigItem
         public boolean sql;
 
         /**
@@ -289,7 +289,7 @@ public class HibernateOrmConfig {
          * <p>
          * Setting it to true is obviously not recommended in production.
          */
-        @ConfigItem(defaultValue = "false")
+        @ConfigItem
         public boolean bindParam;
 
         /**

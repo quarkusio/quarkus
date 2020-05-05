@@ -1,16 +1,16 @@
 package io.quarkus.test.junit;
 
-import static io.quarkus.test.common.PathTestHelper.getAppClassLocation;
+import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -93,21 +93,38 @@ public class QuarkusTestExtension
             final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
 
             Class<?> requiredTestClass = context.getRequiredTestClass();
-            Path appClassLocation = getAppClassLocation(requiredTestClass);
+            testClassLocation = getTestClassesLocation(requiredTestClass);
+            final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
 
-            final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder(appClassLocation)
+            originalCl = Thread.currentThread().getContextClassLoader();
+
+            final QuarkusBootstrap.Builder runnerBuilder = QuarkusBootstrap.builder()
                     .setIsolateDeployment(true)
                     .setMode(QuarkusBootstrap.Mode.TEST);
 
-            originalCl = Thread.currentThread().getContextClassLoader();
-            testClassLocation = getTestClassesLocation(requiredTestClass);
+            if (Files.isDirectory(appClassLocation)) {
+                // this is a project that is a part of the workspace
+                runnerBuilder.setProjectRoot(Paths.get("").normalize().toAbsolutePath());
+            } else {
+                // this is an external JAR
+                runnerBuilder.setApplicationRoot(appClassLocation);
+            }
 
             if (!appClassLocation.equals(testClassLocation)) {
-                runnerBuilder.addAdditionalApplicationArchive(new AdditionalDependency(testClassLocation, false, true, true));
+                runnerBuilder.addAdditionalApplicationArchive(AdditionalDependency.test(testClassLocation));
+                // if test classes is a dir, we should also check whether test resources dir exists as a separate dir (gradle)
+                // TODO: this whole app/test path resolution logic is pretty dumb, it needs be re-worked using proper workspace discovery
+                if (Files.isDirectory(testClassLocation)) {
+                    final Path testResourcesLocation = testClassLocation.getParent().getParent().getParent()
+                            .resolve("resources").resolve("test");
+                    if (Files.exists(testResourcesLocation)) {
+                        runnerBuilder.addAdditionalApplicationArchive(AdditionalDependency.test(testResourcesLocation));
+                    }
+                }
             }
+
             CuratedApplication curatedApplication = runnerBuilder
                     .setTest(true)
-                    .setProjectRoot(Files.isDirectory(appClassLocation) ? new File("").toPath() : null)
                     .build()
                     .bootstrap();
 

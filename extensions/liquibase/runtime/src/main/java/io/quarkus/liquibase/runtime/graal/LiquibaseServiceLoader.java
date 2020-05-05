@@ -1,67 +1,46 @@
 package io.quarkus.liquibase.runtime.graal;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
-import org.jboss.logging.Logger;
+import java.util.Map;
 
 /**
  * The liquibase service class loader for native image.
  *
  * The liquibase extension has its own implementation of the class-path scanner to load the Services (Interface implementation).
- * For this we generate .txt files with the list of implementation classes at build time which are used in the native runtime.
  */
 public class LiquibaseServiceLoader {
 
-    private static final Logger LOGGER = Logger.getLogger(LiquibaseServiceLoader.class);
+    private static Map<String, List<String>> servicesImplementations;
 
     /**
-     * File prefix with the service implementation classes list. It is generated dynamically in the Liquibase Quarkus Processor.
-     */
-    private final static String SERVICES_IMPL = "META-INF/liquibase/";
-
-    /**
-     * The service implementation classes list resource name
-     *
-     * @param requiredInterface the required interface
-     * @return the resource file in the class-path
-     */
-    public static String serviceResourceFile(Class<?> requiredInterface) {
-        return SERVICES_IMPL + requiredInterface.getName() + ".txt";
-    }
-
-    /**
-     * Finds all classes for the required interface. The list of classes will be load from the txt files
-     * which are generated in the build phase.
+     * Finds all classes for the required interface.
      *
      * @param requiredInterface the required interface
      * @return the list of the classes that implements the required interface
      */
     public static List<Class<?>> findClassesImpl(Class<?> requiredInterface) {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        String resourceName = serviceResourceFile(requiredInterface);
-        LOGGER.debugf("Liquibase service resource file: %s", resourceName);
-        try (InputStream resource = classLoader.getResourceAsStream(resourceName);
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(Objects.requireNonNull(resource), StandardCharsets.UTF_8))) {
+        List<String> classesImplementationNames = servicesImplementations.get(requiredInterface.getName());
 
-            return reader.lines().map(className -> {
-                try {
-                    LOGGER.debugf("Loading liquibase class: %s", className);
-                    return Class.forName(className);
-                } catch (ClassNotFoundException ex) {
-                    throw new IllegalStateException(ex);
-                }
-            }).collect(Collectors.toList());
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
+        if (classesImplementationNames == null || classesImplementationNames.isEmpty()) {
+            return Collections.emptyList();
         }
 
+        List<Class<?>> classImplementations = new ArrayList<>();
+
+        for (String classImplementation : classesImplementationNames) {
+            try {
+                classImplementations.add(Class.forName(classImplementation));
+            } catch (ClassNotFoundException exception) {
+                throw new IllegalStateException(exception);
+            }
+        }
+
+        return classImplementations;
+    }
+
+    public static void setServicesImplementations(Map<String, List<String>> servicesImplementations) {
+        LiquibaseServiceLoader.servicesImplementations = servicesImplementations;
     }
 }

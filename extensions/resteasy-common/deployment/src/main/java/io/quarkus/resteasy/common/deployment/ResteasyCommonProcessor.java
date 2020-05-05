@@ -136,7 +136,8 @@ public class ResteasyCommonProcessor {
     JaxrsProvidersToRegisterBuildItem setupProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             CombinedIndexBuildItem indexBuildItem,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            List<ResteasyJaxrsProviderBuildItem> contributedProviderBuildItems, Capabilities capabilities) throws Exception {
+            List<ResteasyJaxrsProviderBuildItem> contributedProviderBuildItems,
+            List<RestClientBuildItem> restClients, Capabilities capabilities) throws Exception {
 
         Set<String> contributedProviders = new HashSet<>();
         for (ResteasyJaxrsProviderBuildItem contributedProviderBuildItem : contributedProviderBuildItems) {
@@ -197,8 +198,8 @@ public class ResteasyCommonProcessor {
         IndexView beansIndex = beanArchiveIndexBuildItem.getIndex();
 
         // find the providers declared in our services
-        boolean useBuiltinProviders = collectDeclaredProviders(providersToRegister, categorizedReaders, categorizedWriters,
-                categorizedContextResolvers, index, beansIndex);
+        boolean useBuiltinProviders = collectDeclaredProviders(restClients, providersToRegister, categorizedReaders,
+                categorizedWriters, categorizedContextResolvers, index, beansIndex);
 
         if (useBuiltinProviders) {
             providersToRegister = new HashSet<>(contributedProviders);
@@ -398,23 +399,41 @@ public class ResteasyCommonProcessor {
         }
     }
 
-    private static boolean collectDeclaredProviders(Set<String> providersToRegister,
+    private static boolean collectDeclaredProviders(List<RestClientBuildItem> restClients,
+            Set<String> providersToRegister,
             MediaTypeMap<String> categorizedReaders, MediaTypeMap<String> categorizedWriters,
             MediaTypeMap<String> categorizedContextResolvers, IndexView... indexes) {
+        Set<String> restClientNames = restClients.stream()
+                .map(RestClientBuildItem::getInterfaceName)
+                .collect(Collectors.toSet());
 
         for (IndexView index : indexes) {
             for (ProviderDiscoverer providerDiscoverer : PROVIDER_DISCOVERERS) {
                 Collection<AnnotationInstance> getMethods = index.getAnnotations(providerDiscoverer.getMethodAnnotation());
                 for (AnnotationInstance getMethod : getMethods) {
                     MethodInfo methodTarget = getMethod.target().asMethod();
-                    if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedReaders,
-                            methodTarget, ResteasyDotNames.CONSUMES, providerDiscoverer.noConsumesDefaultsToAll())) {
-                        return true;
+                    if (restClientNames.contains(methodTarget.declaringClass().name().toString())) {
+                        // when dealing with a REST client, we need to collect @Consumes as writers and @Produces as readers
+                        if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedWriters,
+                                methodTarget, ResteasyDotNames.CONSUMES, providerDiscoverer.noConsumesDefaultsToAll())) {
+                            return true;
+                        }
+                        if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedReaders,
+                                methodTarget, ResteasyDotNames.PRODUCES, providerDiscoverer.noProducesDefaultsToAll())) {
+                            return true;
+                        }
+                    } else {
+                        // for JAX-RS resources, we do the opposite
+                        if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedReaders,
+                                methodTarget, ResteasyDotNames.CONSUMES, providerDiscoverer.noConsumesDefaultsToAll())) {
+                            return true;
+                        }
+                        if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedWriters,
+                                methodTarget, ResteasyDotNames.PRODUCES, providerDiscoverer.noProducesDefaultsToAll())) {
+                            return true;
+                        }
                     }
-                    if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedWriters,
-                            methodTarget, ResteasyDotNames.PRODUCES, providerDiscoverer.noProducesDefaultsToAll())) {
-                        return true;
-                    }
+
                     if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister,
                             categorizedContextResolvers, methodTarget, ResteasyDotNames.CONSUMES,
                             providerDiscoverer.noConsumesDefaultsToAll())) {

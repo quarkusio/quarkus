@@ -6,7 +6,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Singleton;
 
@@ -31,7 +33,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
-import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -41,7 +42,6 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildIt
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
@@ -117,27 +117,22 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    void collectScheduledMethods(
-            SchedulerConfig config,
-            BeanArchiveIndexBuildItem beanArchives,
-            BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+    void collectScheduledMethods(BeanArchiveIndexBuildItem beanArchives, BeanRegistrationPhaseBuildItem beanRegistrationPhase,
             BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods,
-            BuildProducer<BeanConfiguratorBuildItem> beans) {
+            BuildProducer<BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem> beans) {
 
         AnnotationStore annotationStore = beanRegistrationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
 
         // We need to collect all business methods annotated with @Scheduled first
         for (BeanInfo bean : beanRegistrationPhase.getContext().beans().classBeans()) {
-            collectScheduledMethods(config, beanArchives.getIndex(), annotationStore, bean,
+            collectScheduledMethods(beanArchives.getIndex(), annotationStore, bean,
                     bean.getTarget().get().asClass(),
-                    scheduledBusinessMethods, beanRegistrationPhase.getContext());
+                    scheduledBusinessMethods);
         }
     }
 
-    private void collectScheduledMethods(SchedulerConfig config, IndexView index, AnnotationStore annotationStore,
-            BeanInfo bean, ClassInfo beanClass,
-            BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods,
-            BeanRegistrar.RegistrationContext context) {
+    private void collectScheduledMethods(IndexView index, AnnotationStore annotationStore, BeanInfo bean,
+            ClassInfo beanClass, BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
         for (MethodInfo method : beanClass.methods()) {
             List<AnnotationInstance> schedules = null;
@@ -163,8 +158,7 @@ public class SchedulerProcessor {
         if (superClassName != null) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
-                collectScheduledMethods(config, index, annotationStore, bean, superClass, scheduledBusinessMethods,
-                        context);
+                collectScheduledMethods(index, annotationStore, bean, superClass, scheduledBusinessMethods);
             }
         }
     }
@@ -173,6 +167,7 @@ public class SchedulerProcessor {
     void validateScheduledBusinessMethods(SchedulerConfig config, List<ScheduledBusinessMethodItem> scheduledMethods,
             ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors) {
         List<Throwable> errors = new ArrayList<>();
+        Map<String, AnnotationInstance> encounteredIdentities = new HashMap<>();
 
         for (ScheduledBusinessMethodItem scheduledMethod : scheduledMethods) {
             MethodInfo method = scheduledMethod.getMethod();
@@ -193,7 +188,7 @@ public class SchedulerProcessor {
             // Validate cron() and every() expressions
             CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(config.cronType));
             for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
-                Throwable error = validateScheduled(parser, scheduled);
+                Throwable error = validateScheduled(parser, scheduled, encounteredIdentities);
                 if (error != null) {
                     errors.add(error);
                 }
@@ -302,7 +297,8 @@ public class SchedulerProcessor {
         return generatedName.replace('/', '.');
     }
 
-    private Throwable validateScheduled(CronParser parser, AnnotationInstance schedule) {
+    private Throwable validateScheduled(CronParser parser, AnnotationInstance schedule,
+            Map<String, AnnotationInstance> encounteredIdentities) {
         AnnotationValue cronValue = schedule.value("cron");
         if (cronValue != null && !cronValue.asString().trim().isEmpty()) {
             String cron = cronValue.asString().trim();
@@ -350,6 +346,20 @@ public class SchedulerProcessor {
                     return new IllegalStateException("Invalid delayed() expression on: " + schedule, e);
                 }
             }
+        }
+
+        AnnotationValue identityValue = schedule.value("identity");
+        if (identityValue != null) {
+            String identity = identityValue.asString().trim();
+            AnnotationInstance previousInstanceWithSameIdentity = encounteredIdentities.get(identity);
+            if (previousInstanceWithSameIdentity != null) {
+                String message = String.format("The identity: \"%s\" on: %s is not unique and it has already bean used by : %s",
+                        identity, schedule, previousInstanceWithSameIdentity);
+                return new IllegalStateException(message);
+            } else {
+                encounteredIdentities.put(identity, schedule);
+            }
+
         }
         return null;
     }

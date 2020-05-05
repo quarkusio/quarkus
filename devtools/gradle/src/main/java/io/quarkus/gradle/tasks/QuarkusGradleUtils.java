@@ -9,18 +9,22 @@ import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.internal.AbstractTask;
+import org.gradle.api.plugins.Convention;
+import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
 import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.util.IoUtils;
 
 public class QuarkusGradleUtils {
 
     private static final String ERROR_COLLECTING_PROJECT_CLASSES = "Failed to collect project's classes in a temporary dir";
 
-    public static Path serializeAppModel(final AppModel appModel, AbstractTask context) throws IOException {
+    public static Path serializeAppModel(final AppModel appModel, Task context) throws IOException {
         final Path serializedModel = context.getTemporaryDir().toPath().resolve("quarkus-app-model.dat");
         try (ObjectOutputStream out = new ObjectOutputStream(Files.newOutputStream(serializedModel))) {
             out.writeObject(appModel);
@@ -28,7 +32,30 @@ public class QuarkusGradleUtils {
         return serializedModel;
     }
 
-    public static String getClassesDir(SourceSet sourceSet, AbstractTask context) {
+    public static PathsCollection getOutputPaths(Project project) {
+        final Convention convention = project.getConvention();
+        JavaPluginConvention javaConvention = convention.findPlugin(JavaPluginConvention.class);
+        if (javaConvention == null) {
+            throw new IllegalArgumentException("The project does not include the Java plugin");
+        }
+        final SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        final PathsCollection.Builder builder = PathsCollection.builder();
+        mainSourceSet.getOutput().getClassesDirs().filter(f -> f.exists()).forEach(f -> builder.add(f.toPath()));
+        final File resourcesDir = mainSourceSet.getOutput().getResourcesDir();
+        if (resourcesDir != null && resourcesDir.exists()) {
+            final Path p = resourcesDir.toPath();
+            if (!builder.contains(p)) {
+                builder.add(p);
+            }
+        }
+        return builder.build();
+    }
+
+    public static String getClassesDir(SourceSet sourceSet, File tmpDir) {
+        return getClassesDir(sourceSet, tmpDir, true);
+    }
+
+    public static String getClassesDir(SourceSet sourceSet, File tmpDir, boolean populated) {
         FileCollection classesDirs = sourceSet.getOutput().getClassesDirs();
         Set<File> classDirFiles = classesDirs.getFiles();
         if (classDirFiles.size() == 1) {
@@ -52,7 +79,10 @@ public class QuarkusGradleUtils {
                         //there does not seem to be any sane way of dealing with multiple output dirs, as there does not seem
                         //to be a way to map them. We will need to address this at some point, but for now we just stick them
                         //all in a temp dir
-                        final Path tmpClassesDir = context.getTemporaryDir().toPath().resolve("quarkus-app-classes");
+                        final Path tmpClassesDir = tmpDir.toPath().resolve("quarkus-app-classes");
+                        if (!populated) {
+                            return tmpClassesDir.toString();
+                        }
                         if (Files.exists(tmpClassesDir)) {
                             IoUtils.recursiveDelete(tmpClassesDir);
                         }

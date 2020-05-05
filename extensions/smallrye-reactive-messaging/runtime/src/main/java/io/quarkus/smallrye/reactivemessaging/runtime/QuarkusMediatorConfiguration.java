@@ -44,6 +44,12 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     private Class<? extends Invoker> invokerClass;
 
+    private boolean blocking;
+
+    private boolean blockingExecutionOrdered;
+
+    private String workerPoolName;
+
     public String getBeanId() {
         return beanId;
     }
@@ -209,5 +215,32 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
         } else {
             return broadcastValue;
         }
+    }
+
+    @Override
+    public boolean isBlocking() {
+        return blocking;
+    }
+
+    @Override
+    public String getWorkerPoolName() {
+        return workerPoolName;
+    }
+
+    @Override
+    public boolean isBlockingExecutionOrdered() {
+        return blockingExecutionOrdered;
+    }
+
+    public void setBlocking(boolean blocking) {
+        this.blocking = blocking;
+    }
+
+    public void setBlockingExecutionOrdered(boolean blockingExecutionOrdered) {
+        this.blockingExecutionOrdered = blockingExecutionOrdered;
+    }
+
+    public void setWorkerPoolName(String workerPoolName) {
+        this.workerPoolName = workerPoolName;
     }
 }

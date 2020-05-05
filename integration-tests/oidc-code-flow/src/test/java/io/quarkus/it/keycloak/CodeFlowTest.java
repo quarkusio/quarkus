@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -8,6 +9,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -96,18 +100,105 @@ public class CodeFlowTest {
             assertNotNull(sessionCookie);
             assertEquals("/", sessionCookie.getPath());
 
-            Thread.sleep(5000);
             webClient.getOptions().setRedirectEnabled(false);
-            WebResponse webResponse = webClient
-                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
-            assertEquals(302, webResponse.getStatusCode());
-            assertNull(getSessionCookie(webClient));
+            webClient.getCache().clear();
+
+            await().atLeast(6, TimeUnit.SECONDS)
+                    .pollDelay(Duration.ofSeconds(6))
+                    .until(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            WebResponse webResponse = webClient
+                                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/index.html").toURL()));
+                            assertEquals(302, webResponse.getStatusCode());
+                            assertNull(getSessionCookie(webClient));
+                            return true;
+                        }
+                    });
 
             webClient.getOptions().setRedirectEnabled(true);
             page = webClient.getPage("http://localhost:8081/index.html");
 
             assertEquals("Log in to quarkus", page.getTitleText());
             webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testRPInitiatedLogout() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant-logout");
+            assertEquals("Log in to logout-realm", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            page = loginForm.getInputByName("login").click();
+            assertTrue(page.asText().contains("Tenant Logout"));
+            assertNotNull(getSessionCookie(webClient));
+
+            page = webClient.getPage("http://localhost:8081/tenant-logout/logout");
+            assertTrue(page.asText().contains("You were logged out"));
+            assertNull(getSessionCookie(webClient));
+
+            page = webClient.getPage("http://localhost:8081/tenant-logout");
+            assertEquals("Log in to logout-realm", page.getTitleText());
+            loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            page = loginForm.getInputByName("login").click();
+            assertTrue(page.asText().contains("Tenant Logout"));
+
+            Cookie sessionCookie = getSessionCookie(webClient);
+            assertNotNull(sessionCookie);
+            String idToken = getIdToken(sessionCookie);
+
+            //wait now so that we reach the refresh timeout
+            await().atMost(10, TimeUnit.SECONDS)
+                    .pollInterval(Duration.ofSeconds(1))
+                    .until(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            webClient.getOptions().setRedirectEnabled(false);
+                            WebResponse webResponse = webClient
+                                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/tenant-logout").toURL()));
+                            // Should not redirect to OP but silently refresh token
+                            Cookie newSessionCookie = getSessionCookie(webClient);
+                            assertNotNull(newSessionCookie);
+                            return !idToken.equals(getIdToken(newSessionCookie));
+                        }
+                    });
+
+            // local session refreshed and still valid
+            page = webClient.getPage("http://localhost:8081/tenant-logout");
+            assertTrue(page.asText().contains("Tenant Logout"));
+            assertNotNull(getSessionCookie(webClient));
+
+            //wait now so that we reach the refresh timeout
+            await().atMost(20, TimeUnit.SECONDS)
+                    .pollInterval(Duration.ofSeconds(1))
+                    .until(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            webClient.getOptions().setRedirectEnabled(false);
+                            WebResponse webResponse = webClient
+                                    .loadWebResponse(new WebRequest(URI.create("http://localhost:8081/tenant-logout").toURL()));
+                            // Should redirect to login page given that session is now expired at the OP
+                            int statusCode = webResponse.getStatusCode();
+
+                            if (statusCode == 302) {
+                                assertNull(getSessionCookie(webClient));
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    });
+
+            // session invalidated because it ended at the OP, should redirect to login page at the OP
+            webClient.getOptions().setRedirectEnabled(true);
+            page = webClient.getPage("http://localhost:8081/tenant-logout");
+            assertNull(getSessionCookie(webClient));
+            assertEquals("Log in to logout-realm", page.getTitleText());
         }
     }
 
@@ -159,19 +250,33 @@ public class CodeFlowTest {
     @Test
     public void testIdTokenInjectionJwtMethod() throws IOException, InterruptedException {
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/web-app/callback-jwt-before-redirect");
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/web-app/callback-jwt-before-redirect").toURL()));
             assertNotNull(getStateCookieStateParam(webClient));
             assertNull(getStateCookieSavedPath(webClient));
 
+            HtmlPage page = webClient.getPage(webResponse.getResponseHeaderValue("location"));
             assertEquals("Log in to quarkus", page.getTitleText());
-
             HtmlForm loginForm = page.getForms().get(0);
-
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
 
-            page = loginForm.getInputByName("login").click();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
 
+            // This is a redirect from the OIDC server to the endpoint
+            URI endpointLocationUri = URI.create(webResponse.getResponseHeaderValue("location"));
+            assertNotNull(endpointLocationUri.getRawQuery());
+            webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+
+            // This is a redirect from quarkus-oidc which drops the query parameters
+            URI endpointLocationUri2 = URI.create(webResponse.getResponseHeaderValue("location"));
+            assertNull(endpointLocationUri2.getRawQuery());
+
+            page = webClient.getPage(endpointLocationUri2.toString());
             assertEquals("callback-jwt:alice", page.getBody().asText());
             webClient.getCookieManager().clearCookies();
         }
@@ -389,5 +494,9 @@ public class CodeFlowTest {
 
     private Cookie getSessionCookie(WebClient webClient) {
         return webClient.getCookieManager().getCookie("q_session");
+    }
+
+    private String getIdToken(Cookie sessionCookie) {
+        return sessionCookie.getValue().split("___")[0];
     }
 }

@@ -13,10 +13,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.security.test.utils.TestIdentityController;
+import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.http.security.PathHandler;
-import io.quarkus.vertx.http.security.TestIdentityController;
-import io.quarkus.vertx.http.security.TestIdentityProvider;
 
 public class CoresSecurityTestCase {
 

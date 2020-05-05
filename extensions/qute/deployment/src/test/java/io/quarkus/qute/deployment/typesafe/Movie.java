@@ -26,4 +26,8 @@ public class Movie {
         return 11l;
     }
 
+    public String findNames(long limit, String... names) {
+        return "ok";
+    }
+
 }

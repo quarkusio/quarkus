@@ -12,7 +12,6 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
 
 import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
@@ -98,7 +97,7 @@ final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator_Alp
     @Substitute
     public SSLEngine wrapSslEngine(SSLEngine engine, ByteBufAllocator alloc,
             JdkApplicationProtocolNegotiator applicationNegotiator, boolean isServer) {
-        return (SSLEngine) (Object) new Target_io_netty_handler_ssl_Java9SslEngine(engine, applicationNegotiator, isServer);
+        return (SSLEngine) (Object) new Target_io_netty_handler_ssl_JdkAlpnSslEngine(engine, applicationNegotiator, isServer);
     }
 
 }
@@ -140,10 +139,10 @@ final class Target_io_netty_handler_ssl_JettyAlpnSslEngine {
     }
 }
 
-@TargetClass(className = "io.netty.handler.ssl.Java9SslEngine", onlyWith = JDK11OrLater.class)
-final class Target_io_netty_handler_ssl_Java9SslEngine {
+@TargetClass(className = "io.netty.handler.ssl.JdkAlpnSslEngine", onlyWith = JDK11OrLater.class)
+final class Target_io_netty_handler_ssl_JdkAlpnSslEngine {
     @Alias
-    Target_io_netty_handler_ssl_Java9SslEngine(final SSLEngine engine,
+    Target_io_netty_handler_ssl_JdkAlpnSslEngine(final SSLEngine engine,
             final JdkApplicationProtocolNegotiator applicationNegotiator, final boolean isServer) {
 
     }
@@ -341,8 +340,9 @@ final class Holder_io_netty_util_concurrent_ScheduledFutureTask {
 
 @TargetClass(className = "io.netty.util.concurrent.ScheduledFutureTask")
 final class Target_io_netty_util_concurrent_ScheduledFutureTask {
-    @Delete
-    public static long START_TIME = 0;
+
+    // The START_TIME field is kept but not used.
+    // All the accesses to it have been replaced with Holder_io_netty_util_concurrent_ScheduledFutureTask
 
     @Substitute
     static long initialNanoTime() {

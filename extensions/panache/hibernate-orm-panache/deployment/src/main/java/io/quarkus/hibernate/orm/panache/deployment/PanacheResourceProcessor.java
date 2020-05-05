@@ -6,8 +6,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
+import javax.persistence.Id;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 
@@ -18,6 +20,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -38,6 +42,8 @@ import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
+import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
+import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
 public final class PanacheResourceProcessor {
@@ -51,7 +57,7 @@ public final class PanacheResourceProcessor {
 
     private static final DotName DOTNAME_NAMED_QUERY = DotName.createSimple(NamedQuery.class.getName());
     private static final DotName DOTNAME_NAMED_QUERIES = DotName.createSimple(NamedQueries.class.getName());
-    private static final DotName DOTNAME_OBJECT = DotName.createSimple(Object.class.getName());
+    private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
@@ -76,7 +82,11 @@ public final class PanacheResourceProcessor {
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             HibernateEnhancersRegisteredBuildItem hibernateMarker,
             BuildProducer<PanacheEntityClassesBuildItem> entityClasses,
-            BuildProducer<NamedQueryEntityClassBuildStep> namedQueries) throws Exception {
+            BuildProducer<NamedQueryEntityClassBuildStep> namedQueries,
+            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) throws Exception {
+
+        List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
+                .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
         PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
@@ -107,7 +117,7 @@ public final class PanacheResourceProcessor {
             namedQueries.produce(new NamedQueryEntityClassBuildStep(parameterType.name().toString(), typeNamedQueries));
         }
 
-        PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex());
+        PanacheJpaEntityEnhancer modelEnhancer = new PanacheJpaEntityEnhancer(index.getIndex(), methodCustomizers);
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheEntity if we ask for subtypes of PanacheEntityBase
@@ -148,6 +158,23 @@ public final class PanacheResourceProcessor {
     }
 
     @BuildStep
+    ValidationPhaseBuildItem.ValidationErrorBuildItem validate(ValidationPhaseBuildItem validationPhase,
+            CombinedIndexBuildItem index) throws BuildException {
+        // we verify that no ID fields are defined (via @Id) when extending PanacheEntity
+        for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(DOTNAME_ID)) {
+            ClassInfo info = io.quarkus.panache.common.deployment.JandexUtil.getEnclosingClass(annotationInstance);
+            if (io.quarkus.panache.common.deployment.JandexUtil.isSubclassOf(index.getIndex(), info, DOTNAME_PANACHE_ENTITY)) {
+                BuildException be = new BuildException("You provide a JPA identifier via @Id inside '" + info.name() +
+                        "' but one is already provided by PanacheEntity, " +
+                        "your class should extend PanacheEntityBase instead, or use the id provided by PanacheEntity",
+                        Collections.emptyList());
+                return new ValidationPhaseBuildItem.ValidationErrorBuildItem(be);
+            }
+        }
+        return null;
+    }
+
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void buildNamedQueryMap(List<NamedQueryEntityClassBuildStep> namedQueryEntityClasses,
             PanacheHibernateRecorder panacheHibernateRecorder) {
@@ -184,7 +211,7 @@ public final class PanacheResourceProcessor {
         }
 
         // climb up the hierarchy of types
-        if (!classInfo.superClassType().name().equals(DOTNAME_OBJECT)) {
+        if (!classInfo.superClassType().name().equals(io.quarkus.panache.common.deployment.JandexUtil.DOTNAME_OBJECT)) {
             Type superType = classInfo.superClassType();
             ClassInfo superClass = index.getIndex().getClassByName(superType.name());
             lookupNamedQueries(index, superClass.name(), namedQueries);

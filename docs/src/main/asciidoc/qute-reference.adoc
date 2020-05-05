@@ -222,6 +222,8 @@ This could be useful to access data for which the key is overriden:
 |`{item.isActive ? item.name : 'Inactive item'}` outputs the value of `item.name` if `item.isActive` resolves to `true`.
 |===
 
+TIP: The condition in a ternary operator evaluates to `true` if the value is not considered `falsy` as described in the <<if_section>>.
+
 NOTE: In fact, the operators are implemented as "virtual methods" that consume one parameter and can be used with infix notation, i.e. `{person.name or 'John'}` is translated to `{person.name.or('John')}`.
 
 ===== Character Escapes
@@ -374,8 +376,9 @@ The output will be:
 [[if_section]]
 ===== If Section
 
-A basic control flow section.
-The simplest possible version accepts a single parameter and renders the content if it's evaluated to `true` (or `Boolean.TRUE`).
+The `if` section represents a basic control flow section.
+The simplest possible version accepts a single parameter and renders the content if the condition is evaluated to `true`.
+A condition without an operator evaluates to `true` if the value is not considered `falsy`, i.e. if the value is not `null`, `false`, an empty collection, an empty map, an empty array, an empty string/char sequence or a number equal to zero.
 
 [source]
 ----
@@ -384,7 +387,7 @@ The simplest possible version accepts a single parameter and renders the content
 {/if}
 ----
 
-You can also use the following operators:
+You can also use the following operators in a condition:
 
 |===
 |Operator |Aliases |Precedence (higher wins)
@@ -456,7 +459,7 @@ Precedence rules can be overridden by parentheses.
 ----
 
 
-You can add any number of `else` blocks:
+You can also add any number of `else` blocks:
 
 [source]
 ----
@@ -486,29 +489,39 @@ This could be useful to simplify the template structure:
 <1> The `name` will be resolved against the `item.parent`.
 <2> The `description` will be also resolved against the `item.parent`.
 
-It's also possible to specify an alias for the context object:
-
-[source,html]
-----
-{#with item.parent as myParent} <1>
-  <h1>{myParent.name}</h1>
-{/with}
-----
-<1> `myParent` is the alias that can be used inside the tag.
-
 This section might also come in handy when we'd like to avoid multiple expensive invocations:
 
 [source,html]
 ----
-{#with item.callExpensiveLogicToGetTheValue(true) as it}
-  {#if it is "fun"} <1>
+{#with item.callExpensiveLogicToGetTheValue(1,'foo',bazinga)}
+  {#if this is "fun"} <1>
     <h1>Yay!</h1>
   {#else}
-    <h1>{it} is not fun at all!</h1>
+    <h1>{this} is not fun at all!</h1>
   {/if}
 {/with}
 ----
-<1> `it` is the result of `item.callExpensiveLogicToGetTheValue(1,'foo',bazinga)`. The method is only invoked once even though the result may be used in multiple expressions.
+<1> `this` is the result of `item.callExpensiveLogicToGetTheValue(1,'foo',bazinga)`. The method is only invoked once even though the result may be used in multiple expressions.
+
+===== Let/Set Section
+
+This section allows you to define named local variables:
+[source,html]
+----
+{#let myParent=order.item.parent}
+  <h1>{myParent.name}</h1>
+{/let}
+----
+
+The section tag is also registered under the `set` alias:
+
+[source,html]
+----
+{#set myParent=item.parent price=item.price}
+  <h1>{myParent.name}</h1>
+  <p>Price: {price}
+{/set}
+----
 
 
 [[include_helper]]
@@ -553,7 +566,7 @@ NOTE: Section blocks can also define an optional end tag - `{/title}`.
 ===== User-defined Tags
 
 User-defined tags can be used to include a template and optionally pass some parameters.
-Let's suppose we have a template called `item.html`:
+Let's suppose we have a template called `itemDetail.html`:
 
 [source]
 ----
@@ -564,30 +577,30 @@ Let's suppose we have a template called `item.html`:
 <1> `showImage` is a named parameter.
 <2> `it` is a special key that is replaced with the first unnamed param of the tag.
 
-Now if we register this template under the name `item` and if we add a `UserTagSectionHelper` to the engine:
+Now if we register this template under the name `itemDetail.html` and if we add a `UserTagSectionHelper` to the engine:
 
 [source,java]
 ----
 Engine engine = Engine.builder()
-                   .addSectionHelper(new UserTagSectionHelper.Factory("item"))
+                   .addSectionHelper(new UserTagSectionHelper.Factory("itemDetail","itemDetail.html"))
                    .build();
 ----
 
-NOTE: In Quarkus, all files from the `src/main/resources/templates/tags` are registered and monitored automatically.
+NOTE: In Quarkus, all files from the `src/main/resources/templates/tags` are registered and monitored automatically!
 
 We can include the tag like this:
 
 [source,html]
 ----
 <ul>
-{#each items}
+{#for item in items}
   <li>
-  {#item this showImage=true /} <1>
+  {#itemDetail item showImage=true /} <1>
   </li>
-{/each}
+{/for}
 </ul>
 ----
-<1> `this` is resolved to an iteration element and can be referenced using the `it` key in the tag template.
+<1> `item` is resolved to an iteration element and can be referenced using the `it` key in the tag template.
 
 === Engine Configuration
 
@@ -611,7 +624,7 @@ If you want to use Qute in your Quarkus application add the following dependency
 </dependency>
 ----
 
-In Quarkus, a preconfigured engine instance is provided and available for injection - a bean with scope `@Singleton`, bean type `io.quarkus.qute.Engine` and qualifier `@Default` is registered automatically.
+In Quarkus, a preconfigured engine instance is provided and available for injection - a bean with scope `@ApplicationScoped`, bean type `io.quarkus.qute.Engine` and qualifier `@Default` is registered automatically.
 Moreover, all templates located in the `src/main/resources/templates` directory are validated and can be easily injected. 
 
 [source,java]
@@ -635,6 +648,29 @@ class MyBean {
 <1> If there is no `ResourcePath` qualifier provided, the field name is used to locate the template. In this particular case, the container will attempt to locate a template with path `src/main/resources/templates/items.html`.
 <2> The `ResourcePath` qualifier instructs the container to inject a template from a path relative from `src/main/resources/templates`. In this case, the full path is `src/main/resources/templates/detail/items2_v1.html`. 
 <3> Inject the configured `Engine` instance.
+
+=== Template Variants
+
+Sometimes it's useful to render a specific variant of the template based on the content negotiation.
+This can be done by setting a special attribute via `TemplateInstance.setAttribute()`:
+
+[source,java]
+----
+class MyService {
+
+    @Inject
+    Template items; <1>
+    
+    @Inject
+    ItemManager manager;
+
+    String renderItems() {
+       return items.data("items",manager.findItems()).setAttribute(TemplateInstance.SELECTED_VARIANT, new Variant(Locale.getDefault(),"text/html","UTF-8")).render();
+    }
+}
+----
+
+NOTE: When using `quarkus-resteasy-qute` the content negotiation is performed automatically. See <<resteasy_integration>>.
 
 === Injecting Beans Directly In Templates
 
@@ -872,6 +908,7 @@ class Item {
 ----
 <1> The generated value resolver knows how to invoke the `BigDecimal.setScale()` method.
 
+[[resteasy_integration]]
 === RESTEasy Integration
 
 If you want to use Qute in your JAX-RS application, you'll need to add the `quarkus-resteasy-qute` extension first.
@@ -918,10 +955,9 @@ public class HelloResource {
 <2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
 <3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
 
-==== Variant Templates
 
-Sometimes it could be useful to render a specific variant of the template based on the content negotiation.
-`VariantTemplate` is a perfect match for this use case:
+The content negotiation is performed automatically.
+The resulting output depends on the `Accept` header received from the client.
 
 [source,java]
 ----
@@ -929,17 +965,17 @@ Sometimes it could be useful to render a specific variant of the template based 
 class DetailResource {
 
     @Inject
-    VariantTemplate item; <1>
+    Template item; <1>
 
     @GET
     @Produces({ MediaType.TEXT_HTML, MediaType.TEXT_PLAIN })
-    public Rendering item() {
-        return item.data(new Item("Alpha", 1000)); <2>
+    public TemplateInstance item() {
+        return item.data("myItem", new Item("Alpha", 1000)); <2>
     }
 }
 ----
 <1> Inject a variant template with base path derived from the injected field - `src/main/resources/templates/item`.
-<2> The resulting output depends on the `Accept` header received from the client. For `text/plain` the `src/main/resources/templates/item.txt` template is used. For `text/html` the `META-INF/resources/templates/item.html` template is used.
+<2> For `text/plain` the `src/main/resources/templates/item.txt` template is used. For `text/html` the `META-INF/resources/templates/item.html` template is used.
 
 
 === Development Mode

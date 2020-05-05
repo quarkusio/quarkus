@@ -11,10 +11,11 @@ import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 
 import io.quarkus.oidc.OIDCException;
-import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
-import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials;
-import io.quarkus.oidc.runtime.OidcTenantConfig.Credentials.Secret;
-import io.quarkus.oidc.runtime.OidcTenantConfig.Tls.Verification;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.OidcTenantConfig.Credentials;
+import io.quarkus.oidc.OidcTenantConfig.Credentials.Secret;
+import io.quarkus.oidc.OidcTenantConfig.Tls.Verification;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.core.AsyncResult;
@@ -82,9 +83,9 @@ public class OidcRecorder {
             options.setValidateIssuer(false);
         }
 
-        if (oidcConfig.getToken().getExpirationGrace().isPresent()) {
+        if (oidcConfig.getToken().getLifespanGrace().isPresent()) {
             JWTOptions jwtOptions = new JWTOptions();
-            jwtOptions.setLeeway(oidcConfig.getToken().getExpirationGrace().get());
+            jwtOptions.setLeeway(oidcConfig.getToken().getLifespanGrace().get());
             options.setJWTOptions(jwtOptions);
         }
 
@@ -165,6 +166,29 @@ public class OidcRecorder {
                 });
 
                 auth = cf.join();
+
+                if (!ApplicationType.WEB_APP.equals(oidcConfig.applicationType)) {
+                    if (oidcConfig.token.refreshExpired) {
+                        throw new RuntimeException(
+                                "The 'token.refresh-expired' property can only be enabled for " + ApplicationType.WEB_APP
+                                        + " application types");
+                    }
+                    if (oidcConfig.logout.path.isPresent()) {
+                        throw new RuntimeException(
+                                "The 'logout.path' property can only be enabled for " + ApplicationType.WEB_APP
+                                        + " application types");
+                    }
+                }
+
+                String endSessionEndpoint = OAuth2AuthProviderImpl.class.cast(auth).getConfig().getLogoutPath();
+
+                if (oidcConfig.logout.path.isPresent()) {
+                    if (!oidcConfig.endSessionPath.isPresent() && endSessionEndpoint == null) {
+                        throw new RuntimeException(
+                                "The application supports RP-Initiated Logout but the OpenID Provider does not advertise the end_session_endpoint");
+                    }
+                }
+
                 break;
             } catch (Throwable throwable) {
                 while (throwable instanceof CompletionException && throwable.getCause() != null) {

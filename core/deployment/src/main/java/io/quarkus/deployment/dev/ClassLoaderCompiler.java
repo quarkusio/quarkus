@@ -1,5 +1,6 @@
 package io.quarkus.deployment.dev;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -28,10 +29,10 @@ import io.quarkus.bootstrap.model.AppDependency;
 
 /**
  * Class that handles compilation of source files
- * 
+ *
  * @author Stuart Douglas
  */
-public class ClassLoaderCompiler {
+public class ClassLoaderCompiler implements Closeable {
 
     private static final Logger log = Logger.getLogger(ClassLoaderCompiler.class);
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile(" ");
@@ -52,7 +53,9 @@ public class ClassLoaderCompiler {
 
         Set<URL> urls = new HashSet<>();
         for (AppDependency i : application.getAppModel().getUserDependencies()) {
-            urls.add(i.getArtifact().getPath().toUri().toURL());
+            for (Path p : i.getArtifact().getPaths()) {
+                urls.add(p.toUri().toURL());
+            }
         }
         urls.addAll(context.getClassPath());
 
@@ -187,5 +190,12 @@ public class ClassLoaderCompiler {
             }
         }
         return null;
+    }
+
+    @Override
+    public void close() throws IOException {
+        for (CompilationProvider i : compilationProviders) {
+            i.close();
+        }
     }
 }

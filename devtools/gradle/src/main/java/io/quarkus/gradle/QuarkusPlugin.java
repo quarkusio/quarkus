@@ -1,15 +1,17 @@
 package io.quarkus.gradle;
 
 import java.util.Collections;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.UnknownTaskException;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.plugins.BasePlugin;
@@ -26,6 +28,8 @@ import io.quarkus.gradle.tasks.QuarkusBuild;
 import io.quarkus.gradle.tasks.QuarkusDev;
 import io.quarkus.gradle.tasks.QuarkusGenerateConfig;
 import io.quarkus.gradle.tasks.QuarkusListExtensions;
+import io.quarkus.gradle.tasks.QuarkusRemoteDev;
+import io.quarkus.gradle.tasks.QuarkusRemoveExtension;
 import io.quarkus.gradle.tasks.QuarkusTestConfig;
 import io.quarkus.gradle.tasks.QuarkusTestNative;
 
@@ -37,13 +41,16 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String EXTENSION_NAME = "quarkus";
     public static final String LIST_EXTENSIONS_TASK_NAME = "listExtensions";
     public static final String ADD_EXTENSION_TASK_NAME = "addExtension";
+    public static final String REMOVE_EXTENSION_TASK_NAME = "removeExtension";
     public static final String QUARKUS_BUILD_TASK_NAME = "quarkusBuild";
     public static final String GENERATE_CONFIG_TASK_NAME = "generateConfig";
     public static final String QUARKUS_DEV_TASK_NAME = "quarkusDev";
+    public static final String QUARKUS_REMOTE_DEV_TASK_NAME = "quarkusRemoteDev";
 
     @Deprecated
     public static final String BUILD_NATIVE_TASK_NAME = "buildNative";
     public static final String TEST_NATIVE_TASK_NAME = "testNative";
+    @Deprecated
     public static final String QUARKUS_TEST_CONFIG_TASK_NAME = "quarkusTestConfig";
 
     // this name has to be the same as the directory in which the tests reside
@@ -52,27 +59,29 @@ public class QuarkusPlugin implements Plugin<Project> {
     public static final String NATIVE_TEST_IMPLEMENTATION_CONFIGURATION_NAME = "nativeTestImplementation";
     public static final String NATIVE_TEST_RUNTIME_ONLY_CONFIGURATION_NAME = "nativeTestRuntimeOnly";
 
-    private QuarkusPluginExtension extension;
-
     @Override
     public void apply(Project project) {
         verifyGradleVersion();
 
         // register extension
-        extension = project.getExtensions().create(EXTENSION_NAME, QuarkusPluginExtension.class, project);
+        final QuarkusPluginExtension quarkusExt = project.getExtensions().create(EXTENSION_NAME, QuarkusPluginExtension.class,
+                project);
 
-        registerTasks(project);
+        registerTasks(project, quarkusExt);
     }
 
-    private void registerTasks(Project project) {
+    @SuppressWarnings("Convert2Lambda")
+    private void registerTasks(Project project, QuarkusPluginExtension quarkusExt) {
         TaskContainer tasks = project.getTasks();
         tasks.create(LIST_EXTENSIONS_TASK_NAME, QuarkusListExtensions.class);
         tasks.create(ADD_EXTENSION_TASK_NAME, QuarkusAddExtension.class);
+        tasks.create(REMOVE_EXTENSION_TASK_NAME, QuarkusRemoveExtension.class);
         tasks.create(GENERATE_CONFIG_TASK_NAME, QuarkusGenerateConfig.class);
 
         Task quarkusBuild = tasks.create(QUARKUS_BUILD_TASK_NAME, QuarkusBuild.class);
         Task quarkusDev = tasks.create(QUARKUS_DEV_TASK_NAME, QuarkusDev.class);
-        Task quarkusTestConfig = tasks.create(QUARKUS_TEST_CONFIG_TASK_NAME, QuarkusTestConfig.class);
+        Task quarkusRemoteDev = tasks.create(QUARKUS_REMOTE_DEV_TASK_NAME, QuarkusRemoteDev.class);
+        tasks.create(QUARKUS_TEST_CONFIG_TASK_NAME, QuarkusTestConfig.class);
 
         Task buildNative = tasks.create(BUILD_NATIVE_TASK_NAME, DefaultTask.class);
         buildNative.finalizedBy(quarkusBuild);
@@ -80,6 +89,21 @@ public class QuarkusPlugin implements Plugin<Project> {
                 .warn("The 'buildNative' task has been deprecated in favor of 'build -Dquarkus.package.type=native'"));
 
         configureBuildNativeTask(project);
+
+        final Consumer<Test> configureTestTask = t -> {
+            // Quarkus test configuration action which should be executed before any Quarkus test
+            // Use anonymous classes in order to leverage task avoidance.
+            t.doFirst(new Action<Task>() {
+                @Override
+                public void execute(Task test) {
+                    quarkusExt.beforeTest(t);
+                }
+            });
+            // also make each task use the JUnit platform since it's the only supported test environment
+            t.useJUnitPlatform();
+            // quarkusBuild is expected to run after the project has passed the tests
+            quarkusBuild.shouldRunAfter(t);
+        };
 
         project.getPlugins().withType(
                 BasePlugin.class,
@@ -91,8 +115,8 @@ public class QuarkusPlugin implements Plugin<Project> {
 
                     Task classesTask = tasks.getByName(JavaPlugin.CLASSES_TASK_NAME);
                     quarkusDev.dependsOn(classesTask);
+                    quarkusRemoteDev.dependsOn(classesTask);
                     quarkusBuild.dependsOn(classesTask, tasks.getByName(JavaPlugin.JAR_TASK_NAME));
-                    quarkusTestConfig.dependsOn(classesTask);
 
                     SourceSetContainer sourceSets = project.getConvention().getPlugin(JavaPluginConvention.class)
                             .getSourceSets();
@@ -120,12 +144,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     Task testNative = tasks.create(TEST_NATIVE_TASK_NAME, QuarkusTestNative.class);
                     testNative.dependsOn(quarkusBuild);
                     testNative.setShouldRunAfter(Collections.singletonList(tasks.findByName(JavaPlugin.TEST_TASK_NAME)));
-                    Consumer<Test> configureTestTask = t -> {
-                        // Quarkus test configuration task which should be executed before any Quarkus test
-                        t.dependsOn(quarkusTestConfig);
-                        // also make each task use the JUnit platform since it's the only supported test environment
-                        t.useJUnitPlatform();
-                    };
+
                     tasks.withType(Test.class).forEach(configureTestTask);
                     tasks.withType(Test.class).whenTaskAdded(configureTestTask::accept);
                 });
@@ -149,47 +168,48 @@ public class QuarkusPlugin implements Plugin<Project> {
     }
 
     private void afterEvaluate(Project project) {
+        final HashSet<String> visited = new HashSet<>();
         project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
                 .getIncoming().getDependencies()
                 .forEach(d -> {
                     if (d instanceof ProjectDependency) {
-                        configProjectDependency(project, ((ProjectDependency) d).getDependencyProject());
+                        visitProjectDep(project, ((ProjectDependency) d).getDependencyProject(), visited);
                     }
                 });
     }
 
-    private void configProjectDependency(Project project, Project dep) {
+    private void visitProjectDep(Project project, Project dep, Set<String> visited) {
         if (dep.getState().getExecuted()) {
-            setupTaskDependencies(project, dep);
+            setupQuarkusBuildTaskDeps(project, dep, visited);
         } else {
             dep.afterEvaluate(p -> {
-                setupTaskDependencies(project, p);
+                setupQuarkusBuildTaskDeps(project, p, visited);
             });
         }
     }
 
-    private void setupTaskDependencies(Project project, Project dep) {
+    private void setupQuarkusBuildTaskDeps(Project project, Project dep, Set<String> visited) {
+        if (!visited.add(dep.getPath())) {
+            return;
+        }
         project.getLogger().debug("Configuring {} task dependencies on {} tasks", project, dep);
-        try {
-            final Task jarTask = dep.getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
-            final Task quarkusBuild = findTask(project.getTasks(), QUARKUS_BUILD_TASK_NAME);
+
+        final Task jarTask = dep.getTasks().findByName(JavaPlugin.JAR_TASK_NAME);
+        if (jarTask != null) {
+            final Task quarkusBuild = project.getTasks().findByName(QUARKUS_BUILD_TASK_NAME);
             if (quarkusBuild != null) {
                 quarkusBuild.dependsOn(jarTask);
             }
-            extension.addProjectDepJarTask(dep, jarTask);
-        } catch (UnknownTaskException e) {
-            project.getLogger().debug("Project {} does not include {} task", dep, JavaPlugin.JAR_TASK_NAME, e);
         }
-        for (Map.Entry<String, Project> entry : dep.getChildProjects().entrySet()) {
-            configProjectDependency(project, entry.getValue());
-        }
-    }
 
-    private static Task findTask(TaskContainer tasks, String name) {
-        try {
-            return tasks.findByName(name);
-        } catch (UnknownTaskException e) {
-            return null;
+        final Configuration compileConfig = dep.getConfigurations().findByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
+        if (compileConfig != null) {
+            compileConfig.getIncoming().getDependencies()
+                    .forEach(d -> {
+                        if (d instanceof ProjectDependency) {
+                            visitProjectDep(project, ((ProjectDependency) d).getDependencyProject(), visited);
+                        }
+                    });
         }
     }
 }

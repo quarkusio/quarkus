@@ -20,31 +20,39 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycleManager {
 
     private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
-    private static final String KEYCLOAK_REALM = "quarkus";
+    static final String KEYCLOAK_REALM = "quarkus";
 
     private Keycloak keycloak;
+    private List<RealmRepresentation> realms = new ArrayList<>();
 
     @Override
     public Map<String, String> start() {
+        keycloak = createKeycloakClient();
 
         RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
+        keycloak.realms().create(realm);
+        realms.add(realm);
 
-        realm.getClients().add(createClient("quarkus-app"));
-        realm.getClients().add(createClientJwt("quarkus-app-jwt"));
-        realm.getUsers().add(createUser("alice", "user"));
-        realm.getUsers().add(createUser("admin", "user", "admin"));
-        realm.getUsers().add(createUser("jdoe", "user", "confidential"));
+        RealmRepresentation logoutRealm = createRealm("logout-realm");
+        // revoke refresh tokens so that they can only be used once
+        logoutRealm.setRevokeRefreshToken(true);
+        logoutRealm.setRefreshTokenMaxReuse(0);
+        logoutRealm.setSsoSessionMaxLifespan(15);
+        logoutRealm.setAccessTokenLifespan(5);
+        keycloak.realms().create(logoutRealm);
+        realms.add(logoutRealm);
 
-        keycloak = KeycloakBuilder.builder()
+        return Collections.emptyMap();
+    }
+
+    private static Keycloak createKeycloakClient() {
+        return KeycloakBuilder.builder()
                 .serverUrl(KEYCLOAK_SERVER_URL)
                 .realm("master")
                 .clientId("admin-cli")
                 .username("admin")
                 .password("admin")
                 .build();
-        keycloak.realms().create(realm);
-
-        return Collections.emptyMap();
     }
 
     private static RealmRepresentation createRealm(String name) {
@@ -66,6 +74,12 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         realm.getRoles().getRealm().add(new RoleRepresentation("user", null, false));
         realm.getRoles().getRealm().add(new RoleRepresentation("admin", null, false));
         realm.getRoles().getRealm().add(new RoleRepresentation("confidential", null, false));
+
+        realm.getClients().add(createClient("quarkus-app"));
+        realm.getClients().add(createClientJwt("quarkus-app-jwt"));
+        realm.getUsers().add(createUser("alice", "user"));
+        realm.getUsers().add(createUser("admin", "user", "admin"));
+        realm.getUsers().add(createUser("jdoe", "user", "confidential"));
 
         return realm;
     }
@@ -115,6 +129,12 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
 
     @Override
     public void stop() {
-        keycloak.realm(KEYCLOAK_REALM).remove();
+        for (RealmRepresentation realm : realms) {
+            try {
+                keycloak.realm(realm.getRealm()).remove();
+            } catch (Exception ignore) {
+
+            }
+        }
     }
 }

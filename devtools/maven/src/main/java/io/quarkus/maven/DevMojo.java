@@ -49,6 +49,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.shared.utils.cli.CommandLineUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -66,6 +67,7 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import org.twdata.maven.mojoexecutor.MojoExecutor;
 
 import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
@@ -184,6 +186,9 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${jvm.args}")
     private String jvmArgs;
 
+    @Parameter(defaultValue = "${quarkus.args}")
+    private String argsString;
+
     @Parameter(defaultValue = "${session}")
     private MavenSession session;
 
@@ -240,6 +245,8 @@ public class DevMojo extends AbstractMojo {
 
     @Component
     private BuildPluginManager pluginManager;
+
+    private Boolean debugPortOk;
 
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
@@ -488,15 +495,18 @@ public class DevMojo extends AbstractMojo {
          */
         void prepare() throws Exception {
             if (debug == null) {
-                boolean useDebugMode = true;
                 // debug mode not specified
                 // make sure 5005 is not used, we don't want to just fail if something else is using it
-                try (Socket socket = new Socket(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), 5005)) {
-                    getLog().error("Port 5005 in use, not starting in debug mode");
-                    useDebugMode = false;
-                } catch (IOException e) {
+                // we don't check this on restarts, as the previous process is still running
+                if (debugPortOk == null) {
+                    try (Socket socket = new Socket(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), 5005)) {
+                        getLog().error("Port 5005 in use, not starting in debug mode");
+                        debugPortOk = false;
+                    } catch (IOException e) {
+                        debugPortOk = true;
+                    }
                 }
-                if (useDebugMode) {
+                if (debugPortOk) {
                     args.add("-Xdebug");
                     args.add("-Xrunjdwp:transport=dt_socket,address=0.0.0.0:5005,server=y,suspend=" + suspend);
                 }
@@ -638,9 +648,45 @@ public class DevMojo extends AbstractMojo {
             if (devModeContext.isEnablePreview()) {
                 args.add(DevModeContext.ENABLE_PREVIEW_FLAG);
             }
+
+            propagateUserProperties();
+
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
+            if (argsString != null) {
+                args.addAll(Arrays.asList(CommandLineUtils.translateCommandline(argsString)));
+            }
+        }
 
+        private void propagateUserProperties() {
+            final String mavenCmdLine = BootstrapMavenOptions.getMavenCmdLine();
+            if (mavenCmdLine == null || mavenCmdLine.isEmpty()) {
+                return;
+            }
+            int i = mavenCmdLine.indexOf("-D");
+            if (i < 0) {
+                return;
+            }
+            final StringBuilder buf = new StringBuilder();
+            buf.append("-D");
+            i += 2;
+            while (i < mavenCmdLine.length()) {
+                final char ch = mavenCmdLine.charAt(i++);
+                if (!Character.isWhitespace(ch)) {
+                    buf.append(ch);
+                } else if (buf.length() > 2) {
+                    args.add(buf.toString());
+                    buf.setLength(2);
+                    i = mavenCmdLine.indexOf("-D", i);
+                    if (i < 0) {
+                        break;
+                    }
+                    i += 2;
+                }
+            }
+            if (buf.length() > 2) {
+                args.add(buf.toString());
+            }
         }
 
         private void addQuarkusDevModeDeps(StringBuilder classPathManifest, final DevModeContext devModeContext)

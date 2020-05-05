@@ -29,7 +29,7 @@ public class AnonymousAmqpTest {
     public void test() {
         await().atMost(1, TimeUnit.MINUTES).until(() -> {
             String value = RestAssured.get("/last").asString();
-            return !value.equalsIgnoreCase("-1");
+            return value.equalsIgnoreCase("20");
         });
     }
 }

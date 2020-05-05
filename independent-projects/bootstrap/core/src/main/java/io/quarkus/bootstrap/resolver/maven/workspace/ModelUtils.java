@@ -14,11 +14,14 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
@@ -31,6 +34,20 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
  * @author Alexey Loubyansky
  */
 public class ModelUtils {
+
+    /**
+     * Matches specific properties that are allowed to be used in a version as per Maven spec.
+     *
+     * @see <a href="https://maven.apache.org/maven-ci-friendly.html">Maven CI Friendly Versions (maven.apache.org)</a>
+     */
+    private static Pattern unresolvedVersionPattern;
+
+    private static Pattern getUnresolvedVersionPattern() {
+        return unresolvedVersionPattern == null
+                ? unresolvedVersionPattern = Pattern
+                        .compile(Pattern.quote("${") + "(revision|sha1|changelist)" + Pattern.quote("}"))
+                : unresolvedVersionPattern;
+    }
 
     private static final String STATE_ARTIFACT_INITIAL_VERSION = "1";
 
@@ -169,7 +186,16 @@ public class ModelUtils {
         throw new IllegalStateException("Failed to determine groupId for project model");
     }
 
-    public static String getVersion(Model model) {
+    /**
+     * Returns the raw version of the model. If the model does not include
+     * the version directly, it will return the version of the parent.
+     * The version is raw in a sense if it's a property expression, the
+     * expression will not be resolved.
+     *
+     * @param model POM
+     * @return raw model
+     */
+    public static String getRawVersion(Model model) {
         String version = model.getVersion();
         if (version != null) {
             return version;
@@ -182,6 +208,39 @@ public class ModelUtils {
             }
         }
         throw new IllegalStateException("Failed to determine version for project model");
+    }
+
+    public static String getVersion(Model model) {
+        final String rawVersion = getRawVersion(model);
+        return isUnresolvedVersion(rawVersion) ? resolveVersion(rawVersion, model) : rawVersion;
+    }
+
+    public static boolean isUnresolvedVersion(String version) {
+        return getUnresolvedVersionPattern().matcher(version).find();
+    }
+
+    public static String resolveVersion(String rawVersion, Model rawModel) {
+        final Map<String, String> props = new HashMap<>();
+        putAll(props, rawModel.getProperties());
+        putAll(props, System.getProperties());
+
+        Matcher matcher = getUnresolvedVersionPattern().matcher(rawVersion);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            final String resolved = props.get(matcher.group(1));
+            if (resolved == null) {
+                return null;
+            }
+            matcher.appendReplacement(sb, resolved);
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+    private static void putAll(Map<String, String> map, Properties props) {
+        for (Map.Entry<Object, Object> e : props.entrySet()) {
+            map.put(e.getKey().toString(), e.getValue().toString());
+        }
     }
 
     /**

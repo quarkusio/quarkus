@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
+import org.bson.codecs.pojo.annotations.BsonId;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
 import org.jboss.jandex.AnnotationInstance;
@@ -21,6 +23,8 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -51,6 +55,8 @@ import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepository;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoRepositoryBase;
 import io.quarkus.panache.common.deployment.PanacheEntityClassesBuildItem;
 import io.quarkus.panache.common.deployment.PanacheFieldAccessEnhancer;
+import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
+import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.common.deployment.PanacheRepositoryEnhancer;
 
 public class PanacheResourceProcessor {
@@ -62,6 +68,7 @@ public class PanacheResourceProcessor {
 
     private static final DotName DOTNAME_PROJECTION_FOR = DotName.createSimple(ProjectionFor.class.getName());
     private static final DotName DOTNAME_BSON_PROPERTY = DotName.createSimple(BsonProperty.class.getName());
+    private static final DotName DOTNAME_BSON_ID = DotName.createSimple(BsonId.class.getName());
 
     // reactive types (Mutiny)
     static final DotName DOTNAME_MUTINY_PANACHE_REPOSITORY_BASE = DotName
@@ -74,8 +81,6 @@ public class PanacheResourceProcessor {
             .createSimple(ReactivePanacheMongoEntity.class.getName());
 
     private static final DotName DOTNAME_OBJECT_ID = DotName.createSimple(ObjectId.class.getName());
-
-    private static final DotName DOTNAME_OBJECT = DotName.createSimple(Object.class.getName());
 
     @BuildStep
     CapabilityBuildItem capability() {
@@ -133,7 +138,11 @@ public class PanacheResourceProcessor {
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
-            BuildProducer<PanacheEntityClassesBuildItem> entityClasses) {
+            BuildProducer<PanacheEntityClassesBuildItem> entityClasses,
+            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {
+
+        List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
+                .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
         PanacheMongoRepositoryEnhancer daoEnhancer = new PanacheMongoRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
@@ -167,7 +176,7 @@ public class PanacheResourceProcessor {
             propertyMappingClass.produce(new PropertyMappingClassBuildStep(parameterType.name().toString()));
         }
 
-        PanacheMongoEntityEnhancer modelEnhancer = new PanacheMongoEntityEnhancer(index.getIndex());
+        PanacheMongoEntityEnhancer modelEnhancer = new PanacheMongoEntityEnhancer(index.getIndex(), methodCustomizers);
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheMongoEntity if we ask for subtypes of PanacheMongoEntityBase
@@ -214,8 +223,11 @@ public class PanacheResourceProcessor {
             ApplicationIndexBuildItem applicationIndex,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
-            BuildProducer<BytecodeTransformerBuildItem> transformers) {
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
+            List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) {
 
+        List<PanacheMethodCustomizer> methodCustomizers = methodCustomizersBuildItems.stream()
+                .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
         ReactivePanacheMongoRepositoryEnhancer daoEnhancer = new ReactivePanacheMongoRepositoryEnhancer(index.getIndex());
         Set<String> daoClasses = new HashSet<>();
         Set<Type> daoTypeParameters = new HashSet<>();
@@ -249,7 +261,8 @@ public class PanacheResourceProcessor {
             propertyMappingClass.produce(new PropertyMappingClassBuildStep(parameterType.name().toString()));
         }
 
-        ReactivePanacheMongoEntityEnhancer modelEnhancer = new ReactivePanacheMongoEntityEnhancer(index.getIndex());
+        ReactivePanacheMongoEntityEnhancer modelEnhancer = new ReactivePanacheMongoEntityEnhancer(index.getIndex(),
+                methodCustomizers);
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheMongoEntity if we ask for subtypes of PanacheMongoEntityBase
@@ -289,22 +302,46 @@ public class PanacheResourceProcessor {
     }
 
     @BuildStep
+    ValidationPhaseBuildItem.ValidationErrorBuildItem validate(ValidationPhaseBuildItem validationPhase,
+            CombinedIndexBuildItem index) throws BuildException {
+        // we verify that no ID fields are defined (via @BsonId) when extending PanacheMongoEntity or ReactivePanacheMongoEntity
+        for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(DOTNAME_BSON_ID)) {
+            ClassInfo info = io.quarkus.panache.common.deployment.JandexUtil.getEnclosingClass(annotationInstance);
+            if (io.quarkus.panache.common.deployment.JandexUtil.isSubclassOf(index.getIndex(), info,
+                    DOTNAME_PANACHE_ENTITY)) {
+                BuildException be = new BuildException("You provide a MongoDB identifier via @BsonId inside '" + info.name() +
+                        "' but one is already provided by PanacheMongoEntity, " +
+                        "your class should extend PanacheMongoEntityBase instead, or use the id provided by PanacheMongoEntity",
+                        Collections.emptyList());
+                return new ValidationPhaseBuildItem.ValidationErrorBuildItem(be);
+            } else if (io.quarkus.panache.common.deployment.JandexUtil.isSubclassOf(index.getIndex(), info,
+                    DOTNAME_MUTINY_PANACHE_ENTITY)) {
+                BuildException be = new BuildException("You provide a MongoDB identifier via @BsonId inside '" + info.name() +
+                        "' but one is already provided by ReactivePanacheMongoEntity, " +
+                        "your class should extend ReactivePanacheMongoEntityBase instead, or use the id provided by ReactivePanacheMongoEntity",
+                        Collections.emptyList());
+                return new ValidationPhaseBuildItem.ValidationErrorBuildItem(be);
+            }
+        }
+        return null;
+    }
+
+    @BuildStep
     void handleProjectionFor(CombinedIndexBuildItem index,
             BuildProducer<PropertyMappingClassBuildStep> propertyMappingClass,
             BuildProducer<BytecodeTransformerBuildItem> transformers) {
         // manage @BsonProperty for the @ProjectionFor annotation
-        Map<ClassInfo, Map<String, String>> propertyMapping = new HashMap<>();
+        Map<DotName, Map<String, String>> propertyMapping = new HashMap<>();
         for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(DOTNAME_PROJECTION_FOR)) {
             Type targetClass = annotationInstance.value().asClass();
             ClassInfo target = index.getIndex().getClassByName(targetClass.name());
             Map<String, String> classPropertyMapping = new HashMap<>();
             extractMappings(classPropertyMapping, target, index);
-            propertyMapping.put(target, classPropertyMapping);
+            propertyMapping.put(targetClass.name(), classPropertyMapping);
         }
         for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(DOTNAME_PROJECTION_FOR)) {
             Type targetClass = annotationInstance.value().asClass();
-            ClassInfo target = index.getIndex().getClassByName(targetClass.name());
-            Map<String, String> targetPropertyMapping = propertyMapping.get(target);
+            Map<String, String> targetPropertyMapping = propertyMapping.get(targetClass.name());
             if (targetPropertyMapping != null && !targetPropertyMapping.isEmpty()) {
                 ClassInfo info = annotationInstance.target().asClass();
                 ProjectionForEnhancer fieldEnhancer = new ProjectionForEnhancer(targetPropertyMapping);
@@ -313,7 +350,7 @@ public class PanacheResourceProcessor {
 
             // Register for building the property mapping cache
             propertyMappingClass
-                    .produce(new PropertyMappingClassBuildStep(target.name().toString(),
+                    .produce(new PropertyMappingClassBuildStep(targetClass.name().toString(),
                             annotationInstance.target().asClass().name().toString()));
         }
     }
@@ -333,7 +370,7 @@ public class PanacheResourceProcessor {
         }
 
         // climb up the hierarchy of types
-        if (!target.superClassType().name().equals(DOTNAME_OBJECT)) {
+        if (!target.superClassType().name().equals(io.quarkus.panache.common.deployment.JandexUtil.DOTNAME_OBJECT)) {
             Type superType = target.superClassType();
             ClassInfo superClass = index.getIndex().getClassByName(superType.name());
             extractMappings(classPropertyMapping, superClass, index);

@@ -239,6 +239,15 @@ In particular, you need to set the appropriate `LogManager` using the `java.util
 <1> Make sure the `org.jboss.logmanager.LogManager` is used.
 <2> Enable debug logging for all logging categories.
 
+If you are using Gradle, add this to your `build.gradle`:
+
+[source, groovy]
+----
+test {
+	systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}
+----
+
 [[loggingConfigurationReference]]
 == Logging configuration reference
 

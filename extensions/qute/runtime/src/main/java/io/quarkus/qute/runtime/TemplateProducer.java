@@ -2,30 +2,53 @@ package io.quarkus.qute.runtime;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.AnnotatedParameter;
 import javax.enterprise.inject.spi.InjectionPoint;
-import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
+import org.reactivestreams.Publisher;
 
+import io.quarkus.qute.Engine;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
+import io.quarkus.qute.TemplateInstanceBase;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.ResourcePath;
+import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 
 @Singleton
 public class TemplateProducer {
 
     private static final Logger LOGGER = Logger.getLogger(TemplateProducer.class);
 
-    @Inject
-    EngineProducer engineProducer;
+    private final Engine engine;
+
+    private final Map<String, TemplateVariants> templateVariants;
+
+    TemplateProducer(Engine engine, QuteContext context) {
+        this.engine = engine;
+        Map<String, TemplateVariants> templateVariants = new HashMap<>();
+        for (Entry<String, List<String>> entry : context.getVariants().entrySet()) {
+            TemplateVariants var = new TemplateVariants(initVariants(entry.getKey(), entry.getValue()), entry.getKey());
+            templateVariants.put(entry.getKey(), var);
+        }
+        this.templateVariants = Collections.unmodifiableMap(templateVariants);
+        LOGGER.debugf("Initializing Qute variant templates: %s", templateVariants);
+    }
 
     @Produces
     Template getDefaultTemplate(InjectionPoint injectionPoint) {
@@ -42,8 +65,7 @@ public class TemplateProducer {
                 LOGGER.warnf("Parameter name not present - using the method name as the template name instead %s", name);
             }
         }
-        // Note that engine may not be initialized and so we inject a delegating template
-        return new InjectableTemplate(name);
+        return new InjectableTemplate(name, templateVariants, engine);
     }
 
     @Produces
@@ -59,46 +81,138 @@ public class TemplateProducer {
         if (path == null || path.value().isEmpty()) {
             throw new IllegalStateException("No template reource path specified");
         }
-        // Note that engine may not be initialized and so we inject a delegating template
-        return new InjectableTemplate(path.value());
+        // We inject a delegating template in order to:
+        // 1. Be able to select an appropriate variant if needed
+        // 2. Be able to reload the template when needed, i.e. when the cache is cleared
+        return new InjectableTemplate(path.value(), templateVariants, engine);
     }
 
-    class InjectableTemplate implements Template {
+    static class InjectableTemplate implements Template {
 
         private final String path;
+        private final TemplateVariants variants;
+        private final Engine engine;
 
-        public InjectableTemplate(String path) {
+        public InjectableTemplate(String path, Map<String, TemplateVariants> templateVariants, Engine engine) {
             this.path = path;
-        }
-
-        private Template template() {
-            Template template = engineProducer.getEngine().getTemplate(path);
-            if (template == null) {
-                throw new IllegalStateException("No template found for path: " + path);
-            }
-            return template;
+            this.variants = templateVariants.get(path);
+            this.engine = engine;
         }
 
         @Override
         public TemplateInstance instance() {
-            return template().instance();
+            return new InjectableTemplateInstanceImpl(path, variants, engine);
         }
 
         @Override
         public Set<Expression> getExpressions() {
-            return template().getExpressions();
+            throw new UnsupportedOperationException("Injected templates do not support getExpressions()");
         }
 
         @Override
         public String getGeneratedId() {
-            return template().getGeneratedId();
+            throw new UnsupportedOperationException("Injected templates do not support getGeneratedId()");
         }
 
         @Override
         public Optional<Variant> getVariant() {
-            return template().getVariant();
+            throw new UnsupportedOperationException("Injected templates do not support getVariant()");
         }
 
+    }
+
+    static class InjectableTemplateInstanceImpl extends TemplateInstanceBase {
+
+        private final String path;
+        private final TemplateVariants variants;
+        private final Engine engine;
+
+        public InjectableTemplateInstanceImpl(String path, TemplateVariants variants, Engine engine) {
+            this.path = path;
+            this.variants = variants;
+            this.engine = engine;
+            if (variants != null) {
+                setAttribute(TemplateInstance.VARIANTS, new ArrayList<>(variants.variantToTemplate.keySet()));
+            }
+        }
+
+        @Override
+        public String render() {
+            return template().instance().data(data()).render();
+        }
+
+        @Override
+        public CompletionStage<String> renderAsync() {
+            return template().instance().data(data()).renderAsync();
+        }
+
+        @Override
+        public Publisher<String> publisher() {
+            return template().instance().data(data()).publisher();
+        }
+
+        @Override
+        public CompletionStage<Void> consume(Consumer<String> consumer) {
+            return template().instance().data(data()).consume(consumer);
+        }
+
+        private Template template() {
+            Variant selected = (Variant) getAttribute(TemplateInstance.SELECTED_VARIANT);
+            String id;
+            if (selected != null) {
+                id = variants.variantToTemplate.get(selected);
+                if (id == null) {
+                    id = variants.defaultTemplate;
+                }
+            } else {
+                id = path;
+            }
+            return engine.getTemplate(id);
+        }
+
+    }
+
+    static class TemplateVariants {
+
+        public final Map<Variant, String> variantToTemplate;
+        public final String defaultTemplate;
+
+        public TemplateVariants(Map<Variant, String> variants, String defaultTemplate) {
+            this.variantToTemplate = variants;
+            this.defaultTemplate = defaultTemplate;
+        }
+
+    }
+
+    static String parseMediaType(String suffix) {
+        // TODO we need a proper way to parse the media type
+        if (suffix.equalsIgnoreCase(".html") || suffix.equalsIgnoreCase(".htm")) {
+            return Variant.TEXT_HTML;
+        } else if (suffix.equalsIgnoreCase(".xml")) {
+            return Variant.TEXT_XML;
+        } else if (suffix.equalsIgnoreCase(".txt")) {
+            return Variant.TEXT_PLAIN;
+        } else if (suffix.equalsIgnoreCase(".json")) {
+            return Variant.APPLICATION_JSON;
+        }
+        LOGGER.warn("Unknown media type for suffix: " + suffix);
+        return "application/octet-stream";
+    }
+
+    static String parseMediaType(String base, String variant) {
+        String suffix = variant.substring(base.length());
+        return parseMediaType(suffix);
+    }
+
+    private static Map<Variant, String> initVariants(String base, List<String> availableVariants) {
+        Map<Variant, String> map = new HashMap<>();
+        for (String path : availableVariants) {
+            if (!base.equals(path)) {
+                String mediaType = parseMediaType(base, path);
+                map.put(new Variant(null, mediaType, null), path);
+            }
+        }
+        return map;
     }
 
 }

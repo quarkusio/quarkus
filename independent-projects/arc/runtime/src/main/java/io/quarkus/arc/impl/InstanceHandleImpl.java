@@ -89,7 +89,7 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
             try {
                 bean.destroy(instance, creationalContext);
             } catch (Throwable t) {
-                String msg = "Error occured while destroying instance of bean [%s]";
+                String msg = "Error occurred while destroying instance of bean [%s]";
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.errorf(t, msg, bean.getClass().getName());
                 } else {

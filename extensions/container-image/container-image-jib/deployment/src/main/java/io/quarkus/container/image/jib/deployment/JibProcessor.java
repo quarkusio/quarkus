@@ -38,11 +38,12 @@ import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
-import io.quarkus.container.spi.ContainerImageResultBuildItem;
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
@@ -58,6 +59,11 @@ public class JibProcessor {
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
     private static final String BINARY_NAME_IN_CONTAINER = "application";
 
+    @BuildStep
+    public CapabilityBuildItem capability() {
+        return new CapabilityBuildItem(Capabilities.CONTAINER_IMAGE_JIB);
+    }
+
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class }, onlyIfNot = NativeBuild.class)
     public void buildFromJar(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
             JarBuildItem sourceJar,
@@ -66,8 +72,7 @@ public class JibProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
-            BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer) {
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
         if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
                 && !pushRequest.isPresent()) {
@@ -79,9 +84,6 @@ public class JibProcessor {
         JibContainer container = containerize(applicationInfo, containerImageConfig, jibContainerBuilder,
                 pushRequest.isPresent());
 
-        ImageReference targetImage = container.getTargetImage();
-        containerImageResultProducer.produce(new ContainerImageResultBuildItem(JIB, container.getImageId().getHash(),
-                targetImage.getRepository(), targetImage.getTag()));
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
     }
 
@@ -92,8 +94,7 @@ public class JibProcessor {
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
-            BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            BuildProducer<ContainerImageResultBuildItem> containerImageResultProducer) {
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
         if (!containerImageConfig.build && !containerImageConfig.push && !buildRequest.isPresent()
                 && !pushRequest.isPresent()) {
@@ -111,8 +112,6 @@ public class JibProcessor {
                 pushRequest.isPresent());
 
         ImageReference targetImage = container.getTargetImage();
-        containerImageResultProducer.produce(new ContainerImageResultBuildItem(JIB, container.getImageId().getHash(),
-                targetImage.getRepository(), targetImage.getTag()));
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
     }
 
@@ -190,7 +189,7 @@ public class JibProcessor {
             throw new IllegalArgumentException("The supplied container-image registry '" + registry + "' is invalid");
         }
 
-        String repository = (containerImageConfig.group.map(s -> s + "/").orElse(""))
+        String repository = (containerImageConfig.getEffectiveGroup().map(s -> s + "/").orElse(""))
                 + containerImageConfig.name.orElse(applicationInfo.getName());
         if (!ImageReference.isValidRepository(repository)) {
             throw new IllegalArgumentException("The supplied container-image repository '" + repository + "' is invalid");

@@ -32,24 +32,24 @@
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <!-- Quarkus uses jboss-parent and it comes with 3.8.0-jboss-2, we don't want that in the templates -->
         <compiler-plugin.version>3.8.1</compiler-plugin.version>
-        <kotlin.version>1.3.71</kotlin.version>
+        <kotlin.version>1.3.72</kotlin.version>
         <scala.version>2.12.8</scala.version>
         <scala-plugin.version>4.1.1</scala-plugin.version>
 
         <!-- Versions -->
         <assertj.version>3.15.0</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
-        <jackson.version>2.10.3</jackson.version>
+        <jackson.version>2.10.4</jackson.version>
         <jakarta.enterprise.cdi-api.version>2.0.2</jakarta.enterprise.cdi-api.version>
         <jakarta.servlet-api.version>4.0.3</jakarta.servlet-api.version>
         <jakarta.websocket-api.version>1.1.2</jakarta.websocket-api.version>
         <junit.version>5.6.1</junit.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
-        <maven-core.version>3.5.4</maven-core.version>
+        <maven-core.version>3.6.3</maven-core.version>
         <mockito.version>3.3.3</mockito.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <quarkus.version>999-SNAPSHOT</quarkus.version>
-        <quarkus-http.version>3.0.4.Final</quarkus-http.version>
+        <quarkus-http.version>3.0.7.Final</quarkus-http.version>
     </properties>
     <modules>
         <module>platform-descriptor-api</module>
@@ -275,7 +275,7 @@
             <plugin>
                 <groupId>net.revelc.code</groupId>
                 <artifactId>impsort-maven-plugin</artifactId>
-                <version>1.3.2</version>
+                <version>1.4.1</version>
                 <configuration>
                     <removeUnused>true</removeUnused>
                     <skip>${format.skip}</skip>

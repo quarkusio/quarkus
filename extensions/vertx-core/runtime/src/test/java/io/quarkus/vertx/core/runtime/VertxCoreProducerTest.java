@@ -1,16 +1,18 @@
 package io.quarkus.vertx.core.runtime;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.vertx.core.runtime.VertxCoreRecorder.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
 import io.quarkus.vertx.core.runtime.config.EventBusConfiguration;
 import io.quarkus.vertx.core.runtime.config.JksConfiguration;
@@ -18,6 +20,8 @@ import io.quarkus.vertx.core.runtime.config.PemKeyCertConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemTrustCertConfiguration;
 import io.quarkus.vertx.core.runtime.config.PfxConfiguration;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
+import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 
 public class VertxCoreProducerTest {
 
@@ -49,11 +53,26 @@ public class VertxCoreProducerTest {
         configuration.cluster = cc;
 
         try {
-            VertxCoreRecorder.initialize(configuration);
-            fail("It should not have a cluster manager on the classpath, and so fail the creation");
+            VertxCoreRecorder.initialize(configuration, null);
+            Assertions.fail("It should not have a cluster manager on the classpath, and so fail the creation");
         } catch (IllegalStateException e) {
-            assertTrue(e.getMessage().contains("No ClusterManagerFactory"));
+            Assertions.assertTrue(e.getMessage().contains("No ClusterManagerFactory"),
+                    "The message should contain ''. Message: " + e.getMessage());
         }
+    }
+
+    @Test
+    public void shouldInvokeCustomizers() {
+        final AtomicBoolean called = new AtomicBoolean(false);
+        VertxOptionsCustomizer customizers = new VertxOptionsCustomizer(Arrays.asList(
+                new Consumer<VertxOptions>() {
+                    @Override
+                    public void accept(VertxOptions vertxOptions) {
+                        called.set(true);
+                    }
+                }));
+        Vertx v = VertxCoreRecorder.initialize(createDefaultConfiguration(), customizers);
+        Assertions.assertTrue(called.get(), "Customizer should get called during initialization");
     }
 
     private VertxConfiguration createDefaultConfiguration() {

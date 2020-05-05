@@ -1,0 +1,59 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Quarkus - Kubernetes Config
+
+include::./attributes.adoc[]
+
+
+Quarkus includes the `kubernetes-config` extension which allows developers to use Kubernetes https://cloud.google.com/kubernetes-engine/docs/concepts/configmap[ConfigMaps] as a configuration source, without having to mount the ConfigMaps into the https://kubernetes.io/docs/concepts/workloads/pods/pod/[Pod] running the Quarkus application.
+
+
+== Configuration
+
+Once you have your Quarkus project configured you can add the `kubernetes-config` extension
+by running the following command in your project base directory.
+
+[source]
+----
+./mvnw quarkus:add-extension -Dextensions="kubernetes-config"
+----
+
+This will add the following to your pom.xml:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-kubernetes-config</artifactId>
+</dependency>
+----
+
+== Usage
+
+The extension works by reading ConfigMaps directly from the Kubernetes API server using the link:kubernetes-client[Kubernetes Client].
+
+The extension understands the following types of ConfigMaps as input sources:
+
+* ConfigMaps that contain literal data (see https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#create-configmaps-from-literal-values[this] for an example on how to create one)
+* ConfigMaps created from files named, `application.properties`, `application.yaml` or `application.yml` (see https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#create-configmaps-from-files[this] for an example on how to create one).
+
+To configure which ConfigMaps (from the namespace that the application runs in, or the explicitly configured namespace via `quarkus.kubernetes-client.namespace`), you can set the `quarkus.kubernetes-config.config-maps` property (in any of the usual Quarkus ways).
+Keep in mind however that you will also have to explicitly enable the retrieval of ConfigMaps by setting `quarkus.kubernetes-config.enabled=true` (the default is `false` in order to make it easy to test the application locally).
+
+=== Priority of obtained properties
+
+The properties obtained from the ConfigMaps have a higher priority (i.e. they override) any properties of the same name that are found in `application.properties` (or the YAML equivalents), but they have lower priority than properties set via Environment Variables or Java System Properties.
+
+=== Kubernetes Permissions
+
+Since reading ConfigMaps involves interacting with the Kubernetes API Server, when https://kubernetes.io/docs/reference/access-authn-authz/rbac/[RBAC] is enabled on the cluster, the https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/[ServiceAccount]
+that is used to run the application needs to have the proper permissions for such access.
+
+Thankfully, when using the `kubernetes-config` extension along with the link:deploying-to-kubernetes[Kubernetes] extension, all the necessary Kubernetes resources to make that happen are automatically generated.
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-kubernetes-config-kubernetes-config-source-config.adoc[opts=optional, leveloffset=+1]

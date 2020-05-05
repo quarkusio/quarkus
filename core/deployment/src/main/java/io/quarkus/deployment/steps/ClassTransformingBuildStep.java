@@ -61,32 +61,34 @@ public class ClassTransformingBuildStep {
                 if (archive != null) {
                     List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = entry.getValue();
                     String classFileName = className.replace(".", "/") + ".class";
-                    Path path = archive.getChildPath(classFileName);
-                    transformedToArchive.put(classFileName, archive.getArchiveLocation());
-                    transformed.add(executorPool.submit(new Callable<TransformedClassesBuildItem.TransformedClass>() {
-                        @Override
-                        public TransformedClassesBuildItem.TransformedClass call() throws Exception {
-                            ClassLoader old = Thread.currentThread().getContextClassLoader();
-                            try {
-                                Thread.currentThread().setContextClassLoader(transformCl);
-                                if (Files.size(path) > Integer.MAX_VALUE) {
-                                    throw new RuntimeException(
-                                            "Can't process class files larger than Integer.MAX_VALUE bytes");
+                    archive.processEntry(classFileName, (classFile, jar) -> {
+                        transformedToArchive.put(classFileName, jar);
+                        transformed.add(executorPool.submit(new Callable<TransformedClassesBuildItem.TransformedClass>() {
+                            @Override
+                            public TransformedClassesBuildItem.TransformedClass call() throws Exception {
+                                ClassLoader old = Thread.currentThread().getContextClassLoader();
+                                try {
+                                    Thread.currentThread().setContextClassLoader(transformCl);
+                                    if (Files.size(classFile) > Integer.MAX_VALUE) {
+                                        throw new RuntimeException(
+                                                "Can't process class files larger than Integer.MAX_VALUE bytes");
+                                    }
+                                    ClassReader cr = new ClassReader(Files.readAllBytes(classFile));
+                                    ClassWriter writer = new QuarkusClassWriter(cr,
+                                            ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                                    ClassVisitor visitor = writer;
+                                    for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
+                                        visitor = i.apply(className, visitor);
+                                    }
+                                    cr.accept(visitor, 0);
+                                    return new TransformedClassesBuildItem.TransformedClass(writer.toByteArray(),
+                                            classFileName);
+                                } finally {
+                                    Thread.currentThread().setContextClassLoader(old);
                                 }
-                                ClassReader cr = new ClassReader(Files.readAllBytes(path));
-                                ClassWriter writer = new QuarkusClassWriter(cr,
-                                        ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-                                ClassVisitor visitor = writer;
-                                for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
-                                    visitor = i.apply(className, visitor);
-                                }
-                                cr.accept(visitor, 0);
-                                return new TransformedClassesBuildItem.TransformedClass(writer.toByteArray(), classFileName);
-                            } finally {
-                                Thread.currentThread().setContextClassLoader(old);
                             }
-                        }
-                    }));
+                        }));
+                    });
                 } else {
                     log.warnf("Cannot transform %s as it's containing application archive could not be found.",
                             entry.getKey());

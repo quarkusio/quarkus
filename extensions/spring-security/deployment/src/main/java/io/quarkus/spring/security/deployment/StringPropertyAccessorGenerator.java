@@ -6,7 +6,7 @@ import java.util.Set;
 
 import javax.inject.Singleton;
 
-import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
@@ -24,9 +24,9 @@ final class StringPropertyAccessorGenerator {
     private StringPropertyAccessorGenerator() {
     }
 
-    static String getAccessorClassName(ClassInfo classInfo) {
-        return "io.quarkus.spring.security.accessor." + classInfo.name().withoutPackagePrefix() + "_"
-                + HashUtil.sha1(classInfo.name().toString()) + "_Accessor";
+    static String getAccessorClassName(DotName className) {
+        return "io.quarkus.spring.security.accessor." + className.withoutPackagePrefix() + "_"
+                + HashUtil.sha1(className.toString()) + "_Accessor";
     }
 
     /**
@@ -53,8 +53,8 @@ final class StringPropertyAccessorGenerator {
      * {@link io.quarkus.spring.security.runtime.interceptor.check.PrincipalNameFromParameterObjectSecurityCheck}
      * to access fields of the object referenced by security expressions
      */
-    static String generate(ClassInfo classInfo, Set<FieldInfo> properties, ClassOutput classOutput) {
-        String generatedClassName = getAccessorClassName(classInfo);
+    static String generate(DotName className, Set<FieldInfo> properties, ClassOutput classOutput) {
+        String generatedClassName = getAccessorClassName(className);
         try (ClassCreator cc = ClassCreator.builder()
                 .classOutput(classOutput).className(generatedClassName)
                 .interfaces(StringPropertyAccessor.class)
@@ -65,7 +65,7 @@ final class StringPropertyAccessorGenerator {
             try (MethodCreator access = cc.getMethodCreator("access", String.class.getName(), Object.class, String.class)) {
                 ResultHandle objectParam = access.getMethodParam(0);
                 ResultHandle propertyParam = access.getMethodParam(1);
-                ResultHandle castedObjectParam = access.checkCast(objectParam, classInfo.name().toString());
+                ResultHandle castedObjectParam = access.checkCast(objectParam, className.toString());
                 for (FieldInfo fieldInfo : properties) {
                     ResultHandle propertyName = access.load(fieldInfo.name());
                     ResultHandle propertyNameEquals = access.invokeVirtualMethod(
@@ -74,7 +74,7 @@ final class StringPropertyAccessorGenerator {
                     BranchResult propertyNameEqualsBranch = access.ifNonZero(propertyNameEquals);
                     BytecodeCreator propertyNameEqualsTrue = propertyNameEqualsBranch.trueBranch();
                     ResultHandle result = propertyNameEqualsTrue.invokeVirtualMethod(
-                            ofMethod(classInfo.name().toString(), "get" + JavaBeanUtil.capitalize(fieldInfo.name()),
+                            ofMethod(className.toString(), "get" + JavaBeanUtil.capitalize(fieldInfo.name()),
                                     String.class.getName()),
                             castedObjectParam);
                     propertyNameEqualsTrue.returnValue(result);

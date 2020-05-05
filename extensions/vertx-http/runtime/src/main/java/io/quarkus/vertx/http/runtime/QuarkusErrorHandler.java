@@ -14,6 +14,7 @@ import org.jboss.logging.Logger;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.TemplateHtmlBuilder;
+import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
@@ -68,6 +69,9 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         if (event.failure() instanceof ForbiddenException) {
             event.response().setStatusCode(HttpResponseStatus.FORBIDDEN.code()).end();
             return;
+        }
+        if (event.failure() instanceof AuthenticationFailedException) {
+            return; //handled elsewhere
         }
         event.response().setStatusCode(500);
         String uuid = BASE_ID + ERROR_COUNT.incrementAndGet();

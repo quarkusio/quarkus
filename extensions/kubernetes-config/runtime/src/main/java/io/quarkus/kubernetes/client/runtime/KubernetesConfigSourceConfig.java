@@ -28,10 +28,4 @@ public class KubernetesConfigSourceConfig {
     @ConfigItem
     public Optional<List<String>> configMaps;
 
-    /**
-     * Secrets to look for in the namespace that the Kubernetes Client has been configured for
-     */
-    @ConfigItem
-    public Optional<List<String>> secrets;
-
 }

@@ -70,6 +70,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.EngineBuilder;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.VirtualMethodPart;
 import io.quarkus.qute.LoopSectionHelper;
@@ -82,9 +83,9 @@ import io.quarkus.qute.TemplateException;
 import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
+import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.api.ResourcePath;
-import io.quarkus.qute.api.VariantTemplate;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.Check;
 import io.quarkus.qute.deployment.TypeInfos.Info;
@@ -96,7 +97,6 @@ import io.quarkus.qute.runtime.QuteConfig;
 import io.quarkus.qute.runtime.QuteRecorder;
 import io.quarkus.qute.runtime.QuteRecorder.QuteContext;
 import io.quarkus.qute.runtime.TemplateProducer;
-import io.quarkus.qute.runtime.VariantTemplateProducer;
 import io.quarkus.qute.runtime.extensions.CollectionTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.MapTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.NumberTemplateExtensions;
@@ -106,10 +106,7 @@ public class QuteProcessor {
     private static final Logger LOGGER = Logger.getLogger(QuteProcessor.class);
 
     public static final DotName RESOURCE_PATH = DotName.createSimple(ResourcePath.class.getName());
-
     public static final DotName TEMPLATE = DotName.createSimple(Template.class.getName());
-
-    public static final DotName VARIANT_TEMPLATE = DotName.createSimple(VariantTemplate.class.getName());
 
     static final DotName ITERABLE = DotName.createSimple(Iterable.class.getName());
     static final DotName ITERATOR = DotName.createSimple(Iterator.class.getName());
@@ -162,7 +159,7 @@ public class QuteProcessor {
     AdditionalBeanBuildItem additionalBeans() {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
-                .addBeanClasses(EngineProducer.class, TemplateProducer.class, VariantTemplateProducer.class, ResourcePath.class,
+                .addBeanClasses(EngineProducer.class, TemplateProducer.class, ResourcePath.class,
                         Template.class, TemplateInstance.class, CollectionTemplateExtensions.class,
                         MapTemplateExtensions.class, NumberTemplateExtensions.class)
                 .build();
@@ -173,8 +170,23 @@ public class QuteProcessor {
         long start = System.currentTimeMillis();
         List<TemplateAnalysis> analysis = new ArrayList<>();
 
-        // A dummy engine instance is used to parse and validate all templates during the build. The real engine instance is created at startup.
-        Engine dummyEngine = Engine.builder().addDefaultSectionHelpers().computeSectionHelper(name -> {
+        // A dummy engine instance is used to parse and validate all templates during the build
+        // The real engine instance is created at startup
+        EngineBuilder builder = Engine.builder().addDefaultSectionHelpers();
+
+        // Register user tags
+        for (TemplatePathBuildItem path : templatePaths) {
+            if (path.isTag()) {
+                String tagPath = path.getPath();
+                String tagName = tagPath.substring(TemplatePathBuildItem.TAGS.length(), tagPath.length());
+                if (tagName.contains(".")) {
+                    tagName = tagName.substring(0, tagName.lastIndexOf('.'));
+                }
+                builder.addSectionHelper(new UserTagSectionHelper.Factory(tagName, tagPath));
+            }
+        }
+
+        builder.computeSectionHelper(name -> {
             // Create a dummy section helper factory for an uknown section that could be potentially registered at runtime 
             return new SectionHelperFactory<SectionHelper>() {
                 @Override
@@ -187,8 +199,9 @@ public class QuteProcessor {
                     };
                 }
             };
-        }).addLocator(new TemplateLocator() {
+        });
 
+        builder.addLocator(new TemplateLocator() {
             @Override
             public Optional<TemplateLocation> locate(String id) {
                 TemplatePathBuildItem found = templatePaths.stream().filter(p -> p.getPath().equals(id)).findAny().orElse(null);
@@ -210,14 +223,13 @@ public class QuteProcessor {
                         LOGGER.warn("Unable to read the template from path: " + found.getFullPath(), e);
                     }
                 }
-                ;
                 return Optional.empty();
             }
-        }).build();
+        });
 
-        for (
+        Engine dummyEngine = builder.build();
 
-        TemplatePathBuildItem path : templatePaths) {
+        for (TemplatePathBuildItem path : templatePaths) {
             Template template = dummyEngine.getTemplate(path.getPath());
             if (template != null) {
                 analysis.add(new TemplateAnalysis(template.getGeneratedId(), template.getExpressions(), path));
@@ -551,23 +563,24 @@ public class QuteProcessor {
             }
         };
 
-        Set<ClassInfo> controlled = new HashSet<>();
-        Map<ClassInfo, AnnotationInstance> uncontrolled = new HashMap<>();
+        Map<DotName, ClassInfo> nameToClass = new HashMap<>();
+        Set<DotName> controlled = new HashSet<>();
+        Map<DotName, AnnotationInstance> uncontrolled = new HashMap<>();
         for (AnnotationInstance templateData : index.getAnnotations(ValueResolverGenerator.TEMPLATE_DATA)) {
-            processsTemplateData(index, templateData, templateData.target(), controlled, uncontrolled);
+            processsTemplateData(index, templateData, templateData.target(), controlled, uncontrolled, nameToClass);
         }
         for (AnnotationInstance containerInstance : index.getAnnotations(ValueResolverGenerator.TEMPLATE_DATA_CONTAINER)) {
             for (AnnotationInstance templateData : containerInstance.value().asNestedArray()) {
-                processsTemplateData(index, templateData, containerInstance.target(), controlled, uncontrolled);
+                processsTemplateData(index, templateData, containerInstance.target(), controlled, uncontrolled, nameToClass);
             }
         }
 
         for (ImplicitValueResolverBuildItem implicit : implicitClasses) {
-            if (controlled.contains(implicit.getClazz())) {
+            if (controlled.contains(implicit.getClazz().name())) {
                 LOGGER.debugf("Implicit value resolver build item ignored: %s is annotated with @TemplateData");
                 continue;
             }
-            AnnotationInstance templateData = uncontrolled.get(implicit.getClazz());
+            AnnotationInstance templateData = uncontrolled.get(implicit.getClazz().name());
             if (templateData != null) {
                 if (!templateData.equals(implicit.getTemplateData())) {
                     throw new IllegalStateException("Multiple implicit value resolver build items produced for "
@@ -575,7 +588,8 @@ public class QuteProcessor {
                 }
                 continue;
             }
-            uncontrolled.put(implicit.getClazz(), implicit.getTemplateData());
+            uncontrolled.put(implicit.getClazz().name(), implicit.getTemplateData());
+            nameToClass.put(implicit.getClazz().name(), implicit.getClazz());
         }
 
         ValueResolverGenerator generator = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput)
@@ -583,12 +597,12 @@ public class QuteProcessor {
                 .build();
 
         // @TemplateData
-        for (ClassInfo data : controlled) {
-            generator.generate(data);
+        for (DotName name : controlled) {
+            generator.generate(nameToClass.get(name));
         }
         // Uncontrolled classes
-        for (ClassInfo data : uncontrolled.keySet()) {
-            generator.generate(data);
+        for (DotName name : uncontrolled.keySet()) {
+            generator.generate(nameToClass.get(name));
         }
 
         Set<String> generatedTypes = new HashSet<>();
@@ -663,24 +677,6 @@ public class QuteProcessor {
                                 new IllegalStateException("No template found for " + injectionPoint.getTargetInfo())));
                     }
                 }
-
-            } else if (injectionPoint.getRequiredType().name().equals(VARIANT_TEMPLATE)) {
-
-                AnnotationInstance resourcePath = injectionPoint.getRequiredQualifier(RESOURCE_PATH);
-                String name;
-                if (resourcePath != null) {
-                    name = resourcePath.value().asString();
-                } else if (injectionPoint.hasDefaultedQualifier()) {
-                    name = getName(injectionPoint);
-                } else {
-                    name = null;
-                }
-                if (name != null) {
-                    if (filePaths.stream().noneMatch(path -> path.endsWith(name))) {
-                        validationErrors.produce(new ValidationErrorBuildItem(
-                                new IllegalStateException("No variant template found for " + injectionPoint.getTargetInfo())));
-                    }
-                }
             }
         }
     }
@@ -702,7 +698,7 @@ public class QuteProcessor {
                 variants.add(path);
             }
         }
-        LOGGER.debugf("Variant templates found: %s", baseToVariants);
+        LOGGER.debugf("Template variants found: %s", baseToVariants);
         return new TemplateVariantsBuildItem(baseToVariants);
     }
 
@@ -889,7 +885,7 @@ public class QuteProcessor {
         String name = info.isProperty() ? info.asProperty().name : info.asVirtualMethod().name;
         for (TemplateExtensionMethodBuildItem extensionMethod : templateExtensionMethods) {
             if (!Types.isAssignableFrom(extensionMethod.getMatchClass().name(), matchClass.name(), index)) {
-                // If "Bar extends Foo" then Bar should be matched for extension method "int get(Foo)"   
+                // If "Bar extends Foo" then Bar should be matched for the extension method "int get(Foo)"   
                 continue;
             }
             if (!extensionMethod.matchesName(name)) {
@@ -899,32 +895,55 @@ public class QuteProcessor {
             if (info.isVirtualMethod()) {
                 // For virtual method validate the number of params and attempt to validate the parameter types if available
                 VirtualMethodPart virtualMethod = info.part.asVirtualMethod();
-                if (virtualMethod.getParameters().size() != (extensionMethod.getMethod().parameters().size() - 1)) {
-                    // Check number of parameters; the first param of an extension method must be ignored
-                    continue;
+                boolean isVarArgs = ValueResolverGenerator.isVarArgs(extensionMethod.getMethod());
+                List<Type> parameters = extensionMethod.getMethod().parameters();
+                int lastParamIdx = parameters.size() - 1;
+                int realParamSize = parameters.size() - (TemplateExtension.ANY.equals(extensionMethod.getMatchName()) ? 2 : 1);
+
+                if (isVarArgs) {
+                    // For varargs methods match the minimal number of params
+                    if ((realParamSize - 1) > virtualMethod.getParameters().size()) {
+                        continue;
+                    }
+                } else {
+                    if (virtualMethod.getParameters().size() != realParamSize) {
+                        // Check number of parameters; some of params of the extension method must be ignored
+                        continue;
+                    }
                 }
+
                 // Check parameter types if available
                 boolean matches = true;
-                byte idx = 0;
+                // Skip base and name param if needed
+                int idx = TemplateExtension.ANY.equals(extensionMethod.getMatchName()) ? 2 : 1;
+
                 for (Expression param : virtualMethod.getParameters()) {
-                    idx++;
+
                     Match result = results.get(param.toOriginalString());
                     if (result != null && !result.isEmpty()) {
                         // Type info available - validate parameter type
+                        Type paramType;
+                        if (isVarArgs && (idx >= lastParamIdx)) {
+                            // Replace the type for varargs methods
+                            paramType = parameters.get(lastParamIdx).asArrayType().component();
+                        } else {
+                            paramType = parameters.get(idx);
+                        }
                         if (!Types.isAssignableFrom(result.type,
-                                extensionMethod.getMethod().parameters().get(idx), index)) {
+                                paramType, index)) {
                             matches = false;
                             break;
                         }
                     } else {
                         LOGGER.debugf(
                                 "Type info not available - skip validation for parameter [%s] of extension method [%s] for expression [%s] in template [%s] on line %s",
-                                extensionMethod.getMethod().parameterName(idx + 1),
+                                extensionMethod.getMethod().parameterName(idx),
                                 extensionMethod.getMethod().declaringClass().name() + "#" + extensionMethod.getMethod(),
                                 expression.toOriginalString(),
                                 templateIdToPathFun.apply(expression.getOrigin().getTemplateId()),
                                 expression.getOrigin().getLine());
                     }
+                    idx++;
                 }
                 if (!matches) {
                     continue;
@@ -987,18 +1006,41 @@ public class QuteProcessor {
         while (clazz != null) {
             for (MethodInfo method : clazz.methods()) {
                 if (Modifier.isPublic(method.flags()) && !Modifier.isStatic(method.flags())
-                        && !ValueResolverGenerator.isSynthetic(method.flags()) && method.name().equals(virtualMethod.getName())
-                        && virtualMethod.getParameters().size() == method.parameters().size()) {
+                        && !ValueResolverGenerator.isSynthetic(method.flags())
+                        && method.name().equals(virtualMethod.getName())) {
+                    boolean isVarArgs = ValueResolverGenerator.isVarArgs(method);
+                    List<Type> parameters = method.parameters();
+                    int lastParamIdx = parameters.size() - 1;
+
+                    if (isVarArgs) {
+                        // For varargs methods match the minimal number of params
+                        if (lastParamIdx > virtualMethod.getParameters().size()) {
+                            continue;
+                        }
+                    } else {
+                        if (virtualMethod.getParameters().size() != parameters.size()) {
+                            // Number of params must be equal
+                            continue;
+                        }
+                    }
+
                     // Check parameter types if available
                     boolean matches = true;
                     byte idx = 0;
+
                     for (Expression param : virtualMethod.getParameters()) {
-                        idx++;
                         Match result = results.get(param.toOriginalString());
                         if (result != null && !result.isEmpty()) {
                             // Type info available - validate parameter type
+                            Type paramType;
+                            if (isVarArgs && idx >= lastParamIdx) {
+                                // Replace the type for varargs methods
+                                paramType = parameters.get(lastParamIdx).asArrayType().component();
+                            } else {
+                                paramType = parameters.get(idx);
+                            }
                             if (!Types.isAssignableFrom(result.type,
-                                    method.parameters().get(idx - 1), index)) {
+                                    paramType, index)) {
                                 matches = false;
                                 break;
                             }
@@ -1011,6 +1053,7 @@ public class QuteProcessor {
                                     templateIdToPathFun.apply(expression.getOrigin().getTemplateId()),
                                     expression.getOrigin().getLine());
                         }
+                        idx++;
                     }
                     return matches ? method : null;
                 }
@@ -1026,15 +1069,18 @@ public class QuteProcessor {
     }
 
     private void processsTemplateData(IndexView index, AnnotationInstance templateData, AnnotationTarget annotationTarget,
-            Set<ClassInfo> controlled, Map<ClassInfo, AnnotationInstance> uncontrolled) {
+            Set<DotName> controlled, Map<DotName, AnnotationInstance> uncontrolled, Map<DotName, ClassInfo> nameToClass) {
         AnnotationValue targetValue = templateData.value("target");
         if (targetValue == null || targetValue.asClass().name().equals(ValueResolverGenerator.TEMPLATE_DATA)) {
-            controlled.add(annotationTarget.asClass());
+            ClassInfo annotationTargetClass = annotationTarget.asClass();
+            controlled.add(annotationTargetClass.name());
+            nameToClass.put(annotationTargetClass.name(), annotationTargetClass);
         } else {
             ClassInfo uncontrolledClass = index.getClassByName(targetValue.asClass().name());
             if (uncontrolledClass != null) {
-                uncontrolled.compute(uncontrolledClass, (c, v) -> {
+                uncontrolled.compute(uncontrolledClass.name(), (c, v) -> {
                     if (v == null) {
+                        nameToClass.put(uncontrolledClass.name(), uncontrolledClass);
                         return templateData;
                     }
                     if (!Objects.equals(v.value(ValueResolverGenerator.IGNORE),
@@ -1052,7 +1098,6 @@ public class QuteProcessor {
                 LOGGER.warnf("@TemplateData#target() not available: %s", annotationTarget.asClass().name());
             }
         }
-
     }
 
     private Set<Expression> collectInjectExpressions(TemplatesAnalysisBuildItem analysis) {

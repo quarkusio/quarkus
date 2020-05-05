@@ -8,8 +8,8 @@ jobs:
       runs-on: ubuntu-latest
       name: auto label
       steps:
-      - name: Debug Action
-        uses: hmarr/debug-action@v1.0.0
+#      - name: Debug Action
+#        uses: hmarr/debug-action@v1.0.0
       - name: issuelabeler
         continue-on-error: true
         uses: docker://maxandersen/jbang-issuelabeler

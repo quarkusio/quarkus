@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -12,6 +13,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -46,6 +48,11 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration.InsecureRequests;
 import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.quarkus.vertx.http.runtime.filters.Filters;
 import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
+import io.quarkus.vertx.http.runtime.filters.QuarkusRequestWrapper;
+import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogHandler;
+import io.quarkus.vertx.http.runtime.filters.accesslog.AccessLogReceiver;
+import io.quarkus.vertx.http.runtime.filters.accesslog.DefaultAccessLogReceiver;
+import io.quarkus.vertx.http.runtime.filters.accesslog.JBossLoggingAccessLogReceiver;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -55,6 +62,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
@@ -77,6 +85,11 @@ import io.vertx.ext.web.handler.BodyHandler;
 
 @Recorder
 public class VertxHttpRecorder {
+
+    /**
+     * The key that the request start time is stored under
+     */
+    public static final String REQUEST_START_TIME = "io.quarkus.request-start-time";
 
     public static final String MAX_REQUEST_SIZE_KEY = "io.quarkus.max-request-size";
 
@@ -125,7 +138,7 @@ public class VertxHttpRecorder {
         }
         VertxConfiguration vertxConfiguration = new VertxConfiguration();
         ConfigInstantiator.handleObject(vertxConfiguration);
-        Vertx vertx = VertxCoreRecorder.initialize(vertxConfiguration);
+        Vertx vertx = VertxCoreRecorder.initialize(vertxConfiguration, null);
 
         try {
             HttpConfiguration config = new HttpConfiguration();
@@ -185,7 +198,8 @@ public class VertxHttpRecorder {
             List<Filter> filterList, Supplier<Vertx> vertx,
             RuntimeValue<Router> runtimeValue, String rootPath, LaunchMode launchMode, boolean requireBodyHandler,
             Handler<RoutingContext> bodyHandler, HttpConfiguration httpConfiguration,
-            GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig) {
+            GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
+            Executor executor) {
         // install the default route at the end
         Router router = runtimeValue.getValue();
 
@@ -281,10 +295,37 @@ public class VertxHttpRecorder {
                 }
             };
         }
+        boolean quarkusWrapperNeeded = false;
 
         if (shutdownConfig.isShutdownTimeoutSet()) {
             gracefulShutdownFilter.next(root);
             root = gracefulShutdownFilter;
+            quarkusWrapperNeeded = true;
+        }
+
+        AccessLogConfig accessLog = httpConfiguration.accessLog;
+        if (accessLog.enabled) {
+            AccessLogReceiver receiver;
+            if (accessLog.logToFile) {
+                File outputDir = accessLog.logDirectory.isPresent() ? new File(accessLog.logDirectory.get()) : new File("");
+                receiver = new DefaultAccessLogReceiver(executor, outputDir, accessLog.baseFileName, accessLog.logSuffix,
+                        accessLog.rotate);
+            } else {
+                receiver = new JBossLoggingAccessLogReceiver(accessLog.category);
+            }
+            AccessLogHandler handler = new AccessLogHandler(receiver, accessLog.pattern, getClass().getClassLoader());
+            router.route().order(Integer.MIN_VALUE).handler(handler);
+            quarkusWrapperNeeded = true;
+        }
+
+        if (quarkusWrapperNeeded) {
+            Handler<HttpServerRequest> old = root;
+            root = new Handler<HttpServerRequest>() {
+                @Override
+                public void handle(HttpServerRequest event) {
+                    old.handle(new QuarkusRequestWrapper(event));
+                }
+            };
         }
 
         Handler<HttpServerRequest> delegate = root;
@@ -294,6 +335,15 @@ public class VertxHttpRecorder {
                 delegate.handle(new ResumingRequestWrapper(event));
             }
         };
+        if (httpConfiguration.recordRequestStartTime) {
+            router.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
+                @Override
+                public void handle(RoutingContext event) {
+                    event.put(REQUEST_START_TIME, System.nanoTime());
+                    event.next();
+                }
+            });
+        }
 
         rootHandler = root;
     }
@@ -895,7 +945,11 @@ public class VertxHttpRecorder {
                                 //this can happen if blocking authentication is involved for get requests
                                 if (!event.request().isEnded()) {
                                     event.request().resume();
-                                    bodyHandler.handle(event);
+                                    if (CAN_HAVE_BODY.contains(event.request().method())) {
+                                        bodyHandler.handle(event);
+                                    } else {
+                                        event.next();
+                                    }
                                 } else {
                                     event.next();
                                 }
@@ -906,9 +960,16 @@ public class VertxHttpRecorder {
                     });
                 } else {
                     event.request().resume();
-                    bodyHandler.handle(event);
+                    if (CAN_HAVE_BODY.contains(event.request().method())) {
+                        bodyHandler.handle(event);
+                    } else {
+                        event.next();
+                    }
                 }
             }
         };
     }
+
+    private static final List<HttpMethod> CAN_HAVE_BODY = Arrays.asList(HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH,
+            HttpMethod.DELETE);
 }

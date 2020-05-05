@@ -12,6 +12,6 @@ public class JaxRsSecurityConfig {
     /**
      * if set to true, access to all JAX-RS resources will be denied by default
      */
-    @ConfigItem(name = "deny-unannotated-endpoints", defaultValue = "false")
+    @ConfigItem(name = "deny-unannotated-endpoints")
     public boolean denyJaxRs;
 }

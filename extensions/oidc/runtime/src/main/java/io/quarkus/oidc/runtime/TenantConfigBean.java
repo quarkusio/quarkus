@@ -3,6 +3,8 @@ package io.quarkus.oidc.runtime;
 import java.util.Map;
 import java.util.function.Function;
 
+import io.quarkus.oidc.OidcTenantConfig;
+
 public class TenantConfigBean {
 
     private final Map<String, TenantConfigContext> staticTenantsConfig;

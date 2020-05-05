@@ -1,6 +1,7 @@
 package io.quarkus.bootstrap.resolver.maven;
 
 import io.quarkus.bootstrap.BootstrapException;
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
@@ -107,6 +108,7 @@ public class BootstrapMavenContext {
     private File globalSettings;
     private Boolean offline;
     private LocalWorkspace workspace;
+    private LocalProject currentProject;
     private Settings settings;
     private List<org.apache.maven.model.Profile> activeSettingsProfiles;
     private RepositorySystem repoSystem;
@@ -140,7 +142,14 @@ public class BootstrapMavenContext {
         this.repoSystem = config.repoSystem;
         this.repoSession = config.repoSession;
         this.remoteRepos = config.remoteRepos;
-        this.workspace = config.workspace == null ? (config.workspaceDiscovery ? resolveWorkspace() : null) : config.workspace;
+        if (config.currentProject != null) {
+            this.currentProject = config.currentProject;
+            this.currentPom = currentProject.getRawModel().getPomFile().toPath();
+            this.workspace = config.currentProject.getWorkspace();
+        } else if (config.workspaceDiscovery) {
+            currentProject = resolveCurrentProject();
+            this.workspace = currentProject == null ? null : currentProject.getWorkspace();
+        }
         userSettings = config.userSettings == null
                 ? resolveSettingsFile(getCliOptions().getOptionValue(ALTERNATE_USER_SETTINGS),
                         () -> new File(userMavenConfigurationHome, SETTINGS_XML))
@@ -149,6 +158,18 @@ public class BootstrapMavenContext {
             final String envM2Home = System.getenv(MAVEN_HOME);
             return new File(PropertyUtils.getProperty(MAVEN_DOT_HOME, envM2Home != null ? envM2Home : ""), "conf/settings.xml");
         });
+    }
+
+    public AppArtifact getCurrentProjectArtifact(String extension) throws AppModelResolverException {
+        if (currentProject != null) {
+            return currentProject.getAppArtifact(extension);
+        }
+        final Model model = loadCurrentProjectModel();
+        if (model == null) {
+            return null;
+        }
+        return new AppArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), "", extension,
+                ModelUtils.getVersion(model));
     }
 
     public LocalWorkspace getWorkspace() {
@@ -219,12 +240,11 @@ public class BootstrapMavenContext {
         return localRepo == null ? localRepo = resolveLocalRepo(getEffectiveSettings()) : localRepo;
     }
 
-    private LocalWorkspace resolveWorkspace() throws AppModelResolverException {
+    private LocalProject resolveCurrentProject() throws AppModelResolverException {
         try {
             return LocalProject.loadWorkspace(this);
         } catch (BootstrapException e) {
-            throw new AppModelResolverException(
-                    "Failed to load the workspace for the current project at " + getCurrentProjectPomOrNull());
+            throw new AppModelResolverException("Failed to load current project at " + getCurrentProjectPomOrNull(), e);
         }
     }
 
@@ -391,20 +411,26 @@ public class BootstrapMavenContext {
                 .build();
     }
 
-    private List<RemoteRepository> resolveCurrentProjectRepos(List<RemoteRepository> repos)
-            throws AppModelResolverException {
+    private Model loadCurrentProjectModel() throws AppModelResolverException {
         final Path pom = getCurrentProjectPomOrNull();
         if (pom == null) {
-            return repos;
+            return null;
         }
-        final Artifact projectArtifact;
         try {
-            final Model model = ModelUtils.readModel(pom);
-            projectArtifact = new DefaultArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), "", "pom",
-                    ModelUtils.getVersion(model));
+            return ModelUtils.readModel(pom);
         } catch (IOException e) {
             throw new AppModelResolverException("Failed to parse " + pom, e);
         }
+    }
+
+    private List<RemoteRepository> resolveCurrentProjectRepos(List<RemoteRepository> repos)
+            throws AppModelResolverException {
+        final Model model = loadCurrentProjectModel();
+        if (model == null) {
+            return repos;
+        }
+        final Artifact projectArtifact = new DefaultArtifact(ModelUtils.getGroupId(model), model.getArtifactId(), "", "pom",
+                ModelUtils.getVersion(model));
         try {
             return getRepositorySystem().readArtifactDescriptor(getRepositorySystemSession(), new ArtifactDescriptorRequest()
                     .setArtifact(projectArtifact)
@@ -598,21 +624,85 @@ public class BootstrapMavenContext {
                 || currentProjectExists != null && !currentProjectExists) {
             return currentPom;
         }
-        String pomName = alternatePomName == null ? getCliOptions().getOptionValue(ALTERNATE_POM_FILE) : alternatePomName;
-        if (pomName == null) {
-            pomName = "pom.xml";
+        final Path pom = resolveCurrentPom();
+        return currentPom = (currentProjectExists = pom != null) ? pom : null;
+    }
+
+    private Path resolveCurrentPom() {
+
+        Path alternatePom = null;
+        // explicitly set absolute path has a priority
+        if (alternatePomName != null) {
+            alternatePom = Paths.get(alternatePomName);
+            if (alternatePom.isAbsolute()) {
+                return pomXmlOrNull(alternatePom);
+            }
         }
-        Path pom = Paths.get(pomName);
-        if (!pom.isAbsolute()) {
-            pom = getCurrentProjectBaseDir().resolve(pom);
+
+        if (alternatePom == null) {
+            // check whether an alternate pom was provided as a CLI arg
+            final String cliPomName = getCliOptions().getOptionValue(ALTERNATE_POM_FILE);
+            if (cliPomName != null) {
+                alternatePom = Paths.get(cliPomName);
+            }
         }
-        if (Files.isDirectory(pom)) {
-            pom = pom.resolve("pom.xml");
+
+        final String basedirProp = PropertyUtils.getProperty(BASEDIR);
+        if (basedirProp != null) {
+            // this is the actual current project dir
+            final Path basedir = Paths.get(basedirProp);
+
+            // if the basedir matches the parent of the alternate pom, it's the alternate pom
+            if (alternatePom != null
+                    && alternatePom.isAbsolute()
+                    && alternatePom.getParent().equals(basedir)) {
+                return alternatePom;
+            }
+            // even if the alternate pom has been specified we try the default pom.xml first
+            // since unlike Maven CLI we don't know which project originated the build
+            Path pom = basedir.resolve("pom.xml");
+            if (Files.exists(pom)) {
+                return pom;
+            }
+
+            // if alternate pom path has a single element we can try it
+            // if it has more, it won't match the basedir
+            if (alternatePom != null && !alternatePom.isAbsolute() && alternatePom.getNameCount() == 1) {
+                pom = basedir.resolve(alternatePom);
+                if (Files.exists(pom)) {
+                    return pom;
+                }
+            }
+
+            // give up
+            return null;
         }
-        return currentPom = (currentProjectExists = Files.exists(pom)) ? pom : null;
+
+        // we are not in the context of a Maven build
+        if (alternatePom != null && alternatePom.isAbsolute()) {
+            return pomXmlOrNull(alternatePom);
+        }
+
+        // trying the current dir as the basedir
+        final Path basedir = Paths.get("").normalize().toAbsolutePath();
+        if (alternatePom != null) {
+            return pomXmlOrNull(basedir.resolve(alternatePom));
+        }
+        final Path pom = basedir.resolve("pom.xml");
+        return Files.exists(pom) ? pom : null;
+    }
+
+    private static Path pomXmlOrNull(Path path) {
+        if (Files.isDirectory(path)) {
+            path = path.resolve("pom.xml");
+        }
+        return Files.exists(path) ? path : null;
     }
 
     public Path getCurrentProjectBaseDir() {
+        if (currentProject != null) {
+            return currentProject.getDir();
+        }
         final String basedirProp = PropertyUtils.getProperty(BASEDIR);
         return basedirProp == null ? Paths.get("").normalize().toAbsolutePath() : Paths.get(basedirProp);
     }
@@ -630,6 +720,12 @@ public class BootstrapMavenContext {
                 return null;
             }
         }
-        return Paths.get(rootBaseDir);
+        final Path rootProjectBaseDirPath = Paths.get(rootBaseDir);
+        // if the root project dir set by the Maven process (through the env variable) doesn't have a pom.xml
+        // then it probably isn't relevant
+        if (!Files.exists(rootProjectBaseDirPath.resolve("pom.xml"))) {
+            return null;
+        }
+        return rootProjectBaseDirPath;
     }
 }

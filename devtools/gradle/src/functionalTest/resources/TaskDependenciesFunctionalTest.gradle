@@ -1,7 +1,0 @@
-plugins {
-  id 'java'
-  id 'io.quarkus'
-}
-
-task acceptTest(type: Test) {
-}

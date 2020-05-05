@@ -16,7 +16,7 @@ public class HttpConfiguration {
     /**
      * Enable the CORS filter.
      */
-    @ConfigItem(name = "cors", defaultValue = "false")
+    @ConfigItem(name = "cors")
     public boolean corsEnabled;
 
     /**
@@ -59,14 +59,14 @@ public class HttpConfiguration {
      * If this is true then the address, scheme etc will be set from headers forwarded by the proxy server, such as
      * {@code X-Forwarded-For}. This should only be set if you are behind a proxy that sets these headers.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean proxyAddressForwarding;
 
     /**
      * If this is true and proxy address forwarding is enabled then the standard {@code Forwarded} header will be used,
      * rather than the more common but not standard {@code X-Forwarded-For}.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean allowForwarded;
 
     /**
@@ -147,25 +147,25 @@ public class HttpConfiguration {
     /**
      * Enable socket reuse port (linux/macOs native transport only)
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean soReusePort;
 
     /**
      * Enable tcp quick ack (linux native transport only)
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean tcpQuickAck;
 
     /**
      * Enable tcp cork (linux native transport only)
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean tcpCork;
 
     /**
      * Enable tcp fast open (linux native transport only)
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean tcpFastOpen;
 
     /**
@@ -177,8 +177,18 @@ public class HttpConfiguration {
     /**
      * Enable listening to host:port
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean domainSocketEnabled;
+
+    /**
+     * If this is true then the request start time will be recorded to enable logging of total request time.
+     * 
+     * This has a small performance penalty, so is disabled by default.
+     */
+    @ConfigItem
+    public boolean recordRequestStartTime;
+
+    AccessLogConfig accessLog;
 
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;
@@ -188,7 +198,7 @@ public class HttpConfiguration {
         return launchMode == LaunchMode.TEST ? testSslPort : sslPort;
     }
 
-    public static enum InsecureRequests {
+    public enum InsecureRequests {
         ENABLED,
         REDIRECT,
         DISABLED;

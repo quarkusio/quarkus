@@ -253,7 +253,7 @@ mvn package -Pnative
 or, if using Gradle:
 [source, subs=attributes+]
 ----
-./gradlew buildNative
+./gradlew build -Dquarkus.package.type=native
 ----
 
 NOTE: If you are building on a non-Linux system, you will need to also pass in a property instructing quarkus to use a docker build as Amazon
@@ -268,7 +268,7 @@ Lambda requires linux binaries.  You can do this by passing this property to you
 or, if using Gradle:
 [source, subs=attributes+]
 ----
-./gradlew buildNative --docker-build=true
+./gradlew build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
 ----
 
 Either of these commands will compile and create a native executable image.  It also generates a zip file `target/function.zip`.

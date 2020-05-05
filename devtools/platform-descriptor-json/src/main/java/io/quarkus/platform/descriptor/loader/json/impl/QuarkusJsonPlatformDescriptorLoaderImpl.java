@@ -28,9 +28,10 @@ public class QuarkusJsonPlatformDescriptorLoaderImpl
                     }
                 });
 
-        platform.setManagedDependencies(context.getArtifactResolver().getManagedDependencies(platform.getBomGroupId(),
-                platform.getBomArtifactId(), null, "pom", platform.getBomVersion()));
-
+        if (context.getArtifactResolver() != null) {
+            platform.setManagedDependencies(context.getArtifactResolver().getManagedDependencies(platform.getBomGroupId(),
+                    platform.getBomArtifactId(), null, "pom", platform.getBomVersion()));
+        }
         platform.setResourceLoader(context.getResourceLoader());
         platform.setMessageWriter(context.getMessageWriter());
 

@@ -4,7 +4,6 @@ import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.IoUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,8 +45,8 @@ public class SystemPropertyOverridesPomPropertyDependencyTestCase extends Collec
         IoUtils.copy(installDir.resolve(root.toPomArtifact().getArtifactFileName()), projectDir.resolve("pom.xml"));
 
         // workspace reader for the root project
-        final LocalWorkspace workspace = LocalProject.loadWorkspace(projectDir).getWorkspace();
+        final LocalProject currentProject = LocalProject.loadWorkspace(projectDir);
 
-        return initResolver(workspace);
+        return initResolver(currentProject);
     }
 }

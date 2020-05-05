@@ -84,3 +84,7 @@ check {
     // Run the functional tests as part of `check`
     dependsOn(tasks.functionalTest)
 }
+
+wrapper {
+    distributionType = Wrapper.DistributionType.ALL
+}

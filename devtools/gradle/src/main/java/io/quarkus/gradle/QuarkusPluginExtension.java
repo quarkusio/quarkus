@@ -3,12 +3,10 @@ package io.quarkus.gradle;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import org.gradle.api.Project;
-import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.Convention;
@@ -16,10 +14,12 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.testing.Test;
 import org.gradle.jvm.tasks.Jar;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
+import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.gradle.tasks.QuarkusGradleUtils;
 import io.quarkus.runtime.LaunchMode;
@@ -38,14 +38,26 @@ public class QuarkusPluginExtension {
 
     private File outputConfigDirectory;
 
-    private Map<AppArtifactKey, Task> projectDepJarTasks = new HashMap<>();
-
     public QuarkusPluginExtension(Project project) {
         this.project = project;
     }
 
-    void addProjectDepJarTask(Project projectDep, Task jarTask) {
-        projectDepJarTasks.put(new AppArtifactKey(projectDep.getGroup().toString(), projectDep.getName()), jarTask);
+    void beforeTest(Test task) {
+        try {
+            final Map<String, Object> props = task.getSystemProperties();
+
+            final AppModel appModel = getAppModelResolver(LaunchMode.TEST)
+                    .resolveModel(getAppArtifact());
+            final Path serializedModel = QuarkusGradleUtils.serializeAppModel(appModel, task);
+            props.put(BootstrapConstants.SERIALIZED_APP_MODEL, serializedModel.toString());
+
+            final String nativeRunner = task.getProject().getBuildDir().toPath().resolve(finalName() + "-runner")
+                    .toAbsolutePath()
+                    .toString();
+            props.put("native.image.path", nativeRunner);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to resolve deployment classpath", e);
+        }
     }
 
     public Path appJarOrClasses() {
@@ -66,7 +78,7 @@ public class QuarkusPluginExtension {
             JavaPluginConvention javaConvention = convention.findPlugin(JavaPluginConvention.class);
             if (javaConvention != null) {
                 final SourceSet mainSourceSet = javaConvention.getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-                final String classesPath = QuarkusGradleUtils.getClassesDir(mainSourceSet, jarTask);
+                final String classesPath = QuarkusGradleUtils.getClassesDir(mainSourceSet, jarTask.getTemporaryDir());
                 if (classesPath != null) {
                     classesDir = Paths.get(classesPath);
                 }
@@ -151,7 +163,7 @@ public class QuarkusPluginExtension {
     }
 
     public AppModelResolver getAppModelResolver(LaunchMode mode) {
-        return new AppModelGradleResolver(project, mode, projectDepJarTasks);
+        return new AppModelGradleResolver(project, mode);
     }
 
     /**

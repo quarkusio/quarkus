@@ -43,6 +43,8 @@ public class MongoOperations {
     public static final String ID = "_id";
     public static final String MONGODB_DATABASE = "quarkus.mongodb.database";
 
+    private static volatile String defaultDatabaseName;
+
     //
     // Instance methods
 
@@ -277,9 +279,20 @@ public class MongoOperations {
         if (entity != null && !entity.database().isEmpty()) {
             return mongoClient.getDatabase(entity.database());
         }
-        String databaseName = ConfigProvider.getConfig()
-                .getValue(MONGODB_DATABASE, String.class);
+        String databaseName = getDefaultDatabaseName();
         return mongoClient.getDatabase(databaseName);
+    }
+
+    private static String getDefaultDatabaseName() {
+        if (defaultDatabaseName == null) {
+            synchronized (MongoOperations.class) {
+                if (defaultDatabaseName == null) {
+                    defaultDatabaseName = ConfigProvider.getConfig()
+                            .getValue(MONGODB_DATABASE, String.class);
+                }
+            }
+        }
+        return defaultDatabaseName;
     }
 
     private static MongoClient mongoClient(MongoEntity entity) {
@@ -313,7 +326,7 @@ public class MongoOperations {
     @SuppressWarnings("rawtypes")
     public static PanacheQuery<?> find(Class<?> entityClass, String query, Sort sort, Object... params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         Document docSort = sortToDocument(sort);
         MongoCollection collection = mongoCollection(entityClass);
         return new PanacheQueryImpl(collection, docQuery, docSort);
@@ -400,7 +413,7 @@ public class MongoOperations {
     @SuppressWarnings("rawtypes")
     public static PanacheQuery<?> find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         Document docSort = sortToDocument(sort);
         MongoCollection collection = mongoCollection(entityClass);
         return new PanacheQueryImpl(collection, docQuery, docSort);
@@ -546,14 +559,14 @@ public class MongoOperations {
 
     public static long count(Class<?> entityClass, String query, Object... params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         MongoCollection collection = mongoCollection(entityClass);
         return collection.countDocuments(docQuery);
     }
 
     public static long count(Class<?> entityClass, String query, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         MongoCollection collection = mongoCollection(entityClass);
         return collection.countDocuments(docQuery);
     }
@@ -582,14 +595,14 @@ public class MongoOperations {
 
     public static long delete(Class<?> entityClass, String query, Object... params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         MongoCollection collection = mongoCollection(entityClass);
         return collection.deleteMany(docQuery).getDeletedCount();
     }
 
     public static long delete(Class<?> entityClass, String query, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
-        Document docQuery = Document.parse(bindQuery);
+        BsonDocument docQuery = BsonDocument.parse(bindQuery);
         MongoCollection collection = mongoCollection(entityClass);
         return collection.deleteMany(docQuery).getDeletedCount();
     }
@@ -617,15 +630,15 @@ public class MongoOperations {
     }
 
     private static PanacheUpdate executeUpdate(Class<?> entityClass, String update, Object... params) {
-        String bindUpdate = MongoOperations.bindUpdate(entityClass, update, params);
-        Document docUpdate = Document.parse(bindUpdate);
+        String bindUpdate = bindUpdate(entityClass, update, params);
+        BsonDocument docUpdate = BsonDocument.parse(bindUpdate);
         MongoCollection collection = mongoCollection(entityClass);
         return new PanacheUpdateImpl(entityClass, docUpdate, collection);
     }
 
     private static PanacheUpdate executeUpdate(Class<?> entityClass, String update, Map<String, Object> params) {
-        String bindUpdate = MongoOperations.bindUpdate(entityClass, update, params);
-        Document docUpdate = Document.parse(bindUpdate);
+        String bindUpdate = bindUpdate(entityClass, update, params);
+        BsonDocument docUpdate = BsonDocument.parse(bindUpdate);
         MongoCollection collection = mongoCollection(entityClass);
         return new PanacheUpdateImpl(entityClass, docUpdate, collection);
     }

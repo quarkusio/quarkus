@@ -119,6 +119,14 @@ public class MavenArtifactResolver {
         this.remoteRepoManager = mvnSettings.getRemoteRepositoryManager();
     }
 
+    public MavenArtifactResolver(BootstrapMavenContext mvnSettings) throws AppModelResolverException {
+        this.repoSystem = mvnSettings.getRepositorySystem();
+        this.repoSession = mvnSettings.getRepositorySystemSession();
+        localRepoManager = null;
+        this.remoteRepos = mvnSettings.getRemoteRepositories();
+        this.remoteRepoManager = mvnSettings.getRemoteRepositoryManager();
+    }
+
     public MavenLocalRepositoryManager getLocalRepositoryManager() {
         return localRepoManager;
     }
@@ -140,11 +148,20 @@ public class MavenArtifactResolver {
     }
 
     public ArtifactResult resolve(Artifact artifact) throws AppModelResolverException {
+        return resolveInternal(artifact, remoteRepos);
+    }
+
+    public ArtifactResult resolve(Artifact artifact, List<RemoteRepository> mainRepos) throws AppModelResolverException {
+        return resolveInternal(artifact, aggregateRepositories(mainRepos, remoteRepos));
+    }
+
+    private ArtifactResult resolveInternal(Artifact artifact, List<RemoteRepository> aggregatedRepos)
+            throws AppModelResolverException {
         try {
             return repoSystem.resolveArtifact(repoSession,
                     new ArtifactRequest()
                             .setArtifact(artifact)
-                            .setRepositories(remoteRepos));
+                            .setRepositories(aggregatedRepos));
         } catch (ArtifactResolutionException e) {
             throw new AppModelResolverException("Failed to resolve artifact " + artifact, e);
         }

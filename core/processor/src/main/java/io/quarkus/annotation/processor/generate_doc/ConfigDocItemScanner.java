@@ -37,15 +37,7 @@ final public class ConfigDocItemScanner {
     private static final String IO_QUARKUS_TEST_EXTENSION_PACKAGE = "io.quarkus.extest.";
 
     private final Set<ConfigRootInfo> configRoots = new HashSet<>();
-    private final Set<String> processorClassMembers = new HashSet<>();
     private final Map<String, TypeElement> configGroups = new HashMap<>();
-
-    /**
-     * Holds build steps member. These represents possible used configuration roots.
-     */
-    public void addProcessorClassMember(String member) {
-        processorClassMembers.add(member);
-    }
 
     /**
      * Record configuration group. It will later be visited to find configuration items.
@@ -238,9 +230,10 @@ final public class ConfigDocItemScanner {
             Properties configurationRootsParExtensionFileName) throws IOException {
         Set<ConfigDocGeneratedOutput> outputs = new HashSet<>();
 
-        Set<String> extensionFileNamesToGenerate = processorClassMembers
+        Set<String> extensionFileNamesToGenerate = inMemoryScannedItemsHolder
+                .getConfigRootConfigItems()
+                .keySet()
                 .stream()
-                .filter(allExtensionGeneratedDocs::containsKey)
                 .map(member -> computeExtensionDocFileName(member))
                 .collect(Collectors.toSet());
 
@@ -345,8 +338,7 @@ final public class ConfigDocItemScanner {
     @Override
     public String toString() {
         return "ConfigDocItemScanner{" +
-                ", configRoots=" + configRoots +
-                ", processorClassMembers=" + processorClassMembers +
+                "configRoots=" + configRoots +
                 ", configGroups=" + configGroups +
                 '}';
     }

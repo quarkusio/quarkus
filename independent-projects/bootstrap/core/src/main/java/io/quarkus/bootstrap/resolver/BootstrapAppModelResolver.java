@@ -5,6 +5,7 @@ import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.bootstrap.resolver.maven.BuildDependencyGraphVisitor;
 import io.quarkus.bootstrap.resolver.maven.DeploymentInjectingDependencyVisitor;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
@@ -82,16 +83,16 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         }
         mvn.getLocalRepositoryManager().relink(artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier(),
                 artifact.getType(), artifact.getVersion(), path);
-        artifact.setPath(path);
+        artifact.setPaths(PathsCollection.of(path));
     }
 
     @Override
     public Path resolve(AppArtifact artifact) throws AppModelResolverException {
         if (artifact.isResolved()) {
-            return artifact.getPath();
+            return artifact.getPaths().iterator().next();
         }
         final Path path = mvn.resolve(toAetherArtifact(artifact)).getArtifact().getFile().toPath();
-        artifact.setPath(path);
+        artifact.setPaths(PathsCollection.of(path));
         return path;
     }
 
@@ -145,6 +146,11 @@ public class BootstrapAppModelResolver implements AppModelResolver {
 
     private AppModel doResolveModel(AppArtifact appArtifact, List<Dependency> directMvnDeps, AppArtifact managingProject)
             throws AppModelResolverException {
+        if (appArtifact == null) {
+            throw new IllegalArgumentException("Application artifact is null");
+        }
+        final Artifact mvnArtifact = toAetherArtifact(appArtifact);
+
         AppModel.Builder appBuilder = new AppModel.Builder();
         List<Dependency> managedDeps = Collections.emptyList();
         List<RemoteRepository> managedRepos = Collections.emptyList();
@@ -161,15 +167,15 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             excludedScopes.add("provided");
         }
 
+        if (!appArtifact.isResolved()) {
+            final ArtifactResult resolveResult = mvn.resolve(mvnArtifact, managedRepos);
+            appArtifact.setPaths(PathsCollection.of(resolveResult.getArtifact().getFile().toPath()));
+        }
+
         final Set<AppArtifactKey> appDeps = new HashSet<>();
         final List<AppDependency> userDeps = new ArrayList<>();
-        DependencyNode resolvedDeps;
-        if (appArtifact != null) {
-            resolvedDeps = mvn.resolveManagedDependencies(toAetherArtifact(appArtifact),
-                    directMvnDeps, managedDeps, managedRepos, excludedScopes.toArray(new String[0])).getRoot();
-        } else {
-            throw new IllegalArgumentException("Application artifact is null");
-        }
+        DependencyNode resolvedDeps = mvn.resolveManagedDependencies(mvnArtifact,
+                directMvnDeps, managedDeps, managedRepos, excludedScopes.toArray(new String[0])).getRoot();
 
         final TreeDependencyVisitor visitor = new TreeDependencyVisitor(new DependencyVisitor() {
             @Override
@@ -193,7 +199,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
         }
 
         final ArtifactDescriptorResult appArtifactDescr = mvn.resolveDescriptor(toAetherArtifact(appArtifact));
-        if (managedDeps == null) {
+        if (managingProject == null) {
             managedDeps = appArtifactDescr.getManagedDependencies();
         } else {
             final List<Dependency> mergedManagedDeps = new ArrayList<>(managedDeps.size());
@@ -255,6 +261,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                 }
             }
         }
+
         List<AppDependency> fullDeploymentDeps = new ArrayList<>(userDeps);
         fullDeploymentDeps.addAll(deploymentDeps);
         return appBuilder
@@ -379,13 +386,9 @@ public class BootstrapAppModelResolver implements AppModelResolver {
     }
 
     private static Artifact toAetherArtifact(AppArtifact artifact) {
-        Artifact defaultArtifact = new DefaultArtifact(artifact.getGroupId(), artifact.getArtifactId(),
+        return new DefaultArtifact(artifact.getGroupId(), artifact.getArtifactId(),
                 artifact.getClassifier(),
                 artifact.getType(), artifact.getVersion());
-        if (artifact.getPath() != null) {
-            defaultArtifact = defaultArtifact.setFile(artifact.getPath().toFile());
-        }
-        return defaultArtifact;
     }
 
     private static AppArtifact toAppArtifact(Artifact artifact) {
@@ -393,7 +396,7 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                 artifact.getClassifier(), artifact.getExtension(), artifact.getVersion());
         final File file = artifact.getFile();
         if (file != null) {
-            appArtifact.setPath(file.toPath());
+            appArtifact.setPaths(PathsCollection.of(file.toPath()));
         }
         return appArtifact;
     }

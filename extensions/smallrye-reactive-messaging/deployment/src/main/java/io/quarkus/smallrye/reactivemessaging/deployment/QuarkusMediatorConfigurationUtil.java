@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.deployment;
 
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.ACKNOWLEDGMENT;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.BLOCKING;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.BROADCAST;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMING;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.MERGE;
@@ -22,6 +23,7 @@ import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguratio
 import io.smallrye.reactive.messaging.Invoker;
 import io.smallrye.reactive.messaging.MediatorConfigurationSupport;
 import io.smallrye.reactive.messaging.Shape;
+import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.annotations.Merge;
 
 final class QuarkusMediatorConfigurationUtil {
@@ -30,7 +32,7 @@ final class QuarkusMediatorConfigurationUtil {
     }
 
     static QuarkusMediatorConfiguration create(MethodInfo methodInfo, BeanInfo bean,
-            String generatedInvokerName, RecorderContext recorderContext, ClassLoader cl, boolean strict) {
+            String generatedInvokerName, RecorderContext recorderContext, ClassLoader cl) {
 
         Class<?> returnTypeClass = load(methodInfo.returnType().name().toString(), cl);
         Class[] parameterTypeClasses = new Class[methodInfo.parameters().size()];
@@ -43,8 +45,7 @@ final class QuarkusMediatorConfigurationUtil {
                 fullMethodName(methodInfo), returnTypeClass, parameterTypeClasses,
                 new ReturnTypeGenericTypeAssignable(methodInfo, cl),
                 methodInfo.parameters().isEmpty() ? new AlwaysInvalidIndexGenericTypeAssignable()
-                        : new MethodParamGenericTypeAssignable(methodInfo, 0, cl),
-                strict);
+                        : new MethodParamGenericTypeAssignable(methodInfo, 0, cl));
 
         configuration.setBeanId(bean.getIdentifier());
         configuration.setMethodName(methodInfo.name());
@@ -115,6 +116,19 @@ final class QuarkusMediatorConfigurationUtil {
             }
             return null;
         }));
+
+        AnnotationInstance blockingAnnotation = methodInfo.annotation(BLOCKING);
+        if (blockingAnnotation != null) {
+            mediatorConfigurationSupport.validateBlocking(validationOutput);
+            configuration.setBlocking(true);
+            AnnotationValue ordered = blockingAnnotation.value("ordered");
+            configuration.setBlockingExecutionOrdered(ordered == null || ordered.asBoolean());
+            String poolName;
+            if (blockingAnnotation.value() != null &&
+                    !(poolName = blockingAnnotation.value().asString()).equals(Blocking.DEFAULT_WORKER_POOL)) {
+                configuration.setWorkerPoolName(poolName);
+            }
+        }
 
         return configuration;
     }

@@ -7,14 +7,15 @@ import java.util.function.Supplier;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.security.test.utils.TestIdentityController;
+import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class RolesAllowedTestCase {
+public class RolesAllowedTestCase extends AbstractRolesAllowedTestCase {
 
     private static final String APP_PROPS = "" +
             "quarkus.http.auth.basic=true\n" +
@@ -39,234 +40,20 @@ public class RolesAllowedTestCase {
         }
     });
 
-    @BeforeAll
-    public static void setup() {
-        TestIdentityController.resetRoles().add("test", "test", "test");
-    }
-
     @Test
-    public void testRolesAllowed() {
-
-        RestAssured
-                .given()
-                .when()
-                .get("/roles1")
-                .then()
-                .assertThat()
-                .statusCode(401);
+    public void testUnauthenticatedPath() {
 
         RestAssured
                 .given()
                 .auth()
+                .preemptive()
                 .basic("test", "test")
                 .when()
-                .get("/roles1")
+                .get("/public")
                 .then()
                 .assertThat()
                 .statusCode(200)
-                .body(equalTo("test:/roles1"));
-
-        RestAssured
-                .given()
-                .auth()
-                .preemptive()
-                .basic("test", "test")
-                .when()
-                .get("/roles1")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body(equalTo("test:/roles1"));
+                .body(equalTo("test:/public"));
     }
 
-    @Test
-    public void testRolesAllowedWrongRoles() {
-
-        RestAssured
-                .given()
-                .when()
-                .get("/roles2")
-                .then()
-                .assertThat()
-                .statusCode(401);
-
-        RestAssured
-                .given()
-                .auth()
-                .basic("test", "test")
-                .when()
-                .get("/roles2")
-                .then()
-                .assertThat()
-                .statusCode(403);
-
-        RestAssured
-                .given()
-                .auth()
-                .preemptive()
-                .basic("test", "test")
-                .when()
-                .get("/roles2")
-                .then()
-                .assertThat()
-                .statusCode(403);
-    }
-
-    @Test
-    public void testRolesAllowedCombinedWithPermitAll() {
-
-        RestAssured
-                .given()
-                .when()
-                .get("/permit")
-                .then()
-                .assertThat()
-                .statusCode(401);
-
-        RestAssured
-                .given()
-                .auth()
-                .preemptive()
-                .basic("test", "test")
-                .when()
-                .get("/permit")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body(equalTo("test:/permit"));
-    }
-
-    @Test
-    public void testRolesAllowedCombinedWithDenyAll() {
-
-        RestAssured
-                .given()
-                .when()
-                .get("/deny")
-                .then()
-                .assertThat()
-                .statusCode(401);
-
-        RestAssured
-                .given()
-                .auth()
-                .basic("test", "test")
-                .when()
-                .get("/deny")
-                .then()
-                .assertThat()
-                .statusCode(403);
-
-        RestAssured
-                .given()
-                .auth()
-                .preemptive()
-                .basic("test", "test")
-                .when()
-                .get("/deny")
-                .then()
-                .assertThat()
-                .statusCode(403);
-
-        RestAssured
-                .given()
-                .auth()
-                .preemptive()
-                .basic("test", "test")
-                .when()
-                .get("/combined")
-                .then()
-                .assertThat()
-                .statusCode(403);
-    }
-
-    @Test
-    public void testWildcardMatchingWithSlash() {
-        RestAssured
-                .given()
-                .auth()
-                .preemptive()
-                .basic("test", "test")
-                .when()
-                .get("/wildcard1/a")
-                .then()
-                .assertThat()
-                .statusCode(200);
-
-        RestAssured
-                .given()
-                .auth()
-                .preemptive()
-                .basic("test", "test")
-                .when()
-                .get("/wildcard1/a/")
-                .then()
-                .assertThat()
-                .statusCode(200);
-
-        RestAssured
-                .given()
-                .when()
-                .get("/wildcard1/a")
-                .then()
-                .assertThat()
-                .statusCode(401);
-
-        RestAssured
-                .given()
-                .when()
-                .get("/wildcard1/a/")
-                .then()
-                .assertThat()
-                .statusCode(401);
-
-        RestAssured
-                .given()
-                .when()
-                .get("/wildcard3XXX")
-                .then()
-                .assertThat()
-                .statusCode(200);
-    }
-
-    @Test
-    public void testWildcardMatchingWithoutSlash() {
-        RestAssured
-                .given()
-                .auth()
-                .preemptive()
-                .basic("test", "test")
-                .when()
-                .get("/wildcard2/a")
-                .then()
-                .assertThat()
-                .statusCode(200);
-
-        RestAssured
-                .given()
-                .auth()
-                .preemptive()
-                .basic("test", "test")
-                .when()
-                .get("/wildcard2")
-                .then()
-                .assertThat()
-                .statusCode(200);
-
-        RestAssured
-                .given()
-                .when()
-                .get("/wildcard2")
-                .then()
-                .assertThat()
-                .statusCode(401);
-
-        RestAssured
-                .given()
-                .when()
-                .get("/wildcard2/a")
-                .then()
-                .assertThat()
-                .statusCode(401);
-    }
 }

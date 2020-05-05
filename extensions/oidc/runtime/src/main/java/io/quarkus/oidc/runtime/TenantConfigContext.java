@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import io.quarkus.oidc.OidcTenantConfig;
 import io.vertx.ext.auth.oauth2.OAuth2Auth;
 
 class TenantConfigContext {

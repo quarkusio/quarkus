@@ -55,9 +55,7 @@ public class PgPoolProducerTest {
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            pgClient.query("SELECT 1", ar -> {
-                cf.complete(null);
-            });
+            pgClient.query("SELECT 1").execute(ar -> cf.complete(null));
             return cf;
         }
     }
@@ -69,7 +67,7 @@ public class PgPoolProducerTest {
         io.vertx.mutiny.pgclient.PgPool pgClient;
 
         public CompletionStage<Void> verify() {
-            return pgClient.query("SELECT 1")
+            return pgClient.query("SELECT 1").execute()
                     .onItem().ignore().andContinueWithNull()
                     .onFailure().recoverWithItem(() -> null)
                     .subscribeAsCompletionStage();
@@ -83,7 +81,7 @@ public class PgPoolProducerTest {
         io.vertx.axle.pgclient.PgPool pgClient;
 
         public CompletionStage<Void> verify() {
-            return pgClient.query("SELECT 1")
+            return pgClient.query("SELECT 1").execute()
                     .<Void> thenApply(rs -> null)
                     .exceptionally(t -> null);
         }
@@ -97,7 +95,7 @@ public class PgPoolProducerTest {
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            pgClient.rxQuery("SELECT 1")
+            pgClient.query("SELECT 1").rxExecute()
                     .ignoreElement()
                     .onErrorComplete()
                     .subscribe(() -> cf.complete(null));

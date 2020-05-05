@@ -1,6 +1,8 @@
 package io.quarkus.deployment.dev;
 
+import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -9,7 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-public interface CompilationProvider {
+public interface CompilationProvider extends Closeable {
 
     Set<String> handledExtensions();
 
@@ -20,6 +22,11 @@ public interface CompilationProvider {
     void compile(Set<File> files, Context context);
 
     Path getSourcePath(Path classFilePath, Set<String> sourcePaths, String classesPath);
+
+    @Override
+    default void close() throws IOException {
+
+    }
 
     class Context {
 

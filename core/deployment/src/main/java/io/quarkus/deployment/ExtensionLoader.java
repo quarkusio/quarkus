@@ -921,7 +921,8 @@ public final class ExtensionLoader {
                                 Object[] methodArgs = new Object[methodParamFns.size()];
                                 BytecodeRecorderImpl bri = isRecorder
                                         ? new BytecodeRecorderImpl(recordAnnotation.value() == ExecutionTime.STATIC_INIT,
-                                                clazz.getSimpleName(), method.getName())
+                                                clazz.getSimpleName(), method.getName(),
+                                                Integer.toString(method.toString().hashCode()))
                                         : null;
                                 for (int i = 0; i < methodArgs.length; i++) {
                                     methodArgs[i] = methodParamFns.get(i).apply(bc, bri);

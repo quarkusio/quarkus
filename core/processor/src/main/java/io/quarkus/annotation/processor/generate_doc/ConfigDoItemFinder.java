@@ -1,16 +1,25 @@
 package io.quarkus.annotation.processor.generate_doc;
 
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_MAP_KEY;
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_DOC_SECTION;
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_ITEM;
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONVERT_WITH;
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_DEFAULT_CONVERTER;
+import static io.quarkus.annotation.processor.Constants.HYPHENATED_ELEMENT_NAME;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getJavaDocSiteLink;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.getKnownGenericType;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenate;
+import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.hyphenateEnumValue;
 import static io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil.stringifyType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -29,7 +38,9 @@ import io.quarkus.annotation.processor.Constants;
 
 class ConfigDoItemFinder {
 
+    private static String COMMA = ",";
     private static final String NAMED_MAP_CONFIG_ITEM_FORMAT = ".\"%s\"";
+
     private final JavaDocParser javaDocParser = new JavaDocParser();
     private final ScannedConfigDocsItemHolder holder = new ScannedConfigDocsItemHolder();
 
@@ -106,6 +117,7 @@ class ConfigDoItemFinder {
             final String javaDocKey = clazz.getQualifiedName().toString() + Constants.DOT + fieldName;
             final List<? extends AnnotationMirror> annotationMirrors = enclosedElement.getAnnotationMirrors();
             final String rawJavaDoc = javaDocProperties.getProperty(javaDocKey);
+            boolean useHyphenateEnumValue = true;
 
             String hyphenatedFieldName = hyphenate(fieldName);
             String configDocMapKey = hyphenatedFieldName;
@@ -117,18 +129,18 @@ class ConfigDoItemFinder {
                     isDeprecated = true;
                     break;
                 }
-                if (annotationName.equals(Constants.ANNOTATION_CONFIG_ITEM)
-                        || annotationName.equals(Constants.ANNOTATION_CONFIG_DOC_MAP_KEY)) {
+                if (annotationName.equals(ANNOTATION_CONFIG_ITEM)
+                        || annotationName.equals(ANNOTATION_CONFIG_DOC_MAP_KEY)) {
                     for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror
                             .getElementValues().entrySet()) {
                         final String key = entry.getKey().toString();
                         final String value = entry.getValue().getValue().toString();
-                        if (annotationName.equals(Constants.ANNOTATION_CONFIG_DOC_MAP_KEY) && "value()".equals(key)) {
+                        if (annotationName.equals(ANNOTATION_CONFIG_DOC_MAP_KEY) && "value()".equals(key)) {
                             configDocMapKey = value;
-                        } else if (annotationName.equals(Constants.ANNOTATION_CONFIG_ITEM)) {
+                        } else if (annotationName.equals(ANNOTATION_CONFIG_ITEM)) {
                             if ("name()".equals(key)) {
                                 switch (value) {
-                                    case Constants.HYPHENATED_ELEMENT_NAME:
+                                    case HYPHENATED_ELEMENT_NAME:
                                         name = parentName + Constants.DOT + hyphenatedFieldName;
                                         break;
                                     case Constants.PARENT:
@@ -144,7 +156,7 @@ class ConfigDoItemFinder {
                             }
                         }
                     }
-                } else if (annotationName.equals(Constants.ANNOTATION_CONFIG_DOC_SECTION)) {
+                } else if (annotationName.equals(ANNOTATION_CONFIG_DOC_SECTION)) {
                     final JavaDocParser.SectionHolder sectionHolder = javaDocParser.parseConfigSection(rawJavaDoc,
                             sectionLevel);
 
@@ -155,6 +167,9 @@ class ConfigDoItemFinder {
                     configSection.setSectionDetails(sectionHolder.details);
                     configSection.setSectionDetailsTitle(sectionHolder.title);
                     configSection.setName(parentName + Constants.DOT + hyphenatedFieldName);
+                } else if (annotationName.equals(ANNOTATION_DEFAULT_CONVERTER)
+                        || annotationName.equals(ANNOTATION_CONVERT_WITH)) {
+                    useHyphenateEnumValue = false;
                 }
             }
 
@@ -248,13 +263,21 @@ class ConfigDoItemFinder {
 
                             type = simpleTypeToString(realTypeMirror);
                             if (isEnumType(realTypeMirror)) {
-                                acceptedValues = extractEnumValues(realTypeMirror);
+                                if (useHyphenateEnumValue) {
+                                    defaultValue = Arrays.stream(defaultValue.split(COMMA))
+                                            .map(defaultEnumValue -> hyphenateEnumValue(defaultEnumValue.trim()))
+                                            .collect(Collectors.joining(COMMA));
+                                }
+                                acceptedValues = extractEnumValues(realTypeMirror, useHyphenateEnumValue);
                             }
                         }
                     } else {
                         type = simpleTypeToString(declaredType);
                         if (isEnumType(declaredType)) {
-                            acceptedValues = extractEnumValues(declaredType);
+                            if (useHyphenateEnumValue) {
+                                defaultValue = hyphenateEnumValue(defaultValue);
+                            }
+                            acceptedValues = extractEnumValues(declaredType, useHyphenateEnumValue);
                         }
                     }
                 }
@@ -330,13 +353,14 @@ class ConfigDoItemFinder {
         return typeMirror.toString();
     }
 
-    private List<String> extractEnumValues(TypeMirror realTypeMirror) {
+    private List<String> extractEnumValues(TypeMirror realTypeMirror, boolean useHyphenatedEnumValue) {
         Element declaredTypeElement = ((DeclaredType) realTypeMirror).asElement();
         List<String> acceptedValues = new ArrayList<>();
 
         for (Element field : declaredTypeElement.getEnclosedElements()) {
             if (field.getKind() == ElementKind.ENUM_CONSTANT) {
-                acceptedValues.add(DocGeneratorUtil.hyphenateEnumValue(field.getSimpleName().toString()));
+                String enumValue = field.getSimpleName().toString();
+                acceptedValues.add(useHyphenatedEnumValue ? hyphenateEnumValue(enumValue) : enumValue);
             }
         }
 

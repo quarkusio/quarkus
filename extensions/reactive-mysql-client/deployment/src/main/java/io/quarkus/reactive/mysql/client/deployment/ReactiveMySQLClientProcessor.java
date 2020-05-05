@@ -11,6 +11,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
@@ -18,6 +19,7 @@ import io.quarkus.reactive.mysql.client.runtime.DataSourceReactiveMySQLConfig;
 import io.quarkus.reactive.mysql.client.runtime.LegacyDataSourceReactiveMySQLConfig;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolProducer;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolRecorder;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
 @SuppressWarnings("deprecation")
@@ -30,7 +32,8 @@ class ReactiveMySQLClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void build(BuildProducer<FeatureBuildItem> feature, BuildProducer<MySQLPoolBuildItem> mysqlPool, MySQLPoolRecorder recorder,
+    ServiceStartBuildItem build(BuildProducer<FeatureBuildItem> feature, BuildProducer<MySQLPoolBuildItem> mysqlPool,
+            MySQLPoolRecorder recorder,
             VertxBuildItem vertx,
             BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
@@ -41,13 +44,15 @@ class ReactiveMySQLClientProcessor {
             LegacyDataSourceReactiveMySQLConfig legacyDataSourceReactiveMySQLConfig) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.REACTIVE_MYSQL_CLIENT));
+        // Make sure the MySQLPoolProducer is initialized before the StartupEvent is fired
+        ServiceStartBuildItem serviceStart = new ServiceStartBuildItem("reactive-mysql-client");
 
         // Note: we had to tweak that logic to support the legacy configuration
         if (dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent()
                 && ((!DatabaseKind.isMySQL(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get())
                         && !DatabaseKind.isMariaDB(dataSourcesBuildTimeConfig.defaultDataSource.dbKind.get()))
                         || !dataSourceReactiveBuildTimeConfig.enabled)) {
-            return;
+            return serviceStart;
         }
 
         boolean isLegacy = !dataSourcesBuildTimeConfig.defaultDataSource.dbKind.isPresent();
@@ -56,5 +61,13 @@ class ReactiveMySQLClientProcessor {
                 dataSourcesRuntimeConfig, dataSourceReactiveRuntimeConfig, dataSourceReactiveMySQLConfig,
                 legacyDataSourcesRuntimeConfig, legacyDataSourceReactiveMySQLConfig, isLegacy,
                 shutdown)));
+
+        return serviceStart;
+    }
+
+    @BuildStep
+    HealthBuildItem addHealthCheck(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
+        return new HealthBuildItem("io.quarkus.reactive.mysql.client.runtime.health.ReactiveMySQLDataSourceHealthCheck",
+                dataSourcesBuildTimeConfig.healthEnabled, "datasource");
     }
 }

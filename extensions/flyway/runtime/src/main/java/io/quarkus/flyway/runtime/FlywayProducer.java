@@ -18,22 +18,17 @@ public class FlywayProducer {
     @Default
     Instance<DataSource> defaultDataSource;
 
-    private volatile FlywayRuntimeConfig flywayRuntimeConfig;
-    private volatile FlywayBuildTimeConfig flywayBuildConfig;
+    @Inject
+    FlywayRuntimeConfig flywayRuntimeConfig;
+
+    @Inject
+    FlywayBuildTimeConfig flywayBuildConfig;
 
     @Produces
     @Dependent
     @Default
     public Flyway produceFlyway() {
         return createDefaultFlyway(defaultDataSource.get());
-    }
-
-    public void setFlywayRuntimeConfig(FlywayRuntimeConfig flywayRuntimeConfig) {
-        this.flywayRuntimeConfig = flywayRuntimeConfig;
-    }
-
-    public void setFlywayBuildConfig(FlywayBuildTimeConfig flywayBuildConfig) {
-        this.flywayBuildConfig = flywayBuildConfig;
     }
 
     private Flyway createDefaultFlyway(DataSource dataSource) {

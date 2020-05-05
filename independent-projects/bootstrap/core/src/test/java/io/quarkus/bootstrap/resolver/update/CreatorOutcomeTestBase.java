@@ -37,7 +37,8 @@ public abstract class CreatorOutcomeTestBase extends ResolverSetupCleanup {
         IoUtils.recursiveDelete(ws);
         final Path outputDir = IoUtils.mkdirs(ws.resolve("target"));
 
-        final QuarkusBootstrap.Builder bootstrap = QuarkusBootstrap.builder(resolver.resolve(appJar.toAppArtifact()))
+        final QuarkusBootstrap.Builder bootstrap = QuarkusBootstrap.builder()
+                .setApplicationRoot(resolver.resolve(appJar.toAppArtifact()))
                 .setTargetDirectory(outputDir)
                 .setAppModelResolver(resolver);
 
@@ -48,7 +49,7 @@ public abstract class CreatorOutcomeTestBase extends ResolverSetupCleanup {
             ModelUtils.persistModel(ws.resolve("pom.xml"), appJar.getPomModel());
             bootstrap.setProjectRoot(ws);
             bootstrap.setLocalProjectDiscovery(true);
-            bootstrap.setAppModelResolver(initResolver(LocalProject.loadWorkspace(classesDir).getWorkspace()));
+            bootstrap.setAppModelResolver(initResolver(LocalProject.loadWorkspace(classesDir)));
         }
 
         initProps(bootstrap);

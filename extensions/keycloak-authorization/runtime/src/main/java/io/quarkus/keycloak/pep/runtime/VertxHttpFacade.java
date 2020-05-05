@@ -222,13 +222,10 @@ public class VertxHttpFacade implements OIDCHttpFacade {
 
     @Override
     public KeycloakSecurityContext getSecurityContext() {
-        QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
-
-        if (user == null) {
+        SecurityIdentity identity = QuarkusHttpUser.getSecurityIdentityBlocking(routingContext, null);
+        if (identity == null) {
             return null;
         }
-
-        SecurityIdentity identity = user.getSecurityIdentity();
         TokenCredential credential = identity.getCredential(AccessTokenCredential.class);
 
         if (credential == null) {

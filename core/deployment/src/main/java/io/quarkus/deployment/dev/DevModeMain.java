@@ -42,7 +42,6 @@ public class DevModeMain implements Closeable {
     }
 
     public static void main(String... args) throws Exception {
-
         try (InputStream devModeCp = DevModeMain.class.getClassLoader().getResourceAsStream(DEV_MODE_CONTEXT)) {
             DevModeContext context;
             try {
@@ -52,6 +51,7 @@ public class DevModeMain implements Closeable {
                         "Unable to deserialize the dev mode context. Does the Quarkus plugin version match the version of Quarkus that is in use?",
                         e);
             }
+            context.setArgs(args);
             try (DevModeMain devModeMain = new DevModeMain(context)) {
                 devModeMain.start();
 
@@ -83,7 +83,8 @@ public class DevModeMain implements Closeable {
                     }
                 }
             }
-            QuarkusBootstrap.Builder bootstrapBuilder = QuarkusBootstrap.builder(context.getClassesRoots().get(0).toPath())
+            QuarkusBootstrap.Builder bootstrapBuilder = QuarkusBootstrap.builder()
+                    .setApplicationRoot(context.getClassesRoots().get(0).toPath())
                     .setIsolateDeployment(true)
                     .setLocalProjectDiscovery(context.isLocalProjectDiscovery())
                     .addAdditionalDeploymentArchive(path)
@@ -102,7 +103,10 @@ public class DevModeMain implements Closeable {
                 if (i.getClassesPath() != null) {
                     Path classesPath = Paths.get(i.getClassesPath());
                     bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(classesPath, true, false));
-
+                }
+                if (i.getResourcesOutputPath() != null && !i.getResourcesOutputPath().equals(i.getClassesPath())) {
+                    Path resourceOutputPath = Paths.get(i.getResourcesOutputPath());
+                    bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(resourceOutputPath, true, false));
                 }
             }
 
@@ -130,6 +134,12 @@ public class DevModeMain implements Closeable {
             return;
         }
         Path currentDir = Paths.get("").toAbsolutePath().normalize();
+        if (projectDir.toPath().equals(currentDir)) {
+            // the current directory is the same as the project directory so there is no need to copy the file as it's already in the proper location
+            // see https://github.com/quarkusio/quarkus/issues/8812
+            return;
+        }
+
         Path dotEnvPath = projectDir.toPath().resolve(".env");
         if (Files.exists(dotEnvPath)) {
             try {

@@ -31,6 +31,14 @@ public final class CreateUtils {
     public static final String QUARKUS_CORE_BOM_ARTIFACT_ID = "quarkus-bom";
     public static final String DEFAULT_PLATFORM_BOM_ARTIFACT_ID = QUARKUS_CORE_BOM_ARTIFACT_ID;
 
+    public static final String GRADLE_WRAPPER_PATH = "gradle-wrapper";
+    public static final String[] GRADLE_WRAPPER_FILES = new String[] {
+            "gradlew",
+            "gradlew.bat",
+            "gradle/wrapper/gradle-wrapper.properties",
+            "gradle/wrapper/gradle-wrapper.jar"
+    };
+
     private CreateUtils() {
         //Not to be constructed
     }

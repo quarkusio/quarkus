@@ -63,6 +63,15 @@ public class MavenBuildFile extends BuildFile {
     }
 
     @Override
+    protected void removeDependencyFromBuildFile(Dependency dependency) throws IOException {
+        if (getModel() != null) {
+            getModel().getDependencies()
+                    .removeIf(d -> d.getGroupId().equals(dependency.getGroupId())
+                            && d.getArtifactId().equals(dependency.getArtifactId()));
+        }
+    }
+
+    @Override
     protected boolean hasDependency(Extension extension) throws IOException {
         return getModel() != null && MojoUtils.hasDependency(getModel(), extension.getGroupId(), extension.getArtifactId());
     }

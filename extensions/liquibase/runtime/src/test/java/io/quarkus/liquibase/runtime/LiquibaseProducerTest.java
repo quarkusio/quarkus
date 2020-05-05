@@ -20,8 +20,8 @@ class LiquibaseProducerTest {
 
     @BeforeEach
     void beforeEach() {
-        liquibaseProducer.setLiquibaseBuildConfig(buildDataSourceConfig);
-        liquibaseProducer.setLiquibaseRuntimeConfig(runtimeDataSourceConfig);
+        liquibaseProducer.liquibaseBuildConfig = buildDataSourceConfig;
+        liquibaseProducer.liquibaseRuntimeConfig = runtimeDataSourceConfig;
     }
 
     @Test
@@ -33,14 +33,14 @@ class LiquibaseProducerTest {
     @Test
     @DisplayName("fail on missing build configuration")
     void testMissingBuildConfig() {
-        liquibaseProducer.setLiquibaseBuildConfig(null);
+        liquibaseProducer.liquibaseBuildConfig = null;
         assertThrows(IllegalStateException.class, () -> liquibaseProducer.createLiquibase(null, DEFAULT_DATASOURCE));
     }
 
     @Test
     @DisplayName("fail on missing runtime configuration")
     void testMissingRuntimeConfig() {
-        liquibaseProducer.setLiquibaseRuntimeConfig(null);
+        liquibaseProducer.liquibaseRuntimeConfig = null;
         assertThrows(IllegalStateException.class, () -> liquibaseProducer.createLiquibase(null, DEFAULT_DATASOURCE));
     }
 }

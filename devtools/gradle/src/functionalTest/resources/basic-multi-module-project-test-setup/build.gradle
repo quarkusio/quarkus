@@ -1,0 +1,47 @@
+buildscript {
+
+    repositories {
+        mavenLocal()
+        jcenter()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+
+}
+
+apply plugin: 'java'
+
+group = 'io.quarkus.gradle.test'
+version = '1.0'
+
+subprojects {
+
+    apply plugin: 'java'
+
+    compileJava {
+        options.compilerArgs << '-parameters'
+    }
+
+    test {
+        dependsOn 'cleanTest'
+        useJUnitPlatform()
+        forkEvery 1
+    }
+
+    repositories {
+        mavenLocal()
+        jcenter()
+        mavenCentral()
+    }
+
+    dependencies {
+
+        implementation 'io.quarkus:quarkus-arc'
+
+        testImplementation 'io.quarkus:quarkus-junit5'
+        testImplementation 'io.rest-assured:rest-assured'
+
+        implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+
+    }
+}

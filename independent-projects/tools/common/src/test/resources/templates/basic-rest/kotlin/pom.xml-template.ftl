@@ -52,7 +52,7 @@
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
+            <artifactId>kotlin-extensions</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -12,12 +12,10 @@ import io.quarkus.arc.DefaultBean;
 @ApplicationScoped
 public class KubernetesClientProducer {
 
-    private volatile KubernetesClientBuildConfig buildConfig;
-
     @DefaultBean
     @Singleton
     @Produces
-    public Config config() {
+    public Config config(KubernetesClientBuildConfig buildConfig) {
         return KubernetesClientUtils.createConfig(buildConfig);
     }
 
@@ -26,9 +24,5 @@ public class KubernetesClientProducer {
     @Produces
     public KubernetesClient kubernetesClient(Config config) {
         return new DefaultKubernetesClient(config);
-    }
-
-    public void setKubernetesClientBuildConfig(KubernetesClientBuildConfig buildConfig) {
-        this.buildConfig = buildConfig;
     }
 }

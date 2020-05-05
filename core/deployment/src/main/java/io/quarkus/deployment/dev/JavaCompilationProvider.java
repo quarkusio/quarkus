@@ -31,6 +31,10 @@ public class JavaCompilationProvider implements CompilationProvider {
     // this is useful when people using debuggers against their hot-reloaded app
     private static final Set<String> COMPILER_OPTIONS = new HashSet<>(Arrays.asList("-g", "-parameters"));
 
+    JavaCompiler compiler;
+    StandardJavaFileManager fileManager;
+    DiagnosticCollector<JavaFileObject> fileManagerDiagnostics;
+
     @Override
     public Set<String> handledExtensions() {
         return Collections.singleton(".java");
@@ -38,14 +42,20 @@ public class JavaCompilationProvider implements CompilationProvider {
 
     @Override
     public void compile(Set<File> filesToCompile, Context context) {
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        JavaCompiler compiler = this.compiler;
+        if (compiler == null) {
+            compiler = this.compiler = ToolProvider.getSystemJavaCompiler();
+        }
         if (compiler == null) {
             throw new RuntimeException("No system java compiler provided");
         }
-        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null,
-                context.getSourceEncoding())) {
+        try {
+            if (fileManager == null) {
+                fileManager = compiler.getStandardFileManager(fileManagerDiagnostics = new DiagnosticCollector<>(), null,
+                        context.getSourceEncoding());
+            }
 
+            DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
             fileManager.setLocation(StandardLocation.CLASS_PATH, context.getClasspath());
             fileManager.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singleton(context.getOutputDirectory()));
 
@@ -64,6 +74,15 @@ public class JavaCompilationProvider implements CompilationProvider {
                 System.out.format("%s, line %d in %s", diagnostic.getMessage(null), diagnostic.getLineNumber(),
                         diagnostic.getSource() == null ? "[unknown source]" : diagnostic.getSource().getName());
             }
+            if (!fileManagerDiagnostics.getDiagnostics().isEmpty()) {
+                for (Diagnostic<? extends JavaFileObject> diagnostic : fileManagerDiagnostics.getDiagnostics()) {
+                    System.out.format("%s, line %d in %s", diagnostic.getMessage(null), diagnostic.getLineNumber(),
+                            diagnostic.getSource() == null ? "[unknown source]" : diagnostic.getSource().getName());
+                }
+                fileManager.close();
+                fileManagerDiagnostics = null;
+                fileManager = null;
+            }
         } catch (IOException e) {
             throw new RuntimeException("Cannot close file manager", e);
         }
@@ -81,6 +100,15 @@ public class JavaCompilationProvider implements CompilationProvider {
             throw new RuntimeException(e);
         }
         return sourceFilePath;
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (fileManager != null) {
+            fileManager.close();
+            fileManager = null;
+            fileManagerDiagnostics = null;
+        }
     }
 
     static class RuntimeUpdatesClassVisitor extends ClassVisitor {

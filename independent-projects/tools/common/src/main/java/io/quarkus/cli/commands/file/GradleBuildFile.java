@@ -3,6 +3,7 @@ package io.quarkus.cli.commands.file;
 import io.quarkus.cli.commands.writer.ProjectWriter;
 import io.quarkus.dependencies.Extension;
 import io.quarkus.generators.BuildTool;
+import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.descriptor.QuarkusPlatformDescriptor;
 import io.quarkus.platform.tools.ToolsUtils;
 import java.io.ByteArrayInputStream;
@@ -102,6 +103,13 @@ public class GradleBuildFile extends BuildFile {
             res.append(System.lineSeparator()).append(versionLine)
                     .append(System.lineSeparator());
         }
+
+        res.append(System.lineSeparator())
+                .append("test {").append(System.lineSeparator())
+                .append("    systemProperty \"java.util.logging.manager\", \"org.jboss.logmanager.LogManager\"")
+                .append(System.lineSeparator())
+                .append("}");
+
         getModel().setBuildContent(res.toString());
     }
 
@@ -149,6 +157,39 @@ public class GradleBuildFile extends BuildFile {
     protected void addDependencyInBuildFile(Dependency dependency) throws IOException {
         StringBuilder newBuildContent = new StringBuilder();
         readLineByLine(getModel().getBuildContent(), new AppendDependency(newBuildContent, dependency));
+        getModel().setBuildContent(newBuildContent.toString());
+    }
+
+    @Override
+    public boolean removeDependency(QuarkusPlatformDescriptor platform, Extension extension) throws IOException {
+        PRINTER.ok(" Removing extension " + extension.managementKey());
+        Dependency dep;
+        if (containsBOM(platform.getBomGroupId(), platform.getBomArtifactId())
+                && isDefinedInBom(platform.getManagedDependencies(), extension)) {
+            dep = extension.toDependency(true);
+        } else {
+            dep = extension.toDependency(false);
+            if (getProperty(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_VERSION_NAME) != null) {
+                dep.setVersion(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_VERSION_VALUE);
+            }
+        }
+        removeDependencyFromBuildFile(dep);
+        return true;
+    }
+
+    @Override
+    protected void removeDependencyFromBuildFile(Dependency dependency) throws IOException {
+        String depString = new StringBuilder("'").append(dependency.getGroupId()).append(":")
+                .append(dependency.getArtifactId()).toString();
+        StringBuilder newBuildContent = new StringBuilder();
+        Scanner scanner = new Scanner(getModel().getBuildContent());
+        while (scanner.hasNextLine()) {
+            String line = scanner.nextLine();
+            if (!line.contains(depString)) {
+                newBuildContent.append(line).append(System.lineSeparator());
+            }
+        }
+        scanner.close();
         getModel().setBuildContent(newBuildContent.toString());
     }
 

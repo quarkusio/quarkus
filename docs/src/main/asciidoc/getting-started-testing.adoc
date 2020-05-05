@@ -249,7 +249,7 @@ import io.quarkus.test.junit.QuarkusTest;
 @QuarkusTest
 public class GreetingServiceTest {
 
-    @Inject //<1>
+    @Inject // <1>
     GreetingService service;
 
     @Test
@@ -330,7 +330,7 @@ I could mock it with the following class in `src/test/java`:
 [source,java]
 ----
 @Mock
-@ApplicationScoped <1>
+@ApplicationScoped // <1>
 public class MockExternalService extends ExternalService {
 
     @Override
@@ -373,7 +373,7 @@ public class MockTestCase {
     public static void setup() {
         MockableBean1 mock = Mockito.mock(MockableBean1.class);
         Mockito.when(mock.greet("Stuart")).thenReturn("A mock for Stuart");
-        QuarkusMock.installMockForType(mock, MockableBean1.class);  <1>
+        QuarkusMock.installMockForType(mock, MockableBean1.class);  // <1>
     }
 
     @Test
@@ -384,7 +384,7 @@ public class MockTestCase {
 
     @Test
     public void testPerTestMock() {
-        QuarkusMock.installMockForInstance(new BonourGreeter(), mockableBean2); <2>
+        QuarkusMock.installMockForInstance(new BonourGreeter(), mockableBean2); // <2>
         Assertions.assertEquals("A mock for Stuart", mockableBean1.greet("Stuart"));
         Assertions.assertEquals("Bonjour Stuart", mockableBean2.greet("Stuart"));
     }
@@ -432,25 +432,25 @@ Using `@InjectMock`, the previous example could be written as follows:
 public class MockTestCase {
 
     @InjectMock
-    MockableBean1 mockableBean1; <1>
+    MockableBean1 mockableBean1; // <1>
 
     @InjectMock
     MockableBean2 mockableBean2;
 
     @BeforeEach
     public void setup() {
-        Mockito.when(mockableBean1.greet("Stuart")).thenReturn("A mock for Stuart"); <2>
+        Mockito.when(mockableBean1.greet("Stuart")).thenReturn("A mock for Stuart"); // <2>
     }
 
     @Test
     public void firstTest() {
         Assertions.assertEquals("A mock for Stuart", mockableBean1.greet("Stuart"));
-        Assertions.assertEquals(null, mockableBean2.greet("Stuart")); <3>
+        Assertions.assertEquals(null, mockableBean2.greet("Stuart")); // <3>
     }
 
     @Test
     public void secondTest() {
-        Mockito.when(mockableBean2.greet("Stuart")).thenReturn("Bonjour Stuart"); <4>
+        Mockito.when(mockableBean2.greet("Stuart")).thenReturn("Bonjour Stuart"); // <4>
         Assertions.assertEquals("A mock for Stuart", mockableBean1.greet("Stuart"));
         Assertions.assertEquals("Bonjour Stuart", mockableBean2.greet("Stuart"));
     }
@@ -496,7 +496,7 @@ public class MockGreetingServiceTest {
                 .when().get("/greeting")
                 .then()
                 .statusCode(200)
-                .body(is("hi")); <1>
+                .body(is("hi")); // <1>
     }
 
     @Path("greeting")
@@ -524,6 +524,54 @@ public class MockGreetingServiceTest {
 }
 ----
 <1> Since we configured `greetingService` as a mock, the `GreetingResource` which uses the `GreetingService` bean, we get the mocked response instead of the response of the regular `GreetingService` bean
+
+==== Using `@InjectMock` with `@RestClient`
+
+The `@RegisterRestClient` registers the implementation of the rest-client at runtime, and because the bean needs to be a regular scope, you have to annotate your interface with `@ApplicationScoped`. 
+
+[source,java]
+----
+@Path("/")
+@ApplicationScoped
+@RegisterRestClient
+public interface GreetingService {
+
+    @GET
+    @Path("/hello")
+    @Produces(MediaType.TEXT_PLAIN)
+    String hello();
+}
+----
+
+For the test class here is an example: 
+
+[source,java]
+----
+@QuarkusTest
+public class GreetingResourceTest {
+
+    @InjectMock
+    @RestClient // <1>
+    GreetingService greetingService;
+
+    @Test
+    public void testHelloEndpoint() {
+        Mockito.when(greetingService.hello()).thenReturn("hello from mockito");
+
+        given()
+          .when().get("/hello")
+          .then()
+             .statusCode(200)
+             .body(is("hello from mockito"));
+    }
+
+}
+----
+<1> Indicate that this injection point is meant to use an instance of `RestClient`.
+
+=== Mocking with Panache
+
+If you are using the `quarkus-hibernate-orm-panache` or `quarkus-mongodb-panache` extensions, check out the link:hibernate-orm-panache#mocking[Hibernate ORM with Panache Mocking] and link:mongodb-panache#mocking[MongoDB with Panache Mocking] documentation for the easiest way to mock your data access.
 
 == Test Bootstrap Configuration Options
 

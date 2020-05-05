@@ -54,7 +54,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
-import io.quarkus.infinispan.client.runtime.InfinispanClientRuntimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanRecorder;
 
 class InfinispanClientProcessor {
@@ -224,13 +223,6 @@ class InfinispanClientProcessor {
         }
 
         return new BeanContainerListenerBuildItem(recorder.configureInfinispan(properties));
-    }
-
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep
-    void configureRuntimeProperties(InfinispanRecorder recorder,
-            InfinispanClientRuntimeConfig infinispanClientRuntimeConfig) {
-        recorder.configureRuntimeProperties(infinispanClientRuntimeConfig);
     }
 
     private static final Set<DotName> UNREMOVABLE_BEANS = Collections.unmodifiableSet(

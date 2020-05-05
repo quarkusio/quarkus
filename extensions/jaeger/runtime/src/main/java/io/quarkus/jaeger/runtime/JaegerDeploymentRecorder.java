@@ -5,6 +5,8 @@ import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
+import io.jaegertracing.internal.metrics.NoopMetricsFactory;
+import io.jaegertracing.spi.MetricsFactory;
 import io.opentracing.util.GlobalTracer;
 import io.quarkus.runtime.ApplicationConfig;
 import io.quarkus.runtime.annotations.Recorder;
@@ -15,7 +17,15 @@ public class JaegerDeploymentRecorder {
     private static final Optional UNKNOWN_SERVICE_NAME = Optional.of("quarkus/unknown");
     private static final QuarkusJaegerTracer quarkusTracer = new QuarkusJaegerTracer();
 
-    synchronized public void registerTracer(JaegerConfig jaeger, ApplicationConfig appConfig) {
+    synchronized public void registerTracerWithoutMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
+        registerTracer(jaeger, appConfig, new NoopMetricsFactory());
+    }
+
+    synchronized public void registerTracerWithMetrics(JaegerConfig jaeger, ApplicationConfig appConfig) {
+        registerTracer(jaeger, appConfig, new QuarkusJaegerMetricsFactory());
+    }
+
+    private void registerTracer(JaegerConfig jaeger, ApplicationConfig appConfig, MetricsFactory metricsFactory) {
         if (!jaeger.serviceName.isPresent()) {
             if (appConfig.name.isPresent()) {
                 jaeger.serviceName = appConfig.name;
@@ -24,6 +34,7 @@ public class JaegerDeploymentRecorder {
             }
         }
         initTracerConfig(jaeger);
+        quarkusTracer.setMetricsFactory(metricsFactory);
         quarkusTracer.reset();
         // register Quarkus tracer to GlobalTracer.
         // Usually the tracer will be registered only here, although consumers

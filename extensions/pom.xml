@@ -166,7 +166,7 @@
         <module>logging-json</module>
         <module>logging-sentry</module>
         <module>logging-gelf</module>
-        
+
         <!-- Templating -->
         <module>qute</module>
     </modules>

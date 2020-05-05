@@ -1,7 +1,7 @@
 package io.quarkus.bootstrap.resolver;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.util.IoUtils;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -56,12 +56,12 @@ public class ResolverSetupCleanup {
         return true;
     }
 
-    protected BootstrapAppModelResolver initResolver(LocalWorkspace workspace) throws AppModelResolverException {
+    protected BootstrapAppModelResolver initResolver(LocalProject currentProject) throws AppModelResolverException {
         return new BootstrapAppModelResolver(MavenArtifactResolver.builder()
                 .setRepoHome(repoHome)
                 .setOffline(true)
                 .setWorkspaceDiscovery(false)
-                .setWorkspace(workspace)
+                .setCurrentProject(currentProject)
                 .build());
     }
 

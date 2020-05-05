@@ -24,25 +24,25 @@
         <opentracing-concurrent.version>0.2.0</opentracing-concurrent.version>
         <opentracing-jdbc.version>0.0.12</opentracing-jdbc.version>
         <jaeger.version>0.34.0</jaeger.version>
-        <quarkus-http.version>3.0.4.Final</quarkus-http.version>
+        <quarkus-http.version>3.0.7.Final</quarkus-http.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
         <microprofile-config-api.version>1.4</microprofile-config-api.version>
         <microprofile-metrics-api.version>2.3</microprofile-metrics-api.version>
         <microprofile-context-propagation.version>1.0.1</microprofile-context-propagation.version>
         <microprofile-opentracing-api.version>1.3.3</microprofile-opentracing-api.version>
-        <microprofile-reactive-streams-operators.version>1.0</microprofile-reactive-streams-operators.version>
+        <microprofile-reactive-streams-operators.version>1.0.1</microprofile-reactive-streams-operators.version>
         <microprofile-rest-client.version>1.4.1</microprofile-rest-client.version>
         <smallrye-config.version>1.7.0</smallrye-config.version>
-        <smallrye-health.version>2.2.0</smallrye-health.version>
+        <smallrye-health.version>2.2.1</smallrye-health.version>
         <smallrye-metrics.version>2.4.1</smallrye-metrics.version>
-        <smallrye-open-api.version>1.2.1</smallrye-open-api.version>
+        <smallrye-open-api.version>1.2.3</smallrye-open-api.version>
         <smallrye-opentracing.version>1.3.4</smallrye-opentracing.version>
-        <smallrye-fault-tolerance.version>4.1.1</smallrye-fault-tolerance.version>
+        <smallrye-fault-tolerance.version>4.2.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>2.1.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>1.0.11</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.10</smallrye-reactive-streams-operators.version>
         <smallrye-converter-api.version>1.0.10</smallrye-converter-api.version>
-        <smallrye-reactive-messaging.version>1.1.0</smallrye-reactive-messaging.version>
+        <smallrye-reactive-messaging.version>2.0.2</smallrye-reactive-messaging.version>
         <swagger-ui.version>3.25.0</swagger-ui.version>
         <jakarta.activation.version>1.2.1</jakarta.activation.version>
         <jakarta.annotation-api.version>1.3.5</jakarta.annotation-api.version>
@@ -64,30 +64,30 @@
         <jaxb-api.version>2.3.1</jaxb-api.version>
         <jboss-jaxrs-api_2.1_spec.version>2.0.1.Final</jboss-jaxrs-api_2.1_spec.version>
         <jboss-jaxb-api_2.3_spec.version>2.0.0.Final</jboss-jaxb-api_2.3_spec.version>
-        <asm.version>7.3.1</asm.version>
+        <asm.version>8.0.1</asm.version>
         <commons-io.version>2.6</commons-io.version>
         <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
         <maven-core.version>3.6.3</maven-core.version>
         <maven-resolver.version>1.4.1</maven-resolver.version>
-        <maven-toolchain.version>3.0.0</maven-toolchain.version>
+        <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <guava.version>27.0.1-jre</guava.version>
         <plexus-utils.version>3.2.1</plexus-utils.version>
         <maven-plugin-annotations.version>3.6.0</maven-plugin-annotations.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <!-- What we actually depend on for the annotations, as latest Graal is not available in Maven fast enough: -->
         <graal-sdk.version>19.3.1</graal-sdk.version>
-        <gizmo.version>1.0.2.Final</gizmo.version>
-        <jackson.version>2.10.3</jackson.version>
+        <gizmo.version>1.0.3.Final</gizmo.version>
+        <jackson.version>2.10.4</jackson.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.9</commons-lang3.version>
         <commons-codec.version>1.13</commons-codec.version>
         <classmate.version>1.3.4</classmate.version>
-        <hibernate-orm.version>5.4.14.Final</hibernate-orm.version>
-        <hibernate-validator.version>6.1.3.Final</hibernate-validator.version>
+        <hibernate-orm.version>5.4.15.Final</hibernate-orm.version>
+        <hibernate-validator.version>6.1.4.Final</hibernate-validator.version>
         <hibernate-search.version>6.0.0.Beta6</hibernate-search.version>
         <narayana.version>5.10.4.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
-        <agroal.version>1.7</agroal.version>
+        <agroal.version>1.8</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
         <elasticsearch-rest-client.version>7.6.1</elasticsearch-rest-client.version>
         <rxjava1.version>1.3.8</rxjava1.version>
@@ -98,10 +98,10 @@
         <slf4j-jboss-logging.version>1.2.0.Final</slf4j-jboss-logging.version>
         <wildfly-common.version>1.5.4.Final-format-001</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>1.11.3.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>1.11.4.Final</wildfly-elytron.version>
         <jboss-modules.version>1.8.7.Final</jboss-modules.version>
-        <jboss-threads.version>3.0.1.Final</jboss-threads.version>
-        <vertx.version>3.8.5</vertx.version>
+        <jboss-threads.version>3.1.1.Final</jboss-threads.version>
+        <vertx.version>3.9.0</vertx.version>
         <httpclient.version>4.5.12</httpclient.version>
         <httpcore.version>4.4.13</httpcore.version>
         <httpasync.version>4.1.4</httpasync.version>
@@ -110,7 +110,7 @@
         <h2.version>1.4.197</h2.version>  <!-- keep 1.4.197 as newer versions have severe regressions -->
         <postgresql-jdbc.version>42.2.12</postgresql-jdbc.version>
         <mariadb-jdbc.version>2.6.0</mariadb-jdbc.version>
-        <mysql-jdbc.version>8.0.19</mysql-jdbc.version>
+        <mysql-jdbc.version>8.0.20</mysql-jdbc.version>
         <mssql-jdbc.version>7.2.2.jre8</mssql-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
@@ -122,15 +122,15 @@
         <infinispan.version>10.1.5.Final</infinispan.version>
         <infinispan.protostream.version>4.3.2.Final</infinispan.protostream.version>
         <caffeine.version>2.8.0</caffeine.version>
-        <netty.version>4.1.45.Final</netty.version>
+        <netty.version>4.1.49.Final</netty.version>
         <reactive-streams.version>1.0.3</reactive-streams.version>
-        <test-containers.version>1.12.4</test-containers.version>
+        <test-containers.version>1.14.1</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
-        <mutiny.version>0.4.4</mutiny.version>
-        <axle-client.version>0.0.13</axle-client.version>
-        <mutiny-client.version>0.0.13</mutiny-client.version>
-        <kafka2.version>2.4.1</kafka2.version>
-        <debezium.version>1.1.0.Final</debezium.version>
+        <mutiny.version>0.5.0</mutiny.version>
+        <axle-client.version>0.0.15</axle-client.version>
+        <mutiny-client.version>0.0.15</mutiny-client.version>
+        <kafka2.version>2.5.0</kafka2.version>
+        <debezium.version>1.1.1.Final</debezium.version>
         <zookeeper.version>3.5.7</zookeeper.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.12.9</scala.version>
@@ -143,8 +143,8 @@
         <awssdk.version>2.10.70</awssdk.version>
         <aws-alexa-sdk.version>2.30.0</aws-alexa-sdk.version>
         <azure-functions-java-library.version>1.3.0</azure-functions-java-library.version>
-        <kotlin.version>1.3.71</kotlin.version>
         <dekorate.version>0.11.6</dekorate.version>
+        <kotlin.version>1.3.72</kotlin.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <jline.version>2.14.6</jline.version>
         <maven-invoker.version>3.0.1</maven-invoker.version>
@@ -152,7 +152,7 @@
         <jprocesses.version>1.6.5</jprocesses.version>
         <jboss-logmanager.version>1.0.4</jboss-logmanager.version>
         <jgit.version>5.7.0.202003110725-r</jgit.version>
-        <flyway.version>6.3.3</flyway.version>
+        <flyway.version>6.4.1</flyway.version>
         <yasson.version>1.0.7</yasson.version>
         <liquibase.version>3.8.9</liquibase.version>
         <snakeyaml.version>1.26</snakeyaml.version>
@@ -168,22 +168,22 @@
         <bootstrap.version>3.1.0</bootstrap.version>
         <subethasmtp.version>3.1.7</subethasmtp.version>
         <hibernate-quarkus-local-cache.version>0.1.0</hibernate-quarkus-local-cache.version>
-        <kubernetes-client.version>4.9.0</kubernetes-client.version>
-        <optaplanner.version>7.35.0.Final</optaplanner.version>
+        <kubernetes-client.version>4.9.1</kubernetes-client.version>
+        <optaplanner.version>7.36.1.Final</optaplanner.version>
         <!-- Namespaced to avoid clashing with the kogito version in the universe-bom. We're working on getting rid of this potential version mismatch -->
-        <optaplanner-kogito.version>0.8.1</optaplanner-kogito.version>
+        <optaplanner-kogito.version>0.10.1</optaplanner-kogito.version>
         <sundr.version>0.19.1</sundr.version> <!-- this is to avoid annoying pop-up in eclipse about failure to init Velocity logging -->
         <flapdoodle.mongo.version>2.2.0</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP1</quarkus-spring-api.version>
-        <quarkus-spring-data-api.version>2.1.Final</quarkus-spring-data-api.version>
+        <quarkus-spring-data-api.version>2.1.SP1</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.2.Final</quarkus-spring-security-api.version>
         <quarkus-spring-boot-api.version>2.1.SP1</quarkus-spring-boot-api.version>
-        <mvel2.version>2.4.4.Final</mvel2.version>
+        <mvel2.version>2.4.7.Final</mvel2.version>
         <htmlunit.version>2.36.0</htmlunit.version>
         <mockito.version>3.3.3</mockito.version>
         <jna.version>5.3.1</jna.version>
         <antlr.version>4.7.2</antlr.version>
-        <quarkus-security.version>1.1.0.Beta1</quarkus-security.version>
+        <quarkus-security.version>1.1.1.Final</quarkus-security.version>
         <keycloak.version>9.0.2</keycloak.version>
         <logstash-gelf.version>1.14.0</logstash-gelf.version>
         <jsch.version>0.1.55</jsch.version>
@@ -192,6 +192,7 @@
         <error-prone-annotations.version>2.2.0</error-prone-annotations.version>
         <jib-core.version>0.13.1</jib-core.version>
         <google-http-client.version>1.34.0</google-http-client.version>
+        <scram-client.version>2.1</scram-client.version>
     </properties>
 
     <dependencyManagement>
@@ -244,7 +245,7 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Vert.X dependencies, imported as a BOM -->
+            <!-- Vert.x dependencies, imported as a BOM -->
             <dependency>
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-stack-depchain</artifactId>
@@ -425,6 +426,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-panache-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-panache-mock</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1263,6 +1269,30 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+            <dependency>
+                <groupId>io.rest-assured</groupId>
+                <artifactId>kotlin-extensions</artifactId>
+                <version>${rest-assured.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>javax.activation</groupId>
+                        <artifactId>activation</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax.activation</groupId>
+                        <artifactId>javax.activation-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <!-- https://github.com/quarkusio/quarkus/issues/1991 -->
+                        <groupId>com.sun.xml.bind</groupId>
+                        <artifactId>jaxb-osgi</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
 
             <dependency>
                 <groupId>io.debezium</groupId>
@@ -1451,6 +1481,11 @@
             <dependency>
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-fault-tolerance-context-propagation</artifactId>
+                <version>${smallrye-fault-tolerance.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye</groupId>
+                <artifactId>smallrye-fault-tolerance-tracing-propagation</artifactId>
                 <version>${smallrye-fault-tolerance.version}</version>
             </dependency>
             <dependency>
@@ -2437,6 +2472,12 @@
                 <version>${mutiny-client.version}</version>
             </dependency>
             <dependency>
+                <!-- Used by the Reactive PG Client -->
+                <groupId>com.ongres.scram</groupId>
+                <artifactId>client</artifactId>
+                <version>${scram-client.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-axle-mail-client</artifactId>
                 <version>${axle-client.version}</version>
@@ -2511,7 +2552,17 @@
             </dependency>
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-reactive-messaging-api</artifactId>
+                <version>${smallrye-reactive-messaging.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-reactive-messaging-mqtt</artifactId>
+                <version>${smallrye-reactive-messaging.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-reactive-messaging-in-memory</artifactId>
                 <version>${smallrye-reactive-messaging.version}</version>
             </dependency>
             <dependency>
@@ -2538,6 +2589,10 @@
                     <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>log4j</groupId>
+                        <artifactId>log4j</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -2694,7 +2749,27 @@
             </dependency>
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-stdlib</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-stdlib-jdk7</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-stdlib-jdk8</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-stdlib-common</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-reflect</artifactId>
                 <version>${kotlin.version}</version>
             </dependency>
 
@@ -3062,6 +3137,11 @@
                 <groupId>org.kie.kogito</groupId>
                 <artifactId>drools-core-static</artifactId>
                 <version>${optaplanner-kogito.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mvel</groupId>
+                <artifactId>mvel2</artifactId>
+                <version>${mvel2.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

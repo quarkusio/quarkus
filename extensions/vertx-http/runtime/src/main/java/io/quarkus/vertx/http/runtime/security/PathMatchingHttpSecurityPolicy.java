@@ -30,35 +30,42 @@ public class PathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
     private final PathMatcher<List<HttpMatcher>> pathMatcher = new PathMatcher<>();
 
     @Override
-    public Uni<CheckResult> checkPermission(RoutingContext routingContext, SecurityIdentity identity,
+    public Uni<CheckResult> checkPermission(RoutingContext routingContext, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
         List<HttpSecurityPolicy> permissionCheckers = findPermissionCheckers(routingContext.request());
-        return doPermissionCheck(routingContext, identity, 0, permissionCheckers, requestContext);
+        return doPermissionCheck(routingContext, identity, 0, null, permissionCheckers, requestContext);
     }
 
     private Uni<CheckResult> doPermissionCheck(RoutingContext routingContext,
-            SecurityIdentity identity, int index,
+            Uni<SecurityIdentity> identity, int index, SecurityIdentity augmentedIdentity,
             List<HttpSecurityPolicy> permissionCheckers, AuthorizationRequestContext requestContext) {
         if (index == permissionCheckers.size()) {
-            return Uni.createFrom().item(new CheckResult(true, identity));
+            return Uni.createFrom().item(new CheckResult(true, augmentedIdentity));
         }
         //get the current checker
         HttpSecurityPolicy res = permissionCheckers.get(index);
         return res.checkPermission(routingContext, identity, requestContext)
-                .on().item().produceUni(new Function<CheckResult, Uni<? extends CheckResult>>() {
+                .flatMap(new Function<CheckResult, Uni<? extends CheckResult>>() {
                     @Override
                     public Uni<? extends CheckResult> apply(CheckResult checkResult) {
                         if (!checkResult.isPermitted()) {
                             return Uni.createFrom().item(CheckResult.DENY);
                         } else {
-                            SecurityIdentity newIdentity = checkResult.getAugmentedIdentity() != null
-                                    ? checkResult.getAugmentedIdentity()
-                                    : identity;
-                            //attempt to run the next checker
-                            return doPermissionCheck(routingContext, newIdentity, index + 1, permissionCheckers,
-                                    requestContext);
-                        }
+                            if (checkResult.getAugmentedIdentity() != null) {
 
+                                //attempt to run the next checker
+                                return doPermissionCheck(routingContext,
+                                        Uni.createFrom().item(checkResult.getAugmentedIdentity()), index + 1,
+                                        checkResult.getAugmentedIdentity(),
+                                        permissionCheckers,
+                                        requestContext);
+                            } else {
+                                //attempt to run the next checker
+                                return doPermissionCheck(routingContext, identity, index + 1, augmentedIdentity,
+                                        permissionCheckers,
+                                        requestContext);
+                            }
+                        }
                     }
                 });
     }

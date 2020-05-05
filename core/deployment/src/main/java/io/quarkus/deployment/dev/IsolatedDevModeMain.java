@@ -3,6 +3,7 @@ package io.quarkus.deployment.dev;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
@@ -51,6 +52,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     private static volatile CuratedApplication curatedApplication;
     private static volatile AugmentAction augmentAction;
     private static volatile boolean restarting;
+    private static volatile boolean firstStartCompleted;
 
     private synchronized void firstStart() {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
@@ -72,7 +74,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                     return;
                                 }
                                 System.out.println("Quarkus application exited with code " + integer);
-                                System.out.println("Press Enter to restart");
+                                System.out.println("Press Enter to restart or Ctrl + C to quit");
                                 try {
                                     while (System.in.read() != '\n') {
                                     }
@@ -83,7 +85,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                 }
                             }
                         });
-                runner = start.runMainClass();
+                runner = start.runMainClass(context.getArgs());
+                firstStartCompleted = true;
             } catch (Throwable t) {
                 deploymentProblem = t;
                 if (context.isAbortOnFailedStart()) {
@@ -119,7 +122,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
     public synchronized void restartApp(Set<String> changedResources) {
         restarting = true;
         stop();
-        restarting = false;
         Timing.restart(curatedApplication.getAugmentClassLoader());
         deploymentProblem = null;
         ClassLoader old = Thread.currentThread().getContextClassLoader();
@@ -127,13 +129,15 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
 
             //ok, we have resolved all the deps
             try {
-                StartupAction start = augmentAction.reloadExistingApplication(changedResources);
-                runner = start.runMainClass();
+                StartupAction start = augmentAction.reloadExistingApplication(firstStartCompleted, changedResources);
+                runner = start.runMainClass(context.getArgs());
+                firstStartCompleted = true;
             } catch (Throwable t) {
                 deploymentProblem = t;
                 log.error("Failed to start quarkus", t);
             }
         } finally {
+            restarting = false;
             Thread.currentThread().setContextClassLoader(old);
         }
     }
@@ -202,6 +206,11 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             stop();
         } finally {
             try {
+                try {
+                    runtimeUpdatesProcessor.close();
+                } catch (IOException e) {
+                    log.error("Failed to close compiler", e);
+                }
                 for (HotReplacementSetup i : hotReplacementSetups) {
                     i.close();
                 }

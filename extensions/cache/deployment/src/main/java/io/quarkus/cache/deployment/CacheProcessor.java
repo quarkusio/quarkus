@@ -3,13 +3,14 @@ package io.quarkus.cache.deployment;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.API_METHODS_ANNOTATIONS;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.API_METHODS_ANNOTATIONS_LISTS;
 import static io.quarkus.cache.deployment.CacheDeploymentConstants.CACHE_NAME_PARAM;
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.enterprise.inject.spi.DeploymentException;
@@ -36,6 +37,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ManagedExecutorInitializedBuildItem;
 
 class CacheProcessor {
 
@@ -74,14 +76,15 @@ class CacheProcessor {
     }
 
     @BuildStep
-    @Record(STATIC_INIT)
+    @Record(RUNTIME_INIT)
     void recordCachesBuild(CombinedIndexBuildItem combinedIndex, BeanContainerBuildItem beanContainer, CacheConfig config,
-            CaffeineCacheBuildRecorder caffeineRecorder) {
+            CaffeineCacheBuildRecorder caffeineRecorder,
+            Optional<ManagedExecutorInitializedBuildItem> managedExecutorInitialized) {
         Set<String> cacheNames = getCacheNames(combinedIndex.getIndex());
         switch (config.type) {
             case CacheDeploymentConstants.CAFFEINE_CACHE_TYPE:
                 Set<CaffeineCacheInfo> cacheInfos = CaffeineCacheInfoBuilder.build(cacheNames, config);
-                caffeineRecorder.buildCaches(beanContainer.getValue(), cacheInfos);
+                caffeineRecorder.buildCaches(managedExecutorInitialized.isPresent(), beanContainer.getValue(), cacheInfos);
                 break;
             default:
                 throw new DeploymentException("Unknown cache type: " + config.type);

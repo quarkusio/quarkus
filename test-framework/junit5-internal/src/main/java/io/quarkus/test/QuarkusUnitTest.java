@@ -377,7 +377,8 @@ public class QuarkusUnitTest
             final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
 
             try {
-                QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder(deploymentDir)
+                QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
+                        .setApplicationRoot(deploymentDir)
                         .setMode(QuarkusBootstrap.Mode.TEST)
                         .addExcludedPath(testLocation)
                         .setProjectRoot(testLocation)
@@ -461,7 +462,9 @@ public class QuarkusUnitTest
             if (afterUndeployListener != null) {
                 afterUndeployListener.run();
             }
-            curatedApplication.close();
+            if (curatedApplication != null) {
+                curatedApplication.close();
+            }
         } finally {
             System.clearProperty("test.url");
             Thread.currentThread().setContextClassLoader(originalClassLoader);
@@ -470,9 +473,10 @@ public class QuarkusUnitTest
             if (deploymentDir != null) {
                 FileUtil.deleteDirectory(deploymentDir);
             }
-        }
-        if (afterAllCustomizer != null) {
-            afterAllCustomizer.run();
+
+            if (afterAllCustomizer != null) {
+                afterAllCustomizer.run();
+            }
         }
     }
 

@@ -1,8 +1,5 @@
 package io.quarkus.resteasy.qute.runtime;
 
-import static io.quarkus.qute.api.VariantTemplate.SELECTED_VARIANT;
-import static io.quarkus.qute.api.VariantTemplate.VARIANTS;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,7 +15,6 @@ import org.jboss.resteasy.core.interception.jaxrs.SuspendableContainerResponseCo
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
-import io.quarkus.qute.api.VariantTemplate;
 
 @Provider
 public class TemplateResponseFilter implements ContainerResponseFilter {
@@ -32,17 +28,17 @@ public class TemplateResponseFilter implements ContainerResponseFilter {
             ctx.suspend();
 
             MediaType mediaType;
-            TemplateInstance rendering = (TemplateInstance) entity;
-
-            if (rendering.getAttribute(VariantTemplate.VARIANTS) != null) {
+            TemplateInstance instance = (TemplateInstance) entity;
+            Object variantsAttr = instance.getAttribute(TemplateInstance.VARIANTS);
+            if (variantsAttr != null) {
                 @SuppressWarnings("unchecked")
-                List<Variant> variants = (List<Variant>) rendering.getAttribute(VARIANTS);
+                List<Variant> variants = (List<Variant>) variantsAttr;
                 javax.ws.rs.core.Variant selected = requestContext.getRequest()
                         .selectVariant(variants.stream()
                                 .map(v -> new javax.ws.rs.core.Variant(MediaType.valueOf(v.mediaType), v.locale, v.encoding))
                                 .collect(Collectors.toList()));
                 if (selected != null) {
-                    rendering.setAttribute(SELECTED_VARIANT,
+                    instance.setAttribute(TemplateInstance.SELECTED_VARIANT,
                             new Variant(selected.getLanguage(), selected.getMediaType().toString(), selected.getEncoding()));
                     mediaType = selected.getMediaType();
                 } else {
@@ -55,7 +51,7 @@ public class TemplateResponseFilter implements ContainerResponseFilter {
             }
 
             try {
-                rendering.renderAsync()
+                instance.renderAsync()
                         .whenComplete((r, t) -> {
                             if (t == null) {
                                 Response resp = Response.ok(r, mediaType).build();

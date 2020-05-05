@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        jcenter()
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    //noinspection GroovyAssignabilityCheck
+    plugins {
+        id 'io.quarkus' version "${quarkusPluginVersion}"
+    }
+}
+rootProject.name = 'quarkus-multi-module-test-setup'
+
+include ':common-base'
+include ':common-one'
+include ':common-two'
+include ':application'
+

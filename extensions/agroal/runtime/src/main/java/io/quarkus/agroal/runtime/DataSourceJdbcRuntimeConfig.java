@@ -28,7 +28,7 @@ public class DataSourceJdbcRuntimeConfig {
     /**
      * The datasource pool minimum size
      */
-    @ConfigItem(defaultValue = "0")
+    @ConfigItem
     public int minSize = 0;
 
     /**

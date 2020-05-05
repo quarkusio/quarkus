@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -19,24 +20,28 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     private MongoCollection collection;
-    private Document mongoQuery;
-    private Document sort;
-    private Document projections;
+    private Bson mongoQuery;
+    private Bson sort;
+    private Bson projections;
 
-    /*
-     * We store the pageSize and apply it for each request because getFirstResult()
-     * sets the page size to 1
-     */
     private Page page;
     private Long count;
 
     private Range range;
 
-    PanacheQueryImpl(MongoCollection<? extends Entity> collection, Document mongoQuery, Document sort) {
+    PanacheQueryImpl(MongoCollection<? extends Entity> collection, Bson mongoQuery, Bson sort) {
         this.collection = collection;
         this.mongoQuery = mongoQuery;
         this.sort = sort;
-        page = new Page(0, Integer.MAX_VALUE);
+    }
+
+    private PanacheQueryImpl(PanacheQueryImpl previousQuery, Bson projections) {
+        this.collection = previousQuery.collection;
+        this.mongoQuery = previousQuery.mongoQuery;
+        this.sort = previousQuery.sort;
+        this.projections = projections;
+        this.page = previousQuery.page;
+        this.count = previousQuery.count;
     }
 
     // Builder
@@ -47,12 +52,12 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         Set<String> fieldNames = MongoPropertyUtil.collectFields(type);
 
         // create the projection document
-        this.projections = new Document();
+        Document projections = new Document();
         for (String fieldName : fieldNames) {
-            this.projections.append(fieldName, 1);
+            projections.append(fieldName, 1);
         }
 
-        return (PanacheQuery<T>) this;
+        return new PanacheQueryImpl(this, projections);
     }
 
     @Override
@@ -70,43 +75,43 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     @Override
     public <T extends Entity> PanacheQuery<T> nextPage() {
-        checkNotInRange();
+        checkPagination();
         return page(page.next());
     }
 
     @Override
     public <T extends Entity> PanacheQuery<T> previousPage() {
-        checkNotInRange();
+        checkPagination();
         return page(page.previous());
     }
 
     @Override
     public <T extends Entity> PanacheQuery<T> firstPage() {
-        checkNotInRange();
+        checkPagination();
         return page(page.first());
     }
 
     @Override
     public <T extends Entity> PanacheQuery<T> lastPage() {
-        checkNotInRange();
+        checkPagination();
         return page(page.index(pageCount() - 1));
     }
 
     @Override
     public boolean hasNextPage() {
-        checkNotInRange();
+        checkPagination();
         return page.index < (pageCount() - 1);
     }
 
     @Override
     public boolean hasPreviousPage() {
-        checkNotInRange();
+        checkPagination();
         return page.index > 0;
     }
 
     @Override
     public int pageCount() {
-        checkNotInRange();
+        checkPagination();
         long count = count();
         if (count == 0)
             return 1; // a single page of zero results
@@ -115,11 +120,16 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     @Override
     public Page page() {
-        checkNotInRange();
+        checkPagination();
         return page;
     }
 
-    private void checkNotInRange() {
+    private void checkPagination() {
+        if (page == null) {
+            throw new UnsupportedOperationException(
+                    "Cannot call a page related method, "
+                            + "call page(Page) or page(int, int) to initiate pagination first");
+        }
         if (range != null) {
             throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, " +
                     "call page(Page) or page(int, int) to initiate pagination first");
@@ -130,7 +140,7 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     public <T extends Entity> PanacheQuery<T> range(int startIndex, int lastIndex) {
         this.range = Range.of(startIndex, lastIndex);
         // reset the page to its default to be able to switch from page to range
-        this.page = new Page(0, Integer.MAX_VALUE);
+        this.page = null;
         return (PanacheQuery<T>) this;
     }
 
@@ -146,14 +156,18 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T extends Entity> List<T> list() {
+        return list(null);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends Entity> List<T> list(Integer limit) {
         List<T> list = new ArrayList<>();
         FindIterable find = mongoQuery == null ? collection.find() : collection.find(mongoQuery);
         if (this.projections != null) {
             find.projection(projections);
         }
-        manageOffsets(find);
+        manageOffsets(find, limit);
         MongoCursor<T> cursor = find.sort(sort).iterator();
 
         try {
@@ -175,7 +189,7 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     @Override
     public <T extends Entity> T firstResult() {
-        List<T> list = list();
+        List<T> list = list(1);
         return list.isEmpty() ? null : list.get(0);
     }
 
@@ -185,9 +199,8 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T extends Entity> T singleResult() {
-        List<T> list = list();
+        List<T> list = list(2);
         if (list.size() != 1) {
             throw new PanacheQueryException("There should be only one result");
         }
@@ -196,9 +209,8 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T extends Entity> Optional<T> singleResultOptional() {
-        List<T> list = list();
+        List<T> list = list(2);
         if (list.size() > 1) {
             throw new PanacheQueryException("There should be no more than one result");
         }
@@ -206,12 +218,21 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 
-    private void manageOffsets(FindIterable find) {
+    private void manageOffsets(FindIterable find, Integer limit) {
         if (range != null) {
-            // range is 0 based, so we add 1 to the limit
-            find.skip(range.getStartIndex()).limit(range.getLastIndex() - range.getStartIndex() + 1);
-        } else {
-            find.skip(page.index * page.size).limit(page.size);
+            find.skip(range.getStartIndex());
+            if (limit == null) {
+                // range is 0 based, so we add 1 to the limit
+                find.limit(range.getLastIndex() - range.getStartIndex() + 1);
+            }
+        } else if (page != null) {
+            find.skip(page.index * page.size);
+            if (limit == null) {
+                find.limit(page.size);
+            }
+        }
+        if (limit != null) {
+            find.limit(limit);
         }
     }
 }

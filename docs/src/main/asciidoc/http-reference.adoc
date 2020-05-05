@@ -218,31 +218,43 @@ link:http://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates-
 
 === Configuring HTTP Access Logs
 
-You can add HTTP request logging by configuring the `AccessHandler` in the `undertow-handlers.conf` file.
+You can add HTTP request logging by configuring it in `application.properties`. There are two options for logging,
+either logging to the standard JBoss logging output, or logging to a dedicated file.
 
-The simplest possible configuration can be a standard Apache `common` Log Format:
+include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-config.adoc[opts=optional, leveloffset=+1]
 
-[source]
-----
-access-log('common')
-----
-
-This will log every request using the standard Quarkus logging infrastructure under the `io.undertow.accesslog` category.
-
-You can customize the category like this:
-
-
-[source]
-----
-access-log(format='common', category='my.own.category')
-----
-
-Finally the logging format can be customized:
-
-[source]
-----
-access-log(format='%h %l %u %t "%r" %s %b %D "%{i,Referer}" "%{i,User-Agent}" "%{i,X-Request-ID}"', category='my.own.category')
-----
+[frame="topbot",options="header"]
+|===
+|Attribute                                                                    |Short Form|Long Form
+|Remote IP address                                                            | `%a`     | `%{REMOTE_IP}`
+|Local IP address                                                             | `%A`     | `%{LOCAL_IP}`
+|Bytes sent, excluding HTTP headers, or '-' if no bytes were sent             | `%b`     |
+|Bytes sent, excluding HTTP headers                                           | `%B`     | `%{BYTES_SENT}`
+|Remote host name                                                             | `%h`     | `%{REMOTE_HOST}`
+|Request protocol                                                             | `%H`     | `%{PROTOCOL}`
+|Request method                                                               | `%m`     | `%{METHOD}`
+|Local port                                                                   | `%p`     | `%{LOCAL_PORT}`
+|Query string (prepended with a '?' if it exists, otherwise an empty string)  | `%q`     | `%{QUERY_STRING}`
+|First line of the request                                                    | `%r`     | `%{REQUEST_LINE}`
+|HTTP status code of the response                                             | `%s`     | `%{RESPONSE_CODE}`
+|Date and time, in Common Log Format format                                   | `%t`     | `%{DATE_TIME}`
+|Remote user that was authenticated                                           | `%u`     | `%{REMOTE_USER}`
+|Requested URL path                                                           | `%U`     | `%{REQUEST_URL}`
+|Request relative path                                                        | `%R`     | `%{RELATIVE_PATH}`
+|Local server name                                                            | `%v`     | `%{LOCAL_SERVER_NAME}`
+|Time taken to process the request, in millis                                 | `%D`     | `%{RESPONSE_TIME}`
+|Time taken to process the request, in seconds                                | `%T`     |
+|Time taken to process the request, in micros                                 |          | `%{RESPONSE_TIME_MICROS}`
+|Time taken to process the request, in nanos                                  |          | `%{RESPONSE_TIME_NANOS}`
+|Current request thread name                                                  | `%I`     | `%{THREAD_NAME}`
+|SSL cypher                                                                   |          | `%{SSL_CIPHER}`
+|SSL client certificate                                                       |          | `%{SSL_CLIENT_CERT}`
+|SSL session id                                                               |          | `%{SSL_SESSION_ID}`
+|Cookie value                                                                 |          | `%{c,cookie_name}`
+|Query parameter                                                              |          | `%{q,query_param_name}`
+|Request header                                                               |          | `%{i,request_header_name}`
+|Response header                                                              |          | `%{o,response_header_name}`
+|===
 
 === web.xml
 

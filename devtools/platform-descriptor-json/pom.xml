@@ -13,6 +13,11 @@
     <artifactId>quarkus-platform-descriptor-json</artifactId>
     <name>Quarkus - Dev tools - Platform Descriptor - JSON</name>
 
+    <properties>
+        <gradle-wrapper.path>${project.basedir}/../gradle</gradle-wrapper.path>
+        <gradle.executable>gradlew</gradle.executable>
+    </properties>
+
     <build>
         <resources>
             <resource>
@@ -65,6 +70,29 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-gradle-wrapper</id>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <executable>${gradle-wrapper.path}/${gradle.executable}</executable>
+                            <arguments>
+                                <argument>wrapper</argument>
+                                <argument>--gradle-version</argument>
+                                <argument>${gradle-wrapper.version}</argument>
+                            </arguments>
+                            <workingDirectory>target/classes/gradle-wrapper</workingDirectory>
+                            <addOutputToClasspath>true</addOutputToClasspath>
+                        </configuration>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -88,11 +116,24 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
-            <dependency>
-      	      <groupId>org.junit.jupiter</groupId>
-              <artifactId>junit-jupiter</artifactId>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
-        
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <gradle.executable>gradlew.bat</gradle.executable>
+            </properties>
+        </profile>
+    </profiles>
 </project>

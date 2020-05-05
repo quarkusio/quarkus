@@ -22,18 +22,18 @@ public class FruitResource {
 
     @PostConstruct
     void setupDb() {
-        client.query("DROP TABLE IF EXISTS fruits")
-                .flatMap(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)"))
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Orange')"))
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Pear')"))
-                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Apple')"))
+        client.query("DROP TABLE IF EXISTS fruits").execute()
+                .flatMap(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)").execute())
+                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Orange')").execute())
+                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Pear')").execute())
+                .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Apple')").execute())
                 .await().indefinitely();
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<JsonArray> listFruits() {
-        return client.query("SELECT * FROM fruits")
+        return client.query("SELECT * FROM fruits").execute()
                 .map(mysqlRowSet -> {
                     JsonArray jsonArray = new JsonArray();
                     for (Row row : mysqlRowSet) {

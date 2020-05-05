@@ -43,6 +43,10 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
 @Path("test")
 public class TestEndpoint {
 
+    // fake unused injection point to force ArC to not remove this otherwise I can't mock it in the tests
+    @Inject
+    MockablePersonRepository mockablePersonRepository;
+
     @GET
     @Path("model")
     @Transactional
@@ -842,6 +846,24 @@ public class TestEndpoint {
     }
 
     private void testPaging(PanacheQuery<Person> query) {
+        // No paging allowed until a page is setup
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.firstPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.previousPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.nextPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.lastPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.hasNextPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.hasPreviousPage(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.page(),
+                "UnsupportedOperationException should have thrown");
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> query.pageCount(),
+                "UnsupportedOperationException should have thrown");
+
         // ints
         List<Person> persons = query.page(0, 3).list();
         Assertions.assertEquals(3, persons.size());
@@ -1056,6 +1078,34 @@ public class TestEndpoint {
         Assertions.assertEquals("1", person.name);
 
         person.name = "2";
+        return "OK";
+    }
+
+    @GET
+    @Path("projection")
+    @Transactional
+    public String testProjection() {
+        Assertions.assertEquals(1, Person.count());
+
+        PersonName person = Person.findAll().project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name", "2").project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name = ?1", "2").project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        person = Person.find("name = :name", Parameters.with("name", "2")).project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
+        PanacheQuery<PersonName> query = Person.findAll().project(PersonName.class).page(0, 2);
+        Assertions.assertEquals(1, query.list().size());
+        query.nextPage();
+        Assertions.assertEquals(0, query.list().size());
+
+        Assertions.assertEquals(1, Person.findAll().project(PersonName.class).count());
+
         return "OK";
     }
 

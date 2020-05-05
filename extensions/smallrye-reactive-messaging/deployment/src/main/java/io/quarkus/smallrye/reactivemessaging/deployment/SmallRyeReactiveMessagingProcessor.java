@@ -58,10 +58,12 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
+import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
 import io.quarkus.smallrye.reactivemessaging.runtime.ReactiveMessagingConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLifecycle;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder;
 import io.smallrye.reactive.messaging.Invoker;
+import io.smallrye.reactive.messaging.annotations.Blocking;
 
 /**
  * 
@@ -82,7 +84,7 @@ public class SmallRyeReactiveMessagingProcessor {
     AdditionalBeanBuildItem beans() {
         // We add the connector and channel qualifiers to make them part of the index.
         return new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class, Connector.class,
-                Channel.class, io.smallrye.reactive.messaging.annotations.Channel.class);
+                Channel.class, io.smallrye.reactive.messaging.annotations.Channel.class, QuarkusWorkerPoolRegistry.class);
     }
 
     @BuildStep
@@ -135,6 +137,8 @@ public class SmallRyeReactiveMessagingProcessor {
                         ReactiveMessagingDotNames.INCOMING);
                 AnnotationInstance outgoing = annotationStore.getAnnotation(method,
                         ReactiveMessagingDotNames.OUTGOING);
+                AnnotationInstance blocking = annotationStore.getAnnotation(method,
+                        ReactiveMessagingDotNames.BLOCKING);
                 if (incoming != null || outgoing != null) {
                     if (incoming != null && incoming.value().asString().isEmpty()) {
                         validationPhase.getContext().addDeploymentProblem(
@@ -147,6 +151,10 @@ public class SmallRyeReactiveMessagingProcessor {
                     // TODO: validate method params and return type?
                     mediatorMethods.produce(new MediatorBuildItem(bean, method));
                     LOGGER.debugf("Found mediator business method %s declared on %s", method, bean);
+                } else if (blocking != null) {
+                    validationPhase.getContext().addDeploymentProblem(
+                            new DeploymentException(
+                                    "@Blocking used on " + method + " which has no @Incoming or @Outgoing annotation"));
                 }
             }
         }
@@ -294,17 +302,24 @@ public class SmallRyeReactiveMessagingProcessor {
              */
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, generatedInvokerName));
 
+            if (methodInfo.hasAnnotation(ReactiveMessagingDotNames.BLOCKING)) {
+                AnnotationInstance blocking = methodInfo.annotation(ReactiveMessagingDotNames.BLOCKING);
+                String poolName = blocking.value() == null ? Blocking.DEFAULT_WORKER_POOL : blocking.value().asString();
+
+                recorder.configureWorkerPool(beanContainer.getValue(), methodInfo.declaringClass().toString(),
+                        methodInfo.name(), poolName);
+            }
+
             try {
                 QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil
                         .create(methodInfo, bean,
                                 generatedInvokerName, recorderContext,
-                                Thread.currentThread().getContextClassLoader(), conf.strict);
+                                Thread.currentThread().getContextClassLoader());
                 configurations.add(mediatorConfiguration);
             } catch (IllegalArgumentException e) {
                 throw new DeploymentException(e); // needed to pass the TCK
             }
         }
-
         recorder.registerMediators(configurations, beanContainer.getValue());
 
         for (EmitterBuildItem it : emitterFields) {

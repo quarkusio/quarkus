@@ -13,6 +13,7 @@ import javax.validation.valueextraction.ValueExtractor;
 
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
+import org.hibernate.validator.internal.engine.resolver.JPATraversableResolver;
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolver;
 import org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy;
 import org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory;
@@ -29,7 +30,10 @@ import io.quarkus.runtime.annotations.Recorder;
 public class HibernateValidatorRecorder {
 
     public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated,
-            ShutdownContext shutdownContext, LocalesBuildTimeConfig localesBuildTimeConfig) {
+            Set<String> detectedBuiltinConstraints,
+            boolean hasXmlConfiguration, boolean jpaInClasspath,
+            ShutdownContext shutdownContext, LocalesBuildTimeConfig localesBuildTimeConfig,
+            HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig) {
         BeanContainerListener beanContainerListener = new BeanContainerListener() {
 
             @Override
@@ -37,6 +41,11 @@ public class HibernateValidatorRecorder {
                 PredefinedScopeHibernateValidatorConfiguration configuration = Validation
                         .byProvider(PredefinedScopeHibernateValidator.class)
                         .configure();
+
+                if (!hasXmlConfiguration) {
+                    configuration.ignoreXmlConfiguration();
+                }
+
                 LocaleResolver localeResolver = null;
                 InstanceHandle<LocaleResolver> configuredLocaleResolver = Arc.container()
                         .instance(LocaleResolver.class);
@@ -46,6 +55,7 @@ public class HibernateValidatorRecorder {
                 }
 
                 configuration
+                        .builtinConstraints(detectedBuiltinConstraints)
                         .initializeBeanMetaData(classesToBeValidated)
                         .locales(localesBuildTimeConfig.locales)
                         .defaultLocale(localesBuildTimeConfig.defaultLocale)
@@ -69,6 +79,13 @@ public class HibernateValidatorRecorder {
                         .instance(TraversableResolver.class);
                 if (configuredTraversableResolver.isAvailable()) {
                     configuration.traversableResolver(configuredTraversableResolver.get());
+                } else {
+                    // we still define the one we want to use so that we do not rely on runtime automatic detection
+                    if (jpaInClasspath) {
+                        configuration.traversableResolver(new JPATraversableResolver());
+                    } else {
+                        configuration.traversableResolver(new TraverseAllTraversableResolver());
+                    }
                 }
 
                 InstanceHandle<ParameterNameProvider> configuredParameterNameProvider = Arc.container()
@@ -83,6 +100,14 @@ public class HibernateValidatorRecorder {
                 }
 
                 // Hibernate Validator-specific configuration
+
+                configuration.failFast(hibernateValidatorBuildTimeConfig.failFast);
+                configuration.allowOverridingMethodAlterParameterConstraint(
+                        hibernateValidatorBuildTimeConfig.methodValidation.allowOverridingParameterConstraints);
+                configuration.allowParallelMethodsDefineParameterConstraints(
+                        hibernateValidatorBuildTimeConfig.methodValidation.allowParameterConstraintsOnParallelMethods);
+                configuration.allowMultipleCascadedValidationOnReturnValues(
+                        hibernateValidatorBuildTimeConfig.methodValidation.allowMultipleCascadedValidationOnReturnValues);
 
                 InstanceHandle<ScriptEvaluatorFactory> configuredScriptEvaluatorFactory = Arc.container()
                         .instance(ScriptEvaluatorFactory.class);

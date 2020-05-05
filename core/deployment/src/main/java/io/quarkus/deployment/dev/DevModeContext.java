@@ -38,6 +38,8 @@ public class DevModeContext implements Serializable {
     // the jar file which is used to launch the DevModeMain
     private File devModeRunnerJarFile;
     private boolean localProjectDiscovery = true;
+    // args of the main-method
+    private String[] args;
 
     private List<String> compilerOptions;
     private String sourceJavaVersion;
@@ -176,6 +178,14 @@ public class DevModeContext implements Serializable {
         return this;
     }
 
+    public String[] getArgs() {
+        return args;
+    }
+
+    public void setArgs(String[] args) {
+        this.args = args;
+    }
+
     public static class ModuleInfo implements Serializable {
 
         private final String name;
@@ -183,6 +193,7 @@ public class DevModeContext implements Serializable {
         private final Set<String> sourcePaths;
         private final String classesPath;
         private final String resourcePath;
+        private final String resourcesOutputPath;
 
         public ModuleInfo(
                 String name,
@@ -190,11 +201,22 @@ public class DevModeContext implements Serializable {
                 Set<String> sourcePaths,
                 String classesPath,
                 String resourcePath) {
+            this(name, projectDirectory, sourcePaths, classesPath, resourcePath, classesPath);
+        }
+
+        public ModuleInfo(
+                String name,
+                String projectDirectory,
+                Set<String> sourcePaths,
+                String classesPath,
+                String resourcePath,
+                String resourceOutputPath) {
             this.name = name;
             this.projectDirectory = projectDirectory;
             this.sourcePaths = sourcePaths == null ? new HashSet<>() : new HashSet<>(sourcePaths);
             this.classesPath = classesPath;
             this.resourcePath = resourcePath;
+            this.resourcesOutputPath = resourceOutputPath;
         }
 
         public String getName() {
@@ -219,6 +241,10 @@ public class DevModeContext implements Serializable {
 
         public String getResourcePath() {
             return resourcePath;
+        }
+
+        public String getResourcesOutputPath() {
+            return resourcesOutputPath;
         }
     }
 

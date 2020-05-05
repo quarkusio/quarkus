@@ -127,6 +127,13 @@ update_configs:
           dependency_name: "org.jboss.narayana.jts:narayana-jts-integration"
       - match:
           dependency_name: "org.jboss.narayana.stm:stm"
+      # Agroal
+      - match:
+          dependency_name: "io.agroal:agroal-api"
+      - match:
+          dependency_name: "io.agroal:agroal-pool"
+      - match:
+          dependency_name: "io.agroal:agroal-narayana"
       #Jandex
       - match:
           dependency_name: "org.jboss:jandex"
@@ -135,6 +142,11 @@ update_configs:
       #Neo4j
       - match:
           dependency_name: "org.neo4j.driver:neo4j-java-driver"
+      #WireMock
+      - match:
+          dependency_name: "com.github.tomakehurst:wiremock-jre8"
+      - match:
+          dependency_name: "uk.co.automatictester:wiremock-maven-plugin"
   - package_manager: "java:gradle"
     directory: "/devtools/gradle"
     update_schedule: "daily"

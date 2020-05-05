@@ -5,13 +5,16 @@ import static org.assertj.core.api.Assertions.entry;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
-import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.smallrye.mutiny.Multi;
 import io.vertx.axle.core.Vertx;
 
 class MailTest {
@@ -110,7 +113,7 @@ class MailTest {
         assertThat(mail2.getAttachments().get(0).getDisposition()).isEqualTo(Attachment.DISPOSITION_ATTACHMENT);
 
         Mail mail3 = new Mail().addAttachment("some-name-3",
-                ReactiveStreams.of(0, 1, 2).map(Integer::byteValue).buildRs(), TEXT_PLAIN);
+                Multi.createFrom().items(0, 1, 2).map(Integer::byteValue), TEXT_PLAIN);
         assertThat(mail3.getAttachments()).hasSize(1);
         assertThat(mail3.getAttachments().get(0).getName()).isEqualTo("some-name-3");
         assertThat(mail3.getAttachments().get(0).getContentType()).isEqualTo(TEXT_PLAIN);
@@ -118,7 +121,7 @@ class MailTest {
         assertThat(mail3.getAttachments().get(0).getDisposition()).isEqualTo(Attachment.DISPOSITION_ATTACHMENT);
 
         Mail mail4 = new Mail().addAttachment("some-name-4",
-                ReactiveStreams.of(0, 1, 2).map(Integer::byteValue).buildRs(), TEXT_PLAIN,
+                Multi.createFrom().items(0, 1, 2).map(Integer::byteValue), TEXT_PLAIN,
                 DESCRIPTION, Attachment.DISPOSITION_ATTACHMENT);
         assertThat(mail4.getAttachments()).hasSize(1);
         assertThat(mail4.getAttachments().get(0).getName()).isEqualTo("some-name-4");
@@ -155,7 +158,7 @@ class MailTest {
         assertThat(mail2.getAttachments().get(0).getContentId()).isEqualTo("<cid-2>");
 
         Mail mail3 = new Mail().addInlineAttachment("name-3",
-                ReactiveStreams.of(0, 1, 2).map(Integer::byteValue).buildRs(), TEXT_PLAIN, "cid-3");
+                Multi.createFrom().items(0, 1, 2).map(Integer::byteValue), TEXT_PLAIN, "cid-3");
         assertThat(mail3.getAttachments()).hasSize(1);
         assertThat(mail3.getAttachments().get(0).getName()).isEqualTo("name-3");
         assertThat(mail3.getAttachments().get(0).getContentType()).isEqualTo(TEXT_PLAIN);

@@ -23,8 +23,8 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-reactive-streams-operators</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-mutiny</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye</groupId>

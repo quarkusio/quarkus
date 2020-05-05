@@ -101,7 +101,7 @@ public class SimpleContextPropagationTest {
 
     private void awaitState(ThrowingRunnable task) {
         Awaitility.await().atMost(5, TimeUnit.SECONDS)
-                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .pollInterval(1000, TimeUnit.MILLISECONDS)
                 .untilAsserted(task);
     }
 

@@ -67,6 +67,7 @@ cd hibernate-search-elasticsearch-quickstart
 ----
 
 This command generates a Maven structure importing the following extensions:
+
  * Hibernate ORM with Panache,
  * the PostgreSQL JDBC driver,
  * Hibernate Search + Elasticsearch,
@@ -514,7 +515,7 @@ The Hibernate Search DSL supports a significant subset of the Elasticsearch pred
 Feel free to explore the DSL using autocompletion.
 
 When that's not enough, you can always fall back to
-[defining a predicate using JSON directly](https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/#search-dsl-predicate-extensions-elasticsearch-from-json).
+link:https://docs.jboss.org/hibernate/search/6.0/reference/en-US/html_single/#search-dsl-predicate-extensions-elasticsearch-from-json[defining a predicate using JSON directly].
 ====
 
 == Configuring the application
@@ -575,8 +576,8 @@ Let's create a `src/main/resources/import.sql` file with the following content:
 
 [source,sql]
 ----
-INSERT INTO author(id, firstname, lastname) VALUES (nextval('hibernate_sequence'), 'John', 'Irving')
-INSERT INTO author(id, firstname, lastname) VALUES (nextval('hibernate_sequence'), 'Paul', 'Auster')
+INSERT INTO author(id, firstname, lastname) VALUES (nextval('hibernate_sequence'), 'John', 'Irving');
+INSERT INTO author(id, firstname, lastname) VALUES (nextval('hibernate_sequence'), 'Paul', 'Auster');
 
 INSERT INTO book(id, title, author_id) VALUES (nextval('hibernate_sequence'), 'The World According to Garp', 1);
 INSERT INTO book(id, title, author_id) VALUES (nextval('hibernate_sequence'), 'The Hotel New Hampshire', 1);

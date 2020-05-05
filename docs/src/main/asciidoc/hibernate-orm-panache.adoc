@@ -577,6 +577,46 @@ Person.find("name = :name and status = :status",
 
 Every query operation accepts passing parameters by index (`Object...`), or by name (`Map<String,Object>` or `Parameters`).
 
+=== Query projection
+
+Query projection can be done with the `project(Class)` method on the `PanacheQuery` object that is returned by the `find()` methods.
+
+You can use it to restrict which fields will be returned by the database.
+
+Hibernate will use **DTO projection** and generate a SELECT clause with the attributes from the projection class.
+This is also called **dynamic instantiation** or **constructor expression**, more info can be found on the Hibernate guide:
+link:https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html#hql-select-clause[hql select clause]
+
+The projection class needs to be a valid Java Bean and have a constructor that contains all its attributes, this constructor will be used to
+instantiate the projection DTO instead of using the entity class. This must be the only constructor of the class.
+
+[source,java]
+----
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection // <1>
+public class PersonName {
+    public final String name; // <2>
+
+    public PersonName(String name){ // <3>
+        this.name = name;
+    }
+}
+
+// only 'name' will be loaded from the database
+PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
+----
+
+1. If you plan to deploy your application as a native executable, you must register manually the projection class for reflection.
+2. We use public fields here, but you can use private fields and getters/setters if you prefer.
+3. This constructor will be used by Hibernate, it must be the only constructor in your class and have all the class attributes as parameters.
+
+[WARNING]
+====
+The implementation of the `project(Class)` method uses the constructor's parameter names to build the select clause of the query,
+so the compiler must be configured to store parameter names inside the compiled class.
+This is enabled by default if you are using the Quarkus Maven archetype. If you are not using it, add the property `<maven.compiler.parameters>true</maven.compiler.parameters>` to your pom.xml.
+====
 
 == Transactions
 
@@ -611,7 +651,7 @@ public void create(Parameter parameter){
 
 Panache provides direct support for database locking with your entity/repository, using `findById(Object, LockModeType)` or `find().withLock(LockModeType)`.
 
-The following examples are for the entity pattern, but the same can be used with repositories.
+The following examples are for the active record pattern, but the same can be used with repositories.
 
 === First: Locking using findById().
 
@@ -683,6 +723,184 @@ and specify your ID type as an extra type parameter:
 @ApplicationScoped
 public class PersonRepository implements PanacheRepositoryBase<Person,Integer> {
     //...
+}
+----
+
+== Mocking
+
+=== Using the active record pattern
+
+If you are using the active record pattern you cannot use Mockito directly as it does not support mocking static methods,
+but you can use the `quarkus-panache-mock` module which allows you to use Mockito to mock all provided static
+methods, including your own.
+
+Add this dependency to your `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-panache-mock</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+
+Given this simple entity:
+
+[source,java]
+----
+@Entity
+public class Person extends PanacheEntity {
+
+    public String name;
+
+    public static List<Person> findOrdered() {
+        return find("ORDER BY name").list();
+    }
+}
+----
+
+You can write your mocking test like this:
+
+[source,java]
+----
+@QuarkusTest
+public class PanacheFunctionalityTest {
+
+    @Test
+    public void testPanacheMocking() {
+        PanacheMock.mock(Person.class);
+
+        // Mocked classes always return a default value
+        Assertions.assertEquals(0, Person.count());
+
+        // Now let's specify the return value
+        Mockito.when(Person.count()).thenReturn(23l);
+        Assertions.assertEquals(23, Person.count());
+
+        // Now let's change the return value
+        Mockito.when(Person.count()).thenReturn(42l);
+        Assertions.assertEquals(42, Person.count());
+
+        // Now let's call the original method
+        Mockito.when(Person.count()).thenCallRealMethod();
+        Assertions.assertEquals(0, Person.count());
+
+        // Check that we called it 4 times
+        PanacheMock.verify(Person.class, Mockito.times(4)).count();// <1>
+
+        // Mock only with specific parameters
+        Person p = new Person();
+        Mockito.when(Person.findById(12l)).thenReturn(p);
+        Assertions.assertSame(p, Person.findById(12l));
+        Assertions.assertNull(Person.findById(42l));
+
+        // Mock throwing
+        Mockito.when(Person.findById(12l)).thenThrow(new WebApplicationException());
+        Assertions.assertThrows(WebApplicationException.class, () -> Person.findById(12l));
+
+        // We can even mock your custom methods
+        Mockito.when(Person.findOrdered()).thenReturn(Collections.emptyList());
+        Assertions.assertTrue(Person.findOrdered().isEmpty());
+
+        PanacheMock.verify(Person.class).findOrdered();
+        PanacheMock.verify(Person.class, Mockito.atLeastOnce()).findById(Mockito.any());
+        PanacheMock.verifyNoMoreInteractions(Person.class);
+    }
+}
+----
+<1> Be sure to call your `verify` methods on `PanacheMock` rather than `Mockito`, otherwise you won't know
+what mock object to pass.
+
+=== Using the repository pattern
+
+If you are using the repository pattern you can use Mockito directly, using the `quarkus-junit5-mockito` module,
+which makes mocking beans much easier:
+
+[source,java]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5-mockito</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+Given this simple entity:
+
+[source,java]
+----
+@Entity
+public class Person {
+
+    @Id
+    @GeneratedValue
+    public Long id;
+
+    public String name;
+}
+----
+
+And this repository:
+
+[source,java]
+----
+@ApplicationScoped
+public class PersonRepository implements PanacheRepository<Person> {
+    public List<Person> findOrdered() {
+        return find("ORDER BY name").list();
+    }
+}
+----
+
+You can write your mocking test like this:
+
+[source,java]
+----
+@QuarkusTest
+public class PanacheFunctionalityTest {
+    @InjectMock
+    PersonRepository personRepository;
+
+    @Test
+    public void testPanacheRepositoryMocking() throws Throwable {
+        // Mocked classes always return a default value
+        Assertions.assertEquals(0, personRepository.count());
+
+        // Now let's specify the return value
+        Mockito.when(personRepository.count()).thenReturn(23l);
+        Assertions.assertEquals(23, personRepository.count());
+
+        // Now let's change the return value
+        Mockito.when(personRepository.count()).thenReturn(42l);
+        Assertions.assertEquals(42, personRepository.count());
+
+        // Now let's call the original method
+        Mockito.when(personRepository.count()).thenCallRealMethod();
+        Assertions.assertEquals(0, personRepository.count());
+
+        // Check that we called it 4 times
+        Mockito.verify(personRepository, Mockito.times(4)).count();
+
+        // Mock only with specific parameters
+        Person p = new Person();
+        Mockito.when(personRepository.findById(12l)).thenReturn(p);
+        Assertions.assertSame(p, personRepository.findById(12l));
+        Assertions.assertNull(personRepository.findById(42l));
+
+        // Mock throwing
+        Mockito.when(personRepository.findById(12l)).thenThrow(new WebApplicationException());
+        Assertions.assertThrows(WebApplicationException.class, () -> personRepository.findById(12l));
+
+        Mockito.when(personRepository.findOrdered()).thenReturn(Collections.emptyList());
+        Assertions.assertTrue(personRepository.findOrdered().isEmpty());
+
+        // We can even mock your custom methods
+        Mockito.verify(personRepository).findOrdered();
+        Mockito.verify(personRepository, Mockito.atLeastOnce()).findById(Mockito.any());
+        Mockito.verifyNoMoreInteractions(personRepository);
+    }
 }
 ----
 

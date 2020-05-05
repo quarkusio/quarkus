@@ -9,20 +9,20 @@ public class HealthConfig {
     /**
      * Whether or not an health check is published in case the smallrye-health extension is present.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean enabled;
 
     /**
      * Specifies if being a standby should still return the active status code instead of the standby status code.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean standByOk;
 
     /**
      * Specifies if being a performance standby should still return the active status code instead of the performance standby
      * status code.
      */
-    @ConfigItem(defaultValue = "false")
+    @ConfigItem
     public boolean performanceStandByOk;
 
 }

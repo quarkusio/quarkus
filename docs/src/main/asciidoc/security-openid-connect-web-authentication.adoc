@@ -12,7 +12,7 @@ This guide demonstrates how to use the OpenID Connect Extension to protect your 
 The extension allows you to easily enable authentication to your web application based on the Authorization Code Flow so that your users are redirected to a
 OpenID Connect Provider (e.g.: Keycloak) to authenticate and, once the authentication is complete, return back to your application.
 
-We are going to give you a guideline on how to use OpenId Connect to authenticate users using the Quarkus OpenID Connect Extenson.
+We are going to give you a guideline on how to use OpenId Connect to authenticate users using the Quarkus OpenID Connect Extension.
 
 == Prerequisites
 
@@ -158,7 +158,82 @@ After clicking the `Login` button you should be redirected back to the applicati
 
 == Logout
 
-The extension only supports logout based on the expiration time of the ID Token issued by the OpenID Connect Provider. When the token expires, users are redirected to the OpenID Connect Provider again to authenticate. If the session at the OpenID Connect Provider is still active, users are automatically re-authenticated without having to provide their credentials again.
+By default the logout is based on the expiration time of the ID Token issued by the OpenID Connect Provider. When the ID Token expires, the current user session at the Quarkus endpoint is invalidated and the user is redirected to the OpenID Connect Provider again to authenticate. If the session at the OpenID Connect Provider is still active, users are automatically re-authenticated without having to provide their credentials again.
+
+The current user session may be automatically extended by enabling a `quarkus.oidc.token.refresh-expired` property. If it is set to `true` then when the current ID Token expires a Refresh Token Grant will be used to refresh ID Token as well as Access and Refresh Tokens.
+
+=== User-Initiated Logout
+
+Users can request a logout by sending a request to the Quarkus endpoint logout path set with a `quarkus.oidc.logout.path` property.
+For example, if the endpoint address is `https://application.com/webapp` and the `quarkus.oidc.logout.path` is set to "/logout" then the logout request has to be sent to `https://application.com/webapp/logout`.
+
+This logout request will start an https://openid.net/specs/openid-connect-session-1_0.html#RPLogout[RP-Initiated Logout] and the user will be redirected to the OpenID Connect Provider to logout where a user may be asked to confirm the logout is indeed intended.
+
+The user will be returned to the endpoint post logout page once the logout has been completed if the `quarkus.oidc.logout.post-logout-path` property is set. For example, if the endpoint address is `https://application.com/webapp` and the `quarkus.oidc.logout.post-logout-path` is set to "/signin" then the user will be returned to `https://application.com/webapp/signin` (note this URI must be registered as a valid `post_logout_redirect_uri` in the OpenID Connect Provider).
+
+If the `quarkus.oidc.logout.post-logout-path` is set then a `q_post_logout` cookie will be created and a matching `state` query parameter will be added to the logout redirect URI and the OpenID Connect Provider will return this `state` once the logout has been completed. It is recommended for the Quarkus `web-app` applications to check that a `state` query parameter matches the value of the `q_post_logout` cookie which can be done for example in a JAX-RS filter.
+
+== Accessing ID and Access Tokens
+
+ID Token is always a JWT token. One can access ID Token claims by injecting `JsonWebToken` with an `IdToken` qualifier:
+
+[source, java]
+----
+import javax.inject.Inject;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import io.quarkus.oidc.IdToken;
+import io.quarkus.security.Authenticated;
+
+@Path("/web-app")
+@Authenticated
+public class ProtectedResource {
+
+    @Inject
+    @IdToken
+    JsonWebToken idToken;
+
+    @GET
+    public String getUserName() {
+        return idToken.getName();
+    }
+}
+----
+
+Access Token is usually used by the OIDC `web-app` application to access other endpoints on behalf of the currently logged in user. The raw access token can be accessed as follows:
+
+[source, java]
+----
+import javax.inject.Inject;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.security.Authenticated;
+
+@Path("/web-app")
+@Authenticated
+public class ProtectedResource {
+
+    @Inject
+    JsonWebToken accessToken;
+
+    // or
+    // @Inject
+    // AccessTokenCredential accessTokenCredential;
+
+    @GET
+    public String getReservationOnBehalfOfUser() {
+        String rawAccessToken = accessToken.getRawToken();
+        //or
+        //String rawAccessToken = accessTokenCredential.getToken();
+
+        // Use the raw access token to access a remote endpoint
+        return getReservationfromRemoteEndpoint(rawAccesstoken);
+    }
+}
+----
+
+Note that `AccessTokenCredential` will have to be used if the Access Token issued to the Quarkus `web-app` application is opaque (binary) and can not be parsed to `JsonWebToken`. However the opaque access tokens are not currently supported by the `web-app` applications.
+
+Injection of the `JsonWebToken` and `AccessTokenCredential` is supported in both `@RequestScoped` and `@ApplicationScoped` contexts.
 
 == Configuration Reference
 

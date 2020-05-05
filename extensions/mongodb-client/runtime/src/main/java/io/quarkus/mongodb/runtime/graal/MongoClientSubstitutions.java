@@ -173,3 +173,14 @@ final class DefaultDnsResolverSubstitution {
         throw new UnsupportedOperationException("mongo+srv:// not supported in native mode");
     }
 }
+
+//TODO: move to a dedicated jna extension that will simply collect JNA substitutions
+@TargetClass(com.sun.jna.Native.class)
+final class JnaNativeSubstitutions {
+
+    // This method can trick GraalVM into thinking that Classloader#findLibrary is getting called
+    @Substitute
+    public static String getWebStartLibraryPath(final String libName) {
+        return null;
+    }
+}

@@ -8,6 +8,8 @@ import io.quarkus.bootstrap.model.AppModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
@@ -57,13 +59,13 @@ public class BootstrapAppModelFactory {
     private static final int CP_CACHE_FORMAT_ID = 2;
 
     private static final Logger log = Logger.getLogger(BootstrapAppModelFactory.class);
-    private AppArtifact managingProject;
 
     public static BootstrapAppModelFactory newInstance() {
         return new BootstrapAppModelFactory();
     }
 
-    private Path appClasses;
+    private AppArtifact managingProject;
+    private Path projectRoot;
     private List<Path> appCp = new ArrayList<>(0);
     private Boolean localProjectsDiscovery;
     private Boolean offline;
@@ -78,7 +80,7 @@ public class BootstrapAppModelFactory {
     private AppArtifact appArtifact;
     private MavenArtifactResolver mavenArtifactResolver;
 
-    private LocalProject appClassesWorkspace;
+    private LocalProject currentProject;
 
     private List<AppDependency> forcedDependencies = Collections.emptyList();
 
@@ -95,8 +97,8 @@ public class BootstrapAppModelFactory {
         return this;
     }
 
-    public BootstrapAppModelFactory setAppClasses(Path appClasses) {
-        this.appClasses = appClasses;
+    public BootstrapAppModelFactory setProjectRoot(Path projectRoot) {
+        this.projectRoot = projectRoot;
         return this;
     }
 
@@ -151,32 +153,19 @@ public class BootstrapAppModelFactory {
     }
 
     public AppModelResolver getAppModelResolver() {
-
         if (bootstrapAppModelResolver != null) {
             return bootstrapAppModelResolver;
         }
-        if (appClasses == null) {
-            throw new IllegalArgumentException("Application classes path has not been set");
-        }
 
         try {
-            if (!Files.isDirectory(appClasses)) {
+            if (projectRoot != null && !Files.isDirectory(projectRoot)) {
                 final MavenArtifactResolver mvn;
                 if (mavenArtifactResolver == null) {
-                    final MavenArtifactResolver.Builder mvnBuilder = MavenArtifactResolver.builder();
-                    if (offline != null) {
-                        mvnBuilder.setOffline(offline);
+                    final BootstrapMavenContext mvnCtx = createBootstrapMavenContext();
+                    if (managingProject == null) {
+                        managingProject = mvnCtx.getCurrentProjectArtifact("pom");
                     }
-                    final LocalProject localProject = isWorkspaceDiscoveryEnabled()
-                            ? LocalProject.loadWorkspace(Paths.get("").normalize().toAbsolutePath(), false)
-                            : null;
-                    if (localProject != null) {
-                        mvnBuilder.setWorkspace(localProject.getWorkspace());
-                        if (managingProject == null) {
-                            managingProject = localProject.getAppArtifact();
-                        }
-                    }
-                    mvn = mvnBuilder.build();
+                    mvn = new MavenArtifactResolver(mvnCtx);
                 } else {
                     mvn = mavenArtifactResolver;
                 }
@@ -188,24 +177,31 @@ public class BootstrapAppModelFactory {
 
             MavenArtifactResolver mvn = mavenArtifactResolver;
             if (mvn == null) {
-                final MavenArtifactResolver.Builder builder = MavenArtifactResolver.builder();
-                final LocalProject localProject = isWorkspaceDiscoveryEnabled()
-                        ? loadAppClassesWorkspace()
-                        : null;
-                if (localProject != null) {
-                    builder.setWorkspace(localProject.getWorkspace());
-                }
-                if (offline != null) {
-                    builder.setOffline(offline);
-                }
-                mvn = builder.build();
+                mvn = new MavenArtifactResolver(createBootstrapMavenContext());
             }
             return bootstrapAppModelResolver = new BootstrapAppModelResolver(mvn)
                     .setTest(test)
                     .setDevMode(devMode);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create resolver for " + appClasses, e);
+            throw new RuntimeException("Failed to create application model resolver for " + projectRoot, e);
         }
+    }
+
+    private BootstrapMavenContext createBootstrapMavenContext() throws AppModelResolverException {
+        final BootstrapMavenContextConfig<?> config = BootstrapMavenContext.config();
+        if (offline != null) {
+            config.setOffline(offline);
+        }
+        if (currentProject != null) {
+            config.setCurrentProject(currentProject);
+        } else {
+            // Currently projectRoot may be an app location which is not exactly a Maven project dir
+            //if (projectRoot != null && Files.isDirectory(projectRoot)) {
+            //    config.setCurrentProject(projectRoot.toString());
+            //}
+            config.setWorkspaceDiscovery(isWorkspaceDiscoveryEnabled());
+        }
+        return new BootstrapMavenContext(config);
     }
 
     public CurationResult resolveAppModel() throws BootstrapException {
@@ -227,18 +223,19 @@ public class BootstrapAppModelFactory {
                 }
             }
         }
-        if (appClasses == null) {
-            throw new IllegalArgumentException("Application classes path has not been set");
-        }
 
-        if (!Files.isDirectory(appClasses)) {
-            return createAppModelForJar(appClasses);
+        if (projectRoot != null && !Files.isDirectory(projectRoot)) {
+            return createAppModelForJar(projectRoot);
         }
 
         LocalProject localProject = null;
         AppArtifact appArtifact = this.appArtifact;
         if (appArtifact == null) {
-            localProject = enableClasspathCache ? loadAppClassesWorkspace() : LocalProject.load(appClasses, false);
+            if (projectRoot == null) {
+                throw new IllegalArgumentException(
+                        "Neither the application artifact nor the project root path has been provided");
+            }
+            localProject = enableClasspathCache ? loadWorkspace() : LocalProject.load(projectRoot, false);
             if (localProject == null) {
                 log.warn("Unable to locate the maven project on the filesystem");
                 throw new BootstrapException("Failed to determine the Maven artifact associated with the application");
@@ -252,7 +249,7 @@ public class BootstrapAppModelFactory {
             LocalWorkspace workspace = null;
             if (enableClasspathCache) {
                 if (localProject == null) {
-                    localProject = loadAppClassesWorkspace();
+                    localProject = loadWorkspace();
                 }
                 workspace = localProject.getWorkspace();
                 cachedCpPath = resolveCachedCpPath(localProject);
@@ -266,13 +263,10 @@ public class BootstrapAppModelFactory {
 
                                 log.debugf("Loaded cached AppMode %s from %s", appModel, cachedCpPath);
                                 for (AppDependency i : appModel.getFullDeploymentDeps()) {
-                                    if (!Files.exists(i.getArtifact().getPath())) {
-                                        throw new IOException("Cached artifact does not exist: " + i.getArtifact().getPath());
-                                    }
-                                }
-                                for (AppDependency i : appModel.getUserDependencies()) {
-                                    if (!Files.exists(i.getArtifact().getPath())) {
-                                        throw new IOException("Cached artifact does not exist: " + i.getArtifact().getPath());
+                                    for (Path p : i.getArtifact().getPaths()) {
+                                        if (!Files.exists(p)) {
+                                            throw new IOException("Cached artifact does not exist: " + p);
+                                        }
                                     }
                                 }
                                 return new CurationResult(appModel);
@@ -289,8 +283,7 @@ public class BootstrapAppModelFactory {
                     }
                 }
             }
-            AppModelResolver appModelResolver = getAppModelResolver();
-            CurationResult curationResult = new CurationResult(appModelResolver
+            CurationResult curationResult = new CurationResult(getAppModelResolver()
                     .resolveManagedModel(appArtifact, forcedDependencies, managingProject));
             if (cachedCpPath != null) {
                 Files.createDirectories(cachedCpPath.getParent());
@@ -310,13 +303,16 @@ public class BootstrapAppModelFactory {
     }
 
     private boolean isWorkspaceDiscoveryEnabled() {
-        return localProjectsDiscovery == null ? test || devMode : localProjectsDiscovery;
+        return localProjectsDiscovery == null ? projectRoot != null && (test || devMode)
+                : localProjectsDiscovery;
     }
 
-    private LocalProject loadAppClassesWorkspace() throws BootstrapException {
-        return appClassesWorkspace == null
-                ? appClassesWorkspace = LocalProject.loadWorkspace(appClasses, false)
-                : appClassesWorkspace;
+    private LocalProject loadWorkspace() throws BootstrapException {
+        return currentProject == null
+                ? currentProject = projectRoot == null || !Files.isDirectory(projectRoot)
+                        ? null
+                        : LocalProject.loadWorkspace(projectRoot, false)
+                : currentProject;
     }
 
     private CurationResult createAppModelForJar(Path appArtifactPath) {
@@ -348,7 +344,6 @@ public class BootstrapAppModelFactory {
                     log.info("- located the state at " + statePath);
                 } catch (AppModelResolverException e) {
                     // for now let's assume this means artifact does not exist
-                    // System.out.println(" no state found");
                 }
 
                 if (statePath != null) {
@@ -401,12 +396,13 @@ public class BootstrapAppModelFactory {
                 depsI.remove();
                 continue;
             }
-            final Path path = appDep.getPath();
-            if (Files.isDirectory(path)) {
-                if (!Files.exists(path.resolve(BootstrapConstants.DESCRIPTOR_PATH))) {
-                    depsI.remove();
+            appDep.getPaths().forEach(path -> {
+                if (Files.isDirectory(path)) {
+                    if (!Files.exists(path.resolve(BootstrapConstants.DESCRIPTOR_PATH))) {
+                        depsI.remove();
+                    }
+                    return;
                 }
-            } else {
                 try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
                     if (!Files.exists(artifactFs.getPath(BootstrapConstants.DESCRIPTOR_PATH))) {
                         depsI.remove();
@@ -414,7 +410,7 @@ public class BootstrapAppModelFactory {
                 } catch (IOException e) {
                     throw new RuntimeException("Failed to open " + path, e);
                 }
-            }
+            });
         }
 
         final UpdateDiscovery ud = new DefaultUpdateDiscovery(modelResolver, versionUpdateNumber);
@@ -453,7 +449,7 @@ public class BootstrapAppModelFactory {
     }
 
     private Path resolveCachedCpPath(LocalProject project) {
-        final String filePrefix = test ? "test-" : (devMode ? "dev-" : null);
+        final String filePrefix = devMode ? "dev-" : (test ? "test-" : null);
         return project.getOutputDir().resolve(QUARKUS).resolve(BOOTSTRAP)
                 .resolve(filePrefix == null ? APP_MODEL_DAT : filePrefix + APP_MODEL_DAT);
     }

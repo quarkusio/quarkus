@@ -40,6 +40,15 @@ public class PolicyEnforcerTest {
                 .then()
                 .statusCode(200)
                 .and().body(Matchers.containsString("Permission Resource"));
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scope?scope=write")
+                .then()
+                .statusCode(403);
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scope?scope=read")
+                .then()
+                .statusCode(200)
+                .and().body(Matchers.containsString("read"));
         ;
         RestAssured.given().auth().oauth2(getAccessToken("admin"))
                 .when().get("/api/permission")

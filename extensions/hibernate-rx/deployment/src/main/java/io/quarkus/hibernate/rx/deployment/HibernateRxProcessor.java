@@ -41,14 +41,12 @@ public final class HibernateRxProcessor {
                 .addBeanClass(RxSessionFactoryProducer.class)
                 .addBeanClass(RxSessionProducer.class)
                 .build());
-        //        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(RxSessionFactoryProducer.class));
-        //        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(RxSessionProducer.class));
     }
 
     @BuildStep
     void reflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         String[] classes = {
-                "org.hibernate.rx.persister.entity.impl.RxSingleTableEntityPersister" // TODO see if we can eliminate this
+                "org.hibernate.rx.persister.entity.impl.RxSingleTableEntityPersister"
         };
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, classes));
     }

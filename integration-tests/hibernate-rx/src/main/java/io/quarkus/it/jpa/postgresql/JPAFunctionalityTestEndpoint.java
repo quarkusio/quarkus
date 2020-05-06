@@ -28,9 +28,6 @@ public class JPAFunctionalityTestEndpoint {
     @Inject
     RxSession session;
 
-    //    @Inject
-    //    Mutiny.Session mutinySession;
-
     @GET
     @Path("/reactiveFindRx")
     @Produces(MediaType.APPLICATION_JSON)

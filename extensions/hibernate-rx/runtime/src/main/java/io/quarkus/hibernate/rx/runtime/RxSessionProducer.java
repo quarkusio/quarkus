@@ -26,21 +26,8 @@ public class RxSessionProducer {
         return rxSessionFactory.openRxSession();
     }
 
-    // TODO: I think this isn't working because we are producing Mutiny.Session as a bean but it has no default ctor
-    // so one is being generated
-    //    @Produces
-    //    @Typed(Mutiny.Session.class)
-    //    @RequestScoped
-    //    public Mutiny.Session mutinySession(RxSession rxSession) {
-    //        return new Mutiny.Session(rxSession);
-    //    }
-
     public void disposeRxSession(@Disposes RxSession rxSession) {
         rxSession.close();
     }
-
-    //    public void disposeMutinySession(@Disposes Mutiny.Session mutinySession) {
-    //        // TODO: Should we add a mutinySession.close() method to the API?
-    //    }
 
 }

@@ -26,10 +26,6 @@
             <artifactId>quarkus-reactive-datasource-deployment</artifactId>
         </dependency>
         <dependency>
-        	<groupId>io.quarkus</groupId>
-        	<artifactId>quarkus-mutiny-deployment</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-rx</artifactId>
         </dependency>

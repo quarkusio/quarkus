@@ -1,0 +1,10 @@
+---
+name: "gRPC"
+metadata:
+  keywords:
+    - "gRPC"
+  categories:
+    - "web"
+    - "serialization"
+    - "reactive"
+  status: "experimental"

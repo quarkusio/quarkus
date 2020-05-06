@@ -152,4 +152,19 @@ final public class ConfigDocItem implements ConfigDocElement, Comparable<ConfigD
         return false;
     }
 
+    public void configPhase(ConfigPhase phase) {
+        if (isConfigKey()) {
+            configDocKey.setConfigPhase(phase);
+        } else {
+            configDocSection.setConfigPhase(phase);
+        }
+    }
+
+    public void withinAMap(boolean withinAMap) {
+        if (isConfigKey()) {
+            configDocKey.setWithinAMap(configDocKey.isWithinAMap() || withinAMap);
+        } else {
+            configDocSection.setWithinAMap(configDocSection.isWithinAMap() || withinAMap);
+        }
+    }
 }

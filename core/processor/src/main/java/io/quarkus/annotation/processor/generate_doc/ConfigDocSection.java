@@ -14,11 +14,29 @@ final public class ConfigDocSection implements ConfigDocElement, Comparable<Conf
     private String sectionDetailsTitle;
     private ConfigPhase configPhase;
     private String topLevelGrouping;
+    private String configGroupType;
+    private boolean showSection;
 
     private List<ConfigDocItem> configDocItems = new ArrayList<>();
     private String anchorPrefix;
 
     public ConfigDocSection() {
+    }
+
+    public String getConfigGroupType() {
+        return configGroupType;
+    }
+
+    public void setConfigGroupType(String configGroupType) {
+        this.configGroupType = configGroupType;
+    }
+
+    public boolean isShowSection() {
+        return showSection;
+    }
+
+    public void setShowSection(boolean showSection) {
+        this.showSection = showSection;
     }
 
     public boolean isWithinAMap() {

@@ -8,13 +8,17 @@ final public class ConfigRootInfo {
     private final String name;
     private final TypeElement clazz;
     private final ConfigPhase configPhase;
-    private final String extensionName;
+    private final String fileName;
 
-    public ConfigRootInfo(String name, TypeElement clazz, String extensionName, ConfigPhase visibility) {
+    public ConfigRootInfo(String name, TypeElement clazz, ConfigPhase visibility, String fileName) {
         this.name = name;
         this.clazz = clazz;
         this.configPhase = visibility;
-        this.extensionName = extensionName;
+        this.fileName = fileName;
+    }
+
+    public String getFileName() {
+        return fileName;
     }
 
     @Override
@@ -26,13 +30,13 @@ final public class ConfigRootInfo {
         ConfigRootInfo that = (ConfigRootInfo) o;
         return Objects.equals(name, that.name) &&
                 Objects.equals(clazz, that.clazz) &&
-                Objects.equals(configPhase, that.configPhase) &&
-                Objects.equals(extensionName, that.extensionName);
+                configPhase == that.configPhase &&
+                Objects.equals(fileName, that.fileName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, clazz, configPhase, extensionName);
+        return Objects.hash(name, clazz, configPhase, fileName);
     }
 
     @Override
@@ -41,7 +45,7 @@ final public class ConfigRootInfo {
                 "name='" + name + '\'' +
                 ", clazz=" + clazz +
                 ", configPhase=" + configPhase +
-                ", extensionName='" + extensionName + '\'' +
+                ", fileName='" + fileName + '\'' +
                 '}';
     }
 

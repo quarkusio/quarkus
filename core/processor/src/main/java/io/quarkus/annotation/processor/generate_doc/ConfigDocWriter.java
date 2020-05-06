@@ -23,9 +23,6 @@ final public class ConfigDocWriter {
     /**
      * Generate documentation in a summary table and descriptive format
      *
-     * @param targetPath
-     * @param configDocItems
-     * @throws IOException
      */
     private void generateDocumentation(Path targetPath, String initialAnchorPrefix, boolean activateSearch,
             List<ConfigDocItem> configDocItems)

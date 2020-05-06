@@ -31,6 +31,14 @@ public class BootstrapMavenOptions {
     private static final String MAVEN_CMD_LINE_ARGS = "MAVEN_CMD_LINE_ARGS";
 
     private static final String ACTIVATE_PROFILES = "P";
+    public static final String ALTERNATE_USER_SETTINGS = "s";
+    public static final String ALTERNATE_GLOBAL_SETTINGS = "gs";
+    public static final String ALTERNATE_POM_FILE = "f";
+    public static final String OFFLINE = "o";
+    public static final String SUPRESS_SNAPSHOT_UPDATES = "nsu";
+    public static final String UPDATE_SNAPSHOTS = "U";
+    public static final String CHECKSUM_FAILURE_POLICY = "C";
+    public static final String CHECKSUM_WARNING_POLICY = "c";
 
     public static Map<String, Object> parse(String cmdLine) {
         if (cmdLine == null) {

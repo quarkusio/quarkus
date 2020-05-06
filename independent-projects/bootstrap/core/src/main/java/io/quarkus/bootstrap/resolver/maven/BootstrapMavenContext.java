@@ -90,15 +90,6 @@ public class BootstrapMavenContext {
     private static final String MAVEN_PROJECTBASEDIR = "MAVEN_PROJECTBASEDIR";
     private static final String SETTINGS_XML = "settings.xml";
 
-    private static final String ALTERNATE_USER_SETTINGS = "s";
-    private static final String ALTERNATE_GLOBAL_SETTINGS = "gs";
-    private static final String ALTERNATE_POM_FILE = "f";
-    private static final String OFFLINE = "o";
-    private static final String SUPRESS_SNAPSHOT_UPDATES = "nsu";
-    private static final String UPDATE_SNAPSHOTS = "U";
-    private static final String CHECKSUM_FAILURE_POLICY = "C";
-    private static final String CHECKSUM_WARNING_POLICY = "c";
-
     private static final String userHome = PropertyUtils.getUserHome();
     private static final File userMavenConfigurationHome = new File(userHome, ".m2");
 
@@ -151,13 +142,15 @@ public class BootstrapMavenContext {
             this.workspace = currentProject == null ? null : currentProject.getWorkspace();
         }
         userSettings = config.userSettings == null
-                ? resolveSettingsFile(getCliOptions().getOptionValue(ALTERNATE_USER_SETTINGS),
+                ? resolveSettingsFile(getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_USER_SETTINGS),
                         () -> new File(userMavenConfigurationHome, SETTINGS_XML))
                 : config.userSettings;
-        globalSettings = resolveSettingsFile(getCliOptions().getOptionValue(ALTERNATE_GLOBAL_SETTINGS), () -> {
-            final String envM2Home = System.getenv(MAVEN_HOME);
-            return new File(PropertyUtils.getProperty(MAVEN_DOT_HOME, envM2Home != null ? envM2Home : ""), "conf/settings.xml");
-        });
+        globalSettings = resolveSettingsFile(getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_GLOBAL_SETTINGS),
+                () -> {
+                    final String envM2Home = System.getenv(MAVEN_HOME);
+                    return new File(PropertyUtils.getProperty(MAVEN_DOT_HOME, envM2Home != null ? envM2Home : ""),
+                            "conf/settings.xml");
+                });
     }
 
     public AppArtifact getCurrentProjectArtifact(String extension) throws AppModelResolverException {
@@ -189,7 +182,9 @@ public class BootstrapMavenContext {
     }
 
     public boolean isOffline() throws AppModelResolverException {
-        return offline == null ? offline = getCliOptions().hasOption(OFFLINE) || getEffectiveSettings().isOffline() : offline;
+        return offline == null
+                ? offline = (getCliOptions().hasOption(BootstrapMavenOptions.OFFLINE) || getEffectiveSettings().isOffline())
+                : offline;
     }
 
     public RepositorySystem getRepositorySystem() throws AppModelResolverException {
@@ -311,17 +306,14 @@ public class BootstrapMavenContext {
 
         final BootstrapMavenOptions mvnArgs = getCliOptions();
         if (!mvnArgs.isEmpty()) {
-            if (!session.isOffline() && mvnArgs.hasOption(OFFLINE)) {
-                session.setOffline(true);
-            }
-            if (mvnArgs.hasOption(SUPRESS_SNAPSHOT_UPDATES)) {
+            if (mvnArgs.hasOption(BootstrapMavenOptions.SUPRESS_SNAPSHOT_UPDATES)) {
                 session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_NEVER);
-            } else if (mvnArgs.hasOption(UPDATE_SNAPSHOTS)) {
+            } else if (mvnArgs.hasOption(BootstrapMavenOptions.UPDATE_SNAPSHOTS)) {
                 session.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_ALWAYS);
             }
-            if (mvnArgs.hasOption(CHECKSUM_FAILURE_POLICY)) {
+            if (mvnArgs.hasOption(BootstrapMavenOptions.CHECKSUM_FAILURE_POLICY)) {
                 session.setChecksumPolicy(RepositoryPolicy.CHECKSUM_POLICY_FAIL);
-            } else if (mvnArgs.hasOption(CHECKSUM_WARNING_POLICY)) {
+            } else if (mvnArgs.hasOption(BootstrapMavenOptions.CHECKSUM_WARNING_POLICY)) {
                 session.setChecksumPolicy(RepositoryPolicy.CHECKSUM_POLICY_WARN);
             }
         }
@@ -641,7 +633,7 @@ public class BootstrapMavenContext {
 
         if (alternatePom == null) {
             // check whether an alternate pom was provided as a CLI arg
-            final String cliPomName = getCliOptions().getOptionValue(ALTERNATE_POM_FILE);
+            final String cliPomName = getCliOptions().getOptionValue(BootstrapMavenOptions.ALTERNATE_POM_FILE);
             if (cliPomName != null) {
                 alternatePom = Paths.get(cliPomName);
             }

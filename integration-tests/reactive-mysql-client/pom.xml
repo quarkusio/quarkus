@@ -33,6 +33,7 @@
 
     <properties>
         <reactive-mysql.url>vertx-reactive:mysql://localhost:3306/hibernate_orm_test</reactive-mysql.url>
+        <mariadb.image>mariadb:10.4</mariadb.image>
     </properties>
 
     <dependencies>
@@ -188,7 +189,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>mariadb:10.4</name>
+                                    <name>${mariadb.image}</name>
                                     <alias>quarkus-test-mariadb</alias>
                                     <run>
                                         <network>

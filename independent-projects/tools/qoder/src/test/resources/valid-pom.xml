@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.test</groupId>
+    <artifactId>some-project</artifactId>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>some-managed-ext</artifactId>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    <dependencies>
+        <!-- My comment -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <!-- My comment -->
+            <artifactId>some-ext</artifactId>
+        </dependency>
+        <dependency>
+            <!-- My comment -->
+            <groupId>org.other</groupId>
+            <artifactId>some-other-ext</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

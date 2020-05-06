@@ -669,7 +669,7 @@ final class Beans {
                     if (!DotNames.OBJECT.equals(superName)) {
                         ClassInfo superClass = bean.getDeployment().getIndex().getClassByName(beanClass.superName());
                         if (superClass == null || !superClass.hasNoArgsConstructor()) {
-                            // Bean class extend a class without no-args constructor
+                            // Bean class extends a class without no-args constructor
                             // It is not possible to generate a no-args constructor reliably
                             superName = null;
                         }
@@ -679,9 +679,10 @@ final class Beans {
                         bytecodeTransformerConsumer.accept(new BytecodeTransformer(beanClass.name().toString(),
                                 new NoArgConstructorTransformFunction(superClassName)));
                     } else {
-                        errors.add(new DeploymentException(String
-                                .format("It is not possible to add a synthetic constructor with no parameters to the unproxyable bean class: %s",
-                                        beanClass)));
+                        errors.add(new DeploymentException(
+                                "It's not possible to add a synthetic constructor with no parameters to the unproxyable bean class: "
+                                        +
+                                        beanClass));
                     }
                 } else {
                     errors.add(new DeploymentException(String
@@ -731,19 +732,19 @@ final class Beans {
                         if (!DotNames.OBJECT.equals(superName)) {
                             ClassInfo superClass = bean.getDeployment().getIndex().getClassByName(returnTypeClass.superName());
                             if (superClass == null || !superClass.hasNoArgsConstructor()) {
-                                // Bean class extend a class without no-args constructor
+                                // Bean class extends a class without no-args constructor
                                 // It is not possible to generate a no-args constructor reliably
                                 superName = null;
-                            } else {
-                                errors.add(new DeploymentException(String
-                                        .format("It is not possible to add a synthetic constructor with no parameters to the unproxyable return type of: %s",
-                                                bean)));
                             }
                         }
                         if (superName != null) {
                             String superClassName = superName.toString().replace('.', '/');
                             bytecodeTransformerConsumer.accept(new BytecodeTransformer(returnTypeClass.name().toString(),
                                     new NoArgConstructorTransformFunction(superClassName)));
+                        } else {
+                            errors.add(new DeploymentException(String
+                                    .format("It's not possible to add a synthetic constructor with no parameters to the unproxyable return type of "
+                                            + bean)));
                         }
                     } else {
                         errors.add(new DefinitionException(String

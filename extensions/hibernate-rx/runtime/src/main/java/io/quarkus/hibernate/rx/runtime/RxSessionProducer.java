@@ -25,13 +25,15 @@ public class RxSessionProducer {
         return rxSessionFactory.openRxSession();
     }
 
-    @Produces
-    @Typed(Mutiny.Session.class)
-    @RequestScoped
-    public Mutiny.Session mutinySession(RxSession rxSession) {
-        System.out.println("@AGG producing Mutiny.Session with rxSess=" + rxSession);
-        return new Mutiny.Session(rxSession);
-    }
+    // TODO: I think this isn't working because we are producing Mutiny.Session as a bean but it has no default ctor
+    // so one is being generated
+    //    @Produces
+    //    @Typed(Mutiny.Session.class)
+    //    @RequestScoped
+    //    public Mutiny.Session mutinySession(RxSession rxSession) {
+    //        System.out.println("@AGG producing Mutiny.Session with rxSess=" + rxSession);
+    //        return new Mutiny.Session(rxSession);
+    //    }
 
     public void disposeRxSession(@Disposes RxSession rxSession) {
         rxSession.close();

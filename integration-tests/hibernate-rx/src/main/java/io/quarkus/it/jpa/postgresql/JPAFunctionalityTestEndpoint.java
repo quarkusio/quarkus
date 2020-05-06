@@ -28,8 +28,8 @@ public class JPAFunctionalityTestEndpoint {
     @Inject
     RxSession session;
 
-    @Inject
-    Mutiny.Session mutinySession;
+    //    @Inject
+    //    Mutiny.Session mutinySession;
 
     @GET
     @Path("/reactiveFindRx")
@@ -45,6 +45,7 @@ public class JPAFunctionalityTestEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<GuineaPig> reactiveFindMutiny() {
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
+        Mutiny.Session mutinySession = new Mutiny.Session(session);
         return populateDB()
                 .onItem().produceUni(junk -> mutinySession.find(GuineaPig.class, expectedPig.getId()));
     }
@@ -53,6 +54,7 @@ public class JPAFunctionalityTestEndpoint {
     @Path("/reactivePersist")
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactivePersist() {
+        Mutiny.Session mutinySession = new Mutiny.Session(session);
         return mutinySession.persist(new GuineaPig(10, "Tulip"))
                 .flatMap(s -> s.flush())
                 .flatMap(junk -> selectNameFromId(10));
@@ -62,6 +64,7 @@ public class JPAFunctionalityTestEndpoint {
     @Path("/reactiveRemoveTransientEntity")
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactiveRemoveTransientEntity() {
+        Mutiny.Session mutinySession = new Mutiny.Session(session);
         return populateDB()
                 .flatMap(junk -> selectNameFromId(5))
                 .map(name -> {
@@ -85,6 +88,7 @@ public class JPAFunctionalityTestEndpoint {
     @Path("/reactiveRemoveManagedEntity")
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactiveRemoveManagedEntity() {
+        Mutiny.Session mutinySession = new Mutiny.Session(session);
         return populateDB()
                 .flatMap(junk -> mutinySession.find(GuineaPig.class, 5))
                 .flatMap(aloi -> mutinySession.remove(aloi))
@@ -102,6 +106,7 @@ public class JPAFunctionalityTestEndpoint {
     @Path("/reactiveUpdate")
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<String> reactiveUpdate() {
+        Mutiny.Session mutinySession = new Mutiny.Session(session);
         final String NEW_NAME = "Tina";
         return populateDB()
                 .flatMap(junk -> mutinySession.find(GuineaPig.class, 5))

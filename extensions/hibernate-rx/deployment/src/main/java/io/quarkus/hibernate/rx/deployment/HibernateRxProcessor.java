@@ -11,6 +11,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.orm.deployment.JpaEntitiesBuildItem;
 import io.quarkus.hibernate.orm.deployment.NonJpaModelBuildItem;
@@ -39,8 +40,16 @@ public final class HibernateRxProcessor {
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         // TODO @AGG make these DefaultXXX beans and do not register them if user-defined producers are present
-        additionalBeans.produce(new AdditionalBeanBuildItem(RxSessionFactoryProducer.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(RxSessionProducer.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(RxSessionFactoryProducer.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(RxSessionProducer.class));
+    }
+
+    @BuildStep
+    void reflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        String[] classes = {
+                "org.hibernate.rx.persister.entity.impl.RxSingleTableEntityPersister" // TODO see if we can eliminate this
+        };
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, classes));
     }
 
     @BuildStep

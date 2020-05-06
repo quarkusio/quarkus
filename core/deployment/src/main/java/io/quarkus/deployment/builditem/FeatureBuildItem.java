@@ -10,13 +10,14 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class FeatureBuildItem extends MultiBuildItem {
 
     public static final String AGROAL = "agroal";
+    public static final String AMAZON_DYNAMODB = "amazon-dynamodb";
     public static final String AMAZON_LAMBDA = "amazon-lambda";
+    public static final String AMAZON_S3 = "amazon-s3";
     public static final String ARTEMIS_CORE = "artemis-core";
     public static final String ARTEMIS_JMS = "artemis-jms";
     public static final String CACHE = "cache";
     public static final String CDI = "cdi";
     public static final String CONFIG_YAML = "config-yaml";
-    public static final String DYNAMODB = "dynamodb";
     public static final String ELASTICSEARCH_REST_CLIENT = "elasticsearch-rest-client";
     public static final String FLYWAY = "flyway";
     public static final String LIQUIBASE = "liquibase";

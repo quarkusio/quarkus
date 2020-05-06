@@ -34,8 +34,8 @@ on:
 env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
-  NATIVE_TEST_MAVEN_OPTS: "-B --settings .github/mvn-settings.xml --fail-at-end -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:19.3.1-java11 -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Dtest-dynamodb -Dtest-mysql -Dtest-mariadb -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dnative-image.xmx=5g -Dnative -Dformat.skip install"
-  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-mariadb -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-dynamodb -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dtest-keycloak -Dformat.skip"
+  NATIVE_TEST_MAVEN_OPTS: "-B --settings .github/mvn-settings.xml --fail-at-end -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:19.3.1-java11 -Dtest-postgresql -Dtest-elasticsearch -Dtest-keycloak -Dtest-amazon-services -Dtest-mysql -Dtest-mariadb -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dnative-image.xmx=5g -Dnative -Dformat.skip install"
+  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-postgresql -Dtest-elasticsearch -Dtest-mysql -Dtest-mariadb -Dmariadb.url='jdbc:mariadb://localhost:3308/hibernate_orm_test'  -Dtest-mssql -Dtest-amazon-services -Dtest-vault -Dtest-neo4j -Dtest-kafka -Dtest-keycloak -Dformat.skip"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
@@ -162,10 +162,14 @@ jobs:
           NEO4J_dbms_memory_heap_initial__size: 10M
         ports:
           - 127.0.0.1:7687:7687
-      dynamodb:
-        image: amazon/dynamodb-local:1.11.477
+      amazonServices:
+        image: localstack/localstack
+        env:
+          SERVICES: s3,dynamodb
+          START_WEB: 0
         ports:
-          - 127.0.0.1:8000:8000
+          - 127.0.0.1:8000:4569
+          - 127.0.0.1:8008:4572
 
     steps:
       - name: Start mysql
@@ -273,10 +277,14 @@ jobs:
           NEO4J_dbms_memory_heap_initial__size: 10M
         ports:
           - 7687:7687
-      dynamodb:
-        image: amazon/dynamodb-local:1.11.477
+      amazonServices:
+        image: localstack/localstack
+        env:
+          SERVICES: s3,dynamodb
+          START_WEB: 0
         ports:
-          - 8000:8000
+          - 127.0.0.1:8000:4569
+          - 127.0.0.1:8008:4572
 
     steps:
       - name: Start mysql
@@ -372,10 +380,10 @@ jobs:
               narayana-stm
               narayana-jta
           - category: Amazon
-            dynamodb: "true"
+            amazonServices: "true"
             timeout: 20
             test-modules: >
-              amazon-dynamodb
+              amazon-services
               amazon-lambda
               amazon-lambda-http
           - category: Messaging
@@ -487,11 +495,11 @@ jobs:
             -e ACCEPT_EULA=Y -e SA_PASSWORD=ActuallyRequired11Complexity \
             -d microsoft/mssql-server-linux:2017-CU12
         if: matrix.mssql
-      - name: Dynamo DB Service
+      - name: Amazon Services
         run: |
-          docker run --rm --publish 8000:8000 --name build-dynamodb \
-            -d amazon/dynamodb-local:1.11.477
-        if: matrix.dynamodb
+          docker run --rm --publish 8000:4569 --publish 8008:4572 --name build-amazon-service-clients -e SERVICES=s3,dynamodb -e START_WEB=0 \
+            -d localstack/localstack
+        if: matrix.amazonServices
       - name: Neo4j Service
         run: |
           docker run --rm --publish 7687:7687 --name build-neo4j \

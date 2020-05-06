@@ -39,6 +39,7 @@ import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
+import io.smallrye.jwt.auth.principal.DefaultJWTParser;
 import io.smallrye.jwt.build.impl.JwtProviderImpl;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 
@@ -76,6 +77,7 @@ class SmallRyeJwtProcessor {
         }
         AdditionalBeanBuildItem.Builder removable = AdditionalBeanBuildItem.builder();
         removable.addBeanClass(JWTAuthContextInfoProvider.class);
+        removable.addBeanClass(DefaultJWTParser.class);
         removable.addBeanClass(CommonJwtProducer.class);
         removable.addBeanClass(RawClaimTypeProducer.class);
         removable.addBeanClass(JsonValueProducer.class);

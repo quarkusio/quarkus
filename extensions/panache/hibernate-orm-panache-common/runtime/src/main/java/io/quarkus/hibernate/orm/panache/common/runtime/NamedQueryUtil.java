@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.panache.runtime;
+package io.quarkus.hibernate.orm.panache.common.runtime;
 
 import java.util.Collections;
 import java.util.Map;

@@ -23,7 +23,6 @@ public class AdditionalJpaOperations {
         return new CustomCountPanacheQuery(em, jpaQuery, findQuery, countQuery, params);
     }
 
-    @SuppressWarnings("rawtypes")
     public static PanacheQuery<?> find(Class<?> entityClass, String query, String countQuery, Sort sort,
             Parameters parameters) {
         return find(entityClass, query, countQuery, sort, parameters.map());

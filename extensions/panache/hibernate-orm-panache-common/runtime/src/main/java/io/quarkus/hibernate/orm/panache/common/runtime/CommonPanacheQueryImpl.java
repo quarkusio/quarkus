@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.panache.runtime;
+package io.quarkus.hibernate.orm.panache.common.runtime;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
@@ -16,21 +16,19 @@ import javax.persistence.NonUniqueResultException;
 import javax.persistence.Query;
 
 import org.hibernate.engine.spi.RowSelection;
-import org.jetbrains.annotations.NotNull;
 
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
 import io.quarkus.panache.common.exception.PanacheQueryException;
 
-public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
+public class CommonPanacheQueryImpl<Entity> {
 
     private static final Pattern SELECT_PATTERN = Pattern.compile("^\\s*SELECT\\s+((?:DISTINCT\\s+)?[^\\s]+)\\s+([^\\s]+.*)$",
             Pattern.CASE_INSENSITIVE);
 
     private Object paramsArrayOrMap;
     private String query;
-    private String countQuery;
+    protected String countQuery;
     private String orderBy;
     private EntityManager em;
 
@@ -42,14 +40,14 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
     private LockModeType lockModeType;
     private Map<String, Object> hints = new HashMap<>();
 
-    PanacheQueryImpl(EntityManager em, String query, String orderBy, Object paramsArrayOrMap) {
+    public CommonPanacheQueryImpl(EntityManager em, String query, String orderBy, Object paramsArrayOrMap) {
         this.em = em;
         this.query = query;
         this.orderBy = orderBy;
         this.paramsArrayOrMap = paramsArrayOrMap;
     }
 
-    private PanacheQueryImpl(PanacheQueryImpl previousQuery, String newQueryString, String countQuery) {
+    private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString, String countQuery) {
         this.em = previousQuery.em;
         this.query = newQueryString;
         this.countQuery = countQuery;
@@ -64,10 +62,8 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     // Builder
 
-    @NotNull
-    @Override
-    public <Entity> PanacheQuery<Entity> project(Class<Entity> type) {
-        if (JpaOperations.isNamedQuery(query)) {
+    public <T> CommonPanacheQueryImpl<T> project(Class<T> type) {
+        if (AbstractJpaOperations.isNamedQuery(query)) {
             throw new PanacheQueryException("Unable to perform a projection on a named query");
         }
 
@@ -94,65 +90,48 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         }
         select.append(") ");
 
-        return new PanacheQueryImpl<>(this, select.toString() + query, "select count(*) " + query);
+        return new CommonPanacheQueryImpl<>(this, select.toString() + query, "select count(*) " + query);
     }
 
-    @NotNull
-    @Override
-    @SuppressWarnings("unchecked")
-    public PanacheQuery<Entity> page(@NotNull Page page) {
+    public void page(Page page) {
         this.page = page;
         this.range = null; // reset the range to be able to switch from range to page
-        return (PanacheQuery<Entity>) this;
     }
 
-    @NotNull
-    @Override
-    public PanacheQuery<Entity> page(int pageIndex, int pageSize) {
-        return page(Page.of(pageIndex, pageSize));
+    public void page(int pageIndex, int pageSize) {
+        page(Page.of(pageIndex, pageSize));
     }
 
-    @NotNull
-    @Override
-    public PanacheQuery<Entity> nextPage() {
+    public void nextPage() {
         checkPagination();
-        return page(page.next());
+        page(page.next());
     }
 
-    @NotNull
-    @Override
-    public PanacheQuery<Entity> previousPage() {
+    public void previousPage() {
         checkPagination();
-        return page(page.previous());
+        page(page.previous());
     }
 
-    @NotNull
-    @Override
-    public PanacheQuery<Entity> firstPage() {
+    public void firstPage() {
         checkPagination();
-        return page(page.first());
+        page(page.first());
     }
 
-    @NotNull
-    @Override
-    public PanacheQuery<Entity> lastPage() {
+    public void lastPage() {
         checkPagination();
-        return page(page.index(pageCount() - 1));
+        page(page.index(pageCount() - 1));
     }
 
-    @Override
     public boolean hasNextPage() {
         checkPagination();
         return page.index < (pageCount() - 1);
     }
 
-    @Override
     public boolean hasPreviousPage() {
         checkPagination();
         return page.index > 0;
     }
 
-    @Override
     public int pageCount() {
         checkPagination();
         long count = count();
@@ -161,8 +140,6 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         return (int) Math.ceil((double) count / (double) page.size);
     }
 
-    @NotNull
-    @Override
     public Page page() {
         checkPagination();
         return page;
@@ -179,50 +156,40 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         }
     }
 
-    @NotNull
-    @Override
-    public PanacheQuery<Entity> range(int startIndex, int lastIndex) {
+    public void range(int startIndex, int lastIndex) {
         this.range = Range.of(startIndex, lastIndex);
         // reset the page to its default to be able to switch from page to range
         this.page = null;
-        return (PanacheQuery<Entity>) this;
     }
 
-    @NotNull
-    @Override
-    public PanacheQuery<Entity> withLock(@NotNull LockModeType lockModeType) {
+    public void withLock(LockModeType lockModeType) {
         this.lockModeType = lockModeType;
-        return (PanacheQuery<Entity>) this;
     }
 
-    @NotNull
-    @Override
-    public PanacheQuery<Entity> withHint(@NotNull String hintName, @NotNull Object value) {
+    public void withHint(String hintName, Object value) {
         hints.put(hintName, value);
-        return (PanacheQuery<Entity>) this;
     }
 
     // Results
 
-    @Override
     @SuppressWarnings("unchecked")
     public long count() {
-        if (JpaOperations.isNamedQuery(query)) {
+        if (AbstractJpaOperations.isNamedQuery(query)) {
             throw new PanacheQueryException("Unable to perform a count operation on a named query");
         }
 
         if (count == null) {
             Query countQuery = em.createQuery(countQuery());
             if (paramsArrayOrMap instanceof Map)
-                JpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
+                AbstractJpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
             else
-                JpaOperations.bindParameters(countQuery, (Object[]) paramsArrayOrMap);
+                AbstractJpaOperations.bindParameters(countQuery, (Object[]) paramsArrayOrMap);
             count = (Long) countQuery.getSingleResult();
         }
         return count;
     }
 
-    protected String countQuery() {
+    private String countQuery() {
         if (countQuery != null) {
             return countQuery;
         }
@@ -245,50 +212,39 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         return countQuery;
     }
 
-    @NotNull
-    @Override
     @SuppressWarnings("unchecked")
-    public List<Entity> list() {
+    public <T extends Entity> List<T> list() {
         Query jpaQuery = createQuery();
         return jpaQuery.getResultList();
     }
 
-    @NotNull
-    @Override
     @SuppressWarnings("unchecked")
-    public Stream<Entity> stream() {
+    public <T extends Entity> Stream<T> stream() {
         Query jpaQuery = createQuery();
         return jpaQuery.getResultStream();
     }
 
-    @NotNull
-    @Override
-    public Entity firstResult() {
+    public <T extends Entity> T firstResult() {
         Query jpaQuery = createQuery(1);
-        List<Entity> list = jpaQuery.getResultList();
+        @SuppressWarnings("unchecked")
+        List<T> list = jpaQuery.getResultList();
         return list.isEmpty() ? null : list.get(0);
     }
 
-    @NotNull
-    @Override
-    public Optional<Entity> firstResultOptional() {
+    public <T extends Entity> Optional<T> firstResultOptional() {
         return Optional.ofNullable(firstResult());
     }
 
-    @NotNull
-    @Override
     @SuppressWarnings("unchecked")
-    public Entity singleResult() {
+    public <T extends Entity> T singleResult() {
         Query jpaQuery = createQuery();
-        return (Entity) jpaQuery.getSingleResult();
+        return (T) jpaQuery.getSingleResult();
     }
 
-    @NotNull
-    @Override
     @SuppressWarnings("unchecked")
-    public Optional<Entity> singleResultOptional() {
+    public <T extends Entity> Optional<T> singleResultOptional() {
         Query jpaQuery = createQuery(2);
-        List<Entity> list = jpaQuery.getResultList();
+        List<T> list = jpaQuery.getResultList();
         if (list.size() > 1) {
             throw new NonUniqueResultException();
         }
@@ -308,6 +264,7 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
             jpaQuery.setMaxResults(page.size);
         } else {
             // Use deprecated API in org.hibernate.Query that will be moved to org.hibernate.query.Query on Hibernate 6.0
+            @SuppressWarnings("deprecation")
             RowSelection options = jpaQuery.unwrap(org.hibernate.query.Query.class).getQueryOptions();
             options.setFirstRow(null);
             options.setMaxRows(null);
@@ -325,6 +282,7 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
             jpaQuery.setFirstResult(page.index * page.size);
         } else {
             // Use deprecated API in org.hibernate.Query that will be moved to org.hibernate.query.Query on Hibernate 6.0
+            @SuppressWarnings("deprecation")
             RowSelection options = jpaQuery.unwrap(org.hibernate.query.Query.class).getQueryOptions();
             options.setFirstRow(null);
         }
@@ -333,9 +291,10 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         return jpaQuery;
     }
 
+    @SuppressWarnings("unchecked")
     private Query createBaseQuery() {
         Query jpaQuery;
-        if (JpaOperations.isNamedQuery(query)) {
+        if (AbstractJpaOperations.isNamedQuery(query)) {
             String namedQuery = query.substring(1);
             jpaQuery = em.createNamedQuery(namedQuery);
         } else {
@@ -343,9 +302,9 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         }
 
         if (paramsArrayOrMap instanceof Map) {
-            JpaOperations.bindParameters(jpaQuery, (Map<String, Object>) paramsArrayOrMap);
+            AbstractJpaOperations.bindParameters(jpaQuery, (Map<String, Object>) paramsArrayOrMap);
         } else {
-            JpaOperations.bindParameters(jpaQuery, (Object[]) paramsArrayOrMap);
+            AbstractJpaOperations.bindParameters(jpaQuery, (Object[]) paramsArrayOrMap);
         }
 
         if (this.lockModeType != null) {

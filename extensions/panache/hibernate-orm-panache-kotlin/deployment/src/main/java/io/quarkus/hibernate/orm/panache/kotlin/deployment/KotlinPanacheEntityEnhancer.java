@@ -12,7 +12,7 @@ import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
+import io.quarkus.hibernate.orm.panache.kotlin.runtime.JpaOperations;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;

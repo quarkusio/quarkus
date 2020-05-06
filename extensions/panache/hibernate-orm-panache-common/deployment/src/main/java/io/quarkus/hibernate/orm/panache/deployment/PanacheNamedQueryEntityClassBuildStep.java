@@ -4,11 +4,11 @@ import java.util.Set;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
-final class NamedQueryEntityClassBuildStep extends MultiBuildItem {
+final class PanacheNamedQueryEntityClassBuildStep extends MultiBuildItem {
     private String className;
     private Set<String> namedQueries;
 
-    public NamedQueryEntityClassBuildStep(String className, Set<String> namedQueries) {
+    public PanacheNamedQueryEntityClassBuildStep(String className, Set<String> namedQueries) {
         this.className = className;
         this.namedQueries = namedQueries;
     }

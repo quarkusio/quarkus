@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.panache.runtime;
+package io.quarkus.hibernate.orm.panache.kotlin.runtime;
 
 import java.util.List;
 import java.util.Map;
@@ -10,14 +10,14 @@ import javax.persistence.LockModeType;
 import javax.persistence.Query;
 import javax.transaction.TransactionManager;
 
-import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheQuery;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
 public class JpaOperations {
 
-    private static class JavaJpaOperations extends AbstractJpaOperations<PanacheQueryImpl<?>> {
+    private static class KotlinJpaOperations extends AbstractJpaOperations<PanacheQueryImpl<?>> {
 
         @Override
         protected PanacheQueryImpl<?> createPanacheQuery(EntityManager em, String query, String orderBy,
@@ -37,7 +37,7 @@ public class JpaOperations {
 
     }
 
-    private static final JavaJpaOperations delegate = new JavaJpaOperations();
+    private static final KotlinJpaOperations delegate = new KotlinJpaOperations();
 
     //
     // Instance methods

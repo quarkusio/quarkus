@@ -86,9 +86,6 @@
         <wiremock-jre8.version>2.26.3</wiremock-jre8.version>
         <wiremock-maven-plugin.version>6.0.0</wiremock-maven-plugin.version>
 
-        <test-containers.version>1.14.1</test-containers.version>
-        <jna.version>5.3.1</jna.version>
-
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
         <jacoco.version>0.8.5</jacoco.version>
@@ -196,23 +193,6 @@
                         <artifactId>jsr305</artifactId>
                    </exclusion>
                 </exclusions>
-            </dependency>
-
-            <!-- JNA dependency is fixed due to transitive dependency issue on testcontainers-->
-            <dependency>
-                <groupId>net.java.dev.jna</groupId>
-                <artifactId>jna</artifactId>
-                <version>${jna.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers</artifactId>
-                <version>${test-containers.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>postgresql</artifactId>
-                <version>${test-containers.version}</version>
             </dependency>
 
         </dependencies>

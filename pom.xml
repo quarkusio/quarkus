@@ -38,17 +38,18 @@
     </properties>
 
     <modules>
-      
+
         <!-- External projects -->
         <module>independent-projects/ide-config</module>
         <module>independent-projects/arc</module>
         <module>independent-projects/bootstrap</module>
         <module>independent-projects/tools</module>
         <module>independent-projects/qute</module>
-       
+
         <!-- BOMs and parent POM -->
         <module>bom/runtime</module>
         <module>bom/deployment</module>
+        <module>bom/test</module>
         <module>build-parent</module>
 
         <!-- Core components -->

@@ -63,8 +63,13 @@ public class JdbcRecorder {
     }
 
     private DataSource getDataSource(PrincipalQueryConfig principalQuery) {
-        return (DataSource) principalQuery.datasource
-                .map(name -> Arc.container().instance(name).get())
-                .orElse(Arc.container().instance(DataSource.class).get());
+        if (principalQuery.datasource.isPresent()) {
+            return Arc.container()
+                    .instance(DataSource.class,
+                            new io.quarkus.agroal.DataSource.DataSourceLiteral(principalQuery.datasource.get()))
+                    .get();
+        }
+
+        return Arc.container().instance(DataSource.class).get();
     }
 }

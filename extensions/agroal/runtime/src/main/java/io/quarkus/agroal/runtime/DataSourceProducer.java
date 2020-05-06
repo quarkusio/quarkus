@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.ServiceLoader;
 
 import javax.annotation.PreDestroy;
-import javax.inject.Inject;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
@@ -41,64 +40,70 @@ import io.quarkus.datasource.runtime.LegacyDataSourcesRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vault.CredentialsProvider;
 
+/**
+ * This class is sort of a producer for {@link AgroalDataSource}.
+ *
+ * It isn't a CDI producer in the literal sense, but it is marked as a bean
+ * and its {@code  createDataSource} method is called at runtime in order to produce
+ * the actual {@code AgroalDataSource} objects.
+ *
+ * CDI scopes and qualifiers are setup at build-time, which is why this class is devoid of
+ * any CDI annotations
+ *
+ */
 @SuppressWarnings("deprecation")
-public abstract class AbstractDataSourceProducer {
+public class DataSourceProducer {
 
-    private static final Logger log = Logger.getLogger(AbstractDataSourceProducer.class.getName());
+    private static final Logger log = Logger.getLogger(DataSourceProducer.class.getName());
 
-    private DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig;
-    private DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
-    private DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig;
-    private DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig;
+    private final DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig;
+    private final DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
+    private final DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig;
+    private final DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig;
+    private final LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig;
+    private final LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig;
+    private final LegacyDataSourcesJdbcRuntimeConfig legacyDataSourcesJdbcRuntimeConfig;
+    private final TransactionManager transactionManager;
+    private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
+    private final DataSourceSupport dataSourceSupport;
 
-    private LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig;
-    private LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig;
-    private LegacyDataSourcesJdbcRuntimeConfig legacyDataSourcesJdbcRuntimeConfig;
+    private final List<AgroalDataSource> dataSources = new ArrayList<>();
 
-    private boolean disableSslSupport = false;
-
-    private List<AgroalDataSource> dataSources = new ArrayList<>();
-
-    @Inject
-    public TransactionManager transactionManager;
-
-    @Inject
-    public TransactionSynchronizationRegistry transactionSynchronizationRegistry;
-
-    public void configureDataSources(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+    public DataSourceProducer(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourcesRuntimeConfig dataSourcesRuntimeConfig, DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig,
             LegacyDataSourcesJdbcBuildTimeConfig legacyDataSourcesJdbcBuildTimeConfig,
             LegacyDataSourcesRuntimeConfig legacyDataSourcesRuntimeConfig,
-            LegacyDataSourcesJdbcRuntimeConfig legacyDataSourcesJdbcRuntimeConfig,
-            boolean disableSslSupport) {
+            LegacyDataSourcesJdbcRuntimeConfig legacyDataSourcesJdbcRuntimeConfig, TransactionManager transactionManager,
+            TransactionSynchronizationRegistry transactionSynchronizationRegistry, DataSourceSupport dataSourceSupport) {
         this.dataSourcesBuildTimeConfig = dataSourcesBuildTimeConfig;
-        this.dataSourcesJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig;
         this.dataSourcesRuntimeConfig = dataSourcesRuntimeConfig;
+        this.dataSourcesJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig;
         this.dataSourcesJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig;
-
         this.legacyDataSourcesJdbcBuildTimeConfig = legacyDataSourcesJdbcBuildTimeConfig;
         this.legacyDataSourcesRuntimeConfig = legacyDataSourcesRuntimeConfig;
         this.legacyDataSourcesJdbcRuntimeConfig = legacyDataSourcesJdbcRuntimeConfig;
-
-        this.disableSslSupport = disableSslSupport;
+        this.transactionManager = transactionManager;
+        this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
+        this.dataSourceSupport = dataSourceSupport;
     }
 
-    public AgroalDataSource createDataSource(String dataSourceName,
-            DataSourceBuildTimeConfig dataSourceBuildTimeConfig,
-            DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig,
-            LegacyDataSourceJdbcBuildTimeConfig legacyDataSourceJdbcBuildTimeConfig,
-            LegacyDataSourceRuntimeConfig legacyDataSourceRuntimeConfig,
-            LegacyDataSourceJdbcRuntimeConfig legacyDataSourceJdbcRuntimeConfig,
-            String resolvedDbKind,
-            String resolvedDriverClass,
-            boolean mpMetricsPresent,
-            boolean isLegacy) {
-        checkConfigInjection();
+    public AgroalDataSource createDataSource(String dataSourceName) {
+        if (!dataSourceSupport.entries.containsKey(dataSourceName)) {
+            throw new IllegalArgumentException("No datasource named '" + dataSourceName + "' exists");
+        }
 
+        DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig = getDataSourceJdbcBuildTimeConfig(dataSourceName);
+        DataSourceRuntimeConfig dataSourceRuntimeConfig = getDataSourceRuntimeConfig(dataSourceName);
+        DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig = getDataSourceJdbcRuntimeConfig(dataSourceName);
+        LegacyDataSourceJdbcBuildTimeConfig legacyDataSourceJdbcBuildTimeConfig = getLegacyDataSourceJdbcBuildTimeConfig(
+                dataSourceName);
+        LegacyDataSourceRuntimeConfig legacyDataSourceRuntimeConfig = getLegacyDataSourceRuntimeConfig(dataSourceName);
+        LegacyDataSourceJdbcRuntimeConfig legacyDataSourceJdbcRuntimeConfig = getLegacyDataSourceJdbcRuntimeConfig(
+                dataSourceName);
+
+        DataSourceSupport.Entry matchingSupportEntry = dataSourceSupport.entries.get(dataSourceName);
+        boolean isLegacy = matchingSupportEntry.isLegacy;
         if (!isLegacy) {
             if (!dataSourceJdbcRuntimeConfig.url.isPresent()) {
                 throw new ConfigurationException("URL is not defined for datasource " + dataSourceName);
@@ -112,6 +117,7 @@ public abstract class AbstractDataSourceProducer {
         // we first make sure that all available JDBC drivers are loaded in the current TCCL
         loadDriversInTCCL();
 
+        String resolvedDriverClass = matchingSupportEntry.resolvedDriverClass;
         Class<?> driver;
         try {
             driver = Class.forName(resolvedDriverClass, true, Thread.currentThread().getContextClassLoader());
@@ -120,6 +126,7 @@ public abstract class AbstractDataSourceProducer {
                     "Unable to load the datasource driver " + resolvedDriverClass + " for datasource " + dataSourceName, e);
         }
 
+        String resolvedDbKind = matchingSupportEntry.resolvedDbKind;
         InstanceHandle<AgroalConnectionConfigurer> agroalConnectionConfigurerHandle = Arc.container().instance(
                 AgroalConnectionConfigurer.class,
                 new JdbcDriverLiteral(resolvedDbKind));
@@ -130,6 +137,7 @@ public abstract class AbstractDataSourceProducer {
         AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration = poolConfiguration
                 .connectionFactoryConfiguration();
 
+        boolean mpMetricsPresent = dataSourceSupport.mpMetricsPresent;
         if (!isLegacy) {
             applyNewConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver,
                     dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, mpMetricsPresent);
@@ -139,7 +147,7 @@ public abstract class AbstractDataSourceProducer {
                     legacyDataSourceJdbcRuntimeConfig, mpMetricsPresent);
         }
 
-        if (disableSslSupport) {
+        if (dataSourceSupport.disableSslSupport) {
             if (agroalConnectionConfigurerHandle.isAvailable()) {
                 agroalConnectionConfigurerHandle.get().disableSslSupport(resolvedDbKind,
                         dataSourceConfiguration);
@@ -442,14 +450,6 @@ public abstract class AbstractDataSourceProducer {
                 .get(dataSourceName);
 
         return namedConfig != null ? namedConfig : new LegacyDataSourceJdbcRuntimeConfig();
-    }
-
-    private void checkConfigInjection() {
-        if (dataSourcesBuildTimeConfig == null || dataSourcesJdbcBuildTimeConfig == null || dataSourcesRuntimeConfig == null
-                || dataSourcesJdbcRuntimeConfig == null) {
-            throw new IllegalStateException(
-                    "The datasources are not ready to be consumed: the configuration has not been injected yet");
-        }
     }
 
     /**

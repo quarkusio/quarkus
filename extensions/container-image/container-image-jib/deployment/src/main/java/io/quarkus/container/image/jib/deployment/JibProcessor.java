@@ -108,10 +108,9 @@ public class JibProcessor {
 
         JibContainerBuilder jibContainerBuilder = createContainerBuilderFromNative(containerImageConfig, jibConfig,
                 nativeImage, containerImageLabels);
-        JibContainer container = containerize(applicationInfo, containerImageConfig, jibContainerBuilder,
-                pushRequest.isPresent());
 
-        ImageReference targetImage = container.getTargetImage();
+        containerize(applicationInfo, containerImageConfig, jibContainerBuilder, pushRequest.isPresent());
+
         artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
     }
 

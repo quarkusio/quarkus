@@ -333,7 +333,7 @@ jobs:
       max-parallel: 8
       fail-fast: false
       matrix:
-        category: [Main, Data1, Data2, Data3, Data4, Data5, Security1, Security2, Amazon, Messaging, Cache, HTTP, Misc1, Misc2, Misc3, Spring]
+        category: [Main, Data1, Data2, Data3, Data4, Data5, Security1, Security2, Amazon, Messaging, Cache, HTTP, Misc1, Misc2, Misc3, Spring, gRPC]
         include:
           - category: Main
             postgres: "true"
@@ -469,6 +469,16 @@ jobs:
               vault
               vault-app
               vault-agroal
+          - category: gRPC
+            timeout: 45
+            test-modules: >
+              grpc-health
+              grpc-interceptors
+              grpc-mutual-auth
+              grpc-plain-text
+              grpc-proto-v2
+              grpc-streaming
+              grpc-tls
     steps:
       # These should be services, but services do not (yet) allow conditional execution
       - name: Postgres Service

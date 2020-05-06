@@ -91,7 +91,25 @@ update_configs:
       - match:
           dependency_name: "io.smallrye:smallrye-jwt"
       - match:
+          dependency_name: "io.smallrye:smallrye-health"
+      - match:
+          dependency_name: "io.smallrye:smallrye-metrics"
+      - match:
+          dependency_name: "io.smallrye:smallrye-open-api"
+      - match:
+          dependency_name: "io.smallrye:smallrye-opentracing"
+      - match:
+          dependency_name: "io.smallrye:smallrye-fault-tolerance"
+      - match:
+          dependency_name: "io.smallrye:smallrye-context-propagation"
+      - match:
           dependency_name: "io.smallrye.config:smallrye-config"
+      - match:
+          dependency_name: "io.smallrye.reactive:mutiny"
+      - match:
+          dependency_name: "io.smallrye.reactive:smallrye-reactive-messaging"
+      - match:
+          dependency_name: "io.smallrye.reactive:smallrye-reactive-streams-operators"
       # Tika
       - match:
           dependency_name: "org.apache.tika:tika-parsers"

@@ -87,15 +87,11 @@ Otherwise, you can manually add this to the dependencies section of your `pom.xm
 </dependency>
 ----
 
-NOTE: In this guide, we will use the Axle API of the Reactive PostgreSQL Client.
-Read the link:vertx[Using Eclipse Vert.x] guide to understand the differences between the callback, Mutiny, RxJava and Axle based APIs.
-The RxJava and Axle API are deprecated, and are planned for removal.
-It is recommended to switch to Mutiny.
-
 [TIP]
 .Mutiny
 ====
-The recommended API uses Mutiny reactive types, if you're not familiar with them, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
+In this guide, we will use the Mutiny API of the Reactive PostgreSQL Client.
+If you're not familiar with Mutiny reactive types, read the link:getting-started-reactive#mutiny[Getting Started with Reactive guide] first.
 ====
 
 === JSON Binding
@@ -159,20 +155,19 @@ But for development we can simply drop and create the tables on startup, and the
 [source,java]
 .src/main/java/org/acme/vertx/FruitResource.java
 ----
-    @Inject
-    @ConfigProperty(name = "myapp.schema.create", defaultValue = "true") // <1>
-    boolean schemaCreate;
+@Inject
+@ConfigProperty(name = "myapp.schema.create", defaultValue = "true") // <1>
+boolean schemaCreate;
 
-    @PostConstruct
-    void config() {
-        if (schemaCreate) {
-            initdb();
-        }
+@PostConstruct
+void config() {
+    if (schemaCreate) {
+        initdb();
     }
+}
 
-    private void initdb() {
-        // TODO
-    }
+private void initdb() {
+    // TODO
 }
 ----
 
@@ -184,7 +179,7 @@ It returns a `Uni` and thus can be composed to execute queries sequentially:
 
 [source,java]
 ----
- client.query("DROP TABLE IF EXISTS fruits").execute()
+client.query("DROP TABLE IF EXISTS fruits").execute()
     .flatMap(r -> client.query("CREATE TABLE fruits (id SERIAL PRIMARY KEY, name TEXT NOT NULL)").execute())
     .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Orange')").execute())
     .flatMap(r -> client.query("INSERT INTO fruits (name) VALUES ('Pear')").execute())
@@ -216,25 +211,20 @@ To retrieve all the data, we will use the `query` method again:
 
 [source,java]
 ----
-Uni<RowSet> rowSet = client.query("SELECT id, name FROM fruits ORDER BY name ASC").execute();
+Uni<RowSet<Row>> rowSet = client.query("SELECT id, name FROM fruits ORDER BY name ASC").execute();
 ----
 
 When the operation completes, we will get a `RowSet` that has all the rows buffered in memory.
-As an `java.lang.Iterable<Row>`, it can be traversed with a _for-each_ loop:
+A `RowSet` is an `java.lang.Iterable<Row>` and thus can be converted to a `Multi`:
 
 [source,java]
 ----
-Uni<List<Fruit>> fruits = rowSet
-    .map(pgRowSet -> {
-        List<Fruit> list = new ArrayList<>(pgRowSet.size());
-        for (Row row : pgRowSet) {
-            list.add(from(row));
-        }
-        return list;
-    });
+Multi<Fruit> fruits = rowSet
+  .onItem().produceMulti(set -> Multi.createFrom().items(() -> StreamSupport.stream(set.spliterator(), false)))
+  .onItem().apply(Fruit::from);
 ----
 
-The `from` method converts a `Row` instance to a `Fruit` instance.
+The `Fruit#from` method converts a `Row` instance to a `Fruit` instance.
 It is extracted as a convenience for the implementation of the other data management methods:
 
 [source,java]
@@ -250,16 +240,11 @@ Putting it all together, the `Fruit.findAll` method looks like:
 [source,java]
 .src/main/java/org/acme/vertx/Fruit.java
 ----
-    public static Uni<List<Fruit>> findAll(PgPool client) {
-        return client.query("SELECT id, name FROM fruits ORDER BY name ASC").execute()
-            .map(pgRowSet -> {
-                List<Fruit> list = new ArrayList<>(pgRowSet.size());
-                for (Row row : pgRowSet) {
-                    list.add(from(row));
-                }
-                return list;
-            });
-    }
+public static Multi<Fruit> findAll(PgPool client) {
+    return client.query("SELECT id, name FROM fruits ORDER BY name ASC").execute()
+            .onItem().produceMulti(set -> Multi.createFrom().items(() -> StreamSupport.stream(set.spliterator(), false)))
+            .onItem().apply(Fruit::from);
+}
 ----
 
 And the endpoint to get all fruits from the backend:
@@ -268,10 +253,8 @@ And the endpoint to get all fruits from the backend:
 .src/main/java/org/acme/vertx/FruitResource.java
 ----
 @GET
-public Uni<Response> get() {
-    return Fruit.findAll(client)
-            .map(Response::ok)
-            .map(ResponseBuilder::build);
+public Multi<Fruit> get() {
+    return Fruit.findAll(client);
 }
 ----
 
@@ -295,21 +278,21 @@ The Reactive PostgreSQL Client can also prepare queries and take parameters that
 
 [source,java]
 ----
-client.preparedQuery("SELECT name FROM fruits WHERE id = $1", Tuple.of(id)).execute()
+client.preparedQuery("SELECT id, name FROM fruits WHERE id = $1").execute(Tuple.of(id))
 ----
 
 TIP: The SQL string can refer to parameters by position, using $1, $2, ...etc.
 
-Like the simple `query` method, `preparedQuery` returns an instance of `Uni<RowSet>`.
+Similar to the simple `query` method, `preparedQuery` returns an instance of `PreparedQuery<RowSet<Row>>`.
 Equipped with this tooling, we are able to safely use an `id` provided by the user to get the details of a particular fruit:
 
 [source,java]
 .src/main/java/org/acme/vertx/Fruit.java
 ----
 public static Uni<Fruit> findById(PgPool client, Long id) {
-    return client.preparedQuery("SELECT id, name FROM fruits WHERE id = $1", Tuple.of(id)).execute() // <1>
-            .map(RowSet::iterator) // <2>
-            .map(iterator -> iterator.hasNext() ? from(iterator.next()) : null); // <3>
+    return client.preparedQuery("SELECT id, name FROM fruits WHERE id = $1").execute(Tuple.of(id)) // <1>
+            .onItem().apply(RowSet::iterator) // <2>
+            .onItem().apply(iterator -> iterator.hasNext() ? from(iterator.next()) : null); // <3>
 }
 ----
 <1> Create a `Tuple` to hold the prepared query parameters.
@@ -325,8 +308,8 @@ And in the JAX-RS resource:
 @Path("{id}")
 public Uni<Response> getSingle(@PathParam Long id) {
     return Fruit.findById(client, id)
-            .map(fruit -> fruit != null ? Response.ok(fruit) : Response.status(Status.NOT_FOUND)) // <1>
-            .map(ResponseBuilder::build); // <2>
+            .onItem().apply(fruit -> fruit != null ? Response.ok(fruit) : Response.status(Status.NOT_FOUND)) // <1>
+            .onItem().apply(ResponseBuilder::build); // <2>
 }
 ----
 <1> Prepare a JAX-RS response with  either the `Fruit` instance if found or the `404` status code.
@@ -338,8 +321,8 @@ The same logic applies when saving a `Fruit`:
 .src/main/java/org/acme/vertx/Fruit.java
 ----
 public Uni<Long> save(PgPool client) {
-    return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)", Tuple.of(name)).execute()
-            .map(pgRowSet -> pgRowSet.iterator().next().getLong("id"));
+    return client.preparedQuery("INSERT INTO fruits (name) VALUES ($1) RETURNING (id)").execute(Tuple.of(name))
+            .onItem().apply(pgRowSet -> pgRowSet.iterator().next().getLong("id"));
 }
 ----
 
@@ -351,8 +334,8 @@ And in the web resource we handle the `POST` request:
 @POST
 public Uni<Response> create(Fruit fruit) {
     return fruit.save(client)
-            .map(id -> URI.create("/fruits/" + id))
-            .map(uri -> Response.created(uri).build());
+            .onItem().apply(id -> URI.create("/fruits/" + id))
+            .onItem().apply(uri -> Response.created(uri).build());
 }
 ----
 
@@ -369,8 +352,8 @@ Let's use this to support removal of fruits in the database:
 .src/main/java/org/acme/vertx/Fruit.java
 ----
 public static Uni<Boolean> delete(PgPool client, Long id) {
-    return client.preparedQuery("DELETE FROM fruits WHERE id = $1", Tuple.of(id)).execute()
-            .map(pgRowSet -> pgRowSet.rowCount() == 1); // <1>
+    return client.preparedQuery("DELETE FROM fruits WHERE id = $1").execute(Tuple.of(id))
+            .onItem().apply(pgRowSet -> pgRowSet.rowCount() == 1); // <1>
 }
 ----
 <1> Inspect metadata to determine if a fruit has been actually deleted.
@@ -384,8 +367,8 @@ And to handle the HTTP `DELETE` method in the web resource:
 @Path("{id}")
 public Uni<Response> delete(@PathParam Long id) {
     return Fruit.delete(client, id)
-            .map(deleted -> deleted ? Status.NO_CONTENT : Status.NOT_FOUND)
-            .map(status -> Response.status(status).build());
+            .onItem().apply(deleted -> deleted ? Status.NO_CONTENT : Status.NOT_FOUND)
+            .onItem().apply(status -> Response.status(status).build());
 }
 ----
 

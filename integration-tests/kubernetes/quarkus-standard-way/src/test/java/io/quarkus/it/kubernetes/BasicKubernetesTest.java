@@ -55,7 +55,8 @@ public class BasicKubernetesTest {
         final Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
         assertThat(kubernetesDir)
                 .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.json"))
-                .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.yml"));
+                .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.yml"))
+                .satisfies(p -> assertThat(p.toFile().listFiles()).hasSize(2));
         List<HasMetadata> kubernetesList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
 

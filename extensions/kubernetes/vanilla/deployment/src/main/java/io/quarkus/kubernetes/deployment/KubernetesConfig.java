@@ -102,6 +102,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     ServiceType serviceType;
 
     /**
+     * The nodePort to set when serviceType is set to node-port.
+     */
+    @ConfigItem
+    Optional<Integer> nodePort;
+
+    /**
      * Image pull policy
      */
     @ConfigItem(defaultValue = "Always")
@@ -187,11 +193,12 @@ public class KubernetesConfig implements PlatformConfiguration {
 
     /**
      * The target deployment platform.
-     * Defaults to kubernetes. Can be kubernetes, openshift, knative etc, or any combination of the above as comma separated
+     * Defaults to kubernetes. Can be kubernetes, openshift, knative, minikube etc, or any combination of the above as comma
+     * separated
      * list.
      */
-    @ConfigItem(defaultValue = "kubernetes")
-    List<String> deploymentTarget;
+    @ConfigItem
+    Optional<List<String>> deploymentTarget;
 
     /**
      * If true, a Kubernetes Ingress will be created

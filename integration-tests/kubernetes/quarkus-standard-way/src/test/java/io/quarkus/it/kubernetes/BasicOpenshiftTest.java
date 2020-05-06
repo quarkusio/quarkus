@@ -35,7 +35,8 @@ public class BasicOpenshiftTest {
         Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
         assertThat(kubernetesDir)
                 .isDirectoryContaining(p -> p.getFileName().endsWith("openshift.json"))
-                .isDirectoryContaining(p -> p.getFileName().endsWith("openshift.yml"));
+                .isDirectoryContaining(p -> p.getFileName().endsWith("openshift.yml"))
+                .satisfies(p -> assertThat(p.toFile().listFiles()).hasSize(2));
         List<HasMetadata> openshiftList = DeserializationUtil
                 .deserializeAsList(kubernetesDir.resolve("openshift.yml"));
 

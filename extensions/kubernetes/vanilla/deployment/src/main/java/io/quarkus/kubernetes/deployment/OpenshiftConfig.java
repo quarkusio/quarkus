@@ -103,6 +103,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
     ServiceType serviceType;
 
     /**
+     * The nodePort to set when serviceType is set to nodePort
+     */
+    @ConfigItem
+    Optional<Integer> nodePort;
+
+    /**
      * Image pull policy
      */
     @ConfigItem(defaultValue = "Always")

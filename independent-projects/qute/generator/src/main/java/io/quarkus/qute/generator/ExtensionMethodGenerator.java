@@ -293,14 +293,14 @@ public class ExtensionMethodGenerator {
         ResultHandle testClass = appliesTo.loadClass(parameters.get(0).name().toString());
         ResultHandle baseClassTest = appliesTo.invokeVirtualMethod(Descriptors.IS_ASSIGNABLE_FROM, testClass,
                 baseClass);
-        BytecodeCreator baseNotAssignable = appliesTo.ifNonZero(baseClassTest).falseBranch();
+        BytecodeCreator baseNotAssignable = appliesTo.ifTrue(baseClassTest).falseBranch();
         baseNotAssignable.returnValue(baseNotAssignable.load(false));
 
         // Test property name
         if (!matchAny) {
             ResultHandle nameTest = appliesTo.invokeVirtualMethod(Descriptors.EQUALS, name,
                     appliesTo.load(matchName));
-            BytecodeCreator nameNotMatched = appliesTo.ifNonZero(nameTest).falseBranch();
+            BytecodeCreator nameNotMatched = appliesTo.ifTrue(nameTest).falseBranch();
             nameNotMatched.returnValue(nameNotMatched.load(false));
         }
 
@@ -308,18 +308,13 @@ public class ExtensionMethodGenerator {
         if (!isVarArgs || realParamSize > 1) {
             ResultHandle params = appliesTo.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
             ResultHandle paramsCount = appliesTo.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, params);
-            BranchResult paramsTest;
+            BytecodeCreator paramsNotMatching;
             if (isVarArgs) {
                 // For varargs methods match the minimal number of params
-                // TODO https://github.com/quarkusio/gizmo/issues/39
-                paramsTest = appliesTo.ifNonZero(appliesTo.invokeStaticMethod(Descriptors.INTEGERS_IS_GT,
-                        appliesTo.load(realParamSize - 1), paramsCount));
+                paramsNotMatching = appliesTo.ifIntegerGreaterThan(appliesTo.load(realParamSize - 1), paramsCount).trueBranch();
             } else {
-                paramsTest = appliesTo
-                        .ifNonZero(appliesTo.invokeStaticMethod(Descriptors.INTEGER_COMPARE,
-                                appliesTo.load(realParamSize), paramsCount));
+                paramsNotMatching = appliesTo.ifIntegerEqual(appliesTo.load(realParamSize), paramsCount).falseBranch();
             }
-            BytecodeCreator paramsNotMatching = paramsTest.trueBranch();
             paramsNotMatching.returnValue(paramsNotMatching.load(false));
         }
 

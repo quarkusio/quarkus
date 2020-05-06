@@ -5,7 +5,6 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.qute.EvalContext;
 import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.Expression;
-import io.quarkus.qute.Integers;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.Results.Result;
 import java.util.Collection;
@@ -27,8 +26,6 @@ class Descriptors {
     static final MethodDescriptor GET_PARAMS = MethodDescriptor.ofMethod(EvalContext.class, "getParams", List.class);
     static final MethodDescriptor EVALUATE = MethodDescriptor.ofMethod(EvalContext.class, "evaluate",
             CompletionStage.class, Expression.class);
-    static final MethodDescriptor INTEGER_COMPARE = MethodDescriptor.ofMethod(Integer.class, "compare", int.class,
-            int.class, int.class);
     static final MethodDescriptor LIST_GET = MethodDescriptor.ofMethod(List.class, "get", Object.class, int.class);
     static final MethodDescriptor COMPLETED_FUTURE = MethodDescriptor.ofMethod(CompletableFuture.class,
             "completedFuture", CompletableFuture.class, Object.class);
@@ -64,8 +61,6 @@ class Descriptors {
     static final MethodDescriptor EVALUATED_PARAMS_GET_VARARGS_RESULTS = MethodDescriptor.ofMethod(EvaluatedParams.class,
             "getVarargsResults", Object.class, int.class,
             Class.class);
-    static final MethodDescriptor INTEGERS_IS_GT = MethodDescriptor.ofMethod(Integers.class,
-            "isGt", boolean.class, int.class, int.class);
 
     static final FieldDescriptor RESULTS_NOT_FOUND = FieldDescriptor.of(Results.class, "NOT_FOUND",
             CompletionStage.class);

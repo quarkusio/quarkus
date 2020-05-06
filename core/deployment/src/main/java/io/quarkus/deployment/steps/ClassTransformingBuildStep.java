@@ -1,6 +1,5 @@
 package io.quarkus.deployment.steps;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,7 +22,8 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
-import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -55,6 +55,7 @@ public class ClassTransformingBuildStep {
                         .addAll(i.getRequireConstPoolEntry());
             }
         }
+        QuarkusClassLoader cl = (QuarkusClassLoader) Thread.currentThread().getContextClassLoader();
         Map<String, Path> transformedToArchive = new ConcurrentHashMap<>();
         // now copy all the contents to the runner jar
         // we also record if any additional archives needed transformation
@@ -66,46 +67,46 @@ public class ClassTransformingBuildStep {
             for (Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> entry : bytecodeTransformers
                     .entrySet()) {
                 String className = entry.getKey();
-                Set<String> constValues = constScanning.get(className);
-                ApplicationArchive archive = appArchives.containingArchive(entry.getKey());
-                if (archive != null) {
+                String classFileName = className.replace(".", "/") + ".class";
+                List<ClassPathElement> archives = cl.getElementsWithResource(classFileName);
+                if (!archives.isEmpty()) {
+                    ClassPathElement classPathElement = archives.get(0);
+                    Path jar = classPathElement.getRoot();
+                    if (jar == null) {
+                        log.warnf("Cannot transform %s as it's containing application archive could not be found.",
+                                entry.getKey());
+                        continue;
+                    }
                     List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = entry.getValue();
-                    String classFileName = className.replace(".", "/") + ".class";
-                    archive.processEntry(classFileName, (classFile, jar) -> {
-                        transformedToArchive.put(classFileName, jar);
-                        transformed.add(executorPool.submit(new Callable<TransformedClassesBuildItem.TransformedClass>() {
-                            @Override
-                            public TransformedClassesBuildItem.TransformedClass call() throws Exception {
-                                ClassLoader old = Thread.currentThread().getContextClassLoader();
-                                try {
-                                    Thread.currentThread().setContextClassLoader(transformCl);
-                                    if (Files.size(classFile) > Integer.MAX_VALUE) {
-                                        throw new RuntimeException(
-                                                "Can't process class files larger than Integer.MAX_VALUE bytes");
+                    transformedToArchive.put(classFileName, jar);
+                    transformed.add(executorPool.submit(new Callable<TransformedClassesBuildItem.TransformedClass>() {
+                        @Override
+                        public TransformedClassesBuildItem.TransformedClass call() throws Exception {
+                            ClassLoader old = Thread.currentThread().getContextClassLoader();
+                            try {
+                                Thread.currentThread().setContextClassLoader(transformCl);
+                                byte[] classData = classPathElement.getResource(classFileName).getData();
+                                Set<String> constValues = constScanning.get(className);
+                                if (constValues != null && !noConstScanning.contains(className)) {
+                                    if (!ConstPoolScanner.constPoolEntryPresent(classData, constValues)) {
+                                        return null;
                                     }
-                                    byte[] classData = Files.readAllBytes(classFile);
-
-                                    if (constValues != null && !noConstScanning.contains(className)) {
-                                        if (!ConstPoolScanner.constPoolEntryPresent(classData, constValues)) {
-                                            return null;
-                                        }
-                                    }
-                                    ClassReader cr = new ClassReader(classData);
-                                    ClassWriter writer = new QuarkusClassWriter(cr,
-                                            ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-                                    ClassVisitor visitor = writer;
-                                    for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
-                                        visitor = i.apply(className, visitor);
-                                    }
-                                    cr.accept(visitor, 0);
-                                    return new TransformedClassesBuildItem.TransformedClass(writer.toByteArray(),
-                                            classFileName);
-                                } finally {
-                                    Thread.currentThread().setContextClassLoader(old);
                                 }
+                                ClassReader cr = new ClassReader(classData);
+                                ClassWriter writer = new QuarkusClassWriter(cr,
+                                        ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                                ClassVisitor visitor = writer;
+                                for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
+                                    visitor = i.apply(className, visitor);
+                                }
+                                cr.accept(visitor, 0);
+                                return new TransformedClassesBuildItem.TransformedClass(writer.toByteArray(),
+                                        classFileName);
+                            } finally {
+                                Thread.currentThread().setContextClassLoader(old);
                             }
-                        }));
-                    });
+                        }
+                    }));
                 } else {
                     log.warnf("Cannot transform %s as it's containing application archive could not be found.",
                             entry.getKey());

@@ -32,16 +32,23 @@ public class JarClassPathElement implements ClassPathElement {
     private static final Logger log = Logger.getLogger(JarClassPathElement.class);
     private final File file;
     private final URL jarPath;
+    private final Path root;
     private JarFile jarFile;
     private boolean closed;
 
     public JarClassPathElement(Path root) {
         try {
             jarPath = root.toUri().toURL();
+            this.root = root;
             jarFile = new JarFile(file = root.toFile());
         } catch (IOException e) {
             throw new UncheckedIOException("Error while reading file as JAR: " + root, e);
         }
+    }
+
+    @Override
+    public Path getRoot() {
+        return root;
     }
 
     @Override

@@ -3,12 +3,12 @@ package io.quarkus.quartz.runtime;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import javax.enterprise.util.AnnotationLiteral;
 import javax.sql.DataSource;
 
 import org.quartz.utils.PoolingConnectionProvider;
 
 import io.agroal.api.AgroalDataSource;
+import io.quarkus.agroal.DataSource.DataSourceLiteral;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
@@ -58,21 +58,5 @@ public class QuarkusQuartzConnectionPoolProvider implements PoolingConnectionPro
 
     static void setDataSourceName(String dataSourceName) {
         QuarkusQuartzConnectionPoolProvider.dataSourceName = dataSourceName;
-    }
-
-    private static class DataSourceLiteral extends AnnotationLiteral<io.quarkus.agroal.DataSource>
-            implements io.quarkus.agroal.DataSource {
-
-        private String name;
-
-        public DataSourceLiteral(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String value() {
-            return name;
-        }
-
     }
 }

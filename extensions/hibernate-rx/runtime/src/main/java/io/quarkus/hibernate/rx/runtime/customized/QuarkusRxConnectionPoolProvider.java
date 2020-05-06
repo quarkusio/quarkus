@@ -22,7 +22,6 @@ public class QuarkusRxConnectionPoolProvider implements RxConnectionPoolProvider
     private boolean showSQL;
 
     public QuarkusRxConnectionPoolProvider(Pool pool) {
-        System.out.println("@AGG creating QuarkusRxConnectionPoolProvider with pool=" + pool);
         this.pool = pool;
     }
 
@@ -33,7 +32,6 @@ public class QuarkusRxConnectionPoolProvider implements RxConnectionPoolProvider
 
     @Override
     public RxConnection getConnection() {
-        System.out.println("@AGG getting rx connection");
         return new PoolConnection(pool, showSQL);
     }
 

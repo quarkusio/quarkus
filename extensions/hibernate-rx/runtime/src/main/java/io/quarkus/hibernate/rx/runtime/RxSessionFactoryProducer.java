@@ -10,16 +10,19 @@ import javax.persistence.PersistenceUnit;
 
 import org.hibernate.rx.RxSessionFactory;
 
+import io.quarkus.arc.DefaultBean;
+
 @ApplicationScoped
 public class RxSessionFactoryProducer {
 
     @Inject
     @PersistenceUnit
-    private EntityManagerFactory emf;
+    EntityManagerFactory emf;
 
     @Produces
-    @Typed(RxSessionFactory.class)
     @Singleton
+    @DefaultBean
+    @Typed(RxSessionFactory.class)
     public RxSessionFactory rxSessionFactory() {
         return emf.unwrap(RxSessionFactory.class);
     }

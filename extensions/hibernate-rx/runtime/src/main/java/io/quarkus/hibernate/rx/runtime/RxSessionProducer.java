@@ -9,7 +9,8 @@ import javax.inject.Inject;
 
 import org.hibernate.rx.RxSession;
 import org.hibernate.rx.RxSessionFactory;
-import org.hibernate.rx.mutiny.Mutiny;
+
+import io.quarkus.arc.DefaultBean;
 
 @ApplicationScoped
 public class RxSessionProducer {
@@ -18,10 +19,10 @@ public class RxSessionProducer {
     private RxSessionFactory rxSessionFactory;
 
     @Produces
-    @Typed(RxSession.class)
     @RequestScoped
+    @DefaultBean
+    @Typed(RxSession.class)
     public RxSession rxSession() {
-        System.out.println("@AGG producing RxSession with rxSF=" + rxSessionFactory);
         return rxSessionFactory.openRxSession();
     }
 
@@ -31,7 +32,6 @@ public class RxSessionProducer {
     //    @Typed(Mutiny.Session.class)
     //    @RequestScoped
     //    public Mutiny.Session mutinySession(RxSession rxSession) {
-    //        System.out.println("@AGG producing Mutiny.Session with rxSess=" + rxSession);
     //        return new Mutiny.Session(rxSession);
     //    }
 
@@ -39,8 +39,8 @@ public class RxSessionProducer {
         rxSession.close();
     }
 
-    public void disposeMutinySession(@Disposes Mutiny.Session mutinySession) {
-        // TODO: Should we add a mutinySession.close() method to the API?
-    }
+    //    public void disposeMutinySession(@Disposes Mutiny.Session mutinySession) {
+    //        // TODO: Should we add a mutinySession.close() method to the API?
+    //    }
 
 }

@@ -54,7 +54,6 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
 
     @Override
     public EntityManagerFactory createEntityManagerFactory(String emName, Map properties) {
-        System.out.println("@AGG createEntityManagerFactory emName=" + emName + " properties=" + properties);
         if (properties == null)
             properties = new HashMap<Object, Object>();
         try {
@@ -65,18 +64,9 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
                 //if the provider is not set, don't use it as people might want to use Hibernate ORM
                 if (IMPLEMENTATION_NAME.equalsIgnoreCase(unit.getProviderClassName()) ||
                         unit.getProviderClassName() == null) {
-                    //correct provider
-                    //                    Map<Object, Object> protectiveCopy = new HashMap<Object, Object>(properties);
-                    //                    enforceRxConfig(protectiveCopy);
-                    //                    protectiveCopy.put(AvailableSettings.PROVIDER, delegate.getClass().getName());
-                    System.out.println("@AGG CREATING EMF name=" + emName);
                     EntityManagerFactoryBuilder emfBuilder = getEntityManagerFactoryBuilderOrNull(emName, properties);
-                    System.out.println("  builder=" + emfBuilder);
                     EntityManagerFactory emf = emfBuilder.build();
-                    System.out.println("  emf=" + emf);
                     return emf;
-                } else {
-                    System.out.println("@AGG found different provider: " + unit.getProviderClassName());
                 }
             }
 
@@ -95,7 +85,6 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
                 persistenceUnitName);
 
         verifyProperties(properties);
-        //enforceRxConfig(properties);
 
         // These are pre-parsed during image generation:
         final List<PersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
@@ -225,12 +214,10 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
         }
 
         DataSource ds = Arc.container().instance(DataSource.class).get();
-        System.out.println("@AGG using injected datasource: " + ds);
         runtimeSettingsBuilder.put(AvailableSettings.DATASOURCE, ds);
     }
 
     private void injectVertxPool(String persistenceUnitName, RuntimeSettings.Builder runtimeSettingsBuilder) {
-        System.out.println("@AGG injecting Vertx pool...");
         if (runtimeSettingsBuilder.isConfigured(AvailableSettings.URL) ||
                 runtimeSettingsBuilder.isConfigured(AvailableRxSettings.VERTX_POOL)) {
             // the pool has been defined in the persistence unit, we can bail out
@@ -239,7 +226,6 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
 
         // for now we only support one pool but this will change
         InstanceHandle<Pool> poolHandle = Arc.container().instance(Pool.class);
-        System.out.println("@AGG is generic pool available? " + poolHandle.isAvailable());
         if (!poolHandle.isAvailable()) {
             throw new IllegalStateException("No pool has been defined for persistence unit " + persistenceUnitName);
         }
@@ -252,10 +238,6 @@ final class FastBootHibernateRxPersistenceProvider implements PersistenceProvide
         final String persistenceProviderClassName = info.getPersistenceProviderClassName();
         if (persistenceProviderClassName == null || IMPLEMENTATION_NAME.equals(persistenceProviderClassName)) {
             Map<Object, Object> protectiveCopy = map != null ? new HashMap<Object, Object>(map) : new HashMap<Object, Object>();
-            //            enforceRxConfig(protectiveCopy);
-            //HEM only buislds an EntityManagerFactory when HibernatePersistence.class.getName() is the PersistenceProvider
-            //that's why we override it when
-            //new DelegatorPersistenceUnitInfo(info)
             return delegate.createContainerEntityManagerFactory(
                     new DelegatorPersistenceUnitInfo(info),
                     protectiveCopy);

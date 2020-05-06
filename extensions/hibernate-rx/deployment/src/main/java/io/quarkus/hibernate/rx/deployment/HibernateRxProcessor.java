@@ -27,21 +27,22 @@ public final class HibernateRxProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        System.out.println("@AGG in HibernateRxProcessor.feature()");
         return new FeatureBuildItem(FeatureBuildItem.HIBERNATE_RX);
     }
 
     @BuildStep
     CapabilityBuildItem capability() {
-        System.out.println("@AGG in HibernateRxProcessor.capability()");
         return new CapabilityBuildItem(Capabilities.HIBERNATE_RX);
     }
 
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        // TODO @AGG make these DefaultXXX beans and do not register them if user-defined producers are present
-        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(RxSessionFactoryProducer.class));
-        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(RxSessionProducer.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClass(RxSessionFactoryProducer.class)
+                .addBeanClass(RxSessionProducer.class)
+                .build());
+        //        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(RxSessionFactoryProducer.class));
+        //        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(RxSessionProducer.class));
     }
 
     @BuildStep
@@ -58,8 +59,6 @@ public final class HibernateRxProcessor {
             HibernateRxRecorder recorder,
             JpaEntitiesBuildItem jpaEntities,
             List<NonJpaModelBuildItem> nonJpaModels) {
-        System.out.println("@AGG in HibernateRxProcessor.build()");
-
         final boolean enableRx = hasEntities(jpaEntities, nonJpaModels);
         recorder.callHibernateRxFeatureInit(enableRx);
     }
@@ -70,7 +69,6 @@ public final class HibernateRxProcessor {
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
         // Define a dependency on VertxPoolBuildItem to ensure that any Pool instances are available
         // when HibernateORM starts its persistence units
-        System.out.println("@AGG HibernateRX processor is configured with pool(s)=" + vertxPool);
         runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_RX));
     }
 

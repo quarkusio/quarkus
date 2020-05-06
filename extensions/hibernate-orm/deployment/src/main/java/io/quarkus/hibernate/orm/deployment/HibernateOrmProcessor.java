@@ -331,14 +331,12 @@ public final class HibernateOrmProcessor {
         // inspect service files for additional integrators
         Collection<Class<? extends Integrator>> integratorClasses = new LinkedHashSet<>();
         for (String integratorClassName : ServiceUtil.classNamesNamedIn(classLoader, INTEGRATOR_SERVICE_FILE)) {
-            System.out.println("@AGG integrator class: " + integratorClassName);
             integratorClasses.add((Class<? extends Integrator>) recorderContext.classProxy(integratorClassName));
         }
         // inspect service files for service contributors
         Collection<Class<? extends ServiceContributor>> serviceContributorClasses = new LinkedHashSet<>();
         for (String serviceContributorClassName : ServiceUtil.classNamesNamedIn(classLoader,
                 SERVICE_CONTRIBUTOR_SERVICE_FILE)) {
-            System.out.println("@AGG svc contributor: " + serviceContributorClassName);
             serviceContributorClasses
                     .add((Class<? extends ServiceContributor>) recorderContext.classProxy(serviceContributorClassName));
         }

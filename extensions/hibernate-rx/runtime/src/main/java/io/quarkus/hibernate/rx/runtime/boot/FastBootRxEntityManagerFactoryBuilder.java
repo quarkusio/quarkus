@@ -23,7 +23,6 @@ public final class FastBootRxEntityManagerFactoryBuilder extends FastBootEntityM
 
     @Override
     public EntityManagerFactory build() {
-        System.out.println("@AGG inside build RX EMF");
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
             populate(optionsBuilder, standardServiceRegistry);
@@ -32,12 +31,5 @@ public final class FastBootRxEntityManagerFactoryBuilder extends FastBootEntityM
         } catch (Exception e) {
             throw persistenceException("Unable to build Hibernate SessionFactory", e);
         }
-    }
-
-    protected void populate(SessionFactoryOptionsBuilder options, StandardServiceRegistry ssr) {
-        super.populate(options, ssr);
-
-        // HibernateRX does not currently support transactions
-        //options.disableJtaTransactionAccess();
     }
 }

@@ -42,7 +42,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
 
     private static final Logger log = Logger.getLogger(DevModeMain.class);
 
-    private DevModeContext context;
+    private volatile DevModeContext context;
 
     private final List<HotReplacementSetup> hotReplacementSetups = new ArrayList<>();
     private static volatile RunningQuarkusApplication runner;

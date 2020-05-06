@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.panache.runtime;
+package io.quarkus.hibernate.orm.panache.kotlin.runtime;
 
 import java.util.List;
 import java.util.Optional;
@@ -7,8 +7,10 @@ import java.util.stream.Stream;
 import javax.persistence.EntityManager;
 import javax.persistence.LockModeType;
 
-import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import org.jetbrains.annotations.NotNull;
+
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
+import io.quarkus.hibernate.orm.panache.kotlin.PanacheQuery;
 import io.quarkus.panache.common.Page;
 
 public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
@@ -25,51 +27,52 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
 
     // Builder
 
+    @NotNull
     @Override
-    public <T> PanacheQuery<T> project(Class<T> type) {
+    public <NewEntity> PanacheQuery<NewEntity> project(Class<NewEntity> type) {
         return new PanacheQueryImpl<>(delegate.project(type));
     }
 
+    @NotNull
     @Override
-    @SuppressWarnings("unchecked")
-    public <T extends Entity> PanacheQuery<T> page(Page page) {
+    public PanacheQuery<Entity> page(@NotNull Page page) {
         delegate.page(page);
-        return (PanacheQuery<T>) this;
+        return (PanacheQuery<Entity>) this;
     }
 
-    @SuppressWarnings("unchecked")
+    @NotNull
     @Override
-    public <T extends Entity> PanacheQuery<T> page(int pageIndex, int pageSize) {
+    public PanacheQuery<Entity> page(int pageIndex, int pageSize) {
         delegate.page(pageIndex, pageSize);
-        return (PanacheQuery<T>) this;
+        return (PanacheQuery<Entity>) this;
     }
 
-    @SuppressWarnings("unchecked")
+    @NotNull
     @Override
-    public <T extends Entity> PanacheQuery<T> nextPage() {
+    public PanacheQuery<Entity> nextPage() {
         delegate.nextPage();
-        return (PanacheQuery<T>) this;
+        return (PanacheQuery<Entity>) this;
     }
 
-    @SuppressWarnings("unchecked")
+    @NotNull
     @Override
-    public <T extends Entity> PanacheQuery<T> previousPage() {
+    public PanacheQuery<Entity> previousPage() {
         delegate.previousPage();
-        return (PanacheQuery<T>) this;
+        return (PanacheQuery<Entity>) this;
     }
 
-    @SuppressWarnings("unchecked")
+    @NotNull
     @Override
-    public <T extends Entity> PanacheQuery<T> firstPage() {
+    public PanacheQuery<Entity> firstPage() {
         delegate.firstPage();
-        return (PanacheQuery<T>) this;
+        return (PanacheQuery<Entity>) this;
     }
 
-    @SuppressWarnings("unchecked")
+    @NotNull
     @Override
-    public <T extends Entity> PanacheQuery<T> lastPage() {
+    public PanacheQuery<Entity> lastPage() {
         delegate.lastPage();
-        return (PanacheQuery<T>) this;
+        return (PanacheQuery<Entity>) this;
     }
 
     @Override
@@ -87,30 +90,31 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         return delegate.pageCount();
     }
 
+    @NotNull
     @Override
     public Page page() {
         return delegate.page();
     }
 
-    @SuppressWarnings("unchecked")
+    @NotNull
     @Override
-    public <T extends Entity> PanacheQuery<T> range(int startIndex, int lastIndex) {
+    public PanacheQuery<Entity> range(int startIndex, int lastIndex) {
         delegate.range(startIndex, lastIndex);
-        return (PanacheQuery<T>) this;
+        return (PanacheQuery<Entity>) this;
     }
 
-    @SuppressWarnings("unchecked")
+    @NotNull
     @Override
-    public <T extends Entity> PanacheQuery<T> withLock(LockModeType lockModeType) {
+    public PanacheQuery<Entity> withLock(@NotNull LockModeType lockModeType) {
         delegate.withLock(lockModeType);
-        return (PanacheQuery<T>) this;
+        return (PanacheQuery<Entity>) this;
     }
 
-    @SuppressWarnings("unchecked")
+    @NotNull
     @Override
-    public <T extends Entity> PanacheQuery<T> withHint(String hintName, Object value) {
+    public PanacheQuery<Entity> withHint(@NotNull String hintName, @NotNull Object value) {
         delegate.withHint(hintName, value);
-        return (PanacheQuery<T>) this;
+        return (PanacheQuery<Entity>) this;
     }
 
     // Results
@@ -120,33 +124,38 @@ public class PanacheQueryImpl<Entity> implements PanacheQuery<Entity> {
         return delegate.count();
     }
 
+    @NotNull
     @Override
-    public <T extends Entity> List<T> list() {
+    public List<Entity> list() {
         return delegate.list();
     }
 
+    @NotNull
     @Override
-    public <T extends Entity> Stream<T> stream() {
+    public Stream<Entity> stream() {
         return delegate.stream();
     }
 
     @Override
-    public <T extends Entity> T firstResult() {
+    public Entity firstResult() {
         return delegate.firstResult();
     }
 
+    @NotNull
     @Override
-    public <T extends Entity> Optional<T> firstResultOptional() {
+    public Optional<Entity> firstResultOptional() {
         return delegate.firstResultOptional();
     }
 
+    @NotNull
     @Override
-    public <T extends Entity> T singleResult() {
+    public Entity singleResult() {
         return delegate.singleResult();
     }
 
+    @NotNull
     @Override
-    public <T extends Entity> Optional<T> singleResultOptional() {
+    public Optional<Entity> singleResultOptional() {
         return delegate.singleResultOptional();
     }
 }

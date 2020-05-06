@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.orm.panache.kotlin
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import io.quarkus.hibernate.orm.panache.runtime.JpaOperations
+import io.quarkus.hibernate.orm.panache.kotlin.runtime.JpaOperations
 import javax.json.bind.annotation.JsonbTransient
 
 interface PanacheEntityBase {

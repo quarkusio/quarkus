@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.panache.runtime;
+package io.quarkus.hibernate.orm.panache.common.runtime;
 
 import java.util.List;
 import java.util.Map;
@@ -14,35 +14,41 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheQuery;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.exception.PanacheQueryException;
 
-public class JpaOperations {
+public abstract class AbstractJpaOperations<PanacheQueryType> {
+
+    protected abstract PanacheQueryType createPanacheQuery(EntityManager em, String query, String orderBy,
+            Object paramsArrayOrMap);
+
+    protected abstract List<?> list(PanacheQueryType query);
+
+    protected abstract Stream<?> stream(PanacheQueryType query);
 
     //
     // Instance methods
 
-    public static void persist(Object entity) {
+    public void persist(Object entity) {
         EntityManager em = getEntityManager();
         persist(em, entity);
     }
 
-    public static void persist(EntityManager em, Object entity) {
+    public void persist(EntityManager em, Object entity) {
         if (!em.contains(entity)) {
             em.persist(entity);
         }
     }
 
-    public static void persist(Iterable<?> entities) {
+    public void persist(Iterable<?> entities) {
         EntityManager em = getEntityManager();
         for (Object entity : entities) {
             persist(em, entity);
         }
     }
 
-    public static void persist(Object firstEntity, Object... entities) {
+    public void persist(Object firstEntity, Object... entities) {
         EntityManager em = getEntityManager();
         persist(firstEntity);
         for (Object entity : entities) {
@@ -50,28 +56,28 @@ public class JpaOperations {
         }
     }
 
-    public static void persist(Stream<?> entities) {
+    public void persist(Stream<?> entities) {
         EntityManager em = getEntityManager();
         entities.forEach(entity -> persist(em, entity));
     }
 
-    public static void delete(Object entity) {
+    public void delete(Object entity) {
         EntityManager em = getEntityManager();
         em.remove(entity);
     }
 
-    public static boolean isPersistent(Object entity) {
+    public boolean isPersistent(Object entity) {
         return getEntityManager().contains(entity);
     }
 
-    public static void flush() {
+    public void flush() {
         getEntityManager().flush();
     }
 
     //
     // Private stuff
 
-    public static EntityManager getEntityManager() {
+    public EntityManager getEntityManager() {
         EntityManager entityManager = Arc.container().instance(EntityManager.class).get();
         if (entityManager == null) {
             throw new PersistenceException("No EntityManager found. Do you have any JPA entities defined?");
@@ -79,7 +85,7 @@ public class JpaOperations {
         return entityManager;
     }
 
-    public static TransactionManager getTransactionManager() {
+    public TransactionManager getTransactionManager() {
         return Arc.container().instance(TransactionManager.class).get();
     }
 
@@ -101,20 +107,20 @@ public class JpaOperations {
         return query;
     }
 
-    static int paramCount(Object[] params) {
+    public int paramCount(Object[] params) {
         return params != null ? params.length : 0;
     }
 
-    static int paramCount(Map<String, Object> params) {
+    public int paramCount(Map<String, Object> params) {
         return params != null ? params.size() : 0;
     }
 
-    private static String getEntityName(Class<?> entityClass) {
+    private String getEntityName(Class<?> entityClass) {
         // FIXME: not true?
         return entityClass.getName();
     }
 
-    static String createFindQuery(Class<?> entityClass, String query, int paramCount) {
+    public String createFindQuery(Class<?> entityClass, String query, int paramCount) {
         if (query == null) {
             return "FROM " + getEntityName(entityClass);
         }
@@ -149,7 +155,7 @@ public class JpaOperations {
         return query.charAt(0) == '#';
     }
 
-    private static String createCountQuery(Class<?> entityClass, String query, int paramCount) {
+    private String createCountQuery(Class<?> entityClass, String query, int paramCount) {
         if (query == null)
             return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
 
@@ -171,7 +177,7 @@ public class JpaOperations {
         return "SELECT COUNT(*) FROM " + getEntityName(entityClass) + " WHERE " + query;
     }
 
-    private static String createUpdateQuery(Class<?> entityClass, String query, int paramCount) {
+    private String createUpdateQuery(Class<?> entityClass, String query, int paramCount) {
         if (query == null) {
             throw new PanacheQueryException("Query string cannot be null");
         }
@@ -197,7 +203,7 @@ public class JpaOperations {
         return "UPDATE FROM " + getEntityName(entityClass) + " SET " + query;
     }
 
-    private static String createDeleteQuery(Class<?> entityClass, String query, int paramCount) {
+    private String createDeleteQuery(Class<?> entityClass, String query, int paramCount) {
         if (query == null)
             return "DELETE FROM " + getEntityName(entityClass);
 
@@ -219,7 +225,7 @@ public class JpaOperations {
         return "DELETE FROM " + getEntityName(entityClass) + " WHERE " + query;
     }
 
-    public static String toOrderBy(Sort sort) {
+    public String toOrderBy(Sort sort) {
         if (sort == null) {
             return null;
         }
@@ -241,182 +247,177 @@ public class JpaOperations {
     //
     // Queries
 
-    public static Object findById(Class<?> entityClass, Object id) {
+    public Object findById(Class<?> entityClass, Object id) {
         return getEntityManager().find(entityClass, id);
     }
 
-    public static Object findById(Class<?> entityClass, Object id, LockModeType lockModeType) {
+    public Object findById(Class<?> entityClass, Object id, LockModeType lockModeType) {
         return getEntityManager().find(entityClass, id, lockModeType);
     }
 
-    public static Optional<?> findByIdOptional(Class<?> entityClass, Object id) {
+    public Optional<?> findByIdOptional(Class<?> entityClass, Object id) {
         return Optional.ofNullable(findById(entityClass, id));
     }
 
-    public static Optional<?> findByIdOptional(Class<?> entityClass, Object id, LockModeType lockModeType) {
+    public Optional<?> findByIdOptional(Class<?> entityClass, Object id, LockModeType lockModeType) {
         return Optional.ofNullable(findById(entityClass, id, lockModeType));
     }
 
-    public static PanacheQuery<?> find(Class<?> entityClass, String query, Object... params) {
+    public PanacheQueryType find(Class<?> entityClass, String query, Object... params) {
         return find(entityClass, query, null, params);
     }
 
-    @SuppressWarnings("rawtypes")
-    public static PanacheQuery<?> find(Class<?> entityClass, String query, Sort sort, Object... params) {
+    public PanacheQueryType find(Class<?> entityClass, String query, Sort sort, Object... params) {
         String findQuery = createFindQuery(entityClass, query, paramCount(params));
         EntityManager em = getEntityManager();
         // FIXME: check for duplicate ORDER BY clause?
         if (isNamedQuery(query)) {
             String namedQuery = query.substring(1);
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return new PanacheQueryImpl(em, query, toOrderBy(sort), params);
+            return createPanacheQuery(em, query, toOrderBy(sort), params);
         }
-        return new PanacheQueryImpl(em, findQuery, toOrderBy(sort), params);
+        return createPanacheQuery(em, findQuery, toOrderBy(sort), params);
     }
 
-    public static PanacheQuery<?> find(Class<?> entityClass, String query, Map<String, Object> params) {
+    public PanacheQueryType find(Class<?> entityClass, String query, Map<String, Object> params) {
         return find(entityClass, query, null, params);
     }
 
-    @SuppressWarnings("rawtypes")
-    public static PanacheQuery<?> find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
+    public PanacheQueryType find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         String findQuery = createFindQuery(entityClass, query, paramCount(params));
         EntityManager em = getEntityManager();
         // FIXME: check for duplicate ORDER BY clause?
         if (isNamedQuery(query)) {
             String namedQuery = query.substring(1);
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
-            return new PanacheQueryImpl(em, query, toOrderBy(sort), params);
+            return createPanacheQuery(em, query, toOrderBy(sort), params);
         }
-        return new PanacheQueryImpl(em, findQuery, toOrderBy(sort), params);
+        return createPanacheQuery(em, findQuery, toOrderBy(sort), params);
     }
 
-    public static PanacheQuery<?> find(Class<?> entityClass, String query, Parameters params) {
+    public PanacheQueryType find(Class<?> entityClass, String query, Parameters params) {
         return find(entityClass, query, null, params);
     }
 
-    public static PanacheQuery<?> find(Class<?> entityClass, String query, Sort sort, Parameters params) {
+    public PanacheQueryType find(Class<?> entityClass, String query, Sort sort, Parameters params) {
         return find(entityClass, query, sort, params.map());
     }
 
-    public static List<?> list(Class<?> entityClass, String query, Object... params) {
-        return find(entityClass, query, params).list();
+    public List<?> list(Class<?> entityClass, String query, Object... params) {
+        return list(find(entityClass, query, params));
     }
 
-    public static List<?> list(Class<?> entityClass, String query, Sort sort, Object... params) {
-        return find(entityClass, query, sort, params).list();
+    public List<?> list(Class<?> entityClass, String query, Sort sort, Object... params) {
+        return list(find(entityClass, query, sort, params));
     }
 
-    public static List<?> list(Class<?> entityClass, String query, Map<String, Object> params) {
-        return find(entityClass, query, params).list();
+    public List<?> list(Class<?> entityClass, String query, Map<String, Object> params) {
+        return list(find(entityClass, query, params));
     }
 
-    public static List<?> list(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        return find(entityClass, query, sort, params).list();
+    public List<?> list(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
+        return list(find(entityClass, query, sort, params));
     }
 
-    public static List<?> list(Class<?> entityClass, String query, Parameters params) {
-        return find(entityClass, query, params).list();
+    public List<?> list(Class<?> entityClass, String query, Parameters params) {
+        return list(find(entityClass, query, params));
     }
 
-    public static List<?> list(Class<?> entityClass, String query, Sort sort, Parameters params) {
-        return find(entityClass, query, sort, params).list();
+    public List<?> list(Class<?> entityClass, String query, Sort sort, Parameters params) {
+        return list(find(entityClass, query, sort, params));
     }
 
-    public static Stream<?> stream(Class<?> entityClass, String query, Object... params) {
-        return find(entityClass, query, params).stream();
+    public Stream<?> stream(Class<?> entityClass, String query, Object... params) {
+        return stream(find(entityClass, query, params));
     }
 
-    public static Stream<?> stream(Class<?> entityClass, String query, Sort sort, Object... params) {
-        return find(entityClass, query, sort, params).stream();
+    public Stream<?> stream(Class<?> entityClass, String query, Sort sort, Object... params) {
+        return stream(find(entityClass, query, sort, params));
     }
 
-    public static Stream<?> stream(Class<?> entityClass, String query, Map<String, Object> params) {
-        return find(entityClass, query, params).stream();
+    public Stream<?> stream(Class<?> entityClass, String query, Map<String, Object> params) {
+        return stream(find(entityClass, query, params));
     }
 
-    public static Stream<?> stream(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
-        return find(entityClass, query, sort, params).stream();
+    public Stream<?> stream(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
+        return stream(find(entityClass, query, sort, params));
     }
 
-    public static Stream<?> stream(Class<?> entityClass, String query, Parameters params) {
-        return find(entityClass, query, params).stream();
+    public Stream<?> stream(Class<?> entityClass, String query, Parameters params) {
+        return stream(find(entityClass, query, params));
     }
 
-    public static Stream<?> stream(Class<?> entityClass, String query, Sort sort, Parameters params) {
-        return find(entityClass, query, sort, params).stream();
+    public Stream<?> stream(Class<?> entityClass, String query, Sort sort, Parameters params) {
+        return stream(find(entityClass, query, sort, params));
     }
 
-    @SuppressWarnings("rawtypes")
-    public static PanacheQuery<?> findAll(Class<?> entityClass) {
+    public PanacheQueryType findAll(Class<?> entityClass) {
         String query = "FROM " + getEntityName(entityClass);
         EntityManager em = getEntityManager();
-        return new PanacheQueryImpl(em, query, null, null);
+        return createPanacheQuery(em, query, null, null);
     }
 
-    @SuppressWarnings("rawtypes")
-    public static PanacheQuery<?> findAll(Class<?> entityClass, Sort sort) {
+    public PanacheQueryType findAll(Class<?> entityClass, Sort sort) {
         String query = "FROM " + getEntityName(entityClass);
-        String sortedQuery = query + toOrderBy(sort);
         EntityManager em = getEntityManager();
-        return new PanacheQueryImpl(em, query, toOrderBy(sort), null);
+        return createPanacheQuery(em, query, toOrderBy(sort), null);
     }
 
-    public static List<?> listAll(Class<?> entityClass) {
-        return findAll(entityClass).list();
+    public List<?> listAll(Class<?> entityClass) {
+        return list(findAll(entityClass));
     }
 
-    public static List<?> listAll(Class<?> entityClass, Sort sort) {
-        return findAll(entityClass, sort).list();
+    public List<?> listAll(Class<?> entityClass, Sort sort) {
+        return list(findAll(entityClass, sort));
     }
 
-    public static Stream<?> streamAll(Class<?> entityClass) {
-        return findAll(entityClass).stream();
+    public Stream<?> streamAll(Class<?> entityClass) {
+        return stream(findAll(entityClass));
     }
 
-    public static Stream<?> streamAll(Class<?> entityClass, Sort sort) {
-        return findAll(entityClass, sort).stream();
+    public Stream<?> streamAll(Class<?> entityClass, Sort sort) {
+        return stream(findAll(entityClass, sort));
     }
 
-    public static long count(Class<?> entityClass) {
+    public long count(Class<?> entityClass) {
         return (long) getEntityManager().createQuery("SELECT COUNT(*) FROM " + getEntityName(entityClass)).getSingleResult();
     }
 
-    public static long count(Class<?> entityClass, String query, Object... params) {
+    public long count(Class<?> entityClass, String query, Object... params) {
         return (long) bindParameters(getEntityManager().createQuery(createCountQuery(entityClass, query, paramCount(params))),
                 params).getSingleResult();
     }
 
-    public static long count(Class<?> entityClass, String query, Map<String, Object> params) {
+    public long count(Class<?> entityClass, String query, Map<String, Object> params) {
         return (long) bindParameters(getEntityManager().createQuery(createCountQuery(entityClass, query, paramCount(params))),
                 params).getSingleResult();
     }
 
-    public static long count(Class<?> entityClass, String query, Parameters params) {
+    public long count(Class<?> entityClass, String query, Parameters params) {
         return count(entityClass, query, params.map());
     }
 
-    public static boolean exists(Class<?> entityClass) {
+    public boolean exists(Class<?> entityClass) {
         return count(entityClass) > 0;
     }
 
-    public static boolean exists(Class<?> entityClass, String query, Object... params) {
+    public boolean exists(Class<?> entityClass, String query, Object... params) {
         return count(entityClass, query, params) > 0;
     }
 
-    public static boolean exists(Class<?> entityClass, String query, Map<String, Object> params) {
+    public boolean exists(Class<?> entityClass, String query, Map<String, Object> params) {
         return count(entityClass, query, params) > 0;
     }
 
-    public static boolean exists(Class<?> entityClass, String query, Parameters params) {
+    public boolean exists(Class<?> entityClass, String query, Parameters params) {
         return count(entityClass, query, params) > 0;
     }
 
-    public static long deleteAll(Class<?> entityClass) {
+    public long deleteAll(Class<?> entityClass) {
         return (long) getEntityManager().createQuery("DELETE FROM " + getEntityName(entityClass)).executeUpdate();
     }
 
-    public static boolean deleteById(Class<?> entityClass, Object id) {
+    public boolean deleteById(Class<?> entityClass, Object id) {
         // Impl note : we load the entity then delete it because it's the only implementation generic enough for any model,
         // and correct in all cases (composite key, graph of entities, ...). HQL cannot be directly used for these reasons.
         Object entity = findById(entityClass, id);
@@ -427,60 +428,60 @@ public class JpaOperations {
         return true;
     }
 
-    public static long delete(Class<?> entityClass, String query, Object... params) {
+    public long delete(Class<?> entityClass, String query, Object... params) {
         return bindParameters(getEntityManager().createQuery(createDeleteQuery(entityClass, query, paramCount(params))), params)
                 .executeUpdate();
     }
 
-    public static long delete(Class<?> entityClass, String query, Map<String, Object> params) {
+    public long delete(Class<?> entityClass, String query, Map<String, Object> params) {
         return bindParameters(getEntityManager().createQuery(createDeleteQuery(entityClass, query, paramCount(params))), params)
                 .executeUpdate();
     }
 
-    public static long delete(Class<?> entityClass, String query, Parameters params) {
+    public long delete(Class<?> entityClass, String query, Parameters params) {
         return delete(entityClass, query, params.map());
     }
 
-    public static IllegalStateException implementationInjectionMissing() {
+    public IllegalStateException implementationInjectionMissing() {
         return new IllegalStateException(
                 "This method is normally automatically overridden in subclasses: did you forget to annotate your entity with @Entity?");
     }
 
-    public static int executeUpdate(String query, Object... params) {
+    public int executeUpdate(String query, Object... params) {
         Query jpaQuery = getEntityManager().createQuery(query);
         bindParameters(jpaQuery, params);
         return jpaQuery.executeUpdate();
     }
 
-    public static int executeUpdate(String query, Map<String, Object> params) {
+    public int executeUpdate(String query, Map<String, Object> params) {
         Query jpaQuery = getEntityManager().createQuery(query);
         bindParameters(jpaQuery, params);
         return jpaQuery.executeUpdate();
     }
 
-    public static int executeUpdate(Class<?> entityClass, String query, Object... params) {
+    public int executeUpdate(Class<?> entityClass, String query, Object... params) {
         String updateQuery = createUpdateQuery(entityClass, query, paramCount(params));
         return executeUpdate(updateQuery, params);
     }
 
-    public static int executeUpdate(Class<?> entityClass, String query, Map<String, Object> params) {
+    public int executeUpdate(Class<?> entityClass, String query, Map<String, Object> params) {
         String updateQuery = createUpdateQuery(entityClass, query, paramCount(params));
         return executeUpdate(updateQuery, params);
     }
 
-    public static int update(Class<?> entityClass, String query, Map<String, Object> params) {
+    public int update(Class<?> entityClass, String query, Map<String, Object> params) {
         return executeUpdate(entityClass, query, params);
     }
 
-    public static int update(Class<?> entityClass, String query, Parameters params) {
+    public int update(Class<?> entityClass, String query, Parameters params) {
         return update(entityClass, query, params.map());
     }
 
-    public static int update(Class<?> entityClass, String query, Object... params) {
+    public int update(Class<?> entityClass, String query, Object... params) {
         return executeUpdate(entityClass, query, params);
     }
 
-    public static void setRollbackOnly() {
+    public void setRollbackOnly() {
         try {
             getTransactionManager().setRollbackOnly();
         } catch (SystemException e) {

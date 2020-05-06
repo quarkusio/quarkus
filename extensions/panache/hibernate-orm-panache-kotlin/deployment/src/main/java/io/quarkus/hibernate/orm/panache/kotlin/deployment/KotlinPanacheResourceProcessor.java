@@ -31,7 +31,7 @@ import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepository;
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepositoryBase;
-import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;
+import io.quarkus.hibernate.orm.panache.kotlin.runtime.JpaOperations;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;

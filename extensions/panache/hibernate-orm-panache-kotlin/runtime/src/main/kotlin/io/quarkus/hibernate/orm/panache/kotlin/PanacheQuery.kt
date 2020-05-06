@@ -184,7 +184,7 @@ interface PanacheQuery<Entity: Any> {
      * @return the first result of the current page index, or null if there are no results.
      * @see .singleResult
      */
-    fun firstResult(): Entity
+    fun firstResult(): Entity?
 
     /**
      * Returns the first result of the current page index. This ignores the current page size to fetch

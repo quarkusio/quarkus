@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.panache.kotlin
 
-import io.quarkus.hibernate.orm.panache.runtime.JpaOperations
+import io.quarkus.hibernate.orm.panache.kotlin.runtime.JpaOperations
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.quarkus.panache.common.impl.GenerateBridge

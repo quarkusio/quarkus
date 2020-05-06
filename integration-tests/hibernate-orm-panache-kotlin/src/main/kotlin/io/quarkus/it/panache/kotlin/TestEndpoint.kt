@@ -901,9 +901,11 @@ class TestEndpoint {
         Assertions.assertEquals(1, Person.count())
 
         val person = Person.findAll().firstResult()
-        Assertions.assertEquals("1", person.name)
+        Assertions.assertEquals("1", person?.name)
 
-        person.name = "2"
+        if(person != null) {
+            person.name = "2"
+        }
         return "OK"
     }
 

@@ -1,0 +1,241 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/master/docs/src/main/asciidoc
+////
+= Implementing a gRPC Service
+
+include::./attributes.adoc[]
+
+gRPC service implementations exposed as beans are automatically registered and served by quarkus-grpc.
+
+IMPORTANT: Implementing a gRPC service requires the gRPC classes to be generated.
+Place your `proto` files in `src/main/proto` and run `mvn compile`.
+
+== Implementation base
+
+The generation has created 2 implementation bases:
+
+1. One using the default gRPC API
+2. One using the Mutiny API
+
+The first classname is structured as follows: `${NAME_OF_THE_SERVICE}Grpc.${NAME_OF_THE_SERVICE}ImplBase`.
+The second classname is structured as follows: `Mutiny${NAME_OF_THE_SERVICE}Grpc.${NAME_OF_THE_SERVICE}ImplBase`.
+
+For example, if you use `Greeter` as service name as in:
+
+[source]
+----
+service Greeter {
+    rpc SayHello (HelloRequest) returns (HelloReply) {}
+}
+----
+
+The regular implementation base is: `GreeterGrpc.GreeterImplBase`.
+The second implementation base is: `MutinyGreeterGrpc.GreeterImplBase`.
+
+Note that these classes are not interfaces but regular classes.
+When extending them, you need to override the service methods defined in the service definition.
+
+== Implementing a service with the default gRPC API
+
+To implement a gRPC service using the default gRPC API, create a class extending the default implementation base.
+Then, override the methods defined in the service interface.
+Finally, expose the service as a CDI bean using the `@Singleton` annotation:
+
+[source, java]
+----
+import javax.inject.Singleton;
+
+@Singleton
+public class HelloService extends GreeterGrpc.GreeterImplBase {
+
+    @Override
+    public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
+        String name = request.getName();
+        String message = "Hello " + name;
+        responseObserver.onNext(HelloReply.newBuilder().setMessage(message).build());
+        responseObserver.onCompleted();
+    }
+}
+----
+
+== Implementing a service with the Mutiny API
+
+To implement a gRPC service using the Mutiny gRPC API, create a class extending the Mutiny implementation base.
+Then, override the methods defined in the service interface.
+These methods are using Mutiny types.
+Finally, expose the service as a CDI bean using the `@Singleton` annotation:
+
+[source, java]
+----
+import javax.inject.Singleton;
+
+@Singleton
+public class ReactiveHelloService extends MutinyGreeterGrpc.GreeterImplBase {
+
+    @Override
+    public Uni<HelloReply> sayHello(HelloRequest request) {
+        return Uni.createFrom().item(() ->
+                HelloReply.newBuilder().setMessage("Hello " + request.getName()).build()
+        );
+    }
+}
+----
+
+== Handling streams
+
+gRPC allows receiving and returning streams:
+
+[source]
+----
+service Streaming {
+    rpc Source(Empty) returns (stream Item) {} // Returns a stream
+    rpc Sink(stream Item) returns (Empty) {}   // Reads a stream
+    rpc Pipe(stream Item) returns (stream Item) {}  // Reads a streams and return a streams
+}
+----
+
+Using Mutiny, you can implement these as follows:
+
+[source, java]
+----
+@Singleton
+public class StreamingService extends MutinyStreamingGrpc.StreamingImplBase {
+
+    @Override
+    public Multi<Item> source(Empty request) {
+        // Just returns a stream emitting an item every 2ms and stopping after 10 items.
+        return Multi.createFrom().ticks().every(Duration.ofMillis(2))
+                .transform().byTakingFirstItems(10)
+                .map(l -> Item.newBuilder().setValue(Long.toString(l)).build());
+    }
+
+    @Override
+    public Uni<Empty> sink(Multi<Item> request) {
+        // Reads the incoming streams, consume all the items.
+        return request
+                .map(Item::getValue)
+                .map(Long::parseLong)
+                .collectItems().last()
+                .map(l -> Empty.newBuilder().build());
+    }
+
+    @Override
+    public Multi<Item> pipe(Multi<Item> request) {
+        // Reads the incoming stream, compute a sum and return the cumulative results
+        // in the outbound stream.
+        return request
+                .map(Item::getValue)
+                .map(Long::parseLong)
+                .onItem().scan(() -> 0L, Long::sum)
+                .onItem().apply(l -> Item.newBuilder().setValue(Long.toString(l)).build());
+    }
+}
+----
+
+== Health check
+For the exposed services, Quarkus gRPC exposes health information in the following format:
+[source,protobuf]
+----
+syntax = "proto3";
+
+package grpc.health.v1;
+
+message HealthCheckRequest {
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+  }
+  ServingStatus status = 1;
+}
+
+service Health {
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+
+  rpc Watch(HealthCheckRequest) returns (stream HealthCheckResponse);
+}
+----
+
+Clients can specify the fully qualified service name to get the health status of a specific service
+or skip specifying the service name to get the general status of the gRPC server.
+
+For more details, check out the
+https://github.com/grpc/grpc/blob/v1.28.1/doc/health-checking.md[gRPC documentation]
+
+Additionally, if Quarkus SmallRye Health is added to the application, a readiness check for
+the state of the gRPC services will be added to the MicroProfile Health endpoint response, that is `/health`.
+
+== Reflection Service
+
+Quarkus gRPC Server implements the https://github.com/grpc/grpc/blob/master/doc/server-reflection.md[reflection service].
+This service allows tools like https://github.com/fullstorydev/grpcurl[grpcurl] or https://github.com/gusaul/grpcox[grpcox] to interact with your services.
+
+The reflection service is enabled by default in _dev_ mode.
+In test or production mode, you need to enable it explicitly by setting `quarkus.grpc-server.enable-reflection-service` to `true`.
+
+== Server configuration
+
+By default, the server is exposed on `localhost:9000` and uses `plain-text`.
+
+The following configuration properties are supported:
+
+|===
+|Property |Description |Default Value
+
+|quarkus.grpc-server.enable-reflection-service | Enables the reflection service  | `false` (`true` in dev mode)
+|quarkus.grpc-server.grpc-health.enabled | Whether to expose the gRPC health information | `true`
+|quarkus.grpc-server.health.enabled | Whether to add gRPC health information to MicroProfile Health | `true`
+|quarkus.grpc-server.host | The network interface on which the service is exposed.  | `0.0.0.0`
+|quarkus.grpc-server.port | The port on which the service is exposed.  | `9000`
+|quarkus.grpc-server.handshake-timeout | The max duration of the handshake.  |
+|quarkus.grpc-server.max-inbound-message-size | The max size of the inbound messages.  |
+|quarkus.grpc-server.plain-text | Whether plain-text is used.  | `true` except is `ssl` is configured
+|quarkus.grpc-server.alpn | Whether alpn is used.  | `true` if `ssl` is configured
+|quarkus.grpc-server.ssl.certificate | The path to the certificate file to use.  |
+|quarkus.grpc-server.ssl.key-file | The path to the key file to use.  |
+|quarkus.grpc-server.ssl.key-store | The path to the keystore file to use.  |
+|quarkus.grpc-server.ssl.key-store-type | The type of the key store file.   | based on file name
+|quarkus.grpc-server.ssl.key-store-password | The key store password.  | `password`
+|quarkus.grpc-server.ssl.trust-store | The path to the trust store file.  |
+|quarkus.grpc-server.ssl.trust-store-type | The type of the trust store file.  | based on file name
+|quarkus.grpc-server.ssl.trust-store-password | The trust store password. |
+|quarkus.grpc-server.ssl.cipher-suites | The cipher suites to use. If none is given, a reasonable default is selected. |
+|quarkus.grpc-server.ssl.protocols |  The list of protocols to explicitly enable. | `TLSv1.3`,`TLSv1.2`
+|quarkus.grpc-server.ssl.client-auth | Whether to require/request client authentication. Accepted values are: `NONE`, `REQUEST`, `REQUIRED` | `NONE`
+|quarkus.grpc-server.transport-security.file | The path to the certificate file |
+|quarkus.grpc-server.transport-security.key-file | The path to the key file |
+|===
+
+== Example of configuration
+
+=== Enabling TLS
+
+To enable TLS, use the following configuration:
+
+[source]
+----
+quarkus.grpc-server.ssl.certificate=src/main/resources/tls/server.pem
+quarkus.grpc-server.ssl.key=src/main/resources/tls/server.key
+----
+
+NOTE: When SSL/TLS is configured, `plain-text` is automatically disabled.
+
+=== TLS with Mutual Auth
+
+To use TLS with mutual authentication, use the following configuration:
+
+[source]
+----
+quarkus.grpc-server.ssl.certificate=src/main/resources/tls/server.pem
+quarkus.grpc-server.ssl.key=src/main/resources/tls/server.key
+quarkus.grpc-server.ssl.trust-store=src/main/resources/tls/ca.jks
+quarkus.grpc-server.ssl.trust-store-password=*****
+quarkus.grpc-server.ssl.client-auth=REQUIRED
+----
+

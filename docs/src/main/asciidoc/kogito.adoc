@@ -410,5 +410,5 @@ Once the dependency is added to the project, decision tables in `xls` or `xlsx` 
 
 == References
 
-* https://kogito.kie.org[Kogito website]
-* https://github.com/kiegroup/kogito-runtimes/wiki[Kogito wiki]
+* https://kogito.kie.org[Kogito Website]
+* https://docs.jboss.org/kogito/release/latest/html_single[Kogito Documentation]

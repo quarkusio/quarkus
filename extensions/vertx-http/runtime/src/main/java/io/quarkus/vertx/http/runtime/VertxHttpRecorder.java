@@ -150,6 +150,8 @@ public class VertxHttpRecorder {
         Vertx vertx = VertxCoreRecorder.initialize(vertxConfiguration, null);
 
         try {
+            HttpBuildTimeConfig buildConfig = new HttpBuildTimeConfig();
+            ConfigInstantiator.handleObject(buildConfig);
             HttpConfiguration config = new HttpConfiguration();
             ConfigInstantiator.handleObject(config);
 
@@ -160,7 +162,7 @@ public class VertxHttpRecorder {
             rootHandler = router;
 
             //we can't really do
-            doServerStart(vertx, config, LaunchMode.DEVELOPMENT, new Supplier<Integer>() {
+            doServerStart(vertx, buildConfig, config, LaunchMode.DEVELOPMENT, new Supplier<Integer>() {
                 @Override
                 public Integer get() {
                     return ProcessorInfo.availableProcessors() * 2; //this is dev mode, so the number of IO threads not always being 100% correct does not really matter in this case
@@ -185,7 +187,8 @@ public class VertxHttpRecorder {
     }
 
     public void startServer(Supplier<Vertx> vertx, ShutdownContext shutdown,
-            HttpConfiguration httpConfiguration, LaunchMode launchMode,
+            HttpBuildTimeConfig httpBuildTimeConfig, HttpConfiguration httpConfiguration,
+            LaunchMode launchMode,
             boolean startVirtual, boolean startSocket, Supplier<Integer> ioThreads, String websocketSubProtocols)
             throws IOException {
 
@@ -195,7 +198,8 @@ public class VertxHttpRecorder {
         if (startSocket) {
             // Start the server
             if (closeTask == null) {
-                doServerStart(vertx.get(), httpConfiguration, launchMode, ioThreads, websocketSubProtocols);
+                doServerStart(vertx.get(), httpBuildTimeConfig, httpConfiguration, launchMode, ioThreads,
+                        websocketSubProtocols);
                 if (launchMode != LaunchMode.DEVELOPMENT) {
                     shutdown.addShutdownTask(closeTask);
                 }
@@ -364,12 +368,13 @@ public class VertxHttpRecorder {
         rootHandler = root;
     }
 
-    private static void doServerStart(Vertx vertx, HttpConfiguration httpConfiguration, LaunchMode launchMode,
+    private static void doServerStart(Vertx vertx, HttpBuildTimeConfig httpBuildTimeConfig,
+            HttpConfiguration httpConfiguration, LaunchMode launchMode,
             Supplier<Integer> eventLoops, String websocketSubProtocols) throws IOException {
         // Http server configuration
         HttpServerOptions httpServerOptions = createHttpServerOptions(httpConfiguration, launchMode, websocketSubProtocols);
         HttpServerOptions domainSocketOptions = createDomainSocketOptions(httpConfiguration, websocketSubProtocols);
-        HttpServerOptions sslConfig = createSslOptions(httpConfiguration, launchMode);
+        HttpServerOptions sslConfig = createSslOptions(httpBuildTimeConfig, httpConfiguration, launchMode);
         if (httpConfiguration.insecureRequests != HttpConfiguration.InsecureRequests.ENABLED && sslConfig == null) {
             throw new IllegalStateException("Cannot set quarkus.http.redirect-insecure-requests without enabling SSL.");
         }
@@ -467,7 +472,8 @@ public class VertxHttpRecorder {
     /**
      * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled
      */
-    private static HttpServerOptions createSslOptions(HttpConfiguration httpConfiguration, LaunchMode launchMode)
+    private static HttpServerOptions createSslOptions(HttpBuildTimeConfig buildTimeConfig, HttpConfiguration httpConfiguration,
+            LaunchMode launchMode)
             throws IOException {
         if (!httpConfiguration.hostEnabled) {
             return null;
@@ -562,7 +568,7 @@ public class VertxHttpRecorder {
         serverOptions.setSsl(true);
         serverOptions.setHost(httpConfiguration.host);
         serverOptions.setPort(httpConfiguration.determineSslPort(launchMode));
-        serverOptions.setClientAuth(sslConfig.clientAuth);
+        serverOptions.setClientAuth(buildTimeConfig.tlsClientAuth);
         serverOptions.setReusePort(httpConfiguration.soReusePort);
         serverOptions.setTcpQuickAck(httpConfiguration.tcpQuickAck);
         serverOptions.setTcpCork(httpConfiguration.tcpCork);

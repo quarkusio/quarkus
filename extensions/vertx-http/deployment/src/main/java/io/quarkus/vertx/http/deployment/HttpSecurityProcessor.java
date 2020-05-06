@@ -28,10 +28,12 @@ import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
+import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.PermitSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.RolesAllowedHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.SupplierImpl;
+import io.vertx.core.http.ClientAuth;
 
 public class HttpSecurityProcessor {
 
@@ -70,10 +72,26 @@ public class HttpSecurityProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
+    SyntheticBeanBuildItem initMtlsClientAuth(
+            HttpSecurityRecorder recorder,
+            HttpBuildTimeConfig buildTimeConfig) {
+        if (isMtlsClientAuthenticationEnabled(buildTimeConfig)) {
+            return SyntheticBeanBuildItem.configure(MtlsAuthenticationMechanism.class)
+                    .types(HttpAuthenticationMechanism.class)
+                    .setRuntimeInit()
+                    .scope(Singleton.class)
+                    .supplier(recorder.setupMtlsClientAuth()).done();
+        }
+        return null;
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem initBasicAuth(
             HttpSecurityRecorder recorder,
             HttpBuildTimeConfig buildTimeConfig) {
-        if (buildTimeConfig.auth.form.enabled && !buildTimeConfig.auth.basic) {
+        if ((buildTimeConfig.auth.form.enabled || isMtlsClientAuthenticationEnabled(buildTimeConfig))
+                && !buildTimeConfig.auth.basic) {
             //if form auth is enabled and we are not then we don't install
             return null;
         }
@@ -83,7 +101,8 @@ public class HttpSecurityProcessor {
                 .setRuntimeInit()
                 .scope(Singleton.class)
                 .supplier(recorder.setupBasicAuth(buildTimeConfig));
-        if (!buildTimeConfig.auth.form.enabled && !buildTimeConfig.auth.basic) {
+        if (!buildTimeConfig.auth.form.enabled && !isMtlsClientAuthenticationEnabled(buildTimeConfig)
+                && !buildTimeConfig.auth.basic) {
             //if not explicitly enabled we make this a default bean, so it is the fallback if nothing else is defined
             configurator.defaultBean();
         }
@@ -134,5 +153,9 @@ public class HttpSecurityProcessor {
                 throw new IllegalStateException("HTTP permissions have been set however security is not enabled");
             }
         }
+    }
+
+    private boolean isMtlsClientAuthenticationEnabled(HttpBuildTimeConfig buildTimeConfig) {
+        return !ClientAuth.NONE.equals(buildTimeConfig.tlsClientAuth);
     }
 }

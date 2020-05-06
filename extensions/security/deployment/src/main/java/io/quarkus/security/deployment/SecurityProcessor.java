@@ -52,6 +52,7 @@ import io.quarkus.security.runtime.IdentityProviderManagerCreator;
 import io.quarkus.security.runtime.SecurityBuildTimeConfig;
 import io.quarkus.security.runtime.SecurityIdentityAssociation;
 import io.quarkus.security.runtime.SecurityIdentityProxy;
+import io.quarkus.security.runtime.X509IdentityProvider;
 import io.quarkus.security.runtime.interceptor.AuthenticatedInterceptor;
 import io.quarkus.security.runtime.interceptor.DenyAllInterceptor;
 import io.quarkus.security.runtime.interceptor.PermitAllInterceptor;
@@ -355,5 +356,6 @@ public class SecurityProcessor {
         beans.produce(AdditionalBeanBuildItem.unremovableOf(SecurityIdentityAssociation.class));
         beans.produce(AdditionalBeanBuildItem.unremovableOf(IdentityProviderManagerCreator.class));
         beans.produce(AdditionalBeanBuildItem.unremovableOf(SecurityIdentityProxy.class));
+        beans.produce(AdditionalBeanBuildItem.unremovableOf(X509IdentityProvider.class));
     }
 }

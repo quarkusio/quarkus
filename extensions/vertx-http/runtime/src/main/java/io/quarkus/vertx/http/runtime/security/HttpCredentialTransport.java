@@ -39,7 +39,11 @@ public class HttpCredentialTransport {
         /**
          * A post request, target is the POST URI
          */
-        POST
+        POST,
+        /**
+         * X509
+         */
+        X509
     }
 
     @Override

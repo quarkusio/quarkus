@@ -167,12 +167,10 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                 //ignore
             }
         }
-        //TODO: in theory resources could have been added in dev mode
-        //but I don't thing this really matters for this code path
-        ClassPathElement[] providers = state.loadableResources.get(name);
-        if (providers != null) {
-            for (ClassPathElement element : providers) {
-                resources.add(element.getResource(nm).getUrl());
+        for (ClassPathElement i : elements) {
+            ClassPathResource res = i.getResource(nm);
+            if (res != null) {
+                resources.add(res.getUrl());
             }
         }
         if (!banned) {

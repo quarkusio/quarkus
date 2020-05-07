@@ -1,0 +1,14 @@
+---
+name: "REST CRUD resources for Hibernate ORM with Panache"
+metadata:
+  keywords:
+  - "hibernate-orm-panache"
+  - "panache"
+  - "hibernate"
+  - "jpa"
+  - "rest"
+  - "jaxrs"
+  - "resteasy"
+  categories:
+  - "data"
+  status: "preview"

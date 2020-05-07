@@ -19,6 +19,8 @@
         <module>hibernate-orm-panache</module>
         <module>mongodb-panache</module>
         <module>panacheql</module>
+        <module>panache-rest-common</module>
+        <module>panache-rest-hibernate-orm</module>
     </modules>
 
 

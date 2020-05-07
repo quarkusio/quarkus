@@ -18,6 +18,13 @@ import io.quarkus.arc.ManagedContext;
  */
 public class ArcContextProvider implements ThreadContextProvider {
 
+    protected static final ThreadContextController NOOP_CONTROLLER = new ThreadContextController() {
+        @Override
+        public void endContext() throws IllegalStateException {
+
+        }
+    };
+
     @Override
     public ThreadContextSnapshot currentContext(Map<String, String> map) {
         ArcContainer arc = Arc.container();
@@ -28,46 +35,57 @@ public class ArcContextProvider implements ThreadContextProvider {
 
         // capture the state, null indicates no active context while capturing snapshot
         InjectableContext.ContextState state = isContextActiveOnThisThread(arc) ? arc.requestContext().getState() : null;
-        return () -> {
-            // can be called later on, we should retrieve the container again
-            ArcContainer arcContainer = Arc.container();
-            if (arcContainer == null || !arcContainer.isRunning()) {
-                throw new IllegalStateException("Arc context propagation was attempted but the container is not running.");
-            }
-            ThreadContextController controller;
-            ManagedContext requestContext = arcContainer.requestContext();
-            // this is executed on another thread, context can but doesn't need to be active here
-            if (isContextActiveOnThisThread(arcContainer)) {
-                // context active, store current state, feed it new one and restore state afterwards
-                InjectableContext.ContextState stateToRestore = requestContext.getState();
-                requestContext.deactivate();
-                if (state != null) {
-                    // only activate if previous thread had it active
-                    requestContext.activate(state);
+        return new ThreadContextSnapshot() {
+            @Override
+            public ThreadContextController begin() {
+                // can be called later on, we should retrieve the container again
+                ArcContainer arcContainer = Arc.container();
+                if (arcContainer == null || !arcContainer.isRunning()) {
+                    //this happens on shutdown, if we blow up here it can break shutdown, and stop
+                    //resources from being cleaned up, causing tests to fail
+                    return NOOP_CONTROLLER;
                 }
-                controller = () -> {
-                    // clean up, reactivate context with previous values
+                ThreadContextController controller;
+                ManagedContext requestContext = arcContainer.requestContext();
+                // this is executed on another thread, context can but doesn't need to be active here
+                if (ArcContextProvider.this.isContextActiveOnThisThread(arcContainer)) {
+                    // context active, store current state, feed it new one and restore state afterwards
+                    InjectableContext.ContextState stateToRestore = requestContext.getState();
+                    requestContext.deactivate();
                     if (state != null) {
-                        // only deactivate if previous thread had it active
-                        requestContext.deactivate();
+                        // only activate if previous thread had it active
+                        requestContext.activate(state);
                     }
-                    requestContext.activate(stateToRestore);
-                };
-            } else {
-                // context not active, activate and pass it new instance, deactivate afterwards
-                if (state != null) {
-                    // only activate if previous thread had it active
-                    requestContext.activate(state);
+                    controller = new ThreadContextController() {
+                        @Override
+                        public void endContext() throws IllegalStateException {
+                            // clean up, reactivate context with previous values
+                            if (state != null) {
+                                // only deactivate if previous thread had it active
+                                requestContext.deactivate();
+                            }
+                            requestContext.activate(stateToRestore);
+                        }
+                    };
+                } else {
+                    // context not active, activate and pass it new instance, deactivate afterwards
+                    if (state != null) {
+                        // only activate if previous thread had it active
+                        requestContext.activate(state);
 
-                }
-                controller = () -> {
-                    if (state != null) {
-                        // only deactivate if previous thread had it active
-                        requestContext.deactivate();
                     }
-                };
+                    controller = new ThreadContextController() {
+                        @Override
+                        public void endContext() throws IllegalStateException {
+                            if (state != null) {
+                                // only deactivate if previous thread had it active
+                                requestContext.deactivate();
+                            }
+                        }
+                    };
+                }
+                return controller;
             }
-            return controller;
         };
     }
 
@@ -80,33 +98,40 @@ public class ArcContextProvider implements ThreadContextProvider {
             return null;
         }
 
-        return () -> {
-            // can be called later on, we should retrieve the container again
-            ArcContainer arcContainer = Arc.container();
-            if (arcContainer == null || !arcContainer.isRunning()) {
-                throw new IllegalStateException("Arc context propagation was attempted but the container is not running.");
-            }
-            ThreadContextController controller;
-            ManagedContext requestContext = arcContainer.requestContext();
-            // this is executed on another thread, context can but doesn't need to be active here
-            if (isContextActiveOnThisThread(arcContainer)) {
-                // context active, store current state, start blank context anew and restore state afterwards
-                InjectableContext.ContextState stateToRestore = requestContext.getState();
-                requestContext.deactivate();
-                requestContext.activate();
-                controller = () -> {
-                    // clean up, reactivate context with previous values
+        return new ThreadContextSnapshot() {
+            @Override
+            public ThreadContextController begin() {
+                // c
+                // an be called later on, we should retrieve the container again
+                ArcContainer arcContainer = Arc.container();
+                if (arcContainer == null || !arcContainer.isRunning()) {
+                    return NOOP_CONTROLLER;
+                }
+                ThreadContextController controller;
+                ManagedContext requestContext = arcContainer.requestContext();
+                // this is executed on another thread, context can but doesn't need to be active here
+                if (ArcContextProvider.this.isContextActiveOnThisThread(arcContainer)) {
+                    // context active, store current state, start blank context anew and restore state afterwards
+                    InjectableContext.ContextState stateToRestore = requestContext.getState();
                     requestContext.deactivate();
-                    requestContext.activate(stateToRestore);
-                };
-            } else {
-                // context not active, activate blank one, deactivate afterwards
-                requestContext.activate();
-                controller = () -> {
-                    requestContext.deactivate();
-                };
+                    requestContext.activate();
+                    controller = () -> {
+                        // clean up, reactivate context with previous values
+                        requestContext.deactivate();
+                        requestContext.activate(stateToRestore);
+                    };
+                } else {
+                    // context not active, activate blank one, deactivate afterwards
+                    requestContext.activate();
+                    controller = new ThreadContextController() {
+                        @Override
+                        public void endContext() throws IllegalStateException {
+                            requestContext.deactivate();
+                        }
+                    };
+                }
+                return controller;
             }
-            return controller;
         };
     }
 
